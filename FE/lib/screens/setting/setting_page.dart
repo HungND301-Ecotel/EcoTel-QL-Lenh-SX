@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/providers/user_provider.dart';
+import 'package:job_manager/routes/app_routes.dart';
+import 'package:provider/provider.dart';
 
 class SettingPage extends StatelessWidget {
   const SettingPage({super.key});
@@ -27,7 +30,12 @@ class SettingPage extends StatelessWidget {
             ),
           ),
           TextButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.pushNamed(
+                context,
+                AppRoute.changePass,
+              );
+            },
             style: TextButton.styleFrom(
               padding: EdgeInsets.symmetric(vertical: 16),
             ),
@@ -129,7 +137,13 @@ class SettingPage extends StatelessWidget {
             ),
           ),
           TextButton(
-            onPressed: () {},
+            onPressed: () async {
+              await Provider.of<UserProvider>(
+                context,
+                listen: false,
+              ).clearUser();
+              Navigator.pushNamed(context, AppRoute.signin);
+            },
             style: TextButton.styleFrom(
               padding: EdgeInsets.symmetric(vertical: 16),
             ),

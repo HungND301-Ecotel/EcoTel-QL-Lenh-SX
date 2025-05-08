@@ -117,7 +117,7 @@ class _AddAssignJobState extends State<AddAssignJob> {
                 onPressed: () {
                   Navigator.pushNamed(
                     context,
-                    AssignJobRoutes.list_assign_job,
+                    AssignJobRoutes.listAssignJob,
                   );
                 },
                 style: ElevatedButton.styleFrom(

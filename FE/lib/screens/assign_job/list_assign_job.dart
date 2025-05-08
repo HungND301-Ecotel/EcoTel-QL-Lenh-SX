@@ -96,7 +96,7 @@ class _ListAssignJob extends State<ListAssignJob> {
             onPressed: () {
               Navigator.pushNamed(
                 context,
-                AssignJobRoutes.list_job,
+                AssignJobRoutes.listJob,
               );
             },
             icon: Icon(Icons.add, color: Colors.white),

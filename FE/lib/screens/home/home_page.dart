@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:job_manager/providers/user_provider.dart';
+import 'package:job_manager/routes/app_routes.dart';
+import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -74,7 +77,7 @@ class _HomePageState extends State<HomePage> {
         return '${placemark.name}, ${placemark.street}, ${placemark.locality}, ${placemark.country}';
       }
     } catch (e) {
-      print('Lỗi lấy địa chỉ: $e');
+      return 'Lỗi lấy địa chỉ: $e';
     }
     return 'Không tìm thấy địa chỉ';
   }
@@ -106,6 +109,23 @@ class _HomePageState extends State<HomePage> {
           ),
           PopupMenuButton<String>(
             color: Colors.white,
+            onSelected: (value) async {
+              if (value == "Đăng xuất") {
+                await Provider.of<UserProvider>(
+                  context,
+                  listen: false,
+                ).clearUser();
+                Navigator.pushNamed(
+                  context,
+                  AppRoute.signin,
+                );
+              } else if (value == "Liên hệ") {
+                Navigator.pushNamed(
+                  context,
+                  AppRoute.contact,
+                );
+              }
+            },
             itemBuilder:
                 (BuildContext context) => [
                   PopupMenuItem(

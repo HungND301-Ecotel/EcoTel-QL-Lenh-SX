@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/providers/user_provider.dart';
 import 'package:job_manager/routes/app_routes.dart';
+import 'package:job_manager/screens/main.dart';
+import 'package:job_manager/services/user_service.dart';
+import 'package:provider/provider.dart';
 
 class SignIn extends StatefulWidget {
-  const SignIn({Key? key}) : super(key: key);
+  const SignIn({super.key});
 
   @override
   State<StatefulWidget> createState() => _SignInState();
@@ -10,10 +14,45 @@ class SignIn extends StatefulWidget {
 
 class _SignInState extends State<SignIn> {
   bool _obscurePassword = false;
+  final TextEditingController _usernameController =
+      TextEditingController();
+  final TextEditingController _passwordController =
+      TextEditingController();
+
+  final AuthService _authService = AuthService();
+
+  void signin() async {
+    String username = _usernameController.text.trim();
+    String password = _passwordController.text.trim();
+    var result = await _authService.signin(
+      username,
+      password,
+    );
+
+    if (!mounted) return;
+    if (result.containsKey('error')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['error']),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      final user = result['success']['data']['user'];
+      final token = result['success']['data']['token'];
+      Provider.of<UserProvider>(
+        context,
+        listen: false,
+      ).setUser(user, token);
+      Navigator.pushNamed(context, AppRoute.main);
+    }
+  }
 
   @override
-  void initState() {
-    super.initState();
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -41,12 +80,14 @@ class _SignInState extends State<SignIn> {
                   child: Column(
                     children: [
                       TextFormField(
+                        controller: _usernameController,
                         decoration: const InputDecoration(
                           labelText: 'Tên truy cập',
                         ),
                       ),
                       SizedBox(height: 20),
                       TextFormField(
+                        controller: _passwordController,
                         obscuringCharacter: '*',
                         obscureText: _obscurePassword,
                         decoration: InputDecoration(
@@ -74,12 +115,7 @@ class _SignInState extends State<SignIn> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushNamed(
-                      context,
-                      AppRoute.main,
-                    );
-                  },
+                  onPressed: signin,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,

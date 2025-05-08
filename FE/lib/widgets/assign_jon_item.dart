@@ -32,7 +32,7 @@ class AssignJobItem extends StatelessWidget {
         onPressed: () {
           Navigator.pushNamed(
             context,
-            AssignJobRoutes.job_detail,
+            AssignJobRoutes.jobDetail,
             arguments: data,
           );
         },

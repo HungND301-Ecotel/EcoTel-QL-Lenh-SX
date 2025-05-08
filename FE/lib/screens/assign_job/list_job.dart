@@ -27,7 +27,7 @@ class _ListJob extends State<ListJob> {
   String _searchText = '';
   @override
   Widget build(BuildContext context) {
-    List<String> _filteredItems =
+    List<String> filteredItems =
         _allData
             .where(
               (item) => item.toLowerCase().contains(
@@ -79,12 +79,12 @@ class _ListJob extends State<ListJob> {
           Divider(height: 1),
           Expanded(
             child:
-                _filteredItems.isEmpty
+                filteredItems.isEmpty
                     ? Center(child: Text('Không tìm thấy'))
                     : ListView.builder(
-                      itemCount: _filteredItems.length,
+                      itemCount: filteredItems.length,
                       itemBuilder: (context, index) {
-                        final item = _filteredItems[index];
+                        final item = filteredItems[index];
                         return Container(
                           decoration: BoxDecoration(
                             border: Border(
@@ -105,7 +105,7 @@ class _ListJob extends State<ListJob> {
                             onTap: () {
                               Navigator.pushNamed(
                                 context,
-                                AssignJobRoutes.add_assign,
+                                AssignJobRoutes.addAssign,
                                 arguments: item,
                               );
                             },
