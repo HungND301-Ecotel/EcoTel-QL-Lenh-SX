@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/routes/assign_job_route.dart';
+import 'package:job_manager/routes/task_assignment_route.dart';
 
-class ListJob extends StatefulWidget {
-  const ListJob({super.key});
+class TaskAssignmentType extends StatefulWidget {
+  const TaskAssignmentType({super.key});
 
   @override
-  State<StatefulWidget> createState() => _ListJob();
+  State<StatefulWidget> createState() =>
+      _TaskAssignmentType();
 }
 
-class _ListJob extends State<ListJob> {
+class _TaskAssignmentType
+    extends State<TaskAssignmentType> {
   final List<String> _allData = [
     'Bảo dưỡng, sửa chữa xe',
     'Bảo dưỡng, sửa chữa xe cẩu, xe nâng kéo, xe nâng hạ lốp, xe nâng hàng',
@@ -98,14 +100,15 @@ class _ListJob extends State<ListJob> {
                           ),
                           child: ListTile(
                             leading: Icon(
-                              Icons.build_circle_outlined,
+                              Icons.group_work_outlined,
                               color: Colors.grey,
                             ),
                             title: Text(item),
                             onTap: () {
                               Navigator.pushNamed(
                                 context,
-                                AssignJobRoutes.addAssign,
+                                TaskAssignmentRoutes
+                                    .taskAssignmentAdd,
                                 arguments: item,
                               );
                             },

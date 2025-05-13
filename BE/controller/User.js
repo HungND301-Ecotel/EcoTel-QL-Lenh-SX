@@ -39,12 +39,13 @@ exports.login = async (req, res) => {
         }
 
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN })
-        const { password, ...others } = user._doc
+        const userData = user.toObject()
+        delete userData.password
         res.status(200).send({
             status: 'success',
             message: "Đăng nhập thành công",
             data: {
-                user: others,
+                user: userData,
                 token
             }
         })
@@ -92,11 +93,12 @@ exports.update = async (req, res) => {
         if (!userUpdate) {
             return res.status(404).send({ status: 'error', message: "Cập nhật không thành công" })
         };
-        const { _id, name, username, phone } = userUpdate;
+        const userData = userUpdate.toObject()
+        delete userData.password
         res.status(200).send({
             status: 'success',
             message: "Cập nhật thành công",
-            data: { _id, name, username, phone }
+            data: userData
         })
     } catch (err) {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })

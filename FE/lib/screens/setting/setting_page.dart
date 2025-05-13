@@ -10,7 +10,10 @@ class SettingPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Cài đặt"),
+        title: Text(
+          "Cài đặt",
+          style: TextStyle(color: Colors.white),
+        ),
         centerTitle: true,
         automaticallyImplyLeading: false,
         backgroundColor: Colors.blue,

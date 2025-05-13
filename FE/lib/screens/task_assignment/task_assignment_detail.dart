@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 
-class JobDetail extends StatefulWidget {
+class TaskAssignmentDetail extends StatefulWidget {
   final Map<String, dynamic> data;
-  const JobDetail({super.key, required this.data});
+  const TaskAssignmentDetail({
+    super.key,
+    required this.data,
+  });
 
   @override
-  State<StatefulWidget> createState() => _JobDetailState();
+  State<StatefulWidget> createState() =>
+      _TaskAssignmentDetail();
 }
 
-class _JobDetailState extends State<JobDetail> {
+class _TaskAssignmentDetail
+    extends State<TaskAssignmentDetail> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:job_manager/providers/user_provider.dart';
 import 'package:job_manager/routes/app_routes.dart';
-import 'package:job_manager/screens/main.dart';
 import 'package:job_manager/services/user_service.dart';
 import 'package:provider/provider.dart';
 

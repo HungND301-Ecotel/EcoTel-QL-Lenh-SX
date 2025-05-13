@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:job_manager/providers/user_provider.dart';
 import 'package:job_manager/routes/app_routes.dart';
-import 'package:job_manager/routes/assign_job_route.dart';
+import 'package:job_manager/routes/task_assignment_route.dart';
 import 'package:job_manager/screens/home/home_page.dart';
-import 'package:job_manager/screens/job/job_page.dart';
 import 'package:job_manager/screens/report/report_page.dart';
 import 'package:job_manager/screens/setting/setting_page.dart';
+import 'package:job_manager/screens/work_log/routes/routes.dart';
 import 'package:provider/provider.dart';
 
 class MyPage extends StatefulWidget {
@@ -110,53 +110,58 @@ class MyHomePageState extends State<MyPage> {
 
   @override
   Widget build(BuildContext context) {
+    final user =
+        Provider.of<UserProvider>(
+          context,
+          listen: false,
+        ).user;
+    final role = user?['role'];
+
+    final items = <BottomNavigationBarItem>[
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.zoom_out_map),
+        label: "Bản đồ",
+      ),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.check_circle_outline),
+        label: "Công việc",
+      ),
+      if (role == 'admin')
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.badge_outlined),
+          label: "Giao việc",
+        ),
+      if (role == 'admin')
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.file_copy_outlined),
+          label: "Báo cáo",
+        ),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.settings),
+        label: "Cài đặt",
+      ),
+    ];
     return Scaffold(
-      body: getBody(),
+      body: getBody(role),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: selectedIndex,
         selectedItemColor: Colors.blue,
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.zoom_out_map),
-            label: "Bản đồ",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.check_circle_outline),
-            label: "Công việc",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.badge_outlined),
-            label: "Giao việc",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.file_copy_outlined),
-            label: "Báo cáo",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: "Cài đặt",
-          ),
-        ],
-        onTap: (int index) {
-          onTapHandler(index);
-        },
+        items: items,
+        onTap: onTapHandler,
       ),
     );
   }
 
-  Widget getBody() {
-    if (selectedIndex == 0) {
-      return HomePage();
-    } else if (selectedIndex == 1) {
-      return JobPage();
-    } else if (selectedIndex == 2) {
-      return AssignJobRoute();
-    } else if (selectedIndex == 3) {
-      return ReportPage();
-    } else {
-      return SettingPage();
-    }
+  Widget getBody(String? role) {
+    final bodyList = <Widget>[
+      HomePage(),
+      WorkLogRoute(),
+      if (role == 'admin') TaskAssignmentRoute(),
+      if (role == 'admin') ReportPage(),
+      SettingPage(),
+    ];
+    return bodyList[selectedIndex];
   }
 
   void onTapHandler(int index) {

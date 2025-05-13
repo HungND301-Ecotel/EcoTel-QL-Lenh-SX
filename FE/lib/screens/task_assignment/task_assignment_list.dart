@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/routes/assign_job_route.dart';
-import 'package:job_manager/widgets/assign_jon_item.dart';
+import 'package:job_manager/providers/user_provider.dart';
+import 'package:job_manager/routes/task_assignment_route.dart';
+import 'package:job_manager/widgets/task_assignment_item.dart';
+import 'package:provider/provider.dart';
 
-class ListAssignJob extends StatefulWidget {
-  const ListAssignJob({super.key});
+class TaskAssignmentList extends StatefulWidget {
+  const TaskAssignmentList({super.key});
 
   @override
-  State<StatefulWidget> createState() => _ListAssignJob();
+  State<StatefulWidget> createState() =>
+      _TaskAssignmentList();
 }
 
-class _ListAssignJob extends State<ListAssignJob> {
+class _TaskAssignmentList
+    extends State<TaskAssignmentList> {
   final List<Map<String, dynamic>> _allData = [
     {
       'title': 'Bảo dưỡng, sửa chữa xe',
@@ -71,6 +75,11 @@ class _ListAssignJob extends State<ListAssignJob> {
   ];
   @override
   Widget build(BuildContext context) {
+    final user =
+        Provider.of<UserProvider>(
+          context,
+          listen: false,
+        ).user;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
@@ -92,22 +101,23 @@ class _ListAssignJob extends State<ListAssignJob> {
         ),
         centerTitle: true,
         actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamed(
-                context,
-                AssignJobRoutes.listJob,
-              );
-            },
-            icon: Icon(Icons.add, color: Colors.white),
-          ),
+          if (user != null && user['role'] == 'admin')
+            IconButton(
+              onPressed: () {
+                Navigator.pushNamed(
+                  context,
+                  TaskAssignmentRoutes.taskAssignmentType,
+                );
+              },
+              icon: Icon(Icons.add, color: Colors.white),
+            ),
         ],
       ),
       body: SingleChildScrollView(
         child: Column(
           children:
               _allData
-                  .map((item) => AssignJobItem(data: item))
+                  .map((item) => TaskAssignItem(data: item))
                   .toList(),
         ),
       ),

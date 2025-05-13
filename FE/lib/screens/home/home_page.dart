@@ -19,6 +19,7 @@ class _HomePageState extends State<HomePage> {
   LatLng?
   _currentPosition; //Biến lưu trữ vị trí hiện tại của người dùng (tọa độ latitude, longitude).
   String? _currentAddress;
+
   @override
   void initState() {
     super.initState();
@@ -48,6 +49,7 @@ class _HomePageState extends State<HomePage> {
     final String address = await _getAddressFromLatLng(
       latLng,
     );
+    if (!mounted) return;
     setState(() {
       _currentPosition = LatLng(
         position.latitude,

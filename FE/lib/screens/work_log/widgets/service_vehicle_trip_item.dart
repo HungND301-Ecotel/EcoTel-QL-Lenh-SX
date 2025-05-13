@@ -1,21 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/routes/assign_job_route.dart';
 
-class AssignJobItem extends StatelessWidget {
+class ServiceVehicleTripItem extends StatelessWidget {
   final Map<String, dynamic> data;
 
-  const AssignJobItem({super.key, required this.data});
-
-  Color getStatusColor(String status) {
-    switch (status) {
-      case 'Chưa nhận lệnh':
-        return Colors.grey;
-      case 'Đã nhận lệnh':
-        return Colors.green;
-      default:
-        return Colors.red;
-    }
-  }
+  const ServiceVehicleTripItem({
+    super.key,
+    required this.data,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -29,13 +20,7 @@ class AssignJobItem extends StatelessWidget {
         ),
       ),
       child: TextButton(
-        onPressed: () {
-          Navigator.pushNamed(
-            context,
-            AssignJobRoutes.jobDetail,
-            arguments: data,
-          );
-        },
+        onPressed: () {},
         style: TextButton.styleFrom(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.zero,
@@ -47,9 +32,9 @@ class AssignJobItem extends StatelessWidget {
             SizedBox(
               width: 60,
               child: Icon(
-                Icons.mark_as_unread_outlined,
-                color: getStatusColor(data['status']),
+                Icons.cable_outlined,
                 size: 25,
+                color: Colors.blue,
               ),
             ),
             Expanded(
@@ -58,7 +43,7 @@ class AssignJobItem extends StatelessWidget {
                     CrossAxisAlignment.start,
                 children: [
                   Text(
-                    data['title'] ?? '',
+                    data['start'] ?? '',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.black,
@@ -67,31 +52,32 @@ class AssignJobItem extends StatelessWidget {
                   ),
                   SizedBox(height: 6),
                   Text(
-                    data['time'] ?? '',
+                    data['end'] ?? '',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey,
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                   SizedBox(height: 6),
                   Text(
-                    data['description'] ?? '',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    data['type'] ?? '',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey,
+                      color: Colors.black,
                     ),
                   ),
                 ],
               ),
             ),
             SizedBox(
-              width: 40,
-              child: Icon(
-                Icons.arrow_forward_ios_outlined,
-                size: 15,
-                color: Colors.grey,
+              width: 80,
+              child: Text(
+                "${data['quantity']}=${data['distance']}",
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.black,
+                ),
               ),
             ),
           ],
