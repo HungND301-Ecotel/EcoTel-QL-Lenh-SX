@@ -7,7 +7,8 @@ exports.create = async (req, res) => {
         const { name, mode } = req.body
         const newTaskType = new TaskType({
             name: name,
-            mode: mode
+            mode: mode,
+            description: description
         });
         await newTaskType.save();
         res.status(200).send({ status: 'success', message: "Tạo thành công" });
