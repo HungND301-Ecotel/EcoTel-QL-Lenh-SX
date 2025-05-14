@@ -16,3 +16,5 @@ const Payroll = new mongoose.Schema({
         timestamps: true
     })
 module.exports = mongoose.model('pay_roll', Payroll)
+
+// lưu thông tin thẻ lương

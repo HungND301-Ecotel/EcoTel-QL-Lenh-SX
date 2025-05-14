@@ -24,23 +24,23 @@ const Order = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "user",
     },
-    deviceId: {
+    deviceId: {//thiết bị
         type: mongoose.Schema.Types.ObjectId,
         ref: "device",
     },
-    excavatorId: {
+    excavatorId: {//máy xúc
         type: mongoose.Schema.Types.ObjectId,
         ref: "device",
     },
-    locationId: {
+    locationId: {//vị trí
         type: mongoose.Schema.Types.ObjectId,
         ref: "location",
     },
-    materialId: {
+    materialId: {//chủng loại
         type: mongoose.Schema.Types.ObjectId,
         ref: "material",
     },
-    description: {
+    description: {//nội dung
         type: String,
     },
     status: {
@@ -53,3 +53,4 @@ const Order = new mongoose.Schema({
         timestamps: true
     })
 module.exports = mongoose.model('order', Order)
+// lưu lệnh

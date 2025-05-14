@@ -10,3 +10,4 @@ const Location = new mongoose.Schema({
         timestamps: true
     })
 module.exports = mongoose.model('location', Location)
+// lưu vị trí, điểm đổ, bãi thải...

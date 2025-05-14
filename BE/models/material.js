@@ -10,3 +10,4 @@ const Material = new mongoose.Schema({
         timestamps: true
     })
 module.exports = mongoose.model('material', Material)
+// lưu chủng loại/loại hàng

@@ -15,3 +15,5 @@ const Task = new mongoose.Schema({
         timestamps: true
     })
 module.exports = mongoose.model('task', Task)
+
+// lưu các công việc
