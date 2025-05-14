@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:job_manager/routes/task_assignment_route.dart';
 
 class TaskAssignItem extends StatelessWidget {
@@ -8,9 +9,9 @@ class TaskAssignItem extends StatelessWidget {
 
   Color getStatusColor(String status) {
     switch (status) {
-      case 'Chưa nhận lệnh':
+      case 'pending':
         return Colors.grey;
-      case 'Đã nhận lệnh':
+      case 'accepted':
         return Colors.green;
       default:
         return Colors.red;
@@ -58,22 +59,37 @@ class TaskAssignItem extends StatelessWidget {
                     CrossAxisAlignment.start,
                 children: [
                   Text(
-                    data['title'] ?? '',
+                    data['taskId']?['name'] ?? '',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.black,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 6),
                   Text(
-                    data['time'] ?? '',
+                    data['start_time'] != null
+                        ? DateFormat(
+                          'dd/MM/yyyy HH:mm:ss',
+                        ).format(
+                          DateTime.parse(
+                            data['start_time'],
+                          ).toLocal(),
+                        )
+                        : '',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey,
                     ),
                   ),
-                  SizedBox(height: 6),
+                  Text(
+                    "${data['assignedTo']?['payroll']?['code'] ?? ''} ${data['assignedTo']?['name'] ?? ''}",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
                   Text(
                     data['description'] ?? '',
                     maxLines: 1,

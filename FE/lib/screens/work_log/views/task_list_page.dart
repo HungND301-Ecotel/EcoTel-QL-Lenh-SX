@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/services/order_service.dart';
 import 'package:job_manager/widgets/task_item.dart';
 
 class TaskListPage extends StatefulWidget {
@@ -9,68 +10,48 @@ class TaskListPage extends StatefulWidget {
 }
 
 class _TaskListPage extends State<TaskListPage> {
-  final List<Map<String, dynamic>> taskList = [
-    {
-      'title': 'Vận hành xe',
-      'time': '19/07/2022 15:00:00',
-      'description':
-          'Bảo dưỡng, sửa chữa xe cẩu, xe nâng kéo, xe nâng hạ lốp, xe nâng hàng',
-      'status': 'Chưa nhận lệnh',
-      'type': 'Vận hành xe',
-      'sign': 'HDBN-2025',
-      'category': 'trực tiếp',
-    },
-    {
-      'title': 'Vận hành xúc',
-      'time': '19/07/2022 15:00:00',
-      'description':
-          'Bảo dưỡng, sửa chữa xe cẩu, xe nâng kéo, xe nâng hạ lốp, xe nâng hàng',
-      'status': 'Đã kết thúc lệnh',
-      'type': 'Vận hành xúc',
-      'sign': 'HDBN-2026',
-      'category': 'trực tiếp',
-    },
-    {
-      'title': 'Vận hành khoan',
-      'time': '19/07/2022 15:00:00',
-      'description':
-          'Bảo dưỡng, sửa chữa xe cẩu, xe nâng kéo, xe nâng hạ lốp, xe nâng hàng',
-      'status': 'Đã nhận lệnh',
-      'type': 'Vận hành khoan',
-      'sign': 'HDBN-2027',
-      'category': 'trực tiếp',
-    },
-    {
-      'title': 'Vận hành gạt',
-      'time': '19/07/2022 15:00:00',
-      'description':
-          'Bảo dưỡng, sửa chữa xe cẩu, xe nâng kéo, xe nâng hạ lốp, xe nâng hàng',
-      'status': 'Chưa nhận lệnh',
-      'type': 'Vận hành gạt',
-      'sign': 'HDBN-2028',
-      'category': 'trực tiếp',
-    },
-    {
-      'title': 'Vận hành xe phục vụ',
-      'time': '19/07/2022 15:00:00',
-      'description':
-          'Bảo dưỡng, sửa chữa xe cẩu, xe nâng kéo, xe nâng hạ lốp, xe nâng hàng',
-      'status': 'Đã nhận lệnh',
-      'type': 'Vận hành xe phục vụ',
-      'sign': 'HDBN-2029',
-      'category': 'trực tiếp',
-    },
-    {
-      'title': 'Lao động',
-      'time': '19/07/2022 15:00:00',
-      'description':
-          'Bảo dưỡng, sửa chữa xe cẩu, xe nâng kéo, xe nâng hạ lốp, xe nâng hàng',
-      'status': 'Đã kết thúc lệnh',
-      'type': 'Lao động',
-      'sign': 'HDBN-2030',
-      'category': 'gián tiếp',
-    },
-  ];
+  final List<Map<String, dynamic>> taskList = [];
+  bool _isLoading = true;
+  final OrderService _orderService = OrderService();
+
+  void getOrderByUser() async {
+    var result = await _orderService.getByUser();
+    if (!mounted) return;
+    if (result['status'] == 'error') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      var data = result['data'];
+      setState(() {
+        taskList
+            .clear(); // Nếu cần làm sạch danh sách trước
+        taskList.addAll(
+          List<Map<String, dynamic>>.from(data),
+        );
+      });
+    }
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  void getReload() async {
+    setState(() {
+      _isLoading = true;
+    });
+    getOrderByUser();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getOrderByUser();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -88,7 +69,7 @@ class _TaskListPage extends State<TaskListPage> {
         centerTitle: true,
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: getReload,
             icon: Icon(
               Icons.replay_outlined,
               color: Colors.white,
@@ -96,11 +77,18 @@ class _TaskListPage extends State<TaskListPage> {
           ),
         ],
       ),
-      body: Column(
-        children:
-            taskList
-                .map((item) => TaskItem(data: item))
-                .toList(),
+      body: Expanded(
+        child:
+            _isLoading
+                ? Center(child: CircularProgressIndicator())
+                : Column(
+                  children:
+                      taskList
+                          .map(
+                            (item) => TaskItem(data: item),
+                          )
+                          .toList(),
+                ),
       ),
     );
   }

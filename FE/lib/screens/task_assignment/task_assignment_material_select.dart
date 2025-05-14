@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/services/material_service.dart';
 
 class TaskAssignmentMaterialSelect extends StatefulWidget {
   const TaskAssignmentMaterialSelect({super.key});
@@ -10,26 +11,50 @@ class TaskAssignmentMaterialSelect extends StatefulWidget {
 
 class _TaskAssignmentMaterialSelect
     extends State<TaskAssignmentMaterialSelect> {
-  final List<Map<String, dynamic>> _allData = [
-    {'name': 'Bùn chặn'},
-    {'name': 'Bùn chặn CN'},
-    {'name': 'Bùn trộn'},
-    {'name': 'Bùn trộn CN'},
-    {'name': 'Bùn đặc CN'},
-    {'name': 'Đất trộn'},
-    {'name': 'Bùn chặn'},
-    {'name': 'Bùn chặn CN'},
-    {'name': 'Bùn trộn'},
-    {'name': 'Bùn trộn CN'},
-    {'name': 'Bùn đặc CN'},
-    {'name': 'Đất trộn'},
-  ];
+  final List<Map<String, dynamic>> materials = [];
+  bool _isLoading = true;
+
+  final MaterialService _materialService =
+      MaterialService();
+
+  void getAllMaterial() async {
+    var result = await _materialService.getAllMaterial();
+
+    if (!mounted) return;
+    if (result['status']=='error') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      var data = result['data'];
+      setState(() {
+        materials
+            .clear(); // Nếu cần làm sạch danh sách trước
+        materials.addAll(
+          List<Map<String, dynamic>>.from(data),
+        );
+      });
+    }
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getAllMaterial();
+  }
+
   String _searchText = '';
 
   @override
   Widget build(BuildContext context) {
     List<Map<String, dynamic>> filteredItems =
-        _allData
+        materials
             .where(
               (item) => item['name'].toLowerCase().contains(
                 _searchText.toLowerCase(),
@@ -85,37 +110,54 @@ class _TaskAssignmentMaterialSelect
           ),
           Divider(height: 1),
           Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children:
-                    filteredItems
-                        .map(
-                          (item) => Container(
-                            decoration: BoxDecoration(
-                              border: Border(
-                                top: BorderSide(
-                                  color:
-                                      Colors.grey.shade300,
-                                ), // Viền trên
-                                bottom: BorderSide(
-                                  color:
-                                      Colors.grey.shade300,
-                                ), // Viền dưới
-                              ),
-                            ),
-                            child: ListTile(
-                              leading: Icon(
-                                Icons.group_work_outlined,
-                                color: Colors.blue,
-                              ),
-                              title: Text(item['name']),
-                              onTap: () {},
-                            ),
-                          ),
-                        )
-                        .toList(),
-              ),
-            ),
+            child:
+                _isLoading
+                    ? Center(
+                      child: CircularProgressIndicator(),
+                    )
+                    : SingleChildScrollView(
+                      child: Column(
+                        children:
+                            filteredItems
+                                .map(
+                                  (item) => Container(
+                                    decoration: BoxDecoration(
+                                      border: Border(
+                                        top: BorderSide(
+                                          color:
+                                              Colors
+                                                  .grey
+                                                  .shade300,
+                                        ), // Viền trên
+                                        bottom: BorderSide(
+                                          color:
+                                              Colors
+                                                  .grey
+                                                  .shade300,
+                                        ), // Viền dưới
+                                      ),
+                                    ),
+                                    child: ListTile(
+                                      leading: Icon(
+                                        Icons
+                                            .group_work_outlined,
+                                        color: Colors.blue,
+                                      ),
+                                      title: Text(
+                                        item['name'],
+                                      ),
+                                      onTap: () {
+                                        Navigator.pop(
+                                          context,
+                                          item,
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                      ),
+                    ),
           ),
         ],
       ),

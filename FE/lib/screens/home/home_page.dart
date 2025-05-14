@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:job_manager/providers/user_provider.dart';
 import 'package:job_manager/routes/app_routes.dart';
+import 'package:job_manager/routes/home__route.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -125,6 +126,11 @@ class _HomePageState extends State<HomePage> {
                 Navigator.pushNamed(
                   context,
                   AppRoute.contact,
+                );
+              } else if (value == "Thông báo") {
+                Navigator.pushNamed(
+                  context,
+                  HomeRoutes.notification,
                 );
               }
             },

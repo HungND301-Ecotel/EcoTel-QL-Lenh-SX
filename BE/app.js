@@ -8,6 +8,17 @@ app.use(express.json())
 app.use(cors())
 
 const userRoute = require('./route/user')
+const tasktypeRoute = require('./route/tasktype')
+const taskRoute = require('./route/task')
+const deviceRoute = require('./route/device')
+const materialRoute = require('./route/material')
+const locationRoute = require('./route/location')
+const payrollRoute = require('./route/pay_roll')
+const orderRoute = require('./route/order')
+
+
+
+
 
 
 
@@ -16,6 +27,17 @@ const userRoute = require('./route/user')
 
 
 app.use('/api/user', userRoute)
+app.use('/api/tasktype', tasktypeRoute)
+app.use('/api/task', taskRoute)
+app.use('/api/device', deviceRoute)
+app.use('/api/material', materialRoute)
+app.use('/api/location', locationRoute)
+app.use('/api/payroll', payrollRoute)
+app.use('/api/order', orderRoute)
+
+
+
+
 
 
 

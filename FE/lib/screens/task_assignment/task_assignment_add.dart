@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:job_manager/routes/task_assignment_route.dart';
+import 'package:job_manager/screens/task_assignment/task_assignment_type/task_assignment_common.dart';
+import 'package:job_manager/screens/task_assignment/task_assignment_type/task_assignment_excavator.dart';
+import 'package:job_manager/screens/task_assignment/task_assignment_type/task_assignment_other.dart';
 
 class TaskAssignmentAdd extends StatefulWidget {
-  final String name;
-  const TaskAssignmentAdd({super.key, required this.name});
+  final Map<String, dynamic> data;
+  const TaskAssignmentAdd({super.key, required this.data});
 
   @override
   State<StatefulWidget> createState() =>
@@ -12,41 +13,20 @@ class TaskAssignmentAdd extends StatefulWidget {
 }
 
 class _TaskAssignmentAdd extends State<TaskAssignmentAdd> {
-  DateTime? _selectedDateTime;
+  Widget _getBody() {
+    final type = widget.data['typeId']['name'];
 
-  String get _formattedDateTime {
-    if (_selectedDateTime == null) return 'Chọn ngày giờ';
-    return DateFormat(
-      'dd/MM/yyyy HH:mm',
-    ).format(_selectedDateTime!);
-  }
-
-  Future<void> _pickDateTime() async {
-    DateTime? date = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-
-    if (date == null) return;
-
-    TimeOfDay? time = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-    );
-
-    if (time == null) return;
-
-    setState(() {
-      _selectedDateTime = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        time.hour,
-        time.minute,
-      );
-    });
+    switch (type) {
+      case 'Vận hành xúc':
+        return TaskAssignmentExcavator(data: widget.data);
+      case 'Vận hành xe':
+      case 'Vận hành khoan':
+      case 'Vận hành gạt':
+      case 'Vận hành xe phục vụ':
+        return TaskAssignmentCommon(data: widget.data);
+      default:
+        return TaskAssignmentOther(data: widget.data);
+    }
   }
 
   @override
@@ -55,7 +35,7 @@ class _TaskAssignmentAdd extends State<TaskAssignmentAdd> {
       appBar: AppBar(
         backgroundColor: Colors.blue,
         title: Text(
-          widget.name,
+          widget.data['name'],
           style: TextStyle(
             color: Colors.white,
             fontSize: 18,
@@ -67,206 +47,7 @@ class _TaskAssignmentAdd extends State<TaskAssignmentAdd> {
           color: Colors.white, // Màu icon trên AppBar
         ),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
-                children: [
-                  Text.rich(
-                    TextSpan(
-                      text: 'Số thẻ lương  ',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
-                      children: [
-                        TextSpan(
-                          text: 'Nguyễn Tuấn Đạt',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  TextField(),
-                  Text(
-                    'Ngày giờ',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(
-                    width: double.infinity,
-                    child: TextButton.icon(
-                      icon: Icon(Icons.calendar_today),
-                      onPressed: _pickDateTime,
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.black,
-                        backgroundColor:
-                            Colors.grey.shade300,
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(0),
-                        ),
-                        alignment: Alignment.centerLeft,
-                      ),
-                      label: Text(_formattedDateTime),
-                    ),
-                  ),
-                  Text(
-                    'Phương tiện',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(
-                    width: double.infinity,
-                    child: TextButton.icon(
-                      icon: Icon(Icons.pin),
-                      onPressed: () {
-                        Navigator.pushNamed(
-                          context,
-                          TaskAssignmentRoutes
-                              .taskAssignmentVehicleSelect,
-                        );
-                      },
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.black,
-                        backgroundColor:
-                            Colors.grey.shade300,
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(0),
-                        ),
-                        alignment: Alignment.centerLeft,
-                      ),
-                      label: Text('Phương tiện'),
-                    ),
-                  ),
-                  Text(
-                    'Máy xúc',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(
-                    width: double.infinity,
-                    child: TextButton.icon(
-                      icon: Icon(Icons.pin),
-                      onPressed: () {
-                        Navigator.pushNamed(
-                          context,
-                          TaskAssignmentRoutes
-                              .taskAssignmentVehicleSelect,
-                        );
-                      },
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.black,
-                        backgroundColor:
-                            Colors.grey.shade300,
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(0),
-                        ),
-                        alignment: Alignment.centerLeft,
-                      ),
-                      label: Text('Máy xúc'),
-                    ),
-                  ),
-                  Text(
-                    'Bãi thải',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(
-                    width: double.infinity,
-                    child: TextButton.icon(
-                      icon: Icon(Icons.casino_sharp),
-                      onPressed: () {
-                        Navigator.pushNamed(
-                          context,
-                          TaskAssignmentRoutes
-                              .taskAssignmentDumpSiteSelect,
-                        );
-                      },
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.black,
-                        backgroundColor:
-                            Colors.grey.shade300,
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(0),
-                        ),
-                        alignment: Alignment.centerLeft,
-                      ),
-                      label: Text('Bãi thải'),
-                    ),
-                  ),
-                  Text(
-                    'Chủng loại',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(
-                    width: double.infinity,
-                    child: TextButton.icon(
-                      icon: Icon(Icons.group_work_outlined),
-                      onPressed: () {
-                        Navigator.pushNamed(
-                          context,
-                          TaskAssignmentRoutes
-                              .taskAssignmentMaterialSelect,
-                        );
-                      },
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.black,
-                        backgroundColor:
-                            Colors.grey.shade300,
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(0),
-                        ),
-                        alignment: Alignment.centerLeft,
-                      ),
-                      label: Text('Chủng loại'),
-                    ),
-                  ),
-                  Text(
-                    'Nội dung công việc',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  TextField(maxLines: null, minLines: 5),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(
-                  context,
-                  TaskAssignmentRoutes.taskAssignmentList,
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-              ),
-              child: Text('Lưu lại'),
-            ),
-          ),
-        ],
-      ),
+      body: _getBody(),
     );
   }
 }

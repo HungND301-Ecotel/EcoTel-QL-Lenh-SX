@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:job_manager/providers/user_provider.dart';
 import 'package:job_manager/routes/app_routes.dart';
+import 'package:job_manager/routes/home__route.dart';
 import 'package:job_manager/routes/task_assignment_route.dart';
-import 'package:job_manager/screens/home/home_page.dart';
 import 'package:job_manager/screens/report/report_page.dart';
 import 'package:job_manager/screens/setting/setting_page.dart';
 import 'package:job_manager/screens/work_log/routes/routes.dart';
@@ -155,7 +155,7 @@ class MyHomePageState extends State<MyPage> {
 
   Widget getBody(String? role) {
     final bodyList = <Widget>[
-      HomePage(),
+      HomeWrapper(),
       WorkLogRoute(),
       if (role == 'admin') TaskAssignmentRoute(),
       if (role == 'admin') ReportPage(),

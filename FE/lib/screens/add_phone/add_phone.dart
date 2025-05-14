@@ -25,15 +25,15 @@ class _AddPhonePageState extends State<AddPhonePage> {
     });
 
     if (!mounted) return;
-    if (result.containsKey('error')) {
+    if (result['status']=='error') {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result['error']),
+          content: Text(result['message']),
           backgroundColor: Colors.red,
         ),
       );
     } else {
-      final user = result['success']['data'];
+      final user = result['data'];
       final userProvider = Provider.of<UserProvider>(
         context,
         listen: false,
@@ -45,7 +45,7 @@ class _AddPhonePageState extends State<AddPhonePage> {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result['success']['message']),
+          content: Text(result['message']),
           backgroundColor: Colors.green,
         ),
       );

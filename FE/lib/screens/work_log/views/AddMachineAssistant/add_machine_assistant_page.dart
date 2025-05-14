@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/widgets/pay_roll_input.dart';
 
 class AddMachineAssistantPage extends StatefulWidget {
   const AddMachineAssistantPage({super.key});
@@ -10,6 +11,14 @@ class AddMachineAssistantPage extends StatefulWidget {
 
 class _AddMachineAssistantPage
     extends State<AddMachineAssistantPage> {
+  Map<String, dynamic> user = {};
+
+  void _updateUser(Map<String, dynamic> selectedUser) {
+    setState(() {
+      user = selectedUser;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,41 +46,26 @@ class _AddMachineAssistantPage
                 crossAxisAlignment:
                     CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Phụ máy 1  Nguyễn Tuấn Đạt',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  PayRollInput(
+                    title: 'Phụ máy 1',
+                    onSelectUser: _updateUser,
                   ),
-                  TextField(),
-                  Text(
-                    'Phụ máy 2  Nguyễn Tuấn Đạt',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  PayRollInput(
+                    title: 'Phụ máy 2',
+                    onSelectUser: _updateUser,
                   ),
-                  TextField(),
-                  Text(
-                    'Phụ máy 3  Nguyễn Tuấn Đạt',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  PayRollInput(
+                    title: 'Phụ máy 3',
+                    onSelectUser: _updateUser,
                   ),
-                  TextField(),
-                  Text(
-                    'Phụ máy 4  Nguyễn Tuấn Đạt',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  PayRollInput(
+                    title: 'Phụ máy 4',
+                    onSelectUser: _updateUser,
                   ),
-                  TextField(),
-                  Text(
-                    'Phụ máy 5  Nguyễn Tuấn Đạt',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  PayRollInput(
+                    title: 'Phụ máy 5',
+                    onSelectUser: _updateUser,
                   ),
-                  TextField(),
                 ],
               ),
             ),

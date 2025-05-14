@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/providers/user_provider.dart';
 import 'package:job_manager/routes/task_assignment_route.dart';
+import 'package:job_manager/services/order_service.dart';
 import 'package:job_manager/widgets/task_assignment_item.dart';
-import 'package:provider/provider.dart';
 
 class TaskAssignmentList extends StatefulWidget {
   const TaskAssignmentList({super.key});
@@ -14,72 +13,47 @@ class TaskAssignmentList extends StatefulWidget {
 
 class _TaskAssignmentList
     extends State<TaskAssignmentList> {
-  final List<Map<String, dynamic>> _allData = [
-    {
-      'title': 'Bảo dưỡng, sửa chữa xe',
-      'time': '19/07/2022 15:00:00',
-      'description':
-          'Bảo dưỡng, sửa chữa xe cẩu, xe nâng kéo, xe nâng hạ lốp, xe nâng hàng',
-      'status': 'Chưa nhận lệnh',
-    },
-    {
-      'title': 'Điều hành sản xuất',
-      'time': '19/07/2022 15:00:00',
-      'description': 'Điều hành sản xuất',
-      'status': 'Đã nhận lệnh',
-    },
-    {
-      'title': 'Vận hành xúc (Khoan, giặt...)',
-      'time': '19/07/2022 15:00:00',
-      'description': 'Vận hành xúc (Khoan, giặt...)',
-      'status': 'Đã kết thúc lệnh',
-    },
-    {
-      'title': 'Bảo dưỡng, sửa chữa xe',
-      'time': '19/07/2022 15:00:00',
-      'description':
-          'Bảo dưỡng, sửa chữa xe cẩu, xe nâng kéo, xe nâng hạ lốp, xe nâng hàng',
-      'status': 'Chưa nhận lệnh',
-    },
-    {
-      'title': 'Điều hành sản xuất',
-      'time': '19/07/2022 15:00:00',
-      'description': 'Điều hành sản xuất',
-      'status': 'Đã nhận lệnh',
-    },
-    {
-      'title': 'Vận hành xúc (Khoan, giặt...)',
-      'time': '19/07/2022 15:00:00',
-      'description': 'Vận hành xúc (Khoan, giặt...)',
-      'status': 'Đã kết thúc lệnh',
-    },
-    {
-      'title': 'Bảo dưỡng, sửa chữa xe',
-      'time': '19/07/2022 15:00:00',
-      'description':
-          'Bảo dưỡng, sửa chữa xe cẩu, xe nâng kéo, xe nâng hạ lốp, xe nâng hàng',
-      'status': 'Chưa nhận lệnh',
-    },
-    {
-      'title': 'Điều hành sản xuất',
-      'time': '19/07/2022 15:00:00',
-      'description': 'Điều hành sản xuất',
-      'status': 'Đã nhận lệnh',
-    },
-    {
-      'title': 'Vận hành xúc (Khoan, giặt...)',
-      'time': '19/07/2022 15:00:00',
-      'description': 'Vận hành xúc (Khoan, giặt...)',
-      'status': 'Đã kết thúc lệnh',
-    },
-  ];
+  bool _isLoading = true;
+  final List<Map<String, dynamic>> tasks = [];
+  final OrderService _orderService = OrderService();
+
+  void getAllOrder() async {
+    var result = await _orderService.getAllOrder();
+    if (!mounted) return;
+    if (result['status'] == 'error') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      var data = result['data'];
+      setState(() {
+        tasks.clear(); // Nếu cần làm sạch danh sách trước
+        tasks.addAll(List<Map<String, dynamic>>.from(data));
+      });
+    }
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  void getReload() async {
+    setState(() {
+      _isLoading = true;
+    });
+    getAllOrder();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getAllOrder();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final user =
-        Provider.of<UserProvider>(
-          context,
-          listen: false,
-        ).user;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
@@ -89,7 +63,7 @@ class _TaskAssignmentList
             Icons.replay_outlined,
             color: Colors.white,
           ),
-          onPressed: () {},
+          onPressed: getReload,
         ),
         title: Text(
           'Giao việc',
@@ -101,25 +75,33 @@ class _TaskAssignmentList
         ),
         centerTitle: true,
         actions: [
-          if (user != null && user['role'] == 'admin')
-            IconButton(
-              onPressed: () {
-                Navigator.pushNamed(
-                  context,
-                  TaskAssignmentRoutes.taskAssignmentType,
-                );
-              },
-              icon: Icon(Icons.add, color: Colors.white),
-            ),
+          IconButton(
+            onPressed: () {
+              Navigator.pushNamed(
+                context,
+                TaskAssignmentRoutes.taskAssignmentType,
+              );
+            },
+            icon: Icon(Icons.add, color: Colors.white),
+          ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children:
-              _allData
-                  .map((item) => TaskAssignItem(data: item))
-                  .toList(),
-        ),
+      body: Expanded(
+        child:
+            _isLoading
+                ? Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                  child: Column(
+                    children:
+                        tasks
+                            .map(
+                              (item) => TaskAssignItem(
+                                data: item,
+                              ),
+                            )
+                            .toList(),
+                  ),
+                ),
       ),
     );
   }

@@ -29,10 +29,10 @@ class _Changepass extends State<Changepass> {
       repass,
     );
     if (!mounted) return;
-    if (result.containsKey('error')) {
+    if (result['status']=='error') {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result['error']),
+          content: Text(result['message']),
           backgroundColor: Colors.red,
         ),
       );
@@ -40,7 +40,7 @@ class _Changepass extends State<Changepass> {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result['success']),
+          content: Text(result['message']),
           backgroundColor: Colors.green,
         ),
       );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/services/device_service.dart';
 
 class TaskAssignmentVehicleSelect extends StatefulWidget {
   const TaskAssignmentVehicleSelect({super.key});
@@ -10,28 +11,48 @@ class TaskAssignmentVehicleSelect extends StatefulWidget {
 
 class _TaskAssignmentVehicleSelect
     extends State<TaskAssignmentVehicleSelect> {
-  final List<Map<String, dynamic>> _allData = [
-    {'name': 'CKCD1-CN'},
-    {'name': 'CKCD1-CN'},
-    {'name': 'CKCD1-CN'},
-    {'name': 'CKCD1-CN'},
-    {'name': 'CKCD1-CN'},
-    {'name': 'CKCD1-CN'},
-    {'name': 'CKCD1-CN'},
-    {'name': 'CKCD1-CN'},
-    {'name': 'CKCD1-CN'},
-    {'name': 'CKCD1-CN'},
-    {'name': 'CKCD1-CN'},
-    {'name': 'CKCD1-CN'},
-    {'name': 'CKCD1-CN'},
-    {'name': 'CKCD1-CN'},
-  ];
+  final List<Map<String, dynamic>> devices = [];
+  bool _isLoading = true;
+
+  final DeviceService _deviceService = DeviceService();
+
+  void getAllTask() async {
+    var result = await _deviceService.getAlldevice();
+
+    if (!mounted) return;
+    if (result['status']=='error') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      var data = result['data'];
+      setState(() {
+        devices.clear(); // Nếu cần làm sạch danh sách trước
+        devices.addAll(
+          List<Map<String, dynamic>>.from(data),
+        );
+      });
+    }
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getAllTask();
+  }
+
   String _searchText = '';
 
   @override
   Widget build(BuildContext context) {
     List<Map<String, dynamic>> filteredItems =
-        _allData
+        devices
             .where(
               (item) => item['name'].toLowerCase().contains(
                 _searchText.toLowerCase(),
@@ -98,42 +119,59 @@ class _TaskAssignmentVehicleSelect
           ),
           Divider(height: 1),
           Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children:
-                    filteredItems
-                        .map(
-                          (item) => Container(
-                            decoration: BoxDecoration(
-                              border: Border(
-                                top: BorderSide(
-                                  color:
-                                      Colors.grey.shade300,
-                                ), // Viền trên
-                                bottom: BorderSide(
-                                  color:
-                                      Colors.grey.shade300,
-                                ), // Viền dưới
-                              ),
-                            ),
-                            child: ListTile(
-                              leading: Icon(
-                                Icons.navigation,
-                                color: Colors.blue,
-                              ),
-                              title: Text(item['name']),
-                              trailing: Icon(
-                                Icons.arrow_forward_ios,
-                                size: 16,
-                                color: Colors.grey,
-                              ),
-                              onTap: () {},
-                            ),
-                          ),
-                        )
-                        .toList(),
-              ),
-            ),
+            child:
+                _isLoading
+                    ? Center(
+                      child: CircularProgressIndicator(),
+                    )
+                    : SingleChildScrollView(
+                      child: Column(
+                        children:
+                            filteredItems
+                                .map(
+                                  (item) => Container(
+                                    decoration: BoxDecoration(
+                                      border: Border(
+                                        top: BorderSide(
+                                          color:
+                                              Colors
+                                                  .grey
+                                                  .shade300,
+                                        ), // Viền trên
+                                        bottom: BorderSide(
+                                          color:
+                                              Colors
+                                                  .grey
+                                                  .shade300,
+                                        ), // Viền dưới
+                                      ),
+                                    ),
+                                    child: ListTile(
+                                      leading: Icon(
+                                        Icons.navigation,
+                                        color: Colors.blue,
+                                      ),
+                                      title: Text(
+                                        item['name'],
+                                      ),
+                                      trailing: Icon(
+                                        Icons
+                                            .arrow_forward_ios,
+                                        size: 16,
+                                        color: Colors.grey,
+                                      ),
+                                      onTap: () {
+                                        Navigator.pop(
+                                          context,
+                                          item,
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                      ),
+                    ),
           ),
         ],
       ),

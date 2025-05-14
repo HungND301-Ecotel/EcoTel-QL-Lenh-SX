@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:job_manager/routes/task_assignment_route.dart';
+import 'package:job_manager/services/task_service.dart';
 
 class TaskAssignmentType extends StatefulWidget {
   const TaskAssignmentType({super.key});
@@ -11,30 +12,49 @@ class TaskAssignmentType extends StatefulWidget {
 
 class _TaskAssignmentType
     extends State<TaskAssignmentType> {
-  final List<String> _allData = [
-    'Bảo dưỡng, sửa chữa xe',
-    'Bảo dưỡng, sửa chữa xe cẩu, xe nâng kéo, xe nâng hạ lốp, xe nâng hàng',
-    'Bổ túc lái máy',
-    'Bổ túc lái xe',
-    'Công nhân',
-    'Công nhân gác',
-    'Công nhân sửa chữa điện',
-    'Công nhân thủ kho',
-    'Công nhân tạp vụ',
-    'Cấp nước',
-    'Gia công ống thủy lực',
-    'Gác',
-    'Gác, trực bơm nước',
-  ];
+  final List<Map<String, dynamic>> tasks = [];
+  bool _isLoading = true;
+
+  final TaskService _taskService = TaskService();
+
+  void getAllTask() async {
+    var result = await _taskService.getAllTask();
+    if (!mounted) return;
+    if (result['status']=='error') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      var data = result['data'];
+      setState(() {
+        tasks.clear(); // Nếu cần làm sạch danh sách trước
+        tasks.addAll(List<Map<String, dynamic>>.from(data));
+      });
+    }
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getAllTask();
+  }
+
   String _searchText = '';
   @override
   Widget build(BuildContext context) {
-    List<String> filteredItems =
-        _allData
+    List<Map<String, dynamic>> filteredTasks =
+        tasks
             .where(
-              (item) => item.toLowerCase().contains(
-                _searchText.toLowerCase(),
-              ),
+              (item) => item['name']
+                  .toString()
+                  .toLowerCase()
+                  .contains(_searchText.toLowerCase()),
             )
             .toList();
     return Scaffold(
@@ -81,12 +101,16 @@ class _TaskAssignmentType
           Divider(height: 1),
           Expanded(
             child:
-                filteredItems.isEmpty
+                _isLoading
+                    ? Center(
+                      child: CircularProgressIndicator(),
+                    )
+                    : filteredTasks.isEmpty
                     ? Center(child: Text('Không tìm thấy'))
                     : ListView.builder(
-                      itemCount: filteredItems.length,
+                      itemCount: filteredTasks.length,
                       itemBuilder: (context, index) {
-                        final item = filteredItems[index];
+                        final item = filteredTasks[index];
                         return Container(
                           decoration: BoxDecoration(
                             border: Border(
@@ -103,7 +127,7 @@ class _TaskAssignmentType
                               Icons.group_work_outlined,
                               color: Colors.grey,
                             ),
-                            title: Text(item),
+                            title: Text(item['name']),
                             onTap: () {
                               Navigator.pushNamed(
                                 context,

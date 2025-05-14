@@ -29,16 +29,16 @@ class _SignInState extends State<SignIn> {
     );
 
     if (!mounted) return;
-    if (result.containsKey('error')) {
+    if (result['status']=='error') {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result['error']),
+          content: Text(result['message']),
           backgroundColor: Colors.red,
         ),
       );
     } else {
-      final user = result['success']['data']['user'];
-      final token = result['success']['data']['token'];
+      final user = result['data']['user'];
+      final token = result['data']['token'];
       Provider.of<UserProvider>(
         context,
         listen: false,
