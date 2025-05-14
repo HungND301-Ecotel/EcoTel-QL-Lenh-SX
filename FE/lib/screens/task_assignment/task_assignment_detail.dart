@@ -201,7 +201,8 @@ class _TaskAssignmentDetail
                         ),
                       ),
                       Text(
-                        widget.data['description'] ?? '',
+                        widget.data['taskId']?['typeId']?['description'] ??
+                            '',
                       ),
                     ],
                   ),

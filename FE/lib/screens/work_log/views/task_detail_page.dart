@@ -196,7 +196,10 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  Text(widget.data['description'] ?? ''),
+                  Text(
+                    widget.data['taskId']?['typeId']?['description'] ??
+                        '',
+                  ),
                 ],
               ),
             ),

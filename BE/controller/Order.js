@@ -29,7 +29,14 @@ exports.getAll = async (req, res) => {
     try {
         const orders = await Order.find()
             .sort({ createdAt: -1 })
-            .populate("taskId", "name")
+            .populate({
+                path: "taskId",
+                select: "name typeId",
+                populate: {
+                    path: "typeId",
+                    select: "name mode description",
+                }
+            })
             .populate({
                 path: "assignedTo",
                 select: "name",
@@ -83,7 +90,7 @@ exports.getByUser = async (req, res) => {
                 select: "name typeId",
                 populate: {
                     path: "typeId",
-                    select: "name mode",
+                    select: "name mode description",
                 }
             })
             .populate({
