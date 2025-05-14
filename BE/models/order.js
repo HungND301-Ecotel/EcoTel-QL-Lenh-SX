@@ -47,7 +47,11 @@ const Order = new mongoose.Schema({
         type: String,
         enum: ['pending', 'accepted', 'completed'],
         default: 'pending'
-    }
+    },
+    assistants: [
+        // mảng các phụ máy
+        { type: mongoose.Schema.Types.ObjectId, ref: 'user' }
+    ]
 },
     {
         timestamps: true
