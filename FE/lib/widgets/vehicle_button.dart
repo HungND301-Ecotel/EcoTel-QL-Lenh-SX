@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/device_model.dart';
 import 'package:job_manager/routes/task_assignment_route.dart';
 
 class VehicleButton extends StatefulWidget {
-  final Map<String, dynamic> vehicle;
-  final Function(Map<String, dynamic>) onSelectVehicle;
+  final DeviceModel? vehicle;
+  final Function(DeviceModel) onSelectVehicle;
   const VehicleButton({
     super.key,
     required this.vehicle,
@@ -16,7 +17,7 @@ class VehicleButton extends StatefulWidget {
 }
 
 class _VehicleButtonState extends State<VehicleButton> {
-  late Map<String, dynamic> _vehicle;
+  late DeviceModel? _vehicle;
 
   @override
   void initState() {
@@ -39,7 +40,7 @@ class _VehicleButtonState extends State<VehicleButton> {
           );
           // Nếu có giá trị trả về, cập nhật phương tiện
           if (selectedVehicle != null &&
-              selectedVehicle is Map<String, dynamic>) {
+              selectedVehicle is DeviceModel) {
             widget.onSelectVehicle(selectedVehicle);
             setState(() {
               _vehicle =
@@ -55,11 +56,7 @@ class _VehicleButtonState extends State<VehicleButton> {
           ),
           alignment: Alignment.centerLeft,
         ),
-        label: Text(
-          _vehicle.isNotEmpty
-              ? _vehicle['name']
-              : 'Chọn phương tiện',
-        ),
+        label: Text(_vehicle?.name ?? 'Chọn phương tiện'),
       ),
     );
   }

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/task_model.dart';
 import 'package:job_manager/screens/task_assignment/task_assignment_type/task_assignment_common.dart';
 import 'package:job_manager/screens/task_assignment/task_assignment_type/task_assignment_excavator.dart';
 import 'package:job_manager/screens/task_assignment/task_assignment_type/task_assignment_other.dart';
 
 class TaskAssignmentAdd extends StatefulWidget {
-  final Map<String, dynamic> data;
+  final TaskModel data;
   const TaskAssignmentAdd({super.key, required this.data});
 
   @override
@@ -14,7 +15,7 @@ class TaskAssignmentAdd extends StatefulWidget {
 
 class _TaskAssignmentAdd extends State<TaskAssignmentAdd> {
   Widget _getBody() {
-    final type = widget.data['typeId']['name'];
+    final type = widget.data.typeId.name;
 
     switch (type) {
       case 'Vận hành xúc':
@@ -35,7 +36,7 @@ class _TaskAssignmentAdd extends State<TaskAssignmentAdd> {
       appBar: AppBar(
         backgroundColor: Colors.blue,
         title: Text(
-          widget.data['name'],
+          widget.data.name,
           style: TextStyle(
             color: Colors.white,
             fontSize: 18,

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:job_manager/models/order_model.dart';
 import 'package:job_manager/routes/task_assignment_route.dart';
 import 'package:job_manager/services/order_service.dart';
 
 class TaskAssignmentDetail extends StatefulWidget {
-  final Map<String, dynamic> data;
+  final OrderModel data;
   const TaskAssignmentDetail({
     super.key,
     required this.data,
@@ -24,9 +25,7 @@ class _TaskAssignmentDetail
     setState(() {
       _isLoading = true;
     });
-    var result = await _orderService.delete(
-      widget.data['_id'],
-    );
+    var result = await _orderService.delete(widget.data.id);
     if (!mounted) return;
     if (result['status'] == 'error') {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -70,7 +69,7 @@ class _TaskAssignmentDetail
               },
             ),
             title: Text(
-              widget.data['taskId']?['name'] ?? '',
+              widget.data.taskId.name,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
@@ -97,17 +96,11 @@ class _TaskAssignmentDetail
                             ),
                           ),
                           Text(
-                            widget.data['start_time'] !=
-                                    null
-                                ? DateFormat(
-                                  'dd/MM/yyyy HH:mm:ss',
-                                ).format(
-                                  DateTime.parse(
-                                    widget
-                                        .data['start_time'],
-                                  ).toLocal(),
-                                )
-                                : '',
+                            DateFormat(
+                              'dd/MM/yyyy HH:mm:ss',
+                            ).format(
+                              widget.data.workingDate,
+                            ),
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
                             ),
@@ -124,7 +117,7 @@ class _TaskAssignmentDetail
                             ),
                           ),
                           Text(
-                            widget.data['createdBy']?['name'] ??
+                            widget.data.createdBy.name ??
                                 '', // Điền sau nếu có
                             style: TextStyle(
                               fontSize: 16,
@@ -133,9 +126,9 @@ class _TaskAssignmentDetail
                           ),
                         ],
                       ),
-                      if (widget.data['deviceId'] != null)
+                      if (widget.data.deviceId != null)
                         const SizedBox(height: 10),
-                      if (widget.data['deviceId'] != null)
+                      if (widget.data.deviceId != null)
                         Row(
                           children: [
                             Text(
@@ -145,16 +138,13 @@ class _TaskAssignmentDetail
                               ),
                             ),
                             Text(
-                              widget.data['deviceId']?['name'] ??
-                                  '',
+                              widget.data.deviceId!.name,
                             ), // Điền sau nếu có
                           ],
                         ),
-                      if (widget.data['excavatorId'] !=
-                          null)
+                      if (widget.data.excavatorId != null)
                         const SizedBox(height: 10),
-                      if (widget.data['excavatorId'] !=
-                          null)
+                      if (widget.data.excavatorId != null)
                         Row(
                           children: [
                             Text(
@@ -164,8 +154,7 @@ class _TaskAssignmentDetail
                               ),
                             ),
                             Text(
-                              widget.data['excavatorId']?['name'] ??
-                                  '',
+                              widget.data.excavatorId!.name,
                             ), // Điền sau nếu có
                           ],
                         ),
@@ -179,7 +168,7 @@ class _TaskAssignmentDetail
                             ),
                           ),
                           Text(
-                            "${widget.data['assignedTo']?['payroll']?['code'] ?? ''} ${widget.data['assignedTo']?['name'] ?? ''}",
+                            "${widget.data.assignedTo.payroll!.code} ${widget.data.assignedTo.name ?? ''}",
                           ), // Điền sau nếu có
                         ],
                       ),
@@ -190,9 +179,7 @@ class _TaskAssignmentDetail
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      Text(
-                        widget.data['description'] ?? '',
-                      ),
+                      Text(widget.data.description ?? ''),
                       const SizedBox(height: 10),
                       const Text(
                         'Biện pháp an toàn chung',
@@ -201,7 +188,11 @@ class _TaskAssignmentDetail
                         ),
                       ),
                       Text(
-                        widget.data['taskId']?['typeId']?['description'] ??
+                        widget
+                                .data
+                                .taskId
+                                .typeId
+                                .description ??
                             '',
                       ),
                     ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/device_model.dart';
 import 'package:job_manager/services/device_service.dart';
 
 class TaskAssignmentVehicleSelect extends StatefulWidget {
@@ -11,7 +12,7 @@ class TaskAssignmentVehicleSelect extends StatefulWidget {
 
 class _TaskAssignmentVehicleSelect
     extends State<TaskAssignmentVehicleSelect> {
-  final List<Map<String, dynamic>> devices = [];
+  final List<DeviceModel> devices = [];
   bool _isLoading = true;
 
   final DeviceService _deviceService = DeviceService();
@@ -20,7 +21,7 @@ class _TaskAssignmentVehicleSelect
     var result = await _deviceService.getAlldevice();
 
     if (!mounted) return;
-    if (result['status']=='error') {
+    if (result['status'] == 'error') {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result['message']),
@@ -32,7 +33,9 @@ class _TaskAssignmentVehicleSelect
       setState(() {
         devices.clear(); // Nếu cần làm sạch danh sách trước
         devices.addAll(
-          List<Map<String, dynamic>>.from(data),
+          (data as List)
+              .map((e) => DeviceModel.fromJson(e))
+              .toList(),
         );
       });
     }
@@ -51,10 +54,10 @@ class _TaskAssignmentVehicleSelect
 
   @override
   Widget build(BuildContext context) {
-    List<Map<String, dynamic>> filteredItems =
+    List<DeviceModel> filteredItems =
         devices
             .where(
-              (item) => item['name'].toLowerCase().contains(
+              (item) => item.name.toLowerCase().contains(
                 _searchText.toLowerCase(),
               ),
             )
@@ -152,13 +155,19 @@ class _TaskAssignmentVehicleSelect
                                         color: Colors.blue,
                                       ),
                                       title: Text(
-                                        item['name'],
+                                        item.name,
                                       ),
                                       trailing: Icon(
                                         Icons
-                                            .arrow_forward_ios,
-                                        size: 16,
-                                        color: Colors.grey,
+                                            .power_settings_new,
+                                        size: 30,
+                                        color:
+                                            item.status ==
+                                                    'active'
+                                                ? Colors
+                                                    .green
+                                                : Colors
+                                                    .red,
                                       ),
                                       onTap: () {
                                         Navigator.pop(

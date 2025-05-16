@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/order_model.dart';
 import 'package:job_manager/services/order_service.dart';
 import 'package:job_manager/widgets/task_item.dart';
 
@@ -10,7 +11,7 @@ class TaskListPage extends StatefulWidget {
 }
 
 class _TaskListPage extends State<TaskListPage> {
-  final List<Map<String, dynamic>> taskList = [];
+  final List<OrderModel> taskList = [];
   bool _isLoading = true;
   final OrderService _orderService = OrderService();
 
@@ -30,7 +31,9 @@ class _TaskListPage extends State<TaskListPage> {
         taskList
             .clear(); // Nếu cần làm sạch danh sách trước
         taskList.addAll(
-          List<Map<String, dynamic>>.from(data),
+          (data as List)
+              .map((e) => OrderModel.fromJson(e))
+              .toList(),
         );
       });
     }

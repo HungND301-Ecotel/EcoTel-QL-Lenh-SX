@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/order_model.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 class QrCode extends StatefulWidget {
-  final Map<String, dynamic> data;
+  final OrderModel data;
   const QrCode({super.key, required this.data});
 
   @override
@@ -44,7 +45,8 @@ class _QrCodeState extends State<QrCode> {
                     setState(() => scanned = true);
                     // _controller.stop();
 
-                    if (widget.data['sign'] == code) {
+                    if (widget.data.deviceId!.name ==
+                        code) {
                       ScaffoldMessenger.of(
                         context,
                       ).showSnackBar(

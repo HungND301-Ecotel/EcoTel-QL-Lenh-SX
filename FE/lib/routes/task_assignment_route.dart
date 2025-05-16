@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/order_model.dart';
+import 'package:job_manager/models/task_model.dart';
 import 'package:job_manager/screens/task_assignment/task_assignment_add.dart';
 import 'package:job_manager/screens/task_assignment/task_assignment_detail.dart';
 import 'package:job_manager/screens/task_assignment/task_assignment_dump_site_select.dart';
@@ -25,14 +27,12 @@ class TaskAssignmentRoute extends StatelessWidget {
               builder: (_) => TaskAssignmentType(),
             );
           case TaskAssignmentRoutes.taskAssignmentAdd:
-            final args =
-                settings.arguments as Map<String, dynamic>;
+            final args = settings.arguments as TaskModel;
             return MaterialPageRoute(
               builder: (_) => TaskAssignmentAdd(data: args),
             );
           case TaskAssignmentRoutes.taskAssignmentDetail:
-            final args =
-                settings.arguments as Map<String, dynamic>;
+            final args = settings.arguments as OrderModel;
             return MaterialPageRoute(
               builder:
                   (_) => TaskAssignmentDetail(data: args),

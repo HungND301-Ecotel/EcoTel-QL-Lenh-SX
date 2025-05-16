@@ -17,8 +17,11 @@ exports.create = async (req, res) => {
 }
 exports.getByCode = async (req, res) => {
     try {
-        const payrolls = await PayRoll.findOne({ code: req.params.code }).populate('userId', 'name');
-        res.status(200).send({ status: 'success', data: payrolls });
+        const payroll = await PayRoll.findOne({ code: req.params.code }).populate('userId', 'name');
+        if (!payroll) {
+            return res.status(404).send({ status: 'error', message: 'Not found' });
+        }
+        res.status(200).send({ status: 'success', data: payroll });
     } catch (err) {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }

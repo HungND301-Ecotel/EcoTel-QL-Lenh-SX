@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/order_model.dart';
 import 'package:job_manager/screens/work_log/views/AddMachineAssistant/add_machine_assistant_page.dart';
 import 'package:job_manager/screens/work_log/views/QrCode/qr_code.dart';
 import 'package:job_manager/screens/work_log/views/ReportTask/direct_work_report.dart';
@@ -40,14 +41,13 @@ class WorkLogRoute extends StatelessWidget {
               builder: (_) => TaskListPage(),
             );
           case WorkLogRoutes.taskDetailPage:
-            final args =
-                settings.arguments as Map<String, dynamic>;
+            final args = settings.arguments as OrderModel;
             return MaterialPageRoute(
               builder: (_) => TaskDetailPage(data: args),
             );
           case WorkLogRoutes.qrCode:
             final args =
-                settings.arguments as Map<String, dynamic>;
+                settings.arguments as OrderModel;
             return MaterialPageRoute(
               builder: (_) => QrCode(data: args),
             );

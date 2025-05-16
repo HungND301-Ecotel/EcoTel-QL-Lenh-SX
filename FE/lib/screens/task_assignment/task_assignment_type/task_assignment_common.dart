@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/device_model.dart';
+import 'package:job_manager/models/task_model.dart';
+import 'package:job_manager/models/user_model.dart';
 import 'package:job_manager/routes/task_assignment_route.dart';
 import 'package:job_manager/services/order_service.dart';
 import 'package:job_manager/widgets/date_time_picker_button.dart';
@@ -6,7 +9,7 @@ import 'package:job_manager/widgets/pay_roll_input.dart';
 import 'package:job_manager/widgets/vehicle_button.dart';
 
 class TaskAssignmentCommon extends StatefulWidget {
-  final Map<String, dynamic> data;
+  final TaskModel data;
 
   const TaskAssignmentCommon({
     super.key,
@@ -21,8 +24,8 @@ class TaskAssignmentCommon extends StatefulWidget {
 class _TaskAssignmentCommon
     extends State<TaskAssignmentCommon> {
   DateTime? _selectedDateTime;
-  Map<String, dynamic> vehicle = {};
-  Map<String, dynamic> user = {};
+  DeviceModel? vehicle;
+  UserModel? user;
 
   @override
   void initState() {
@@ -60,15 +63,13 @@ class _TaskAssignmentCommon
     });
   }
 
-  void _updateVehicle(
-    Map<String, dynamic> selectedVehicle,
-  ) {
+  void _updateVehicle(DeviceModel selectedVehicle) {
     setState(() {
       vehicle = selectedVehicle;
     });
   }
 
-  void _updateUser(Map<String, dynamic> selectedUser) {
+  void _updateUser(UserModel selectedUser) {
     setState(() {
       user = selectedUser;
     });
@@ -81,10 +82,10 @@ class _TaskAssignmentCommon
   void createOrder() async {
     String description = _descriptionController.text.trim();
     var result = await _orderService.createOrder({
-      "taskId": widget.data['_id'],
-      "start_time": _selectedDateTime?.toIso8601String(),
-      "assignedTo": user['userId'],
-      "deviceId": vehicle['_id'],
+      "taskId": widget.data.id,
+      "workingDate": _selectedDateTime?.toIso8601String(),
+      "assignedTo": user?.id,
+      "deviceId": vehicle?.id,
       "description": description,
     });
     if (!mounted) return;

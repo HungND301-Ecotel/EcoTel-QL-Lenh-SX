@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:job_manager/models/order_model.dart';
 import 'package:job_manager/screens/work_log/routes/routes.dart';
 import 'package:job_manager/services/order_service.dart';
 
 class TaskDetailPage extends StatefulWidget {
-  final Map<String, dynamic> data;
+  final OrderModel data;
   const TaskDetailPage({super.key, required this.data});
 
   @override
@@ -40,7 +41,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
   final OrderService _orderService = OrderService();
   void update() async {
     var result = await _orderService.update(
-      widget.data['_id'],
+      widget.data.id,
       {'status': 'accepted'},
     );
     if (!mounted) return;
@@ -53,7 +54,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
       );
     } else {
       setState(() {
-        widget.data['status'] = 'accepted';
+        widget.data.status = 'accepted';
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -66,8 +67,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedType =
-        widget.data['taskId']?['typeId']?['name'];
+    final selectedType = widget.data.taskId.typeId.name;
     final route = typeToRoute[selectedType];
     return Scaffold(
       appBar: AppBar(
@@ -85,8 +85,24 @@ class _TaskDetailPage extends State<TaskDetailPage> {
             );
           },
         ),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.pushNamed(
+                context,
+                WorkLogRoutes.qrCode,
+                arguments: widget.data,
+              );
+            },
+            icon: Icon(
+              Icons.qr_code_scanner_outlined,
+              color: Colors.white,
+              size: 30,
+            ),
+          ),
+        ],
         title: Text(
-          widget.data['taskId']?['name'] ?? '',
+          widget.data.taskId.name,
           style: const TextStyle(
             color: Colors.white,
             fontSize: 18,
@@ -113,15 +129,9 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                         ),
                       ),
                       Text(
-                        widget.data['start_time'] != null
-                            ? DateFormat(
-                              'dd/MM/yyyy HH:mm:ss',
-                            ).format(
-                              DateTime.parse(
-                                widget.data['start_time'],
-                              ).toLocal(),
-                            )
-                            : '',
+                        DateFormat(
+                          'dd/MM/yyyy HH:mm:ss',
+                        ).format(widget.data.workingDate),
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                         ),
@@ -138,7 +148,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                         ),
                       ),
                       Text(
-                        widget.data['createdBy']?['name'] ??
+                        widget.data.createdBy.name ??
                             '', // Điền sau nếu có
                         style: TextStyle(
                           fontSize: 16,
@@ -147,9 +157,9 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                       ),
                     ],
                   ),
-                  if (widget.data['deviceId'] != null)
+                  if (widget.data.deviceId != null)
                     const SizedBox(height: 10),
-                  if (widget.data['deviceId'] != null)
+                  if (widget.data.deviceId != null)
                     Row(
                       children: [
                         Text(
@@ -159,14 +169,13 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                           ),
                         ),
                         Text(
-                          widget.data['deviceId']?['name'] ??
-                              '',
+                          widget.data.deviceId!.name,
                         ), // Điền sau nếu có
                       ],
                     ),
-                  if (widget.data['excavatorId'] != null)
+                  if (widget.data.excavatorId != null)
                     const SizedBox(height: 10),
-                  if (widget.data['excavatorId'] != null)
+                  if (widget.data.excavatorId != null)
                     Row(
                       children: [
                         Text(
@@ -176,8 +185,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                           ),
                         ),
                         Text(
-                          widget.data['excavatorId']?['name'] ??
-                              '',
+                          widget.data.excavatorId!.name,
                         ), // Điền sau nếu có
                       ],
                     ),
@@ -188,7 +196,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  Text(widget.data['description'] ?? ''),
+                  Text(widget.data.description ?? ''),
                   const SizedBox(height: 10),
                   const Text(
                     'Biện pháp an toàn chung',
@@ -197,7 +205,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                     ),
                   ),
                   Text(
-                    widget.data['taskId']?['typeId']?['description'] ??
+                    widget.data.taskId.typeId.description ??
                         '',
                   ),
                 ],
@@ -209,7 +217,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
             width: double.infinity,
             color: Colors.white,
             child:
-                widget.data['status'] == 'pending'
+                widget.data.status == 'pending'
                     ? SizedBox(
                       child: ElevatedButton(
                         onPressed: () {
@@ -272,7 +280,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                         ),
                       ),
                     )
-                    : widget.data['status'] == 'accepted'
+                    : widget.data.status == 'accepted'
                     ? Row(
                       children: [
                         if (route != null &&
@@ -346,7 +354,10 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                           child: ElevatedButton(
                             onPressed: () {
                               if (widget
-                                      .data['taskId']?['typeId']?['mode'] ==
+                                      .data
+                                      .taskId
+                                      .typeId
+                                      .mode ==
                                   'trực tiếp') {
                                 Navigator.pushNamed(
                                   context,

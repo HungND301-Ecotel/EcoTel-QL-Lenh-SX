@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/order_model.dart';
 import 'package:job_manager/routes/task_assignment_route.dart';
 import 'package:job_manager/services/order_service.dart';
 import 'package:job_manager/widgets/task_assignment_item.dart';
@@ -14,7 +15,7 @@ class TaskAssignmentList extends StatefulWidget {
 class _TaskAssignmentList
     extends State<TaskAssignmentList> {
   bool _isLoading = true;
-  final List<Map<String, dynamic>> tasks = [];
+  final List<OrderModel> tasks = [];
   final OrderService _orderService = OrderService();
 
   void getAllOrder() async {
@@ -31,7 +32,11 @@ class _TaskAssignmentList
       var data = result['data'];
       setState(() {
         tasks.clear(); // Nếu cần làm sạch danh sách trước
-        tasks.addAll(List<Map<String, dynamic>>.from(data));
+        tasks.addAll(
+          (data as List)
+              .map((e) => OrderModel.fromJson(e))
+              .toList(),
+        );
       });
     }
     setState(() {

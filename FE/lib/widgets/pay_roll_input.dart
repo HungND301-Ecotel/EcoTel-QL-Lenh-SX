@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/user_model.dart';
 import 'package:job_manager/services/payroll_service.dart';
 
 class PayRollInput extends StatefulWidget {
   final String title;
-  final Function(Map<String, dynamic>) onSelectUser;
+  final Function(UserModel) onSelectUser;
 
   const PayRollInput({
     super.key,
@@ -17,7 +18,7 @@ class PayRollInput extends StatefulWidget {
 }
 
 class _PayRollInputState extends State<PayRollInput> {
-  Map<String, dynamic> _user = {};
+  UserModel? _user;
   final TextEditingController _codeController =
       TextEditingController();
 
@@ -30,17 +31,14 @@ class _PayRollInputState extends State<PayRollInput> {
 
     if (!mounted) return;
     if (result['status'] == 'error') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message']),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } else {
-      var data = result['data'];
       setState(() {
-        _user = data ?? {};
-        widget.onSelectUser(data ?? {});
+        _user = null;
+      });
+    } else {
+      var data = result['data']['userId'];
+      setState(() {
+        _user = UserModel.fromJson(data);
+        widget.onSelectUser(UserModel.fromJson(data));
       });
     }
   }
@@ -57,11 +55,7 @@ class _PayRollInputState extends State<PayRollInput> {
             children: [
               TextSpan(text: '  '),
               TextSpan(
-                text:
-                    _user.isNotEmpty &&
-                            _user['userId'] != null
-                        ? _user['userId']['name']
-                        : '',
+                text: _user?.name ?? '',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.black,

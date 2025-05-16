@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/material_model.dart';
 import 'package:job_manager/services/material_service.dart';
 
 class TaskAssignmentMaterialSelect extends StatefulWidget {
@@ -11,7 +12,7 @@ class TaskAssignmentMaterialSelect extends StatefulWidget {
 
 class _TaskAssignmentMaterialSelect
     extends State<TaskAssignmentMaterialSelect> {
-  final List<Map<String, dynamic>> materials = [];
+  final List<MaterialModel> materials = [];
   bool _isLoading = true;
 
   final MaterialService _materialService =
@@ -21,7 +22,7 @@ class _TaskAssignmentMaterialSelect
     var result = await _materialService.getAllMaterial();
 
     if (!mounted) return;
-    if (result['status']=='error') {
+    if (result['status'] == 'error') {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result['message']),
@@ -34,7 +35,9 @@ class _TaskAssignmentMaterialSelect
         materials
             .clear(); // Nếu cần làm sạch danh sách trước
         materials.addAll(
-          List<Map<String, dynamic>>.from(data),
+          (data as List)
+              .map((e) => MaterialModel.fromJson(e))
+              .toList(),
         );
       });
     }
@@ -53,10 +56,10 @@ class _TaskAssignmentMaterialSelect
 
   @override
   Widget build(BuildContext context) {
-    List<Map<String, dynamic>> filteredItems =
+    List<MaterialModel> filteredItems =
         materials
             .where(
-              (item) => item['name'].toLowerCase().contains(
+              (item) => item.name.toLowerCase().contains(
                 _searchText.toLowerCase(),
               ),
             )
@@ -144,7 +147,7 @@ class _TaskAssignmentMaterialSelect
                                         color: Colors.blue,
                                       ),
                                       title: Text(
-                                        item['name'],
+                                        item.name,
                                       ),
                                       onTap: () {
                                         Navigator.pop(

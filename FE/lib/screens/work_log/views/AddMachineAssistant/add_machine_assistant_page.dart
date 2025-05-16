@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/user_model.dart';
 import 'package:job_manager/widgets/pay_roll_input.dart';
 
 class AddMachineAssistantPage extends StatefulWidget {
@@ -11,9 +12,9 @@ class AddMachineAssistantPage extends StatefulWidget {
 
 class _AddMachineAssistantPage
     extends State<AddMachineAssistantPage> {
-  Map<String, dynamic> user = {};
+  UserModel? user;
 
-  void _updateUser(Map<String, dynamic> selectedUser) {
+  void _updateUser(UserModel selectedUser) {
     setState(() {
       user = selectedUser;
     });

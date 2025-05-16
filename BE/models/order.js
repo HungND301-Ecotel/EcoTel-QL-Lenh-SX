@@ -1,28 +1,29 @@
 const mongoose = require('mongoose')
 
 const Order = new mongoose.Schema({
-    taskId: {
+    taskId: {// cv
         type: mongoose.Schema.Types.ObjectId,
         ref: "task",
         required: true,
     },
-    start_time: {
+    workingDate: {//ngày làm vc
         type: Date,
-        default: Date.now
     },
-    assignedTo: {
+    start_time: {// tg bắt đầu
+        type: Date,
+    },
+    end_time: {//tg kết thúc
+        type: Date,
+    },
+    assignedTo: {//ng nhận
         type: mongoose.Schema.Types.ObjectId,
         ref: "user",
         required: true,
     },
-    createdBy: {
+    createdBy: {// ng giao
         type: mongoose.Schema.Types.ObjectId,
         ref: "user",
         required: true,
-    },
-    createdBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "user",
     },
     deviceId: {//thiết bị
         type: mongoose.Schema.Types.ObjectId,
@@ -43,7 +44,7 @@ const Order = new mongoose.Schema({
     description: {//nội dung
         type: String,
     },
-    status: {
+    status: {// trạng thái
         type: String,
         enum: ['pending', 'accepted', 'completed'],
         default: 'pending'

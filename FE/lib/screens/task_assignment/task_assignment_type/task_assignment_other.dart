@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/task_model.dart';
+import 'package:job_manager/models/user_model.dart';
 import 'package:job_manager/routes/task_assignment_route.dart';
 import 'package:job_manager/services/order_service.dart';
 import 'package:job_manager/widgets/date_time_picker_button.dart';
 import 'package:job_manager/widgets/pay_roll_input.dart';
 
 class TaskAssignmentOther extends StatefulWidget {
-  final Map<String, dynamic> data;
+  final TaskModel data;
   const TaskAssignmentOther({
     super.key,
     required this.data,
@@ -19,7 +21,7 @@ class TaskAssignmentOther extends StatefulWidget {
 class _TaskAssignmentOther
     extends State<TaskAssignmentOther> {
   DateTime? _selectedDateTime;
-  Map<String, dynamic> user = {};
+  UserModel? user;
 
   @override
   void initState() {
@@ -57,7 +59,7 @@ class _TaskAssignmentOther
     });
   }
 
-  void _updateUser(Map<String, dynamic> selectedUser) {
+  void _updateUser(UserModel selectedUser) {
     setState(() {
       user = selectedUser;
     });
@@ -70,9 +72,9 @@ class _TaskAssignmentOther
   void createOrder() async {
     String description = _descriptionController.text.trim();
     var result = await _orderService.createOrder({
-      "taskId": widget.data['_id'],
-      "start_time": _selectedDateTime?.toIso8601String(),
-      "assignedTo": user['userId'],
+      "taskId": widget.data.id,
+      "workingDate": _selectedDateTime?.toIso8601String(),
+      "assignedTo": user?.id,
       "description": description,
     });
     if (!mounted) return;

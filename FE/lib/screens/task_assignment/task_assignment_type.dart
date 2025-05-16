@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/task_model.dart';
 import 'package:job_manager/routes/task_assignment_route.dart';
 import 'package:job_manager/services/task_service.dart';
 
@@ -12,7 +13,7 @@ class TaskAssignmentType extends StatefulWidget {
 
 class _TaskAssignmentType
     extends State<TaskAssignmentType> {
-  final List<Map<String, dynamic>> tasks = [];
+  final List<TaskModel> tasks = [];
   bool _isLoading = true;
 
   final TaskService _taskService = TaskService();
@@ -20,7 +21,7 @@ class _TaskAssignmentType
   void getAllTask() async {
     var result = await _taskService.getAllTask();
     if (!mounted) return;
-    if (result['status']=='error') {
+    if (result['status'] == 'error') {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result['message']),
@@ -31,7 +32,11 @@ class _TaskAssignmentType
       var data = result['data'];
       setState(() {
         tasks.clear(); // Nếu cần làm sạch danh sách trước
-        tasks.addAll(List<Map<String, dynamic>>.from(data));
+        tasks.addAll(
+          (data as List)
+              .map((e) => TaskModel.fromJson(e))
+              .toList(),
+        );
       });
     }
     setState(() {
@@ -48,10 +53,10 @@ class _TaskAssignmentType
   String _searchText = '';
   @override
   Widget build(BuildContext context) {
-    List<Map<String, dynamic>> filteredTasks =
+    List<TaskModel> filteredTasks =
         tasks
             .where(
-              (item) => item['name']
+              (item) => item.name
                   .toString()
                   .toLowerCase()
                   .contains(_searchText.toLowerCase()),
@@ -127,7 +132,7 @@ class _TaskAssignmentType
                               Icons.group_work_outlined,
                               color: Colors.grey,
                             ),
-                            title: Text(item['name']),
+                            title: Text(item.name),
                             onTap: () {
                               Navigator.pushNamed(
                                 context,

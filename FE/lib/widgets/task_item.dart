@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:job_manager/models/order_model.dart';
 import 'package:job_manager/screens/work_log/routes/routes.dart';
 
 class TaskItem extends StatelessWidget {
-  final Map<String, dynamic> data;
+  final OrderModel data;
 
   const TaskItem({super.key, required this.data});
 
@@ -49,7 +50,7 @@ class TaskItem extends StatelessWidget {
               width: 60,
               child: Icon(
                 Icons.mark_as_unread_outlined,
-                color: getStatusColor(data['status']),
+                color: getStatusColor(data.status),
                 size: 25,
               ),
             ),
@@ -59,7 +60,7 @@ class TaskItem extends StatelessWidget {
                     CrossAxisAlignment.start,
                 children: [
                   Text(
-                    data['taskId']?['name'] ?? '',
+                    data.taskId.name,
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.black,
@@ -67,22 +68,16 @@ class TaskItem extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    data['start_time'] != null
-                        ? DateFormat(
-                          'dd/MM/yyyy HH:mm:ss',
-                        ).format(
-                          DateTime.parse(
-                            data['start_time'],
-                          ).toLocal(),
-                        )
-                        : '',
+                    DateFormat(
+                      'dd/MM/yyyy HH:mm:ss',
+                    ).format(data.workingDate),
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey,
                     ),
                   ),
                   Text(
-                    "${data['assignedTo']?['payroll']?['code'] ?? ''} ${data['assignedTo']?['name'] ?? ''}",
+                    "${data.assignedTo.payroll!.code} ${data.assignedTo.name ?? ''}",
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -91,7 +86,7 @@ class TaskItem extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    data['description'] ?? '',
+                    data.description ?? '',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/location_model.dart';
 import 'package:job_manager/services/location_service.dart';
 
 class TaskAssignmentDumpSiteSelect extends StatefulWidget {
@@ -11,7 +12,7 @@ class TaskAssignmentDumpSiteSelect extends StatefulWidget {
 
 class _TaskAssignmentDumpSiteSelect
     extends State<TaskAssignmentDumpSiteSelect> {
-  final List<Map<String, dynamic>> locations = [];
+  final List<LocationModel> locations = [];
   bool _isLoading = true;
 
   final LocationService _locationService =
@@ -21,7 +22,7 @@ class _TaskAssignmentDumpSiteSelect
     var result = await _locationService.getAllLocation();
 
     if (!mounted) return;
-    if (result['status']=='error') {
+    if (result['status'] == 'error') {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result['message']),
@@ -34,7 +35,9 @@ class _TaskAssignmentDumpSiteSelect
         locations
             .clear(); // Nếu cần làm sạch danh sách trước
         locations.addAll(
-          List<Map<String, dynamic>>.from(data),
+          (data as List)
+              .map((e) => LocationModel.fromJson(e))
+              .toList(),
         );
       });
     }
@@ -53,10 +56,10 @@ class _TaskAssignmentDumpSiteSelect
 
   @override
   Widget build(BuildContext context) {
-    List<Map<String, dynamic>> filteredItems =
+    List<LocationModel> filteredItems =
         locations
             .where(
-              (item) => item['name'].toLowerCase().contains(
+              (item) => item.name.toLowerCase().contains(
                 _searchText.toLowerCase(),
               ),
             )
@@ -143,7 +146,7 @@ class _TaskAssignmentDumpSiteSelect
                                         color: Colors.blue,
                                       ),
                                       title: Text(
-                                        item['name'],
+                                        item.name,
                                       ),
                                       onTap: () {
                                         Navigator.pop(

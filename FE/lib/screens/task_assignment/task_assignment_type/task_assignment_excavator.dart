@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/device_model.dart';
+import 'package:job_manager/models/location_model.dart';
+import 'package:job_manager/models/material_model.dart';
+import 'package:job_manager/models/task_model.dart';
+import 'package:job_manager/models/user_model.dart';
 import 'package:job_manager/routes/task_assignment_route.dart';
 import 'package:job_manager/services/order_service.dart';
 import 'package:job_manager/widgets/date_time_picker_button.dart';
@@ -6,7 +11,7 @@ import 'package:job_manager/widgets/pay_roll_input.dart';
 import 'package:job_manager/widgets/vehicle_button.dart';
 
 class TaskAssignmentExcavator extends StatefulWidget {
-  final Map<String, dynamic> data;
+  final TaskModel data;
   const TaskAssignmentExcavator({
     super.key,
     required this.data,
@@ -20,11 +25,11 @@ class TaskAssignmentExcavator extends StatefulWidget {
 class _TaskAssignmentExcavator
     extends State<TaskAssignmentExcavator> {
   DateTime? _selectedDateTime;
-  Map<String, dynamic> vehicle = {};
-  Map<String, dynamic> excavator = {};
-  Map<String, dynamic> dump = {};
-  Map<String, dynamic> material = {};
-  Map<String, dynamic> user = {};
+  DeviceModel? vehicle;
+  DeviceModel? excavator;
+  LocationModel? dump;
+  MaterialModel? material;
+  UserModel? user;
 
   @override
   void initState() {
@@ -62,15 +67,13 @@ class _TaskAssignmentExcavator
     });
   }
 
-  void _updateVehicle(
-    Map<String, dynamic> selectedVehicle,
-  ) {
+  void _updateVehicle(DeviceModel selectedVehicle) {
     setState(() {
       vehicle = selectedVehicle;
     });
   }
 
-  void _updateUser(Map<String, dynamic> selectedUser) {
+  void _updateUser(UserModel selectedUser) {
     setState(() {
       user = selectedUser;
     });
@@ -83,13 +86,13 @@ class _TaskAssignmentExcavator
   void createOrder() async {
     String description = _descriptionController.text.trim();
     var result = await _orderService.createOrder({
-      "taskId": widget.data['_id'],
-      "start_time": _selectedDateTime?.toIso8601String(),
-      "assignedTo": user['userId'],
-      "deviceId": vehicle['_id'],
-      "locationId": dump['_id'],
-      "excavatorId": excavator['_id'],
-      "materialId": material['_id'],
+      "taskId": widget.data.id,
+      "workingDate": _selectedDateTime?.toIso8601String(),
+      "assignedTo": user?.id,
+      "deviceId": vehicle?.id,
+      "locationId": dump?.id,
+      "excavatorId": excavator?.id,
+      "materialId": material?.id,
       "description": description,
     });
     if (!mounted) return;
@@ -167,7 +170,7 @@ class _TaskAssignmentExcavator
                           );
                       if (selectedExcavator != null &&
                           selectedExcavator
-                              is Map<String, dynamic>) {
+                              is DeviceModel) {
                         setState(() {
                           excavator = selectedExcavator;
                         });
@@ -184,9 +187,7 @@ class _TaskAssignmentExcavator
                       alignment: Alignment.centerLeft,
                     ),
                     label: Text(
-                      excavator.isNotEmpty
-                          ? excavator['name']
-                          : 'Máy xúc',
+                      excavator?.name ?? 'Máy xúc',
                     ),
                   ),
                 ),
@@ -208,8 +209,7 @@ class _TaskAssignmentExcavator
                                 .taskAssignmentDumpSiteSelect,
                           );
                       if (selectedDump != null &&
-                          selectedDump
-                              is Map<String, dynamic>) {
+                          selectedDump is LocationModel) {
                         setState(() {
                           dump = selectedDump;
                         });
@@ -225,11 +225,7 @@ class _TaskAssignmentExcavator
                       ),
                       alignment: Alignment.centerLeft,
                     ),
-                    label: Text(
-                      dump.isNotEmpty
-                          ? dump['name']
-                          : 'Bãi thải',
-                    ),
+                    label: Text(dump?.name ?? 'Bãi thải'),
                   ),
                 ),
                 Text(
@@ -251,7 +247,7 @@ class _TaskAssignmentExcavator
                           );
                       if (selectedMaterial != null &&
                           selectedMaterial
-                              is Map<String, dynamic>) {
+                              is MaterialModel) {
                         setState(() {
                           material = selectedMaterial;
                         });
@@ -268,9 +264,7 @@ class _TaskAssignmentExcavator
                       alignment: Alignment.centerLeft,
                     ),
                     label: Text(
-                      material.isNotEmpty
-                          ? material['name']
-                          : 'Chủng loại',
+                      material?.name ?? 'Chủng loại',
                     ),
                   ),
                 ),

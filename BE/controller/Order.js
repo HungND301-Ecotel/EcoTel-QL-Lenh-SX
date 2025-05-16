@@ -4,12 +4,12 @@ const Order = require('../models/order')
 
 exports.create = async (req, res) => {
     try {
-        const { taskId, start_time, assignedTo, deviceId, excavatorId, locationId, materialId, description } = req.body
+        const { taskId, workingDate, assignedTo, deviceId, excavatorId, locationId, materialId, description } = req.body
         console.log(req.body)
 
         const newOrder = new Order({
             taskId: taskId,
-            start_time: start_time,
+            workingDate: workingDate,
             assignedTo: assignedTo,
             createdBy: req.user._id,
             deviceId: deviceId,
@@ -49,6 +49,7 @@ exports.getAll = async (req, res) => {
             .populate("locationId", "name")
             .populate("excavatorId", "name")
             .populate("materialId", "name")
+            .populate("assistants", "name")
 
 
         res.status(200).send({ status: 'success', data: orders });
@@ -105,6 +106,7 @@ exports.getByUser = async (req, res) => {
             .populate("locationId", "name")
             .populate("excavatorId", "name")
             .populate("materialId", "name")
+            .populate("assistants", "name")
 
 
         res.status(200).send({ status: 'success', data: orders });
