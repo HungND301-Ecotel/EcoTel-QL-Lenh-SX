@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:job_manager/models/device_model.dart';
 import 'package:job_manager/models/location_model.dart';
 import 'package:job_manager/models/material_model.dart';
+import 'package:job_manager/models/order_model.dart';
 import 'package:job_manager/models/task_model.dart';
 import 'package:job_manager/models/user_model.dart';
 import 'package:job_manager/routes/task_assignment_route.dart';
@@ -10,20 +11,23 @@ import 'package:job_manager/widgets/date_time_picker_button.dart';
 import 'package:job_manager/widgets/pay_roll_input.dart';
 import 'package:job_manager/widgets/vehicle_button.dart';
 
-class TaskAssignmentExcavator extends StatefulWidget {
+class TaskAssignmentVehicle extends StatefulWidget {
   final TaskModel data;
-  const TaskAssignmentExcavator({
+  final OrderModel? order;
+
+  const TaskAssignmentVehicle({
     super.key,
     required this.data,
+    this.order,
   });
 
   @override
   State<StatefulWidget> createState() =>
-      _TaskAssignmentExcavator();
+      _TaskAssignmentVehicle();
 }
 
-class _TaskAssignmentExcavator
-    extends State<TaskAssignmentExcavator> {
+class _TaskAssignmentVehicle
+    extends State<TaskAssignmentVehicle> {
   DateTime? _selectedDateTime;
   DeviceModel? vehicle;
   DeviceModel? excavator;
@@ -35,6 +39,26 @@ class _TaskAssignmentExcavator
   void initState() {
     super.initState();
     _selectedDateTime = DateTime.now();
+    if (widget.order != null) {
+      final order = widget.order!;
+
+      // Gán lại vehicle nếu có
+      if (order.deviceId != null) {
+        vehicle = order.deviceId;
+      }
+      // Gán lại vehicle nếu có
+      if (order.excavatorId != null) {
+        excavator = order.excavatorId;
+      }
+      // Gán lại vehicle nếu có
+      if (order.materialId != null) {
+        material = order.materialId;
+      }
+      // Gán lại ngày làm việc nếu có
+      _selectedDateTime = order.workingDate;
+
+      _descriptionController.text = order.description ?? '';
+    }
   }
 
   Future<void> _pickDateTime() async {
@@ -73,7 +97,7 @@ class _TaskAssignmentExcavator
     });
   }
 
-  void _updateUser(UserModel selectedUser) {
+  void _updateUser(UserModel? selectedUser) {
     setState(() {
       user = selectedUser;
     });

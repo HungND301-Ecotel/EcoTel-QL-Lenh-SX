@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/order_model.dart';
 import 'package:job_manager/models/task_model.dart';
 import 'package:job_manager/screens/task_assignment/task_assignment_type/task_assignment_common.dart';
-import 'package:job_manager/screens/task_assignment/task_assignment_type/task_assignment_excavator.dart';
+import 'package:job_manager/screens/task_assignment/task_assignment_type/task_assignment_vehicle.dart';
 import 'package:job_manager/screens/task_assignment/task_assignment_type/task_assignment_other.dart';
 
 class TaskAssignmentAdd extends StatefulWidget {
   final TaskModel data;
-  const TaskAssignmentAdd({super.key, required this.data});
+  final OrderModel? order;
+  const TaskAssignmentAdd({
+    super.key,
+    required this.data,
+    this.order,
+  });
 
   @override
   State<StatefulWidget> createState() =>
@@ -18,15 +24,24 @@ class _TaskAssignmentAdd extends State<TaskAssignmentAdd> {
     final type = widget.data.typeId.name;
 
     switch (type) {
-      case 'Vận hành xúc':
-        return TaskAssignmentExcavator(data: widget.data);
       case 'Vận hành xe':
+        return TaskAssignmentVehicle(
+          data: widget.data,
+          order: widget.order,
+        );
+      case 'Vận hành xúc':
       case 'Vận hành khoan':
       case 'Vận hành gạt':
       case 'Vận hành xe phục vụ':
-        return TaskAssignmentCommon(data: widget.data);
+        return TaskAssignmentCommon(
+          data: widget.data,
+          order: widget.order,
+        );
       default:
-        return TaskAssignmentOther(data: widget.data);
+        return TaskAssignmentOther(
+          data: widget.data,
+          order: widget.order,
+        );
     }
   }
 

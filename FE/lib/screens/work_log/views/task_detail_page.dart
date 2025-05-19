@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:job_manager/models/order_model.dart';
 import 'package:job_manager/screens/work_log/routes/routes.dart';
 import 'package:job_manager/services/order_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class TaskDetailPage extends StatefulWidget {
   final OrderModel data;
@@ -54,12 +55,31 @@ class _TaskDetailPage extends State<TaskDetailPage> {
       );
     } else {
       setState(() {
-        widget.data.status = 'accepted';
+        widget.data.updateFromJson(result['data']);
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Công việc đã bắt đầu'),
           backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  void _callPhone(String phoneNumber) async {
+    //tao url
+    final Uri phoneUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    // kiểm tra ứng dụng hỗ trợ gọi điện
+    if (await canLaunchUrl(phoneUri)) {
+      await launchUrl(phoneUri); // gọi tới sdt
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Không thể gọi '),
+          backgroundColor: Colors.red,
         ),
       );
     }
@@ -86,20 +106,21 @@ class _TaskDetailPage extends State<TaskDetailPage> {
           },
         ),
         actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamed(
-                context,
-                WorkLogRoutes.qrCode,
-                arguments: widget.data,
-              );
-            },
-            icon: Icon(
-              Icons.qr_code_scanner_outlined,
-              color: Colors.white,
-              size: 30,
+          if (widget.data.status == 'accepted')
+            IconButton(
+              onPressed: () {
+                Navigator.pushNamed(
+                  context,
+                  WorkLogRoutes.qrCode,
+                  arguments: widget.data,
+                );
+              },
+              icon: Icon(
+                Icons.qr_code_scanner_outlined,
+                color: Colors.white,
+                size: 30,
+              ),
             ),
-          ),
         ],
         title: Text(
           widget.data.taskId.name,
@@ -155,6 +176,18 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
+
+                      SizedBox(width: 6),
+                      if (widget.data.createdBy.phone !=
+                          null)
+                        IconButton(
+                          onPressed: () {
+                            _callPhone(
+                              widget.data.createdBy.phone!,
+                            );
+                          },
+                          icon: Icon(Icons.phone),
+                        ),
                     ],
                   ),
                   if (widget.data.deviceId != null)
@@ -293,6 +326,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                                   context,
                                   WorkLogRoutes
                                       .addMachineAssistantPage,
+                                  arguments: widget.data,
                                 );
                               },
                               style: ElevatedButton.styleFrom(
@@ -324,6 +358,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                                 Navigator.pushNamed(
                                   context,
                                   route,
+                                  arguments: widget.data.id
                                 );
                               },
                               style: ElevatedButton.styleFrom(

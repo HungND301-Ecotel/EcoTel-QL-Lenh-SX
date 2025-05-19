@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/material_model.dart';
 
 class MaterialItem extends StatelessWidget {
-  final Map<String, dynamic> data;
+  final MaterialModel data;
 
   const MaterialItem({super.key, required this.data});
 
@@ -23,7 +24,7 @@ class MaterialItem extends StatelessWidget {
           Icons.cable_outlined,
           color: Colors.blue,
         ),
-        title: Text(data['name']),
+        title: Text(data.name),
         trailing: Icon(
           Icons.arrow_forward_ios,
           size: 16,

@@ -46,19 +46,23 @@ class WorkLogRoute extends StatelessWidget {
               builder: (_) => TaskDetailPage(data: args),
             );
           case WorkLogRoutes.qrCode:
-            final args =
-                settings.arguments as OrderModel;
+            final args = settings.arguments as OrderModel;
             return MaterialPageRoute(
               builder: (_) => QrCode(data: args),
             );
           case WorkLogRoutes.addMachineAssistantPage:
+            final args = settings.arguments as OrderModel;
             return MaterialPageRoute(
-              builder: (_) => AddMachineAssistantPage(),
+              builder:
+                  (_) =>
+                      AddMachineAssistantPage(data: args),
             );
           //Vehicle
           case WorkLogRoutes.vehicleTripList:
+            final orderId = settings.arguments as String;
             return MaterialPageRoute(
-              builder: (_) => VehicleTripList(),
+              builder:
+                  (_) => VehicleTripList(orderId: orderId),
             );
           case WorkLogRoutes.vehicleSelectExcavator:
             return MaterialPageRoute(
@@ -78,8 +82,11 @@ class WorkLogRoute extends StatelessWidget {
             );
           //Excavator
           case WorkLogRoutes.excavatorTripList:
+            final orderId = settings.arguments as String;
             return MaterialPageRoute(
-              builder: (_) => ExcavatorTripList(),
+              builder:
+                  (_) =>
+                      ExcavatorTripList(orderId: orderId),
             );
           case WorkLogRoutes.excavatorSelectVehicle:
             return MaterialPageRoute(
@@ -95,8 +102,11 @@ class WorkLogRoute extends StatelessWidget {
             );
           //Drilling
           case WorkLogRoutes.drillingProductList:
+            final orderId = settings.arguments as String;
             return MaterialPageRoute(
-              builder: (_) => DrillingProductList(),
+              builder:
+                  (_) =>
+                      DrillingProductList(orderId: orderId),
             );
           case WorkLogRoutes.drillingSelectProduct:
             return MaterialPageRoute(
@@ -108,8 +118,10 @@ class WorkLogRoute extends StatelessWidget {
             );
           //Dozer
           case WorkLogRoutes.dozerProductList:
+            final orderId = settings.arguments as String;
             return MaterialPageRoute(
-              builder: (_) => DozerProductList(),
+              builder:
+                  (_) => DozerProductList(orderId: orderId),
             );
           case WorkLogRoutes.dozerSelectProduct:
             return MaterialPageRoute(
@@ -121,8 +133,12 @@ class WorkLogRoute extends StatelessWidget {
             );
           //ServiceVehicle
           case WorkLogRoutes.serviceVehicleTripList:
+            final orderId = settings.arguments as String;
             return MaterialPageRoute(
-              builder: (_) => ServiceVehicleTripList(),
+              builder:
+                  (_) => ServiceVehicleTripList(
+                    orderId: orderId,
+                  ),
             );
           case WorkLogRoutes.serviceVehicleSelectStartPoint:
             return MaterialPageRoute(

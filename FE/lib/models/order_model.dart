@@ -8,8 +8,8 @@ class OrderModel {
   final String id;
   final TaskModel taskId;
   final DateTime workingDate;
-  final DateTime? startTime;
-  final DateTime? endTime;
+  DateTime? startTime;
+  DateTime? endTime;
   final UserModel assignedTo;
   final UserModel createdBy;
   final DeviceModel? deviceId;
@@ -18,7 +18,7 @@ class OrderModel {
   final MaterialModel? materialId;
   final String? description;
   String status;
-  final List<UserModel>? assistants;
+  List<UserModel>? assistants;
 
   OrderModel({
     required this.id,
@@ -79,5 +79,29 @@ class OrderModel {
               .toList() ??
           [],
     );
+  }
+  void updateFromJson(Map<String, dynamic> json) {
+    if (json.containsKey('status')) {
+      status = json['status'];
+    }
+
+    if (json.containsKey('start_time') &&
+        json['start_time'] != null) {
+      startTime =
+          DateTime.parse(json['start_time']).toLocal();
+    }
+
+    if (json.containsKey('end_time') &&
+        json['end_time'] != null) {
+      endTime = DateTime.parse(json['end_time']).toLocal();
+    }
+
+    if (json.containsKey('assistants')) {
+      assistants =
+          (json['assistants'] as List?)
+              ?.map((e) => UserModel.fromJson(e))
+              .toList() ??
+          [];
+    }
   }
 }

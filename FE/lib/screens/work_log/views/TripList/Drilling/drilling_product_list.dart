@@ -3,7 +3,8 @@ import 'package:job_manager/screens/work_log/routes/routes.dart';
 import 'package:job_manager/screens/work_log/widgets/performance_item.dart';
 
 class DrillingProductList extends StatefulWidget {
-  const DrillingProductList({super.key});
+  final String orderId;
+  const DrillingProductList({super.key,required this.orderId});
 
   @override
   State<StatefulWidget> createState() =>

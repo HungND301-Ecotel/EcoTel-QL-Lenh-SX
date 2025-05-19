@@ -138,7 +138,7 @@ class _TaskAssignmentType
                                 context,
                                 TaskAssignmentRoutes
                                     .taskAssignmentAdd,
-                                arguments: item,
+                                arguments: {'task': item},
                               );
                             },
                           ),

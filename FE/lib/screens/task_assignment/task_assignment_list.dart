@@ -91,23 +91,20 @@ class _TaskAssignmentList
           ),
         ],
       ),
-      body: Expanded(
-        child:
-            _isLoading
-                ? Center(child: CircularProgressIndicator())
-                : SingleChildScrollView(
-                  child: Column(
-                    children:
-                        tasks
-                            .map(
-                              (item) => TaskAssignItem(
-                                data: item,
-                              ),
-                            )
-                            .toList(),
-                  ),
+      body:
+          _isLoading
+              ? Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                child: Column(
+                  children:
+                      tasks
+                          .map(
+                            (item) =>
+                                TaskAssignItem(data: item),
+                          )
+                          .toList(),
                 ),
-      ),
+              ),
     );
   }
 }

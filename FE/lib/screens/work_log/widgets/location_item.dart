@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/location_model.dart';
 
-class ExcavatorItem extends StatelessWidget {
-  final Map<String, dynamic> data;
+class LocationItem extends StatelessWidget {
+  final LocationModel data;
 
-  const ExcavatorItem({super.key, required this.data});
+  const LocationItem({super.key, required this.data});
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +24,7 @@ class ExcavatorItem extends StatelessWidget {
           Icons.radio_button_checked,
           color: Colors.grey,
         ),
-        title: Text(data['name']),
+        title: Text(data.name),
         trailing: Icon(
           Icons.arrow_forward_ios,
           size: 16,

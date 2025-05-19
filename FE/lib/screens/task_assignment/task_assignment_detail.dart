@@ -173,6 +173,63 @@ class _TaskAssignmentDetail
                         ],
                       ),
                       const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Text(
+                                  'Bắt đầu:',
+                                  style: TextStyle(
+                                    fontWeight:
+                                        FontWeight.w600,
+                                  ),
+                                ),
+                                Text(' '),
+                                Text(
+                                  widget.data.startTime !=
+                                          null
+                                      ? DateFormat(
+                                        'HH:mm:ss',
+                                      ).format(
+                                        widget
+                                            .data
+                                            .startTime!,
+                                      )
+                                      : '',
+                                ),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Text(
+                                  'Kết thúc:',
+                                  style: TextStyle(
+                                    fontWeight:
+                                        FontWeight.w600,
+                                  ),
+                                ),
+                                Text(' '),
+                                Text(
+                                  widget.data.endTime !=
+                                          null
+                                      ? DateFormat(
+                                        'HH:mm:ss',
+                                      ).format(
+                                        widget
+                                            .data
+                                            .endTime!,
+                                      )
+                                      : '',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
                       const Text(
                         'Nội dung công việc',
                         style: TextStyle(
@@ -208,7 +265,15 @@ class _TaskAssignmentDetail
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
-                          Navigator.pop(context);
+                          Navigator.pushNamed(
+                            context,
+                            TaskAssignmentRoutes
+                                .taskAssignmentAdd,
+                            arguments: {
+                              'task': widget.data.taskId,
+                              'order': widget.data,
+                            },
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue,

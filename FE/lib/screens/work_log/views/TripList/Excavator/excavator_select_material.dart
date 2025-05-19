@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/material_model.dart';
 import 'package:job_manager/screens/work_log/routes/routes.dart';
 import 'package:job_manager/screens/work_log/widgets/material_item.dart';
+import 'package:job_manager/services/material_service.dart';
 
 class ExcavatorSelectMaterial extends StatefulWidget {
   const ExcavatorSelectMaterial({super.key});
@@ -12,35 +14,43 @@ class ExcavatorSelectMaterial extends StatefulWidget {
 
 class _ExcavatorSelectMaterial
     extends State<ExcavatorSelectMaterial> {
-  final List<Map<String, dynamic>> _allData = [
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-    {'name': 'Than loại 1'},
-  ];
+  bool _isLoading = true;
+  final List<MaterialModel> materials = [];
+  final MaterialService _materialService =
+      MaterialService();
+  void getAllMaterial() async {
+    var result = await _materialService.getAllMaterial();
+
+    if (!mounted) return;
+    if (result['status'] == 'error') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      var data = result['data'];
+      setState(() {
+        materials
+            .clear(); // Nếu cần làm sạch danh sách trước
+        materials.addAll(
+          (data as List)
+              .map((e) => MaterialModel.fromJson(e))
+              .toList(),
+        );
+      });
+    }
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getAllMaterial();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,17 +71,23 @@ class _ExcavatorSelectMaterial
       body: Column(
         children: [
           Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children:
-                    _allData
-                        .map(
-                          (item) =>
-                              MaterialItem(data: item),
-                        )
-                        .toList(),
-              ),
-            ),
+            child:
+                _isLoading
+                    ? Center(
+                      child: CircularProgressIndicator(),
+                    )
+                    : SingleChildScrollView(
+                      child: Column(
+                        children:
+                            materials
+                                .map(
+                                  (item) => MaterialItem(
+                                    data: item,
+                                  ),
+                                )
+                                .toList(),
+                      ),
+                    ),
           ),
           Container(
             padding: const EdgeInsets.all(8.0),

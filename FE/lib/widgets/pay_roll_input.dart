@@ -4,7 +4,7 @@ import 'package:job_manager/services/payroll_service.dart';
 
 class PayRollInput extends StatefulWidget {
   final String title;
-  final Function(UserModel) onSelectUser;
+  final Function(UserModel?) onSelectUser;
 
   const PayRollInput({
     super.key,
@@ -34,6 +34,7 @@ class _PayRollInputState extends State<PayRollInput> {
       setState(() {
         _user = null;
       });
+      widget.onSelectUser(null);
     } else {
       var data = result['data']['userId'];
       setState(() {

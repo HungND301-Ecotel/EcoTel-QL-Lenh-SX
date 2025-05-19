@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:job_manager/models/order_model.dart';
+import 'package:job_manager/services/order_service.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 class QrCode extends StatefulWidget {
@@ -14,6 +15,41 @@ class _QrCodeState extends State<QrCode> {
   final MobileScannerController _controller =
       MobileScannerController();
   bool scanned = false;
+
+  final OrderService _orderService = OrderService();
+  void scanWork() async {
+    final action =
+        widget.data.startTime == null ? 'start' : 'end';
+    var result = await _orderService.scanWork({
+      "deviceId": widget.data.deviceId!.id,
+      "orderId": widget.data.id,
+      "action": action,
+    });
+    if (!mounted) return;
+    if (result['status'] == 'error') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      setState(() {
+        widget.data.updateFromJson(result['data']);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            action == 'start'
+                ? '✅ Công việc đã bắt đầu'
+                : '✅ Công việc đã kết thúc',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,33 +79,19 @@ class _QrCodeState extends State<QrCode> {
                           .rawValue;
                   if (code != null) {
                     setState(() => scanned = true);
-                    // _controller.stop();
-
                     if (widget.data.deviceId!.name ==
                         code) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            '✅ Quét đúng mã: $code',
-                          ),
-                        ),
-                      );
+                      scanWork();
                       await Future.delayed(
                         Duration(seconds: 2),
                       );
                       _controller.stop();
-
-                      if (mounted) Navigator.pop(context);
                     } else {
                       ScaffoldMessenger.of(
                         context,
                       ).showSnackBar(
                         SnackBar(
-                          content: Text(
-                            '❌ Mã không chính xác: $code',
-                          ),
+                          content: Text('❌ Quét thất bại!'),
                         ),
                       );
                       await Future.delayed(
@@ -81,17 +103,6 @@ class _QrCodeState extends State<QrCode> {
                   }
                 }
               },
-            ),
-          ),
-          Expanded(
-            flex: 1,
-            child: Center(
-              child: Text(
-                scanned
-                    ? '✅ Quét thành công'
-                    : 'Đang chờ quét...',
-                style: TextStyle(fontSize: 18),
-              ),
             ),
           ),
         ],

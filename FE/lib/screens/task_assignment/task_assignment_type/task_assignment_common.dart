@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:job_manager/models/device_model.dart';
+import 'package:job_manager/models/order_model.dart';
 import 'package:job_manager/models/task_model.dart';
 import 'package:job_manager/models/user_model.dart';
 import 'package:job_manager/routes/task_assignment_route.dart';
@@ -10,10 +11,12 @@ import 'package:job_manager/widgets/vehicle_button.dart';
 
 class TaskAssignmentCommon extends StatefulWidget {
   final TaskModel data;
+  final OrderModel? order;
 
   const TaskAssignmentCommon({
     super.key,
     required this.data,
+    this.order,
   });
 
   @override
@@ -31,6 +34,18 @@ class _TaskAssignmentCommon
   void initState() {
     super.initState();
     _selectedDateTime = DateTime.now();
+    if (widget.order != null) {
+      final order = widget.order!;
+
+      // Gán lại vehicle nếu có
+      if (order.deviceId != null) {
+        vehicle = order.deviceId;
+      }
+      // Gán lại ngày làm việc nếu có
+      _selectedDateTime = order.workingDate;
+
+      _descriptionController.text = order.description ?? '';
+    }
   }
 
   Future<void> _pickDateTime() async {
@@ -69,7 +84,7 @@ class _TaskAssignmentCommon
     });
   }
 
-  void _updateUser(UserModel selectedUser) {
+  void _updateUser(UserModel? selectedUser) {
     setState(() {
       user = selectedUser;
     });

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/order_model.dart';
 import 'package:job_manager/models/task_model.dart';
 import 'package:job_manager/models/user_model.dart';
 import 'package:job_manager/routes/task_assignment_route.dart';
@@ -8,9 +9,11 @@ import 'package:job_manager/widgets/pay_roll_input.dart';
 
 class TaskAssignmentOther extends StatefulWidget {
   final TaskModel data;
+  final OrderModel? order;
   const TaskAssignmentOther({
     super.key,
     required this.data,
+    this.order,
   });
 
   @override
@@ -27,6 +30,13 @@ class _TaskAssignmentOther
   void initState() {
     super.initState();
     _selectedDateTime = DateTime.now();
+    if (widget.order != null) {
+      final order = widget.order!;
+      // Gán lại ngày làm việc nếu có
+      _selectedDateTime = order.workingDate;
+
+      _descriptionController.text = order.description ?? '';
+    }
   }
 
   Future<void> _pickDateTime() async {
@@ -59,7 +69,7 @@ class _TaskAssignmentOther
     });
   }
 
-  void _updateUser(UserModel selectedUser) {
+  void _updateUser(UserModel? selectedUser) {
     setState(() {
       user = selectedUser;
     });

@@ -4,7 +4,11 @@ import 'package:job_manager/screens/work_log/routes/routes.dart';
 import 'package:job_manager/screens/work_log/widgets/excavator_trip_item.dart';
 
 class ExcavatorTripList extends StatefulWidget {
-  const ExcavatorTripList({super.key});
+  final String orderId;
+  const ExcavatorTripList({
+    super.key,
+    required this.orderId,
+  });
 
   @override
   State<StatefulWidget> createState() =>

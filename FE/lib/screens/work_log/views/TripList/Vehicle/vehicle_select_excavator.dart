@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/device_model.dart';
 import 'package:job_manager/screens/work_log/routes/routes.dart';
-import 'package:job_manager/screens/work_log/widgets/excavator_item.dart';
+import 'package:job_manager/screens/work_log/widgets/device_item.dart';
+import 'package:job_manager/services/device_service.dart';
 
 class VehicleSelectExcavator extends StatefulWidget {
   const VehicleSelectExcavator({super.key});
@@ -12,25 +14,42 @@ class VehicleSelectExcavator extends StatefulWidget {
 
 class _VehicleSelectExcavator
     extends State<VehicleSelectExcavator> {
-  final List<Map<String, dynamic>> _allData = [
-    {'name': 'KT1-P12'},
-    {'name': 'KT3-HT3'},
-    {'name': 'KT3-HT4'},
-    {'name': 'KT3-HT5'},
-    {'name': 'KT3-HT6'},
-    {'name': 'KT3-HT6'},
-    {'name': 'KT3-HT6'},
-    {'name': 'KT3-HT6'},
-    {'name': 'KT3-HT6'},
-    {'name': 'KT3-HT6'},
-    {'name': 'KT3-HT6'},
-    {'name': 'KT3-HT6'},
-    {'name': 'KT3-HT6'},
-    {'name': 'KT3-HT6'},
-    {'name': 'KT3-HT6'},
-    {'name': 'KT3-HT6'},
-    {'name': 'KT3-HT6'},
-  ];
+  bool _isLoading = true;
+  final List<DeviceModel> devices = [];
+  final DeviceService _deviceService = DeviceService();
+  void getAllMaterial() async {
+    var result = await _deviceService.getAlldevice();
+
+    if (!mounted) return;
+    if (result['status'] == 'error') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      var data = result['data'];
+      setState(() {
+        devices.clear(); // Nếu cần làm sạch danh sách trước
+        devices.addAll(
+          (data as List)
+              .map((e) => DeviceModel.fromJson(e))
+              .toList(),
+        );
+      });
+    }
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getAllMaterial();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -50,17 +69,23 @@ class _VehicleSelectExcavator
       body: Column(
         children: [
           Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children:
-                    _allData
-                        .map(
-                          (item) =>
-                              ExcavatorItem(data: item),
-                        )
-                        .toList(),
-              ),
-            ),
+            child:
+                _isLoading
+                    ? Center(
+                      child: CircularProgressIndicator(),
+                    )
+                    : SingleChildScrollView(
+                      child: Column(
+                        children:
+                            devices
+                                .map(
+                                  (item) => ExcavatorItem(
+                                    data: item,
+                                  ),
+                                )
+                                .toList(),
+                      ),
+                    ),
           ),
           SizedBox(
             width: double.infinity,

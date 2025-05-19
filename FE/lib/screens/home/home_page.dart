@@ -118,15 +118,15 @@ class _HomePageState extends State<HomePage> {
                   context,
                   listen: false,
                 ).clearUser();
-                Navigator.pushNamed(
+                Navigator.of(
                   context,
-                  AppRoute.signin,
-                );
+                  rootNavigator: true,
+                ).pushNamed(AppRoute.signin);
               } else if (value == "Liên hệ") {
-                Navigator.pushNamed(
+                Navigator.of(
                   context,
-                  AppRoute.contact,
-                );
+                  rootNavigator: true,
+                ).pushNamed(AppRoute.contact);
               } else if (value == "Thông báo") {
                 Navigator.pushNamed(
                   context,

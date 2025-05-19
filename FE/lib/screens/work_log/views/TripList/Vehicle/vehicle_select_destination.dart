@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/location_model.dart';
 import 'package:job_manager/screens/work_log/routes/routes.dart';
-import 'package:job_manager/screens/work_log/widgets/vehicle_destination_item.dart';
+import 'package:job_manager/screens/work_log/widgets/location_item.dart';
+import 'package:job_manager/services/location_service.dart';
 
 class VehicleSelectDestination extends StatefulWidget {
   const VehicleSelectDestination({super.key});
@@ -12,35 +14,52 @@ class VehicleSelectDestination extends StatefulWidget {
 
 class _VehicleSelectDestination
     extends State<VehicleSelectDestination> {
-  final List<Map<String, dynamic>> _allData = [
-    {'name': '+100 BN KC2'},
-    {'name': '+100 BN KC2'},
-    {'name': '+100 BN KC2'},
-    {'name': '+100 BN KC2'},
-    {'name': '+100 BN KC2'},
-    {'name': '+100 BN KC2'},
-    {'name': '+100 BN KC2'},
-    {'name': '+100 BN KC2'},
-    {'name': '+100 BN KC2'},
-    {'name': '+100 BN KC2'},
-    {'name': '+100 BN KC2'},
-    {'name': '+100 BN KC2'},
-    {'name': '+100 BN KC2'},
-    {'name': '+100 BN KC2'},
-    {'name': '+100 BN KC2'},
-    {'name': '+100 BN KC2'},
-    {'name': '+100 BN KC2'},
-    {'name': '+100 BN KC2'},
-    {'name': '+100 BN KC2'},
-  ];
+  bool _isLoading = true;
+  final List<LocationModel> locations = [];
+  final LocationService _locationService =
+      LocationService();
+  void getAllMaterial() async {
+    var result = await _locationService.getAllLocation();
+
+    if (!mounted) return;
+    if (result['status'] == 'error') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      var data = result['data'];
+      setState(() {
+        locations
+            .clear(); // Nếu cần làm sạch danh sách trước
+        locations.addAll(
+          (data as List)
+              .map((e) => LocationModel.fromJson(e))
+              .toList(),
+        );
+      });
+    }
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getAllMaterial();
+  }
+
   String _searchText = '';
 
   @override
   Widget build(BuildContext context) {
-    List<Map<String, dynamic>> filteredItems =
-        _allData
+    List<LocationModel> filteredItems =
+        locations
             .where(
-              (item) => item['name'].toLowerCase().contains(
+              (item) => item.name.toLowerCase().contains(
                 _searchText.toLowerCase(),
               ),
             )
@@ -88,18 +107,23 @@ class _VehicleSelectDestination
           ),
           Divider(height: 1),
           Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children:
-                    filteredItems
-                        .map(
-                          (item) => VehicleDestinationItem(
-                            data: item,
-                          ),
-                        )
-                        .toList(),
-              ),
-            ),
+            child:
+                _isLoading
+                    ? Center(
+                      child: CircularProgressIndicator(),
+                    )
+                    : SingleChildScrollView(
+                      child: Column(
+                        children:
+                            filteredItems
+                                .map(
+                                  (item) => LocationItem(
+                                    data: item,
+                                  ),
+                                )
+                                .toList(),
+                      ),
+                    ),
           ),
           Container(
             padding: const EdgeInsets.all(8.0),

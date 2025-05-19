@@ -3,7 +3,8 @@ import 'package:job_manager/screens/work_log/routes/routes.dart';
 import 'package:job_manager/screens/work_log/widgets/vehicle_trip_item.dart';
 
 class VehicleTripList extends StatefulWidget {
-  const VehicleTripList({super.key});
+  final String orderId;
+  const VehicleTripList({super.key, required this.orderId});
 
   @override
   State<StatefulWidget> createState() => _VehicleTripList();

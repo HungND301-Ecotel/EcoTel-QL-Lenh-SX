@@ -27,9 +27,16 @@ class TaskAssignmentRoute extends StatelessWidget {
               builder: (_) => TaskAssignmentType(),
             );
           case TaskAssignmentRoutes.taskAssignmentAdd:
-            final args = settings.arguments as TaskModel;
+            final args =
+                settings.arguments as Map<String, dynamic>;
+            final task = args['task'] as TaskModel;
+            final order = args['order'] as OrderModel?;
             return MaterialPageRoute(
-              builder: (_) => TaskAssignmentAdd(data: args),
+              builder:
+                  (_) => TaskAssignmentAdd(
+                    data: task,
+                    order: order,
+                  ),
             );
           case TaskAssignmentRoutes.taskAssignmentDetail:
             final args = settings.arguments as OrderModel;

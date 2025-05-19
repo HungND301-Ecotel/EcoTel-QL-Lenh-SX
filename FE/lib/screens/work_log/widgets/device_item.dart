@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/device_model.dart';
 
-class VehicleDestinationItem extends StatelessWidget {
-  final Map<String, dynamic> data;
+class ExcavatorItem extends StatelessWidget {
+  final DeviceModel data;
 
-  const VehicleDestinationItem({super.key, required this.data});
+  const ExcavatorItem({super.key, required this.data});
 
   @override
   Widget build(BuildContext context) {
@@ -20,10 +21,10 @@ class VehicleDestinationItem extends StatelessWidget {
       ),
       child: ListTile(
         leading: Icon(
-          Icons.cable_outlined,
-          color: Colors.blue,
+          Icons.radio_button_checked,
+          color: Colors.grey,
         ),
-        title: Text(data['name']),
+        title: Text(data.name),
         trailing: Icon(
           Icons.arrow_forward_ios,
           size: 16,

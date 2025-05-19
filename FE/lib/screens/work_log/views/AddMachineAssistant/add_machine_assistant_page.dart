@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/order_model.dart';
 import 'package:job_manager/models/user_model.dart';
+import 'package:job_manager/services/order_service.dart';
 import 'package:job_manager/widgets/pay_roll_input.dart';
 
 class AddMachineAssistantPage extends StatefulWidget {
-  const AddMachineAssistantPage({super.key});
+  final OrderModel data;
+  const AddMachineAssistantPage({
+    super.key,
+    required this.data,
+  });
 
   @override
   State<StatefulWidget> createState() =>
@@ -13,11 +19,45 @@ class AddMachineAssistantPage extends StatefulWidget {
 class _AddMachineAssistantPage
     extends State<AddMachineAssistantPage> {
   UserModel? user;
+  List<String> assistant = [];
 
-  void _updateUser(UserModel selectedUser) {
+  void _updateUser(UserModel? selectedUser, int index) {
     setState(() {
-      user = selectedUser;
+      while (assistant.length <= index) {
+        assistant.add('');
+      }
+      assistant[index] = selectedUser?.id ?? '';
     });
+  }
+
+  final OrderService _orderService = OrderService();
+  void update() async {
+    final cleanedAssistants =
+        assistant.where((id) => id.isNotEmpty).toList();
+    var result = await _orderService.update(
+      widget.data.id,
+      {'assistants': cleanedAssistants},
+    );
+    if (!mounted) return;
+    if (result['status'] == 'error') {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Thêm phụ máy thất bại'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      setState(() {
+        widget.data.updateFromJson(result['data']);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Thêm phụ máy thành công'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
   }
 
   @override
@@ -49,23 +89,28 @@ class _AddMachineAssistantPage
                 children: [
                   PayRollInput(
                     title: 'Phụ máy 1',
-                    onSelectUser: _updateUser,
+                    onSelectUser:
+                        (user) => _updateUser(user, 0),
                   ),
                   PayRollInput(
                     title: 'Phụ máy 2',
-                    onSelectUser: _updateUser,
+                    onSelectUser:
+                        (user) => _updateUser(user, 1),
                   ),
                   PayRollInput(
                     title: 'Phụ máy 3',
-                    onSelectUser: _updateUser,
+                    onSelectUser:
+                        (user) => _updateUser(user, 2),
                   ),
                   PayRollInput(
                     title: 'Phụ máy 4',
-                    onSelectUser: _updateUser,
+                    onSelectUser:
+                        (user) => _updateUser(user, 3),
                   ),
                   PayRollInput(
                     title: 'Phụ máy 5',
-                    onSelectUser: _updateUser,
+                    onSelectUser:
+                        (user) => _updateUser(user, 4),
                   ),
                 ],
               ),
@@ -74,9 +119,7 @@ class _AddMachineAssistantPage
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
+              onPressed: update,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,

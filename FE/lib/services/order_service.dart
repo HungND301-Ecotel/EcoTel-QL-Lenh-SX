@@ -28,4 +28,14 @@ class OrderService {
   Future<Map<String, dynamic>> getByUser() async {
     return await _apiService.get('/order/getByUser');
   }
+
+  Future<Map<String, dynamic>> getbyId(String id) async {
+    return await _apiService.get('/order/getById/$id');
+  }
+
+  Future<Map<String, dynamic>> scanWork(
+    Map<String, dynamic> data,
+  ) async {
+    return await _apiService.post('/order/scanWork', data);
+  }
 }

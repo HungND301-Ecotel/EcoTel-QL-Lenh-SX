@@ -15,6 +15,8 @@ const materialRoute = require('./route/material')
 const locationRoute = require('./route/location')
 const payrollRoute = require('./route/pay_roll')
 const orderRoute = require('./route/order')
+const reportRoute = require('./route/report')
+
 
 
 
@@ -34,6 +36,8 @@ app.use('/api/material', materialRoute)
 app.use('/api/location', locationRoute)
 app.use('/api/payroll', payrollRoute)
 app.use('/api/order', orderRoute)
+app.use('/api/report', reportRoute)
+
 
 
 
