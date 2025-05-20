@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:job_manager/models/location_model.dart';
+import 'package:job_manager/providers/report_provider.dart';
 import 'package:job_manager/screens/work_log/routes/routes.dart';
 import 'package:job_manager/screens/work_log/widgets/location_item.dart';
 import 'package:job_manager/services/location_service.dart';
+import 'package:provider/provider.dart';
 
 class ServiceVehicleSelectEndPoint extends StatefulWidget {
   const ServiceVehicleSelectEndPoint({super.key});
@@ -50,6 +52,18 @@ class _ServiceVehicleSelectEndPoint
   void initState() {
     super.initState();
     getAllMaterial();
+  }
+
+  String? _selecteLocation;
+  void _onSelectLocation(String selectedLocation) {
+    setState(() {
+      _selecteLocation = selectedLocation;
+    });
+
+    Provider.of<ReportDraftProvider>(
+      context,
+      listen: false,
+    ).setToLocation(selectedLocation);
   }
 
   String _searchText = '';
@@ -119,6 +133,14 @@ class _ServiceVehicleSelectEndPoint
                                 .map(
                                   (item) => LocationItem(
                                     data: item,
+                                    selected:
+                                        _selecteLocation ==
+                                        item.id,
+                                    onTap: () {
+                                      _onSelectLocation(
+                                        item.id,
+                                      );
+                                    },
                                   ),
                                 )
                                 .toList(),
@@ -150,13 +172,16 @@ class _ServiceVehicleSelectEndPoint
                 ), // khoảng cách giữa 2 nút
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushNamed(
-                        context,
-                        WorkLogRoutes
-                            .serviceVehicleSelectMaterial,
-                      );
-                    },
+                    onPressed:
+                        _selecteLocation == null
+                            ? null
+                            : () {
+                              Navigator.pushNamed(
+                                context,
+                                WorkLogRoutes
+                                    .serviceVehicleSelectMaterial,
+                              );
+                            },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,

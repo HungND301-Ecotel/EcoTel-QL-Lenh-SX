@@ -5,7 +5,7 @@ import 'package:job_manager/models/order_model.dart';
 
 class ReportModel {
   final String id;
-  final OrderModel orderId;
+  final String orderId;
   final DeviceModel? device;
   final LocationModel? fromLocation;
   final LocationModel? toLocation;
@@ -31,8 +31,8 @@ class ReportModel {
   });
   factory ReportModel.fromJson(Map<String, dynamic>? json) {
     return ReportModel(
-      id: json?['_id'] ?? '',
-      orderId: OrderModel.fromJson(json?['orderId']),
+      id: json?['_id'],
+      orderId: json?['orderId'],
       device: DeviceModel.fromJson(json?['device']),
       fromLocation: LocationModel.fromJson(
         json?['fromLocation'],
@@ -41,11 +41,11 @@ class ReportModel {
         json?['toLocation'],
       ),
       material: MaterialModel.fromJson(json?['material']),
-      quantity: json?['quantity'] ?? '',
-      drillDepth: json?['drillDepth'] ?? '',
-      hardnessF: json?['hardnessF'] ?? '',
-      workingMinutes: json?['workingMinutes'] ?? '',
-      distanceKm: json?['distanceKm'] ?? '',
+      quantity: json?['quantity'],
+      drillDepth: json?['drillDepth'],
+      hardnessF: json?['hardnessF'],
+      workingMinutes: json?['workingMinutes'],
+      distanceKm: json?['distanceKm'],
     );
   }
 }

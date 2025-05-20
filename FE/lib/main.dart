@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:job_manager/providers/report_provider.dart';
 import 'package:job_manager/providers/user_provider.dart';
 import 'package:job_manager/routes/app_routes.dart';
 import 'package:job_manager/screens/main.dart';
@@ -14,6 +15,9 @@ void main() {
       providers: [
         ChangeNotifierProvider(
           create: (_) => UserProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ReportDraftProvider(),
         ),
       ],
       child: const MyApp(),

@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/order_model.dart';
+import 'package:job_manager/models/report_model.dart';
+import 'package:job_manager/providers/report_provider.dart';
 import 'package:job_manager/screens/work_log/routes/routes.dart';
 import 'package:job_manager/screens/work_log/widgets/performance_item.dart';
+import 'package:job_manager/services/report_service.dart';
+import 'package:provider/provider.dart';
 
 class DrillingProductList extends StatefulWidget {
   final String orderId;
-  const DrillingProductList({super.key,required this.orderId});
+  const DrillingProductList({
+    super.key,
+    required this.orderId,
+  });
 
   @override
   State<StatefulWidget> createState() =>
@@ -13,13 +21,52 @@ class DrillingProductList extends StatefulWidget {
 
 class _DrillingProductList
     extends State<DrillingProductList> {
-  final List<Map<String, dynamic>> _allData = [
-    {
-      'name': 'KT1-P12',
-      'perfomance': '25 mks',
-      "HardnessF": "12",
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    getOrderByUser();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = Provider.of<ReportDraftProvider>(
+        context,
+        listen: false,
+      );
+      provider.setOrderId(widget.orderId);
+    });
+  }
+
+  bool _isLoading = true;
+  final ReportService _reportService = ReportService();
+  final List<ReportModel> _allData = [];
+
+  void getOrderByUser() async {
+    var result = await _reportService.getByOrder(
+      widget.orderId,
+    );
+    if (!mounted) return;
+    if (result['status'] == 'error') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      var data = result['data'];
+      setState(() {
+        _allData
+            .clear(); // Nếu cần làm sạch danh sách trước
+        _allData.addAll(
+          (data as List)
+              .map((e) => ReportModel.fromJson(e))
+              .toList(),
+        );
+      });
+    }
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -34,6 +81,17 @@ class _DrillingProductList
           ),
         ),
         iconTheme: IconThemeData(color: Colors.white),
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          onPressed: () {
+            Navigator.pushNamed(
+              context,
+              WorkLogRoutes.taskDetailPage,
+              arguments: widget.orderId,
+            );
+          },
+          icon: Icon(Icons.arrow_back, color: Colors.white),
+        ),
         centerTitle: true,
         actions: [
           IconButton(
@@ -47,16 +105,20 @@ class _DrillingProductList
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children:
-              _allData
-                  .map(
-                    (item) => PerformanceItem(data: item),
-                  )
-                  .toList(),
-        ),
-      ),
+      body:
+          _isLoading
+              ? Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                child: Column(
+                  children:
+                      _allData
+                          .map(
+                            (item) =>
+                                PerformanceItem(data: item),
+                          )
+                          .toList(),
+                ),
+              ),
     );
   }
 }

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/report_model.dart';
 
 class ExcavatorTripItem extends StatelessWidget {
-  final Map<String, dynamic> data;
+  final ReportModel data;
 
   const ExcavatorTripItem({super.key, required this.data});
 
@@ -40,7 +41,7 @@ class ExcavatorTripItem extends StatelessWidget {
                     CrossAxisAlignment.start,
                 children: [
                   Text(
-                    data['name'] ?? '',
+                    data.device?.name ?? '',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.black,
@@ -49,7 +50,7 @@ class ExcavatorTripItem extends StatelessWidget {
                   ),
                   SizedBox(height: 6),
                   Text(
-                    data['type'] ?? '',
+                    data.material?.name ?? '',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -63,7 +64,7 @@ class ExcavatorTripItem extends StatelessWidget {
             SizedBox(
               width: 40,
               child: Text(
-                data['quantity'] ?? '',
+                data.quantity.toString(),
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.black,

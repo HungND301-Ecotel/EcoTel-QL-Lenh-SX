@@ -3,8 +3,15 @@ import 'package:job_manager/models/material_model.dart';
 
 class MaterialItem extends StatelessWidget {
   final MaterialModel data;
+  final VoidCallback? onTap;
+  final bool selected;
 
-  const MaterialItem({super.key, required this.data});
+  const MaterialItem({
+    super.key,
+    required this.data,
+    this.onTap,
+    this.selected = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -22,15 +29,24 @@ class MaterialItem extends StatelessWidget {
       child: ListTile(
         leading: Icon(
           Icons.cable_outlined,
-          color: Colors.blue,
+          color: selected ? Colors.blue : Colors.grey,
         ),
-        title: Text(data.name),
+        title: Text(
+          data.name,
+          style: TextStyle(
+            color: selected ? Colors.blue : Colors.black,
+            fontWeight:
+                selected
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+          ),
+        ),
         trailing: Icon(
           Icons.arrow_forward_ios,
           size: 16,
-          color: Colors.grey,
+          color: selected ? Colors.blue : Colors.grey,
         ),
-        onTap: () {},
+        onTap: onTap,
       ),
     );
   }

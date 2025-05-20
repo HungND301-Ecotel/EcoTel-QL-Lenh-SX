@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/report_model.dart';
 
 class PerformanceItem extends StatelessWidget {
-  final Map<String, dynamic> data;
+  final ReportModel data;
 
   const PerformanceItem({super.key, required this.data});
 
@@ -23,8 +24,11 @@ class PerformanceItem extends StatelessWidget {
           Icons.hub_outlined,
           color: Colors.blue,
         ),
-        title: Text(data['name']),
-        trailing: Text(data['perfomance']),
+        title: Text(data.material?.name ?? ''),
+        trailing:
+            data.drillDepth != null
+                ? Text("${data.drillDepth} mks")
+                : Text("${data.workingMinutes} phút"),
         onTap: () {},
       ),
     );

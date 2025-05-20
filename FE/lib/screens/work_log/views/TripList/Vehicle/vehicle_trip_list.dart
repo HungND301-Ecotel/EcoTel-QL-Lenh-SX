@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/report_model.dart';
+import 'package:job_manager/providers/report_provider.dart';
 import 'package:job_manager/screens/work_log/routes/routes.dart';
 import 'package:job_manager/screens/work_log/widgets/vehicle_trip_item.dart';
+import 'package:job_manager/services/report_service.dart';
+import 'package:provider/provider.dart';
 
 class VehicleTripList extends StatefulWidget {
   final String orderId;
@@ -11,14 +15,51 @@ class VehicleTripList extends StatefulWidget {
 }
 
 class _VehicleTripList extends State<VehicleTripList> {
-  final List<Map<String, dynamic>> _allData = [
-    {
-      'name': 'KT1-P12',
-      'address': '+100 BN KC2',
-      'type': 'Than loại 1',
-      'quantity': '9',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    getOrderByUser();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = Provider.of<ReportDraftProvider>(
+        context,
+        listen: false,
+      );
+      provider.setOrderId(widget.orderId);
+    });
+  }
+
+  bool _isLoading = true;
+  final ReportService _reportService = ReportService();
+  final List<ReportModel> _allData = [];
+  void getOrderByUser() async {
+    var result = await _reportService.getByOrder(
+      widget.orderId,
+    );
+    if (!mounted) return;
+    if (result['status'] == 'error') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      var data = result['data'];
+      setState(() {
+        _allData
+            .clear(); // Nếu cần làm sạch danh sách trước
+        _allData.addAll(
+          (data as List)
+              .map((e) => ReportModel.fromJson(e))
+              .toList(),
+        );
+      });
+    }
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -34,6 +75,17 @@ class _VehicleTripList extends State<VehicleTripList> {
         ),
         iconTheme: IconThemeData(color: Colors.white),
         centerTitle: true,
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          onPressed: () {
+            Navigator.pushNamed(
+              context,
+              WorkLogRoutes.taskDetailPage,
+              arguments: widget.orderId,
+            );
+          },
+          icon: Icon(Icons.arrow_back, color: Colors.white),
+        ),
         actions: [
           IconButton(
             onPressed: () {

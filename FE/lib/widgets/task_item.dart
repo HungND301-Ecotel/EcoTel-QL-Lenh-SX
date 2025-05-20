@@ -35,7 +35,7 @@ class TaskItem extends StatelessWidget {
           Navigator.pushNamed(
             context,
             WorkLogRoutes.taskDetailPage,
-            arguments: data,
+            arguments: data.id,
           );
         },
         style: TextButton.styleFrom(

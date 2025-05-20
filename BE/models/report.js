@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 const Report = new mongoose.Schema({
     orderId: {
         type: mongoose.Schema.Types.ObjectId,
+        ref: 'order',
         required: true
     },
     device: {

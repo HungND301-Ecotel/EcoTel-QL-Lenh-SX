@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:job_manager/models/material_model.dart';
+import 'package:job_manager/providers/report_provider.dart';
 import 'package:job_manager/screens/work_log/routes/routes.dart';
 import 'package:job_manager/screens/work_log/widgets/material_item.dart';
 import 'package:job_manager/services/material_service.dart';
+import 'package:provider/provider.dart';
 
 class DrillingSelectProduct extends StatefulWidget {
   const DrillingSelectProduct({super.key});
@@ -52,6 +54,18 @@ class _DrillingSelectProduct
     getAllMaterial();
   }
 
+  String? _selectedMaterialId;
+  void _onSelectMaterial(String selectedMaterialId) {
+    setState(() {
+      _selectedMaterialId = selectedMaterialId;
+    });
+
+    Provider.of<ReportDraftProvider>(
+      context,
+      listen: false,
+    ).setMaterial(selectedMaterialId);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -83,6 +97,14 @@ class _DrillingSelectProduct
                                 .map(
                                   (item) => MaterialItem(
                                     data: item,
+                                    selected:
+                                        _selectedMaterialId ==
+                                        item.id,
+                                    onTap: () {
+                                      _onSelectMaterial(
+                                        item.id,
+                                      );
+                                    },
                                   ),
                                 )
                                 .toList(),
@@ -95,20 +117,22 @@ class _DrillingSelectProduct
             color: Colors.white,
             child: SizedBox(
               width: double.infinity,
-              child: Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushNamed(
-                      context,
-                      WorkLogRoutes.drillingInputQuantity,
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: Text('Tiếp tục'),
+              child: ElevatedButton(
+                onPressed:
+                    _selectedMaterialId == null
+                        ? null
+                        : () {
+                          Navigator.pushNamed(
+                            context,
+                            WorkLogRoutes
+                                .drillingInputQuantity,
+                          );
+                        },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
                 ),
+                child: Text('Tiếp tục'),
               ),
             ),
           ),

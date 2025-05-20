@@ -16,15 +16,13 @@ exports.create = async (req, res) => {
 }
 exports.getByOrder = async (req, res) => {
     try {
-        const devices = await Report.find({ orderid: req.params.orderId })
-            .populate("orderId", "name")
+        const reports = await Report.find({ orderId: req.params.orderId })
+            .sort({ createdAt: -1 })
             .populate("device", "name")
             .populate("fromLocation", "name")
             .populate("toLocation", "name")
             .populate("material", "name")
-            .populate("orderId", "name")
-            .populate("orderId", "name")
-        res.status(200).send({ status: 'success', data: devices });
+        res.status(200).send({ status: 'success', data: reports });
     } catch (err) {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }

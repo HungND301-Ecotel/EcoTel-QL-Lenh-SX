@@ -1,9 +1,11 @@
 // Chọn phương tiện
 import 'package:flutter/material.dart';
 import 'package:job_manager/models/device_model.dart';
+import 'package:job_manager/providers/report_provider.dart';
 import 'package:job_manager/screens/work_log/routes/routes.dart';
 import 'package:job_manager/screens/work_log/widgets/device_item.dart';
 import 'package:job_manager/services/device_service.dart';
+import 'package:provider/provider.dart';
 
 class ExcavatorSelectVehicle extends StatefulWidget {
   const ExcavatorSelectVehicle({super.key});
@@ -18,7 +20,7 @@ class _ExcavatorSelectVehicle
   bool _isLoading = true;
   final List<DeviceModel> devices = [];
   final DeviceService _deviceService = DeviceService();
-  void getAllMaterial() async {
+  void getAllDevice() async {
     var result = await _deviceService.getAlldevice();
 
     if (!mounted) return;
@@ -48,7 +50,19 @@ class _ExcavatorSelectVehicle
   @override
   void initState() {
     super.initState();
-    getAllMaterial();
+    getAllDevice();
+  }
+
+  String? _selectedDevice;
+  void _onSelectDevice(String selectedDevice) {
+    setState(() {
+      _selectedDevice = selectedDevice;
+    });
+
+    Provider.of<ReportDraftProvider>(
+      context,
+      listen: false,
+    ).setDevice(selectedDevice);
   }
 
   @override
@@ -82,6 +96,14 @@ class _ExcavatorSelectVehicle
                                 .map(
                                   (item) => ExcavatorItem(
                                     data: item,
+                                    selected:
+                                        _selectedDevice ==
+                                        item.id,
+                                    onTap: () {
+                                      _onSelectDevice(
+                                        item.id,
+                                      );
+                                    },
                                   ),
                                 )
                                 .toList(),
@@ -91,12 +113,16 @@ class _ExcavatorSelectVehicle
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(
-                  context,
-                  WorkLogRoutes.excavatorSelectMaterial,
-                );
-              },
+              onPressed:
+                  _selectedDevice == null
+                      ? null
+                      : () {
+                        Navigator.pushNamed(
+                          context,
+                          WorkLogRoutes
+                              .excavatorSelectMaterial,
+                        );
+                      },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,

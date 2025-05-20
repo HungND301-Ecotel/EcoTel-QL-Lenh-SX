@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:job_manager/models/material_model.dart';
+import 'package:job_manager/providers/report_provider.dart';
 import 'package:job_manager/screens/work_log/routes/routes.dart';
 import 'package:job_manager/screens/work_log/widgets/material_item.dart';
 import 'package:job_manager/services/material_service.dart';
+import 'package:provider/provider.dart';
 
 class VehicleSelectMaterial extends StatefulWidget {
   const VehicleSelectMaterial({super.key});
@@ -53,6 +55,17 @@ class _VehicleSelectMaterial
     getAllMaterial();
   }
 
+  String? _selectedMaterial;
+  void _onSelectedMaterial(String selectedMaterial) {
+    setState(() {
+      _selectedMaterial = selectedMaterial;
+    });
+    Provider.of<ReportDraftProvider>(
+      context,
+      listen: false,
+    ).setMaterial(selectedMaterial);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -84,6 +97,14 @@ class _VehicleSelectMaterial
                                 .map(
                                   (item) => MaterialItem(
                                     data: item,
+                                    selected:
+                                        _selectedMaterial ==
+                                        item.id,
+                                    onTap: () {
+                                      _onSelectedMaterial(
+                                        item.id,
+                                      );
+                                    },
                                   ),
                                 )
                                 .toList(),
@@ -111,12 +132,16 @@ class _VehicleSelectMaterial
                 SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushNamed(
-                        context,
-                        WorkLogRoutes.vehicleTripCount,
-                      );
-                    },
+                    onPressed:
+                        _selectedMaterial == null
+                            ? null
+                            : () {
+                              Navigator.pushNamed(
+                                context,
+                                WorkLogRoutes
+                                    .vehicleTripCount,
+                              );
+                            },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,

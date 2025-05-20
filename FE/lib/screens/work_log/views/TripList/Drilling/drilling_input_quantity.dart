@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/providers/report_provider.dart';
 import 'package:job_manager/screens/work_log/routes/routes.dart';
+import 'package:job_manager/services/report_service.dart';
+import 'package:provider/provider.dart';
 
 class DrillingInputQuantity extends StatefulWidget {
   const DrillingInputQuantity({super.key});
@@ -11,6 +14,57 @@ class DrillingInputQuantity extends StatefulWidget {
 
 class _DrillingInputQuantity
     extends State<DrillingInputQuantity> {
+  final TextEditingController _drillDepthController =
+      TextEditingController();
+  final TextEditingController _hardnessController =
+      TextEditingController();
+
+  final ReportService _reportService = ReportService();
+  void create() async {
+    final provider = Provider.of<ReportDraftProvider>(
+      context,
+      listen: false,
+    );
+    final drillDepth = num.tryParse(
+      _drillDepthController.text.trim(),
+    );
+    final hardness = num.tryParse(
+      _hardnessController.text.trim(),
+    );
+    if (drillDepth == null || hardness == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Vui lòng nhập đầy đủ thông tin."),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    provider.setDrillingInfo(drillDepth, hardness);
+    var result = await _reportService.createReport({
+      "orderId": provider.orderId,
+      "material": provider.material,
+      "drillDepth": provider.drillDepth,
+      "hardnessF": provider.hardnessF,
+    });
+    if (!mounted) return;
+    if (result['status'] == 'error') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      provider.reset();
+      Navigator.pushNamed(
+        context,
+        WorkLogRoutes.drillingProductList,
+        arguments: provider.orderId,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,6 +98,7 @@ class _DrillingInputQuantity
                     ),
                   ),
                   TextField(
+                    controller: _drillDepthController,
                     keyboardType: TextInputType.number,
                   ),
                   Text(
@@ -54,6 +109,7 @@ class _DrillingInputQuantity
                     ),
                   ),
                   TextField(
+                    controller: _hardnessController,
                     keyboardType: TextInputType.number,
                   ),
                 ],
@@ -111,11 +167,7 @@ class _DrillingInputQuantity
                                     Navigator.of(
                                       dialogContext,
                                     ).pop();
-                                    Navigator.pushNamed(
-                                      context,
-                                      WorkLogRoutes
-                                          .drillingProductList,
-                                    );
+                                    create();
                                   },
                                   style:
                                       TextButton.styleFrom(

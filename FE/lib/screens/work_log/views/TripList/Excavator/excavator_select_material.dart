@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:job_manager/models/material_model.dart';
+import 'package:job_manager/providers/report_provider.dart';
 import 'package:job_manager/screens/work_log/routes/routes.dart';
 import 'package:job_manager/screens/work_log/widgets/material_item.dart';
 import 'package:job_manager/services/material_service.dart';
+import 'package:provider/provider.dart';
 
 class ExcavatorSelectMaterial extends StatefulWidget {
   const ExcavatorSelectMaterial({super.key});
@@ -52,6 +54,17 @@ class _ExcavatorSelectMaterial
     getAllMaterial();
   }
 
+  String? _selectedMaterial;
+  void _onSelectedMaterial(String selectedMaterial) {
+    setState(() {
+      _selectedMaterial = selectedMaterial;
+    });
+    Provider.of<ReportDraftProvider>(
+      context,
+      listen: false,
+    ).setMaterial(selectedMaterial);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -83,6 +96,14 @@ class _ExcavatorSelectMaterial
                                 .map(
                                   (item) => MaterialItem(
                                     data: item,
+                                    selected:
+                                        _selectedMaterial ==
+                                        item.id,
+                                    onTap: () {
+                                      _onSelectedMaterial(
+                                        item.id,
+                                      );
+                                    },
                                   ),
                                 )
                                 .toList(),
@@ -110,12 +131,16 @@ class _ExcavatorSelectMaterial
                 SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushNamed(
-                        context,
-                        WorkLogRoutes.excavatorTripCount,
-                      );
-                    },
+                    onPressed:
+                        _selectedMaterial == null
+                            ? null
+                            : () {
+                              Navigator.pushNamed(
+                                context,
+                                WorkLogRoutes
+                                    .excavatorTripCount,
+                              );
+                            },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,

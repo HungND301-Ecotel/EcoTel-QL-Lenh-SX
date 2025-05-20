@@ -3,8 +3,15 @@ import 'package:job_manager/models/location_model.dart';
 
 class LocationItem extends StatelessWidget {
   final LocationModel data;
+  final VoidCallback? onTap;
+  final bool selected;
 
-  const LocationItem({super.key, required this.data});
+  const LocationItem({
+    super.key,
+    required this.data,
+    this.selected = false,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -22,15 +29,24 @@ class LocationItem extends StatelessWidget {
       child: ListTile(
         leading: Icon(
           Icons.radio_button_checked,
-          color: Colors.grey,
+          color: selected ? Colors.blue : Colors.grey,
         ),
-        title: Text(data.name),
+        title: Text(
+          data.name,
+          style: TextStyle(
+            color: selected ? Colors.blue : Colors.black,
+            fontWeight:
+                selected
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+          ),
+        ),
         trailing: Icon(
           Icons.arrow_forward_ios,
           size: 16,
-          color: Colors.grey,
+          color: selected ? Colors.blue : Colors.grey,
         ),
-        onTap: () {},
+        onTap: onTap,
       ),
     );
   }

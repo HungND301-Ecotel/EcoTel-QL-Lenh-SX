@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:job_manager/models/report_model.dart';
 
 class ServiceVehicleTripItem extends StatelessWidget {
-  final Map<String, dynamic> data;
+  final ReportModel data;
 
   const ServiceVehicleTripItem({
     super.key,
@@ -43,7 +44,7 @@ class ServiceVehicleTripItem extends StatelessWidget {
                     CrossAxisAlignment.start,
                 children: [
                   Text(
-                    data['start'] ?? '',
+                    data.fromLocation?.name ?? '',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.black,
@@ -52,7 +53,7 @@ class ServiceVehicleTripItem extends StatelessWidget {
                   ),
                   SizedBox(height: 6),
                   Text(
-                    data['end'] ?? '',
+                    data.toLocation?.name ?? '',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.black,
@@ -61,7 +62,7 @@ class ServiceVehicleTripItem extends StatelessWidget {
                   ),
                   SizedBox(height: 6),
                   Text(
-                    data['type'] ?? '',
+                    data.material?.name ?? '',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.black,
@@ -73,7 +74,7 @@ class ServiceVehicleTripItem extends StatelessWidget {
             SizedBox(
               width: 80,
               child: Text(
-                "${data['quantity']}=${data['distance']}",
+                "${data.quantity}~${data.distanceKm} km",
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.black,

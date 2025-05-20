@@ -41,9 +41,9 @@ class WorkLogRoute extends StatelessWidget {
               builder: (_) => TaskListPage(),
             );
           case WorkLogRoutes.taskDetailPage:
-            final args = settings.arguments as OrderModel;
+            final orderId = settings.arguments as String;
             return MaterialPageRoute(
-              builder: (_) => TaskDetailPage(data: args),
+              builder: (_) => TaskDetailPage(orderId: orderId),
             );
           case WorkLogRoutes.qrCode:
             final args = settings.arguments as OrderModel;

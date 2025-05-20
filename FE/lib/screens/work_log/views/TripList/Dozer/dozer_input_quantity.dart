@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:job_manager/providers/report_provider.dart';
 import 'package:job_manager/screens/work_log/routes/routes.dart';
+import 'package:job_manager/services/report_service.dart';
+import 'package:provider/provider.dart';
 
 class DozerInputQuantity extends StatefulWidget {
   const DozerInputQuantity({super.key});
@@ -11,6 +15,53 @@ class DozerInputQuantity extends StatefulWidget {
 
 class _DozerInputQuantity
     extends State<DozerInputQuantity> {
+  final TextEditingController _minuteController =
+      TextEditingController();
+
+  final ReportService _reportService = ReportService();
+  void create() async {
+    final provider = Provider.of<ReportDraftProvider>(
+      context,
+      listen: false,
+    );
+    final minute = int.tryParse(
+      _minuteController.text.trim(),
+    );
+
+    if (minute == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Vui lòng nhập thời gian."),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    print(minute);
+    provider.setDozerInfo(minute);
+    var result = await _reportService.createReport({
+      "orderId": provider.orderId,
+      "material": provider.material,
+      "workingMinutes": provider.workingMinutes,
+    });
+    if (!mounted) return;
+    if (result['status'] == 'error') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      provider.reset();
+      Navigator.pushNamed(
+        context,
+        WorkLogRoutes.dozerProductList,
+        arguments: provider.orderId,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,7 +95,12 @@ class _DozerInputQuantity
                     ),
                   ),
                   TextField(
+                    controller: _minuteController,
                     keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter
+                          .digitsOnly,
+                    ],
                   ),
                 ],
               ),
@@ -101,11 +157,7 @@ class _DozerInputQuantity
                                     Navigator.of(
                                       dialogContext,
                                     ).pop();
-                                    Navigator.pushNamed(
-                                      context,
-                                      WorkLogRoutes
-                                          .dozerProductList,
-                                    );
+                                    create();
                                   },
                                   style:
                                       TextButton.styleFrom(
