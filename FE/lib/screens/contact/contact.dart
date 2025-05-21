@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/screens/contact/navigation_controls.dart';
-import 'package:job_manager/screens/contact/web_view_stack.dart';
+import 'package:soft/screens/contact/navigation_controls.dart';
+import 'package:soft/screens/contact/web_view_stack.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 

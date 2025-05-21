@@ -1,4 +1,4 @@
-import 'package:job_manager/models/payroll_model.dart';
+import 'package:soft/models/payroll_model.dart';
 
 class UserModel {
   final String id;

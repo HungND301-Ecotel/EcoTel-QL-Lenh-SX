@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/models/order_model.dart';
-import 'package:job_manager/services/order_service.dart';
-import 'package:job_manager/widgets/task_item.dart';
+import 'package:soft/models/order_model.dart';
+import 'package:soft/services/order_service.dart';
+import 'package:soft/widgets/task_item.dart';
 
 class TaskListPage extends StatefulWidget {
   const TaskListPage({super.key});

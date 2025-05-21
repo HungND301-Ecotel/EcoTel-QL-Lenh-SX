@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/models/report_model.dart';
+import 'package:soft/models/report_model.dart';
 
 class ServiceVehicleTripItem extends StatelessWidget {
   final ReportModel data;

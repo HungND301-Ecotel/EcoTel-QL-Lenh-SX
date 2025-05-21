@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:job_manager/models/order_model.dart';
-import 'package:job_manager/routes/task_assignment_route.dart';
-import 'package:job_manager/services/order_service.dart';
+import 'package:soft/models/order_model.dart';
+import 'package:soft/routes/task_assignment_route.dart';
+import 'package:soft/services/order_service.dart';
 
 class TaskAssignmentDetail extends StatefulWidget {
   final OrderModel data;

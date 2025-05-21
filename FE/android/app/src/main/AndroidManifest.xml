@@ -6,7 +6,7 @@
 
 
     <application
-        android:label="job_manager"
+        android:label="Soft"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

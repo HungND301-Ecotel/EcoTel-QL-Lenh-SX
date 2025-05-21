@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:job_manager/models/order_model.dart';
-import 'package:job_manager/screens/work_log/routes/routes.dart';
+import 'package:soft/models/order_model.dart';
+import 'package:soft/screens/work_log/routes/routes.dart';
 
 class TaskItem extends StatelessWidget {
   final OrderModel data;

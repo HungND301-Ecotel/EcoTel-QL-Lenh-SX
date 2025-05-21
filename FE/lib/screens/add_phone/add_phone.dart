@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/providers/user_provider.dart';
-import 'package:job_manager/services/user_service.dart';
+import 'package:soft/providers/user_provider.dart';
+import 'package:soft/services/user_service.dart';
 import 'package:provider/provider.dart';
 
 class AddPhonePage extends StatefulWidget {

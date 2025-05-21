@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/models/order_model.dart';
-import 'package:job_manager/models/user_model.dart';
-import 'package:job_manager/services/order_service.dart';
-import 'package:job_manager/widgets/pay_roll_input.dart';
+import 'package:soft/models/order_model.dart';
+import 'package:soft/models/user_model.dart';
+import 'package:soft/services/order_service.dart';
+import 'package:soft/widgets/pay_roll_input.dart';
 
 class AddMachineAssistantPage extends StatefulWidget {
   final OrderModel data;

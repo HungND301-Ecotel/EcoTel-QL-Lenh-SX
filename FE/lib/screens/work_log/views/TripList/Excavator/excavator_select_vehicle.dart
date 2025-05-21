@@ -1,10 +1,10 @@
 // Chọn phương tiện
 import 'package:flutter/material.dart';
-import 'package:job_manager/models/device_model.dart';
-import 'package:job_manager/providers/report_provider.dart';
-import 'package:job_manager/screens/work_log/routes/routes.dart';
-import 'package:job_manager/screens/work_log/widgets/device_item.dart';
-import 'package:job_manager/services/device_service.dart';
+import 'package:soft/models/device_model.dart';
+import 'package:soft/providers/report_provider.dart';
+import 'package:soft/screens/work_log/routes/routes.dart';
+import 'package:soft/screens/work_log/widgets/device_item.dart';
+import 'package:soft/services/device_service.dart';
 import 'package:provider/provider.dart';
 
 class ExcavatorSelectVehicle extends StatefulWidget {

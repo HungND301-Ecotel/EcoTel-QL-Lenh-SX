@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/services/user_service.dart';
+import 'package:soft/services/user_service.dart';
 
 class Changepass extends StatefulWidget {
   const Changepass({super.key});

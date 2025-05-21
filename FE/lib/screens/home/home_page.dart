@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:job_manager/providers/user_provider.dart';
-import 'package:job_manager/routes/app_routes.dart';
-import 'package:job_manager/routes/home__route.dart';
+import 'package:soft/providers/user_provider.dart';
+import 'package:soft/routes/app_routes.dart';
+import 'package:soft/routes/home__route.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {

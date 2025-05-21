@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/models/device_model.dart';
-import 'package:job_manager/routes/task_assignment_route.dart';
+import 'package:soft/models/device_model.dart';
+import 'package:soft/routes/task_assignment_route.dart';
 
 class VehicleButton extends StatefulWidget {
   final DeviceModel? vehicle;

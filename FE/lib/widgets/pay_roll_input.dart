@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/models/user_model.dart';
-import 'package:job_manager/services/payroll_service.dart';
+import 'package:soft/models/user_model.dart';
+import 'package:soft/services/payroll_service.dart';
 
 class PayRollInput extends StatefulWidget {
   final String title;

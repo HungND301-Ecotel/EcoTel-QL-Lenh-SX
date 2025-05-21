@@ -1,10 +1,10 @@
 // Danh sách chuyến của máy xúc
 import 'package:flutter/material.dart';
-import 'package:job_manager/models/report_model.dart';
-import 'package:job_manager/providers/report_provider.dart';
-import 'package:job_manager/screens/work_log/routes/routes.dart';
-import 'package:job_manager/screens/work_log/widgets/excavator_trip_item.dart';
-import 'package:job_manager/services/report_service.dart';
+import 'package:soft/models/report_model.dart';
+import 'package:soft/providers/report_provider.dart';
+import 'package:soft/screens/work_log/routes/routes.dart';
+import 'package:soft/screens/work_log/widgets/excavator_trip_item.dart';
+import 'package:soft/services/report_service.dart';
 import 'package:provider/provider.dart';
 
 class ExcavatorTripList extends StatefulWidget {

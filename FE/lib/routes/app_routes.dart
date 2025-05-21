@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/screens/add_phone/add_phone.dart';
-import 'package:job_manager/screens/contact/contact.dart';
-import 'package:job_manager/screens/main.dart';
-import 'package:job_manager/screens/setting/changepass.dart';
-import 'package:job_manager/screens/signin/signin.dart';
+import 'package:soft/screens/add_phone/add_phone.dart';
+import 'package:soft/screens/contact/contact.dart';
+import 'package:soft/screens/main.dart';
+import 'package:soft/screens/setting/changepass.dart';
+import 'package:soft/screens/signin/signin.dart';
 
 class AppRoute {
   static const String signin = '/signin';

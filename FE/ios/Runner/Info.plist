@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Job Manager</string>
+	<string>Soft</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -45,7 +45,24 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- map -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>App cần truy cập vị trí để hiển thị bản đồ và định vị người dùng.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>App cần truy cập vị trí trong khi chạy nền.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>App cần truy cập vị trí khi dùng và cả trong nền.</string>
+	<!-- camera -->
 	<key>NSCameraUsageDescription</key>
 	<string>This app needs camera access to scan QR codes</string>
+	<!-- url_chuncher,webview -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+	<string>http</string>
+	<string>https</string>
+	</array>
+	<!-- truy cap thu muc -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>App cần truy cập thư viện ảnh để lưu hoặc lấy ảnh.</string>
 </dict>
 </plist>

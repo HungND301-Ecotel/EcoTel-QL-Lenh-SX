@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/models/material_model.dart';
+import 'package:soft/models/material_model.dart';
 
 class MaterialItem extends StatelessWidget {
   final MaterialModel data;

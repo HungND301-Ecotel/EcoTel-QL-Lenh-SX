@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/models/device_model.dart';
-import 'package:job_manager/services/device_service.dart';
+import 'package:soft/models/device_model.dart';
+import 'package:soft/services/device_service.dart';
 
 class TaskAssignmentVehicleSelect extends StatefulWidget {
   const TaskAssignmentVehicleSelect({super.key});

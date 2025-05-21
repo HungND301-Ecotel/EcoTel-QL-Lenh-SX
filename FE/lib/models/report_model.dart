@@ -1,7 +1,7 @@
-import 'package:job_manager/models/device_model.dart';
-import 'package:job_manager/models/location_model.dart';
-import 'package:job_manager/models/material_model.dart';
-import 'package:job_manager/models/order_model.dart';
+import 'package:soft/models/device_model.dart';
+import 'package:soft/models/location_model.dart';
+import 'package:soft/models/material_model.dart';
+import 'package:soft/models/order_model.dart';
 
 class ReportModel {
   final String id;

@@ -1,0 +1,208 @@
+const express = require('express');
+const router = express.Router();
+const { AppError } = require('../utils/errorHandler');
+const Notification = require('../models/Notification');
+const { verifyToken } = require('../middleware/auth.middleware');
+
+/**
+ * @swagger
+ * /api/notifications:
+ *   get:
+ *     summary: Get user's notifications
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: read
+ *         schema:
+ *           type: boolean
+ *       - in: query
+ *         name: priority
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *       - in: query
+ *         name: skip
+ *         schema:
+ *           type: integer
+ *           default: 0
+ */
+router.get('/', verifyToken, async (req, res, next) => {
+    try {
+        const notifications = await Notification.getUserNotifications(req.user.id, {
+            type: req.query.type,
+            read: req.query.read === 'true',
+            priority: req.query.priority,
+            startDate: req.query.startDate,
+            endDate: req.query.endDate,
+            limit: parseInt(req.query.limit) || 20,
+            skip: parseInt(req.query.skip) || 0
+        });
+
+        res.status(200).json({
+            status: 'success',
+            results: notifications.length,
+            data: {
+                notifications
+            }
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * @swagger
+ * /api/notifications/unread/count:
+ *   get:
+ *     summary: Get unread notifications count
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get('/unread/count', verifyToken, async (req, res, next) => {
+    try {
+        const count = await Notification.getUnreadCount(req.user.id);
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                count
+            }
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * @swagger
+ * /api/notifications/{id}/read:
+ *   patch:
+ *     summary: Mark notification as read
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ */
+router.patch('/:id/read', verifyToken, async (req, res, next) => {
+    try {
+        const notification = await Notification.findById(req.params.id);
+
+        if (!notification) {
+            return next(new AppError('No notification found with that ID', 404));
+        }
+
+        // Check if user is the recipient
+        if (notification.recipient.toString() !== req.user.id) {
+            return next(new AppError('You do not have permission to mark this notification as read', 403));
+        }
+
+        await notification.markAsRead();
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                notification
+            }
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * @swagger
+ * /api/notifications/read/all:
+ *   patch:
+ *     summary: Mark all notifications as read
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.patch('/read/all', verifyToken, async (req, res, next) => {
+    try {
+        await Notification.updateMany(
+            {
+                recipient: req.user.id,
+                read: false
+            },
+            {
+                read: true,
+                readAt: Date.now()
+            }
+        );
+
+        res.status(200).json({
+            status: 'success',
+            message: 'All notifications marked as read'
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * @swagger
+ * /api/notifications/{id}:
+ *   delete:
+ *     summary: Delete notification
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ */
+router.delete('/:id', verifyToken, async (req, res, next) => {
+    try {
+        const notification = await Notification.findById(req.params.id);
+
+        if (!notification) {
+            return next(new AppError('No notification found with that ID', 404));
+        }
+
+        // Check if user is the recipient
+        if (notification.recipient.toString() !== req.user.id) {
+            return next(new AppError('You do not have permission to delete this notification', 403));
+        }
+
+        await notification.remove();
+
+        res.status(204).json({
+            status: 'success',
+            data: null
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+module.exports = router; 

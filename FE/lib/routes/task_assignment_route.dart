@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/models/order_model.dart';
-import 'package:job_manager/models/task_model.dart';
-import 'package:job_manager/screens/task_assignment/task_assignment_add.dart';
-import 'package:job_manager/screens/task_assignment/task_assignment_detail.dart';
-import 'package:job_manager/screens/task_assignment/task_assignment_dump_site_select.dart';
-import 'package:job_manager/screens/task_assignment/task_assignment_list.dart';
-import 'package:job_manager/screens/task_assignment/task_assignment_material_select.dart';
-import 'package:job_manager/screens/task_assignment/task_assignment_type.dart';
-import 'package:job_manager/screens/task_assignment/task_assignment_vehicle_select.dart';
+import 'package:soft/models/order_model.dart';
+import 'package:soft/models/task_model.dart';
+import 'package:soft/screens/task_assignment/task_assignment_add.dart';
+import 'package:soft/screens/task_assignment/task_assignment_detail.dart';
+import 'package:soft/screens/task_assignment/task_assignment_dump_site_select.dart';
+import 'package:soft/screens/task_assignment/task_assignment_list.dart';
+import 'package:soft/screens/task_assignment/task_assignment_material_select.dart';
+import 'package:soft/screens/task_assignment/task_assignment_type.dart';
+import 'package:soft/screens/task_assignment/task_assignment_vehicle_select.dart';
 
 class TaskAssignmentRoute extends StatelessWidget {
   const TaskAssignmentRoute({super.key});

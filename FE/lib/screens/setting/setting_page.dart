@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/providers/user_provider.dart';
-import 'package:job_manager/routes/app_routes.dart';
+import 'package:soft/providers/user_provider.dart';
+import 'package:soft/routes/app_routes.dart';
 import 'package:provider/provider.dart';
 
 class SettingPage extends StatelessWidget {

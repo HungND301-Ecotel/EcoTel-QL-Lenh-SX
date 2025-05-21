@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/models/location_model.dart';
+import 'package:soft/models/location_model.dart';
 
 class LocationItem extends StatelessWidget {
   final LocationModel data;

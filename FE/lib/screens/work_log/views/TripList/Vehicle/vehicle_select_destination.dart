@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/models/location_model.dart';
-import 'package:job_manager/providers/report_provider.dart';
-import 'package:job_manager/screens/work_log/routes/routes.dart';
-import 'package:job_manager/screens/work_log/widgets/location_item.dart';
-import 'package:job_manager/services/location_service.dart';
+import 'package:soft/models/location_model.dart';
+import 'package:soft/providers/report_provider.dart';
+import 'package:soft/screens/work_log/routes/routes.dart';
+import 'package:soft/screens/work_log/widgets/location_item.dart';
+import 'package:soft/services/location_service.dart';
 import 'package:provider/provider.dart';
 
 class VehicleSelectDestination extends StatefulWidget {

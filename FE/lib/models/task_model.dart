@@ -1,4 +1,4 @@
-import 'package:job_manager/models/task_type_model.dart';
+import 'package:soft/models/task_type_model.dart';
 
 class TaskModel {
   final String id;

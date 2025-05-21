@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/models/order_model.dart';
-import 'package:job_manager/services/order_service.dart';
+import 'package:soft/models/order_model.dart';
+import 'package:soft/services/order_service.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 class QrCode extends StatefulWidget {

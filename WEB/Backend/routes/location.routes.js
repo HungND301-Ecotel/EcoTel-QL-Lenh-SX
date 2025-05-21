@@ -1,0 +1,64 @@
+const express = require('express');
+const router = express.Router();
+const { AppError } = require('../utils/errorHandler');
+const Location = require('../models/Location');
+const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
+
+
+router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
+    try {
+        const { name, type, coordinates } = req.body
+        const newLocation = new Location({
+            name: name,
+            type: type,
+            coordinates: coordinates
+        });
+        await newLocation.save();
+        res.status(200).send({ status: 'success', message: "Tạo thành công" });
+    } catch (err) {
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+});
+
+router.delete('/:id', verifyToken, restrictTo('admin'), async (req, res, next) => {
+    try {
+        const location = await Location.findByIdAndDelete(req.params.id);
+
+        if (!location) {
+            return res.status(404).send({ status: 'error', message: 'Xóa thất bại ' });
+        }
+
+        res.status(204).json({
+            status: 'success',
+            message: 'Xóa thành công'
+        });
+    } catch (err) {
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+});
+router.put('/:id', verifyToken, restrictTo('admin'), async (req, res, next) => {
+    try {
+        const location = await Location.findByIdAndUpdate(req.params.id, req.body, { new: true });
+
+        if (!location) {
+            return res.status(200).send({ status: 'error', message: 'Sửa thất bại ' });
+        }
+
+        res.status(204).json({
+            status: 'success',
+            message: 'Sửa thành công'
+        });
+    } catch (err) {
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+});
+router.get('/', verifyToken, async (req, res) => {
+    try {
+        const locations = await Location.find();
+        res.status(200).send({ status: 'success', data: locations });
+    } catch (err) {
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+});
+
+module.exports = router; 

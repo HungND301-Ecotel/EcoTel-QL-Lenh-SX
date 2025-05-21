@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/models/order_model.dart';
-import 'package:job_manager/models/task_model.dart';
-import 'package:job_manager/screens/task_assignment/task_assignment_type/task_assignment_common.dart';
-import 'package:job_manager/screens/task_assignment/task_assignment_type/task_assignment_vehicle.dart';
-import 'package:job_manager/screens/task_assignment/task_assignment_type/task_assignment_other.dart';
+import 'package:soft/models/order_model.dart';
+import 'package:soft/models/task_model.dart';
+import 'package:soft/screens/task_assignment/task_assignment_type/task_assignment_common.dart';
+import 'package:soft/screens/task_assignment/task_assignment_type/task_assignment_vehicle.dart';
+import 'package:soft/screens/task_assignment/task_assignment_type/task_assignment_other.dart';
 
 class TaskAssignmentAdd extends StatefulWidget {
   final TaskModel data;

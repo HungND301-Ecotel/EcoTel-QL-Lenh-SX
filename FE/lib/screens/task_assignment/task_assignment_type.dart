@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/models/task_model.dart';
-import 'package:job_manager/routes/task_assignment_route.dart';
-import 'package:job_manager/services/task_service.dart';
+import 'package:soft/models/task_model.dart';
+import 'package:soft/routes/task_assignment_route.dart';
+import 'package:soft/services/task_service.dart';
 
 class TaskAssignmentType extends StatefulWidget {
   const TaskAssignmentType({super.key});

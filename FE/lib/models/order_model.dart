@@ -1,8 +1,8 @@
-import 'package:job_manager/models/device_model.dart';
-import 'package:job_manager/models/location_model.dart';
-import 'package:job_manager/models/material_model.dart';
-import 'package:job_manager/models/task_model.dart';
-import 'package:job_manager/models/user_model.dart';
+import 'package:soft/models/device_model.dart';
+import 'package:soft/models/location_model.dart';
+import 'package:soft/models/material_model.dart';
+import 'package:soft/models/task_model.dart';
+import 'package:soft/models/user_model.dart';
 
 class OrderModel {
   final String id;

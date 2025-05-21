@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/screens/home/home_page.dart';
-import 'package:job_manager/screens/home/notification_page.dart';
+import 'package:soft/screens/home/home_page.dart';
+import 'package:soft/screens/home/notification_page.dart';
 
 
 class HomeWrapper extends StatelessWidget {

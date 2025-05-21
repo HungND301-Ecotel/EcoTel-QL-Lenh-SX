@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/models/location_model.dart';
-import 'package:job_manager/services/location_service.dart';
+import 'package:soft/models/location_model.dart';
+import 'package:soft/services/location_service.dart';
 
 class TaskAssignmentDumpSiteSelect extends StatefulWidget {
   const TaskAssignmentDumpSiteSelect({super.key});

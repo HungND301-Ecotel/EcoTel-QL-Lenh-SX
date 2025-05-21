@@ -1,4 +1,4 @@
-import 'package:job_manager/services/api_service.dart';
+import 'package:soft/services/api_service.dart';
 
 class ReportService {
   final ApiService _apiService =

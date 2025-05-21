@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:job_manager/models/device_model.dart';
+import 'package:soft/models/device_model.dart';
 
 class ExcavatorItem extends StatelessWidget {
   final DeviceModel data;
