@@ -66,12 +66,15 @@ router.get('/', verifyToken, async (req, res, next) => {
         res.status(200).json({
             status: 'success',
             results: orders.length,
-            data: {
+            data:
                 orders
-            }
+
         });
     } catch (err) {
-        next(err);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
     }
 });
 
@@ -149,12 +152,15 @@ router.post('/', verifyToken, restrictTo('admin', 'manager', 'supervisor'), asyn
 
         res.status(201).json({
             status: 'success',
-            data: {
+            data:
                 order
-            }
+
         });
     } catch (err) {
-        next(err);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
     }
 });
 
@@ -188,12 +194,15 @@ router.get('/:id', verifyToken, async (req, res, next) => {
 
         res.status(200).json({
             status: 'success',
-            data: {
+            data:
                 order
-            }
+
         });
     } catch (err) {
-        next(err);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
     }
 });
 
@@ -264,12 +273,15 @@ router.patch('/:id', verifyToken, async (req, res, next) => {
 
         res.status(200).json({
             status: 'success',
-            data: {
-                order: updatedOrder
-            }
+            data:
+                updatedOrder
+
         });
     } catch (err) {
-        next(err);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
     }
 });
 
@@ -335,12 +347,15 @@ router.post('/:id/handover', verifyToken, async (req, res, next) => {
 
         res.status(200).json({
             status: 'success',
-            data: {
+            data:
                 order
-            }
+
         });
     } catch (err) {
-        next(err);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
     }
 });
 

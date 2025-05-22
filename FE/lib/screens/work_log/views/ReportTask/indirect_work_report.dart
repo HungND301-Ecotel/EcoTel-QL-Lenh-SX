@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
 class IndirectWorkReport extends StatefulWidget {
-  const IndirectWorkReport({super.key});
+  final String orderId;
+  const IndirectWorkReport({
+    super.key,
+    required this.orderId,
+  });
   @override
   State<StatefulWidget> createState() =>
       _IndirectWorkReport();

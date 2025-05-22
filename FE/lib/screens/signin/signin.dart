@@ -29,7 +29,7 @@ class _SignInState extends State<SignIn> {
     );
 
     if (!mounted) return;
-    if (result['status']=='error') {
+    if (result['status'] == 'error') {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result['message']),
@@ -64,69 +64,71 @@ class _SignInState extends State<SignIn> {
             left: 30,
             right: 30,
           ),
-          child: Column(
-            children: <Widget>[
-              Image.asset('assets/logo.png'),
-              SizedBox(height: 30),
-              const Text('Đăng nhập'),
-              SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                ),
-                child: Form(
-                  child: Column(
-                    children: [
-                      TextFormField(
-                        controller: _usernameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Tên truy cập',
-                        ),
-                      ),
-                      SizedBox(height: 20),
-                      TextFormField(
-                        controller: _passwordController,
-                        obscuringCharacter: '*',
-                        obscureText: _obscurePassword,
-                        decoration: InputDecoration(
-                          labelText: 'Mật khẩu',
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword =
-                                    !_obscurePassword;
-                              });
-                            },
+          child: SingleChildScrollView(
+            child: Column(
+              children: <Widget>[
+                Image.asset('assets/logo.png'),
+                SizedBox(height: 30),
+                const Text('Đăng nhập'),
+                SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                  ),
+                  child: Form(
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          controller: _usernameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Tên truy cập',
                           ),
                         ),
-                      ),
-                    ],
+                        SizedBox(height: 20),
+                        TextFormField(
+                          controller: _passwordController,
+                          obscuringCharacter: '*',
+                          obscureText: _obscurePassword,
+                          decoration: InputDecoration(
+                            labelText: 'Mật khẩu',
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword =
+                                      !_obscurePassword;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              SizedBox(height: 30),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: signin,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.all(10),
-                  ),
-                  child: const Text(
-                    'Đăng nhập',
-                    style: TextStyle(fontSize: 20),
+                SizedBox(height: 30),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: signin,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.all(10),
+                    ),
+                    child: const Text(
+                      'Đăng nhập',
+                      style: TextStyle(fontSize: 20),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

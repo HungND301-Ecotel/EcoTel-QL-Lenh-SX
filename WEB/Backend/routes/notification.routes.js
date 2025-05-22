@@ -61,9 +61,9 @@ router.get('/', verifyToken, async (req, res, next) => {
         res.status(200).json({
             status: 'success',
             results: notifications.length,
-            data: {
+            data: 
                 notifications
-            }
+            
         });
     } catch (err) {
         next(err);
@@ -85,9 +85,9 @@ router.get('/unread/count', verifyToken, async (req, res, next) => {
 
         res.status(200).json({
             status: 'success',
-            data: {
+            data: 
                 count
-            }
+            
         });
     } catch (err) {
         next(err);
@@ -126,9 +126,9 @@ router.patch('/:id/read', verifyToken, async (req, res, next) => {
 
         res.status(200).json({
             status: 'success',
-            data: {
+            data: 
                 notification
-            }
+            
         });
     } catch (err) {
         next(err);

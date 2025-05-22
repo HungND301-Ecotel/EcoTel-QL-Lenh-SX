@@ -10,7 +10,7 @@ import {
 } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../config/api.config';
-import { Order, Shift, Device, User } from '../../types';
+import { Order, Shift, Device, User, Job, Location, PayRoll } from '../../types';
 
 const validationSchema = yup.object({
     salarycardId: yup.string().required('Vui lòng chọn thẻ lương'),
@@ -35,19 +35,24 @@ const OrderForm: React.FC<OrderFormProps> = ({
     onSubmit,
     onCancel,
 }) => {
-    const { data: shifts = [] } = useQuery({
-        queryKey: ['shifts'],
-        queryFn: () => api.get('/shifts').then(res => res.data.data?.shifts || []),
+    const { data: locations = [] } = useQuery({
+        queryKey: ['locations'],
+        queryFn: () => api.get('/locations').then(res => res.data.data),
     });
 
     const { data: devices = [] } = useQuery({
         queryKey: ['devices'],
-        queryFn: () => api.get('/devices').then(res => res.data.data?.devices || []),
+        queryFn: () => api.get('/devices').then(res => res.data.data),
+    });
+    const { data: jobs = [] } = useQuery({
+        queryKey: ['jobs'],
+        queryFn: () => api.get('/jobs').then(res => res.data.data),
     });
 
-    const { data: users = [] } = useQuery({
-        queryKey: ['users'],
-        queryFn: () => api.get('/users').then(res => res.data.data?.users || []),
+
+    const { data: payrolls = [] } = useQuery({
+        queryKey: ['payrolls'],
+        queryFn: () => api.get('/payrolls').then(res => res.data.data),
     });
 
     const formik = useFormik({
@@ -82,9 +87,9 @@ const OrderForm: React.FC<OrderFormProps> = ({
                         error={formik.touched.salarycardId && Boolean(formik.errors.salarycardId)}
                         helperText={formik.touched.salarycardId && formik.errors.salarycardId}
                     >
-                        {users.map((user: User) => (
-                            <MenuItem key={user._id} value={user._id}>
-                                {user.fullName}
+                        {payrolls.map((payroll: PayRoll) => (
+                            <MenuItem key={payroll._id} value={payroll.userId}>
+                                {payroll.code}
                             </MenuItem>
                         ))}
                     </TextField>
@@ -101,9 +106,9 @@ const OrderForm: React.FC<OrderFormProps> = ({
                         error={formik.touched.jobId && Boolean(formik.errors.jobId)}
                         helperText={formik.touched.jobId && formik.errors.jobId}
                     >
-                        {shifts.map((shift: Shift) => (
-                            <MenuItem key={shift._id} value={shift._id}>
-                                {shift.name}
+                        {jobs.map((job: Job) => (
+                            <MenuItem key={job._id} value={job._id}>
+                                {job.name}
                             </MenuItem>
                         ))}
                     </TextField>
@@ -180,9 +185,9 @@ const OrderForm: React.FC<OrderFormProps> = ({
                         value={formik.values.dumpPoint}
                         onChange={formik.handleChange}
                     >
-                        {devices.map((device: Device) => (
-                            <MenuItem key={device._id} value={device._id}>
-                                {device.name}
+                        {locations.map((location: Location) => (
+                            <MenuItem key={location._id} value={location._id}>
+                                {location.name}
                             </MenuItem>
                         ))}
                     </TextField>

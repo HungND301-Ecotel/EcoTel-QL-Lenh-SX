@@ -43,7 +43,8 @@ class WorkLogRoute extends StatelessWidget {
           case WorkLogRoutes.taskDetailPage:
             final orderId = settings.arguments as String;
             return MaterialPageRoute(
-              builder: (_) => TaskDetailPage(orderId: orderId),
+              builder:
+                  (_) => TaskDetailPage(orderId: orderId),
             );
           case WorkLogRoutes.qrCode:
             final args = settings.arguments as OrderModel;
@@ -161,12 +162,14 @@ class WorkLogRoute extends StatelessWidget {
             );
           //ReportTask
           case WorkLogRoutes.directWorkReport:
+            final orderId = settings.arguments as String;
             return MaterialPageRoute(
-              builder: (_) => DirectWorkReport(),
+              builder: (_) => DirectWorkReport(orderId:orderId),
             );
           case WorkLogRoutes.indirectWorkReport:
+            final orderId = settings.arguments as String;
             return MaterialPageRoute(
-              builder: (_) => IndirectWorkReport(),
+              builder: (_) => IndirectWorkReport(orderId:orderId),
             );
           default:
             return MaterialPageRoute(

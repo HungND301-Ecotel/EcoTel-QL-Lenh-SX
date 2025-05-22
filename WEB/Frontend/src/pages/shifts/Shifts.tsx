@@ -42,31 +42,16 @@ const Shifts: React.FC = () => {
     const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
     const queryClient = useQueryClient();
 
-    const { data: shiftsRaw, isLoading } = useQuery({
+    const { data: shifts=[], isLoading } = useQuery({
         queryKey: ['shifts'],
-        queryFn: () => api.get('/shifts').then(res => res.data),
+        queryFn: () => api.get('/shifts').then(res => res.data.data),
     });
 
-    const { data: departmentsRaw } = useQuery({
+    const { data: departments=[] } = useQuery({
         queryKey: ['departments'],
-        queryFn: () => api.get('/departments').then(res => res.data),
+        queryFn: () => api.get('/departments').then(res => res.data.data),
     });
 
-    const shifts = React.useMemo(() => {
-        if (!shiftsRaw) return [];
-        if (Array.isArray(shiftsRaw)) return shiftsRaw;
-        if (shiftsRaw.data && Array.isArray(shiftsRaw.data.shifts)) return shiftsRaw.data.shifts;
-        if (shiftsRaw.data && Array.isArray(shiftsRaw.data)) return shiftsRaw.data;
-        return [];
-    }, [shiftsRaw]);
-
-    const departments = React.useMemo(() => {
-        if (!departmentsRaw) return [];
-        if (Array.isArray(departmentsRaw)) return departmentsRaw;
-        if (departmentsRaw.data && Array.isArray(departmentsRaw.data.departments)) return departmentsRaw.data.departments;
-        if (departmentsRaw.data && Array.isArray(departmentsRaw.data)) return departmentsRaw.data;
-        return [];
-    }, [departmentsRaw]);
 
     const createMutation = useMutation({
         mutationFn: (newShift: Partial<Shift>) =>

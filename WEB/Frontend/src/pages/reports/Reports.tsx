@@ -49,29 +49,15 @@ const Reports: React.FC = () => {
     const [selectedReport, setSelectedReport] = useState<Report | null>(null);
     const queryClient = useQueryClient();
 
-    const { data: reportsRaw } = useQuery({
+    const { data: reports=[]} = useQuery({
         queryKey: ['reports'],
-        queryFn: () => api.get('/reports').then(res => res.data),
+        queryFn: () => api.get('/reports').then(res => res.data.data),
     });
-    const reports = React.useMemo(() => {
-        if (!reportsRaw) return [];
-        if (Array.isArray(reportsRaw)) return reportsRaw;
-        if (reportsRaw.data && Array.isArray(reportsRaw.data.reports)) return reportsRaw.data.reports;
-        if (reportsRaw.data && Array.isArray(reportsRaw.data)) return reportsRaw.data;
-        return [];
-    }, [reportsRaw]);
 
-    const { data: departmentsRaw } = useQuery({
+    const { data: departments=[] } = useQuery({
         queryKey: ['departments'],
-        queryFn: () => api.get('/departments').then(res => res.data),
+        queryFn: () => api.get('/departments').then(res => res.data.data),
     });
-    const departments = React.useMemo(() => {
-        if (!departmentsRaw) return [];
-        if (Array.isArray(departmentsRaw)) return departmentsRaw;
-        if (departmentsRaw.data && Array.isArray(departmentsRaw.data.departments)) return departmentsRaw.data.departments;
-        if (departmentsRaw.data && Array.isArray(departmentsRaw.data)) return departmentsRaw.data;
-        return [];
-    }, [departmentsRaw]);
 
     const createMutation = useMutation({
         mutationFn: (newReport: Partial<Report>) =>

@@ -65,10 +65,13 @@ class _TaskDetailPage extends State<TaskDetailPage> {
     });
   }
 
-  void update() async {
+  void update(status) async {
     var result = await _orderService.update(
       widget.orderId,
-      {'status': 'accepted'},
+      {
+        'status':
+            status == "start" ? 'accepted' : "completed",
+      },
     );
     if (!mounted) return;
     if (result['status'] == 'error') {
@@ -82,7 +85,11 @@ class _TaskDetailPage extends State<TaskDetailPage> {
       getOrderByUser();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Công việc đã bắt đầu'),
+          content: Text(
+            status == 'start'
+                ? 'Công việc đã bắt đầu'
+                : 'Công việc đã hoàn thành',
+          ),
           backgroundColor: Colors.green,
         ),
       );
@@ -318,7 +325,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                                         ),
                                         TextButton(
                                           onPressed: () {
-                                            update();
+                                            update("start");
                                             Navigator.pop(
                                               context,
                                             );
@@ -433,12 +440,16 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                                       context,
                                       WorkLogRoutes
                                           .directWorkReport,
+                                      arguments:
+                                          widget.orderId,
                                     );
                                   } else {
                                     Navigator.pushNamed(
                                       context,
                                       WorkLogRoutes
                                           .indirectWorkReport,
+                                      arguments:
+                                          widget.orderId,
                                     );
                                   }
                                 },
@@ -497,14 +508,12 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                                             ),
                                             TextButton(
                                               onPressed: () {
+                                                update(
+                                                  "end",
+                                                );
                                                 Navigator.of(
                                                   dialogContext,
                                                 ).pop();
-                                                Navigator.pushNamed(
-                                                  context,
-                                                  WorkLogRoutes
-                                                      .taskListPage,
-                                                );
                                               },
                                               style: TextButton.styleFrom(
                                                 foregroundColor:

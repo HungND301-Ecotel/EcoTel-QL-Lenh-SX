@@ -13,6 +13,8 @@ import Notifications from './pages/notifications/Notifications';
 import Users from './pages/users/Users';
 import Materials from './pages/materials/Materials';
 import Locations from './pages/locations/Locations';
+import Jobs from './pages/job/Job';
+import Payroll from './pages/payroll/PayRoll';
 
 const queryClient = new QueryClient();
 
@@ -71,6 +73,22 @@ const App = () => {
                         element={
                             <PrivateRoute>
                                 <Materials />
+                            </PrivateRoute>
+                        }
+                    />
+                    <Route
+                        path="/jobs"
+                        element={
+                            <PrivateRoute>
+                                <Jobs />
+                            </PrivateRoute>
+                        }
+                    />
+                    <Route
+                        path="/payrolls"
+                        element={
+                            <PrivateRoute>
+                                <Payroll />
                             </PrivateRoute>
                         }
                     />

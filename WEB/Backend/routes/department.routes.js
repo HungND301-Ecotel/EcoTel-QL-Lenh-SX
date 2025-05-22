@@ -23,9 +23,9 @@ router.get('/', verifyToken, async (req, res, next) => {
         res.status(200).json({
             status: 'success',
             results: departments.length,
-            data: {
+            data:
                 departments
-            }
+
         });
     } catch (err) {
         next(err);
@@ -78,9 +78,8 @@ router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, n
 
         res.status(201).json({
             status: 'success',
-            data: {
+            data:
                 department
-            }
         });
     } catch (err) {
         next(err);
@@ -113,9 +112,9 @@ router.get('/:id', verifyToken, async (req, res, next) => {
 
         res.status(200).json({
             status: 'success',
-            data: {
+            data:
                 department
-            }
+
         });
     } catch (err) {
         next(err);
@@ -170,9 +169,9 @@ router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res,
 
         res.status(200).json({
             status: 'success',
-            data: {
+            data:
                 department
-            }
+
         });
     } catch (err) {
         next(err);

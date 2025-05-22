@@ -107,12 +107,15 @@ router.get('/', verifyToken, async (req, res, next) => {
         res.status(200).json({
             status: 'success',
             results: reports.length,
-            data: {
+            data:
                 reports
-            }
+
         });
     } catch (err) {
-        next(err);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
     }
 });
 
@@ -212,12 +215,15 @@ router.post('/', verifyToken, restrictTo('admin', 'manager', 'supervisor'), uplo
 
         res.status(201).json({
             status: 'success',
-            data: {
+            data:
                 report
-            }
+
         });
     } catch (err) {
-        next(err);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
     }
 });
 
@@ -251,12 +257,15 @@ router.get('/:id', verifyToken, async (req, res, next) => {
 
         res.status(200).json({
             status: 'success',
-            data: {
+            data:
                 report
-            }
+
         });
     } catch (err) {
-        next(err);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
     }
 });
 
@@ -328,12 +337,15 @@ router.patch('/:id', verifyToken, async (req, res, next) => {
 
         res.status(200).json({
             status: 'success',
-            data: {
-                report: updatedReport
-            }
+            data:
+                updatedReport
+
         });
     } catch (err) {
-        next(err);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
     }
 });
 
@@ -380,12 +392,15 @@ router.post('/:id/comments', verifyToken, async (req, res, next) => {
 
         res.status(200).json({
             status: 'success',
-            data: {
+            data:
                 report
-            }
+
         });
     } catch (err) {
-        next(err);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
     }
 });
 

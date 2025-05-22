@@ -16,6 +16,8 @@ const locationRoute = require('./route/location')
 const payrollRoute = require('./route/pay_roll')
 const orderRoute = require('./route/order')
 const reportRoute = require('./route/report')
+const shiftreportRoute = require('./route/shift_report')
+
 
 
 
@@ -37,6 +39,8 @@ app.use('/api/location', locationRoute)
 app.use('/api/payroll', payrollRoute)
 app.use('/api/order', orderRoute)
 app.use('/api/report', reportRoute)
+app.use('/api/shiftreport', shiftreportRoute)
+
 
 
 

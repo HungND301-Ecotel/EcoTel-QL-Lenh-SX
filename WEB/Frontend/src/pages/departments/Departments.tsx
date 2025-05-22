@@ -17,7 +17,7 @@ import {
     IconButton,
     Typography,
 } from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -35,17 +35,11 @@ const Departments = () => {
     const [selectedDepartment, setSelectedDepartment] = useState<any>(null);
     const queryClient = useQueryClient();
 
-    const { data: departmentsRaw, isLoading } = useQuery({
+    const { data: departments=[], isLoading } = useQuery({
         queryKey: ['departments'],
-        queryFn: () => api.get('/departments').then(res => res.data),
+        queryFn: () => api.get('/departments').then(res => res.data.data),
     });
-    const departments = React.useMemo(() => {
-        if (!departmentsRaw) return [];
-        if (Array.isArray(departmentsRaw)) return departmentsRaw;
-        if (departmentsRaw.data && Array.isArray(departmentsRaw.data.departments)) return departmentsRaw.data.departments;
-        if (departmentsRaw.data && Array.isArray(departmentsRaw.data)) return departmentsRaw.data;
-        return [];
-    }, [departmentsRaw]);
+
 
     const createMutation = useMutation({
         mutationFn: (data: any) => api.post('/departments', data).then(res => res.data),
@@ -120,10 +114,14 @@ const Departments = () => {
     }
 
     return (
-        <Box sx={{ p: 3 }}>
+        <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h5">Quản lý phòng ban</Typography>
-                <Button variant="contained" onClick={() => handleOpen()}>
+                <Typography variant="h4">Quản lý phòng ban</Typography>
+                <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => handleOpen()}
+                >
                     Thêm phòng ban
                 </Button>
             </Box>

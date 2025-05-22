@@ -21,6 +21,10 @@ const reportRoutes = require('./routes/report.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const materialRoutes = require('./routes/material.routes');
 const locationRoutes = require('./routes/location.routes');
+const jobRoutes = require('./routes/job.routes');
+const payrollRoutes = require('./routes/payroll.routes');
+
+
 
 
 
@@ -93,6 +97,10 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/materials', materialRoutes);
 app.use('/api/locations', locationRoutes);
+app.use('/api/jobs', jobRoutes);
+app.use('/api/payrolls', payrollRoutes);
+
+
 
 
 

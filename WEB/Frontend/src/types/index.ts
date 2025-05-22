@@ -94,13 +94,32 @@ export interface Material {
     createdAt?: string;
     updatedAt?: string;
 }
+export interface Job {
+    _id: string;
+    name: string;
+    type: 'vehicle' | 'drilling' | 'service' | 'grading' | 'excavation' | 'other',
+    createdAt?: string;
+    updatedAt?: string;
+}
+export interface PayRoll {
+    _id: string;
+    code: string;
+    userId: string;
+    jobId: string;
+    baseSalary: number;
+    bonus?: number;
+    allowance?: number;
+    note?: string;
+    createdAt?: string;
+    updatedAt?: string;
+}
 export interface Location {
     _id: string;
     name: string;
     type: 'dumping' | 'screening' | 'station' | 'warehouse' | 'crushing' | 'drilling' | 'road' | 'other',
     coordinates: {
-        lat:Number,
-        lng:Number
+        lat: Number,
+        lng: Number
     },
     createdAt?: string;
     updatedAt?: string;

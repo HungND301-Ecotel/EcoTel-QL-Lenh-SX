@@ -49,17 +49,10 @@ const Notifications: React.FC = () => {
     const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
     const queryClient = useQueryClient();
 
-    const { data: notificationsRaw } = useQuery({
+    const { data: notifications=[] } = useQuery({
         queryKey: ['notifications'],
-        queryFn: () => api.get('/notifications').then(res => res.data),
+        queryFn: () => api.get('/notifications').then(res => res.data.data),
     });
-    const notifications = React.useMemo(() => {
-        if (!notificationsRaw) return [];
-        if (Array.isArray(notificationsRaw)) return notificationsRaw;
-        if (notificationsRaw.data && Array.isArray(notificationsRaw.data.notifications)) return notificationsRaw.data.notifications;
-        if (notificationsRaw.data && Array.isArray(notificationsRaw.data)) return notificationsRaw.data;
-        return [];
-    }, [notificationsRaw]);
 
     const createMutation = useMutation({
         mutationFn: (newNotification: Partial<Notification>) =>

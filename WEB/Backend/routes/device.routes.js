@@ -53,9 +53,9 @@ router.get('/', verifyToken, async (req, res, next) => {
         res.status(200).json({
             status: 'success',
             results: devices.length,
-            data: {
+            data:
                 devices
-            }
+
         });
     } catch (err) {
         next(err);
@@ -119,9 +119,9 @@ router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, n
 
         res.status(201).json({
             status: 'success',
-            data: {
+            data:
                 device
-            }
+
         });
     } catch (err) {
         next(err);
@@ -156,9 +156,9 @@ router.get('/:id', verifyToken, async (req, res, next) => {
 
         res.status(200).json({
             status: 'success',
-            data: {
+            data:
                 device
-            }
+
         });
     } catch (err) {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
@@ -228,9 +228,9 @@ router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res,
 
         res.status(200).json({
             status: 'success',
-            data: {
+            data:
                 device
-            }
+
         });
     } catch (err) {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
@@ -274,7 +274,7 @@ router.get('/:id/history', verifyToken, async (req, res) => {
     try {
         const device = await Device.findById(req.params.id);
         if (!device) {
-            return res.status(404).json({status:'error', message: 'Device not found' });
+            return res.status(404).json({ status: 'error', message: 'Device not found' });
         }
 
         const history = await Order.find({ device: device._id })

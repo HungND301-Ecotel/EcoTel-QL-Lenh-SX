@@ -7,12 +7,12 @@ router.get('/', async (req, res) => {
     try {
         const users = await User.find().populate('department');
         res.json({
-            success: true,
+            status: 'success',
             data: users
         });
     } catch (error) {
         res.status(500).json({
-            success: false,
+            status: 'error',
             message: 'Lấy danh sách người dùng thất bại',
             error: error.message
         });
@@ -25,17 +25,17 @@ router.get('/:id', async (req, res) => {
         const user = await User.findById(req.params.id).populate('department');
         if (!user) {
             return res.status(404).json({
-                success: false,
+                status: 'error',
                 message: 'Không tìm thấy người dùng'
             });
         }
         res.json({
-            success: true,
+            status: 'success',
             data: user
         });
     } catch (error) {
         res.status(500).json({
-            success: false,
+            status: 'error',
             message: 'Lấy thông tin người dùng thất bại',
             error: error.message
         });
@@ -57,18 +57,18 @@ router.put('/:id', async (req, res) => {
 
         if (!user) {
             return res.status(404).json({
-                success: false,
+                success: 'error',
                 message: 'Không tìm thấy người dùng'
             });
         }
 
         res.json({
-            success: true,
+            status: 'success',
             data: user
         });
     } catch (error) {
         res.status(500).json({
-            success: false,
+            status: 'error',
             message: 'Cập nhật người dùng thất bại',
             error: error.message
         });
@@ -86,19 +86,19 @@ router.put('/changepass', async (req, res) => {
 
         const IsPassword = await bcrypt.compare(old_pass, user.password)
         if (!IsPassword) {
-            return res.status(401).send({ status: false, message: "Mật khẩu cũ không chính xác" })
+            return res.status(401).send({ status: 'error', message: "Mật khẩu cũ không chính xác" })
         }
         if (!newpass) {
-            return res.status(400).send({ status: false, message: "Nhập mật khẩu mới" })
+            return res.status(400).send({ status: 'error', message: "Nhập mật khẩu mới" })
         }
         if (newpass !== repass) {
-            return res.status(404).send({ status: false, message: "Mật khẩu nhập lại không khớp" })
+            return res.status(404).send({ status: 'error', message: "Mật khẩu nhập lại không khớp" })
         }
         const hashedPassword = await bcrypt.hash(newpass, 10);
         user.password = hashedPassword;
         await user.save();
         res.status(200).send({
-            status: true,
+            status: 'success',
             message: "Đổi mật khẩu thành công",
         })
     } catch (err) {
@@ -114,12 +114,12 @@ router.put('/addphone', async (req, res) => {
             runValidators: true
         });
         if (!userUpdate) {
-            return res.status(404).send({ status: false, message: "Thêm số điện thoại không thành công" })
+            return res.status(404).send({ status: 'error', message: "Thêm số điện thoại không thành công" })
         };
         const userData = userUpdate.toObject()
         delete userData.password
         res.status(200).send({
-            status: true,
+            status: 'success',
             message: "Thêm số điện thoại thành công",
             data: userData
         })
@@ -134,17 +134,17 @@ router.delete('/:id', async (req, res) => {
         const user = await User.findByIdAndDelete(req.params.id);
         if (!user) {
             return res.status(404).json({
-                success: false,
+                status: 'error',
                 message: 'Không tìm thấy người dùng'
             });
         }
         res.json({
-            success: true,
+            status: 'success',
             message: 'Xóa người dùng thành công'
         });
     } catch (error) {
         res.status(500).json({
-            success: false,
+            status: 'error',
             message: 'Xóa người dùng thất bại',
             error: error.message
         });

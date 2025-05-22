@@ -27,42 +27,41 @@ import {
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import api from '../../config/api.config';
-import { Material } from '../../types';
+import { Job } from '../../types';
 
 const validationSchema = yup.object({
-    name: yup.string().required('Vui lòng nhập tên hạng mục'),
+    name: yup.string().required('Vui lòng nhập tên công việc'),
     type: yup
         .string()
-        .oneOf(['material', 'waste', 'drilling', 'roadwork', 'repair', 'other'])
-        .required('Vui lòng chọn loại hạng mục'),
+        .oneOf(['vehicle', 'drilling', 'service', 'grading', 'excavation', 'other'])
+        .required('Vui lòng chọn loại công việc'),
 });
 
-const Materials: React.FC = () => {
+const Jobs: React.FC = () => {
     const [open, setOpen] = useState(false);
-    const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
+    const [selectedJob, setSelectedJob] = useState<Job | null>(null);
     const queryClient = useQueryClient();
 
-    const { data: materials=[], isLoading } = useQuery({
-        queryKey: ['materials'],
-        queryFn: () => api.get('/materials').then(res => res.data.data),
+    const { data: jobs=[], isLoading } = useQuery({
+        queryKey: ['jobs'],
+        queryFn: () => api.get('/jobs').then(res => res.data.data),
     });
 
 
     const createMutation = useMutation({
-        mutationFn: (newMaterial: Partial<Material>) =>
-            api.post('/materials', newMaterial).then(res => res.data),
+        mutationFn: (newJob: Partial<Job>) =>
+            api.post('/jobs', newJob).then(res => res.data),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['materials'] });
+            queryClient.invalidateQueries({ queryKey: ['jobs'] });
             handleClose();
         },
     });
 
     const updateMutation = useMutation({
-        mutationFn: (updatedMaterial: Partial<Material>) => {
-            return api.put(`/materials/${updatedMaterial._id}`, updatedMaterial).then(res => res.data);
-        },
+        mutationFn: (updatedJob: Partial<Job>) =>
+            api.put(`/jobs/${updatedJob._id}`, updatedJob).then(res => res.data),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['materials'] });
+            queryClient.invalidateQueries({ queryKey: ['jobs'] });
             handleClose();
         },
         onError: (error) => {
@@ -71,9 +70,9 @@ const Materials: React.FC = () => {
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (id: string) => api.delete(`/materials/${id}`).then(res => res.data),
+        mutationFn: (id: string) => api.delete(`/jobs/${id}`).then(res => res.data),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['materials'] });
+            queryClient.invalidateQueries({ queryKey: ['jobs'] });
         },
     });
 
@@ -84,20 +83,20 @@ const Materials: React.FC = () => {
         },
         validationSchema: validationSchema,
         onSubmit: (values) => {
-            if (selectedMaterial) {
-                updateMutation.mutate({ ...values, _id: selectedMaterial._id, type: values.type as Material['type'], });
+            if (selectedJob) {
+                updateMutation.mutate({ ...values, _id: selectedJob._id, type: values.type as Job['type'] });
             } else {
-                createMutation.mutate({ ...values, type: values.type as Material['type'], });
+                createMutation.mutate({ ...values, type: values.type as Job['type'] });
             }
         },
     });
 
-    const handleOpen = (material?: Material) => {
-        if (material) {
-            setSelectedMaterial(material);
-            formik.setValues(material);
+    const handleOpen = (job?: Job) => {
+        if (job) {
+            setSelectedJob(job);
+            formik.setValues(job);
         } else {
-            setSelectedMaterial(null);
+            setSelectedJob(null);
             formik.resetForm();
         }
         setOpen(true);
@@ -105,12 +104,12 @@ const Materials: React.FC = () => {
 
     const handleClose = () => {
         setOpen(false);
-        setSelectedMaterial(null);
+        setSelectedJob(null);
         formik.resetForm();
     };
 
     const handleDelete = (id: string) => {
-        if (window.confirm('Bạn có chắc chắn muốn xóa hạng mục này?')) {
+        if (window.confirm('Bạn có chắc chắn muốn xóa công việc này?')) {
             deleteMutation.mutate(id);
         }
     };
@@ -122,9 +121,9 @@ const Materials: React.FC = () => {
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h4">Quản lý hạng mục</Typography>
+                <Typography variant="h4">Quản lý công việc</Typography>
                 <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
-                    Thêm hạng mục
+                    Thêm công việc
                 </Button>
             </Box>
 
@@ -132,21 +131,21 @@ const Materials: React.FC = () => {
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell>Tên hạng mục</TableCell>
-                            <TableCell>Loại hạng mục</TableCell>
+                            <TableCell>Tên công việc</TableCell>
+                            <TableCell>Loại công việc</TableCell>
                             <TableCell>Thao tác</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {materials.map((material: any) => (
-                            <TableRow key={material._id}>
-                                <TableCell>{material.name}</TableCell>
-                                <TableCell>{material.type}</TableCell>
+                        {jobs.map((job: any) => (
+                            <TableRow key={job._id}>
+                                <TableCell>{job.name}</TableCell>
+                                <TableCell>{job.type}</TableCell>
                                 <TableCell>
-                                    <IconButton color="primary" onClick={() => handleOpen(material)}>
+                                    <IconButton color="primary" onClick={() => handleOpen(job)}>
                                         <EditIcon />
                                     </IconButton>
-                                    <IconButton color="error" onClick={() => handleDelete(material._id)}>
+                                    <IconButton color="error" onClick={() => handleDelete(job._id)}>
                                         <DeleteIcon />
                                     </IconButton>
                                 </TableCell>
@@ -157,7 +156,7 @@ const Materials: React.FC = () => {
             </TableContainer>
 
             <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-                <DialogTitle>{selectedMaterial ? 'Sửa hạng mục' : 'Thêm hạng mục'}</DialogTitle>
+                <DialogTitle>{selectedJob ? 'Sửa công việc' : 'Thêm công việc'}</DialogTitle>
                 <DialogContent>
                     <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -165,7 +164,7 @@ const Materials: React.FC = () => {
                                 fullWidth
                                 id="name"
                                 name="name"
-                                label="Tên hạng mục"
+                                label="Tên công việc"
                                 value={formik.values.name}
                                 onChange={formik.handleChange}
                                 error={formik.touched.name && Boolean(formik.errors.name)}
@@ -176,17 +175,17 @@ const Materials: React.FC = () => {
                                 select
                                 id="type"
                                 name="type"
-                                label="Loại hạng mục"
+                                label="Loại công việc"
                                 value={formik.values.type}
                                 onChange={formik.handleChange}
                                 error={formik.touched.type && Boolean(formik.errors.type)}
                                 helperText={formik.touched.type && formik.errors.type}
                             >
-                                <MenuItem value="material">Vật liệu</MenuItem>
-                                <MenuItem value="waste">Bãi thải</MenuItem>
-                                <MenuItem value="drilling">Khoan bãi</MenuItem>
-                                <MenuItem value="roadwork">Làm đường</MenuItem>
-                                <MenuItem value="repair">Sửa chữa</MenuItem>
+                                <MenuItem value="vehicle">Vận hành xe</MenuItem>
+                                <MenuItem value="drilling">Vận hành khoan</MenuItem>
+                                <MenuItem value="service">Vận hành xe phục vụ</MenuItem>
+                                <MenuItem value="grading">Vận hành gạt</MenuItem>
+                                <MenuItem value="excavation">Vận hành xúc</MenuItem>
                                 <MenuItem value="other">Khác</MenuItem>
                             </TextField>
                         </Box>
@@ -195,7 +194,7 @@ const Materials: React.FC = () => {
                 <DialogActions>
                     <Button onClick={handleClose}>Hủy</Button>
                     <Button onClick={() => formik.submitForm()} variant="contained">
-                        {selectedMaterial ? 'Cập nhật' : 'Thêm mới'}
+                        {selectedJob ? 'Cập nhật' : 'Thêm mới'}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -203,4 +202,4 @@ const Materials: React.FC = () => {
     );
 };
 
-export default Materials;
+export default Jobs;

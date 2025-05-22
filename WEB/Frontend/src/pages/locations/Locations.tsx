@@ -44,17 +44,10 @@ const Locations: React.FC = () => {
         googleMapsApiKey: 'AIzaSyCH1SeR2UE42XBo-Xqv-UB_TrfRIfM6YyI',
     });
 
-    const { data: locationRow, isLoading } = useQuery({
+    const { data: locations=[], isLoading } = useQuery({
         queryKey: ['locations'],
-        queryFn: () => api.get('/locations').then(res => res.data),
+        queryFn: () => api.get('/locations').then(res => res.data.data),
     });
-    const locations = React.useMemo(() => {
-        if (!locationRow) return [];
-        if (Array.isArray(locationRow)) return locationRow;
-        if (locationRow.data && Array.isArray(locationRow.data.materials)) return locationRow.data.materials;
-        if (locationRow.data && Array.isArray(locationRow.data)) return locationRow.data;
-        return [];
-    }, [locationRow]);
 
     const createMutation = useMutation({
         mutationFn: (newLoc: Partial<Location>) => api.post('/locations', newLoc).then(res => res.data),

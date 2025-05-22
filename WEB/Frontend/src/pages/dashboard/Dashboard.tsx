@@ -18,57 +18,26 @@ import api from '../../config/api.config';
 import { Order, Device, Shift, Department } from '../../types';
 
 const Dashboard: React.FC = () => {
-    const { data: ordersRaw } = useQuery({
+    const { data: orders=[] } = useQuery({
         queryKey: ['orders'],
-        queryFn: () => api.get('/orders').then(res => res.data),
+        queryFn: () => api.get('/orders').then(res => res.data.data),
     });
 
-    const { data: devicesRaw } = useQuery({
+    const { data: devices=[] } = useQuery({
         queryKey: ['devices'],
-        queryFn: () => api.get('/devices').then(res => res.data),
+        queryFn: () => api.get('/devices').then(res => res.data.data),
     });
 
-    const { data: shiftsRaw } = useQuery({
+    const { data: shifts=[] } = useQuery({
         queryKey: ['shifts'],
-        queryFn: () => api.get('/shifts').then(res => res.data),
+        queryFn: () => api.get('/shifts').then(res => res.data.data),
     });
 
-    const { data: departmentsRaw } = useQuery({
+    const { data: departments=[] } = useQuery({
         queryKey: ['departments'],
-        queryFn: () => api.get('/departments').then(res => res.data),
+        queryFn: () => api.get('/departments').then(res => res.data.data),
     });
 
-    const orders = React.useMemo(() => {
-        if (!ordersRaw) return [];
-        if (Array.isArray(ordersRaw)) return ordersRaw;
-        if (ordersRaw.data && Array.isArray(ordersRaw.data.orders)) return ordersRaw.data.orders;
-        if (ordersRaw.data && Array.isArray(ordersRaw.data)) return ordersRaw.data;
-        return [];
-    }, [ordersRaw]);
-
-    const devices = React.useMemo(() => {
-        if (!devicesRaw) return [];
-        if (Array.isArray(devicesRaw)) return devicesRaw;
-        if (devicesRaw.data && Array.isArray(devicesRaw.data.devices)) return devicesRaw.data.devices;
-        if (devicesRaw.data && Array.isArray(devicesRaw.data)) return devicesRaw.data;
-        return [];
-    }, [devicesRaw]);
-
-    const shifts = React.useMemo(() => {
-        if (!shiftsRaw) return [];
-        if (Array.isArray(shiftsRaw)) return shiftsRaw;
-        if (shiftsRaw.data && Array.isArray(shiftsRaw.data.shifts)) return shiftsRaw.data.shifts;
-        if (shiftsRaw.data && Array.isArray(shiftsRaw.data)) return shiftsRaw.data;
-        return [];
-    }, [shiftsRaw]);
-
-    const departments = React.useMemo(() => {
-        if (!departmentsRaw) return [];
-        if (Array.isArray(departmentsRaw)) return departmentsRaw;
-        if (departmentsRaw.data && Array.isArray(departmentsRaw.data.departments)) return departmentsRaw.data.departments;
-        if (departmentsRaw.data && Array.isArray(departmentsRaw.data)) return departmentsRaw.data;
-        return [];
-    }, [departmentsRaw]);
 
     const stats = [
         {

@@ -28,6 +28,8 @@ import {
     Description as DescriptionIcon,
     Category,
     LocationCity,
+    Work,
+    CreditCard,
 } from '@mui/icons-material';
 
 const drawerWidth = 240;
@@ -37,6 +39,8 @@ const menuItems = [
     { text: 'Lệnh sản xuất', icon: <AssignmentIcon />, path: '/orders' },
     { text: 'Thiết bị', icon: <DevicesIcon />, path: '/devices' },
     { text: 'Hạng mục', icon: <Category />, path: '/materials' },
+    { text: 'Công việc', icon: <Work />, path: '/jobs' },
+    { text: 'Thẻ lương', icon: <CreditCard />, path: '/payrolls' },
     { text: 'Vị trí', icon: <LocationCity />, path: '/locations' },
     { text: 'Ca làm việc', icon: <AccessTimeIcon />, path: '/shifts' },
     { text: 'Phòng ban', icon: <BusinessIcon />, path: '/departments' },
@@ -116,7 +120,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                         <MenuIcon />
                     </IconButton>
                     <Typography variant="h6" noWrap component="div">
-                        Quản lý lệnh sản xuất
+                        Phần mềm giao ca, nhận lệnh sản xuất
                     </Typography>
                 </Toolbar>
             </AppBar>

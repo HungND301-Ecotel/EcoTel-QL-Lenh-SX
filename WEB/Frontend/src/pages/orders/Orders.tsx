@@ -46,17 +46,11 @@ const Orders: React.FC = () => {
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const queryClient = useQueryClient();
 
-    const { data: ordersRaw, isLoading } = useQuery({
+    const { data: orders=[], isLoading } = useQuery({
         queryKey: ['orders'],
-        queryFn: () => api.get('/orders').then(res => res.data),
+        queryFn: () => api.get('/orders').then(res => res.data.data),
     });
-    const orders = React.useMemo(() => {
-        if (!ordersRaw) return [];
-        if (Array.isArray(ordersRaw)) return ordersRaw;
-        if (ordersRaw.data && Array.isArray(ordersRaw.data.orders)) return ordersRaw.data.orders;
-        if (ordersRaw.data && Array.isArray(ordersRaw.data)) return ordersRaw.data;
-        return [];
-    }, [ordersRaw]);
+
 
     const createMutation = useMutation({
         mutationFn: (newOrder: Partial<Order>) =>
