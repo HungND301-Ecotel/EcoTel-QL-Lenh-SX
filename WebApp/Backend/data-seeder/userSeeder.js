@@ -1,14 +1,13 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const User = require('../models/user.model');
+const User = require('../models/User');
 
 const adminUser = {
     username: 'admin',
     password: 'admin123',
     email: 'admin@example.com',
     fullName: 'Administrator',
-    department: null,
-    isActive: true
+    role:'admin'
 };
 
 const seedAdmin = async () => {

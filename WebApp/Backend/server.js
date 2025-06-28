@@ -10,7 +10,7 @@ const { Server } = require('socket.io');
 const path = require('path');
 const dotenv = require('dotenv');
 const { connectDB } = require('./config/db.config');
-
+// require('./data-seeder/userSeeder')
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const departmentRoutes = require('./routes/department.routes');

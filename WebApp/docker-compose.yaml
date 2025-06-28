@@ -24,6 +24,8 @@ services:
     # restart: always
     networks:
       - frontnet
+    ports:
+      - "3000:80"
   # depends_on:
   #   - ecotel_backend_service
   
@@ -42,6 +44,8 @@ services:
       - /usr/src/app/node_modules
     depends_on:
       - ktv_db
+    ports:
+      - "8080:8080"
     # restart: always
     networks:
       - backnet
