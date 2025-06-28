@@ -1,0 +1,68 @@
+# References:
+# 1. https://github.com/docker/awesome-compose/tree/master/frontnet-postgres
+
+###
+# Run: docker compose up --build
+
+##### NOTE ###########################################
+#### THIS DOCKER COMPOSE IS FOR LOCAL DEVELOPMENT ####
+######################################################
+services:
+
+  Frontend_service:
+    env_file:
+      - ./Frontend/.env
+    image: ecotel_frontend_img
+    build:
+      context: ./Frontend
+    # target: development
+    stdin_open: true
+    volumes:
+      # For development only, to synced src code to container
+      # - ./ecotel_frontend:/usr/src/app
+      - /usr/src/app/node_modules
+    # restart: always
+    networks:
+      - frontnet
+  # depends_on:
+  #   - ecotel_backend_service
+  
+  
+  Backend_service:
+    env_file:
+      - Backend/.env
+    image: ecotel_backend_img
+    build:
+      context: ./Backend
+    # target: development
+    stdin_open: true
+    volumes:
+      # For development only, to synced src code to container
+      #- ./ecotel_backend:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - ktv_db
+    # restart: always
+    networks:
+      - backnet
+
+  ktv_db:
+    image: mongo
+    container_name: mongo_db
+    #restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    volumes:
+      - .mongodb-data:/data/db
+    networks:
+      - backnet
+    ports:
+      - "27017:27017"
+
+
+networks:
+  frontnet:
+  backnet:
+
+
