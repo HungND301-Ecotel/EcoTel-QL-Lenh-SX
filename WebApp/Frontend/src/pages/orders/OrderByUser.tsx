@@ -58,8 +58,8 @@ const OrderByUsers: React.FC = () => {
     const queryClient = useQueryClient();
 
 
-    const { data: orders = [], isLoading, refetch } = useQuery({
-        queryKey: ['orders'],
+    const { data: orderByUser = [], isLoading, refetch } = useQuery({
+        queryKey: ['orderByUser'],
         queryFn: () => api.get(`/orders/user?employee=${employee}&startTime=${startTime}&endTime=${endTime}`).then(res => res.data.data),
     });
 
@@ -123,7 +123,7 @@ const OrderByUsers: React.FC = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {orders.map((order: any) => (
+                            {orderByUser.map((order: any) => (
                                 <TableRow key={order._id}>
                                     <TableCell sx={{
                                         position: 'sticky',

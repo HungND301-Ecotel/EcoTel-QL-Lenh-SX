@@ -84,8 +84,8 @@ const Machines: React.FC = () => {
         googleMapsApiKey: apiKey,
     });
 
-    const { data: devices = [], isLoading } = useQuery({
-        queryKey: ['devices', q, department],
+    const { data: machines = [], isLoading } = useQuery({
+        queryKey: ['machines', q, department],
         queryFn: () => api.get(`/devices?q=${q}&department=${department}`).then(res => res.data.data?.filter((item: any) => item?.category?.name !== "Vận tải")),
     });
     const { data: DeviceTypes = [] } = useQuery({
@@ -229,10 +229,10 @@ const Machines: React.FC = () => {
                 </Button>
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3, gap: 2 }}>
-                <Typography><b style={{color:'red'}}>Chờ điều động:</b> {devices.filter((o: Device) => o.status === "available").length}</Typography>
-                <Typography><b style={{color:'blue'}}>Đang hoạt động:</b> {devices.filter((o: Device) => o.status === "in_use").length}</Typography>
-                <Typography><b style={{color:'orange'}}>Hỏng:</b> {devices.filter((o: Device) => o.status === "maintenance").length}</Typography>
-                <Typography><b style={{color:'green'}}>Niêm cất:</b> {devices.filter((o: Device) => o.status === "retired").length}</Typography>
+                <Typography><b style={{color:'red'}}>Chờ điều động:</b> {machines.filter((o: Device) => o.status === "available").length}</Typography>
+                <Typography><b style={{color:'blue'}}>Đang hoạt động:</b> {machines.filter((o: Device) => o.status === "in_use").length}</Typography>
+                <Typography><b style={{color:'orange'}}>Hỏng:</b> {machines.filter((o: Device) => o.status === "maintenance").length}</Typography>
+                <Typography><b style={{color:'green'}}>Niêm cất:</b> {machines.filter((o: Device) => o.status === "retired").length}</Typography>
             </Box>
             <Box sx={{ flex: 1, flexDirection: 'column', mb: 3 }}>
                 <Typography><h3>Tìm kiếm</h3></Typography>
@@ -287,7 +287,7 @@ const Machines: React.FC = () => {
                             </TableRow>
                         </TableHead>
                         {!isLoading ? <TableBody>
-                            {devices.map((device: any) => {
+                            {machines.map((device: any) => {
                                 let coordsDisplay = '';
                                 if (
                                     device.coordinates &&
