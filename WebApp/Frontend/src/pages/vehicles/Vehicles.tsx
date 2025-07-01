@@ -84,8 +84,8 @@ const Vehicles: React.FC = () => {
         googleMapsApiKey: apiKey,
     });
 
-    const { data: devices = [], isLoading } = useQuery({
-        queryKey: ['devices', q, department],
+    const { data: vehicles = [], isLoading } = useQuery({
+        queryKey: ['vehicles', q, department],
         queryFn: () => api.get(`/devices?q=${q}&department=${department}`).then(res => res.data.data?.filter((item: any) => item?.category?.name === "Vận tải")),
     });
     const { data: DeviceTypes = [] } = useQuery({
@@ -235,10 +235,10 @@ const Vehicles: React.FC = () => {
                 </Button>
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3, gap: 2 }}>
-                <Typography><b style={{ color: 'red' }}>Chờ điều động:</b> {devices.filter((o: Device) => o.status === "available").length}</Typography>
-                <Typography><b style={{ color: 'blue' }}>Đang hoạt động:</b> {devices.filter((o: Device) => o.status === "in_use").length}</Typography>
-                <Typography><b style={{ color: 'orange' }}>Hỏng:</b> {devices.filter((o: Device) => o.status === "maintenance").length}</Typography>
-                <Typography><b style={{ color: 'green' }}>Niêm cất:</b> {devices.filter((o: Device) => o.status === "retired").length}</Typography>
+                <Typography><b style={{ color: 'red' }}>Chờ điều động:</b> {vehicles.filter((o: Device) => o.status === "available").length}</Typography>
+                <Typography><b style={{ color: 'blue' }}>Đang hoạt động:</b> {vehicles.filter((o: Device) => o.status === "in_use").length}</Typography>
+                <Typography><b style={{ color: 'orange' }}>Hỏng:</b> {vehicles.filter((o: Device) => o.status === "maintenance").length}</Typography>
+                <Typography><b style={{ color: 'green' }}>Niêm cất:</b> {vehicles.filter((o: Device) => o.status === "retired").length}</Typography>
             </Box>
             <Box sx={{ flex: 1, flexDirection: 'column', mb: 3 }}>
                 <Typography><h3>Tìm kiếm</h3></Typography>
@@ -293,7 +293,7 @@ const Vehicles: React.FC = () => {
                             </TableRow>
                         </TableHead>
                         {!isLoading ? <TableBody>
-                            {devices.map((device: any) => {
+                            {vehicles.map((device: any) => {
                                 let coordsDisplay = '';
                                 if (
                                     device.coordinates &&
