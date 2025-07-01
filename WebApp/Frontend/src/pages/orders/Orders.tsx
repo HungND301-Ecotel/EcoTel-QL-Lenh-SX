@@ -24,6 +24,9 @@ import {
     TextField,
     MenuItem,
     Tooltip,
+    Autocomplete,
+    styled,
+    Popper,
 } from '@mui/material';
 import { format } from 'date-fns';
 import {
@@ -46,6 +49,14 @@ import OrderFormEdit from './OrderFormEdit';
 import OrderHistories from '../../components/OrderHistory/OrderHistories';
 import OrderFormTransfer from './OrderFormTransfer';
 
+const StyledPopper = styled(Popper)({
+    '& .MuiAutocomplete-listbox': {
+        maxHeight: '200px', // Đặt chiều cao tối đa mong muốn
+        overflowY: 'auto', // Thêm thanh cuộn khi nội dung vượt quá chiều cao
+    },
+});
+
+
 const Orders: React.FC = () => {
     const [open, setOpen] = useState(false);
     const [history, setHistory] = useState(false);
@@ -53,13 +64,13 @@ const Orders: React.FC = () => {
     const [employee, setEmployee] = useState("");
     const [startTime, setStartTime] = useState("");
     const [endTime, setEndTime] = useState("");
-    const [department, setDepartment] = useState("");
+    const [device, setDevice] = useState("");
     const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
     const queryClient = useQueryClient();
 
-    const { data: departments = [] } = useQuery({
-        queryKey: ['departments'],
-        queryFn: () => api.get('/departments').then(res => res.data.data),
+    const { data: devices = [] } = useQuery({
+        queryKey: ['devices'],
+        queryFn: () => api.get('/devices').then(res => res.data.data),
     });
 
     const { data: users = [] } = useQuery({
@@ -69,7 +80,7 @@ const Orders: React.FC = () => {
 
     const { data: orders = [], isLoading, refetch } = useQuery({
         queryKey: ['orders'],
-        queryFn: () => api.get(`/orders?employee=${employee}&startTime=${startTime}&endTime=${endTime}`).then(res => res.data.data),
+        queryFn: () => api.get(`/orders?employee=${employee}&device=${device}&startTime=${startTime}&endTime=${endTime}`).then(res => res.data.data),
     });
 
     const createMutation = useMutation({
@@ -186,27 +197,48 @@ const Orders: React.FC = () => {
             <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 2, mb: 3, flexWrap: 'wrap' }}>
                 <Box sx={{ flex: 1, flexDirection: 'column' }}>
                     <Typography>Công nhân:</Typography>
-                    <TextField fullWidth select size="small" value={employee}
-                        SelectProps={{
-                            displayEmpty: true,
-                            MenuProps: {
-                                style: {
-                                    maxHeight: 300
-                                }
-                            }
+                    <Autocomplete
+                        fullWidth
+                        options={users}
+                        getOptionLabel={(option: any) =>
+                            `${option?.fullName || ""}-${option?.salaryCode || ''}`
+                        }
+                        value={users.find((p: any) => p._id === employee) || null}
+                        onChange={(event, newValue) => {
+                            setEmployee(newValue?._id);
                         }}
-                        onChange={(e) => setEmployee(e.target.value)}>
-                        <MenuItem value="">
-                            Tất cả
-                        </MenuItem>
-                        {users.map((user: any) => (
-                            <MenuItem key={user._id} value={user?._id} >
-                                {user.salaryCode} - {user?.fullName}
-                            </MenuItem>
-                        ))}
-                    </TextField>
+                        PopperComponent={StyledPopper}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                size='small'
+                                label="Công nhân"
+                            />
+                        )}
+                    />
                 </Box>
-
+                <Box sx={{ flex: 1, flexDirection: 'column' }}>
+                    <Typography>Phương tiện:</Typography>
+                    <Autocomplete
+                        fullWidth
+                        options={devices}
+                        getOptionLabel={(option: any) =>
+                            option.code || ''
+                        }
+                        value={devices.find((p: any) => p._id === device) || null}
+                        onChange={(event, newValue) => {
+                            setDevice(newValue?._id);
+                        }}
+                        PopperComponent={StyledPopper}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                size='small'
+                                label="Phương tiện"
+                            />
+                        )}
+                    />
+                </Box>
                 <Box sx={{ flex: 1, flexDirection: 'column' }}>
                     <Typography>Từ ngày:</Typography>
                     <TextField fullWidth type="date" size="small" value={startTime}
@@ -231,7 +263,7 @@ const Orders: React.FC = () => {
             </Box>
 
             <Paper sx={{ width: '100%', overflowX: "initial" }}>
-                <TableContainer sx={{ maxHeight: '80vh' }}>
+                <TableContainer sx={{ height: '80vh' }}>
                     <Table stickyHeader aria-label="sticky table">
                         <TableHead>
                             <TableRow>

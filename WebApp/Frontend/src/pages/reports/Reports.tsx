@@ -26,6 +26,10 @@ import dayjs from 'dayjs';
 import VehicleShiftReport from './VehicleShiftReport';
 import CarReport from './CarReport';
 import ExcavatorTripReport from './ExcavatorTripReport';
+import CarTripReport from './CarTripReport';
+import ProductionReport from './ProductionReport';
+import WorkLogReport from './WorkLogReport';
+import mealRequestReport from './MealRepuestReport';
 
 
 function Reports() {
@@ -44,17 +48,37 @@ function Reports() {
         queryKey: ['shifts'],
         queryFn: () => api.get('/shifts').then(res => res.data.data),
     });
+    const getSignatureUrl = useMutation({
+        mutationFn: async () => {
+            const res = await api.get("/auth/me");
+            const userData = res.data.data;
+            return userData.user?.signature;
+        },
+        onSuccess: (signature: string) => {
+            console.log(signature)
+            if (!signature || signature === "") {
+                alert("Bạn không có chữ kí")
+            } else {
+                setSignatureUrl(signature);
+            }
+        },
+        onError: (error: any) => {
+            alert(error.response?.data?.message || error.message || 'Lỗi');
+        }
+    });
     const reportNames = [
         { name: 'Xe không hoạt động', },
-        { name: 'Nhật trình máy xúc', },
+        { name: 'Danh sách chuyến máy xúc', },
+        { name: 'Danh sách chuyến ô tô', },
         { name: 'Phiếu báo công', },
         { name: 'Phiếu báo ăn', },
-        { name: 'Phiếu bồi dưỡng hiện vật', },
-        { name: 'Phiếu lĩnh dầu', },
-        { name: 'Tổng hợp số liệu trong ca (Gạt)', },
-        { name: 'Tổng hợp số liệu trong ca (Khoan)', },
-        { name: 'Tổng hợp số liệu trong ca (Máy xúc)', },
+        // { name: 'Phiếu bồi dưỡng hiện vật', },
+        // { name: 'Phiếu lĩnh dầu', },
+        // { name: 'Tổng hợp số liệu trong ca (Gạt)', },
+        // { name: 'Tổng hợp số liệu trong ca (Khoan)', },
+        // { name: 'Tổng hợp số liệu trong ca (Máy xúc)', },
         { name: 'Tổng hợp số liệu trong ca (Ô tô)', },
+        { name: 'Theo dõi sản lượng, nhiên liệu, dầu mỡ' }
     ];
     const reportsMap = {
         'Xe không hoạt động': {
@@ -62,10 +86,30 @@ function Reports() {
             exportUrl: '/exports/vehicleShiftReport',
             PreviewComponent: VehicleShiftReport,
         },
-        'Nhật trình máy xúc': {
+        'Danh sách chuyến máy xúc': {
             viewUrl: '/exports/excavatorTripReport/view',
             exportUrl: '/exports/excavatorTripReport',
             PreviewComponent: ExcavatorTripReport,
+        },
+        'Danh sách chuyến ô tô': {
+            viewUrl: '/exports/carTripReport/view',
+            exportUrl: '/exports/carTripReport',
+            PreviewComponent: CarTripReport,
+        },
+        'Phiếu báo công': {
+            viewUrl: '/exports/worklog/view',
+            exportUrl: '/exports/worklog',
+            PreviewComponent: WorkLogReport,
+        },
+        'Phiếu báo ăn': {
+            viewUrl: '/exports/meal_request/view',
+            exportUrl: '/exports/meal_request',
+            PreviewComponent: mealRequestReport,
+        },
+        'Theo dõi sản lượng, nhiên liệu, dầu mỡ': {
+            viewUrl: '/exports/productReport/view',
+            exportUrl: '/exports/productReport',
+            PreviewComponent: ProductionReport,
         },
         'Tổng hợp số liệu trong ca (Ô tô)': {
             viewUrl: '/exports/carReport/view',
@@ -223,7 +267,7 @@ function Reports() {
                                 }
                                 reportExcel.mutate();
                             }}>
-                                Xuất file
+                                Tải xuống
                             </Button>
                             <Button variant="contained" onClick={() => {
                                 if (!title) {
@@ -235,42 +279,18 @@ function Reports() {
                             }}>
                                 Xem trước
                             </Button>
-                        </Grid>
-
-                        {preview && PreviewComponent ? <PreviewComponent data={data} /> : null}
-
-                        <Grid item xs={12}>
                             <Button
                                 variant="contained"
                                 component="label"
+                                startIcon
+                                onClick={() => {
+                                    getSignatureUrl.mutate()
+                                }}
                             >
                                 Thêm chữ kí
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    hidden
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (!file) return;
-
-                                        const formData = new FormData();
-                                        formData.append('file', file);
-
-                                        formData.forEach((value, key) => {
-                                            console.log(`${key}:`, value);
-                                        });
-
-                                        api.post('/uploads', formData, {
-                                            headers: { 'Content-Type': 'multipart/form-data' },
-                                        }).then(res => {
-                                            const url = res.data?.data?.url; // tùy vào response thực tế
-                                            setSignatureUrl(url);
-                                        }).catch((err) => {
-                                            alert("Lỗi upload ảnh");
-                                        });
-                                    }}
-                                />
                             </Button>
+                        </Grid>
+                        <Grid item xs={12}>
 
                             {signatureUrl && (
                                 <Box mt={2}>
@@ -279,6 +299,8 @@ function Reports() {
                                 </Box>
                             )}
                         </Grid>
+
+                        {preview && PreviewComponent ? <PreviewComponent data={data} /> : null}
 
                     </Grid>
                 </Paper>

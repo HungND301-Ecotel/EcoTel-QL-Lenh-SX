@@ -7,6 +7,8 @@ const userSchema = new mongoose.Schema({
     gender: { type: String },
     email: { type: String },
     phone: { type: String },
+    avatar: { type: String },
+    signature:{type:String},
     salaryCode:{type:String},
     department: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
     position: { type: mongoose.Schema.Types.ObjectId, ref: 'Position' },

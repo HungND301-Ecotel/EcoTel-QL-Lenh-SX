@@ -42,6 +42,8 @@ import {
     VpnKeyOutlined,
     SafetyCheck,
     Timelapse,
+    PrecisionManufacturing,
+    LocalOffer,
 } from '@mui/icons-material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../config/api.config';
@@ -97,6 +99,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 </Tooltip>
             , path: '/orders'
         },
+        ["manager"].includes(user?.role) ? {
+            text: 'Công việc của tôi', icon:
+                <Tooltip title="Giao ca" placement='right'>
+                    <AssignmentInd color='primary' />
+                </Tooltip>
+            , path: '/orderByUsers'
+        } : null,
         ["admin", "manager"].includes(user?.role) ? {
             text: 'Ca làm việc', icon:
                 <Tooltip title="Ca làm việc" placement='right'>
@@ -114,21 +123,21 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         ["admin", "manager"].includes(user?.role) ? {
             text: 'Loại phương tiện', icon:
                 <Tooltip title="Loại phương tiện" placement='right'>
-                    <LocalShipping color='primary' />
+                    <LocalOffer color='primary' />
                 </Tooltip>
             , path: '/deviceTypes'
         } : null,
         ["admin", "manager", "dispatcher"].includes(user?.role) ? {
             text: 'Thông tin ô tô', icon:
                 <Tooltip title="Thông tin ô tô" placement='right'>
-                    <DevicesIcon color='primary' />
+                    <LocalShipping color='primary' />
                 </Tooltip>
             , path: '/vehicles'
         } : null,
         ["admin", "manager", "dispatcher"].includes(user?.role) ? {
             text: 'Thông tin máy', icon:
                 <Tooltip title="Thông tin máy" placement='right'>
-                    <DevicesIcon color='primary' />
+                    <PrecisionManufacturing color='primary' />
                 </Tooltip>
             , path: '/machines'
         } : null,
@@ -222,7 +231,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 alignItems: 'center',
                 gap: 2
             }}>
-                <Avatar src='/image/logo.png' />
+                <Avatar src='/image/logo.jpg' sx={{width:'70px'}} />
                 {mobileOpen && <Typography variant="h6" noWrap component="div">
                     ESOFT
                 </Typography>}

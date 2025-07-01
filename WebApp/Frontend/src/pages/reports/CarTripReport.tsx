@@ -3,7 +3,7 @@ import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import React, { useEffect, useState } from 'react'
 import { Device } from '../../types';
 
-export default function ExcavatorTripReport({ data }: { data: any[] }) {
+export default function CarTripReport({ data }: { data: any[] }) {
 
     const reportColumns: GridColDef[] = [
         {
@@ -25,6 +25,9 @@ export default function ExcavatorTripReport({ data }: { data: any[] }) {
         },
         {
             field: 'code', headerName: 'Máy vận hành', flex: 0.6,
+        },
+        {
+            field: 'material', headerName: 'Vật liệu', flex: 0.6,
         },
         {
             field: 'tripCount', headerName: 'Số chuyến', flex: 0.6,

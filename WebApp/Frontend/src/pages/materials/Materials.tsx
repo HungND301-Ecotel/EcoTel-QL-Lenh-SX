@@ -139,7 +139,7 @@ const Materials: React.FC = () => {
                     onChange={(e) => setValue(e.target.value)}>
                 </TextField>
             </Box>
-            <TableContainer component={Paper} sx={{ maxHeight: '80vh' }}>
+            <TableContainer component={Paper} sx={{ height: '80vh' }}>
                 <Table>
                     <TableHead>
                         <TableRow>

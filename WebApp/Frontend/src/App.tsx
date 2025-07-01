@@ -24,6 +24,7 @@ import DispatcherOrders from './pages/dispatcherOrder/DispatcherOrders';
 import SafetyMeasures from './pages/safetyMeasures/SafetyMeasures';
 import Machines from './pages/machine/Machine';
 import Shifts from './pages/shift/Shifts';
+import OrderByUsers from './pages/orders/OrderByUser';
 
 
 interface PrivateRouteProps {
@@ -77,6 +78,14 @@ const App = () => {
                     element={
                         <PrivateRoute>
                             {user?.role === "dispatcher" ? <DispatcherOrders /> : <Orders />}
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/orderByUsers"
+                    element={
+                        <PrivateRoute>
+                            <OrderByUsers />
                         </PrivateRoute>
                     }
                 />

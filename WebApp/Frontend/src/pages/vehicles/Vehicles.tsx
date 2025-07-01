@@ -235,10 +235,10 @@ const Vehicles: React.FC = () => {
                 </Button>
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3, gap: 2 }}>
-                <Typography>Chờ điều động: {devices.filter((o: Device) => o.status === "available").length}</Typography>
-                <Typography>Đang hoạt động: {devices.filter((o: Device) => o.status === "in_use").length}</Typography>
-                <Typography>Hỏng: {devices.filter((o: Device) => o.status === "maintenance").length}</Typography>
-                <Typography>Niêm cất: {devices.filter((o: Device) => o.status === "retired").length}</Typography>
+                <Typography><b style={{ color: 'red' }}>Chờ điều động:</b> {devices.filter((o: Device) => o.status === "available").length}</Typography>
+                <Typography><b style={{ color: 'blue' }}>Đang hoạt động:</b> {devices.filter((o: Device) => o.status === "in_use").length}</Typography>
+                <Typography><b style={{ color: 'orange' }}>Hỏng:</b> {devices.filter((o: Device) => o.status === "maintenance").length}</Typography>
+                <Typography><b style={{ color: 'green' }}>Niêm cất:</b> {devices.filter((o: Device) => o.status === "retired").length}</Typography>
             </Box>
             <Box sx={{ flex: 1, flexDirection: 'column', mb: 3 }}>
                 <Typography><h3>Tìm kiếm</h3></Typography>
@@ -268,7 +268,7 @@ const Vehicles: React.FC = () => {
                 </Box>
             </Box>
             <Paper sx={{ width: '100%', overflowX: "initial" }}>
-                <TableContainer sx={{ maxHeight: '80vh' }}>
+                <TableContainer sx={{ height: '80vh' }}>
                     <Table stickyHeader aria-label="sticky table">
                         <TableHead>
                             <TableRow>
@@ -282,6 +282,7 @@ const Vehicles: React.FC = () => {
                                 }}>Biển số</TableCell>
                                 <TableCell sx={{ border: '1px solid black' }}>Tên ô tô</TableCell>
                                 <TableCell sx={{ border: '1px solid black' }}>Số xe</TableCell>
+                                <TableCell sx={{ border: '1px solid black' }}>Loại xe</TableCell>
                                 <TableCell sx={{ border: '1px solid black' }}>Chủng loại</TableCell>
                                 <TableCell sx={{ border: '1px solid black' }}>Nhiên liệu</TableCell>
                                 <TableCell sx={{ border: '1px solid black' }}>Trọng tải</TableCell>
@@ -316,6 +317,7 @@ const Vehicles: React.FC = () => {
                                         }}>{device.code}</TableCell>
                                         <TableCell sx={{ border: '1px solid black', minWidth: 150, }}>{device.name}</TableCell>
                                         <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{device.vehicleNumber}</TableCell>
+                                        <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{device.category?.name}</TableCell>
                                         <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{device.material}</TableCell>
                                         <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{device.fuelType}</TableCell>
                                         <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{device.capacity}</TableCell>

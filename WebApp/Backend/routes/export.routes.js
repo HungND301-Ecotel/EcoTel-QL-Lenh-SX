@@ -6,7 +6,7 @@ const Order = require('../models/Order');
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 
 
-
+// lệnh sx
 router.get('/order/:id', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
         const order = await Order.findById(req.params.id)
@@ -367,10 +367,13 @@ function formatDate(dateString) {
     const year = date.getFullYear();
     return `${month}/${day}/${year}`;
 }
+//báo ca tình trạng ô tô
 router.post('/vehicleShiftReport/view', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
         const { shift, startDate, endDate } = req.body
-        let query = {};
+        let query = {
+            createdBy: req.userId
+        };
         if (Array.isArray(shift) && shift.length > 0) {
             query.shift = { $in: shift };
         }
@@ -422,7 +425,7 @@ router.post('/vehicleShiftReport/view', verifyToken, restrictTo('admin', 'dispat
 router.post('/vehicleShiftReport', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
         const { shift, startDate, endDate, title, signature } = req.body
-        let query = {};
+        let query = { createdBy: req.userId };
         if (Array.isArray(shift) && shift.length > 0) {
             query.shift = { $in: shift };
         }
@@ -506,8 +509,9 @@ router.post('/vehicleShiftReport', verifyToken, restrictTo('admin', 'dispatcher'
             });
 
             // Gán ảnh vào vị trí (dùng topleft + extents hoặc range)
+            const lastCol = worksheet.columnCount;
             worksheet.addImage(imageId, {
-                tl: { col: 3, row: orders.length + 4 }, // H30
+                tl: { col: lastCol - 2, row: index + 7 }, // H30
                 ext: { width: 150, height: 150 },
             });
         }
@@ -537,7 +541,7 @@ router.post('/vehicleShiftReport', verifyToken, restrictTo('admin', 'dispatcher'
     }
 });
 
-//
+// báo tổng hợp ô tô
 router.post('/carReport/view', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
         const { shift, startDate, endDate, } = req.body
@@ -783,8 +787,9 @@ router.post('/carReport', verifyToken, restrictTo('admin', 'dispatcher', 'manage
             });
 
             // Gán ảnh vào vị trí (dùng topleft + extents hoặc range)
+            const lastCol = worksheet.columnCount;
             worksheet.addImage(imageId, {
-                tl: { col: 20, row: orders.length + 7 }, // H30
+                tl: { col: lastCol - 2, row: index + 7 }, // H30
                 ext: { width: 150, height: 150 },
             });
         }
@@ -815,7 +820,7 @@ router.post('/carReport', verifyToken, restrictTo('admin', 'dispatcher', 'manage
     }
 });
 
-//
+// báo chuyến máy xúc
 
 router.post('/excavatorTripReport/view', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
@@ -847,7 +852,7 @@ router.post('/excavatorTripReport/view', verifyToken, restrictTo('admin', 'dispa
                     }
                 ]
             })
-            .populate('assignedTo', 'fullName salaryCode')
+            .populate('assignedTo', 'fullName salaryCode department')
             .populate('job', 'name')
             .populate('location', 'name')
             .populate('material', 'name')
@@ -861,13 +866,1072 @@ router.post('/excavatorTripReport/view', verifyToken, restrictTo('admin', 'dispa
                 }
             })
             .populate('shift')
-        const filteredOrders = orders.filter(order => order.device?.category?.name === 'Máy xúc');
+        const filteredOrders = orders.filter(order =>
+            order.device?.category?.name === "Máy xúc"
+        );
+        const formattedData = filteredOrders.flatMap((order, orderIndex) => {
+            if (!order.shiftReport || !order.shiftReport.vehicleReports) return [];
 
+            return order.shiftReport.vehicleReports
+                .map(summary => {
 
-        res.status(200).send({ status: 'success', data: filteredOrders })
+                    return {
+                        _id: vehicle?._id,
+                        fullName: order?.assignedTo?.fullName,
+                        salaryCode: order?.assignedTo?.salaryCode,
+                        department: order?.assignedTo?.department?.name,
+                        shift: `${order?.shiftReport._id}`,
+                        code: summary?.vehicle?.code || '',
+                        tripCount: summary?.tripCount || '',
+                    };
+                });
+        });
+
+        res.status(200).send({ status: 'success', data: formattedData })
     } catch (err) {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 })
+
+router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+    try {
+        const { shift, startDate, endDate, title, signature } = req.body
+        let query = {
+            createdBy: req.userId
+        };
+        if (Array.isArray(shift) && shift.length > 0) {
+            query.shift = { $in: shift };
+        }
+
+        if (startDate && endDate) {
+            query.workingDate = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate),
+            };
+        }
+        const orders = await Order.find(query)
+            .populate({
+                path: "shiftReport",
+                populate: [
+                    {
+                        path: "vehicleSummaries.vehicle",
+                        select: "code vehicleNumber"
+                    },
+                    {
+                        path: "vehicleReports.vehicle",
+                        select: "code vehicleNumber",
+                    }
+                ]
+            })
+            .populate('assignedTo', 'fullName salaryCode department')
+            .populate('job', 'name')
+            .populate('location', 'name')
+            .populate('material', 'name')
+            .populate('excavator', 'code')
+            .populate({
+                path: 'device',
+                select: 'code category',
+                populate: {
+                    path: 'category',
+                    select: 'name'
+                }
+            })
+            .populate('shift')
+        const filteredOrders = orders.filter(order =>
+            order.device?.category?.name === "Máy xúc"
+        );
+        const formattedData = filteredOrders.flatMap((order, orderIndex) => {
+            if (!order.shiftReport || !order.shiftReport.vehicleReports) return [];
+
+            return order.shiftReport.vehicleReports
+                .map(summary => {
+
+                    return {
+                        _id: vehicle?._id,
+                        fullName: order?.assignedTo?.fullName,
+                        salaryCode: order?.assignedTo?.salaryCode,
+                        department: order?.assignedTo?.department?.name,
+                        shift: `${order?.shiftReport._id}`,
+                        code: summary?.vehicle?.code || '',
+                        tripCount: summary?.tripCount || '',
+                    };
+                });
+        });
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet();
+
+        worksheet.mergeCells('A1:E1');
+        const infoRow = worksheet.getCell('A1');
+        infoRow.value = `Ca:                   , ngày:                                 Tên cán bộ:`;
+        infoRow.font = { italic: true, size: 12 };
+        infoRow.alignment = { horizontal: 'left', vertical: 'middle' };
+        // Tiêu đề bảng
+        worksheet.mergeCells('A2:E2');
+        const header = worksheet.getCell('A2');
+        header.value = title;
+        header.font = { bold: true, size: 14 };
+        header.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        const headerRow = worksheet.addRow(['STT', 'Họ và tên', 'Số thẻ', 'Đơn vị', 'Máy vận hành', 'Số chuyến']);
+        headerRow.font = { bold: true };
+        headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        let index = 1;
+        for (const item of formattedData) {
+            worksheet.addRow([
+                index++,
+                item.fullName || '',
+                item.salaryCode || '',
+                item.department?.name || '',
+                item.code || '',
+                item.tripCount || '',
+            ]);
+        }
+
+        worksheet.getColumn(1).width = 6;
+        worksheet.getColumn(1).alignment = { horizontal: 'center' }
+        worksheet.getColumn(2).width = 20;
+        worksheet.getColumn(2).alignment = { horizontal: 'center' }
+        worksheet.getColumn(3).width = 10;
+        worksheet.getColumn(3).alignment = { horizontal: 'center' }
+        worksheet.getColumn(4).width = 40;
+        worksheet.getColumn(5).width = 20;
+        worksheet.getColumn(6).width = 15;
+
+        if (signature) {
+            const response = await axios.get(signature, { responseType: 'arraybuffer' });
+            const contentType = response.headers['content-type'];
+            const extension = contentType.split('/')[1];
+            const imageBuffer = Buffer.from(response.data, 'binary');
+
+            // Thêm ảnh vào workbook
+            const imageId = workbook.addImage({
+                buffer: imageBuffer,
+                extension
+            });
+
+            // Gán ảnh vào vị trí (dùng topleft + extents hoặc range)
+            const lastCol = worksheet.columnCount;
+            worksheet.addImage(imageId, {
+                tl: { col: lastCol - 2, row: index + 7 }, // H30
+                ext: { width: 150, height: 150 },
+            });
+        }
+
+        worksheet.eachRow((row) => {
+            row.eachCell((cell) => {
+                // Nếu chưa có font, tạo font mới
+                if (!cell.font) cell.font = {};
+                cell.font.size = 12; // hoặc 8, tuỳ theo bạn muốn nhỏ đến đâu
+            });
+        });
+
+        // Xuất file
+        const buffer = await workbook.xlsx.writeBuffer();
+
+        // Thiết lập header để tải file về
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader(
+            'Content-Disposition',
+            "attachment; filename*=UTF-8''*.xlsx"
+        );   // Gửi buffer về client
+        res.send(buffer);
+
+    } catch (err) {
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+})
+
+// báo chuyến ô tô
+
+router.post('/carTripReport/view', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+    try {
+        const { shift, startDate, endDate, } = req.body
+        let query = {
+            createdBy: req.userId
+        };
+        if (Array.isArray(shift) && shift.length > 0) {
+            query.shift = { $in: shift };
+        }
+
+        if (startDate && endDate) {
+            query.workingDate = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate),
+            };
+        }
+        const orders = await Order.find(query)
+            .populate({
+                path: "shiftReport",
+                populate: [
+                    {
+                        path: "vehicleSummaries.vehicle",
+                        select: "code vehicleNumber"
+                    },
+                    {
+                        path: "vehicleReports.vehicle",
+                        select: "code vehicleNumber",
+                    },
+                    {
+                        path: "vehicleReports.materialType",
+                        select: "name",
+                    }
+                ]
+            })
+            .populate('assignedTo', 'fullName salaryCode department')
+            .populate('job', 'name')
+            .populate('location', 'name')
+            .populate('material', 'name')
+            .populate('excavator', 'code')
+            .populate({
+                path: 'device',
+                select: 'code category',
+                populate: {
+                    path: 'category',
+                    select: 'name'
+                }
+            })
+            .populate('shift')
+        const filteredOrders = orders.filter(order =>
+            order.device?.category?.name === "Vận tải"
+        );
+        const formattedData = filteredOrders.flatMap((order, orderIndex) => {
+            if (!order.shiftReport || !order.shiftReport.vehicleReports) return [];
+
+            return order.shiftReport.vehicleReports
+                .map(summary => {
+
+                    return {
+                        _id: vehicle?._id,
+                        fullName: order?.assignedTo?.fullName,
+                        salaryCode: order?.assignedTo?.salaryCode,
+                        department: order?.assignedTo?.department?.name,
+                        shift: `${order?.shiftReport._id}`,
+                        code: summary?.vehicle?.code || '',
+                        material: summary?.materialType?.name || '',
+                        tripCount: summary?.tripCount || '',
+                    };
+                });
+        });
+
+        res.status(200).send({ status: 'success', data: formattedData })
+    } catch (err) {
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+})
+
+router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+    try {
+        const { shift, startDate, endDate, title, signature } = req.body
+        let query = {
+            createdBy: req.userId
+        };
+        if (Array.isArray(shift) && shift.length > 0) {
+            query.shift = { $in: shift };
+        }
+
+        if (startDate && endDate) {
+            query.workingDate = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate),
+            };
+        }
+        const orders = await Order.find(query)
+            .populate({
+                path: "shiftReport",
+                populate: [
+                    {
+                        path: "vehicleSummaries.vehicle",
+                        select: "code vehicleNumber"
+                    },
+                    {
+                        path: "vehicleReports.vehicle",
+                        select: "code vehicleNumber",
+                    },
+                    {
+                        path: "vehicleReports.materialType",
+                        select: "name",
+                    },
+                ]
+            })
+            .populate('assignedTo', 'fullName salaryCode department')
+            .populate('job', 'name')
+            .populate('location', 'name')
+            .populate('material', 'name')
+            .populate('excavator', 'code')
+            .populate({
+                path: 'device',
+                select: 'code category',
+                populate: {
+                    path: 'category',
+                    select: 'name'
+                }
+            })
+            .populate('shift')
+        const filteredOrders = orders.filter(order =>
+            order.device?.category?.name === "Vận tải"
+        );
+        const formattedData = filteredOrders.flatMap((order, orderIndex) => {
+            if (!order.shiftReport || !order.shiftReport.vehicleReports) return [];
+
+            return order.shiftReport.vehicleReports
+                .map(summary => {
+
+                    return {
+                        _id: vehicle?._id,
+                        fullName: order?.assignedTo?.fullName,
+                        salaryCode: order?.assignedTo?.salaryCode,
+                        department: order?.assignedTo?.department?.name,
+                        shift: `${order?.shiftReport._id}`,
+                        code: summary?.vehicle?.code || '',
+                        material: summary?.materialType?.name || '',
+                        tripCount: summary?.tripCount || '',
+                    };
+                });
+        });
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet();
+
+        worksheet.mergeCells('A1:G1');
+        const infoRow = worksheet.getCell('A1');
+        infoRow.value = `Ca:                   , ngày:                                 Tên cán bộ:`;
+        infoRow.font = { italic: true, size: 12 };
+        infoRow.alignment = { horizontal: 'left', vertical: 'middle' };
+        // Tiêu đề bảng
+        worksheet.mergeCells('A2:E2');
+        const header = worksheet.getCell('A2');
+        header.value = title;
+        header.font = { bold: true, size: 14 };
+        header.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        const headerRow = worksheet.addRow(['STT', 'Họ và tên', 'Số thẻ', 'Đơn vị', 'Máy vận hành', 'Vật liệu', 'Số chuyến']);
+        headerRow.font = { bold: true };
+        headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        let index = 1;
+        for (const item of formattedData) {
+            worksheet.addRow([
+                index++,
+                item.fullName || '',
+                item.salaryCode || '',
+                item.department?.name || '',
+                item.code || '',
+                item.material || '',
+                item.tripCount || '',
+            ]);
+        }
+
+        worksheet.getColumn(1).width = 6;
+        worksheet.getColumn(1).alignment = { horizontal: 'center' }
+        worksheet.getColumn(2).width = 20;
+        worksheet.getColumn(2).alignment = { horizontal: 'center' }
+        worksheet.getColumn(3).width = 10;
+        worksheet.getColumn(3).alignment = { horizontal: 'center' }
+        worksheet.getColumn(4).width = 40;
+        worksheet.getColumn(5).width = 20;
+        worksheet.getColumn(6).width = 20;
+        worksheet.getColumn(7).width = 15;
+
+        if (signature) {
+            const response = await axios.get(signature, { responseType: 'arraybuffer' });
+            const contentType = response.headers['content-type'];
+            const extension = contentType.split('/')[1];
+            const imageBuffer = Buffer.from(response.data, 'binary');
+
+            // Thêm ảnh vào workbook
+            const imageId = workbook.addImage({
+                buffer: imageBuffer,
+                extension
+            });
+
+            // Gán ảnh vào vị trí (dùng topleft + extents hoặc range)
+            const lastCol = worksheet.columnCount;
+            worksheet.addImage(imageId, {
+                tl: { col: lastCol - 2, row: index+7 }, // H30
+                ext: { width: 150, height: 150 },
+            });
+        }
+
+        worksheet.eachRow((row) => {
+            row.eachCell((cell) => {
+                // Nếu chưa có font, tạo font mới
+                if (!cell.font) cell.font = {};
+                cell.font.size = 12; // hoặc 8, tuỳ theo bạn muốn nhỏ đến đâu
+            });
+        });
+
+        // Xuất file
+        const buffer = await workbook.xlsx.writeBuffer();
+
+        // Thiết lập header để tải file về
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader(
+            'Content-Disposition',
+            "attachment; filename*=UTF-8''*.xlsx"
+        );   // Gửi buffer về client
+        res.send(buffer);
+
+    } catch (err) {
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+})
+
+// báo sản lượng
+
+router.post('/productReport/view', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+    try {
+        const { shift, startDate, endDate, } = req.body
+        let query = {
+            createdBy: req.userId
+        };
+        if (Array.isArray(shift) && shift.length > 0) {
+            query.shift = { $in: shift };
+        }
+
+        if (startDate && endDate) {
+            query.workingDate = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate),
+            };
+        }
+        const orders = await Order.find(query)
+            .populate({
+                path: "shiftReport",
+                populate: [
+                    {
+                        path: "vehicleSummaries.vehicle",
+                        select: "code vehicleNumber"
+                    },
+                    {
+                        path: "vehicleReports.vehicle",
+                        select: "code vehicleNumber",
+                    },
+                    {
+                        path: "vehicleReports.materialType",
+                        select: "name",
+                    }
+                ]
+            })
+            .populate('assignedTo', 'fullName salaryCode department')
+            .populate('job', 'name')
+            .populate('location', 'name')
+            .populate('material', 'name')
+            .populate('excavator', 'code')
+            .populate({
+                path: 'device',
+                select: 'code category',
+                populate: {
+                    path: 'category',
+                    select: 'name'
+                }
+            })
+            .populate('shift')
+        const filteredOrders = orders.filter(order =>
+            order.device?.category?.name === "Vận tải"
+        );
+        const formattedData = filteredOrders.flatMap((order, orderIndex) => {
+            if (!order.shiftReport || !order.shiftReport.vehicleReports) return [];
+
+            return order.shiftReport.vehicleReports
+                .map(summary => {
+
+                    return {
+                        _id: vehicle?._id,
+                        fullName: order?.assignedTo?.fullName,
+                        salaryCode: order?.assignedTo?.salaryCode,
+                        department: order?.assignedTo?.department?.name,
+                        shift: `${order?.shiftReport._id}`,
+                        code: summary?.vehicle?.code || '',
+                        material: summary?.materialType?.name || '',
+                        tripCount: summary?.tripCount || '',
+                    };
+                });
+        });
+
+        res.status(200).send({ status: 'success', data: formattedData })
+    } catch (err) {
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+})
+
+router.post('/productReport', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+    try {
+        const { shift, startDate, endDate, title, signature } = req.body
+        let query = {
+            createdBy: req.userId
+        };
+        if (Array.isArray(shift) && shift.length > 0) {
+            query.shift = { $in: shift };
+        }
+
+        if (startDate && endDate) {
+            query.workingDate = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate),
+            };
+        }
+        const orders = await Order.find(query)
+            .populate({
+                path: "shiftReport",
+                populate: [
+                    {
+                        path: "vehicleSummaries.vehicle",
+                        select: "code vehicleNumber"
+                    },
+                    {
+                        path: "vehicleReports.vehicle",
+                        select: "code vehicleNumber",
+                    },
+                    {
+                        path: "vehicleReports.materialType",
+                        select: "name",
+                    },
+                ]
+            })
+            .populate('assignedTo', 'fullName salaryCode department')
+            .populate('job', 'name')
+            .populate('location', 'name')
+            .populate('material', 'name')
+            .populate('excavator', 'code')
+            .populate({
+                path: 'device',
+                select: 'code category',
+                populate: {
+                    path: 'category',
+                    select: 'name'
+                }
+            })
+            .populate('shift')
+        const filteredOrders = orders.filter(order =>
+            order.device?.category?.name === "Vận tải"
+        );
+        const formattedData = filteredOrders.flatMap((order, orderIndex) => {
+            if (!order.shiftReport || !order.shiftReport.vehicleReports) return [];
+
+            return order.shiftReport.vehicleReports
+                .map(summary => {
+
+                    return {
+                        _id: vehicle?._id,
+                        fullName: order?.assignedTo?.fullName,
+                        salaryCode: order?.assignedTo?.salaryCode,
+                        department: order?.assignedTo?.department?.name,
+                        shift: `${order?.shiftReport._id}`,
+                        code: summary?.vehicle?.code || '',
+                        material: summary?.materialType?.name || '',
+                        tripCount: summary?.tripCount || '',
+                    };
+                });
+        });
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet();
+
+        // --- 2. DÒNG NGÀY, THÁNG ---
+        worksheet.mergeCells('B1:C1');
+        worksheet.getCell('B1').value = 'Ca:';
+        worksheet.getCell('B1').alignment = { horizontal: 'left' };
+        worksheet.getCell('B1').font = { italic: true };
+
+        worksheet.mergeCells('D1:F1');
+        worksheet.getCell('D1').value = 'ngày:';
+        worksheet.getCell('D1').alignment = { horizontal: 'left' };
+        worksheet.getCell('D1').font = { italic: true };
+
+        worksheet.mergeCells('G1:I1');
+        worksheet.getCell('G1').value = 'Tháng:';
+        worksheet.getCell('G1').alignment = { horizontal: 'left' };
+        worksheet.getCell('G1').font = { italic: true };
+
+        worksheet.mergeCells('J1:K1');
+        worksheet.getCell('J1').value = 'năm 202';
+        worksheet.getCell('J1').alignment = { horizontal: 'left' };
+        worksheet.getCell('J1').font = { italic: true };
+
+        // --- 3. TIÊU ĐỀ CÁC CỘT ---
+        setCell(worksheet, 'D4:E5', 'TUYẾN VẬN TẢI')
+        setCell(worksheet, 'F4:H5', 'SẢN LƯỢNG THỰC HIỆN - THAN')
+        setCell(worksheet, 'I4:K5', 'SẢN LƯỢNG THỰC HIỆN - ĐẤT, ĐÁ')
+        setCell(worksheet, 'O4:Q5', 'GA DOAN (LÍT)')
+
+        // Hàng 5
+        worksheet.getRow(5).values = [, , , , 'Cung độ', 'Độ cao', 'Số chuyến', 'Số tấn', 'T.Km', 'Số chuyến', 'Số m3', 'T.Km', , , , 'Tổng đầu ca', 'Cấp trong ca', 'Tiêu thụ trong ca'];
+        worksheet.getRow(5).eachCell(cell => {
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        });
+
+        // Hàng 6 - số thứ tự
+        worksheet.getRow(6).values = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20'];
+
+        // --- 4. Style: căn giữa, border ---
+        for (let rowIndex = 4; rowIndex <= 6; rowIndex++) {
+            const row = worksheet.getRow(rowIndex);
+            row.eachCell(cell => {
+                cell.font = { bold: true, size: 11 };
+                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+        }
+        setCell(worksheet, 'A4:A5', 'SỐ TT')
+        setCell(worksheet, 'B4:B5', 'SỐ ĐĂNG KÝ THIẾT BỊ')
+        setCell(worksheet, 'C4:C5', 'HỌ VÀ TÊN CÔNG NHÂN VẬN HÀNH')
+        setCell(worksheet, 'L4:L5', 'T.Km phục vụ')
+        setCell(worksheet, 'M4:M5', 'Tổng sản lượng T.Km')
+        setCell(worksheet, 'N4:N5', 'Giờ hoạt động ra sản phẩm')
+        setCell(worksheet, 'R4:R5', 'Dầu nhờn (lít)')
+        setCell(worksheet, 'S4:S5', 'Mỡ máy (Kg)')
+        setCell(worksheet, 'T4:T5', 'CN VẬN HÀNH KÝ NHẬN')
+
+        const length = formattedData.length;
+
+        if (signature) {
+            const response = await axios.get(signature, { responseType: 'arraybuffer' });
+            const contentType = response.headers['content-type'];
+            const extension = contentType.split('/')[1];
+            const imageBuffer = Buffer.from(response.data, 'binary');
+
+            // Thêm ảnh vào workbook
+            const imageId = workbook.addImage({
+                buffer: imageBuffer,
+                extension
+            });
+
+            // Gán ảnh vào vị trí (dùng topleft + extents hoặc range)
+            const lastCol = worksheet.columnCount;
+            worksheet.addImage(imageId, {
+                tl: { col: lastCol - 2, row: length + 7 }, // H30
+                ext: { width: 150, height: 150 },
+            });
+        }
+
+        worksheet.eachRow((row) => {
+            row.eachCell((cell) => {
+                // Nếu chưa có font, tạo font mới
+                if (!cell.font) cell.font = {};
+                cell.font.size = 8; // hoặc 8, tuỳ theo bạn muốn nhỏ đến đâu
+            });
+        });
+
+        // Xuất file
+        const buffer = await workbook.xlsx.writeBuffer();
+
+        // Thiết lập header để tải file về
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader(
+            'Content-Disposition',
+            "attachment; filename*=UTF-8''*.xlsx"
+        );   // Gửi buffer về client
+        res.send(buffer);
+
+    } catch (err) {
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+})
+
+// báo công
+
+router.post('/worklog/view', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+    try {
+        const { shift, startDate, endDate, } = req.body
+        let query = {
+            createdBy: req.userId
+        };
+        if (Array.isArray(shift) && shift.length > 0) {
+            query.shift = { $in: shift };
+        }
+
+        if (startDate && endDate) {
+            query.workingDate = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate),
+            };
+        }
+        const orders = await Order.find(query)
+            .populate('assignedTo', 'fullName salaryCode department')
+            .populate('job', 'name')
+            .populate('location', 'name')
+            .populate('material', 'name')
+            .populate('excavator', 'code')
+            .populate('device', 'code')
+            .populate('shift')
+        const formattedData = orders.flatMap((order, orderIndex) => {
+            if (!order.shiftReport || !order.shiftReport.vehicleReports) return [];
+
+            return {
+                _id: vehicle?._id,
+                fullName: order?.assignedTo?.fullName,
+                salaryCode: order?.assignedTo?.salaryCode,
+                device: order?.device.map(item => item.code).join(','),
+                job: order?.job?.name
+            };
+        });
+
+        res.status(200).send({ status: 'success', data: formattedData })
+    } catch (err) {
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+})
+
+router.post('/worklog', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+    try {
+        const { shift, startDate, endDate, signature } = req.body
+        let query = {
+            createdBy: req.userId
+        };
+        if (Array.isArray(shift) && shift.length > 0) {
+            query.shift = { $in: shift };
+        }
+
+        if (startDate && endDate) {
+            query.workingDate = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate),
+            };
+        }
+        const orders = await Order.find(query)
+            .populate('assignedTo', 'fullName salaryCode department')
+            .populate('job', 'name')
+            .populate('location', 'name')
+            .populate('material', 'name')
+            .populate('excavator', 'code')
+            .populate('device', 'code')
+            .populate('shift')
+
+        const formattedData = orders.flatMap((order, orderIndex) => {
+            if (!order.shiftReport || !order.shiftReport.vehicleReports) return [];
+
+
+            return {
+                _id: vehicle?._id,
+                fullName: order?.assignedTo?.fullName,
+                salaryCode: order?.assignedTo?.salaryCode,
+                device: order?.device.map(item => item.code).join(','),
+                job: order?.job?.name
+            };
+        });
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet();
+
+        worksheet.mergeCells('A1:I1');
+        const infoRow = worksheet.getCell('A1');
+        infoRow.value = `Ca:                   , ngày:                                 Tên cán bộ:`;
+        infoRow.font = { italic: true, size: 12 };
+        infoRow.alignment = { horizontal: 'left', vertical: 'middle' };
+        // Tiêu đề bảng
+        worksheet.mergeCells('A2:I2');
+        const header = worksheet.getCell('A2');
+        header.value = "Báo công hàng ngày";
+        header.font = { bold: true, size: 14 };
+        header.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        setCell(worksheet, 'A3', 'STT')
+        setCell(worksheet, 'B3', 'Họ và tên')
+        setCell(worksheet, 'C3', 'Số thẻ')
+        setCell(worksheet, 'D3', 'Thiết bị vận hành, vị trí làm việc')
+        setCell(worksheet, 'E3', 'Vị trí ăn')
+        setCell(worksheet, 'F3', 'Lương cấp bậc 1 ngày')
+        setCell(worksheet, 'G3', 'Lương sản phẩm')
+        setCell(worksheet, 'H3', 'Nội dung công việc')
+        setCell(worksheet, 'I3', 'Ghi chú')
+
+
+        let index = 1;
+        for (const item of formattedData) {
+            worksheet.addRow([
+                index++,
+                item.fullName,
+                item.salaryCode,
+                item?.device,
+                '',
+                '',
+                '',
+                item?.job,
+                ''
+            ]);
+        }
+
+        worksheet.getColumn(1).width = 6;
+        worksheet.getColumn(1).alignment = { horizontal: 'center' }
+        worksheet.getColumn(2).width = 20;
+        worksheet.getColumn(2).alignment = { horizontal: 'center' }
+        worksheet.getColumn(3).width = 10;
+        worksheet.getColumn(3).alignment = { horizontal: 'center' }
+        worksheet.getColumn(4).width = 15;
+        worksheet.getColumn(5).width = 10;
+        worksheet.getColumn(6).width = 15
+        worksheet.getColumn(7).width = 10;
+        worksheet.getColumn(8).width = 25;
+        worksheet.getColumn(9).width = 10;
+
+        const length = formattedData.length
+        setCell(worksheet, `C${length + 7}:D${length + 7}`, 'TỔ TRƯỞNG')
+        setCell(worksheet, `H${length + 7}:I${length + 7}`, 'QUẢN ĐỐC')
+
+        for (let row = length + 6; row <= length + 10; row++) {
+            for (let col = 1; col <= 9; col++) { // A = 1, M = 13
+                const cell = worksheet.getRow(row).getCell(col);
+                cell.border = {};
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFFFFFFF' }
+                }; // Xóa tất cả border
+            }
+        }
+
+
+        if (signature) {
+            const response = await axios.get(signature, { responseType: 'arraybuffer' });
+            const contentType = response.headers['content-type'];
+            const extension = contentType.split('/')[1];
+            const imageBuffer = Buffer.from(response.data, 'binary');
+
+            // Thêm ảnh vào workbook
+            const imageId = workbook.addImage({
+                buffer: imageBuffer,
+                extension
+            });
+
+            // Gán ảnh vào vị trí (dùng topleft + extents hoặc range)
+            const lastCol = worksheet.columnCount;
+            worksheet.addImage(imageId, {
+                tl: { col: lastCol - 2, row: length + 8 }, // H30
+                ext: { width: 150, height: 150 },
+            });
+        }
+
+        worksheet.eachRow((row) => {
+            row.eachCell((cell) => {
+                // Nếu chưa có font, tạo font mới
+                if (!cell.font) cell.font = {};
+                cell.font.size = 10; // hoặc 8, tuỳ theo bạn muốn nhỏ đến đâu
+            });
+        });
+
+        // Xuất file
+        const buffer = await workbook.xlsx.writeBuffer();
+
+        // Thiết lập header để tải file về
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader(
+            'Content-Disposition',
+            "attachment; filename*=UTF-8''*.xlsx"
+        );   // Gửi buffer về client
+        res.send(buffer);
+
+    } catch (err) {
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+})
+
+// báo ăn
+
+router.post('/meal_request/view', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+    try {
+        const { shift, startDate, endDate, } = req.body
+        let query = {
+            createdBy: req.userId,
+            status: 'in_progress'
+        };
+        if (Array.isArray(shift) && shift.length > 0) {
+            query.shift = { $in: shift };
+        }
+
+        if (startDate && endDate) {
+            query.workingDate = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate),
+            };
+        }
+        const orders = await Order.find(query)
+            .populate('assignedTo', 'fullName salaryCode department')
+            .populate('job', 'name')
+            .populate('location', 'name')
+            .populate('material', 'name')
+            .populate('excavator', 'code')
+            .populate('device', 'code')
+            .populate('shift')
+        const formattedData = orders.flatMap((order, orderIndex) => {
+            return {
+                _id: vehicle?._id,
+                fullName: order?.assignedTo?.fullName,
+                salaryCode: order?.assignedTo?.salaryCode,
+                device: order?.device.map(item => item.code).join(','),
+                job: order?.job?.name,
+            };
+        });
+
+        res.status(200).send({ status: 'success', data: formattedData })
+    } catch (err) {
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+})
+
+router.post('/meal_request', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+    try {
+        const { shift, startDate, endDate, signature } = req.body
+        let query = {
+            createdBy: req.userId,
+            status: 'in_progress'
+        };
+        if (Array.isArray(shift) && shift.length > 0) {
+            query.shift = { $in: shift };
+        }
+
+        if (startDate && endDate) {
+            query.workingDate = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate),
+            };
+        }
+        const orders = await Order.find(query)
+            .populate('assignedTo', 'fullName salaryCode department')
+            .populate('job', 'name')
+            .populate('location', 'name')
+            .populate('material', 'name')
+            .populate('excavator', 'code')
+            .populate('device', 'code')
+            .populate('shift')
+
+        const formattedData = orders.flatMap((order, orderIndex) => {
+            if (!order.shiftReport || !order.shiftReport.vehicleReports) return [];
+
+
+            return {
+                _id: vehicle?._id,
+                fullName: order?.assignedTo?.fullName,
+                salaryCode: order?.assignedTo?.salaryCode,
+                device: order?.device.map(item => item.code).join(','),
+                job: order?.job?.name
+            };
+        });
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet();
+
+        worksheet.mergeCells('A1:G1');
+        const infoRow = worksheet.getCell('A1');
+        infoRow.value = `Ca:                   , ngày:                                 Tên cán bộ:`;
+        infoRow.font = { italic: true, size: 12 };
+        infoRow.alignment = { horizontal: 'left', vertical: 'middle' };
+        // Tiêu đề bảng
+        worksheet.mergeCells('A2:G2');
+        const header = worksheet.getCell('A2');
+        header.value = "PHIẾU BÁO ĂN";
+        header.font = { bold: true, size: 14 };
+        header.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        setCell(worksheet, 'A3', 'STT')
+        setCell(worksheet, 'B3', 'Họ và tên')
+        setCell(worksheet, 'C3', 'Số thẻ')
+        setCell(worksheet, 'D3', 'Số xe')
+        setCell(worksheet, 'E3', 'Công việc')
+        setCell(worksheet, 'F3', 'Vị trí báo ăn')
+        setCell(worksheet, 'G3', 'Ghi chú')
+
+
+        let index = 1;
+        for (const item of formattedData) {
+            worksheet.addRow([
+                index++,
+                item.fullName,
+                item.salaryCode,
+                item?.device,
+                item?.job,
+                '',
+                ''
+            ]);
+        }
+
+        worksheet.getColumn(1).width = 6;
+        worksheet.getColumn(1).alignment = { horizontal: 'center' }
+        worksheet.getColumn(2).width = 20;
+        worksheet.getColumn(2).alignment = { horizontal: 'center' }
+        worksheet.getColumn(3).width = 10;
+        worksheet.getColumn(3).alignment = { horizontal: 'center' }
+        worksheet.getColumn(4).width = 15;
+        worksheet.getColumn(5).width = 25;
+        worksheet.getColumn(6).width = 15
+        worksheet.getColumn(7).width = 15;
+
+        const length = formattedData.length
+        setCell(worksheet, `E${length + 7}:G${length + 7}`, 'CÁN BỘ ĐI CA')
+
+        for (let row = length + 6; row <= length + 10; row++) {
+            for (let col = 1; col <= 7; col++) { // A = 1, M = 13
+                const cell = worksheet.getRow(row).getCell(col);
+                cell.border = {};
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFFFFFFF' }
+                }; // Xóa tất cả border
+            }
+        }
+
+        if (signature) {
+            const response = await axios.get(signature, { responseType: 'arraybuffer' });
+            const contentType = response.headers['content-type'];
+            const extension = contentType.split('/')[1];
+            const imageBuffer = Buffer.from(response.data, 'binary');
+
+            // Thêm ảnh vào workbook
+            const imageId = workbook.addImage({
+                buffer: imageBuffer,
+                extension
+            });
+
+            // Gán ảnh vào vị trí (dùng topleft + extents hoặc range)
+            const lastCol = worksheet.columnCount;
+            worksheet.addImage(imageId, {
+                tl: { col: lastCol - 2, row: length + 8 }, // H30
+                ext: { width: 150, height: 150 },
+            });
+        }
+
+        worksheet.eachRow((row) => {
+            row.eachCell((cell) => {
+                // Nếu chưa có font, tạo font mới
+                if (!cell.font) cell.font = {};
+                cell.font.size = 10; // hoặc 8, tuỳ theo bạn muốn nhỏ đến đâu
+            });
+        });
+
+        // Xuất file
+        const buffer = await workbook.xlsx.writeBuffer();
+
+        // Thiết lập header để tải file về
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader(
+            'Content-Disposition',
+            "attachment; filename*=UTF-8''*.xlsx"
+        );   // Gửi buffer về client
+        res.send(buffer);
+
+    } catch (err) {
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+})
+function setCell(ws, range, value) {
+    ws.mergeCells(range);
+    const cell = ws.getCell(range.split(':')[0]);
+    cell.value = value;
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    cell.font = { bold: true, size: 11 };
+    cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+    };
+}
 
 module.exports = router; 
