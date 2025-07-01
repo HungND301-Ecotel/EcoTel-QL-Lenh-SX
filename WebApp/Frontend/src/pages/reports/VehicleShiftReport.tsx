@@ -25,12 +25,13 @@ export default function VehicleShiftReport({ data }: { data: any[] }) {
 
     return (
         <Grid item xs={12}>
-            <Paper sx={{ maxHeight: "80vh", overflowX: 'auto', padding: 1, width: '100%', }}>
+            <Paper sx={{ height: "80vh", overflowX: 'auto', padding: 1, width: '100%', }}>
                 <DataGrid
                     rows={data}
                     columns={reportColumns}
                     getRowId={(row) => row._id}
                     autoHeight
+                    hideFooter 
                     sx={{
                         width: '100%',
                         '& .MuiDataGrid-cell': {

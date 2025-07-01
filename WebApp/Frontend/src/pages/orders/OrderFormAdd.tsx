@@ -25,7 +25,7 @@ dayjs.extend(utc);
 
 const StyledPopper = styled(Popper)({
     '& .MuiAutocomplete-listbox': {
-        maxHeight: '200px', // Đặt chiều cao tối đa mong muốn
+        maxHeight: '300px', // Đặt chiều cao tối đa mong muốn
         overflowY: 'auto', // Thêm thanh cuộn khi nội dung vượt quá chiều cao
     },
 });
@@ -288,7 +288,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                                     getOptionLabel={(option: Device) =>
                                         option.code || ''
                                     }
-                                    value={excavators.find((p: any) => p._id === formik.values.excavator) || null}
+                                    value={excavators.find((p: any) => p._id === formik.values.excavator[0]) || null}
                                     onChange={(event, newValue) => {
                                         formik.setFieldValue('excavator', newValue?._id ? [newValue?._id] : []);
                                     }}
@@ -412,52 +412,26 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                                 />
                             </Grid>
                             <Grid item xs={12}>
-                                <TextField
+                                <Autocomplete
                                     fullWidth
-                                    select
-                                    id="safetyMeasure"
-                                    name="safetyMeasure"
-                                    label="Biện pháp an toàn"
-                                    value={formik.values.safetyMeasure}
-                                    onChange={formik.handleChange}
-                                    error={formik.touched.safetyMeasure && Boolean(formik.errors.safetyMeasure)}
-                                    helperText={
-                                        formik.touched.safetyMeasure && typeof formik.errors.safetyMeasure === 'string'
-                                            ? formik.errors.safetyMeasure
-                                            : ''
+                                    options={safetyMeasures}
+                                    getOptionLabel={(option: SafetyMeasure) =>
+                                        option.content || ''
                                     }
-                                    SelectProps={{
-                                        MenuProps: {
-                                            PaperProps: {
-                                                sx: {
-                                                    maxHeight: 300, // 👈 Chiều cao menu dropdown
-                                                    maxWidth: 500,
-                                                    overflowY: 'auto', // 👈 Tạo thanh cuộn
-                                                    mt: 1,
-                                                    border: '1px solid #ccc',
-                                                },
-                                            },
-                                        },
+                                    value={safetyMeasures.find((p: any) => p._id === formik.values.safetyMeasure) || null}
+                                    onChange={(event, newValue) => {
+                                        formik.setFieldValue('safetyMeasure', newValue?._id || '');
                                     }}
-                                >
-                                    {safetyMeasures.map((safetyMeasure: SafetyMeasure, index: number) => (
-                                        <MenuItem
-                                            key={safetyMeasure._id}
-                                            value={safetyMeasure._id}
-                                            sx={{
-                                                whiteSpace: 'normal',
-                                                lineHeight: 1.4,
-                                                borderBottom: index !== safetyMeasures.length - 1 ? '1px solid #eee' : 'none', // 👈 chia từng item
-                                                backgroundColor: index % 2 === 0 ? '#f9f9f9' : '#ffffff', // 👈 màu xen kẽ
-                                                '&:hover': {
-                                                    backgroundColor: '#e0f7fa',
-                                                },
-                                            }}
-                                        >
-                                            {safetyMeasure.content}
-                                        </MenuItem>
-                                    ))}
-                                </TextField>
+                                    PopperComponent={StyledPopper}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Biện pháp an toàn"
+                                            error={formik.touched.safetyMeasure && Boolean(formik.errors.safetyMeasure)}
+                                            helperText={formik.touched.safetyMeasure && typeof formik.errors.safetyMeasure === 'string' ? formik.errors.safetyMeasure : ''}
+                                        />
+                                    )}
+                                />
 
                             </Grid>
                         </Grid>

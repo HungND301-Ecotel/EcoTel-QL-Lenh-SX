@@ -1,35 +1,37 @@
 import { Typography, IconButton, Paper, Grid } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import React, { useEffect, useState } from 'react'
-import { Device } from '../../types';
 
-export default function ExcavatorTripReport({ data }: { data: any[] }) {
+export default function mealRequestReport({ data }: { data: any[] }) {
 
     const reportColumns: GridColDef[] = [
         {
-            field: 'STT', headerName: 'STT', flex: 0.4,
+            field: 'STT', headerName: 'STT', width: 50,
             renderCell: (params) => params.api.getRowIndex(params.id) + 1,
         },
         {
             field: 'fullName', headerName: 'Họ và tên', flex: 1,
+            valueGetter: (params) => params.row.vehicleNumber || '',
         },
         {
-            field: 'salaryCode',
-            headerName: 'Số thẻ',
-            flex: 0.6,
+            field: 'salaryCode', headerName: 'Số thẻ', width: 100,
+            valueGetter: (params) => params.row.vehicleNumber || '',
         },
         {
-            field: 'department',
-            headerName: 'Đơn vị',
+            field: 'device', headerName: 'Số xe', width: 150,
+            valueGetter: (params) => params.row.vehicleNumber || '',
+        },
+        {
+            field: 'job',
+            headerName: 'Công việc',
             flex: 1,
+            valueGetter: (params) => params.row.note || '',
         },
         {
-            field: 'code', headerName: 'Máy vận hành', flex: 0.6,
+            field: 'eatPosition', headerName: 'Vị trí ăn', width: 100,
+            valueGetter: (params) => params.row.vehicleNumber || '',
         },
-        {
-            field: 'tripCount', headerName: 'Số chuyến', flex: 0.6,
-
-        },
+        { field: 'generalNote', headerName: 'Ghi chú', minWidth: 100 },
     ];
 
     return (
@@ -44,7 +46,6 @@ export default function ExcavatorTripReport({ data }: { data: any[] }) {
                     sx={{
                         width: '100%',
                         '& .MuiDataGrid-cell': {
-                            whiteSpace: 'pre-line',
                             border: '1px solid black',
                         },
                         '& .MuiDataGrid-columnHeader': {

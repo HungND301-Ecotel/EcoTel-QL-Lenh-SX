@@ -23,6 +23,7 @@ import {
     styled,
     Popper,
     InputAdornment,
+    Grid,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -32,6 +33,7 @@ import {
     VisibilityOff,
     ImportExport,
     UploadFile,
+    Close,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -66,6 +68,8 @@ const Users: React.FC = () => {
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [value, setValue] = useState("")
     const [department, setDepartment] = useState("")
+    const [signatureUrl, setSignatureUrl] = useState("")
+    const [avatar, setAvatar] = useState("")
     const queryClient = useQueryClient();
     const [user, setUser] = useAtom(userAtom)
 
@@ -145,6 +149,8 @@ const Users: React.FC = () => {
             gender: '',
             email: '',
             phone: '',
+            avatar: avatar,
+            signature: signatureUrl,
             salaryCode: '',
             department: user?.role === "manager" ? user?.department?._id : '',
             position: undefined,
@@ -181,6 +187,8 @@ const Users: React.FC = () => {
                     ? user.department._id
                     : user.department || undefined,
             });
+            setAvatar(user.avatar)
+            setSignatureUrl(user.signature)
         } else {
             setSelectedUser(null);
             formik.resetForm();
@@ -201,20 +209,20 @@ const Users: React.FC = () => {
     };
 
     const userColumns: GridColDef[] = [
-        { field: 'fullName', headerName: 'Họ tên', width: 150 },
+        { field: 'fullName', headerName: 'Họ tên', width: 200 },
         {
             field: 'salaryCode',
             headerName: 'Thẻ lương',
-            width: 120
+            width: 100
         },
-        { field: 'gender', headerName: 'Giới tính', width: 150 },
+        { field: 'gender', headerName: 'Giới tính', width: 70 },
         { field: 'phone', headerName: 'Số điện thoại', width: 150 },
         { field: 'email', headerName: 'Email', width: 150 },
         {
             field: 'position',
             headerName: 'Chức danh, nghề nghiệp',
             valueGetter: (params) => params.row.position?.name || '',
-            width: 150
+            width: 200
         },
         {
             field: 'department',
@@ -225,7 +233,7 @@ const Users: React.FC = () => {
                     ? dept.name
                     : 'Chưa có';
             },
-            width: 150
+            width: 200
         },
         {
             field: 'role', headerName: 'Phân quyền', width: 150,
@@ -233,6 +241,18 @@ const Users: React.FC = () => {
                 <Typography>
                     {params.row.role === "admin" ? "Quản trị hệ thống" : params.row.role === "dispatcher" ? "Điều hành sản xuất" : params.row.role === "manager" ? "Quản lý" : "Nhân viên"}
                 </Typography>
+            )
+        },
+        {
+            field: 'avatar', headerName: 'Ảnh đại diện', width: 100,
+            renderCell: (params) => (
+                <img src={params.row.avatar || ''} width={50} />
+            )
+        },
+        {
+            field: 'signature', headerName: 'Chữ kí', width: 100,
+            renderCell: (params) => (
+                <img src={params.row.signature || ''} width={50} />
             )
         },
         {
@@ -320,7 +340,7 @@ const Users: React.FC = () => {
                     </Button>
                 </label>
             </Box>
-            <Paper sx={{ maxHeight: "80vh", overflowX: 'auto' }}>
+            <Paper sx={{ height: '80vh', width: '100%', overflowX: 'auto' }}>
                 <DataGrid
                     rows={users}
                     columns={userColumns}
@@ -500,6 +520,138 @@ const Users: React.FC = () => {
                                 <MenuItem value="manager">Quản lý</MenuItem>
                                 <MenuItem value="employee">Nhân viên</MenuItem>
                             </TextField>
+                            <Grid container>
+                                <Grid item xs={12} sm={6}>
+                                    <Box sx={{ position: 'relative', width: 200, height: 200 }}>
+                                        {/* Nút Xóa nằm ngoài Button */}
+                                        {avatar && (
+                                            <IconButton
+                                                onClick={() => setAvatar('')}
+                                                sx={{
+                                                    zIndex: 1000,
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    right: 0,
+                                                    color: 'black',
+                                                }}
+                                            >
+                                                <Close />
+                                            </IconButton>
+                                        )}
+
+                                        <Button
+                                            component="label"
+                                            sx={{
+                                                border: '1px solid grey',
+                                                width: '100%',
+                                                height: '100%',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                            }}
+                                        >
+                                            {!avatar && <Typography>Thêm ảnh</Typography>}
+                                            <img
+                                                src={avatar ? avatar : './image/camera.png'}
+                                                width={avatar ? 200 : 30}
+                                                alt="avatar"
+                                            />
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                hidden
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (!file) return;
+
+                                                    const formData = new FormData();
+                                                    formData.append('file', file);
+
+                                                    api
+                                                        .post('/uploads', formData, {
+                                                            headers: { 'Content-Type': 'multipart/form-data' },
+                                                        })
+                                                        .then((res) => {
+                                                            const url = res.data?.data?.url;
+                                                            setAvatar(url);
+                                                            formik.setFieldValue('avatar', url);
+                                                        })
+                                                        .catch(() => {
+                                                            alert('Lỗi upload ảnh');
+                                                        });
+                                                }}
+                                            />
+                                        </Button>
+                                    </Box>
+
+                                </Grid>
+                                <Grid item xs={12} sm={6}>
+                                    <Box sx={{ position: 'relative', width: 200, height: 200 }}>
+                                        {/* Nút Xóa nằm ngoài Button */}
+                                        {signatureUrl && (
+                                            <IconButton
+                                                onClick={() => setSignatureUrl('')}
+                                                sx={{
+                                                    zIndex: 1000,
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    right: 0,
+                                                    color: 'black',
+                                                }}
+                                            >
+                                                <Close />
+                                            </IconButton>
+                                        )}
+
+                                        <Button
+                                            component="label"
+                                            sx={{
+                                                border: '1px solid grey',
+                                                width: '100%',
+                                                height: '100%',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                            }}
+                                        >
+                                            {!signatureUrl && <Typography>Thêm chữ kí</Typography>}
+                                            <img
+                                                src={signatureUrl ? signatureUrl : './image/camera.png'}
+                                                width={signatureUrl ? 200 : 30}
+                                                alt="avatar"
+                                            />
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                hidden
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (!file) return;
+
+                                                    const formData = new FormData();
+                                                    formData.append('file', file);
+
+                                                    api
+                                                        .post('/uploads', formData, {
+                                                            headers: { 'Content-Type': 'multipart/form-data' },
+                                                        })
+                                                        .then((res) => {
+                                                            const url = res.data?.data?.url;
+                                                            setSignatureUrl(url);
+                                                            formik.setFieldValue('signature', url);
+                                                        })
+                                                        .catch(() => {
+                                                            alert('Lỗi upload ảnh');
+                                                        });
+                                                }}
+                                            />
+                                        </Button>
+                                    </Box>
+
+                                </Grid>
+                            </Grid>
                         </Box>
                     </Box>
                 </DialogContent>

@@ -17,7 +17,8 @@ class ApiService {
   ApiService._internal()
     : _dio = Dio(
         BaseOptions(
-          baseUrl: "http://192.168.100.248:3004/api",
+          baseUrl:
+              "https://ecotel-ql-lenh-sx.onrender.com/api",
           headers: {'Content-Type': 'application/json'},
           connectTimeout: const Duration(
             seconds: 15,

@@ -56,8 +56,8 @@ router.get('/', verifyToken, async (req, res, next) => {
         }
 
         // Filter by device
-        if (req.query.department) {
-            query.department = req.query.department;
+        if (req.query.device) {
+            query.device = { $in: Array.isArray(req.query.device) ? req.query.device : [req.query.device] };
         }
 
         if (req.query.startTime && req.query.endTime) {
@@ -395,7 +395,7 @@ router.get('/user', verifyToken, async (req, res, next) => {
             })
             .populate({
                 path: "createdBy",
-                select: "fullName phone salaryCode",
+                select: "username fullName phone salaryCode",
             })
         res.status(200).send({ status: 'success', data: orders });
     } catch (err) {

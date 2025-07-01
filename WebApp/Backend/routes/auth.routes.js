@@ -43,7 +43,8 @@ const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
  */
 router.post('/register', verifyToken, restrictTo('admin', 'manager'), async (req, res) => {
     try {
-        const { username, password, email,gender, fullName, phone, salaryCode, department, position, role } = req.body;
+        const { username, password, email, gender, fullName, phone, avatar, signature,
+            salaryCode, department, position, role } = req.body;
 
         // Check if user already exists
         let user = await User.findOne({ username });
@@ -88,6 +89,8 @@ router.post('/register', verifyToken, restrictTo('admin', 'manager'), async (req
             password,
             email,
             phone,
+            avatar,
+            signature,
             fullName,
             department,
             salaryCode,
@@ -320,7 +323,8 @@ router.get('/me', verifyToken, async (req, res, next) => {
                     salaryCode: user.salaryCode,
                     position: user.position,
                     department: user.department,
-                    role: user.role
+                    role: user.role,
+                    signature: user.signature
                 }
             }
         });

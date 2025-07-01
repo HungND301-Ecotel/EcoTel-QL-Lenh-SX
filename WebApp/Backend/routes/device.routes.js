@@ -5,6 +5,7 @@ const Device = require('../models/Device');
 const DeviceType = require('../models/DeviceType');
 
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
+const Order = require('../models/Order');
 
 /**
  * @swagger
@@ -48,6 +49,14 @@ router.get('/', verifyToken, async (req, res, next) => {
             query.department = req.query.department;
         }
         if (user.role === "manager") {
+            const order = await Order.findOne({ status: "in_progress" })
+            const lastDevice = order?.device[order.device.length - 1];
+
+            if (lastDevice) {
+                query._id = lastDevice;
+            }
+        }
+        if (user.role === "employee") {
             query.department = user.department._id;
         }
         const devices = await Device.find(query)

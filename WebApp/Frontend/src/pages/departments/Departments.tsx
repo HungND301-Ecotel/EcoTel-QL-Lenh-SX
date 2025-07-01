@@ -137,13 +137,13 @@ const Departments = () => {
                     onChange={(e) => setValue(e.target.value)}>
                 </TextField>
             </Box>
-            <TableContainer component={Paper} sx={{ maxHeight: '80vh' }}>
+            <TableContainer component={Paper} sx={{ height: '80vh' }}>
                 <Table>
                     <TableHead>
                         <TableRow>
                             <TableCell sx={{ border: '1px solid black' }}>Mã đơn vị</TableCell>
                             <TableCell sx={{ border: '1px solid black' }}>Tên đơn vị</TableCell>
-                            <TableCell sx={{ border: '1px solid black' }}>Mô tả</TableCell>
+                            <TableCell sx={{ border: '1px solid black' }}>Chức năng</TableCell>
                             <TableCell sx={{ border: '1px solid black' }}>Thao tác</TableCell>
                         </TableRow>
                     </TableHead>
@@ -200,7 +200,7 @@ const Departments = () => {
                             margin="normal"
                             id="description"
                             name="description"
-                            label="Mô tả"
+                            label="Chức năng"
                             multiline
                             rows={3}
                             value={formik.values.description}

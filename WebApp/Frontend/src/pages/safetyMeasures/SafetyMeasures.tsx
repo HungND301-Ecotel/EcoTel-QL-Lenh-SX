@@ -127,7 +127,7 @@ const SafetyMeasures: React.FC = () => {
                 </Button>
             </Box>
 
-            <TableContainer component={Paper} sx={{ maxHeight: '80vh' }}>
+            <TableContainer component={Paper} sx={{ height: '80vh' }}>
                 <Table  sx={{ tableLayout: 'fixed', width: '100%' }}>
                     <TableHead>
                         <TableRow>

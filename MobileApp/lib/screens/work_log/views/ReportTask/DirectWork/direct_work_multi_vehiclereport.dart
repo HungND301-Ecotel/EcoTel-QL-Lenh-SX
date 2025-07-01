@@ -321,6 +321,7 @@ class _DirectWorkMultiVehiclereport
                                         .digitsOnly,
                                   ],
                                 ),
+                                SizedBox(height: 16),
                                 Text(
                                   'Giờ sửa chữa(phút)',
                                   style: TextStyle(
