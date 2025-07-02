@@ -48,13 +48,17 @@ router.get('/', verifyToken, async (req, res, next) => {
         if (req.query.department) {
             query.department = req.query.department;
         }
-        if (user.role === "employee") {
-            const order = await Order.findOne({assignedTo:user._id, status: "in_progress" })
-            const lastDevice = order?.device[order.device.length - 1];
-
-            query._id = lastDevice;
+        if (req.query.status) {
+            query.status = req.query.status;
         }
-        console.log(user.role)
+        if (user.role === "employee") {
+            const order = await Order.findOne({ assignedTo: user._id, status: { $ne: "completed" } })
+            const lastDevice = order?.device[order.device.length - 1];
+            const excavators = order?.excavator[order.excavator.length - 1];
+
+            query._id = { $in: [lastDevice, excavators] };
+        }
+
         if (user.role === "manager") {
             query.department = user.department._id;
         }

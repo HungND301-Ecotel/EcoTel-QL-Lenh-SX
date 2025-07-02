@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:soft/models/user_model.dart';
 import 'package:soft/providers/report_provider.dart';
 import 'package:soft/providers/user_provider.dart';
@@ -14,7 +16,12 @@ import 'package:soft/services/socket_service.dart';
 final GlobalKey<NavigatorState> navigatorKey =
     GlobalKey<NavigatorState>();
 
-void main() {
+Future<void> main() async {
+  if (kReleaseMode) {
+    await dotenv.load(fileName: "assets/.env.example");
+  } else {
+    await dotenv.load(fileName: "assets/.env");
+  }
   runApp(
     MultiProvider(
       providers: [

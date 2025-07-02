@@ -3,6 +3,7 @@ const router = express.Router();
 const { AppError } = require('../utils/errorHandler');
 const Location = require('../models/Location');
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
+const Order = require('../models/Order');
 
 
 router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
@@ -65,8 +66,13 @@ router.get('/', verifyToken, async (req, res) => {
         const query = {}
 
         if (req.query.name) {
-            const regex = new RegExp(req.query.name, 'i'); // không phân biệt hoa thường
+            const regex = new RegExp(req.query.name, 'i');
             query.name = regex;
+        }
+        if (req.user?.role === "employee") {
+            const order = await Order.findOne({ assignedTo: req.userId, status: { $ne: "completed" } })
+
+            query._id = order?.location;
         }
         const locations = await Location.find(query);
         res.status(200).send({ status: 'success', data: locations });

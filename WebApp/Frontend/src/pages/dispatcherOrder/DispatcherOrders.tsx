@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Box,
@@ -18,7 +18,6 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    Typography,
     Chip,
     Checkbox,
     TextField,
@@ -27,6 +26,7 @@ import {
     Autocomplete,
     styled,
     Popper,
+    Typography,
 } from '@mui/material';
 import { format } from 'date-fns';
 import {
@@ -48,6 +48,10 @@ import OrderFormAdd from './DispatcherOrderFormAdd';
 import OrderFormEdit from './DispatcherOrderFormEdit';
 import OrderHistories from '../../components/OrderHistory/OrderHistories';
 import DispatcherOrderFormTransfer from './DispatcherOrderFormTransfer';
+import dayjs, { Dayjs } from 'dayjs';
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { useSocket } from '../../hooks/useSocket';
 const StyledPopper = styled(Popper)({
     '& .MuiAutocomplete-listbox': {
         maxHeight: '200px', // Đặt chiều cao tối đa mong muốn
@@ -59,12 +63,21 @@ const DispatcherOrders: React.FC = () => {
     const [history, setHistory] = useState(false);
     const [transfer, setTransfer] = useState(false);
     const [employee, setEmployee] = useState("");
-    const [startTime, setStartTime] = useState("");
-    const [endTime, setEndTime] = useState("");
+    const [startTime, setStartTime] = useState<Dayjs | null>(null);
+    const [endTime, setEndTime] = useState<Dayjs | null>(null);
     const [department, setDepartment] = useState("");
     const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
     const queryClient = useQueryClient();
+    const socket = useSocket()
 
+    useEffect(() => {
+        if (!socket) return;
+
+        socket.on('notification', () => {
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
+        });
+
+    }, [queryClient, socket]);
 
     const { data: users = [] } = useQuery({
         queryKey: ['users'],
@@ -73,7 +86,7 @@ const DispatcherOrders: React.FC = () => {
 
     const { data: orders = [], isLoading, refetch } = useQuery({
         queryKey: ['orders'],
-        queryFn: () => api.get(`/orders?employee=${employee}&startTime=${startTime}&endTime=${endTime}`).then(res => res.data.data),
+        queryFn: () => api.get(`/orders?employee=${employee}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
     });
 
     const createMutation = useMutation({
@@ -188,221 +201,244 @@ const DispatcherOrders: React.FC = () => {
             <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 2, mb: 3, flexWrap: 'wrap' }}>
                 <Box sx={{ flex: 1, flexDirection: 'column' }}>
                     <Typography>Công nhân:</Typography>
-                    <Box sx={{ flex: 1, flexDirection: 'column' }}>
-                        <Typography>Công nhân:</Typography>
-                        <Autocomplete
-                            fullWidth
-                            options={users}
-                            getOptionLabel={(option: any) =>
-                                `${option?.fullName || ""}-${option?.salaryCode || ''}`
-                            }
-                            value={users.find((p: any) => p._id === employee) || null}
-                            onChange={(event, newValue) => {
-                                setEmployee(newValue?._id);
-                            }}
-                            PopperComponent={StyledPopper}
+                    <Autocomplete
+                        fullWidth
+                        options={users}
+                        getOptionLabel={(option: any) =>
+                            `${option?.fullName || ""}-${option?.salaryCode || ''}`
+                        }
+                        value={users.find((p: any) => p._id === employee) || null}
+                        onChange={(event, newValue) => {
+                            setEmployee(newValue?._id || "");
+                        }}
+                        PopperComponent={StyledPopper}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                size='small'
+                                label="Công nhân"
+                            />
+                        )}
+                    />
+                </Box>
+
+                <Box sx={{ flex: 1, flexDirection: 'column' }}>
+                    <Typography>Từ ngày:</Typography>
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                            label="Từ ngày"
+                            inputFormat="DD/MM/YYYY" // v5 vẫn hỗ trợ
+                            value={startTime ? dayjs(startTime) : null}
+                            onChange={(value) => setStartTime(value)}
                             renderInput={(params) => (
                                 <TextField
                                     {...params}
-                                    size='small'
-                                    label="Công nhân"
+                                    fullWidth
+                                    size="small"
                                 />
                             )}
                         />
-                    </Box>
-
-                    <Box sx={{ flex: 1, flexDirection: 'column' }}>
-                        <Typography>Từ ngày:</Typography>
-                        <TextField fullWidth type="date" size="small" value={startTime}
-                            onChange={(e) => setStartTime(e.target.value)} />
-                    </Box>
-
-                    <Box sx={{ flex: 1, flexDirection: 'column' }}>
-                        <Typography>Đến ngày:</Typography>
-                        <TextField fullWidth type="date" size="small" value={endTime}
-                            onChange={(e) => setEndTime(e.target.value)} />
-                    </Box>
-
-                    <Box>
-                        <Button
-                            variant="contained"
-                            startIcon={<Search />}
-                            onClick={() => refetch()}
-                        >
-                            Tìm
-                        </Button>
-                    </Box>
+                    </LocalizationProvider>
                 </Box>
 
-                <Paper sx={{ width: '100%', overflowX: "initial" }}>
-                    <TableContainer sx={{ height: '80vh' }}>
-                        <Table stickyHeader aria-label="sticky table">
-                            <TableHead>
-                                <TableRow>
+                <Box sx={{ flex: 1, flexDirection: 'column' }}>
+                    <Typography>Đến ngày:</Typography>
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                            label="Đến ngày"
+                            inputFormat="DD/MM/YYYY" // v5 vẫn hỗ trợ
+                            value={endTime ? dayjs(endTime) : null}
+                            onChange={(value) => setEndTime(value)}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    fullWidth
+                                    size="small"
+                                />
+                            )}
+                        />
+                    </LocalizationProvider>
+                </Box>
+
+                <Box>
+                    <Button
+                        variant="contained"
+                        startIcon={<Search />}
+                        onClick={() => refetch()}
+                    >
+                        Tìm
+                    </Button>
+                </Box>
+            </Box>
+
+            <Paper sx={{ width: '100%', overflowX: "initial" }}>
+                <TableContainer sx={{ height: '80vh' }}>
+                    <Table stickyHeader aria-label="sticky table">
+                        <TableHead>
+                            <TableRow>
+                                <TableCell sx={{
+                                    position: 'sticky',
+                                    left: 0,
+                                    backgroundColor: 'white',
+                                    zIndex: 3,
+                                    minWidth: 150,
+                                    border: '1px solid black'
+                                }}>Tên nhân viên</TableCell>
+                                <TableCell sx={{ minWidth: 130, border: '1px solid black' }}>Số thẻ lương</TableCell>
+                                <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Giờ tạo lệnh</TableCell>
+                                <TableCell sx={{ minWidth: 120, border: '1px solid black' }}>Ngày</TableCell>
+                                <TableCell sx={{ minWidth: 50, border: '1px solid black' }}>Ca</TableCell>
+                                <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Công việc</TableCell>
+                                <TableCell sx={{ minWidth: 200, border: '1px solid black' }}>Nội dung</TableCell>
+                                <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Phương tiện</TableCell>
+                                <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Người ra lệnh</TableCell>
+                                <TableCell sx={{ minWidth: 120, border: '1px solid black' }}>Bắt đầu</TableCell>
+                                <TableCell sx={{ minWidth: 120, border: '1px solid black' }}>Kết thúc</TableCell>
+                                <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Ghi chú</TableCell>
+                                <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Trạng thái</TableCell>
+                                <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Thao tác</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {orders.map((order: any) => (
+                                <TableRow key={order._id}>
                                     <TableCell sx={{
                                         position: 'sticky',
                                         left: 0,
                                         backgroundColor: 'white',
-                                        zIndex: 3,
+                                        zIndex: 1,
                                         minWidth: 150,
                                         border: '1px solid black'
-                                    }}>Tên nhân viên</TableCell>
-                                    <TableCell sx={{ minWidth: 130, border: '1px solid black' }}>Số thẻ lương</TableCell>
-                                    <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Giờ tạo lệnh</TableCell>
-                                    <TableCell sx={{ minWidth: 120, border: '1px solid black' }}>Ngày</TableCell>
-                                    <TableCell sx={{ minWidth: 50, border: '1px solid black' }}>Ca</TableCell>
-                                    <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Công việc</TableCell>
-                                    <TableCell sx={{ minWidth: 200, border: '1px solid black' }}>Nội dung</TableCell>
-                                    <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Phương tiện</TableCell>
-                                    <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Người ra lệnh</TableCell>
-                                    <TableCell sx={{ minWidth: 120, border: '1px solid black' }}>Bắt đầu</TableCell>
-                                    <TableCell sx={{ minWidth: 120, border: '1px solid black' }}>Kết thúc</TableCell>
-                                    <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Ghi chú</TableCell>
-                                    <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Trạng thái</TableCell>
-                                    <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Thao tác</TableCell>
+                                    }}>{order.assignedTo?.fullName}</TableCell>
+                                    <TableCell sx={{ border: '1px solid black' }}>
+                                        {order.assignedTo?.salaryCode}
+                                    </TableCell>
+                                    <TableCell sx={{ border: '1px solid black' }}>
+                                        {order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm') : ''}
+                                    </TableCell>
+                                    <TableCell sx={{ border: '1px solid black' }}>
+                                        {order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''}
+                                    </TableCell>
+                                    <TableCell sx={{ border: '1px solid black' }}>
+                                        {order.shift?.name}
+                                    </TableCell>
+                                    <TableCell sx={{ border: '1px solid black' }}>
+                                        {order.job.name || ''}
+                                    </TableCell>
+                                    <TableCell sx={{
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        maxWidth: 200,
+                                        border: '1px solid black'
+                                    }}>
+                                        {order.workContent || ''}
+                                    </TableCell>
+                                    <TableCell sx={{ border: '1px solid black' }}>
+                                        <Typography whiteSpace="pre-line" fontSize={14}>
+                                            {order.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')}
+                                        </Typography>
+                                    </TableCell>
+                                    <TableCell sx={{ border: '1px solid black' }}>
+                                        {order.createdBy.username || ''}
+                                    </TableCell>
+                                    <TableCell sx={{ border: '1px solid black' }}>
+                                        {order.startTime ? format(new Date(order.startTime), 'HH:mm:ss') : ''}
+                                    </TableCell>
+                                    <TableCell sx={{ border: '1px solid black' }}>
+                                        {order.endTime ? format(new Date(order.endTime), 'HH:mm:ss') : ''}
+                                    </TableCell>
+                                    <TableCell sx={{ border: '1px solid black' }}>
+                                        {order?.temporaryError || ''}
+                                    </TableCell>
+                                    <TableCell sx={{ border: '1px solid black' }}>
+                                        <Chip
+                                            label={order.status === 'pending' ? 'Chưa nhận lệnh' :
+                                                order.status === 'in_progress' ? 'Đã nhận lệnh' :
+                                                    order.status === 'completed' ? 'Đã hoàn thành' :
+                                                        order.status === 'warning' ? 'Lỗi' : order.status
+                                            }
+                                            color={
+                                                order.status === 'pending' ? 'default' :
+                                                    order.status === 'completed' ? 'error' :
+                                                        order.status === 'in_progress' ? 'success' :
+                                                            order.status === 'warning' ? 'warning' : 'default'}
+                                        />
+                                    </TableCell>
+                                    <TableCell sx={{ border: '1px solid black' }}>
+                                        {['pending', 'warning'].includes(order?.status) && <IconButton
+                                            color="primary"
+                                            onClick={() => handleOpen(order)}
+                                        >
+                                            <Tooltip title="Sửa" placement='top'>
+                                                <EditIcon />
+                                            </Tooltip>
+                                        </IconButton>}
+                                        {['completed'].includes(order?.status) && <IconButton
+                                            color="success"
+                                            onClick={() => {
+                                                setSelectedOrder(order)
+                                                reportExcel.mutate();
+                                            }}
+                                        >
+                                            <Tooltip title="Xuất file" placement='top'>
+                                                <FileDownload />
+                                            </Tooltip>
+                                        </IconButton>}
+                                        {['pending', 'warning'].includes(order?.status) && <IconButton
+                                            color="error"
+                                            onClick={() => handleDelete(order._id)}
+                                        >
+                                            <Tooltip title="Xóa" placement='top'>
+                                                <DeleteIcon />
+                                            </Tooltip>
+                                        </IconButton>}
+                                        <IconButton
+                                            color="info"
+                                            onClick={() => {
+                                                setSelectedOrder(order)
+                                                setHistory(true)
+                                            }}
+                                        >
+                                            <Tooltip title="Lịch sử" placement='top'>
+                                                <InfoOutlined />
+                                            </Tooltip>
+                                        </IconButton>
+                                        {order.status === "completed" && <IconButton
+                                            color="info"
+                                            onClick={() => {
+                                                setSelectedOrder(order)
+                                                setTransfer(true)
+                                            }}
+                                        >
+                                            <Tooltip title="Chuyển giao ca" placement='top'>
+                                                <SyncAlt />
+                                            </Tooltip>
+                                        </IconButton>}
+                                    </TableCell>
                                 </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {orders.map((order: any) => (
-                                    <TableRow key={order._id}>
-                                        <TableCell sx={{
-                                            position: 'sticky',
-                                            left: 0,
-                                            backgroundColor: 'white',
-                                            zIndex: 1,
-                                            minWidth: 150,
-                                            border: '1px solid black'
-                                        }}>{order.assignedTo?.fullName}</TableCell>
-                                        <TableCell sx={{ border: '1px solid black' }}>
-                                            {order.assignedTo?.salaryCode}
-                                        </TableCell>
-                                        <TableCell sx={{ border: '1px solid black' }}>
-                                            {order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm') : ''}
-                                        </TableCell>
-                                        <TableCell sx={{ border: '1px solid black' }}>
-                                            {order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''}
-                                        </TableCell>
-                                        <TableCell sx={{ border: '1px solid black' }}>
-                                            {order.shift?.name}
-                                        </TableCell>
-                                        <TableCell sx={{ border: '1px solid black' }}>
-                                            {order.job.name || ''}
-                                        </TableCell>
-                                        <TableCell sx={{
-                                            whiteSpace: 'nowrap',
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            maxWidth: 200,
-                                            border: '1px solid black'
-                                        }}>
-                                            {order.workContent || ''}
-                                        </TableCell>
-                                        <TableCell sx={{ border: '1px solid black' }}>
-                                            <Typography whiteSpace="pre-line" fontSize={14}>
-                                                {order.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')}
-                                            </Typography>
-                                        </TableCell>
-                                        <TableCell sx={{ border: '1px solid black' }}>
-                                            {order.createdBy.username || ''}
-                                        </TableCell>
-                                        <TableCell sx={{ border: '1px solid black' }}>
-                                            {order.startTime ? format(new Date(order.startTime), 'HH:mm:ss') : ''}
-                                        </TableCell>
-                                        <TableCell sx={{ border: '1px solid black' }}>
-                                            {order.endTime ? format(new Date(order.endTime), 'HH:mm:ss') : ''}
-                                        </TableCell>
-                                        <TableCell sx={{ border: '1px solid black' }}>
-                                            {order?.temporaryError || ''}
-                                        </TableCell>
-                                        <TableCell sx={{ border: '1px solid black' }}>
-                                            <Chip
-                                                label={order.status === 'pending' ? 'Chưa nhận lệnh' :
-                                                    order.status === 'in_progress' ? 'Đã nhận lệnh' :
-                                                        order.status === 'completed' ? 'Đã hoàn thành' :
-                                                            order.status === 'warning' ? 'Lỗi' : order.status
-                                                }
-                                                color={
-                                                    order.status === 'pending' ? 'default' :
-                                                        order.status === 'completed' ? 'error' :
-                                                            order.status === 'in_progress' ? 'success' :
-                                                                order.status === 'warning' ? 'warning' : 'default'}
-                                            />
-                                        </TableCell>
-                                        <TableCell sx={{ border: '1px solid black' }}>
-                                            <IconButton
-                                                color="primary"
-                                                onClick={() => handleOpen(order)}
-                                            >
-                                                <Tooltip title="Sửa" placement='top'>
-                                                    <EditIcon />
-                                                </Tooltip>
-                                            </IconButton>
-                                            <IconButton
-                                                color="success"
-                                                onClick={() => {
-                                                    setSelectedOrder(order)
-                                                    reportExcel.mutate();
-                                                }}
-                                            >
-                                                <Tooltip title="Xuất file" placement='top'>
-                                                    <FileDownload />
-                                                </Tooltip>
-                                            </IconButton>
-                                            <IconButton
-                                                color="error"
-                                                onClick={() => handleDelete(order._id)}
-                                            >
-                                                <Tooltip title="Xóa" placement='top'>
-                                                    <DeleteIcon />
-                                                </Tooltip>
-                                            </IconButton>
-                                            <IconButton
-                                                color="info"
-                                                onClick={() => {
-                                                    setSelectedOrder(order)
-                                                    setHistory(true)
-                                                }}
-                                            >
-                                                <Tooltip title="Lịch sử" placement='top'>
-                                                    <InfoOutlined />
-                                                </Tooltip>
-                                            </IconButton>
-                                            {order.status === "completed" && <IconButton
-                                                color="info"
-                                                onClick={() => {
-                                                    setSelectedOrder(order)
-                                                    setTransfer(true)
-                                                }}
-                                            >
-                                                <Tooltip title="Chuyển giao ca" placement='top'>
-                                                    <SyncAlt />
-                                                </Tooltip>
-                                            </IconButton>}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
-                </Paper>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Paper>
 
-                <OrderHistories open={history} setOpen={setHistory} initialValues={selectedOrder} />
-                {selectedOrder ? <OrderFormEdit
-                    open={open}
-                    initialValues={selectedOrder}
-                    onSubmit={handleSubmit}
-                    onCancel={handleClose}
-                /> : <OrderFormAdd
-                    open={open}
-                    onSubmit={handleSubmit}
-                    onCancel={handleClose}
-                />}
-                {selectedOrder && <DispatcherOrderFormTransfer
-                    open={transfer}
-                    initialValues={selectedOrder}
-                    onCancel={handleClose}
-                />}
-            </Box>
+            <OrderHistories open={history} setOpen={setHistory} initialValues={selectedOrder} />
+            {selectedOrder ? <OrderFormEdit
+                open={open}
+                initialValues={selectedOrder}
+                onSubmit={handleSubmit}
+                onCancel={handleClose}
+            /> : <OrderFormAdd
+                open={open}
+                onSubmit={handleSubmit}
+                onCancel={handleClose}
+            />}
+            {selectedOrder && <DispatcherOrderFormTransfer
+                open={transfer}
+                initialValues={selectedOrder}
+                onCancel={handleClose}
+            />}
         </Box>
     );
 };

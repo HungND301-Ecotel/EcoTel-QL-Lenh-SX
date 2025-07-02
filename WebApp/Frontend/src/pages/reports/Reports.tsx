@@ -30,6 +30,7 @@ import CarTripReport from './CarTripReport';
 import ProductionReport from './ProductionReport';
 import WorkLogReport from './WorkLogReport';
 import mealRequestReport from './MealRepuestReport';
+import { Close, Edit } from '@mui/icons-material';
 
 
 function Reports() {
@@ -279,28 +280,33 @@ function Reports() {
                             }}>
                                 Xem trước
                             </Button>
-                            <Button
+                            {!signatureUrl ? <Button
                                 variant="contained"
                                 component="label"
-                                startIcon
+                                startIcon={<Edit />}
                                 onClick={() => {
                                     getSignatureUrl.mutate()
                                 }}
                             >
                                 Thêm chữ kí
                             </Button>
+                                : <Button
+                                    variant="contained"
+                                    component="label"
+                                    startIcon={<Close />}
+                                    onClick={() => setSignatureUrl(null)}
+                                >
+                                    bỏ chữ kí
+                                </Button>}
                         </Grid>
                         <Grid item xs={12}>
-
-                            {signatureUrl && (
-                                <Box mt={2}>
-                                    <Typography variant="subtitle2">Xem trước chữ ký:</Typography>
+                            {preview && PreviewComponent ? <PreviewComponent data={data} signatureUrl={signatureUrl} /> : null}
+                            {signatureUrl && !preview && (
+                                <Box mt={2} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                                     <img src={signatureUrl} alt="Chữ ký" style={{ maxWidth: 200, maxHeight: 100 }} />
                                 </Box>
                             )}
                         </Grid>
-
-                        {preview && PreviewComponent ? <PreviewComponent data={data} /> : null}
 
                     </Grid>
                 </Paper>

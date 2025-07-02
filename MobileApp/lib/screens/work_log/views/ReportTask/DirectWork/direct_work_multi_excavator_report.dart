@@ -42,6 +42,34 @@ class _DirectWorkMultiExcavatorReport
   final TextEditingController _risksController =
       TextEditingController();
 
+  void _calculateFuelUsed() {
+    final summaryController =
+        _deviceSummaryControllers[widget
+                .order
+                .device
+                ?.last
+                .id ??
+            ''];
+    if (summaryController == null) return;
+
+    final int remain =
+        int.tryParse(summaryController.fuelRemain.text) ??
+        0;
+    final int received =
+        int.tryParse(summaryController.fuelReceived.text) ??
+        0;
+    final int remainEnd =
+        int.tryParse(
+          summaryController.fuelRemainEnd.text,
+        ) ??
+        0;
+
+    final int used = remain + received - remainEnd;
+
+    summaryController.fuelUsedController.text =
+        used.toString();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -99,6 +127,7 @@ class _DirectWorkMultiExcavatorReport
               item.gpsStatus?.toString() ?? '';
           controller.sealStatus =
               item.sealStatus?.toString() ?? '';
+          _calculateFuelUsed();
         }
       }
     }
@@ -392,6 +421,18 @@ class _DirectWorkMultiExcavatorReport
                         FilteringTextInputFormatter
                             .digitsOnly,
                       ],
+                    ),
+                    Text(
+                      'Tiêu thụ',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    TextField(
+                      controller:
+                          summaryController
+                              ?.fuelUsedController,
+                      readOnly: true,
                     ),
                     Text(
                       'Tình trạng phương tiện',

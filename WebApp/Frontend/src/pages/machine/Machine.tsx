@@ -69,6 +69,7 @@ const Machines: React.FC = () => {
     const [open, setOpen] = useState(false);
     const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
     const [q, setQ] = useState("")
+    const [status, setStatus] = useState("")
     const [department, setDepartment] = useState("")
     const [mapCoords, setMapCoords] = useState<{ lat: number, lng: number; } | null>(null);
 
@@ -85,8 +86,8 @@ const Machines: React.FC = () => {
     });
 
     const { data: machines = [], isLoading } = useQuery({
-        queryKey: ['machines', q, department],
-        queryFn: () => api.get(`/devices?q=${q}&department=${department}`).then(res => res.data.data?.filter((item: any) => item?.category?.name !== "Vận tải")),
+        queryKey: ['machines', q, department,status],
+        queryFn: () => api.get(`/devices?q=${q}&department=${department}&status=${status}`).then(res => res.data.data?.filter((item: any) => item?.category?.name !== "Vận tải")),
     });
     const { data: DeviceTypes = [] } = useQuery({
         queryKey: ['DeviceTypes'],
@@ -104,7 +105,7 @@ const Machines: React.FC = () => {
         mutationFn: (newDevice: Partial<Device>) =>
             api.post('/devices', newDevice).then(res => res.data),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['devices'] });
+            queryClient.invalidateQueries({ queryKey: ['machines'] });
             handleClose();
         },
         onError: (error: any) => {
@@ -117,7 +118,7 @@ const Machines: React.FC = () => {
             return api.put(`/devices/${updatedDevice._id}`, updatedDevice).then(res => res.data);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['devices'] });
+            queryClient.invalidateQueries({ queryKey: ['machines'] });
             handleClose();
         },
         onError: (error: any) => {
@@ -128,7 +129,7 @@ const Machines: React.FC = () => {
     const deleteMutation = useMutation({
         mutationFn: (id: string) => api.delete(`/devices/${id}`).then(res => res.data),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['devices'] });
+            queryClient.invalidateQueries({ queryKey: ['machines'] });
         },
         onError: (error: any) => {
             alert(error.response.data.message || error.response || 'Lỗi')
@@ -220,19 +221,19 @@ const Machines: React.FC = () => {
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
                 <Typography variant="h4">Quản lý thông tin máy</Typography>
-                <Button
+                {user?.role !== "dispatcher" && <Button
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={() => handleOpen()}
                 >
                     Thêm thông tin máy
-                </Button>
+                </Button>}
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3, gap: 2 }}>
-                <Typography><b style={{color:'red'}}>Chờ điều động:</b> {machines.filter((o: Device) => o.status === "available").length}</Typography>
-                <Typography><b style={{color:'blue'}}>Đang hoạt động:</b> {machines.filter((o: Device) => o.status === "in_use").length}</Typography>
-                <Typography><b style={{color:'orange'}}>Hỏng:</b> {machines.filter((o: Device) => o.status === "maintenance").length}</Typography>
-                <Typography><b style={{color:'green'}}>Niêm cất:</b> {machines.filter((o: Device) => o.status === "retired").length}</Typography>
+                <Typography><b style={{ color: 'green' }}>Chờ điều động:</b> {machines.filter((o: Device) => o.status === "available").length}</Typography>
+                <Typography><b style={{ color: 'red' }}>Đang hoạt động:</b> {machines.filter((o: Device) => o.status === "in_use").length}</Typography>
+                <Typography><b style={{ color: 'orange' }}>Hỏng:</b> {machines.filter((o: Device) => o.status === "maintenance").length}</Typography>
+                <Typography><b style={{ color: 'grey' }}>Niêm cất:</b> {machines.filter((o: Device) => o.status === "retired").length}</Typography>
             </Box>
             <Box sx={{ flex: 1, flexDirection: 'column', mb: 3 }}>
                 <Typography><h3>Tìm kiếm</h3></Typography>
@@ -259,6 +260,23 @@ const Machines: React.FC = () => {
                             />
                         )}
                     />}
+                    <TextField
+                        fullWidth
+                        select
+                        size='small'
+                        label="Lọc theo trạng thái"
+                        value={status}
+                        InputLabelProps={{ shrink: true }}
+                        SelectProps={{
+                            displayEmpty: true,
+                        }}
+                        onChange={(e) => setStatus(e.target.value)}>
+                        <MenuItem value="">Tất cả</MenuItem>
+                        <MenuItem value="available">Chờ điều động</MenuItem>
+                        <MenuItem value="in_use">Đang hoạt động</MenuItem>
+                        <MenuItem value="maintenance">Hỏng</MenuItem>
+                        <MenuItem value="retired">Niêm cất</MenuItem>
+                    </TextField>
                 </Box>
             </Box>
             <Paper sx={{ width: '100%', overflowX: "initial" }}>
@@ -279,7 +297,7 @@ const Machines: React.FC = () => {
                                 <TableCell sx={{ border: '1px solid black' }}>Loại máy</TableCell>
                                 <TableCell sx={{ border: '1px solid black' }}>Chủng loại</TableCell>
                                 <TableCell sx={{ border: '1px solid black' }}>Nhiên liệu</TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>Công suất máy</TableCell>
+                                <TableCell sx={{ border: '1px solid black' }}>Công suất</TableCell>
                                 <TableCell sx={{ border: '1px solid black' }}>Vị trí</TableCell>
                                 <TableCell sx={{ border: '1px solid black' }}>Đơn vị</TableCell>
                                 <TableCell sx={{ border: '1px solid black' }}>Trạng thái</TableCell>
@@ -329,8 +347,8 @@ const Machines: React.FC = () => {
                                                             device.status === 'available' ? 'Chờ điều động' : device.status}
                                                 color={device.status === 'in_use' ? 'success' :
                                                     device.status === 'maintenance' ? 'warning' :
-                                                        device.status === 'retired' ? 'primary' :
-                                                            device.status === 'available' ? 'error' : 'default'}
+                                                        device.status === 'retired' ? 'secondary' :
+                                                            device.status === 'available' ? 'success' : 'default'}
                                             />
                                         </TableCell>
                                         {user?.role !== 'dispatcher' && <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>
@@ -436,7 +454,7 @@ const Machines: React.FC = () => {
                                 type="number"
                                 id="power"
                                 name="power"
-                                label="Công suất máy"
+                                label="Công suất"
                                 value={formik.values.power}
                                 onChange={formik.handleChange}
                                 error={formik.touched.power && Boolean(formik.errors.power)}

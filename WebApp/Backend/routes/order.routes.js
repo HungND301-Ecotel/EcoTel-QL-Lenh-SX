@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
 const ShiftReport = require('../models/ShiftReport');
+const Notification = require('../models/Notification');
+
 
 const OrderHistory = require('../models/OrderHistory');
 const handleUpload = require('../utils/uploadImage');
@@ -178,6 +180,12 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
             safetyMeasure,
         } = req.body;
 
+        // const exitOrder = await Order.findOne({ shift: shift, workingDate: workingDate })
+
+        // if (exitOrder) {
+        //     return res.status(400).send({ status: 'error', message: 'Không thể tạo nhiều lệnh cho 1 công nhân trong cùng 1 thời gian làm việc' })
+        // }
+
 
         // Generate order number
         const date = new Date();
@@ -200,6 +208,14 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
             safetyMeasure,
             excavator, location, material, workContent, note,
             createdBy: req.user._id
+        });
+
+        await Notification.createNotification({
+            title: "Lệnh mới",
+            message: "Tạo lệnh mới",
+            type: "order",
+            recipient: assignedTo,
+            sender: req.userId
         });
 
         res.status(201).json({
@@ -270,7 +286,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
         )
             .populate({
                 path: "assignedTo",
-                select: "fullName phone salaryCode",
+                select: "_id fullName phone salaryCode",
             })
             .populate('job', 'name type content')
             .populate('device', 'code')
@@ -302,10 +318,18 @@ router.put('/:id', verifyToken, async (req, res, next) => {
             })
             .populate({
                 path: "createdBy",
-                select: "fullName phone salaryCode",
+                select: "_id fullName phone salaryCode",
 
             })
             .sort('-createdAt');
+
+        const notification = await Notification.createNotification({
+            title: "Trạng thái lệnh",
+            message: updatedOrder.status === "warning" ? "Báo lệnh lỗi" : "Chỉnh sửa lệnh",
+            type: "order",
+            recipient: req.userId.toString() === updatedOrder.assignedTo?._id.toString() ? updatedOrder.createdBy._id : updatedOrder.assignedTo._id,
+            sender: req.userId
+        });
 
         if (updatedOrder.status === "warning") {
 
@@ -349,6 +373,13 @@ router.delete('/:id', verifyToken, restrictTo('admin', 'dispatcher', 'manager'),
         if (order.shiftReport) {
             await ShiftReport.findByIdAndDelete(order.shiftReport._id)
         }
+        await Notification.createNotification({
+            title: "Xóa lệnh",
+            message: "Xóa lệnh",
+            type: "order",
+            recipient: order.assignedTo,
+            sender: req.userId
+        });
 
 
         res.status(200).send({ status: 'success', message: 'Xóa thành công' });
@@ -510,7 +541,7 @@ router.post('/scanWork', verifyToken, async (req, res, next) => {
             status,
         }, { new: true }).populate({
             path: "assignedTo",
-            select: "username fullName phone salaryCode",
+            select: "_id username fullName phone salaryCode",
 
         })
             .populate('job', 'name type content')
@@ -526,7 +557,7 @@ router.post('/scanWork', verifyToken, async (req, res, next) => {
             })
             .populate({
                 path: "createdBy",
-                select: "fullName phone salaryCode",
+                select: "_id fullName phone salaryCode",
             })
         if (!orderUpdate) {
             return res.status(404).send({ status: 'error', message: 'Không tìm thấy lệnh làm việc' });
@@ -558,6 +589,13 @@ router.post('/scanWork', verifyToken, async (req, res, next) => {
         if (!device) {
             return res.status(404).send({ status: 'error', message: 'Không tìm thấy thiết bị' });
         }
+        await Notification.createNotification({
+            title: "Trạng thái công việc",
+            message: orderUpdate.status === "in_progress" ? "Bắt đầu công việc" : "Kết thúc công việc",
+            type: "order",
+            recipient: orderUpdate.createdBy?._id,
+            sender: req.userId
+        });
 
         res.status(200).send({
             status: 'success',
@@ -651,7 +689,7 @@ router.post('/checkin', verifyToken, handleUpload, async (req, res, next) => {
             })
             .populate({
                 path: "createdBy",
-                select: "fullName phone salaryCode",
+                select: "_id fullName phone salaryCode",
             })
         if (!orderUpdate) {
             return res.status(404).send({ status: 'error', message: 'Không tìm thấy lệnh làm việc' });
@@ -686,6 +724,14 @@ router.post('/checkin', verifyToken, handleUpload, async (req, res, next) => {
                 status: orderUpdate.status === "in_progress" ? "in_use" : "available"
             }, { new: true });
         }
+
+        await Notification.createNotification({
+            title: "Trạng thái công việc",
+            message: orderUpdate.status === "in_progress" ? "Bắt đầu công việc" : "Kết thúc công việc",
+            type: "order",
+            recipient: orderUpdate.createdBy?._id,
+            sender: req.userId
+        });
 
 
         res.status(200).send({

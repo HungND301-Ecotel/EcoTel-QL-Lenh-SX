@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soft/main.dart';
@@ -18,7 +19,8 @@ class ApiService {
     : _dio = Dio(
         BaseOptions(
           baseUrl:
-              "http://192.168.100.248:8080/api",
+              dotenv.env['BASE_API'] ??
+              "http://192.168.2.10:8080/api",
           headers: {'Content-Type': 'application/json'},
           connectTimeout: const Duration(
             seconds: 15,

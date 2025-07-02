@@ -131,6 +131,7 @@ notificationSchema.statics.getUserNotifications = async function (userId, option
         .populate('recipient', 'username fullName');
 };
 
+notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 86400 });
 const Notification = mongoose.model('Notification', notificationSchema);
 
 module.exports = Notification;

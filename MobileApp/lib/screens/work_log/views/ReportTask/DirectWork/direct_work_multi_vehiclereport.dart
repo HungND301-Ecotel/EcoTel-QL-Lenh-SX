@@ -41,6 +41,22 @@ class _DirectWorkMultiVehiclereport
   final TextEditingController _risksController =
       TextEditingController();
 
+  void _calculateFuelUsedFor(String id) {
+    final controller = _deviceSummaryControllers[id];
+    if (controller == null) return;
+
+    final int remain =
+        int.tryParse(controller.fuelRemain.text) ?? 0;
+    final int received =
+        int.tryParse(controller.fuelReceived.text) ?? 0;
+    final int remainEnd =
+        int.tryParse(controller.fuelRemainEnd.text) ?? 0;
+
+    final int used = remain + received - remainEnd;
+
+    controller.fuelUsedController.text = used.toString();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -94,6 +110,7 @@ class _DirectWorkMultiVehiclereport
               item.gpsStatus?.toString() ?? '';
           controller.sealStatus =
               item.sealStatus?.toString() ?? '';
+          _calculateFuelUsedFor(item.vehicle.id);
         }
       }
     }
@@ -360,6 +377,11 @@ class _DirectWorkMultiVehiclereport
                                   controller:
                                       summaryController
                                           .fuelRemain,
+                                  onChanged:
+                                      (_) =>
+                                          _calculateFuelUsedFor(
+                                            item.id,
+                                          ),
                                   keyboardType:
                                       TextInputType.number,
                                   inputFormatters: [
@@ -378,6 +400,11 @@ class _DirectWorkMultiVehiclereport
                                   controller:
                                       summaryController
                                           .fuelReceived,
+                                  onChanged:
+                                      (_) =>
+                                          _calculateFuelUsedFor(
+                                            item.id,
+                                          ),
                                   keyboardType:
                                       TextInputType.number,
                                   inputFormatters: [
@@ -396,12 +423,30 @@ class _DirectWorkMultiVehiclereport
                                   controller:
                                       summaryController
                                           .fuelRemainEnd,
+                                  onChanged:
+                                      (_) =>
+                                          _calculateFuelUsedFor(
+                                            item.id,
+                                          ),
                                   keyboardType:
                                       TextInputType.number,
                                   inputFormatters: [
                                     FilteringTextInputFormatter
                                         .digitsOnly,
                                   ],
+                                ),
+                                Text(
+                                  'Tiêu thụ',
+                                  style: TextStyle(
+                                    fontWeight:
+                                        FontWeight.w600,
+                                  ),
+                                ),
+                                TextField(
+                                  controller:
+                                      summaryController
+                                          .fuelUsedController,
+                                  readOnly: true,
                                 ),
                                 Text(
                                   'Tình trạng phương tiện',

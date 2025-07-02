@@ -15,7 +15,7 @@ class SocketService {
 
     public connect(userId: string): void {
         if (!this.socket) {
-            this.socket = io('ws://localhost:3004', {
+            this.socket = io(process.env.REACT_APP_SOCKET_API || 'ws://localhost:8080', {
                 transports: ['websocket'],
                 autoConnect: false,
             });

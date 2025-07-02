@@ -69,6 +69,7 @@ const Vehicles: React.FC = () => {
     const [open, setOpen] = useState(false);
     const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
     const [q, setQ] = useState("")
+    const [status, setStatus] = useState("")
     const [department, setDepartment] = useState("")
     const [mapCoords, setMapCoords] = useState<{ lat: number, lng: number; } | null>(null);
 
@@ -85,8 +86,8 @@ const Vehicles: React.FC = () => {
     });
 
     const { data: vehicles = [], isLoading } = useQuery({
-        queryKey: ['vehicles', q, department],
-        queryFn: () => api.get(`/devices?q=${q}&department=${department}`).then(res => res.data.data?.filter((item: any) => item?.category?.name === "Vận tải")),
+        queryKey: ['vehicles', q, department,status],
+        queryFn: () => api.get(`/devices?q=${q}&department=${department}&status=${status}`).then(res => res.data.data?.filter((item: any) => item?.category?.name === "Vận tải")),
     });
     const { data: DeviceTypes = [] } = useQuery({
         queryKey: ['DeviceTypes'],
@@ -104,7 +105,7 @@ const Vehicles: React.FC = () => {
         mutationFn: (newDevice: Partial<Device>) =>
             api.post('/devices', newDevice).then(res => res.data),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['devices'] });
+            queryClient.invalidateQueries({ queryKey: ['vehicles'] });
             handleClose();
         },
         onError: (error: any) => {
@@ -117,7 +118,7 @@ const Vehicles: React.FC = () => {
             return api.put(`/devices/${updatedDevice._id}`, updatedDevice).then(res => res.data);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['devices'] });
+            queryClient.invalidateQueries({ queryKey: ['vehicles'] });
             handleClose();
         },
         onError: (error: any) => {
@@ -128,7 +129,7 @@ const Vehicles: React.FC = () => {
     const deleteMutation = useMutation({
         mutationFn: (id: string) => api.delete(`/devices/${id}`).then(res => res.data),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['devices'] });
+            queryClient.invalidateQueries({ queryKey: ['vehicles'] });
         },
         onError: (error: any) => {
             alert(error.response.data.message || error.response || 'Lỗi')
@@ -226,19 +227,19 @@ const Vehicles: React.FC = () => {
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
                 <Typography variant="h4">Quản lý thông tin ô tô</Typography>
-                <Button
+                {user?.role !== "dispatcher" && <Button
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={() => handleOpen()}
                 >
                     Thêm thông tin ô tô
-                </Button>
+                </Button>}
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3, gap: 2 }}>
-                <Typography><b style={{ color: 'red' }}>Chờ điều động:</b> {vehicles.filter((o: Device) => o.status === "available").length}</Typography>
-                <Typography><b style={{ color: 'blue' }}>Đang hoạt động:</b> {vehicles.filter((o: Device) => o.status === "in_use").length}</Typography>
+                <Typography><b style={{ color: 'green' }}>Chờ điều động:</b> {vehicles.filter((o: Device) => o.status === "available").length}</Typography>
+                <Typography><b style={{ color: 'red' }}>Đang hoạt động:</b> {vehicles.filter((o: Device) => o.status === "in_use").length}</Typography>
                 <Typography><b style={{ color: 'orange' }}>Hỏng:</b> {vehicles.filter((o: Device) => o.status === "maintenance").length}</Typography>
-                <Typography><b style={{ color: 'green' }}>Niêm cất:</b> {vehicles.filter((o: Device) => o.status === "retired").length}</Typography>
+                <Typography><b style={{ color: 'grey' }}>Niêm cất:</b> {vehicles.filter((o: Device) => o.status === "retired").length}</Typography>
             </Box>
             <Box sx={{ flex: 1, flexDirection: 'column', mb: 3 }}>
                 <Typography><h3>Tìm kiếm</h3></Typography>
@@ -265,6 +266,23 @@ const Vehicles: React.FC = () => {
                             />
                         )}
                     />}
+                    <TextField
+                        fullWidth
+                        select
+                        size='small'
+                        label="Lọc theo trạng thái"
+                        value={status}
+                        InputLabelProps={{ shrink: true }}
+                        SelectProps={{
+                            displayEmpty: true,
+                        }}
+                        onChange={(e) => setStatus(e.target.value)}>
+                        <MenuItem value="">Tất cả</MenuItem>
+                        <MenuItem value="available">Chờ điều động</MenuItem>
+                        <MenuItem value="in_use">Đang hoạt động</MenuItem>
+                        <MenuItem value="maintenance">Hỏng</MenuItem>
+                        <MenuItem value="retired">Niêm cất</MenuItem>
+                    </TextField>
                 </Box>
             </Box>
             <Paper sx={{ width: '100%', overflowX: "initial" }}>
@@ -333,10 +351,10 @@ const Vehicles: React.FC = () => {
                                                     device.status === 'maintenance' ? 'Hỏng' :
                                                         device.status === 'retired' ? 'Niêm cất' :
                                                             device.status === 'available' ? 'Chờ điều động' : device.status}
-                                                color={device.status === 'in_use' ? 'success' :
+                                                color={device.status === 'in_use' ? 'error' :
                                                     device.status === 'maintenance' ? 'warning' :
-                                                        device.status === 'retired' ? 'primary' :
-                                                            device.status === 'available' ? 'error' : 'default'}
+                                                        device.status === 'retired' ? 'secondary' :
+                                                            device.status === 'available' ? 'success' : 'default'}
                                             />
                                         </TableCell>
                                         {user?.role !== 'dispatcher' && <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>

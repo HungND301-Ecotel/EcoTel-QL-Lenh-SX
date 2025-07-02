@@ -20,6 +20,8 @@ class VehicleSummariesControllers {
       TextEditingController();
   final TextEditingController travelHours =
       TextEditingController();
+  final TextEditingController fuelUsedController =
+      TextEditingController();
   String status = 'good';
   final TextEditingController note =
       TextEditingController();

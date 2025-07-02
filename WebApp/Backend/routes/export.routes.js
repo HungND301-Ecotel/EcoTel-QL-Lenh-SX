@@ -86,7 +86,7 @@ router.get('/order/:id', verifyToken, restrictTo('admin', 'dispatcher', 'manager
         worksheet.getCell('F3').font = { bold: true };
         // Lấy ngày từ order.workingDate và định dạng
         const workingDate = order.workingDate ? new Date(order.workingDate) : null;
-        const ngay = workingDate ? workingDate.toLocaleString('vi-VN') : '';
+        const ngay = workingDate ? workingDate.toLocaleDateString('vi-VN') : '';
         worksheet.getCell('G3').value = ngay;
 
 
@@ -876,7 +876,7 @@ router.post('/excavatorTripReport/view', verifyToken, restrictTo('admin', 'dispa
                 .map(summary => {
 
                     return {
-                        _id: vehicle?._id,
+                        _id: summary?.vehicle?._id,
                         fullName: order?.assignedTo?.fullName,
                         salaryCode: order?.assignedTo?.salaryCode,
                         department: order?.assignedTo?.department?.name,
@@ -947,7 +947,7 @@ router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher
                 .map(summary => {
 
                     return {
-                        _id: vehicle?._id,
+                        _id: summary?.vehicle?._id,
                         fullName: order?.assignedTo?.fullName,
                         salaryCode: order?.assignedTo?.salaryCode,
                         department: order?.assignedTo?.department?.name,
@@ -1067,19 +1067,23 @@ router.post('/carTripReport/view', verifyToken, restrictTo('admin', 'dispatcher'
                 populate: [
                     {
                         path: "vehicleSummaries.vehicle",
-                        select: "code vehicleNumber"
+                        select: "_id code vehicleNumber"
                     },
                     {
                         path: "vehicleReports.vehicle",
-                        select: "code vehicleNumber",
+                        select: "_id code vehicleNumber",
                     },
                     {
                         path: "vehicleReports.materialType",
-                        select: "name",
+                        select: "_id name",
                     }
                 ]
             })
-            .populate('assignedTo', 'fullName salaryCode department')
+            .populate({
+                path: 'assignedTo',
+                select: 'fullName salaryCode department',
+                populate: ('department')
+            })
             .populate('job', 'name')
             .populate('location', 'name')
             .populate('material', 'name')
@@ -1093,17 +1097,17 @@ router.post('/carTripReport/view', verifyToken, restrictTo('admin', 'dispatcher'
                 }
             })
             .populate('shift')
-        const filteredOrders = orders.filter(order =>
-            order.device?.category?.name === "Vận tải"
-        );
-        const formattedData = filteredOrders.flatMap((order, orderIndex) => {
+        const formattedData = orders.flatMap((order, orderIndex) => {
             if (!order.shiftReport || !order.shiftReport.vehicleReports) return [];
-
+            const transportDevices = (order.device || []).filter(
+                dev => dev?.category?.name?.toLowerCase() === 'vận tải'
+            );
             return order.shiftReport.vehicleReports
-                .map(summary => {
-
+                .filter(summary =>
+                    transportDevices.some(dev => dev._id.toString() === summary?.vehicle?._id?.toString())
+                ).map(summary => {
                     return {
-                        _id: vehicle?._id,
+                        _id: summary?.vehicle?._id,
                         fullName: order?.assignedTo?.fullName,
                         salaryCode: order?.assignedTo?.salaryCode,
                         department: order?.assignedTo?.department?.name,
@@ -1143,19 +1147,23 @@ router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
                 populate: [
                     {
                         path: "vehicleSummaries.vehicle",
-                        select: "code vehicleNumber"
+                        select: "_id code vehicleNumber"
                     },
                     {
                         path: "vehicleReports.vehicle",
-                        select: "code vehicleNumber",
+                        select: "_id code vehicleNumber",
                     },
                     {
                         path: "vehicleReports.materialType",
-                        select: "name",
+                        select: "_id name",
                     },
                 ]
             })
-            .populate('assignedTo', 'fullName salaryCode department')
+            .populate({
+                path: 'assignedTo',
+                select: 'fullName salaryCode department',
+                populate: ('department')
+            })
             .populate('job', 'name')
             .populate('location', 'name')
             .populate('material', 'name')
@@ -1169,17 +1177,20 @@ router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
                 }
             })
             .populate('shift')
-        const filteredOrders = orders.filter(order =>
-            order.device?.category?.name === "Vận tải"
-        );
-        const formattedData = filteredOrders.flatMap((order, orderIndex) => {
+
+        const formattedData = orders.flatMap((order, orderIndex) => {
             if (!order.shiftReport || !order.shiftReport.vehicleReports) return [];
 
+            const transportDevices = (order.device || []).filter(
+                dev => dev?.category?.name?.toLowerCase() === 'vận tải'
+            );
             return order.shiftReport.vehicleReports
-                .map(summary => {
+                .filter(summary =>
+                    transportDevices.some(dev => dev._id.toString() === summary?.vehicle?._id?.toString())
+                ).map(summary => {
 
                     return {
-                        _id: vehicle?._id,
+                        _id: summary?.vehicle?._id,
                         fullName: order?.assignedTo?.fullName,
                         salaryCode: order?.assignedTo?.salaryCode,
                         department: order?.assignedTo?.department?.name,
@@ -1200,7 +1211,7 @@ router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
         infoRow.font = { italic: true, size: 12 };
         infoRow.alignment = { horizontal: 'left', vertical: 'middle' };
         // Tiêu đề bảng
-        worksheet.mergeCells('A2:E2');
+        worksheet.mergeCells('A2:G2');
         const header = worksheet.getCell('A2');
         header.value = title;
         header.font = { bold: true, size: 14 };
@@ -1216,7 +1227,7 @@ router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
                 index++,
                 item.fullName || '',
                 item.salaryCode || '',
-                item.department?.name || '',
+                item.department || '',
                 item.code || '',
                 item.material || '',
                 item.tripCount || '',
@@ -1249,7 +1260,7 @@ router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
             // Gán ảnh vào vị trí (dùng topleft + extents hoặc range)
             const lastCol = worksheet.columnCount;
             worksheet.addImage(imageId, {
-                tl: { col: lastCol - 2, row: index+7 }, // H30
+                tl: { col: lastCol - 2, row: index + 7 }, // H30
                 ext: { width: 150, height: 150 },
             });
         }
@@ -1338,7 +1349,7 @@ router.post('/productReport/view', verifyToken, restrictTo('admin', 'dispatcher'
                 .map(summary => {
 
                     return {
-                        _id: vehicle?._id,
+                        _id: summary?.vehicle?._id,
                         fullName: order?.assignedTo?.fullName,
                         salaryCode: order?.assignedTo?.salaryCode,
                         department: order?.assignedTo?.department?.name,
@@ -1414,7 +1425,7 @@ router.post('/productReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
                 .map(summary => {
 
                     return {
-                        _id: vehicle?._id,
+                        _id: summary?.vehicle?._id,
                         fullName: order?.assignedTo?.fullName,
                         salaryCode: order?.assignedTo?.salaryCode,
                         department: order?.assignedTo?.department?.name,
@@ -1561,11 +1572,13 @@ router.post('/worklog/view', verifyToken, restrictTo('admin', 'dispatcher', 'man
             .populate('excavator', 'code')
             .populate('device', 'code')
             .populate('shift')
+            .populate('shiftReport')
+
         const formattedData = orders.flatMap((order, orderIndex) => {
-            if (!order.shiftReport || !order.shiftReport.vehicleReports) return [];
+            if (!order.shiftReport) return [];
 
             return {
-                _id: vehicle?._id,
+                _id: order?._id,
                 fullName: order?.assignedTo?.fullName,
                 salaryCode: order?.assignedTo?.salaryCode,
                 device: order?.device.map(item => item.code).join(','),
@@ -1603,13 +1616,14 @@ router.post('/worklog', verifyToken, restrictTo('admin', 'dispatcher', 'manager'
             .populate('excavator', 'code')
             .populate('device', 'code')
             .populate('shift')
+            .populate('shiftReport')
 
         const formattedData = orders.flatMap((order, orderIndex) => {
-            if (!order.shiftReport || !order.shiftReport.vehicleReports) return [];
+            if (!order.shiftReport) return [];
 
 
             return {
-                _id: vehicle?._id,
+                _id: order?._id,
                 fullName: order?.assignedTo?.fullName,
                 salaryCode: order?.assignedTo?.salaryCode,
                 device: order?.device.map(item => item.code).join(','),
@@ -1739,7 +1753,7 @@ router.post('/meal_request/view', verifyToken, restrictTo('admin', 'dispatcher',
         const { shift, startDate, endDate, } = req.body
         let query = {
             createdBy: req.userId,
-            status: 'in_progress'
+            status: { $ne: "pending" }
         };
         if (Array.isArray(shift) && shift.length > 0) {
             query.shift = { $in: shift };
@@ -1761,7 +1775,7 @@ router.post('/meal_request/view', verifyToken, restrictTo('admin', 'dispatcher',
             .populate('shift')
         const formattedData = orders.flatMap((order, orderIndex) => {
             return {
-                _id: vehicle?._id,
+                _id: order?._id,
                 fullName: order?.assignedTo?.fullName,
                 salaryCode: order?.assignedTo?.salaryCode,
                 device: order?.device.map(item => item.code).join(','),
@@ -1780,7 +1794,7 @@ router.post('/meal_request', verifyToken, restrictTo('admin', 'dispatcher', 'man
         const { shift, startDate, endDate, signature } = req.body
         let query = {
             createdBy: req.userId,
-            status: 'in_progress'
+            status: { $ne: "pending" }
         };
         if (Array.isArray(shift) && shift.length > 0) {
             query.shift = { $in: shift };
@@ -1802,11 +1816,9 @@ router.post('/meal_request', verifyToken, restrictTo('admin', 'dispatcher', 'man
             .populate('shift')
 
         const formattedData = orders.flatMap((order, orderIndex) => {
-            if (!order.shiftReport || !order.shiftReport.vehicleReports) return [];
-
 
             return {
-                _id: vehicle?._id,
+                _id: order?._id,
                 fullName: order?.assignedTo?.fullName,
                 salaryCode: order?.assignedTo?.salaryCode,
                 device: order?.device.map(item => item.code).join(','),

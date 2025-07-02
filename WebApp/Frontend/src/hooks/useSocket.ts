@@ -9,7 +9,7 @@ export const useSocket = () => {
     const [user,setUser]=useAtom(userAtom)
 
     useEffect(() => {
-        const userId = user?.id;
+        const userId = user?._id;
 
         if (userId && !socketService.isConnected) {
             socketService.connect(userId);
