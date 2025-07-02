@@ -127,7 +127,9 @@ class _Camera extends State<Camera> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Check In',
+          widget.data.status == "in_progress"
+              ? 'Check Out'
+              : 'Check In',
           style: TextStyle(color: Colors.white),
         ),
         iconTheme: IconThemeData(color: Colors.white),
@@ -157,7 +159,11 @@ class _Camera extends State<Camera> {
               }
             },
             icon: Icon(Icons.check),
-            label: Text("Xác nhận Check-in"),
+            label: Text(
+              widget.data.status == "in_progress"
+                  ? "Xác nhận Check-Out"
+                  : "Xác nhận Check-In",
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
             ),

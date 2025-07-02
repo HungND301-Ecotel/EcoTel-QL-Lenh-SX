@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:soft/models/order_model.dart';
 import 'package:soft/routes/task_assignment_route.dart';
 import 'package:soft/services/order_service.dart';
+import 'package:soft/services/socket_service.dart';
 import 'package:soft/widgets/task_assignment_item.dart';
 
 class TaskAssignmentList extends StatefulWidget {
@@ -55,6 +56,18 @@ class _TaskAssignmentList
   void initState() {
     super.initState();
     getAllOrder();
+    final socketService = SocketService();
+
+    // Lắng nghe sự kiện 'notification' từ server
+    socketService.on('notification', (notif) {
+      getAllOrder();
+    });
+  }
+
+  @override
+  void dispose() {
+    SocketService().off('notification');
+    super.dispose();
   }
 
   @override

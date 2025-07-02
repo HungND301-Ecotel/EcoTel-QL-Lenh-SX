@@ -1,8 +1,8 @@
-import { Typography, IconButton, Paper, Grid } from '@mui/material';
+import { Typography, IconButton, Paper, Grid, Box } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import React, { useEffect, useState } from 'react'
 
-export default function VehicleShiftReport({ data }: { data: any[] }) {
+export default function VehicleShiftReport({ data, signatureUrl }: { data: any[], signatureUrl: string | null }) {
 
     const reportColumns: GridColDef[] = [
         {
@@ -25,13 +25,13 @@ export default function VehicleShiftReport({ data }: { data: any[] }) {
 
     return (
         <Grid item xs={12}>
-            <Paper sx={{ height: "80vh", overflowX: 'auto', padding: 1, width: '100%', }}>
+            <Paper sx={{ minHeight: "80vh", overflowX: 'auto', padding: 1, width: '100%', }}>
                 <DataGrid
                     rows={data}
                     columns={reportColumns}
                     getRowId={(row) => row._id}
                     autoHeight
-                    hideFooter 
+                    hideFooter
                     sx={{
                         width: '100%',
                         '& .MuiDataGrid-cell': {
@@ -42,6 +42,11 @@ export default function VehicleShiftReport({ data }: { data: any[] }) {
                         },
                     }}
                 />
+                {signatureUrl && (
+                    <Box mt={2} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <img src={signatureUrl} alt="Chữ ký" style={{ maxWidth: 200, maxHeight: 100 }} />
+                    </Box>
+                )}
             </Paper>
 
         </Grid>

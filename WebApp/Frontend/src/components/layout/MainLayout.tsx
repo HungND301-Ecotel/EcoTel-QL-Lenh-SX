@@ -59,7 +59,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         <div>
             <Toolbar>
                 <Typography variant="h6" noWrap component="div">
-                    EcoTel QL Lệnh SX
+                    ESOFT QL Lệnh SX
                 </Typography>
             </Toolbar>
             <List>

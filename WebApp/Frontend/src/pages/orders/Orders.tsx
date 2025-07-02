@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Box,
@@ -48,6 +48,10 @@ import OrderFormAdd from './OrderFormAdd';
 import OrderFormEdit from './OrderFormEdit';
 import OrderHistories from '../../components/OrderHistory/OrderHistories';
 import OrderFormTransfer from './OrderFormTransfer';
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs, { Dayjs } from 'dayjs';
+import { useSocket } from '../../hooks/useSocket';
 
 const StyledPopper = styled(Popper)({
     '& .MuiAutocomplete-listbox': {
@@ -62,11 +66,13 @@ const Orders: React.FC = () => {
     const [history, setHistory] = useState(false);
     const [transfer, setTransfer] = useState(false);
     const [employee, setEmployee] = useState("");
-    const [startTime, setStartTime] = useState("");
-    const [endTime, setEndTime] = useState("");
+    const [startTime, setStartTime] = useState<Dayjs | null>(null);
+    const [endTime, setEndTime] = useState<Dayjs | null>(null);
     const [device, setDevice] = useState("");
     const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
     const queryClient = useQueryClient();
+    const socket = useSocket()
+
 
     const { data: devices = [] } = useQuery({
         queryKey: ['devices'],
@@ -80,9 +86,17 @@ const Orders: React.FC = () => {
 
     const { data: orders = [], isLoading, refetch } = useQuery({
         queryKey: ['orders'],
-        queryFn: () => api.get(`/orders?employee=${employee}&device=${device}&startTime=${startTime}&endTime=${endTime}`).then(res => res.data.data),
+        queryFn: () => api.get(`/orders?employee=${employee}&device=${device}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
     });
 
+    useEffect(() => {
+        if (!socket) return;
+
+        socket.on('notification', () => {
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
+        });
+
+    }, [queryClient, socket]);
     const createMutation = useMutation({
         mutationFn: (newOrder: Partial<Order>) =>
             api.post('/orders', newOrder).then(res => res.data),
@@ -205,7 +219,7 @@ const Orders: React.FC = () => {
                         }
                         value={users.find((p: any) => p._id === employee) || null}
                         onChange={(event, newValue) => {
-                            setEmployee(newValue?._id);
+                            setEmployee(newValue?._id || '');
                         }}
                         PopperComponent={StyledPopper}
                         renderInput={(params) => (
@@ -227,7 +241,7 @@ const Orders: React.FC = () => {
                         }
                         value={devices.find((p: any) => p._id === device) || null}
                         onChange={(event, newValue) => {
-                            setDevice(newValue?._id);
+                            setDevice(newValue?._id || '');
                         }}
                         PopperComponent={StyledPopper}
                         renderInput={(params) => (
@@ -241,14 +255,40 @@ const Orders: React.FC = () => {
                 </Box>
                 <Box sx={{ flex: 1, flexDirection: 'column' }}>
                     <Typography>Từ ngày:</Typography>
-                    <TextField fullWidth type="date" size="small" value={startTime}
-                        onChange={(e) => setStartTime(e.target.value)} />
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                            label="Từ ngày"
+                            inputFormat="DD/MM/YYYY" // v5 vẫn hỗ trợ
+                            value={startTime ? dayjs(startTime) : null}
+                            onChange={(value) => setStartTime(value)}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    fullWidth
+                                    size="small"
+                                />
+                            )}
+                        />
+                    </LocalizationProvider>
                 </Box>
 
                 <Box sx={{ flex: 1, flexDirection: 'column' }}>
                     <Typography>Đến ngày:</Typography>
-                    <TextField fullWidth type="date" size="small" value={endTime}
-                        onChange={(e) => setEndTime(e.target.value)} />
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                            label="Đến ngày"
+                            inputFormat="DD/MM/YYYY" // v5 vẫn hỗ trợ
+                            value={endTime ? dayjs(endTime) : null}
+                            onChange={(value) => setEndTime(value)}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    fullWidth
+                                    size="small"
+                                />
+                            )}
+                        />
+                    </LocalizationProvider>
                 </Box>
 
                 <Box>
@@ -355,15 +395,15 @@ const Orders: React.FC = () => {
                                         />
                                     </TableCell>
                                     <TableCell sx={{ border: '1px solid black' }}>
-                                        <IconButton
+                                        {['pending', 'warning'].includes(order?.status) && <IconButton
                                             color="primary"
                                             onClick={() => handleOpen(order)}
                                         >
                                             <Tooltip title="Sửa" placement='top'>
                                                 <EditIcon />
                                             </Tooltip>
-                                        </IconButton>
-                                        <IconButton
+                                        </IconButton>}
+                                        {['completed'].includes(order?.status) && <IconButton
                                             color="success"
                                             onClick={() => {
                                                 setSelectedOrder(order)
@@ -373,15 +413,15 @@ const Orders: React.FC = () => {
                                             <Tooltip title="Xuất file" placement='top'>
                                                 <FileDownload />
                                             </Tooltip>
-                                        </IconButton>
-                                        <IconButton
+                                        </IconButton>}
+                                        {['pending', 'warning'].includes(order?.status) && <IconButton
                                             color="error"
                                             onClick={() => handleDelete(order._id)}
                                         >
                                             <Tooltip title="Xóa" placement='top'>
                                                 <DeleteIcon />
                                             </Tooltip>
-                                        </IconButton>
+                                        </IconButton>}
                                         <IconButton
                                             color="info"
                                             onClick={() => {

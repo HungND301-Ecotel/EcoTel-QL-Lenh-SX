@@ -119,4 +119,6 @@ flutter:
     - assets/marker.png
     - assets/device.png
     - assets/plus_add.png
+    - assets/.env
+    - assets/.env.example
 

@@ -264,9 +264,9 @@ const Users: React.FC = () => {
                     <IconButton color="primary" onClick={() => handleOpen(params.row)}>
                         <EditIcon />
                     </IconButton>
-                    <IconButton color="error" onClick={() => handleDelete(params.row._id)}>
+                    {user._id !== params.row._id && <IconButton color="error" onClick={() => handleDelete(params.row._id)}>
                         <DeleteIcon />
-                    </IconButton>
+                    </IconButton>}
                 </>
             ),
             sortable: false,

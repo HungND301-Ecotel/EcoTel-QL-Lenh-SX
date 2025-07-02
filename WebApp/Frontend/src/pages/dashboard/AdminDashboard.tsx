@@ -88,7 +88,7 @@ const AdminDashboard: React.FC = () => {
                                         color="text.secondary"
                                         gutterBottom
                                     >
-                                        Lệnh sản xuẩt
+                                        Lệnh sản xuất
                                     </Typography>
                                     <Typography
                                         variant="h6"
@@ -104,19 +104,19 @@ const AdminDashboard: React.FC = () => {
                                     }}>
                                         <Box sx={{ display: 'flex', gap: 1 }}>
                                             <Tooltip title={`Chưa nhận lệnh: ${orders.filter((o: Order) => o.status === "pending").length}`} placement='top'>
-                                                <OrderIcon color='error' fontSize='medium' />
+                                                <OrderIcon color='disabled' fontSize='medium' />
                                             </Tooltip>
                                             <Typography>{orders.filter((o: Order) => o.status === "pending").length}</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', gap: 1 }}>
                                             <Tooltip title={`Đã nhận lệnh: ${orders.filter((o: Order) => o.status === "in_progress").length}`} placement='top'>
-                                                <OrderIcon color='primary' fontSize='medium' />
+                                                <OrderIcon sx={{ color: 'green' }} fontSize='medium' />
                                             </Tooltip>
                                             <Typography>{orders.filter((o: Order) => o.status === "in_progress").length}</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', gap: 1 }}>
                                             <Tooltip title={`Lỗi: ${orders.filter((o: Order) => o.status === "warning").length}`} placement='top'>
-                                                <OrderIcon color='warning' fontSize='medium' />
+                                                <OrderIcon color='error' fontSize='medium' />
                                             </Tooltip>
                                             <Typography>{orders.filter((o: Order) => o.status === "warning").length}</Typography>
                                         </Box>
@@ -179,7 +179,7 @@ const AdminDashboard: React.FC = () => {
                                         </Box>
                                         <Box sx={{ display: 'flex', gap: 1 }}>
                                             <Tooltip title={`Đang hoạt động: ${devices.filter((o: Device) => o.status === "in_use").length}`} placement='top'>
-                                                <DeviceIcon color='primary' fontSize='medium' />
+                                                <DeviceIcon sx={{ color: 'green' }} fontSize='medium' />
                                             </Tooltip>
                                             <Typography>{devices.filter((o: Device) => o.status === "in_use").length}</Typography>
                                         </Box>

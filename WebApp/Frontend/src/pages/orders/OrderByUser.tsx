@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Box,
@@ -45,22 +45,35 @@ import OrderFormAdd from './OrderFormAdd';
 import OrderFormEdit from './OrderFormEdit';
 import OrderHistories from '../../components/OrderHistory/OrderHistories';
 import OrderFormTransfer from './OrderFormTransfer';
+import dayjs, { Dayjs } from 'dayjs';
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { useSocket } from '../../hooks/useSocket';
 
 const OrderByUsers: React.FC = () => {
     const [open, setOpen] = useState(false);
     const [history, setHistory] = useState(false);
     const [transfer, setTransfer] = useState(false);
     const [employee, setEmployee] = useState("");
-    const [startTime, setStartTime] = useState("");
-    const [endTime, setEndTime] = useState("");
+    const [startTime, setStartTime] = useState<Dayjs | null>(null);
+    const [endTime, setEndTime] = useState<Dayjs | null>(null);
     const [department, setDepartment] = useState("");
     const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
     const queryClient = useQueryClient();
+    const socket = useSocket()
 
+    useEffect(() => {
+        if (!socket) return;
+
+        socket.on('notification', () => {
+            queryClient.invalidateQueries({ queryKey: ['orderByUser'] });
+        });
+
+    }, [queryClient, socket]);
 
     const { data: orderByUser = [], isLoading, refetch } = useQuery({
         queryKey: ['orderByUser'],
-        queryFn: () => api.get(`/orders/user?employee=${employee}&startTime=${startTime}&endTime=${endTime}`).then(res => res.data.data),
+        queryFn: () => api.get(`/orders/user?startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
     });
 
     if (isLoading) {
@@ -74,15 +87,42 @@ const OrderByUsers: React.FC = () => {
             <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 2, mb: 3, flexWrap: 'wrap' }}>
                 <Box sx={{ flex: 1, flexDirection: 'column' }}>
                     <Typography>Từ ngày:</Typography>
-                    <TextField fullWidth type="date" size="small" value={startTime}
-                        onChange={(e) => setStartTime(e.target.value)} />
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                            label="Từ ngày"
+                            inputFormat="DD/MM/YYYY" // v5 vẫn hỗ trợ
+                            value={startTime ? dayjs(startTime) : null}
+                            onChange={(value) => setStartTime(value)}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    fullWidth
+                                    size="small"
+                                />
+                            )}
+                        />
+                    </LocalizationProvider>
                 </Box>
 
                 <Box sx={{ flex: 1, flexDirection: 'column' }}>
                     <Typography>Đến ngày:</Typography>
-                    <TextField fullWidth type="date" size="small" value={endTime}
-                        onChange={(e) => setEndTime(e.target.value)} />
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                            label="Đến ngày"
+                            inputFormat="DD/MM/YYYY" // v5 vẫn hỗ trợ
+                            value={endTime ? dayjs(endTime) : null}
+                            onChange={(value) => setEndTime(value)}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    fullWidth
+                                    size="small"
+                                />
+                            )}
+                        />
+                    </LocalizationProvider>
                 </Box>
+
 
                 <Box>
                     <Button

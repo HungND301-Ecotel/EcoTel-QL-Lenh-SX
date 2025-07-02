@@ -74,9 +74,22 @@ router.get('/:id', verifyToken, async (req, res) => {
 
 
 // Get user by salaryCode
-router.get('/salaryCode/:code', verifyToken, async (req, res) => {
+router.get('/getOne/salaryCodeOrName', verifyToken, async (req, res) => {
     try {
-        const user = await User.findOne({ salaryCode: req.params.code });
+        let query = {}
+        if (req.query.q) {
+            const regex = new RegExp(req.query.q, 'i');
+            query.$or = [
+                { salaryCode: regex },
+                { fullName: regex },
+            ];
+        } else {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Thiếu tham số tìm kiếm',
+            });
+        }
+        const user = await User.findOne(query);
         if (!user) {
             return res.status(404).json({
                 status: 'error',

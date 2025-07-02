@@ -391,7 +391,7 @@ class _TaskAssignmentVehicleEdit
                   keyboardType: TextInputType.number,
                 ),
                 Text(
-                  'Bãi thải',
+                  'Điểm đổ',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                   ),
@@ -424,11 +424,11 @@ class _TaskAssignmentVehicleEdit
                       ),
                       alignment: Alignment.centerLeft,
                     ),
-                    label: Text(dump?.name ?? 'Bãi thải'),
+                    label: Text(dump?.name ?? 'Điểm đổ'),
                   ),
                 ),
                 Text(
-                  'Chủng loại',
+                  'Vật liệu',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                   ),
@@ -463,7 +463,7 @@ class _TaskAssignmentVehicleEdit
                       alignment: Alignment.centerLeft,
                     ),
                     label: Text(
-                      material?.name ?? 'Chủng loại',
+                      material?.name ?? 'Vật liệu',
                     ),
                   ),
                 ),

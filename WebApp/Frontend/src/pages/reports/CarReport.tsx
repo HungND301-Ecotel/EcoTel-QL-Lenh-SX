@@ -1,9 +1,9 @@
-import { Typography, IconButton, Paper, Grid } from '@mui/material';
+import { Typography, IconButton, Paper, Grid, Box } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import React from 'react'
 import { Device } from '../../types';
 
-export default function CarReport({ data }: { data: any[] }) {
+export default function CarReport({ data, signatureUrl }: { data: any[], signatureUrl: string | null }) {
     const reportColumns: GridColDef[] = [
         {
             field: 'STT', headerName: 'STT', width: 50,
@@ -111,7 +111,7 @@ export default function CarReport({ data }: { data: any[] }) {
 
     return (
         <Grid item xs={12}>
-            <Paper sx={{ height: "80vh", overflowX: 'auto', padding: 1 }}>
+            <Paper sx={{ minHeight: "80vh", overflowX: 'auto', padding: 1 }}>
                 <DataGrid
                     rows={data}
                     columns={reportColumns}
@@ -128,6 +128,11 @@ export default function CarReport({ data }: { data: any[] }) {
                         },
                     }}
                 />
+                {signatureUrl && (
+                    <Box mt={2} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <img src={signatureUrl} alt="Chữ ký" style={{ maxWidth: 200, maxHeight: 100 }} />
+                    </Box>
+                )}
             </Paper>
 
         </Grid>

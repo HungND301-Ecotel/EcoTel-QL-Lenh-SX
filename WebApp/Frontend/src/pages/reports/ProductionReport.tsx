@@ -1,9 +1,9 @@
-import { Typography, IconButton, Paper, Grid, TableContainer, TableHead, Table, TableCell, TableRow, TableBody } from '@mui/material';
+import { Typography, IconButton, Paper, Grid, TableContainer, TableHead, Table, TableCell, TableRow, TableBody, Box } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import React, { useEffect, useState } from 'react'
 import { Device } from '../../types';
 
-export default function ProductionReport({ data }: { data: any[] }) {
+export default function ProductionReport({ data, signatureUrl }: { data: any[], signatureUrl: string | null }) {
 
     const reportColumns: GridColDef[] = [
         {
@@ -37,13 +37,13 @@ export default function ProductionReport({ data }: { data: any[] }) {
 
     return (
         <Grid item xs={12}>
-            <Paper sx={{ height: "80vh", overflowX: 'auto', padding: 1, width: '100%', }}>
+            <Paper sx={{ minHeight: "80vh", overflowX: 'auto', padding: 1, width: '100%', }}>
                 <TableContainer>
                     <Table>
                         <TableHead>
                             <TableRow>
                                 <TableCell rowSpan={3} sx={{ border: '1px solid black' }}>Số TT</TableCell>
-                                <TableCell rowSpan={3} sx={{ border: '1px solid black'}}>Số đăng kí thiết bị</TableCell>
+                                <TableCell rowSpan={3} sx={{ border: '1px solid black' }}>Số đăng kí thiết bị</TableCell>
                                 <TableCell rowSpan={3} colSpan={3} sx={{ border: '1px solid black', }}>Họ và tên công nhân vận hành</TableCell>
                                 <TableCell colSpan={2} sx={{ border: '1px solid black' }}>Tuyến vận tải</TableCell>
                                 <TableCell colSpan={6} align="center" sx={{ border: '1px solid black' }}>Sản lượng thực hiện</TableCell>
@@ -101,6 +101,11 @@ export default function ProductionReport({ data }: { data: any[] }) {
                         </TableBody>
                     </Table>
                 </TableContainer>
+                {signatureUrl && (
+                    <Box mt={2} sx={{display:'flex', justifyContent:'flex-end'}}>
+                        <img src={signatureUrl} alt="Chữ ký" style={{ maxWidth: 200, maxHeight: 100 }} />
+                    </Box>
+                )}
             </Paper>
 
         </Grid>

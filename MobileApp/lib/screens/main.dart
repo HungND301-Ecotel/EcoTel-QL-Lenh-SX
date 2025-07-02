@@ -126,7 +126,6 @@ class MyHomePageState extends State<MyPage> {
           listen: false,
         ).user;
     final role = user?.role;
-    print('role $role');
 
     final items = <BottomNavigationBarItem>[
       const BottomNavigationBarItem(

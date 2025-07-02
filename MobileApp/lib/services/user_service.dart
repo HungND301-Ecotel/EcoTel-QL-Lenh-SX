@@ -32,7 +32,9 @@ class AuthService {
     return await _apiService.put('/users/addphone', data);
   }
 
-  Future<Map<String, dynamic>> getUser(String code) async {
-    return await _apiService.get('/users/salaryCode/$code');
+  Future<Map<String, dynamic>> getUser(String q) async {
+    return await _apiService.get(
+      '/users/getOne/salaryCodeOrName?q=$q',
+    );
   }
 }

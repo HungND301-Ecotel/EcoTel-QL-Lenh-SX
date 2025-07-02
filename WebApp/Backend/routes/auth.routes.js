@@ -316,7 +316,7 @@ router.get('/me', verifyToken, async (req, res, next) => {
             status: 'success',
             data: {
                 user: {
-                    id: user._id,
+                    _id: user._id,
                     username: user.username,
                     email: user.email,
                     fullName: user.fullName,

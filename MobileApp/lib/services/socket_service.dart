@@ -1,3 +1,4 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:socket_io_client/socket_io_client.dart'
     as IO;
 
@@ -15,7 +16,7 @@ class SocketService {
 
   SocketService._internal() {
     _socket = IO.io(
-      'http://192.168.100.248:3004',
+      dotenv.env['SOCKET_API'] ?? 'ws://192.168.2.10:8080',
       IO.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()

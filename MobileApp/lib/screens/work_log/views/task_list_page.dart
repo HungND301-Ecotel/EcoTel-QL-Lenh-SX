@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:soft/models/order_model.dart';
 import 'package:soft/services/order_service.dart';
+import 'package:soft/services/socket_service.dart';
 import 'package:soft/widgets/task_item.dart';
 
 class TaskListPage extends StatefulWidget {
@@ -53,6 +54,18 @@ class _TaskListPage extends State<TaskListPage> {
   void initState() {
     super.initState();
     getOrderByUser();
+    final socketService = SocketService();
+
+    // Lắng nghe sự kiện 'notification' từ server
+    socketService.on('notification', (notif) {
+      getOrderByUser();
+    });
+  }
+
+  @override
+  void dispose() {
+    SocketService().off('notification');
+    super.dispose();
   }
 
   @override

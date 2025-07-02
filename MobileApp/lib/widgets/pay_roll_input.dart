@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:soft/models/user_model.dart';
 import 'package:soft/services/user_service.dart';
 
-
 class PayRollInput extends StatefulWidget {
   final String title;
   final Function(UserModel?) onSelectUser;
@@ -29,17 +28,16 @@ class _PayRollInputState extends State<PayRollInput> {
     super.initState();
     _codeController.text = widget.initialPayroll ?? '';
     if (_codeController.text.isNotEmpty) {
-      getUser();
+      getUser(_codeController.text);
     }
   }
 
   final AuthService _userService = AuthService();
 
-  void getUser() async {
-    String code = _codeController.text.trim();
+  void getUser(String code) async {
+    code = code.trim();
 
     var result = await _userService.getUser(code);
-    print(result);
 
     if (!mounted) return;
     if (result['status'] == 'error') {
@@ -69,7 +67,8 @@ class _PayRollInputState extends State<PayRollInput> {
             children: [
               TextSpan(text: '  '),
               TextSpan(
-                text: _user?.fullName ?? '',
+                text:
+                    '${_user?.fullName ?? ''} - ${_user?.salaryCode ?? ''}',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
@@ -81,9 +80,7 @@ class _PayRollInputState extends State<PayRollInput> {
         TextField(
           controller: _codeController,
           onChanged: (value) {
-            if (value.isNotEmpty) {
-              getUser();
-            }
+            getUser(value);
           },
         ),
       ],

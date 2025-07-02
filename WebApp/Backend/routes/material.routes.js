@@ -3,11 +3,12 @@ const router = express.Router();
 const { AppError } = require('../utils/errorHandler');
 const Material = require('../models/material');
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
+const Order = require('../models/Order');
 
 
 router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
-        const { name,density,masss } = req.body
+        const { name, density, masss } = req.body
         const existingMaterial = await Material.findOne({ name });
         if (existingMaterial) {
             return res.status(400).send({ status: 'error', message: 'Tên hàng hóa đã tồn tại' });
@@ -63,9 +64,10 @@ router.get('/', verifyToken, async (req, res) => {
         const query = {}
 
         if (req.query.name) {
-            const regex = new RegExp(req.query.name, 'i'); // không phân biệt hoa thường
+            const regex = new RegExp(req.query.name, 'i');
             query.name = regex;
         }
+        
         const materials = await Material.find(query);
         res.status(200).send({ status: 'success', data: materials });
     } catch (err) {
