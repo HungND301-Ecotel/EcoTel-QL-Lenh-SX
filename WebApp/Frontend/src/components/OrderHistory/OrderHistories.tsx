@@ -51,7 +51,7 @@ const OrderHistories: React.FC<{ open: boolean, setOpen: Dispatch<SetStateAction
                     <Typography key={index} sx={{ mb: 2 }}>
                         {`${index + 1}.
                             Ngày làm việc: ${item?.snapshot?.workingDate ? format(new Date(item?.snapshot?.workingDate), 'dd/MM/yyyy') : '---'},
-                            Ca: ${item?.snapshot?.shift},
+                            Ca: ${item?.snapshot?.shift?.name},
                             Bởi: ${item?.changedBy?.fullName},
                             Phương tiện: ${item?.snapshot?.device?.map((d: any) => d?.code).join(', ')},
                             Máy xúc: ${item?.snapshot?.excavator?.map((d: any) => d?.code).join(', ')},
