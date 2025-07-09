@@ -17,11 +17,13 @@ final GlobalKey<NavigatorState> navigatorKey =
     GlobalKey<NavigatorState>();
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   if (kReleaseMode) {
-    await dotenv.load(fileName: "assets/.env.example");
+    await dotenv.load(fileName: "assets/.env.prod");
   } else {
     await dotenv.load(fileName: "assets/.env");
   }
+  print('api: ${dotenv.env['BASE_API']}');
   runApp(
     MultiProvider(
       providers: [

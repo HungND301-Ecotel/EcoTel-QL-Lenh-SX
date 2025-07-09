@@ -1,11 +1,17 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as path;
 import 'package:soft/models/order_model.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
 import 'package:soft/services/order_service.dart';
+import 'package:soft/services/upload_service.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path_provider/path_provider.dart';
 
 class Camera extends StatefulWidget {
   final OrderModel data;
@@ -60,47 +66,114 @@ class _Camera extends State<Camera> {
   }
 
   final OrderService _orderService = OrderService();
+  final UploadService _uploadService = UploadService();
+  Future<File> compressToWebP(File file) async {
+    final dir = await getTemporaryDirectory();
+    final targetPath = path.join(
+      dir.path,
+      "${DateTime.now().millisecondsSinceEpoch}.webp",
+    );
+
+    final result =
+        await FlutterImageCompress.compressAndGetFile(
+          file.absolute.path,
+          targetPath,
+          format: CompressFormat.webp,
+          quality: 80,
+          minWidth: 300,
+          minHeight: 300,
+        );
+
+    if (result == null) {
+      throw Exception("Không thể nén ảnh WebP");
+    }
+    return File(result.path);
+  }
+
   void checkin() async {
     if (_imageFile == null) return;
     _showLoadingDialog();
 
-    final position = await Geolocator.getCurrentPosition();
-
-    var result = await _orderService.checkin(
-      lat: position.latitude.toString(),
-      lng: position.longitude.toString(),
-      orderId: widget.data.id,
-      file: _imageFile!,
+    final compressedWebP = await compressToWebP(
+      File(_imageFile!.path),
     );
-    if (!mounted) return;
-    Navigator.of(context, rootNavigator: true).pop();
 
-    if (result['status'] == 'error') {
+    final res = await _uploadService.upload(
+      compressedWebP,
+      "checkin",
+    );
+    if (res['status'] == "error") {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result['message']),
+          content: Text(res['message']),
           backgroundColor: Colors.red,
         ),
       );
-      await Future.delayed(Duration(seconds: 2));
-      setState(() => scanned = false);
     } else {
-      setState(() {
-        widget.data.updateFromJson(result['data']);
+      final uploadUrl = res['data'];
+      final response = await http.put(
+        Uri.parse(uploadUrl),
+        headers: {
+          'Content-Type':
+              'image/webp', // đảm bảo đúng MIME type
+        },
+        body: await compressedWebP.readAsBytes(),
+      );
+
+      if (response.statusCode != 200) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Upload thất bại: ${response.statusCode}',
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+
+        return print("Upload thất bại");
+      }
+      final position =
+          await Geolocator.getCurrentPosition();
+      final publicUrl = uploadUrl.split('?')[0];
+
+      var result = await _orderService.checkin({
+        'lat': position.latitude.toString(),
+        'lng': position.longitude.toString(),
+        'orderId': widget.data.id,
+        'file': publicUrl,
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message']),
-          backgroundColor: Colors.green,
-        ),
-      );
-      // Navigator.pop(context);
-      Navigator.popAndPushNamed(
-        context,
-        WorkLogRoutes.taskDetailPage,
-        arguments: widget.data.id,
-      );
-      await Future.delayed(Duration(seconds: 2));
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+
+      if (result['status'] == 'error') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message']),
+            backgroundColor: Colors.red,
+          ),
+        );
+        await Future.delayed(Duration(seconds: 2));
+        setState(() => scanned = false);
+      } else {
+        setState(() {
+          widget.data.updateFromJson(result['data']);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message']),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Navigator.pop(context);
+        Navigator.popAndPushNamed(
+          context,
+          WorkLogRoutes.taskDetailPage,
+          arguments: widget.data.id,
+        );
+        await Future.delayed(Duration(seconds: 2));
+      }
     }
   }
 

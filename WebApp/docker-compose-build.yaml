@@ -1,0 +1,23 @@
+###### Build Docker Images and push to DockerHub Repository ######
+### Rerferences:
+# 1. Compose build specs: https://docs.docker.com/compose/compose-file/build/
+# Run the commands:
+# a. Build: $ docker compose -f docker-compose-build.yaml build --parallel
+# b. Push:  $ docker compose -f docker-compose-build.yaml push
+##### 
+services:
+  reverseproxy:
+    build:
+      context: ./reverse_proxy
+    image: ${REGISTRY}/reverse_proxy_img:${VERSION}
+
+  backend:
+    build:
+      context: ./Backend
+    image: ${REGISTRY}/ecotel_backend_img:${VERSION}
+
+  frontend:
+    build:
+      context: ./Frontend
+    image: ${REGISTRY}/ecotel_frontend_img:${VERSION}
+  
