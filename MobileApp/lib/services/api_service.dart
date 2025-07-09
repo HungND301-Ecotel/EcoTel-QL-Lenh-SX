@@ -20,13 +20,13 @@ class ApiService {
         BaseOptions(
           baseUrl:
               dotenv.env['BASE_API'] ??
-              "http://192.168.2.10:8080/api",
+              "http://192.168.100.248:8080/api",
           headers: {'Content-Type': 'application/json'},
           connectTimeout: const Duration(
             seconds: 15,
           ), // ⬅️ tăng timeout lên 10s
           receiveTimeout: const Duration(
-            seconds: 15,
+            seconds: 15,  
           ), // ⬅️ nếu nhận dữ liệu chậm
           sendTimeout: const Duration(seconds: 15),
         ),
@@ -35,6 +35,7 @@ class ApiService {
       InterceptorsWrapper(
         onRequest: (options, handler) {
           // Gắn lại base URL nếu cần
+          print(options.path.startsWith('http'));
           if (!options.path.startsWith('http')) {
             options.path =
                 _dio.options.baseUrl + options.path;

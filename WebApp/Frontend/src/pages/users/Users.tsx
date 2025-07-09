@@ -42,6 +42,7 @@ import { Department, User } from '../../types';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
+import imageCompression from 'browser-image-compression';
 
 
 const StyledPopper = styled(Popper)({
@@ -208,6 +209,43 @@ const Users: React.FC = () => {
         }
     };
 
+    const handleImageUpload = async (file: File, type: 'avatar' | 'signature') => {
+        const resizedFile = await imageCompression(file, { maxWidthOrHeight: 300, maxSizeMB: 1, initialQuality: 0.8, useWebWorker: true });
+        const ext = 'webp';
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+        const res = await api.get(`/uploads`, { params: { fileName, type } });
+        const url = res.data?.data;
+        await fetch(url, { method: 'PUT', headers: { 'Content-Type': 'image/webp' }, body: resizedFile });
+        const publicUrl = url.split('?')[0];
+        if (type === 'avatar') {
+            setAvatar(publicUrl);
+            formik.setFieldValue('avatar', publicUrl);
+        } else {
+            setSignatureUrl(publicUrl);
+            formik.setFieldValue('signature', publicUrl);
+        }
+    };
+
+    const renderImageUploadBox = (type: 'avatar' | 'signature', currentUrl: string) => (
+        <Box sx={{ position: 'relative', width: 200, height: 200 }}>
+            {currentUrl && (
+                <IconButton onClick={() => type === 'avatar' ? setAvatar('') : setSignatureUrl('')}
+                    sx={{ position: 'absolute', top: 0, right: 0, zIndex: 1000 }}>
+                    <Close />
+                </IconButton>
+            )}
+            <Button component="label" sx={{ width: '100%', height: '100%', border: '1px solid grey', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                {!currentUrl && <Typography>Thêm {type === 'avatar' ? 'ảnh' : 'chữ ký'}</Typography>}
+                <img src={currentUrl || '/image/camera.png'} width={currentUrl ? 200 : 30} />
+                <input type="file" accept="image/*" hidden onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImageUpload(file, type);
+                    e.target.value = '';
+                }} />
+            </Button>
+        </Box>
+    );
+
     const userColumns: GridColDef[] = [
         { field: 'fullName', headerName: 'Họ tên', width: 200 },
         {
@@ -324,9 +362,9 @@ const Users: React.FC = () => {
                         if (file) {
                             const formData = new FormData();
                             formData.append('file', file);
-
                             importFile.mutate(formData);
                         }
+                        e.target.value = "";
                     }}
                 />
 
@@ -520,137 +558,10 @@ const Users: React.FC = () => {
                                 <MenuItem value="manager">Quản lý</MenuItem>
                                 <MenuItem value="employee">Nhân viên</MenuItem>
                             </TextField>
-                            <Grid container>
-                                <Grid item xs={12} sm={6}>
-                                    <Box sx={{ position: 'relative', width: 200, height: 200 }}>
-                                        {/* Nút Xóa nằm ngoài Button */}
-                                        {avatar && (
-                                            <IconButton
-                                                onClick={() => setAvatar('')}
-                                                sx={{
-                                                    zIndex: 1000,
-                                                    position: 'absolute',
-                                                    top: 0,
-                                                    right: 0,
-                                                    color: 'black',
-                                                }}
-                                            >
-                                                <Close />
-                                            </IconButton>
-                                        )}
 
-                                        <Button
-                                            component="label"
-                                            sx={{
-                                                border: '1px solid grey',
-                                                width: '100%',
-                                                height: '100%',
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                            }}
-                                        >
-                                            {!avatar && <Typography>Thêm ảnh</Typography>}
-                                            <img
-                                                src={avatar ? avatar : './image/camera.png'}
-                                                width={avatar ? 200 : 30}
-                                                alt="avatar"
-                                            />
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                hidden
-                                                onChange={(e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (!file) return;
-
-                                                    const formData = new FormData();
-                                                    formData.append('file', file);
-
-                                                    api
-                                                        .post('/uploads', formData, {
-                                                            headers: { 'Content-Type': 'multipart/form-data' },
-                                                        })
-                                                        .then((res) => {
-                                                            const url = res.data?.data?.url;
-                                                            setAvatar(url);
-                                                            formik.setFieldValue('avatar', url);
-                                                        })
-                                                        .catch(() => {
-                                                            alert('Lỗi upload ảnh');
-                                                        });
-                                                }}
-                                            />
-                                        </Button>
-                                    </Box>
-
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <Box sx={{ position: 'relative', width: 200, height: 200 }}>
-                                        {/* Nút Xóa nằm ngoài Button */}
-                                        {signatureUrl && (
-                                            <IconButton
-                                                onClick={() => setSignatureUrl('')}
-                                                sx={{
-                                                    zIndex: 1000,
-                                                    position: 'absolute',
-                                                    top: 0,
-                                                    right: 0,
-                                                    color: 'black',
-                                                }}
-                                            >
-                                                <Close />
-                                            </IconButton>
-                                        )}
-
-                                        <Button
-                                            component="label"
-                                            sx={{
-                                                border: '1px solid grey',
-                                                width: '100%',
-                                                height: '100%',
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                            }}
-                                        >
-                                            {!signatureUrl && <Typography>Thêm chữ kí</Typography>}
-                                            <img
-                                                src={signatureUrl ? signatureUrl : './image/camera.png'}
-                                                width={signatureUrl ? 200 : 30}
-                                                alt="avatar"
-                                            />
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                hidden
-                                                onChange={(e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (!file) return;
-
-                                                    const formData = new FormData();
-                                                    formData.append('file', file);
-
-                                                    api
-                                                        .post('/uploads', formData, {
-                                                            headers: { 'Content-Type': 'multipart/form-data' },
-                                                        })
-                                                        .then((res) => {
-                                                            const url = res.data?.data?.url;
-                                                            setSignatureUrl(url);
-                                                            formik.setFieldValue('signature', url);
-                                                        })
-                                                        .catch(() => {
-                                                            alert('Lỗi upload ảnh');
-                                                        });
-                                                }}
-                                            />
-                                        </Button>
-                                    </Box>
-
-                                </Grid>
+                            <Grid container spacing={2}>
+                                <Grid item>{renderImageUploadBox('avatar', avatar)}</Grid>
+                                <Grid item>{renderImageUploadBox('signature', signatureUrl)}</Grid>
                             </Grid>
                         </Box>
                     </Box>

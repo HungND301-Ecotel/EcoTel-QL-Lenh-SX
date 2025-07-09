@@ -41,31 +41,9 @@ class OrderService {
     return await _apiService.post('/orders/scanWork', data);
   }
 
-  Future<Map<String, dynamic>> checkin({
-    required String lat,
-    required String lng,
-    required String orderId,
-    required XFile file,
-  }) async {
-    final formData = FormData.fromMap({
-      'lat': lat,
-      'lng': lng,
-      'orderId': orderId,
-      'file': await MultipartFile.fromFile(
-        file.path,
-        filename: file.name,
-      ), // dùng file.name nếu bạn có
-    });
-    print("FormData lat: $lat");
-    print("FormData lng: $lng");
-    print("FormData orderId: $orderId");
-    print("FormData file path: ${file.path}");
-    return await _apiService.post(
-      '/orders/checkin',
-      formData,
-      options: Options(
-        headers: {"Content-Type": "multipart/form-data"},
-      ),
-    );
+  Future<Map<String, dynamic>> checkin(
+    Map<String, dynamic> data,
+  ) async {
+    return await _apiService.post('/orders/checkin', data);
   }
 }

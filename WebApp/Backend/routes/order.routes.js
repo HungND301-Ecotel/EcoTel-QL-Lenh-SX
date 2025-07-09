@@ -6,7 +6,6 @@ const Notification = require('../models/Notification');
 
 
 const OrderHistory = require('../models/OrderHistory');
-const handleUpload = require('../utils/uploadImage');
 
 
 
@@ -609,9 +608,11 @@ router.post('/scanWork', verifyToken, async (req, res, next) => {
 });
 
 
-router.post('/checkin', verifyToken, handleUpload, async (req, res, next) => {
+router.post('/checkin', verifyToken, async (req, res, next) => {
     try {
-        const { lat, lng, orderId } = req.body;
+        const { lat, lng, orderId, file } = req.body;
+
+        console.log(req.body)
 
 
         const order = await Order.findById(orderId).populate('shiftReport')
@@ -619,7 +620,7 @@ router.post('/checkin', verifyToken, handleUpload, async (req, res, next) => {
             return res.status(404).send({ status: 'error', message: 'Không tìm thấy lệnh làm việc' });
         }
 
-        if (!req.file) {
+        if (!file) {
             return res.status(400).send({ status: 'error', message: 'Vui lòng thử lại' });
         }
 
@@ -697,7 +698,7 @@ router.post('/checkin', verifyToken, handleUpload, async (req, res, next) => {
 
         const newCheckIn = new CheckIn({
             orderId: orderUpdate._id,
-            imageUrl: req.file.path
+            imageUrl: file
         })
         await newCheckIn.save()
 

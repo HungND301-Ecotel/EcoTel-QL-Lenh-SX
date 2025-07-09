@@ -16,7 +16,7 @@ class SocketService {
 
   SocketService._internal() {
     _socket = IO.io(
-      dotenv.env['SOCKET_API'] ?? 'ws://192.168.2.10:8080',
+      dotenv.env['SOCKET_API'] ?? 'ws://192.168.100.248:8080',
       IO.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()

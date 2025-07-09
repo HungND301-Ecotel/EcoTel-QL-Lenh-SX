@@ -3,7 +3,6 @@ const router = express.Router();
 const User = require('../models/User');
 const bcrypt = require('bcryptjs')
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
-const handleUpload = require('../utils/uploadImage');
 const xlsx = require('xlsx');
 
 
@@ -215,22 +214,23 @@ router.delete('/:id', verifyToken, async (req, res) => {
     }
 });
 
-
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 // Delete user
-router.post('/importFile', handleUpload, verifyToken, async (req, res) => {
+router.post('/importFile', upload.single('file'), verifyToken, async (req, res) => {
     try {
-        const fileUrl = req.file.path;
-        console.log(fileUrl)
         if (!req.file) {
-            return res.status(400).send({ status: 'error', message: 'Vui lòng thử lại' });
+            return res.status(400).json({ status: 'error', message: 'Vui lòng chọn file' });
         }
 
-        const axios = require('axios');
-        const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
-
-        const workbook = xlsx.read(response.data, { type: 'buffer' });
+        const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
         const sheet = workbook.SheetNames[0];
         const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheet]);
+        if (req.user.role === 'manager' && req.user.department) {
+            for (const row of data) {
+                row.department = req.user.department?._id;
+            }
+        }
 
         await User.insertMany(data);
         res.status(200).json({
