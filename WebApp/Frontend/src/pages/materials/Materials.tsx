@@ -143,10 +143,10 @@ const Materials: React.FC = () => {
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{ border: '1px solid black' }}>Tên vật liệu</TableCell>
-                            <TableCell sx={{ border: '1px solid black' }}>Tỉ trọng</TableCell>
-                            <TableCell sx={{ border: '1px solid black' }}>Khối lượng</TableCell>
-                            <TableCell sx={{ border: '1px solid black' }}>Thao tác</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black' }}>Tên vật liệu</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black' }}>Tỉ trọng</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black' }}>Khối lượng</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black' }}>Thao tác</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>

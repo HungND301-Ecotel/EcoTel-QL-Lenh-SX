@@ -138,12 +138,12 @@ const Notifications: React.FC = () => {
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{ border: '1px solid black' }}>Tiêu đề</TableCell>
-                            <TableCell sx={{ border: '1px solid black' }}>Loại thông báo</TableCell>
-                            <TableCell sx={{ border: '1px solid black' }}>Người gửi</TableCell>
-                            <TableCell sx={{ border: '1px solid black' }}>Trạng thái</TableCell>
-                            <TableCell sx={{ border: '1px solid black' }}>Ngày tạo</TableCell>
-                            <TableCell sx={{ border: '1px solid black' }}>Thao tác</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black' }}>Tiêu đề</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black' }}>Loại thông báo</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black' }}>Người gửi</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black' }}>Trạng thái</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black' }}>Ngày tạo</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black' }}>Thao tác</TableCell>
                         </TableRow>
                     </TableHead>
                     {!isLoading ? <TableBody>

@@ -133,8 +133,8 @@ const DeviceTypes: React.FC = () => {
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{ border: '1px solid black' }}>Tên loại phương tiện</TableCell>
-                            {user?.role !== 'dispatcher' && <TableCell sx={{ border: '1px solid black' }}>Thao tác</TableCell>}
+                            <TableCell align='center' sx={{ border: '1px solid black' }}>Tên loại phương tiện</TableCell>
+                            {user?.role !== 'dispatcher' && <TableCell align='center' sx={{ border: '1px solid black' }}>Thao tác</TableCell>}
                         </TableRow>
                     </TableHead>
                     <TableBody>

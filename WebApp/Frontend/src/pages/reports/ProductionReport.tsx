@@ -42,16 +42,16 @@ export default function ProductionReport({ data, signatureUrl }: { data: any[], 
                     <Table>
                         <TableHead>
                             <TableRow>
-                                <TableCell rowSpan={3} sx={{ border: '1px solid black' }}>Số TT</TableCell>
-                                <TableCell rowSpan={3} sx={{ border: '1px solid black' }}>Số đăng kí thiết bị</TableCell>
-                                <TableCell rowSpan={3} colSpan={3} sx={{ border: '1px solid black', }}>Họ và tên công nhân vận hành</TableCell>
-                                <TableCell colSpan={2} sx={{ border: '1px solid black' }}>Tuyến vận tải</TableCell>
-                                <TableCell colSpan={6} align="center" sx={{ border: '1px solid black' }}>Sản lượng thực hiện</TableCell>
-                                <TableCell rowSpan={3} sx={{ border: '1px solid black' }}>T.km phục vụ</TableCell>
-                                <TableCell rowSpan={3} sx={{ border: '1px solid black' }}>Tổng sản lượng TKm</TableCell>
-                                <TableCell rowSpan={3} sx={{ border: '1px solid black' }}>Giờ hoạt động ra sản phẩm</TableCell>
-                                <TableCell colSpan={5} align="center" sx={{ border: '1px solid black' }}>Cấp nhiên liệu, dầu nhờn, mỡ máy</TableCell>
-                                <TableCell rowSpan={3} sx={{ border: '1px solid black' }}>CN vận hành kí nhận</TableCell>
+                                <TableCell align='center' rowSpan={3} sx={{ border: '1px solid black' }}>Số TT</TableCell>
+                                <TableCell align='center' rowSpan={3} sx={{ border: '1px solid black' }}>Số đăng kí thiết bị</TableCell>
+                                <TableCell align='center' rowSpan={3} colSpan={3} sx={{ border: '1px solid black', }}>Họ và tên công nhân vận hành</TableCell>
+                                <TableCell align='center' colSpan={2} sx={{ border: '1px solid black' }}>Tuyến vận tải</TableCell>
+                                <TableCell align='center' colSpan={6} sx={{ border: '1px solid black' }}>Sản lượng thực hiện</TableCell>
+                                <TableCell align='center' rowSpan={3} sx={{ border: '1px solid black' }}>T.km phục vụ</TableCell>
+                                <TableCell align='center' rowSpan={3} sx={{ border: '1px solid black' }}>Tổng sản lượng TKm</TableCell>
+                                <TableCell align='center' rowSpan={3} sx={{ border: '1px solid black' }}>Giờ hoạt động ra sản phẩm</TableCell>
+                                <TableCell align='center' colSpan={5} sx={{ border: '1px solid black' }}>Cấp nhiên liệu, dầu nhờn, mỡ máy</TableCell>
+                                <TableCell align='center' rowSpan={3} sx={{ border: '1px solid black' }}>CN vận hành kí nhận</TableCell>
                             </TableRow>
                             <TableRow>
                                 <TableCell sx={{ border: '1px solid black' }} rowSpan={2} align="center">Cung độ (Km)</TableCell>
@@ -102,7 +102,7 @@ export default function ProductionReport({ data, signatureUrl }: { data: any[], 
                     </Table>
                 </TableContainer>
                 {signatureUrl && (
-                    <Box mt={2} sx={{display:'flex', justifyContent:'flex-end'}}>
+                    <Box mt={2} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                         <img src={signatureUrl} alt="Chữ ký" style={{ maxWidth: 200, maxHeight: 100 }} />
                     </Box>
                 )}

@@ -39,6 +39,7 @@ import {
     FileDownload,
     InfoOutlined,
     SyncAlt,
+    Visibility,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -52,6 +53,7 @@ import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 import { useSocket } from '../../hooks/useSocket';
+import ShiftReport from '../../components/ShiftReport/ShiftReport';
 
 const StyledPopper = styled(Popper)({
     '& .MuiAutocomplete-listbox': {
@@ -64,6 +66,7 @@ const StyledPopper = styled(Popper)({
 const Orders: React.FC = () => {
     const [open, setOpen] = useState(false);
     const [history, setHistory] = useState(false);
+    const [shiftReport, setShiftReport] = useState(false);
     const [transfer, setTransfer] = useState(false);
     const [employee, setEmployee] = useState("");
     const [startTime, setStartTime] = useState<Dayjs | null>(null);
@@ -161,6 +164,18 @@ const Orders: React.FC = () => {
             alert(error.response.data.message || error.response || 'Lỗi')
         }
     });
+
+    const handleCancel = (order: any) => {
+        if (order.status === "in_progress") {
+            return alert('Lệnh đang thực hiện không thể hủy')
+        }
+        if (order.status === "completed") {
+            return alert('Lệnh đã hoàn thành không thể hủy')
+        }
+        if (window.confirm('Bạn có chắc chắn muốn hủy lệnh sản xuất này?. Bạn sẽ không thể thay đổi')) {
+            updateMutation.mutate({ _id: order._id, status: 'cancel' });
+        }
+    }
 
     const handleOpen = (order?: any) => {
         if (order) {
@@ -307,7 +322,7 @@ const Orders: React.FC = () => {
                     <Table stickyHeader aria-label="sticky table">
                         <TableHead>
                             <TableRow>
-                                <TableCell sx={{
+                                <TableCell align='center' sx={{
                                     position: 'sticky',
                                     left: 0,
                                     backgroundColor: 'white',
@@ -315,19 +330,20 @@ const Orders: React.FC = () => {
                                     minWidth: 150,
                                     border: '1px solid black'
                                 }}>Tên nhân viên</TableCell>
-                                <TableCell sx={{ minWidth: 130, border: '1px solid black' }}>Số thẻ lương</TableCell>
-                                <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Giờ tạo lệnh</TableCell>
-                                <TableCell sx={{ minWidth: 120, border: '1px solid black' }}>Ngày</TableCell>
-                                <TableCell sx={{ minWidth: 50, border: '1px solid black' }}>Ca</TableCell>
-                                <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Công việc</TableCell>
-                                <TableCell sx={{ minWidth: 200, border: '1px solid black' }}>Nội dung</TableCell>
-                                <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Phương tiện</TableCell>
-                                <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Người ra lệnh</TableCell>
-                                <TableCell sx={{ minWidth: 120, border: '1px solid black' }}>Bắt đầu</TableCell>
-                                <TableCell sx={{ minWidth: 120, border: '1px solid black' }}>Kết thúc</TableCell>
-                                <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Ghi chú</TableCell>
-                                <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Trạng thái</TableCell>
-                                <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Thao tác</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 130, border: '1px solid black' }}>Số thẻ lương</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Giờ tạo lệnh</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black' }}>Ngày</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black' }}>Ca</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Công việc</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 200, border: '1px solid black' }}>Nội dung</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Phương tiện</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Người ra lệnh</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black' }}>Bắt đầu</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black' }}>Kết thúc</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black' }}>Hủy</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Ghi chú</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Trạng thái</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Thao tác</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -378,20 +394,24 @@ const Orders: React.FC = () => {
                                         {order.endTime ? format(new Date(order.endTime), 'HH:mm:ss') : ''}
                                     </TableCell>
                                     <TableCell sx={{ border: '1px solid black' }}>
+                                        <Checkbox checked={order.status === "cancel"} onChange={(e) => handleCancel(order)} disabled={order.status === "cancel"} />
+                                    </TableCell>
+                                    <TableCell sx={{ border: '1px solid black' }}>
                                         {order.temporaryError || ''}
                                     </TableCell>
                                     <TableCell sx={{ border: '1px solid black' }}>
                                         <Chip
+                                            sx={{ width: '120px' }}
                                             label={order.status === 'pending' ? 'Chưa nhận lệnh' :
                                                 order.status === 'in_progress' ? 'Đã nhận lệnh' :
                                                     order.status === 'completed' ? 'Đã hoàn thành' :
-                                                        order.status === 'warning' ? 'Lỗi' : order.status
+                                                        order.status === 'warning' ? 'Lỗi' : "Đã hủy"
                                             }
                                             color={
                                                 order.status === 'pending' ? 'default' :
                                                     order.status === 'completed' ? 'error' :
                                                         order.status === 'in_progress' ? 'success' :
-                                                            order.status === 'warning' ? 'warning' : 'default'}
+                                                            order.status === 'warning' ? 'warning' : 'secondary'}
                                         />
                                     </TableCell>
                                     <TableCell sx={{ border: '1px solid black' }}>
@@ -414,7 +434,7 @@ const Orders: React.FC = () => {
                                                 <FileDownload />
                                             </Tooltip>
                                         </IconButton>}
-                                        {['pending', 'warning'].includes(order?.status) && <IconButton
+                                        {['pending', 'warning', 'cancel'].includes(order?.status) && <IconButton
                                             color="error"
                                             onClick={() => handleDelete(order._id)}
                                         >
@@ -434,6 +454,17 @@ const Orders: React.FC = () => {
                                             </Tooltip>
                                         </IconButton>
                                         {order.status === "completed" && <IconButton
+                                            color="secondary"
+                                            onClick={() => {
+                                                setSelectedOrder(order)
+                                                setShiftReport(true)
+                                            }}
+                                        >
+                                            <Tooltip title="Báo công" placement='top'>
+                                                <Visibility />
+                                            </Tooltip>
+                                        </IconButton>}
+                                        {order.status === "completed" && <IconButton
                                             color="info"
                                             onClick={() => {
                                                 setSelectedOrder(order)
@@ -452,6 +483,7 @@ const Orders: React.FC = () => {
                 </TableContainer>
             </Paper>
             <OrderHistories open={history} setOpen={setHistory} initialValues={selectedOrder} />
+            <ShiftReport open={shiftReport} setOpen={setShiftReport} initialValues={selectedOrder} />
             {selectedOrder ? <OrderFormEdit
                 open={open}
                 initialValues={selectedOrder}

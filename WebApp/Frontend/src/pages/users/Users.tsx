@@ -24,6 +24,7 @@ import {
     Popper,
     InputAdornment,
     Grid,
+    Checkbox,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -69,7 +70,6 @@ const Users: React.FC = () => {
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [value, setValue] = useState("")
     const [department, setDepartment] = useState("")
-    const [signatureUrl, setSignatureUrl] = useState("")
     const [avatar, setAvatar] = useState("")
     const queryClient = useQueryClient();
     const [user, setUser] = useAtom(userAtom)
@@ -151,7 +151,6 @@ const Users: React.FC = () => {
             email: '',
             phone: '',
             avatar: avatar,
-            signature: signatureUrl,
             salaryCode: '',
             department: user?.role === "manager" ? user?.department?._id : '',
             position: undefined,
@@ -189,7 +188,6 @@ const Users: React.FC = () => {
                     : user.department || undefined,
             });
             setAvatar(user.avatar)
-            setSignatureUrl(user.signature)
         } else {
             setSelectedUser(null);
             formik.resetForm();
@@ -209,7 +207,7 @@ const Users: React.FC = () => {
         }
     };
 
-    const handleImageUpload = async (file: File, type: 'avatar' | 'signature') => {
+    const handleImageUpload = async (file: File, type: 'avatar') => {
         const resizedFile = await imageCompression(file, { maxWidthOrHeight: 300, maxSizeMB: 1, initialQuality: 0.8, useWebWorker: true });
         const ext = 'webp';
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
@@ -217,25 +215,23 @@ const Users: React.FC = () => {
         const url = res.data?.data;
         await fetch(url, { method: 'PUT', headers: { 'Content-Type': 'image/webp' }, body: resizedFile });
         const publicUrl = url.split('?')[0];
-        if (type === 'avatar') {
-            setAvatar(publicUrl);
-            formik.setFieldValue('avatar', publicUrl);
-        } else {
-            setSignatureUrl(publicUrl);
-            formik.setFieldValue('signature', publicUrl);
-        }
+        setAvatar(publicUrl);
+        formik.setFieldValue('avatar', publicUrl);
     };
 
-    const renderImageUploadBox = (type: 'avatar' | 'signature', currentUrl: string) => (
+    const renderImageUploadBox = (type: 'avatar', currentUrl: string) => (
         <Box sx={{ position: 'relative', width: 200, height: 200 }}>
             {currentUrl && (
-                <IconButton onClick={() => type === 'avatar' ? setAvatar('') : setSignatureUrl('')}
+                <IconButton onClick={() => {
+                    setAvatar('')
+                    formik.setFieldValue('avatar', null);
+                }}
                     sx={{ position: 'absolute', top: 0, right: 0, zIndex: 1000 }}>
                     <Close />
                 </IconButton>
             )}
             <Button component="label" sx={{ width: '100%', height: '100%', border: '1px solid grey', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                {!currentUrl && <Typography>Thêm {type === 'avatar' ? 'ảnh' : 'chữ ký'}</Typography>}
+                {!currentUrl && <Typography>Thêm ảnh</Typography>}
                 <img src={currentUrl || '/image/camera.png'} width={currentUrl ? 200 : 30} />
                 <input type="file" accept="image/*" hidden onChange={(e) => {
                     const file = e.target.files?.[0];
@@ -247,20 +243,22 @@ const Users: React.FC = () => {
     );
 
     const userColumns: GridColDef[] = [
-        { field: 'fullName', headerName: 'Họ tên', width: 200 },
+        { field: 'fullName', headerName: 'Họ tên', minWidth: 250, flex: 1, headerAlign: 'center' },
         {
             field: 'salaryCode',
             headerName: 'Thẻ lương',
-            width: 100
+            width: 100,
+            headerAlign: 'center'
         },
-        { field: 'gender', headerName: 'Giới tính', width: 70 },
-        { field: 'phone', headerName: 'Số điện thoại', width: 150 },
-        { field: 'email', headerName: 'Email', width: 150 },
+        { field: 'gender', headerName: 'Giới tính', width: 70, headerAlign: 'center' },
+        { field: 'phone', headerName: 'Số điện thoại', width: 150, headerAlign: 'center' },
+        { field: 'email', headerName: 'Email', width: 150, headerAlign: 'center' },
         {
             field: 'position',
             headerName: 'Chức danh, nghề nghiệp',
             valueGetter: (params) => params.row.position?.name || '',
-            width: 200
+            width: 250,
+            headerAlign: 'center'
         },
         {
             field: 'department',
@@ -271,10 +269,12 @@ const Users: React.FC = () => {
                     ? dept.name
                     : 'Chưa có';
             },
-            width: 200
+            minWidth: 250,
+            flex: 1,
+            headerAlign: 'center'
         },
         {
-            field: 'role', headerName: 'Phân quyền', width: 150,
+            field: 'role', headerName: 'Phân quyền', width: 150, headerAlign: 'center',
             renderCell: (params) => (
                 <Typography>
                     {params.row.role === "admin" ? "Quản trị hệ thống" : params.row.role === "dispatcher" ? "Điều hành sản xuất" : params.row.role === "manager" ? "Quản lý" : "Nhân viên"}
@@ -282,21 +282,22 @@ const Users: React.FC = () => {
             )
         },
         {
-            field: 'avatar', headerName: 'Ảnh đại diện', width: 100,
+            field: 'active', headerName: 'Trạng thái', width: 100, headerAlign: 'center', align: 'center',
             renderCell: (params) => (
-                <img src={params.row.avatar || ''} width={50} />
+                <Checkbox checked={params.row.active} onChange={(e) => updateMutation.mutate({ _id: params.row._id, active: e.target.checked })} />
             )
         },
         {
-            field: 'signature', headerName: 'Chữ kí', width: 100,
+            field: 'avatar', headerName: 'Ảnh đại diện', width: 100, headerAlign: 'center',
             renderCell: (params) => (
-                <img src={params.row.signature || ''} width={50} />
+                <img src={params.row.avatar || ''} width={50} />
             )
         },
         {
             field: 'actions',
             headerName: 'Thao tác',
             width: 100,
+            headerAlign: 'center',
             renderCell: (params) => (
                 <>
                     <IconButton color="primary" onClick={() => handleOpen(params.row)}>
@@ -383,7 +384,7 @@ const Users: React.FC = () => {
                     rows={users}
                     columns={userColumns}
                     getRowId={(row) => row._id}
-                    rowsPerPageOptions={[10, 20]}
+                    rowsPerPageOptions={[10, 20, 50]}
                     autoHeight
                     initialState={{
                         pagination: {
@@ -396,7 +397,11 @@ const Users: React.FC = () => {
                             border: '1px solid black',
                         },
                         '& .MuiDataGrid-columnHeader': {
-                            border: '1px solid black', // 👈 viền xung quanh header cell
+                            border: '1px solid black',
+                        },
+                        '& .MuiDataGrid-columnHeaderTitle': {
+                            width: '100%',
+                            textAlign: 'center',
                         },
                     }}
                 />
@@ -561,7 +566,6 @@ const Users: React.FC = () => {
 
                             <Grid container spacing={2}>
                                 <Grid item>{renderImageUploadBox('avatar', avatar)}</Grid>
-                                <Grid item>{renderImageUploadBox('signature', signatureUrl)}</Grid>
                             </Grid>
                         </Box>
                     </Box>

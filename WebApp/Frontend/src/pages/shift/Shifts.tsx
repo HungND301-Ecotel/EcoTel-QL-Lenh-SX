@@ -137,10 +137,10 @@ const Shifts: React.FC = () => {
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{ border: '1px solid black' }}>Ca</TableCell>
-                            <TableCell sx={{ border: '1px solid black' }}>Thời gian bắt đầu</TableCell>
-                            <TableCell sx={{ border: '1px solid black' }}>Thời gian kết thúc</TableCell>
-                            <TableCell sx={{ border: '1px solid black' }}>Thao tác</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black' }}>Ca</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black' }}>Thời gian bắt đầu</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black' }}>Thời gian kết thúc</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black' }}>Thao tác</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>

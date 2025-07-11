@@ -8,11 +8,15 @@ const userSchema = new mongoose.Schema({
     email: { type: String },
     phone: { type: String },
     avatar: { type: String },
-    signature:{type:String},
-    salaryCode:{type:String},
+    signature: { type: String },
+    salaryCode: { type: String },
     department: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
     position: { type: mongoose.Schema.Types.ObjectId, ref: 'Position' },
     role: { type: String },
+    active: {
+        type: Boolean,
+        default: true
+    },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
 });

@@ -3,32 +3,12 @@ const router = express.Router();
 const { AppError } = require('../utils/errorHandler');
 const Device = require('../models/Device');
 const DeviceType = require('../models/DeviceType');
+const Department = require('../models/Department');
+
 
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 const Order = require('../models/Order');
 
-/**
- * @swagger
- * /api/devices:
- *   get:
- *     summary: Get all devices
- *     tags: [Devices]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: type
- *         schema:
- *           type: string
- *       - in: query
- *         name: status
- *         schema:
- *           type: string
- *       - in: query
- *         name: department
- *         schema:
- *           type: string
- */
 router.get('/', verifyToken, async (req, res, next) => {
     try {
         const user = req.user
@@ -107,41 +87,6 @@ router.get('/excavators/all', verifyToken, async (req, res, next) => {
 });
 
 
-/**
- * @swagger
- * /api/devices:
- *   post:
- *     summary: Create new device
- *     tags: [Devices]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - name
- *               - type
- *               - model
- *               - serialNumber
- *               - department
- *             properties:
- *               name:
- *                 type: string
- *               type:
- *                 type: string
- *                 enum: [truck, excavator, bulldozer, crane, other]
- *               model:
- *                 type: string
- *               serialNumber:
- *                 type: string
- *               department:
- *                 type: string
- *               specifications:
- *                 type: object
- */
 router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
         const { name, code, vehicleNumber, category, material, fuelType, capacity, power, coordinates, department, status } = req.body;
@@ -177,21 +122,6 @@ router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, n
     }
 });
 
-/**
- * @swagger
- * /api/devices/{id}:
- *   get:
- *     summary: Get device by ID
- *     tags: [Devices]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- */
 router.get('/:id', verifyToken, async (req, res, next) => {
     try {
         const device = await Device.findById(req.params.id)
@@ -215,49 +145,6 @@ router.get('/:id', verifyToken, async (req, res, next) => {
     }
 });
 
-/**
- * @swagger
- * /api/devices/{id}:
- *   patch:
- *     summary: Update device
- *     tags: [Devices]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               type:
- *                 type: string
- *                 enum: [truck, excavator, bulldozer, crane, other]
- *               model:
- *                 type: string
- *               serialNumber:
- *                 type: string
- *               department:
- *                 type: string
- *               status:
- *                 type: string
- *                 enum: [available, in_use, maintenance, retired]
- *               specifications:
- *                 type: object
- *               lastMaintenance:
- *                 type: string
- *                 format: date-time
- *               nextMaintenance:
- *                 type: string
- *                 format: date-time
- */
 router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
         const device = await Device.findByIdAndUpdate(
@@ -291,21 +178,6 @@ router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res,
     }
 });
 
-/**
- * @swagger
- * /api/devices/{id}:
- *   delete:
- *     summary: Delete device
- *     tags: [Devices]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- */
 router.delete('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
         const device = await Device.findByIdAndDelete(req.params.id);
@@ -322,6 +194,70 @@ router.delete('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, r
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
+
+router.get('/count/status', verifyToken, restrictTo('admin', 'manager', 'dispatcher'), async (req, res, next) => {
+    try {
+        const user = req.user
+        const query = {}
+        const query2 = {}
+
+        if (user.role === "manager") {
+            query.department = user?.department._id
+            query2._id = user?.department._id
+        }
+        const departments = await Department.find(query2);
+        const devices = await Device.find(query).populate("department")
+        const deviceTypes = await DeviceType.find()
+
+        const statusList = ['available', 'in_use', 'maintenance', 'retired']
+
+        let data = [];
+
+        for (let type of deviceTypes) {
+            // Lọc thiết bị theo loại
+            const devicesByType = devices.filter(d => d.category.toString() === type._id.toString());
+
+            const organizations = [];
+
+            for (let dept of departments) {
+                const deptId = dept._id.toString();
+
+                // Lọc các thiết bị thuộc đơn vị này
+                const devicesInDept = devicesByType.filter(d => d.department?._id?.toString() === deptId);
+
+                // Tính số lượng theo trạng thái
+                const statusCounts = {
+                    available: 0,
+                    in_use: 0,
+                    maintenance: 0,
+                    retired: 0
+                };
+
+                for (let device of devicesInDept) {
+                    if (statusList.includes(device.status)) {
+                        statusCounts[device.status]++;
+                    }
+                }
+
+                organizations.push({
+                    departmentName: dept.code,
+                    statusCounts
+                });
+            }
+
+            data.push({
+                typeName: type.name,
+                organizations
+            });
+        }
+
+        res.status(200).json({ status: 'success', data: data })
+
+
+    } catch (err) {
+        res.status(500).json({ status: 'error', message: err.message })
+    }
+})
 
 
 module.exports = router; 

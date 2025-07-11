@@ -58,7 +58,7 @@ const OrderHistories: React.FC<{ open: boolean, setOpen: Dispatch<SetStateAction
                             Người ra lệnh: ${item?.snapshot?.createdBy?.fullName},
                             Bắt đầu: ${item?.snapshot?.startTime ? format(new Date(item.snapshot.startTime), 'HH:mm:ss') : '---'},
                             Kết thúc: ${item?.snapshot?.endTime ? format(new Date(item.snapshot.endTime), 'HH:mm:ss') : '---'},
-                            Trạng thái lệnh: ${item?.snapshot?.status === 'warning' ? 'Lỗi' : 'Đã hoàn thành'}`}
+                            Trạng thái lệnh: ${item?.snapshot?.status === 'warning' ? 'Lỗi' : item?.snapshot?.status === 'cancel' ? 'Đã hủy' : 'Đã hoàn thành'}`}
                     </Typography>
                 ))}
 

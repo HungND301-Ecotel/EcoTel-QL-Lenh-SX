@@ -173,6 +173,12 @@ router.post('/login', async (req, res) => {
             });
         }
 
+        if (user.active === false) {
+            return res.status(403).send({
+                status: 'error', message: 'Tài khoản của bạn đã bị khóa'
+            });
+        }
+
         // Create token
         const token = jwt.sign(
             { userId: user._id },
@@ -324,7 +330,8 @@ router.get('/me', verifyToken, async (req, res, next) => {
                     position: user.position,
                     department: user.department,
                     role: user.role,
-                    signature: user.signature
+                    signature: user.signature,
+                    avatar: user.avatar
                 }
             }
         });

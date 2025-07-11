@@ -108,7 +108,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
             liftHeight: undefined,
             workContent: '',
             note: '',
-            safetyMeasure: ''
+            safetyMeasure: undefined
         },
         validationSchema,
         onSubmit: (values) => {
