@@ -12,6 +12,7 @@ export interface User {
     department?: string,
     position?: string,
     role?: string,
+    active: boolean,
     createdAt?: string;
     updatedAt?: string;
 }
@@ -88,7 +89,7 @@ export interface Order {
     liftHeight?: number;
     workContent: string;
     assistants?: string[];
-    status: 'pending' | 'in_progress' | 'completed' | 'warning';
+    status: 'pending' | 'in_progress' | 'completed' | 'warning' | 'cancel';
     isScanned: 'pending' | 'in_progress' | 'completed';
     note?: string;
     safetyMeasure?: string;
@@ -122,7 +123,38 @@ export interface Shift {
     createdAt?: string;
     updatedAt?: string;
 }
-
+export interface ShiftReportType {
+    _id: string;
+    orderId: string,
+    assignedTo: string,
+    vehicleReports:
+    {
+        vehicle?: string,
+        excavator?: string,
+        dumpingLocation?: string,
+        materialType?: string,
+        tripCount?: number,
+    }[],
+    vehicleSummaries:
+    {
+        vehicle?: string,
+        repairHours?: number,
+        travelHours?: number,
+        fuelRemain?: number,
+        fuelReceived?: number,
+        fuelRemainEnd?: number,
+        status?: string,
+        note?: string,
+        gpsStatus?: string,
+        sealStatus?: string,
+    }[],
+    handoverHours?: number,
+    otherHours?: number,
+    handoverNotes?: string,
+    risks?: string,
+    createdAt?: string;
+    updatedAt?: string;
+}
 export interface Location {
     _id: string;
     name: string;

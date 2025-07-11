@@ -108,7 +108,7 @@ router.get('/', verifyToken, async (req, res, next) => {
                     {
                         path: "vehicleSummaries.vehicle",
                         select: "code"
-                    }
+                    },
                 ]
             })
             .populate('createdBy', 'username fullName salaryCode')
@@ -330,7 +330,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
             sender: req.userId
         });
 
-        if (updatedOrder.status === "warning") {
+        if (updatedOrder.status === "warning" || updatedOrder.status === "cancel") {
 
             if (order && order.device && order.device.length > 0) {
                 const lastVehicle = order.device[order.device.length - 1];
@@ -388,7 +388,7 @@ router.delete('/:id', verifyToken, restrictTo('admin', 'dispatcher', 'manager'),
 });
 router.get('/user', verifyToken, async (req, res, next) => {
     try {
-        const orders = await Order.find({ assignedTo: req.user._id })
+        const orders = await Order.find({ assignedTo: req.user._id, status: { $ne: "cancel" } })
             .sort('-createdAt')
             .populate({
                 path: "assignedTo",

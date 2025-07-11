@@ -177,9 +177,9 @@ const Locations: React.FC = () => {
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{ border: '1px solid black' }}>Tên</TableCell>
-                            <TableCell sx={{ border: '1px solid black' }}>Tọa độ</TableCell>
-                            <TableCell sx={{ border: '1px solid black' }}>Thao tác</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black' }}>Tên</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black' }}>Tọa độ</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black' }}>Thao tác</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>

@@ -128,25 +128,25 @@ const SafetyMeasures: React.FC = () => {
             </Box>
 
             <TableContainer component={Paper} sx={{ height: '80vh' }}>
-                <Table  sx={{ tableLayout: 'fixed', width: '100%' }}>
+                <Table sx={{ tableLayout: 'fixed', width: '100%' }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{ border: '1px solid black',width:50 }}>STT</TableCell>
-                            <TableCell sx={{ border: '1px solid black',width:'80%' }}>Nội dung</TableCell>
-                            <TableCell sx={{ border: '1px solid black',width:'15%' }}>Thao tác</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}>STT</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black', width: '80%' }}>Nội dung</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black', width: '15%' }}>Thao tác</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {!isLoading ? safetyMeasures.map((safetyMeasure: SafetyMeasure,index:number) => (
+                        {!isLoading ? safetyMeasures.map((safetyMeasure: SafetyMeasure, index: number) => (
                             <TableRow key={safetyMeasure._id}>
-                                <TableCell sx={{border: '1px solid black',}}>{index+1}</TableCell>
+                                <TableCell sx={{ border: '1px solid black', }}>{index + 1}</TableCell>
                                 <TableCell sx={{
                                     whiteSpace: 'nowrap',
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
                                     border: '1px solid black',
                                 }}>{safetyMeasure.content}</TableCell>
-                                <TableCell sx={{ border: '1px solid black',}}>
+                                <TableCell sx={{ border: '1px solid black', }}>
                                     <IconButton color="primary" onClick={() => handleOpen(safetyMeasure)}>
                                         <EditIcon />
                                     </IconButton>

@@ -86,7 +86,7 @@ const Vehicles: React.FC = () => {
     });
 
     const { data: vehicles = [], isLoading } = useQuery({
-        queryKey: ['vehicles', q, department,status],
+        queryKey: ['vehicles', q, department, status],
         queryFn: () => api.get(`/devices?q=${q}&department=${department}&status=${status}`).then(res => res.data.data?.filter((item: any) => item?.category?.name === "Vận tải")),
     });
     const { data: DeviceTypes = [] } = useQuery({
@@ -210,7 +210,7 @@ const Vehicles: React.FC = () => {
     };
 
     const handleDelete = (id: string) => {
-        if (window.confirm('Bạn có chắc chắn muốn xóa thông tin ô tô này?')) {
+        if (window.confirm('Bạn có chắc chắn muốn xóa Thông tin xe này?')) {
             deleteMutation.mutate(id);
         }
     };
@@ -226,13 +226,13 @@ const Vehicles: React.FC = () => {
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h4">Quản lý thông tin ô tô</Typography>
+                <Typography variant="h4">Quản lý Thông tin xe</Typography>
                 {user?.role !== "dispatcher" && <Button
                     variant="contained"
                     startIcon={<AddIcon />}
                     onClick={() => handleOpen()}
                 >
-                    Thêm thông tin ô tô
+                    Thêm Thông tin xe
                 </Button>}
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3, gap: 2 }}>
@@ -290,7 +290,7 @@ const Vehicles: React.FC = () => {
                     <Table stickyHeader aria-label="sticky table">
                         <TableHead>
                             <TableRow>
-                                <TableCell sx={{
+                                <TableCell align='center' sx={{
                                     position: 'sticky',
                                     left: 0,
                                     backgroundColor: 'white',
@@ -298,16 +298,16 @@ const Vehicles: React.FC = () => {
                                     minWidth: 100,
                                     border: '1px solid black'
                                 }}>Biển số</TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>Tên ô tô</TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>Số xe</TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>Loại xe</TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>Chủng loại</TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>Nhiên liệu</TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>Trọng tải</TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>Vị trí</TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>Đơn vị</TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>Trạng thái</TableCell>
-                                {user?.role !== 'dispatcher' && <TableCell sx={{ border: '1px solid black' }}>Thao tác</TableCell>}
+                                <TableCell align='center' sx={{ border: '1px solid black' }}>Tên xe</TableCell>
+                                <TableCell align='center' sx={{ border: '1px solid black' }}>Số xe</TableCell>
+                                <TableCell align='center' sx={{ border: '1px solid black' }}>Loại xe</TableCell>
+                                <TableCell align='center' sx={{ border: '1px solid black' }}>Chủng loại</TableCell>
+                                <TableCell align='center' sx={{ border: '1px solid black' }}>Nhiên liệu</TableCell>
+                                <TableCell align='center' sx={{ border: '1px solid black' }}>Trọng tải</TableCell>
+                                <TableCell align='center' sx={{ border: '1px solid black' }}>Vị trí</TableCell>
+                                <TableCell align='center' sx={{ border: '1px solid black' }}>Đơn vị</TableCell>
+                                <TableCell align='center' sx={{ border: '1px solid black' }}>Trạng thái</TableCell>
+                                {user?.role !== 'dispatcher' && <TableCell align='center' sx={{ border: '1px solid black' }}>Thao tác</TableCell>}
                             </TableRow>
                         </TableHead>
                         {!isLoading ? <TableBody>
@@ -347,6 +347,7 @@ const Vehicles: React.FC = () => {
                                         </TableCell>
                                         <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>
                                             <Chip
+                                                sx={{ width: '120px' }}
                                                 label={device.status === 'in_use' ? 'Đang hoạt động' :
                                                     device.status === 'maintenance' ? 'Hỏng' :
                                                         device.status === 'retired' ? 'Niêm cất' :
@@ -380,7 +381,7 @@ const Vehicles: React.FC = () => {
 
             <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
                 <DialogTitle>
-                    {selectedDevice ? 'Sửa thông tin ô tô' : 'Thêm thông tin ô tô'}
+                    {selectedDevice ? 'Sửa Thông tin xe' : 'Thêm Thông tin xe'}
                 </DialogTitle>
                 <DialogContent>
                     <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
@@ -399,7 +400,7 @@ const Vehicles: React.FC = () => {
                                 fullWidth
                                 id="name"
                                 name="name"
-                                label="Tên ô tô"
+                                label="Tên xe"
                                 value={formik.values.name}
                                 onChange={formik.handleChange}
                                 error={formik.touched.name && Boolean(formik.errors.name)}

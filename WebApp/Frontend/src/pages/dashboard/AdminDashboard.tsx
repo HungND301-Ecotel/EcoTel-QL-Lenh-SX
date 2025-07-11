@@ -2,12 +2,20 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
     Grid,
-    Paper,
     Typography,
     Box,
     Card,
     CardContent,
     Tooltip,
+    Tabs,
+    Tab,
+    Paper,
+    TableContainer,
+    Table,
+    TableRow,
+    TableHead,
+    TableCell,
+    TableBody,
 } from '@mui/material';
 import {
     Assignment as OrderIcon,
@@ -15,6 +23,8 @@ import {
     AccessTime as ShiftIcon,
     Business as DepartmentIcon,
     Person2,
+    ViewList,
+    MapOutlined,
 } from '@mui/icons-material';
 import api from '../../config/api.config';
 import { Order, Device, Department, Location } from '../../types';
@@ -33,6 +43,7 @@ const defaultCenter = {
 
 const AdminDashboard: React.FC = () => {
     const [mapCoords, setMapCoords] = useState<{ lat: number, lng: number; } | null>(null);
+    const [tabIndex, setTabIndex] = useState(0);
     const apiKey = process.env.REACT_APP_MAP_API_KEY;
 
     if (!apiKey) {
@@ -64,6 +75,14 @@ const AdminDashboard: React.FC = () => {
         queryKey: ['users'],
         queryFn: () => api.get('/users').then(res => res.data.data),
     });
+    const { data: count = [] } = useQuery({
+        queryKey: ['count'],
+        queryFn: () => api.get('/devices/count/status').then(res => res.data.data),
+    });
+
+    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+        setTabIndex(newValue);
+    };
 
 
     return (
@@ -125,6 +144,12 @@ const AdminDashboard: React.FC = () => {
                                                 <OrderIcon color='error' fontSize='medium' />
                                             </Tooltip>
                                             <Typography>{orders.filter((o: Order) => o.status === "completed").length}</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', gap: 1 }}>
+                                            <Tooltip title={`Đã hủy: ${orders.filter((o: Order) => o.status === "cancel").length}`} placement='top'>
+                                                <OrderIcon color='secondary' fontSize='medium' />
+                                            </Tooltip>
+                                            <Typography>{orders.filter((o: Order) => o.status === "cancel").length}</Typography>
                                         </Box>
                                     </Box>
                                 </Box>
@@ -282,54 +307,149 @@ const AdminDashboard: React.FC = () => {
                 </Grid>
             </Grid>
             <Box sx={{ mt: 3 }}>
-                {isLoaded && (
-                    <GoogleMap
-                        mapContainerStyle={containerStyle}
-                        center={mapCoords || defaultCenter}
-                        zoom={20}
-                    >
-                        {devices.map((device: any) => {
-                            if (!device.coordinates?.coordinates) return null;
-                            const [lng, lat] = device.coordinates.coordinates;
-                            return (
-                                <Marker
-                                    key={device._id}
-                                    position={{ lat, lng }}
-                                    label={{
-                                        text: device.code,
-                                        fontSize: '12px',
-                                        color: 'white',
-                                        fontWeight: 'bold',
-                                    }}
-                                    icon={{
-                                        url: 'https://soft-oew7.onrender.com/image/device.png',
-                                        scaledSize: new window.google.maps.Size(40, 40),
-                                    }}
-                                />
-                            );
-                        })}
-                        {locations.map((location: any) => {
-                            if (!location.coordinates?.coordinates) return null;
-                            const [lng, lat] = location.coordinates.coordinates;
-                            return (
-                                <Marker
-                                    key={locations._id}
-                                    position={{ lat, lng }}
-                                    label={{
-                                        text: location.name,
-                                        fontSize: '12px',
-                                        color: 'white',
-                                        fontWeight: 'bold',
-                                    }}
-                                    icon={{
-                                        url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-                                        scaledSize: new window.google.maps.Size(40, 40),
-                                    }}
-                                />
-                            );
-                        })}
-                    </GoogleMap>
-                )}
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <Tabs value={tabIndex} onChange={handleTabChange} sx={{ mb: 2 }}>
+                        <Tab label="Bảng" icon={<ViewList />} />
+                        <Tab label="Bản đồ" icon={<MapOutlined />} />
+                    </Tabs>
+                </Box>
+                {tabIndex === 0 && <Box>
+                    <Paper sx={{ width: '100%', overflowX: "initial" }}>
+                        <TableContainer sx={{ height: '80vh' }}>
+                            <Table stickyHeader aria-label="sticky table">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell align='center' rowSpan={2} sx={{
+                                            border: '1px solid black',
+                                            minWidth: 150,
+                                            position: 'sticky',
+                                            left: 0,
+                                            top: 0,
+                                            backgroundColor: 'white',
+                                            zIndex: 3,
+                                        }}>Đơn vị</TableCell>
+                                        {count.map((item: any) => (
+                                            <TableCell align='center' colSpan={4} sx={{
+                                                border: '1px solid black',
+                                                position: 'sticky',
+                                                top: 0,
+                                                backgroundColor: 'white',
+                                                zIndex: 2,
+                                            }}>{item.typeName}</TableCell>
+                                        ))}
+                                    </TableRow>
+                                    <TableRow>
+                                        {count.map((item: any) => (
+                                            <>
+                                                <TableCell align='center' sx={{
+                                                    border: '1px solid black', minWidth: 150, position: 'sticky',
+                                                    top: 56,
+                                                    backgroundColor: 'white',
+                                                    zIndex: 1,
+                                                }}>Chờ điều động</TableCell>
+                                                <TableCell align='center' sx={{
+                                                    border: '1px solid black', minWidth: 150, position: 'sticky',
+                                                    top: 56,
+                                                    backgroundColor: 'white',
+                                                    zIndex: 1,
+                                                }}>Đang hoạt động</TableCell>
+                                                <TableCell align='center' sx={{
+                                                    border: '1px solid black', minWidth: 50, position: 'sticky',
+                                                    top: 56,
+                                                    backgroundColor: 'white',
+                                                    zIndex: 1,
+                                                }}>Hỏng</TableCell>
+                                                <TableCell align='center' sx={{
+                                                    border: '1px solid black', minWidth: 100, position: 'sticky',
+                                                    top: 56,
+                                                    backgroundColor: 'white',
+                                                    zIndex: 1,
+                                                }}>Niêm cất</TableCell>
+                                            </>
+                                        ))}
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {departments.map((item: Department, index: number) => (
+                                        <TableRow key={index}>
+                                            <TableCell align='center' sx={{
+                                                border: '1px solid black',
+                                                position: 'sticky',
+                                                left: 0,
+                                                backgroundColor: 'white',
+                                                zIndex: 1,
+                                                minWidth: 150
+                                            }}>{item.code}</TableCell>
+                                            {count.map((type: any, typeIndex: number) => {
+                                                const org = type.organizations.find((o: any) => o.departmentName === item.code);
+                                                const s = org?.statusCounts ?? {};
+
+                                                return (
+                                                    <React.Fragment key={typeIndex}>
+                                                        <TableCell align='center' sx={{ border: '1px solid black' }}>{s.available || 0}</TableCell>
+                                                        <TableCell align='center' sx={{ border: '1px solid black' }}>{s.in_use || 0}</TableCell>
+                                                        <TableCell align='center' sx={{ border: '1px solid black' }}>{s.maintenance || 0}</TableCell>
+                                                        <TableCell align='center' sx={{ border: '1px solid black' }}>{s.retired || 0}</TableCell>
+                                                    </React.Fragment>
+                                                );
+                                            })}
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </Paper>
+                </Box>}
+                {tabIndex === 1 && <Box>
+                    {isLoaded && (
+                        <GoogleMap
+                            mapContainerStyle={containerStyle}
+                            center={mapCoords || defaultCenter}
+                            zoom={20}
+                        >
+                            {devices.map((device: any) => {
+                                if (!device.coordinates?.coordinates) return null;
+                                const [lng, lat] = device.coordinates.coordinates;
+                                return (
+                                    <Marker
+                                        key={device._id}
+                                        position={{ lat, lng }}
+                                        label={{
+                                            text: device.code,
+                                            fontSize: '12px',
+                                            color: 'white',
+                                            fontWeight: 'bold',
+                                        }}
+                                        icon={{
+                                            url: 'https://soft-oew7.onrender.com/image/device.png',
+                                            scaledSize: new window.google.maps.Size(40, 40),
+                                        }}
+                                    />
+                                );
+                            })}
+                            {locations.map((location: any) => {
+                                if (!locations.coordinate?.coordinates) return null;
+                                const [lng, lat] = location.coordinates.coordinates;
+                                return (
+                                    <Marker
+                                        key={location._id}
+                                        position={{ lat, lng }}
+                                        label={{
+                                            text: location.name,
+                                            fontSize: '12px',
+                                            color: 'white',
+                                            fontWeight: 'bold',
+                                        }}
+                                        icon={{
+                                            url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                                            scaledSize: new window.google.maps.Size(40, 40),
+                                        }}
+                                    />
+                                );
+                            })}
+                        </GoogleMap>
+                    )}
+                </Box>}
             </Box>
         </Box >
     );

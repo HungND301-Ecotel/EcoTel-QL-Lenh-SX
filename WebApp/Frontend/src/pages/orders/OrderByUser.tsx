@@ -140,7 +140,7 @@ const OrderByUsers: React.FC = () => {
                     <Table stickyHeader aria-label="sticky table">
                         <TableHead>
                             <TableRow>
-                                <TableCell sx={{
+                                <TableCell align='center' sx={{
                                     position: 'sticky',
                                     left: 0,
                                     backgroundColor: 'white',
@@ -148,18 +148,18 @@ const OrderByUsers: React.FC = () => {
                                     minWidth: 150,
                                     border: '1px solid black'
                                 }}>Tên nhân viên</TableCell>
-                                <TableCell sx={{ minWidth: 130, border: '1px solid black' }}>Số thẻ lương</TableCell>
-                                <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Giờ tạo lệnh</TableCell>
-                                <TableCell sx={{ minWidth: 120, border: '1px solid black' }}>Ngày</TableCell>
-                                <TableCell sx={{ minWidth: 50, border: '1px solid black' }}>Ca</TableCell>
-                                <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Công việc</TableCell>
-                                <TableCell sx={{ minWidth: 200, border: '1px solid black' }}>Nội dung</TableCell>
-                                <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Phương tiện</TableCell>
-                                <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Người ra lệnh</TableCell>
-                                <TableCell sx={{ minWidth: 120, border: '1px solid black' }}>Bắt đầu</TableCell>
-                                <TableCell sx={{ minWidth: 120, border: '1px solid black' }}>Kết thúc</TableCell>
-                                <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Ghi chú</TableCell>
-                                <TableCell sx={{ minWidth: 150, border: '1px solid black' }}>Trạng thái</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 130, border: '1px solid black' }}>Số thẻ lương</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Giờ tạo lệnh</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black' }}>Ngày</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black' }}>Ca</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Công việc</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 200, border: '1px solid black' }}>Nội dung</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Phương tiện</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Người ra lệnh</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black' }}>Bắt đầu</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black' }}>Kết thúc</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Ghi chú</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Trạng thái</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>

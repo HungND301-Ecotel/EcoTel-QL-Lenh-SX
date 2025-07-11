@@ -141,10 +141,10 @@ const Departments = () => {
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{ border: '1px solid black' }}>Mã đơn vị</TableCell>
-                            <TableCell sx={{ border: '1px solid black' }}>Tên đơn vị</TableCell>
-                            <TableCell sx={{ border: '1px solid black' }}>Chức năng</TableCell>
-                            <TableCell sx={{ border: '1px solid black' }}>Thao tác</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black' }}>Mã đơn vị</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black' }}>Tên đơn vị</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black' }}>Chức năng</TableCell>
+                            <TableCell align='center' sx={{ border: '1px solid black' }}>Thao tác</TableCell>
                         </TableRow>
                     </TableHead>
                     {!isLoading ? <TableBody>

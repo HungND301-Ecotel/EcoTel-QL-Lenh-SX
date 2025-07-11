@@ -86,7 +86,7 @@ const Machines: React.FC = () => {
     });
 
     const { data: machines = [], isLoading } = useQuery({
-        queryKey: ['machines', q, department,status],
+        queryKey: ['machines', q, department, status],
         queryFn: () => api.get(`/devices?q=${q}&department=${department}&status=${status}`).then(res => res.data.data?.filter((item: any) => item?.category?.name !== "Vận tải")),
     });
     const { data: DeviceTypes = [] } = useQuery({
@@ -284,7 +284,7 @@ const Machines: React.FC = () => {
                     <Table stickyHeader aria-label="sticky table">
                         <TableHead>
                             <TableRow>
-                                <TableCell sx={{
+                                <TableCell align='center' sx={{
                                     position: 'sticky',
                                     left: 0,
                                     backgroundColor: 'white',
@@ -292,16 +292,16 @@ const Machines: React.FC = () => {
                                     minWidth: 100,
                                     border: '1px solid black'
                                 }}>Biển số</TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>Tên máy</TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>Số máy</TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>Loại máy</TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>Chủng loại</TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>Nhiên liệu</TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>Công suất</TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>Vị trí</TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>Đơn vị</TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>Trạng thái</TableCell>
-                                {user?.role !== 'dispatcher' && <TableCell sx={{ border: '1px solid black' }}>Thao tác</TableCell>}
+                                <TableCell align='center' sx={{ border: '1px solid black' }}>Tên máy</TableCell>
+                                <TableCell align='center' sx={{ border: '1px solid black' }}>Số máy</TableCell>
+                                <TableCell align='center' sx={{ border: '1px solid black' }}>Loại máy</TableCell>
+                                <TableCell align='center' sx={{ border: '1px solid black' }}>Chủng loại</TableCell>
+                                <TableCell align='center' sx={{ border: '1px solid black' }}>Nhiên liệu</TableCell>
+                                <TableCell align='center' sx={{ border: '1px solid black' }}>Công suất</TableCell>
+                                <TableCell align='center' sx={{ border: '1px solid black' }}>Vị trí</TableCell>
+                                <TableCell align='center' sx={{ border: '1px solid black' }}>Đơn vị</TableCell>
+                                <TableCell align='center' sx={{ border: '1px solid black' }}>Trạng thái</TableCell>
+                                {user?.role !== 'dispatcher' && <TableCell align='center' sx={{ border: '1px solid black' }}>Thao tác</TableCell>}
                             </TableRow>
                         </TableHead>
                         {!isLoading ? <TableBody>
@@ -341,6 +341,7 @@ const Machines: React.FC = () => {
                                         </TableCell>
                                         <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>
                                             <Chip
+                                                sx={{ width: '120px' }}
                                                 label={device.status === 'in_use' ? 'Đang hoạt động' :
                                                     device.status === 'maintenance' ? 'Hỏng' :
                                                         device.status === 'retired' ? 'Niêm cất' :

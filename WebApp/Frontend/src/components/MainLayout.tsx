@@ -18,6 +18,7 @@ import {
     Avatar,
     Menu,
     MenuItem,
+    Collapse,
 } from '@mui/material';
 import {
     Menu as MenuIcon,
@@ -44,6 +45,11 @@ import {
     Timelapse,
     PrecisionManufacturing,
     LocalOffer,
+    CategoryTwoTone,
+    LinkOff,
+    Link,
+    ExpandLess,
+    ExpandMore,
 } from '@mui/icons-material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../config/api.config';
@@ -52,6 +58,7 @@ import { useSocket } from '../hooks/useSocket';
 import { useAtom } from 'jotai';
 import { userAtom } from '../atoms/userAtoms';
 import ChangePassword from './ChangePassword/ChangePassword';
+import Profile from './Profile/Profile';
 
 const drawerWidth = 240;
 const miniDrawerWidth = 64;
@@ -66,6 +73,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     const [mobileOpen, setMobileOpen] = React.useState(false);
     const queryClient = useQueryClient();
     const [user, setUser] = useAtom(userAtom)
+    const [openDanhMuc, setOpenDanhMuc] = useState(false)
+    const [openprofile, setOpenprofile] = useState(false)
+
 
     const socket = useSocket()
 
@@ -86,26 +96,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     }, [queryClient, socket]);
 
     const menuItems = [
-        {
-            text: 'Dashboard', icon:
-                <Tooltip title="Dashboard" placement='right'>
-                    <DashboardIcon color='primary' />
-                </Tooltip>, path: '/'
-        },
-        {
-            text: 'Lệnh sản xuất', icon:
-                <Tooltip title="Lệnh sản xuất" placement='right'>
-                    <AssignmentIcon color='primary' />
-                </Tooltip>
-            , path: '/orders'
-        },
-        ["manager"].includes(user?.role) ? {
-            text: 'Công việc của tôi', icon:
-                <Tooltip title="Giao ca" placement='right'>
-                    <AssignmentInd color='primary' />
-                </Tooltip>
-            , path: '/orderByUsers'
-        } : null,
         ["admin", "manager"].includes(user?.role) ? {
             text: 'Ca làm việc', icon:
                 <Tooltip title="Ca làm việc" placement='right'>
@@ -128,8 +118,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             , path: '/deviceTypes'
         } : null,
         ["admin", "manager", "dispatcher"].includes(user?.role) ? {
-            text: 'Thông tin ô tô', icon:
-                <Tooltip title="Thông tin ô tô" placement='right'>
+            text: 'Thông tin xe', icon:
+                <Tooltip title="Thông tin xe" placement='right'>
                     <LocalShipping color='primary' />
                 </Tooltip>
             , path: '/vehicles'
@@ -176,29 +166,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 </Tooltip>
             , path: '/departments'
         } : null,
-        ["admin", "manager"].includes(user?.role) ? {
-            text: 'Báo cáo', icon:
-                <Tooltip title="Báo cáo" placement='right'>
-                    <DescriptionIcon color='primary' />
-                </Tooltip>
-            , path: '/reports'
-        } : null,
-        // {
-        //     text: 'Thông báo', icon:
-        //         <Tooltip title="Thông báo" placement='right'>
-        //             <Badge badgeContent={notificationCount || 0} color="error">
-        //                 <NotificationsIcon color="primary" />
-        //             </Badge>
-        //         </Tooltip>
-        //     , path: '/notifications'
-        // },
-        ["admin", "manager"].includes(user?.role) ? {
-            text: 'Cán bộ nhân viên', icon:
-                <Tooltip title="Cán bộ nhân viên" placement='right'>
-                    <PeopleIcon color='primary' />
-                </Tooltip>
-            , path: '/users'
-        } : null,
     ].filter(Boolean)
 
 
@@ -231,32 +198,164 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 alignItems: 'center',
                 gap: 2
             }}>
-                <Avatar src='/image/logo.jpg' sx={{width:'70px'}} />
+                <Avatar src='/image/logo.jpg' sx={{ width: '70px' }} />
                 {mobileOpen && <Typography variant="h6" noWrap component="div">
                     ESOFT
                 </Typography>}
             </Toolbar>
             <Divider />
             <List sx={{ flex: 1, overflowY: 'auto' }}>
-                {menuItems.map((item) => (
-                    <ListItem
-                        button
-                        key={item?.text}
-                        onClick={() => navigate(item?.path!)}
-                        sx={{
-                            justifyContent: mobileOpen ? 'initial' : 'center',
-                            px: 2.5,
-                            mb: mobileOpen ? 0 : 1
-                        }}
-                    >
-                        <ListItemIcon sx={{
-                            minWidth: 0,
-                            mr: mobileOpen ? 2 : 'auto',
-                            justifyContent: 'center',
-                        }}>{item?.icon}</ListItemIcon>
-                        {mobileOpen && <ListItemText primary={item?.text} />}
-                    </ListItem>
-                ))}
+                <ListItem
+                    button
+                    key="Dashboard"
+                    onClick={() => navigate("/")}
+                    sx={{
+                        justifyContent: mobileOpen ? 'initial' : 'center',
+                        px: 2.5,
+                        mb: mobileOpen ? 0 : 1
+                    }}
+                >
+                    <ListItemIcon sx={{
+                        minWidth: 0,
+                        mr: mobileOpen ? 2 : 'auto',
+                        justifyContent: 'center',
+                    }}>
+                        <Tooltip title="Dashboard" placement='right'>
+                            <DashboardIcon color='primary' />
+                        </Tooltip>
+                    </ListItemIcon>
+                    {mobileOpen && <ListItemText primary="Dashboard" />}
+                </ListItem>
+                <ListItem
+                    button
+                    key="Lệnh sản xuất"
+                    onClick={() => navigate("/orders")}
+                    sx={{
+                        justifyContent: mobileOpen ? 'initial' : 'center',
+                        px: 2.5,
+                        mb: mobileOpen ? 0 : 1
+                    }}
+                >
+                    <ListItemIcon sx={{
+                        minWidth: 0,
+                        mr: mobileOpen ? 2 : 'auto',
+                        justifyContent: 'center',
+                    }}>
+                        <Tooltip title="Lệnh sản xuất" placement='right'>
+                            <AssignmentIcon color='primary' />
+                        </Tooltip>
+                    </ListItemIcon>
+                    {mobileOpen && <ListItemText primary="Lệnh sản xuất" />}
+                </ListItem>
+                {["manager"].includes(user?.role) && <ListItem
+                    button
+                    key="Công việc của tôi"
+                    onClick={() => navigate("/orders")}
+                    sx={{
+                        justifyContent: mobileOpen ? 'initial' : 'center',
+                        px: 2.5,
+                        mb: mobileOpen ? 0 : 1
+                    }}
+                >
+                    <ListItemIcon sx={{
+                        minWidth: 0,
+                        mr: mobileOpen ? 2 : 'auto',
+                        justifyContent: 'center',
+                    }}>
+                        <Tooltip title="Công việc của tôi" placement='right'>
+                            <AssignmentInd color='primary' />
+                        </Tooltip>
+                    </ListItemIcon>
+                    {mobileOpen && <ListItemText primary="Công việc của tôi" />}
+                </ListItem>}
+                <ListItem
+                    button
+                    key="Danh mục"
+                    onClick={() => setOpenDanhMuc(!openDanhMuc)}
+                    sx={{
+                        justifyContent: mobileOpen ? 'initial' : 'center',
+                        px: 2.5,
+                        mb: mobileOpen ? 0 : 1
+                    }}
+                >
+                    <ListItemIcon sx={{
+                        minWidth: 0,
+                        mr: mobileOpen ? 2 : 'auto',
+                        justifyContent: 'center',
+                    }}>
+                        <Tooltip title="Danh mục" placement='right'>
+                            <Link color='primary' />
+                        </Tooltip>
+                    </ListItemIcon>
+                    {mobileOpen && <ListItemText primary="Danh mục" />}
+                    {mobileOpen && (openDanhMuc ? <ExpandLess /> : <ExpandMore />)}
+                </ListItem>
+                <Collapse in={openDanhMuc} timeout="auto" unmountOnExit>
+                    <List component="div" disablePadding>
+                        {menuItems.map((item) => (
+                            <ListItem
+                                button
+                                key={item?.text}
+                                onClick={() => navigate(item?.path!)}
+                                sx={{
+                                    justifyContent: mobileOpen ? 'initial' : 'center',
+                                    px: 2.5,
+                                    mb: mobileOpen ? 0 : 1,
+                                    pl: mobileOpen ? 6 : 2.5
+                                }}
+                            >
+                                <ListItemIcon sx={{
+                                    minWidth: 0,
+                                    mr: mobileOpen ? 2 : 'auto',
+                                    justifyContent: 'center',
+                                }}>{item?.icon}</ListItemIcon>
+                                {mobileOpen && <ListItemText primary={item?.text} />}
+                            </ListItem>
+                        ))}
+                    </List>
+                </Collapse>
+                {["admin", "manager", "dispatcher"].includes(user?.role) && <ListItem
+                    button
+                    key="Báo cáo"
+                    onClick={() => navigate("/reports")}
+                    sx={{
+                        justifyContent: mobileOpen ? 'initial' : 'center',
+                        px: 2.5,
+                        mb: mobileOpen ? 0 : 1
+                    }}
+                >
+                    <ListItemIcon sx={{
+                        minWidth: 0,
+                        mr: mobileOpen ? 2 : 'auto',
+                        justifyContent: 'center',
+                    }}>
+                        <Tooltip title="Báo cáo" placement='right'>
+                            <DescriptionIcon color='primary' />
+                        </Tooltip>
+                    </ListItemIcon>
+                    {mobileOpen && <ListItemText primary="Báo cáo" />}
+                </ListItem>}
+                {["admin", "manager"].includes(user?.role) && <ListItem
+                    button
+                    key="Cán bộ nhân viên"
+                    onClick={() => navigate("/users")}
+                    sx={{
+                        justifyContent: mobileOpen ? 'initial' : 'center',
+                        px: 2.5,
+                        mb: mobileOpen ? 0 : 1
+                    }}
+                >
+                    <ListItemIcon sx={{
+                        minWidth: 0,
+                        mr: mobileOpen ? 2 : 'auto',
+                        justifyContent: 'center',
+                    }}>
+                        <Tooltip title="Cán bộ nhân viên" placement='right'>
+                            <PeopleIcon color='primary' />
+                        </Tooltip>
+                    </ListItemIcon>
+                    {mobileOpen && <ListItemText primary="Cán bộ nhân viên" />}
+                </ListItem>}
             </List>
             <Divider />
             <List sx={{ mt: 'auto' }}>
@@ -325,13 +424,23 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                             Phần mềm giao ca, nhận lệnh sản xuất
                         </Typography>
                     </Box>
-                    <Tooltip title="Thông báo" placement='right'>
-                        <IconButton color="inherit" href='/notifications'>
-                            <Badge badgeContent={notificationCount || 0} color="error">
-                                <NotificationsIcon color="inherit" />
-                            </Badge>
-                        </IconButton>
-                    </Tooltip>
+                    <Box>
+                        <Tooltip title="Thông báo" placement='right'>
+                            <IconButton color="inherit" href='/notifications'>
+                                <Badge badgeContent={notificationCount || 0} color="error">
+                                    <NotificationsIcon color="inherit" />
+                                </Badge>
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Cá nhân" placement='right'>
+                            <IconButton color="inherit" onClick={() => setOpenprofile(true)}>
+                                <Avatar src={user?.avatar} sx={{
+                                    objectFit: 'contain',
+                                    bgcolor: 'white'
+                                }} />
+                            </IconButton>
+                        </Tooltip>
+                    </Box>
                 </Toolbar>
 
             </AppBar>
@@ -387,6 +496,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 {children || <Outlet />}
             </Box>
             <ChangePassword open={isOpenChangePassword} setOpen={setIsOpenChangePassword} />
+            <Profile open={openprofile} setOpen={setOpenprofile} />
         </Box >
     );
 };
