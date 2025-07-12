@@ -28,18 +28,21 @@ jobs:
 
       - name: Create an .env file in frontend for building image
         run: |
-          echo "REACT_APP_BASE_API=${{ secrets.REACT_APP_BASE_API }}" > WebApp/Frontend/.env
-          echo "REACT_APP_SOCKET_API=${{ secrets.REACT_APP_SOCKET_API }}" >> WebApp/Frontend/.env
-          echo "REACT_APP_MAP_API_KEY=${{ secrets.REACT_APP_MAP_API_KEY }}" >> WebApp/Frontend/.env
+          echo "REACT_APP_BASE_API=${{ secrets.REACT_APP_BASE_API }}" > ./WebApp/Frontend/.env
+          echo "REACT_APP_SOCKET_API=${{ secrets.REACT_APP_SOCKET_API }}" >> ./WebApp/Frontend/.env
+          echo "REACT_APP_MAP_API_KEY=${{ secrets.REACT_APP_MAP_API_KEY }}" >> ./WebApp/Frontend/.env
       
       - name: List Files
         run: ls -laR
 
       - name: Run Makefiles with Secrets to build anh push docker images to dockerhub
-        run: make staging
         env:
           DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
           DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+        run: |
+          cd WebApp
+          make staging
+          cd ../
       
       - name: Transfer docker-compose file to VPS for deployment
         uses: appleboy/scp-action@v0.1.4
