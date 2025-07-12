@@ -42,7 +42,7 @@ jobs:
           DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
       
       - name: Transfer docker-compose file to VPS for deployment
-        uses: appleboy/scp-action@v0.1.4P
+        uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}
