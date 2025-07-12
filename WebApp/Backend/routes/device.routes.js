@@ -215,7 +215,7 @@ router.get('/count/status', verifyToken, restrictTo('admin', 'manager', 'dispatc
 
         for (let type of deviceTypes) {
             // Lọc thiết bị theo loại
-            const devicesByType = devices.filter(d => d.category.toString() === type._id.toString());
+            const devicesByType = devices.filter(d => d?.category?.toString() === type._id.toString());
 
             const organizations = [];
 

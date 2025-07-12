@@ -8,7 +8,7 @@ on:
       - develop  # Deploy when code is pushed to 'develop'
 
 env:
-  WEBAPP_NAME: ecoMES    # set this to your application's name
+  WEBAPP_NAME: ECOTEL_QL_LENH_SX    # set this to your application's name
   WEBAPP_PACKAGE_PATH: '.'      # set this to the path to your web app project, defaults to the repository root
   NODE_VERSION: '20.x'                # set this to the node version to use
 
@@ -28,31 +28,27 @@ jobs:
 
       - name: Create an .env file in frontend for building image
         run: |
-          echo "REACT_APP_BASE_API=${{ secrets.REACT_APP_BASE_API }}" > Frontend/.env
-          echo "REACT_APP_SOCKET_API=${{ secrets.REACT_APP_SOCKET_API }}" >> Frontend/.env
-          echo "REACT_APP_MAP_API_KEY=${{ secrets.REACT_APP_MAP_API_KEY }}" >> Frontend/.env
-
-        shell: bash
-      - name: Install mosquitto-clients
-        run: sudo apt-get update && sudo apt-get install -y mosquitto
+          echo "REACT_APP_BASE_API=${{ secrets.REACT_APP_BASE_API }}" > WebApp/Frontend/.env
+          echo "REACT_APP_SOCKET_API=${{ secrets.REACT_APP_SOCKET_API }}" >> WebApp/Frontend/.env
+          echo "REACT_APP_MAP_API_KEY=${{ secrets.REACT_APP_MAP_API_KEY }}" >> WebApp/Frontend/.env
       
       - name: List Files
         run: ls -laR
 
-      - name: Run Makefiles with Secrets
+      - name: Run Makefiles with Secrets to build anh push docker images to dockerhub
         run: make staging
         env:
           DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
           DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
       
       - name: Transfer docker-compose file to VPS for deployment
-        uses: appleboy/scp-action@v0.1.4
+        uses: appleboy/scp-action@v0.1.4P
         with:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.STAGING_SSH_KEY }}
           source: "deployment/staging/staging-docker-compose.yaml"
-          target: "/home/${{ secrets.STAGING_USER }}/ecomes/deployment/staging"
+          target: "/home/${{ secrets.STAGING_USER }}/ecotel_ktv/deployment/staging"
           strip_components: 2   # Removes "deployment/staging/" folder path!
       
       - name: Clean up containers and stuff via SSH
@@ -63,7 +59,7 @@ jobs:
           key: ${{ secrets.STAGING_SSH_KEY }}
           script: |
             # Change to staging deployment directory
-            cd /home/${{ secrets.STAGING_USER }}/ecomes/deployment/staging 
+            cd /home/${{ secrets.STAGING_USER }}/ecotel_ktv/deployment/staging 
             # Debug info
             pwd
             ls -al
@@ -71,16 +67,7 @@ jobs:
             docker compose -f staging-docker-compose.yaml down # always down first
             docker ps
             
-            
-      - name: Transfer hash_password.txt file to VPS for deployment
-        uses: appleboy/scp-action@v0.1.4
-        with:
-          host: ${{ secrets.STAGING_HOST }}
-          username: ${{ secrets.STAGING_USER }}
-          key: ${{ secrets.STAGING_SSH_KEY }}
-          source: "mosquitto_broker/hashed_password.txt"
-          target: "/home/${{ secrets.STAGING_USER }}/ecomes/deployment/staging/mosquitto_broker"
-          strip_components: 1   # Removes "mosquitto_broker" folder path!
+          
 
       - name: Deploy to Staging via SSH
         uses: appleboy/ssh-action@v0.1.7
@@ -90,7 +77,7 @@ jobs:
           key: ${{ secrets.STAGING_SSH_KEY }}
           script: |
             # Change to staging deployment directory
-            cd /home/${{ secrets.STAGING_USER }}/ecomes/deployment/staging 
+            cd /home/${{ secrets.STAGING_USER }}/ecotel_ktv/deployment/staging 
             # Docker compose for deployment
             docker compose -f staging-docker-compose.yaml down # always down first
             docker compose -f staging-docker-compose.yaml pull # always pull the latest images

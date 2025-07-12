@@ -6,18 +6,18 @@
 # b. Push:  $ docker compose -f docker-compose-build.yaml push
 ##### 
 services:
-  reverseproxy:
+  ktv_reverseproxy:
     build:
       context: ./reverse_proxy
-    image: ${REGISTRY}/reverse_proxy_img:${VERSION}
+    image: ${REGISTRY}/ktv_reverse_proxy_img:${VERSION}
 
-  backend:
+  ktv_backend:
     build:
       context: ./Backend
-    image: ${REGISTRY}/ecotel_backend_img:${VERSION}
+    image: ${REGISTRY}/ktv_ecotel_backend_img:${VERSION}
 
-  frontend:
+  ktv_frontend:
     build:
       context: ./Frontend
-    image: ${REGISTRY}/ecotel_frontend_img:${VERSION}
+    image: ${REGISTRY}/ktv_ecotel_frontend_img:${VERSION}
   
