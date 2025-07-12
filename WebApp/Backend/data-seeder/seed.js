@@ -7,8 +7,8 @@ const { connectDB } = require('../config/db.config');
 const adminUser = {
     username: 'admin',
     password: 'admin123',
+    role: 'admin',
     fullName: 'admin',
-    role: 'admin'
 };
 
 const deviceTypes = [
