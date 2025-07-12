@@ -10,9 +10,7 @@
 services:
 
   ktv_reverse_proxy_service:
-    image: ktv_reverse_proxy_img
-    build:
-      context: ./WebApp/reverse_proxy
+    image: ecoteldev/ktv_reverse_proxy_img:staging
     ports:
       # HOST_PORT:CONTAINER_PORT
       - "6868:8888"
@@ -26,11 +24,7 @@ services:
       - ktv_Backend_service
 
   ktv_Frontend_service:
-    env_file:
-      - ./WebApp/Frontend/.env
-    image: ktv_ecotel_frontend_img
-    build:
-      context: ./WebApp/Frontend
+    image: ecoteldev/ktv_ecotel_frontend_img:staging
     # target: development
     stdin_open: true
     volumes:
@@ -48,10 +42,8 @@ services:
   
   ktv_Backend_service:
     env_file:
-      - ./WebApp/Backend/.env
-    image: ktv_ecotel_backend_img
-    build:
-      context: ./WebApp/Backend
+      - .env_backend
+    image: ecoteldev/ktv_ecotel_backend_img:staging
     # target: development
     stdin_open: true
     volumes:
@@ -78,7 +70,7 @@ services:
     networks:
       - backnet
     ports:
-      - "27017:27017"
+      - "27018:27017"
 
 
 networks:
