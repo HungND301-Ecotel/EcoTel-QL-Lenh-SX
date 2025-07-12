@@ -5,14 +5,14 @@
 # Run: docker compose up --build
 
 ##### NOTE ###########################################
-#### THIS DOCKER COMPOSE IS FOR LOCAL DEVELOPMENT ####
+#### THIS DOCKER COMPOSE IS FOR STAGING DEVELOPMENT ####
 ######################################################
 services:
 
   ktv_reverse_proxy_service:
     image: ktv_reverse_proxy_img
     build:
-      context: ./reverse_proxy
+      context: ./WebApp/reverse_proxy
     ports:
       # HOST_PORT:CONTAINER_PORT
       - "6868:8888"
@@ -27,10 +27,10 @@ services:
 
   ktv_Frontend_service:
     env_file:
-      - ./Frontend/.env
+      - ./WebApp/Frontend/.env
     image: ktv_ecotel_frontend_img
     build:
-      context: ./Frontend
+      context: ./WebApp/Frontend
     # target: development
     stdin_open: true
     volumes:
@@ -48,10 +48,10 @@ services:
   
   ktv_Backend_service:
     env_file:
-      - ./Backend/.env
+      - ./WebApp/Backend/.env
     image: ktv_ecotel_backend_img
     build:
-      context: ./Backend
+      context: ./WebApp/Backend
     # target: development
     stdin_open: true
     volumes:
