@@ -420,104 +420,108 @@ router.post('/vehicleShiftReport/view', verifyToken, restrictTo('admin', 'dispat
 router.post('/vehicleShiftReport', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
         const { shift, startDate, endDate, title, signature } = req.body
-        let query = { createdBy: req.userId };
-        if (Array.isArray(shift) && shift.length > 0) {
-            query.shift = { $in: shift };
-        }
+        const shiftList = await Shift.find({ _id: { $in: shift } });
+        const start = new Date(startDate);
+        const end = new Date(endDate);
 
-        if (startDate && endDate) {
-            query.workingDate = {
-                $gte: new Date(startDate),
-                $lte: new Date(endDate),
-            };
-        }
-        const orders = await Order.find(query)
-            .populate({
-                path: "shiftReport",
-                populate: [
-                    {
-                        path: "vehicleSummaries.vehicle",
-                        select: "code vehicleNumber"
-                    }
-                ]
-            })
-            .populate('shift')
-
-
-
+        // Đảm bảo end không nhỏ hơn start
+        if (end < start) return res.status(400).json({ message: "Ngày kết thúc phải sau ngày bắt đầu" });
 
         const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet();
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            for (const ca of shiftList) {
+                const orders = await Order.find({
+                    workingDate: d,
+                    shift: ca._id,
+                    createdBy: req.userId
+                })
+                    .populate({
+                        path: "shiftReport",
+                        populate: [
+                            {
+                                path: "vehicleSummaries.vehicle",
+                                select: "code vehicleNumber"
+                            }
+                        ]
+                    })
+                    .populate('shift')
 
-        worksheet.mergeCells('A1:E1');
-        const infoRow = worksheet.getCell('A1');
-        infoRow.value = `Ca:                   , ngày:                                 Tên cán bộ:`;
-        infoRow.font = { italic: true, size: 12 };
-        infoRow.alignment = { horizontal: 'left', vertical: 'middle' };
-        // Tiêu đề bảng
-        worksheet.mergeCells('A2:E2');
-        const header = worksheet.getCell('A2');
-        header.value = title;
-        header.font = { bold: true, size: 14 };
-        header.alignment = { horizontal: 'center', vertical: 'middle' };
 
-        const headerRow = worksheet.addRow(['STT', 'Số xe', 'Tình trạng hư/ hỏng', 'Kết quả sửa chữa trong ca', 'Ghi chú']);
-        headerRow.font = { bold: true };
-        headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+                const sheetName = `${formatDate(d)}_${ca.name}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
 
-        let index = 1;
-        for (const order of orders) {
-            const shiftReport = order.shiftReport;
-            if (!shiftReport) continue;
+                const worksheet = workbook.addWorksheet(sheetName);
 
-            for (const summary of shiftReport.vehicleSummaries || []) {
-                if (summary.status === "fail") {
-                    worksheet.addRow([
-                        index++,
-                        summary.vehicle?.vehicleNumber || '',
-                        summary?.note || '',
-                        '',
-                        '',
-                    ]);
+                worksheet.mergeCells('A1:E1');
+                const infoRow = worksheet.getCell('A1');
+                infoRow.value = `Ca:                   , ngày:                                 Tên cán bộ:`;
+                infoRow.font = { italic: true, size: 12 };
+                infoRow.alignment = { horizontal: 'left', vertical: 'middle' };
+                // Tiêu đề bảng
+                worksheet.mergeCells('A2:E2');
+                const header = worksheet.getCell('A2');
+                header.value = title;
+                header.font = { bold: true, size: 14 };
+                header.alignment = { horizontal: 'center', vertical: 'middle' };
+
+                const headerRow = worksheet.addRow(['STT', 'Số xe', 'Tình trạng hư/ hỏng', 'Kết quả sửa chữa trong ca', 'Ghi chú']);
+                headerRow.font = { bold: true };
+                headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+
+                let index = 1;
+                for (const order of orders) {
+                    const shiftReport = order.shiftReport;
+                    if (!shiftReport) continue;
+
+                    for (const summary of shiftReport.vehicleSummaries || []) {
+                        if (summary.status === "fail") {
+                            worksheet.addRow([
+                                index++,
+                                summary.vehicle?.vehicleNumber || '',
+                                summary?.note || '',
+                                '',
+                                '',
+                            ]);
+                        }
+                    }
                 }
+
+                worksheet.getColumn(1).width = 6;
+                worksheet.getColumn(1).alignment = { horizontal: 'center' }
+                worksheet.getColumn(2).width = 20;
+                worksheet.getColumn(2).alignment = { horizontal: 'center' }
+                worksheet.getColumn(3).width = 40;
+                worksheet.getColumn(4).width = 30;
+                worksheet.getColumn(5).width = 40;
+
+                if (signature) {
+                    const response = await axios.get(signature, { responseType: 'arraybuffer' });
+                    const contentType = response.headers['content-type'];
+                    const extension = contentType.split('/')[1];
+                    const imageBuffer = Buffer.from(response.data, 'binary');
+
+                    // Thêm ảnh vào workbook
+                    const imageId = workbook.addImage({
+                        buffer: imageBuffer,
+                        extension
+                    });
+
+                    // Gán ảnh vào vị trí (dùng topleft + extents hoặc range)
+                    const lastCol = worksheet.columnCount;
+                    worksheet.addImage(imageId, {
+                        tl: { col: lastCol - 2, row: index + 7 }, // H30
+                        ext: { width: 150, height: 150 },
+                    });
+                }
+
+                worksheet.eachRow((row) => {
+                    row.eachCell((cell) => {
+                        // Nếu chưa có font, tạo font mới
+                        if (!cell.font) cell.font = {};
+                        cell.font.size = 12; // hoặc 8, tuỳ theo bạn muốn nhỏ đến đâu
+                    });
+                });
             }
         }
-
-        worksheet.getColumn(1).width = 6;
-        worksheet.getColumn(1).alignment = { horizontal: 'center' }
-        worksheet.getColumn(2).width = 20;
-        worksheet.getColumn(2).alignment = { horizontal: 'center' }
-        worksheet.getColumn(3).width = 40;
-        worksheet.getColumn(4).width = 30;
-        worksheet.getColumn(5).width = 40;
-
-        if (signature) {
-            const response = await axios.get(signature, { responseType: 'arraybuffer' });
-            const contentType = response.headers['content-type'];
-            const extension = contentType.split('/')[1];
-            const imageBuffer = Buffer.from(response.data, 'binary');
-
-            // Thêm ảnh vào workbook
-            const imageId = workbook.addImage({
-                buffer: imageBuffer,
-                extension
-            });
-
-            // Gán ảnh vào vị trí (dùng topleft + extents hoặc range)
-            const lastCol = worksheet.columnCount;
-            worksheet.addImage(imageId, {
-                tl: { col: lastCol - 2, row: index + 7 }, // H30
-                ext: { width: 150, height: 150 },
-            });
-        }
-
-        worksheet.eachRow((row) => {
-            row.eachCell((cell) => {
-                // Nếu chưa có font, tạo font mới
-                if (!cell.font) cell.font = {};
-                cell.font.size = 12; // hoặc 8, tuỳ theo bạn muốn nhỏ đến đâu
-            });
-        });
 
         // Xuất file
         const buffer = await workbook.xlsx.writeBuffer();
@@ -2272,7 +2276,7 @@ router.post('/assignmentManager', verifyToken, restrictTo('admin', 'dispatcher',
                     worksheet.addRow([generateDotLine(200, '')]);
                     worksheet.addRow([generateDotLine(200, '')]);
 
-                    for (let i=0; i < 5; i++) {
+                    for (let i = 0; i < 5; i++) {
                         worksheet.addRow([]);
                     }
 
