@@ -32,7 +32,7 @@ router.get('/', verifyToken, async (req, res, next) => {
             query.status = req.query.status;
         }
         if (user.role === "employee") {
-            const order = await Order.findOne({ assignedTo: user._id, status: { $ne: "completed" } })
+            const order = await Order.findOne({ assignedTo: user._id, status: { $nin: ["completed", "cancel"] } })
             const lastDevice = order?.device[order.device.length - 1];
             const excavators = order?.excavator[order.excavator.length - 1];
 

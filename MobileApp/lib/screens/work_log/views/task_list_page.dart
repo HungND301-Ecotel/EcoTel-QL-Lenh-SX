@@ -58,6 +58,7 @@ class _TaskListPage extends State<TaskListPage> {
 
     // Lắng nghe sự kiện 'notification' từ server
     socketService.on('notification', (notif) {
+      print('Lỗi');
       getOrderByUser();
     });
   }

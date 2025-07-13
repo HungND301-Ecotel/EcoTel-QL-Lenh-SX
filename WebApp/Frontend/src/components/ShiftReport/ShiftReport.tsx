@@ -239,6 +239,22 @@ export default function ShiftReport({ open, setOpen, initialValues }: { open: bo
                                 <MenuItem value="good">Tốt</MenuItem>
                             </TextField>
                         </Grid>
+                        {formik.values.vehicleSummaries[index]?.status === "fail" &&
+                            <>
+                                <Grid item xs={3}>
+                                    <Typography>Lý do hỏng*:</Typography>
+                                </Grid>
+                                <Grid item xs={9}>
+                                    <TextField
+                                        fullWidth
+                                        multiline
+                                        rows={2}
+                                        name={`vehicleSummaries[${index}].note`}
+                                        value={formik.values.vehicleSummaries[index]?.note || ''}
+                                        onChange={formik.handleChange} />
+                                </Grid>
+                            </>
+                        }
                         <Grid item xs={3}>
                             <Typography>GPS:</Typography>
                         </Grid>

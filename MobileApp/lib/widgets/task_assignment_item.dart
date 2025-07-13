@@ -16,6 +16,8 @@ class TaskAssignItem extends StatelessWidget {
         return Colors.green;
       case 'warning':
         return Colors.yellow.shade800;
+      case 'cancel':
+        return Colors.purple.shade800;
       default:
         return Colors.red;
     }

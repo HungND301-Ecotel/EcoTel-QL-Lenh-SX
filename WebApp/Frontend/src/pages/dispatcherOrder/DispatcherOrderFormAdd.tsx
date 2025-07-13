@@ -95,7 +95,7 @@ const DispatcherOrderFormAdd: React.FC<OrderFormProps> = ({
             workingDate: '',
             shift: '',
             workContent: '',
-            note: ''
+            note: '',
         },
         validationSchema,
         onSubmit: (values) => {
@@ -106,6 +106,7 @@ const DispatcherOrderFormAdd: React.FC<OrderFormProps> = ({
                 workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
                 shift: values.shift,
                 workContent: values.workContent,
+                department: department
             };
             onSubmit(order);
         },
