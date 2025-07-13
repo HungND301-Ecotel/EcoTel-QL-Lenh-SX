@@ -1933,6 +1933,405 @@ router.post('/meal_request', verifyToken, restrictTo('admin', 'dispatcher', 'man
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 })
+
+router.post('/assignmentTo', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+    try {
+        const { shift, startDate, endDate, signature } = req.body
+        const shiftList = await Shift.find({ _id: { $in: shift } });
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        // Đảm bảo end không nhỏ hơn start
+        if (end < start) return res.status(400).json({ message: "Ngày kết thúc phải sau ngày bắt đầu" });
+
+        const workbook = new ExcelJS.Workbook();
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            for (const ca of shiftList) {
+                const orders = await Order.find({
+                    workingDate: d,
+                    shift: ca._id,
+                    createdBy: req.userId,
+                    status: { $nin: ["pending", "cancel"] }
+                })
+                    .populate('assignedTo', 'fullName salaryCode department')
+                    .populate('job', 'name')
+                    .populate('location', 'name')
+                    .populate('material', 'name')
+                    .populate('excavator', 'code')
+                    .populate('device', 'code')
+                    .populate('shift')
+                    .populate('createdBy', 'fullName salaryCode department')
+
+
+
+                for (const order of orders) {
+                    const sheetName = `${formatDate(d)}_${ca.name}_${order?.assignedTo?.salaryCode}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
+
+                    const worksheet = workbook.addWorksheet(sheetName, {
+                        views: [{ showGridLines: false }]
+                    });
+
+                    worksheet.pageSetup = {
+                        paperSize: 9,
+                        orientation: 'portrait',
+                        fitToPage: true,
+                        fitToWidth: 1,
+                        fitToHeight: 1,
+                        margins: {
+                            top: 0.5, bottom: 0.5, left: 0.5, right: 0.5,
+                            header: 0.3, footer: 0.3
+                        }
+                    };
+
+                    worksheet.columns = [
+                        { width: 25 }, // A
+                        { width: 30 }, // B
+                        { width: 40 }, // C
+                    ];
+
+                    const generateDotLine = (totalLength, prefix = '') => {
+                        const lineLength = totalLength - prefix.length;
+                        return prefix + '.'.repeat(lineLength > 0 ? lineLength : 0);
+                    };
+                    const addRow = (values = [], options = {}) => {
+                        const row = worksheet.addRow(values);
+                        if (options.merge) worksheet.mergeCells(options.merge);
+                        if (options.bold) row.font = { bold: true };
+                        if (options.italic) row.font = { italic: true };
+                        return row;
+                    };
+
+                    // Tiêu đề dòng đầu
+                    addRow([`Ca: ${ca?.name}     Ngày: ${d.getDate()}     Tháng: ${d.getMonth() + 1}     Năm: ${d.getFullYear()}`], {
+                        merge: 'A1:C1',
+                    });
+
+                    addRow([`Người giao: ${order?.createdBy?.fullName}       Người nhận: ${order?.assignedTo?.fullName}`], {
+                        merge: 'A2:C2',
+                    });
+
+                    worksheet.addRow([]);
+
+                    // I. Hoạt động trong ca
+                    addRow(['I. Hoạt động trong ca:'], { bold: true });
+                    addRow(['Tuyến hoạt động: .........................  Cự ly (km): .............  Chở than/đất: ..........................'], {
+                        merge: 'A5:C5',
+                    });
+                    addRow(['Số chuyển theo định mức: ..............  Số chuyển thực tế: ..............  Giờ hoạt động: ...............'], {
+                        merge: 'A6:C6',
+                    });
+                    addRow(['Giờ sau cộng tiếp sau KT: .............   Giờ cộng tiếp sau bảo dưỡng cấp 1: ..............'], {
+                        merge: 'A7:C7',
+                    });
+                    addRow(['Những hư hỏng xảy ra trong ca:'], { merge: 'A8:C8' });
+                    worksheet.addRow([generateDotLine(200, '')]);
+                    worksheet.addRow([generateDotLine(200, '')]);
+
+                    worksheet.addRow([]);
+
+                    // II. Những công việc đã thực hiện
+                    addRow(['II. Những công việc đã thực hiện trong ca (KT, bảo dưỡng, sửa chữa):'], { bold: true, merge: 'A12:C12' });
+                    worksheet.addRow([generateDotLine(200, '')]);
+                    worksheet.addRow([generateDotLine(200, '')]);
+
+                    worksheet.addRow([]);
+
+                    // III. Nhiên liệu
+                    addRow(['III. Nhiên liệu:'], { bold: true });
+                    addRow(['Tồn đầu ca: ................   Lĩnh trong ca: ...............   Tồn cuối ca: ...............'], {
+                        merge: 'A17:C17',
+                    });
+                    addRow(['Mức tiêu hao: theo định mức: ...............  thực tế: ...............  quá mức: ...............'], {
+                        merge: 'A18:C18',
+                    });
+                    addRow(['Bổ sung dầu nhớt: loại dầu: ...............  vị trí: ...............  số lượng: ...............'], {
+                        merge: 'A19:C19',
+                    });
+
+                    worksheet.addRow([]);
+
+                    // IV. Tình trạng kỹ thuật
+                    addRow(['IV. Tình trạng kỹ thuật xe khi giao lại cho ca sau:'], { bold: true });
+
+
+                    const listItems = [
+                        generateDotLine(193, '- Động cơ: '),
+                        generateDotLine(187, '- Hệ thống phanh:'),
+                        generateDotLine(191, '- Hệ thống lái:'),
+                        generateDotLine(182, '- Gương, đèn, còi, đồng hồ:'),
+                        generateDotLine(182, '- Hệ thống truyền động:'),
+                        generateDotLine(190, '- Hệ thống trục:'),
+                        generateDotLine(185, '- Hệ thống nâng ben:'),
+                        generateDotLine(188, '- Hệ thống điện:'),
+                        generateDotLine(193, '- Ca bin, sắt xi:'),
+                        generateDotLine(189, '- Bánh xe và lốp:'),
+                        generateDotLine(185, '- Radio, máy điều hoà:'),
+                        generateDotLine(185, '- Dụng cụ đồ nghề:'),
+                        generateDotLine(180, '- GPS, niêm phong, kẹp chì:')
+                    ];
+
+
+                    for (const item of listItems) {
+                        worksheet.addRow([item]);
+                    }
+
+                    worksheet.addRow([]);
+
+                    // Ký tên
+                    addRow(['NGƯỜI GIAO CA', '', '', 'NGƯỜI NHẬN CA'], { bold: true });
+                    addRow(['(Ký, ghi rõ họ tên)', '', '', '(Ký, ghi rõ họ tên)'], { bold: true });
+
+                    worksheet.addRow([]);
+                    worksheet.addRow([]);
+
+                    addRow(['V. người nhận ca kiểm tra KT xe đầu ca, xin lệnh hoạt động'], { bold: true });
+                    worksheet.addRow([generateDotLine(200, '')]);
+                    worksheet.addRow([generateDotLine(200, '')]);
+
+                    worksheet.addRow([]);
+
+                    addRow([
+                        'NGƯỜI NHẬN CA',
+                        '',
+                        '',
+                        'NGƯỜI RA LỆNH HOẠT ĐỘNG'
+                    ], { bold: true });
+
+                    addRow(['(Ký, ghi rõ họ tên)', '', '', '', 'CA TIẾP THEO'], { bold: true });
+                    addRow(['', '', '', '(Ký, ghi rõ họ tên)'], { bold: true });
+
+
+                    // Canh chỉnh lề trái cho tất cả
+                    worksheet.eachRow(row => {
+                        row.alignment = { vertical: 'middle', horizontal: 'left', };
+                    });
+
+                    if (signature) {
+                        const response = await axios.get(signature, { responseType: 'arraybuffer' });
+                        const contentType = response.headers['content-type'];
+                        const extension = contentType.split('/')[1];
+                        const imageBuffer = Buffer.from(response.data, 'binary');
+
+                        // Thêm ảnh vào workbook
+                        const imageId = workbook.addImage({
+                            buffer: imageBuffer,
+                            extension
+                        });
+
+                        // Gán ảnh vào vị trí (dùng topleft + extents hoặc range)
+                        const lastCol = worksheet.columnCount;
+                        worksheet.addImage(imageId, {
+                            tl: { col: lastCol - 2, row: 8 }, // H30
+                            ext: { width: 150, height: 150 },
+                        });
+                    }
+
+                    worksheet.eachRow((row) => {
+                        row.eachCell((cell) => {
+                            // Nếu chưa có font, tạo font mới
+                            if (!cell.font) cell.font = {};
+                            cell.font.size = 14; // hoặc 8, tuỳ theo bạn muốn nhỏ đến đâu
+                        });
+                    });
+                }
+            }
+        }
+
+        // Xuất file
+        const buffer = await workbook.xlsx.writeBuffer();
+
+        // Thiết lập header để tải file về
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader(
+            'Content-Disposition',
+            "attachment; filename*=UTF-8''*.xlsx"
+        );   // Gửi buffer về client
+        res.send(buffer);
+    }
+    catch (err) {
+
+    }
+})
+router.post('/assignmentManager', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+    try {
+        const { shift, startDate, endDate, signature } = req.body
+        const shiftList = await Shift.find({ _id: { $in: shift } });
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        // Đảm bảo end không nhỏ hơn start
+        if (end < start) return res.status(400).json({ message: "Ngày kết thúc phải sau ngày bắt đầu" });
+
+        const workbook = new ExcelJS.Workbook();
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            for (const ca of shiftList) {
+                const orders = await Order.find({
+                    workingDate: d,
+                    shift: ca._id,
+                    createdBy: req.userId,
+                    status: { $nin: ["pending", "cancel"] }
+                })
+                    .populate('assignedTo', 'fullName salaryCode department')
+                    .populate('job', 'name')
+                    .populate('location', 'name')
+                    .populate('material', 'name')
+                    .populate('excavator', 'code')
+                    .populate('device', 'code')
+                    .populate('shift')
+                    .populate('createdBy', 'fullName salaryCode department')
+
+
+
+                for (const order of orders) {
+                    const sheetName = `${formatDate(d)}_${ca.name}_${order?.assignedTo?.salaryCode}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
+
+                    const worksheet = workbook.addWorksheet(sheetName, {
+                        views: [{ showGridLines: false }]
+                    });
+
+                    worksheet.pageSetup = {
+                        paperSize: 9,
+                        orientation: 'portrait',
+                        fitToPage: true,
+                        fitToWidth: 1,
+                        fitToHeight: 1,
+                        margins: {
+                            top: 0.5, bottom: 0.5, left: 0.5, right: 0.5,
+                            header: 0.3, footer: 0.3
+                        }
+                    };
+
+                    worksheet.columns = [
+                        { width: 25 }, // A
+                        { width: 30 }, // B
+                        { width: 40 }, // C
+                    ];
+
+                    const generateDotLine = (totalLength, prefix = '') => {
+                        const lineLength = totalLength - prefix.length;
+                        return prefix + '.'.repeat(lineLength > 0 ? lineLength : 0);
+                    };
+                    const addRow = (values = [], options = {}) => {
+                        const row = worksheet.addRow(values);
+                        if (options.merge) worksheet.mergeCells(options.merge);
+                        if (options.bold) row.font = { bold: true };
+                        if (options.italic) row.font = { italic: true };
+                        return row;
+                    };
+
+                    // Tiêu đề dòng đầu
+                    addRow([`Ca: ${ca?.name}     Ngày: ${d.getDate()}     Tháng: ${d.getMonth() + 1}     Năm: ${d.getFullYear()}`], {
+                        merge: 'A1:C1',
+                    });
+
+                    addRow([`Người bàn giao: ${order?.createdBy?.fullName}       Người nhận bàn giao: ${order?.assignedTo?.fullName}`], {
+                        merge: 'A2:C2',
+                    });
+
+                    worksheet.addRow([]);
+
+                    // I. Hoạt động trong ca
+                    addRow(['I. Tình hình hoạt động trong ca:'], { bold: true });
+                    addRow(['- Số lượng thiết bị huy động/tổng số ............................  bao gồm:'], {
+                        merge: 'A5:C5',
+                    });
+                    worksheet.addRow([generateDotLine(200, '')]);
+                    worksheet.addRow([generateDotLine(200, '')]);
+
+                    addRow(['- Các thiết bị kiểm tu, bảo dưỡng bao gồm:'], { merge: 'A8:C8' });
+                    worksheet.addRow([generateDotLine(200, '')]);
+                    worksheet.addRow([generateDotLine(200, '')]);
+
+                    // II. Những công việc đã thực hiện
+                    addRow(['II. Những công việc đã thực hiện trong ca (KT, bảo dưỡng, sửa chữa):'], { bold: true, merge: 'A12:C12' });
+                    worksheet.addRow([generateDotLine(200, '')]);
+                    worksheet.addRow([generateDotLine(200, '')]);
+
+                    worksheet.addRow([generateDotLine(194, '+ Kiểm tu: ')]);
+                    worksheet.addRow([generateDotLine(187, '+ Bảo dưỡng cấp 1: ')]);
+                    worksheet.addRow([generateDotLine(187, '+ Bảo dưỡng cấp 2: ')]);
+                    worksheet.addRow([generateDotLine(178, '+ Bảo dưỡng cấp 3(hoặc 1000 giờ): ')]);
+                    worksheet.addRow([generateDotLine(183, '+ Bảo dưỡng cấp 2000 giờ: ')]);
+                    worksheet.addRow([generateDotLine(185, '- Các thiết bị dừng để TĐT: ')]);
+                    worksheet.addRow([generateDotLine(180, '- Các thiết bị sửa chữa đột suất lớn: ')]);
+                    worksheet.addRow([generateDotLine(200, '')]);
+                    worksheet.addRow([generateDotLine(200, '')]);
+                    worksheet.addRow([generateDotLine(180, '- Các thiết bị dừng do các lý do khác: ')]);
+                    worksheet.addRow([generateDotLine(200, '')]);
+                    worksheet.addRow([generateDotLine(175, '- Nội dung công việc đã thực hiện trong ca: ')]);
+                    worksheet.addRow([generateDotLine(200, '')]);
+                    worksheet.addRow([generateDotLine(200, '')]);
+                    worksheet.addRow([generateDotLine(200, '')]);
+                    worksheet.addRow([generateDotLine(200, '')]);
+                    addRow(['II- Nội dung công việc giao lại ca sau:'], { bold: true, merge: 'A31:C31' });
+                    worksheet.addRow([generateDotLine(200, '')]);
+                    worksheet.addRow([generateDotLine(200, '')]);
+                    worksheet.addRow([generateDotLine(200, '')]);
+                    worksheet.addRow([generateDotLine(200, '')]);
+                    addRow(['III- Dự báo nguy cơ mất an toàn:'], { bold: true, merge: 'A36:C36' });
+                    worksheet.addRow([generateDotLine(200, '')]);
+                    worksheet.addRow([generateDotLine(200, '')]);
+
+                    for (let i=0; i < 5; i++) {
+                        worksheet.addRow([]);
+                    }
+
+                    // Ký tên
+                    addRow(['NGƯỜI GIAO CA', '', '', 'NGƯỜI NHẬN'], { bold: true });
+                    addRow(['(Ký, ghi rõ họ tên)', '', '', '(Ký, ghi rõ họ tên)'], { bold: true });
+
+
+                    // Canh chỉnh lề trái cho tất cả
+                    worksheet.eachRow(row => {
+                        row.alignment = { vertical: 'middle', horizontal: 'left', };
+                    });
+
+                    if (signature) {
+                        const response = await axios.get(signature, { responseType: 'arraybuffer' });
+                        const contentType = response.headers['content-type'];
+                        const extension = contentType.split('/')[1];
+                        const imageBuffer = Buffer.from(response.data, 'binary');
+
+                        // Thêm ảnh vào workbook
+                        const imageId = workbook.addImage({
+                            buffer: imageBuffer,
+                            extension
+                        });
+
+                        // Gán ảnh vào vị trí (dùng topleft + extents hoặc range)
+                        const lastCol = worksheet.columnCount;
+                        worksheet.addImage(imageId, {
+                            tl: { col: lastCol - 2, row: 8 }, // H30
+                            ext: { width: 150, height: 150 },
+                        });
+                    }
+
+                    worksheet.eachRow((row) => {
+                        row.eachCell((cell) => {
+                            // Nếu chưa có font, tạo font mới
+                            if (!cell.font) cell.font = {};
+                            cell.font.size = 14; // hoặc 8, tuỳ theo bạn muốn nhỏ đến đâu
+                        });
+                    });
+                }
+            }
+        }
+
+        // Xuất file
+        const buffer = await workbook.xlsx.writeBuffer();
+
+        // Thiết lập header để tải file về
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader(
+            'Content-Disposition',
+            "attachment; filename*=UTF-8''*.xlsx"
+        );   // Gửi buffer về client
+        res.send(buffer);
+    }
+    catch (err) {
+
+    }
+})
 function setCell(ws, range, value) {
     ws.mergeCells(range);
     const cell = ws.getCell(range.split(':')[0]);

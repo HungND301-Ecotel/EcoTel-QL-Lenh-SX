@@ -94,6 +94,7 @@ export interface Order {
     note?: string;
     safetyMeasure?: string;
     temporaryError?: string
+    department?:string;
     createdBy: string;
     updatedBy?: string;
     createdAt?: string;

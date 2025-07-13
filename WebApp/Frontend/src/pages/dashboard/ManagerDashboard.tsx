@@ -255,8 +255,8 @@ const ManagerDashboard: React.FC = () => {
                                             backgroundColor: 'white',
                                             zIndex: 3,
                                         }}>Đơn vị</TableCell>
-                                        {count.map((item: any) => (
-                                            <TableCell align='center' colSpan={4} sx={{
+                                        {count.map((item: any, index: number) => (
+                                            <TableCell align='center' colSpan={4} key={index} sx={{
                                                 border: '1px solid black',
                                                 position: 'sticky',
                                                 top: 0,

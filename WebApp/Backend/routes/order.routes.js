@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
+
 const ShiftReport = require('../models/ShiftReport');
 const Notification = require('../models/Notification');
 
@@ -10,6 +11,8 @@ const OrderHistory = require('../models/OrderHistory');
 
 
 const Device = require('../models/Device');
+const DeviceType = require('../models/DeviceType');
+
 
 
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
@@ -177,13 +180,54 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
             excavator, location, material, workContent,
             note,
             safetyMeasure,
+            department
         } = req.body;
 
-        // const exitOrder = await Order.findOne({ shift: shift, workingDate: workingDate })
+        const exitOrder = await Order.findOne({ assignedTo: assignedTo, shift: shift, workingDate: workingDate })
 
-        // if (exitOrder) {
-        //     return res.status(400).send({ status: 'error', message: 'Không thể tạo nhiều lệnh cho 1 công nhân trong cùng 1 thời gian làm việc' })
-        // }
+        if (exitOrder) {
+            return res.status(400).send({ status: 'error', message: 'Không thể tạo nhiều lệnh cho 1 công nhân trong cùng 1 thời gian làm việc' })
+        }
+
+
+        if (devicesToProduce?.length > 0) {
+            for (const item of devicesToProduce) {
+                const { deviceType, quantity } = item;
+
+                try {
+                    // Lấy tất cả thiết bị theo loại và phòng ban
+                    const type = await DeviceType.findById(deviceType);
+                    const devices = await Device.find({ department: department, category: deviceType });
+
+                    // Nếu không tìm thấy bất kỳ thiết bị nào theo loại đó
+                    if (!devices || devices.length === 0) {
+                        return res.status(400).send({
+                            status: 'error',
+                            message: `Loại phương tiện ${type?.name} không tồn tại trong đơn vị`
+                        });
+                    }
+
+                    // Lọc ra những thiết bị đang sẵn sàng
+                    const deviceActive = devices.filter(d => d.status === "available");
+
+                    if (quantity > deviceActive.length) {
+                        return res.status(400).send({
+                            status: 'error',
+                            message: `Số lượng yêu cầu (${quantity}) vượt quá số lượng phương tiện khả dụng (${deviceActive.length}) cho loại ${type?.name}`
+                        });
+                    }
+
+                    console.log(`✅ Đủ số lượng cho loại phương tiện ${type?.name}`);
+                } catch (err) {
+                    return res.status(500).send({
+                        status: 'error',
+                        message: `Lỗi khi kiểm tra loại phương tiện: ${err.message}`
+                    });
+                }
+            }
+        }
+
+
 
 
         // Generate order number

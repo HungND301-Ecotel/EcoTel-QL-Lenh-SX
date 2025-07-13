@@ -73,6 +73,8 @@ function Reports() {
         { name: 'Danh sách chuyến ô tô', },
         { name: 'Phiếu báo công', },
         { name: 'Phiếu báo ăn', },
+        { name: 'Giao nhận ca', },
+        { name: 'Giao ca cán bộ', },
         // { name: 'Phiếu bồi dưỡng hiện vật', },
         // { name: 'Phiếu lĩnh dầu', },
         // { name: 'Tổng hợp số liệu trong ca (Gạt)', },
@@ -105,6 +107,16 @@ function Reports() {
         'Phiếu báo ăn': {
             viewUrl: '/exports/meal_request/view',
             exportUrl: '/exports/meal_request',
+            PreviewComponent: mealRequestReport,
+        },
+        'Giao nhận ca': {
+            viewUrl: '',
+            exportUrl: '/exports/assignmentTo',
+            PreviewComponent: mealRequestReport,
+        },
+        'Giao ca cán bộ': {
+            viewUrl: '',
+            exportUrl: '/exports/assignmentManager',
             PreviewComponent: mealRequestReport,
         },
         'Theo dõi sản lượng, nhiên liệu, dầu mỡ': {
