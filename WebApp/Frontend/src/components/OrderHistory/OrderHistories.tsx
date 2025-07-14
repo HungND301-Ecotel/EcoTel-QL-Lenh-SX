@@ -22,9 +22,9 @@ const OrderHistories: React.FC<{ open: boolean, setOpen: Dispatch<SetStateAction
         setTabIndex(newValue);
     };
 
-    const { data: orderHistories = [] } = useQuery({
-        queryKey: ['orderHistories', initialValues],
-        queryFn: () => api.get(`/orderHistories/${initialValues?._id}`).then(res => res.data.data),
+    const { data: histories = [] } = useQuery({
+        queryKey: ['histories', initialValues],
+        queryFn: () => api.get(`/histories/${initialValues?._id}`).then(res => res.data.data),
         enabled: !!initialValues?._id,
     });
 
@@ -47,7 +47,7 @@ const OrderHistories: React.FC<{ open: boolean, setOpen: Dispatch<SetStateAction
             </Tabs>
             <Divider />
             <DialogContent>
-                {tabIndex === 0 && orderHistories.map((item: any, index: number) => (
+                {tabIndex === 0 && histories.map((item: any, index: number) => (
                     <Typography key={index} sx={{ mb: 2 }}>
                         {`${index + 1}.
                             Ngày làm việc: ${item?.snapshot?.workingDate ? format(new Date(item?.snapshot?.workingDate), 'dd/MM/yyyy') : '---'},

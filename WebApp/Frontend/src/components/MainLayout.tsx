@@ -19,6 +19,8 @@ import {
     Menu,
     MenuItem,
     Collapse,
+    Button,
+    Popover,
 } from '@mui/material';
 import {
     Menu as MenuIcon,
@@ -50,6 +52,7 @@ import {
     Link,
     ExpandLess,
     ExpandMore,
+    Person,
 } from '@mui/icons-material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../config/api.config';
@@ -75,25 +78,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     const [user, setUser] = useAtom(userAtom)
     const [openDanhMuc, setOpenDanhMuc] = useState(false)
     const [openprofile, setOpenprofile] = useState(false)
+    const [openPopover, setOpenPopover] = useState(false)
 
 
-    const socket = useSocket()
+
 
     const { data: notificationCount = 0 } = useQuery({
         queryKey: ['notificationCount'],
         queryFn: () => api.get('/notifications/unread/count').then(res => res.data.data),
     });
 
-
-
-    useEffect(() => {
-        if (!socket) return;
-
-        socket.on('notification', () => {
-            queryClient.invalidateQueries({ queryKey: ['notificationCount'] });
-        });
-
-    }, [queryClient, socket]);
 
     const menuItems = [
         ["admin", "manager"].includes(user?.role) ? {
@@ -183,6 +177,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
     const handleClose = () => {
         setAnchorEl(null);
+    };
+
+    const [anchorElPopover, setAnchorElPopover] = useState<HTMLElement | null>(null);
+    const handleAvatarClick = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorElPopover(event.currentTarget); // anchorEl sẽ là nút Avatar
+        setOpenPopover(true);
     };
 
     const handleLogout = () => {
@@ -424,7 +424,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                             Phần mềm giao ca, nhận lệnh sản xuất
                         </Typography>
                     </Box>
-                    <Box>
+                    <Box display={'flex'} gap={3}>
                         <Tooltip title="Thông báo" placement='right'>
                             <IconButton color="inherit" href='/notifications'>
                                 <Badge badgeContent={notificationCount || 0} color="error">
@@ -433,13 +433,56 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                             </IconButton>
                         </Tooltip>
                         <Tooltip title="Cá nhân" placement='right'>
-                            <IconButton color="inherit" onClick={() => setOpenprofile(true)}>
+                            <IconButton aria-owns='mouse-over-popover' color="inherit" onClick={handleAvatarClick}>
                                 <Avatar src={user?.avatar} sx={{
                                     objectFit: 'contain',
                                     bgcolor: 'white'
                                 }} />
                             </IconButton>
                         </Tooltip>
+                        <Popover
+                            id="avatar-popover"
+                            open={openPopover}
+                            anchorEl={anchorElPopover}
+                            onClose={() => {
+                                setOpenPopover(false);
+                                setAnchorElPopover(null);
+                            }}
+                            anchorOrigin={{
+                                vertical: 'bottom',
+                                horizontal: 'right',
+                            }}
+                            transformOrigin={{
+                                vertical: 'top',
+                                horizontal: 'right',
+                            }}
+                        >
+                            <Box padding={2} display='flex' gap={2} flexDirection={'column'}>
+                                <Typography variant='h5' sx={{ alignSelf: 'center', }}>{user?.fullName}</Typography>
+                                <Divider />
+                                <MenuItem onClick={() => {
+                                    setOpenprofile(true)
+                                    setOpenPopover(false)
+                                }}>
+                                    <ListItemIcon>
+                                        <Person color='primary' fontSize="small" />
+                                    </ListItemIcon>
+                                    Thông tin cá nhân
+                                </MenuItem>
+                                <MenuItem onClick={() => setIsOpenChangePassword(true)}>
+                                    <ListItemIcon>
+                                        <VpnKeyOutlined color='primary' fontSize="small" />
+                                    </ListItemIcon>
+                                    Đổi mật khẩu
+                                </MenuItem>
+                                <MenuItem onClick={handleLogout}>
+                                    <ListItemIcon>
+                                        <LogoutIcon color='primary' fontSize="small" />
+                                    </ListItemIcon>
+                                    Đăng xuất
+                                </MenuItem>
+                            </Box>
+                        </Popover>
                     </Box>
                 </Toolbar>
 

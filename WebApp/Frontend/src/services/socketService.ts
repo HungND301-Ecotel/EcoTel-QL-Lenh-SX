@@ -1,8 +1,12 @@
+// socketService.ts
 import { io, Socket } from 'socket.io-client';
+
+type NotificationCallback = (data: any) => void;
 
 class SocketService {
     private static instance: SocketService;
     private socket: Socket | null = null;
+    private notificationCallback?: NotificationCallback;
 
     private constructor() { }
 
@@ -27,12 +31,27 @@ class SocketService {
 
         this.socket.on('connect', () => {
             console.log('✅ Connected to server');
-            this.socket?.emit('notification', userId);
+            this.socket?.emit('join_room', userId);
+        });
+
+        this.socket.on('notification', (data) => {
+            console.log('📩 Received notification:', data);
+            if (this.notificationCallback) {
+                this.notificationCallback(data);
+            }
         });
 
         this.socket.on('disconnect', () => {
             console.log('🔴 Disconnected from server');
         });
+    }
+
+    public onNotification(callback: NotificationCallback): void {
+        this.notificationCallback = callback;
+    }
+
+    public offNotification(): void {
+        this.notificationCallback = undefined;
     }
 
     public on(event: string, callback: (data: any) => void): void {

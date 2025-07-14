@@ -6,7 +6,7 @@ const ShiftReport = require('../models/ShiftReport');
 const Notification = require('../models/Notification');
 
 
-const OrderHistory = require('../models/OrderHistory');
+const History = require('../models/History');
 
 
 
@@ -386,12 +386,12 @@ router.put('/:id', verifyToken, async (req, res, next) => {
             // Gán endTime bằng resumeTime
             snapshot.endTime = updatedOrder.updatedAt;
             snapshot.startTime = updatedOrder.resumeTime;
-            const newOrderHistory = new OrderHistory({
-                orderId: updatedOrder._id,
+            const newHistory = new History({
+                entity: updatedOrder._id,
                 changedBy: req.userId,
                 snapshot: snapshot
             })
-            await newOrderHistory.save();
+            await newHistory.save();
 
         }
 
@@ -612,12 +612,12 @@ router.post('/scanWork', verifyToken, async (req, res, next) => {
             // Gán endTime bằng resumeTime
             snapshot.endTime = orderUpdate.updatedAt;
             snapshot.startTime = orderUpdate.resumeTime;
-            const newOrderHistory = new OrderHistory({
-                orderId: orderUpdate._id,
+            const newHistory = new History({
+                entity: orderUpdate._id,
                 changedBy: req.userId,
                 snapshot: snapshot
             })
-            await newOrderHistory.save();
+            await newHistory.save();
 
         }
 
@@ -753,12 +753,12 @@ router.post('/checkin', verifyToken, async (req, res, next) => {
             // Gán endTime bằng resumeTime
             snapshot.endTime = orderUpdate.updatedAt;
             snapshot.startTime = orderUpdate.resumeTime;
-            const newOrderHistory = new OrderHistory({
-                orderId: orderUpdate._id,
+            const newHistory = new History({
+                entity: orderUpdate._id,
                 changedBy: req.userId,
                 snapshot: snapshot
             })
-            await newOrderHistory.save();
+            await newHistory.save();
 
         }
 

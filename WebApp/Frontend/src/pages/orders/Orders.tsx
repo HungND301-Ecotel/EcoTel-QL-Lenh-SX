@@ -74,7 +74,6 @@ const Orders: React.FC = () => {
     const [device, setDevice] = useState("");
     const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
     const queryClient = useQueryClient();
-    const socket = useSocket()
 
 
     const { data: devices = [] } = useQuery({
@@ -92,14 +91,6 @@ const Orders: React.FC = () => {
         queryFn: () => api.get(`/orders?employee=${employee}&device=${device}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
     });
 
-    useEffect(() => {
-        if (!socket) return;
-
-        socket.on('notification', () => {
-            queryClient.invalidateQueries({ queryKey: ['orders'] });
-        });
-
-    }, [queryClient, socket]);
     const createMutation = useMutation({
         mutationFn: (newOrder: Partial<Order>) =>
             api.post('/orders', newOrder).then(res => res.data),
