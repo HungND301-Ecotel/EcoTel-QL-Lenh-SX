@@ -53,15 +53,6 @@ const Notifications: React.FC = () => {
     const [type, setType] = useState("")
     const [newNotification, setNewNotification] = useState(null)
     const queryClient = useQueryClient();
-    const socket = useSocket()
-
-    useEffect(() => {
-        if (!socket) return;
-        socket.on('notification', (data) => {
-            setNewNotification(data)
-        });
-    }, [socket]);
-
 
     const { data: notifications = [], isLoading } = useQuery({
         queryKey: ['notifications'],

@@ -23,7 +23,7 @@ const locationRoutes = require('./routes/location.routes');
 const jobRoutes = require('./routes/job.routes');
 const positionRoutes = require('./routes/position.routes');
 const deviceTypeRoutes = require('./routes/deviceType.routes');
-const orderHistoryRoutes = require('./routes/orderHistory.routes');
+const historyRoutes = require('./routes/history.routes');
 const ShiftReportRoutes = require('./routes/shiftReport.routes');
 const CheckInRoutes = require('./routes/checkIn.routes');
 const SafetyMeasureRoutes = require('./routes/safetyMeasure.routes');
@@ -62,7 +62,7 @@ io.on('connection', (socket) => {
     console.log(`🟢 Socket connected: ${socket.id}`);
 
     // Nhận sự kiện từ client để join room theo userId
-    socket.on('notification', (userId) => {
+    socket.on('join_room', (userId) => {
         socket.join(userId);
         console.log(`🔗 User ${userId} joined room`);
     });
@@ -129,7 +129,7 @@ app.use('/api/locations', locationRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/positions', positionRoutes);
 app.use('/api/devicetypes', deviceTypeRoutes);
-app.use('/api/orderHistories', orderHistoryRoutes);
+app.use('/api/histories', historyRoutes);
 app.use('/api/shiftReports', ShiftReportRoutes);
 app.use('/api/checkIns', CheckInRoutes);
 app.use('/api/safetyMeasures', SafetyMeasureRoutes);

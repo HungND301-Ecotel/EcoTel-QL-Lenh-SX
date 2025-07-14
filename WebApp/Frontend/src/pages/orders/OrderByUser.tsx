@@ -60,16 +60,7 @@ const OrderByUsers: React.FC = () => {
     const [department, setDepartment] = useState("");
     const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
     const queryClient = useQueryClient();
-    const socket = useSocket()
 
-    useEffect(() => {
-        if (!socket) return;
-
-        socket.on('notification', () => {
-            queryClient.invalidateQueries({ queryKey: ['orderByUser'] });
-        });
-
-    }, [queryClient, socket]);
 
     const { data: orderByUser = [], isLoading, refetch } = useQuery({
         queryKey: ['orderByUser'],

@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const History = require('../models/History');
+
 const bcrypt = require('bcryptjs')
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 const xlsx = require('xlsx');
@@ -112,17 +114,31 @@ router.get('/getOne/salaryCodeOrName', verifyToken, async (req, res) => {
 // Update user
 router.put('/update/:id', verifyToken, async (req, res) => {
     try {
-        const user = await User.findByIdAndUpdate(
-            req.params.id,
-            req.body,
-            { new: true }
-        ).populate("position")
-
+        const user = await User.findById(req.params.id).populate("department")
         if (!user) {
             return res.status(404).json({
                 success: 'error',
                 message: 'Không tìm thấy người dùng'
             });
+        }
+        const userUpdate = await User.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true }
+        )
+            .populate("department")
+
+
+        if (user.department?._id.toString() !== userUpdate.department?._id.toString()) {
+            const snapshot = user.toObject();
+
+            // Gán endTime bằng resumeTime
+            const newHistory = new History({
+                entity: user._id,
+                changedBy: req.userId,
+                snapshot: snapshot
+            })
+            await newHistory.save();
         }
 
         res.json({

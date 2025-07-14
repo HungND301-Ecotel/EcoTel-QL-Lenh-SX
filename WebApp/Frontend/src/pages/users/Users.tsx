@@ -25,6 +25,7 @@ import {
     InputAdornment,
     Grid,
     Checkbox,
+    Tooltip,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -35,6 +36,7 @@ import {
     ImportExport,
     UploadFile,
     Close,
+    InfoOutlined,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -44,6 +46,7 @@ import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import imageCompression from 'browser-image-compression';
+import UserHistories from '../../components/UserHistory/UserHistories';
 
 
 const StyledPopper = styled(Popper)({
@@ -67,6 +70,7 @@ const validationSchema = yup.object({
 
 const Users: React.FC = () => {
     const [open, setOpen] = useState(false);
+    const [history, setHistory] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [value, setValue] = useState("")
     const [department, setDepartment] = useState("")
@@ -288,18 +292,21 @@ const Users: React.FC = () => {
             )
         },
         {
-            field: 'avatar', headerName: 'Ảnh đại diện', width: 100, headerAlign: 'center',
-            renderCell: (params) => (
-                <img src={params.row.avatar || ''} width={50} />
-            )
-        },
-        {
             field: 'actions',
             headerName: 'Thao tác',
-            width: 100,
+            width: 130,
             headerAlign: 'center',
             renderCell: (params) => (
                 <>
+                    <IconButton
+                        color="info"
+                        onClick={() => {
+                            setSelectedUser(params.row)
+                            setHistory(true)
+                        }}
+                    >
+                        <InfoOutlined />
+                    </IconButton>
                     <IconButton color="primary" onClick={() => handleOpen(params.row)}>
                         <EditIcon />
                     </IconButton>
@@ -577,6 +584,7 @@ const Users: React.FC = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+            <UserHistories open={history} setOpen={setHistory} initialValues={selectedUser} />
         </Box>
     );
 };

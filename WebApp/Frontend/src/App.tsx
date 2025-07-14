@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
 import MainLayout from './components/MainLayout';
 import Login from './pages/auth/Login';
 import Orders from './pages/orders/Orders';
@@ -25,6 +25,8 @@ import SafetyMeasures from './pages/safetyMeasures/SafetyMeasures';
 import Machines from './pages/machine/Machine';
 import Shifts from './pages/shift/Shifts';
 import OrderByUsers from './pages/orders/OrderByUser';
+import './index.css'
+import { useSocket } from './hooks/useSocket';
 
 
 interface PrivateRouteProps {
@@ -48,6 +50,8 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
 const App = () => {
     const token = localStorage.getItem('token');
     const [user, setUser] = useAtom(userAtom)
+    const queryClient = useQueryClient();
+    const socket = useSocket();
 
     const { data, isLoading } = useQuery({
         queryKey: ['user', token],
@@ -60,6 +64,21 @@ const App = () => {
             setUser(data)
         }
     }, [data])
+
+    useEffect(() => {
+        // Lắng nghe notification từ socket
+        socketService.onNotification((data) => {
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
+            queryClient.invalidateQueries({ queryKey: ['orderByUser'] });
+            queryClient.invalidateQueries({ queryKey: ['notificationCount'] });
+            queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        });
+
+        // Cleanup khi component unmount
+        return () => {
+            socketService.offNotification();
+        };
+    }, []);
 
     return (
         <BrowserRouter>

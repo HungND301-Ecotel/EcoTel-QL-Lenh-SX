@@ -54,18 +54,10 @@ class _TaskListPage extends State<TaskListPage> {
   void initState() {
     super.initState();
     getOrderByUser();
-    final socketService = SocketService();
-
-    // Lắng nghe sự kiện 'notification' từ server
-    socketService.on('notification', (notif) {
-      print('Lỗi');
-      getOrderByUser();
-    });
   }
 
   @override
   void dispose() {
-    SocketService().off('notification');
     super.dispose();
   }
 
@@ -74,16 +66,12 @@ class _TaskListPage extends State<TaskListPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
-        automaticallyImplyLeading: false,
         title: Text(
           'Công việc được giao',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(color: Colors.white),
         ),
         centerTitle: true,
+        iconTheme: IconThemeData(color: Colors.white),
         actions: [
           IconButton(
             onPressed: getReload,
@@ -94,8 +82,23 @@ class _TaskListPage extends State<TaskListPage> {
           ),
         ],
       ),
-      body:
-          _isLoading
+      body: ValueListenableBuilder(
+        valueListenable:
+            SocketService().notificationNotifier,
+        builder: (context, value, _) {
+          if (value != null) {
+            // Khi có thông báo → reload dữ liệu
+            getOrderByUser();
+            // Reset notifier để tránh reload liên tục
+            WidgetsBinding.instance.addPostFrameCallback((
+              _,
+            ) {
+              SocketService().notificationNotifier.value =
+                  null;
+            });
+          }
+
+          return _isLoading
               ? Center(child: CircularProgressIndicator())
               : SingleChildScrollView(
                 child: Column(
@@ -106,7 +109,9 @@ class _TaskListPage extends State<TaskListPage> {
                           )
                           .toList(),
                 ),
-              ),
+              );
+        },
+      ),
     );
   }
 }

@@ -67,6 +67,13 @@ class _MyAppState extends State<MyApp> {
       ); // phục hồi lại trạng thái
       final socketService = SocketService();
       socketService.connect(user.id);
+      socketService.notificationNotifier.addListener(() {
+        final data =
+            socketService.notificationNotifier.value;
+        if (data != null) {
+          print('📩 Notification nhận được: $data');
+        }
+      });
       return MyPage();
     } else {
       return SignIn();

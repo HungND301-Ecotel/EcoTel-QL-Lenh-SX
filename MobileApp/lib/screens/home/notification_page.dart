@@ -14,19 +14,12 @@ class _NotificationPage extends State<NotificationPage> {
   @override
   void initState() {
     super.initState();
-    final socketService = SocketService();
 
-    // Lắng nghe sự kiện 'notification' từ server
-    socketService.on('notification', (notif) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Bạn có thông báo mới')),
-      );
-    });
+    // Lắng nghe sự kiện 'notification' từ serve
   }
 
   @override
   void dispose() {
-    SocketService().off('notification');
     super.dispose();
   }
 

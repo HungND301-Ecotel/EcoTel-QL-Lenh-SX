@@ -56,17 +56,10 @@ class _TaskAssignmentList
   void initState() {
     super.initState();
     getAllOrder();
-    final socketService = SocketService();
-
-    // Lắng nghe sự kiện 'notification' từ server
-    socketService.on('notification', (notif) {
-      getAllOrder();
-    });
   }
 
   @override
   void dispose() {
-    SocketService().off('notification');
     super.dispose();
   }
 
@@ -104,8 +97,23 @@ class _TaskAssignmentList
           ),
         ],
       ),
-      body:
-          _isLoading
+      body: ValueListenableBuilder(
+        valueListenable:
+            SocketService().notificationNotifier,
+        builder: (context, value, _) {
+          if (value != null) {
+            // Khi có thông báo → reload dữ liệu
+            getAllOrder();
+            // Reset notifier để tránh reload liên tục
+            WidgetsBinding.instance.addPostFrameCallback((
+              _,
+            ) {
+              SocketService().notificationNotifier.value =
+                  null;
+            });
+          }
+
+          return _isLoading
               ? Center(child: CircularProgressIndicator())
               : SingleChildScrollView(
                 child: Column(
@@ -117,7 +125,9 @@ class _TaskAssignmentList
                           )
                           .toList(),
                 ),
-              ),
+              );
+        },
+      ),
     );
   }
 }

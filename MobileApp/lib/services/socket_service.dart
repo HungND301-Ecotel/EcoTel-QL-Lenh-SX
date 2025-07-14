@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:socket_io_client/socket_io_client.dart'
     as IO;
@@ -6,17 +7,18 @@ class SocketService {
   static final SocketService _instance =
       SocketService._internal();
 
-  factory SocketService() {
-    return _instance;
-  }
+  factory SocketService() => _instance;
 
   late IO.Socket _socket;
+  final ValueNotifier<dynamic> notificationNotifier =
+      ValueNotifier(null); // thông báo mới
 
-  bool get isConnectted => _socket.connected;
+  bool get isConnected => _socket.connected;
 
   SocketService._internal() {
     _socket = IO.io(
-      dotenv.env['SOCKET_API'] ?? 'ws://192.168.100.248:8080',
+      dotenv.env['SOCKET_API'] ??
+          'ws://192.168.100.248:8080',
       IO.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()
@@ -31,7 +33,15 @@ class SocketService {
 
     _socket.onConnect((_) {
       print('✅ Connected to server');
-      _socket.emit('notification', userId);
+      _socket.emit('join_room', userId);
+
+      // Gắn listener duy nhất
+      _socket.off('notification');
+      _socket.on('notification', (data) {
+        print('📩 Notification: $data');
+        notificationNotifier.value =
+            data; // đẩy giá trị mới
+      });
     });
 
     _socket.onDisconnect(
@@ -41,17 +51,5 @@ class SocketService {
 
   void disconnect() {
     _socket.disconnect();
-  }
-
-  void on(String event, Function(dynamic) callback) {
-    _socket.on(event, callback);
-  }
-
-  void emit(String event, dynamic data) {
-    _socket.emit(event, data);
-  }
-
-  void off(String event) {
-    _socket.off(event);
   }
 }
