@@ -71,6 +71,19 @@ services:
       - backnet
     ports:
       - "27018:27017"
+  
+  ktv_promtail:
+    image: grafana/promtail:2.9.0
+    container_name: ktv_promtail
+    volumes:
+      - /var/log:/var/log
+      - /etc/machine-id:/etc/machine-id
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./promtail-config.yaml:/etc/promtail/promtail.yaml
+    command: -config.file=/etc/promtail/promtail.yaml
+    networks:
+      - monitoring
 
 
 networks:
