@@ -72,6 +72,28 @@ services:
     ports:
       - "27018:27017"
   
+  ktv_grafana:
+    image: grafana/grafana
+    container_name: ktv_grafana
+    ports:
+      - "4000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    networks:
+      - monitoring
+
+  ktv_loki:
+    image: grafana/loki:2.9.0
+    container_name: ktv_loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - monitoring
+
   ktv_promtail:
     image: grafana/promtail:2.9.0
     container_name: ktv_promtail
@@ -80,8 +102,8 @@ services:
       - /etc/machine-id:/etc/machine-id
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./promtail-config.yaml:/etc/promtail/promtail.yaml
-    command: -config.file=/etc/promtail/promtail.yaml
+      - ./staging-promtail-config.yaml:/etc/promtail/staging-promtail-config.yaml
+    command: -config.file=/etc/promtail/staging-promtail-config.yaml
     networks:
       - monitoring
 
@@ -89,5 +111,10 @@ services:
 networks:
   frontnet:
   backnet:
+  monitoring:
+
+volumes:
+  grafana-storage:
+  
 
 
