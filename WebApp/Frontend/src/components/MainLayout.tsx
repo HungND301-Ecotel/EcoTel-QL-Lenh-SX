@@ -250,7 +250,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 {["manager"].includes(user?.role) && <ListItem
                     button
                     key="Công việc của tôi"
-                    onClick={() => navigate("/orders")}
+                    onClick={() => navigate("/orderByUsers")}
                     sx={{
                         justifyContent: mobileOpen ? 'initial' : 'center',
                         px: 2.5,
