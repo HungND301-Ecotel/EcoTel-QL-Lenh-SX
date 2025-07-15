@@ -22,6 +22,11 @@ services:
     depends_on:
       - ktv_Frontend_service
       - ktv_Backend_service
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   ktv_Frontend_service:
     image: ecoteldev/ktv_ecotel_frontend_img:staging
@@ -34,10 +39,15 @@ services:
     # restart: always
     networks:
       - frontnet
-  # ports:
-  #   - "3000:80"
-  # depends_on:
-  #   - ecotel_backend_service
+    # ports:
+    #   - "3000:80"
+    # depends_on:
+    #   - ecotel_backend_service
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
   
   
   ktv_Backend_service:
@@ -57,6 +67,11 @@ services:
     # restart: always
     networks:
       - backnet
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   ktv_db:
     image: mongo
@@ -71,6 +86,11 @@ services:
       - backnet
     ports:
       - "27018:27017"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
   
   ktv_grafana:
     image: grafana/grafana
@@ -84,6 +104,11 @@ services:
       - grafana-storage:/var/lib/grafana
     networks:
       - monitoring
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   ktv_loki:
     image: grafana/loki:2.9.0
@@ -93,6 +118,11 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
     networks:
       - monitoring
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   ktv_promtail:
     image: grafana/promtail:2.9.0
@@ -106,6 +136,11 @@ services:
     command: -config.file=/etc/promtail/staging-promtail-config.yaml
     networks:
       - monitoring
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 
 networks:
