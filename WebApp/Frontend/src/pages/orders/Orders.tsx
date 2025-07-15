@@ -40,6 +40,7 @@ import {
     InfoOutlined,
     SyncAlt,
     Visibility,
+    CancelOutlined,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -216,7 +217,7 @@ const Orders: React.FC = () => {
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 2, mb: 3, flexWrap: 'wrap' }}>
                 <Box sx={{ flex: 1, flexDirection: 'column' }}>
-                    <Typography>Công nhân:</Typography>
+                    <Typography>Nhân viên:</Typography>
                     <Autocomplete
                         fullWidth
                         options={users}
@@ -232,7 +233,7 @@ const Orders: React.FC = () => {
                             <TextField
                                 {...params}
                                 size='small'
-                                label="Công nhân"
+                                label="Nhân viên"
                             />
                         )}
                     />
@@ -320,20 +321,19 @@ const Orders: React.FC = () => {
                                     zIndex: 3,
                                     minWidth: 150,
                                     border: '1px solid black'
-                                }}>Tên nhân viên</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 130, border: '1px solid black' }}>Số thẻ lương</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Giờ tạo lệnh</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black' }}>Ngày</TableCell>
+                                }}>Nhân viên</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 130, border: '1px solid black' }}>Mã thẻ lương</TableCell>
                                 <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black' }}>Ca</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black' }}>Ngày làm việc</TableCell>
                                 <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Công việc</TableCell>
                                 <TableCell align='center' sx={{ minWidth: 200, border: '1px solid black' }}>Nội dung</TableCell>
                                 <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Phương tiện</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Người ra lệnh</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Người tạo lệnh</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Thời gian tạo lệnh</TableCell>
                                 <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black' }}>Bắt đầu</TableCell>
                                 <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black' }}>Kết thúc</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black' }}>Hủy</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Ghi chú</TableCell>
                                 <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Trạng thái</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Ghi chú</TableCell>
                                 <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Thao tác</TableCell>
                             </TableRow>
                         </TableHead>
@@ -352,13 +352,10 @@ const Orders: React.FC = () => {
                                         {order.assignedTo?.salaryCode}
                                     </TableCell>
                                     <TableCell sx={{ border: '1px solid black' }}>
-                                        {order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm') : ''}
+                                        {order.shift?.name}
                                     </TableCell>
                                     <TableCell sx={{ border: '1px solid black' }}>
                                         {order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''}
-                                    </TableCell>
-                                    <TableCell sx={{ border: '1px solid black' }}>
-                                        {order.shift?.name}
                                     </TableCell>
                                     <TableCell sx={{ border: '1px solid black' }}>
                                         {order.job.name || ''}
@@ -379,16 +376,13 @@ const Orders: React.FC = () => {
                                         {order.createdBy.username || ''}
                                     </TableCell>
                                     <TableCell sx={{ border: '1px solid black' }}>
+                                        {order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm') : ''}
+                                    </TableCell>
+                                    <TableCell sx={{ border: '1px solid black' }}>
                                         {order.startTime ? format(new Date(order.startTime), 'HH:mm:ss') : ''}
                                     </TableCell>
                                     <TableCell sx={{ border: '1px solid black' }}>
                                         {order.endTime ? format(new Date(order.endTime), 'HH:mm:ss') : ''}
-                                    </TableCell>
-                                    <TableCell sx={{ border: '1px solid black' }}>
-                                        <Checkbox checked={order.status === "cancel"} onChange={(e) => handleCancel(order)} disabled={order.status === "cancel"} />
-                                    </TableCell>
-                                    <TableCell sx={{ border: '1px solid black' }}>
-                                        {order.temporaryError || ''}
                                     </TableCell>
                                     <TableCell sx={{ border: '1px solid black' }}>
                                         <Chip
@@ -406,6 +400,9 @@ const Orders: React.FC = () => {
                                         />
                                     </TableCell>
                                     <TableCell sx={{ border: '1px solid black' }}>
+                                        {order.temporaryError || ''}
+                                    </TableCell>
+                                    <TableCell sx={{ border: '1px solid black' }}>
                                         {['pending', 'warning'].includes(order?.status) && <IconButton
                                             color="primary"
                                             onClick={() => handleOpen(order)}
@@ -414,23 +411,12 @@ const Orders: React.FC = () => {
                                                 <EditIcon />
                                             </Tooltip>
                                         </IconButton>}
-                                        {['completed'].includes(order?.status) && <IconButton
-                                            color="success"
-                                            onClick={() => {
-                                                setSelectedOrder(order)
-                                                reportExcel.mutate();
-                                            }}
+                                        {['pending', 'warning'].includes(order?.status) && <IconButton
+                                            color="warning"
+                                            onClick={() => handleCancel(order)}
                                         >
-                                            <Tooltip title="Xuất file" placement='top'>
-                                                <FileDownload />
-                                            </Tooltip>
-                                        </IconButton>}
-                                        {['pending', 'warning', 'cancel'].includes(order?.status) && <IconButton
-                                            color="error"
-                                            onClick={() => handleDelete(order._id)}
-                                        >
-                                            <Tooltip title="Xóa" placement='top'>
-                                                <DeleteIcon />
+                                            <Tooltip title="Hủy" placement='top'>
+                                                <CancelOutlined />
                                             </Tooltip>
                                         </IconButton>}
                                         <IconButton
@@ -466,6 +452,26 @@ const Orders: React.FC = () => {
                                                 <SyncAlt />
                                             </Tooltip>
                                         </IconButton>}
+                                        {['completed'].includes(order?.status) && <IconButton
+                                            color="success"
+                                            onClick={() => {
+                                                setSelectedOrder(order)
+                                                reportExcel.mutate();
+                                            }}
+                                        >
+                                            <Tooltip title="Xuất file" placement='top'>
+                                                <FileDownload />
+                                            </Tooltip>
+                                        </IconButton>}
+                                        {['pending', 'warning', 'cancel'].includes(order?.status) && <IconButton
+                                            color="error"
+                                            onClick={() => handleDelete(order._id)}
+                                        >
+                                            <Tooltip title="Xóa" placement='top'>
+                                                <DeleteIcon />
+                                            </Tooltip>
+                                        </IconButton>}
+
                                     </TableCell>
                                 </TableRow>
                             ))}

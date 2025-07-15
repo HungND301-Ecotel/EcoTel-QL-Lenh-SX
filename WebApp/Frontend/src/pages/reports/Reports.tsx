@@ -278,15 +278,6 @@ function Reports() {
                                     alert("Vui lòng chọn loại báo cáo");
                                     return;
                                 }
-                                reportExcel.mutate();
-                            }}>
-                                Tải xuống
-                            </Button>
-                            <Button variant="contained" onClick={() => {
-                                if (!title) {
-                                    alert("Vui lòng chọn loại báo cáo");
-                                    return;
-                                }
                                 reportView.mutate();
                                 setPreview(true)
                             }}>
@@ -310,6 +301,15 @@ function Reports() {
                                 >
                                     bỏ chữ kí
                                 </Button>}
+                            <Button variant="contained" onClick={() => {
+                                if (!title) {
+                                    alert("Vui lòng chọn loại báo cáo");
+                                    return;
+                                }
+                                reportExcel.mutate();
+                            }}>
+                                Tải xuống
+                            </Button>
                         </Grid>
                         <Grid item xs={12}>
                             {preview && PreviewComponent ? <PreviewComponent data={data} signatureUrl={signatureUrl} /> : null}

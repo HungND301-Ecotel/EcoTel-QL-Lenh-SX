@@ -108,7 +108,7 @@ export default function ShiftReport({ open, setOpen, initialValues }: { open: bo
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
             <DialogContent>
-                <Typography variant="h6" gutterBottom>Số thẻ lương: {initialValues?.assignedTo?.fullName} - {initialValues?.assignedTo?.salaryCode}</Typography>
+                <Typography variant="h6" gutterBottom>Mã thẻ lương: {initialValues?.assignedTo?.fullName} - {initialValues?.assignedTo?.salaryCode}</Typography>
                 <Typography variant="h5">Báo chuyến:</Typography>
                 {shiftReport?.vehicleReports?.map((item: any, index: number) => (<Box key={index}>
                     <Grid container spacing={2} mb={2}>

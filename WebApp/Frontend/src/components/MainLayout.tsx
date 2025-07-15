@@ -105,6 +105,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             , path: '/safetyMeasures'
         } : null,
         ["admin", "manager"].includes(user?.role) ? {
+            text: 'Loại vật liệu', icon:
+                <Tooltip title="Loại vật liệu" placement='right'>
+                    <Category color='primary' />
+                </Tooltip>
+            , path: '/materials'
+        } : null,
+        ["admin", "manager"].includes(user?.role) ? {
             text: 'Loại phương tiện', icon:
                 <Tooltip title="Loại phương tiện" placement='right'>
                     <LocalOffer color='primary' />
@@ -126,11 +133,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             , path: '/machines'
         } : null,
         ["admin", "manager"].includes(user?.role) ? {
-            text: 'Loại vật liệu', icon:
-                <Tooltip title="Loại vật liệu" placement='right'>
-                    <Category color='primary' />
+            text: 'Vị trí', icon:
+                <Tooltip title="Vị trí" placement='right'>
+                    <LocationCity color='primary' />
                 </Tooltip>
-            , path: '/materials'
+            , path: '/locations'
         } : null,
         ["admin", "manager"].includes(user?.role) ? {
             text: 'Công việc', icon:
@@ -147,19 +154,19 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             , path: '/positions'
         } : null,
         ["admin", "manager"].includes(user?.role) ? {
-            text: 'Vị trí', icon:
-                <Tooltip title="Vị trí" placement='right'>
-                    <LocationCity color='primary' />
-                </Tooltip>
-            , path: '/locations'
-        } : null,
-        ["admin", "manager"].includes(user?.role) ? {
             text: 'Đơn vị', icon:
                 <Tooltip title="Đơn vị" placement='right'>
                     <BusinessIcon color='primary' />
                 </Tooltip>
             , path: '/departments'
         } : null,
+        ["admin", "manager"].includes(user?.role) ? {
+            text: 'Cán bộ nhân viên', icon:
+                <Tooltip title="Cán bộ nhân viên" placement='right'>
+                    <PeopleIcon color='primary' />
+                </Tooltip>
+            , path: '/users'
+        } : null
     ].filter(Boolean)
 
 
@@ -335,62 +342,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                     </ListItemIcon>
                     {mobileOpen && <ListItemText primary="Báo cáo" />}
                 </ListItem>}
-                {["admin", "manager"].includes(user?.role) && <ListItem
-                    button
-                    key="Cán bộ nhân viên"
-                    onClick={() => navigate("/users")}
-                    sx={{
-                        justifyContent: mobileOpen ? 'initial' : 'center',
-                        px: 2.5,
-                        mb: mobileOpen ? 0 : 1
-                    }}
-                >
-                    <ListItemIcon sx={{
-                        minWidth: 0,
-                        mr: mobileOpen ? 2 : 'auto',
-                        justifyContent: 'center',
-                    }}>
-                        <Tooltip title="Cán bộ nhân viên" placement='right'>
-                            <PeopleIcon color='primary' />
-                        </Tooltip>
-                    </ListItemIcon>
-                    {mobileOpen && <ListItemText primary="Cán bộ nhân viên" />}
-                </ListItem>}
-            </List>
-            <Divider />
-            <List sx={{ mt: 'auto' }}>
-                <ListItem button onClick={handleClick}>
-                    <Tooltip title="Cài đặt" placement='right'>
-                        <ListItemIcon sx={{
-                            minWidth: 0,
-                            mr: mobileOpen ? 2 : 'auto',
-                            justifyContent: 'center',
-                        }}>
-                            <SettingsIcon color='primary' />
-                        </ListItemIcon>
-                    </Tooltip>
-                    {mobileOpen && <ListItemText primary="Cài đặt" />}
-                </ListItem>
-                <Menu
-                    anchorEl={anchorEl}
-                    open={open}
-                    onClose={handleClose}
-                    anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-                    transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-                >
-                    <MenuItem onClick={() => setIsOpenChangePassword(true)}>
-                        <ListItemIcon>
-                            <VpnKeyOutlined color='primary' fontSize="small" />
-                        </ListItemIcon>
-                        Đổi mật khẩu
-                    </MenuItem>
-                    <MenuItem onClick={handleLogout}>
-                        <ListItemIcon>
-                            <LogoutIcon color='primary' fontSize="small" />
-                        </ListItemIcon>
-                        Đăng xuất
-                    </MenuItem>
-                </Menu>
             </List>
         </Box>
     );
