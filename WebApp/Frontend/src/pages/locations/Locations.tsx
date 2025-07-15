@@ -223,7 +223,7 @@ const Locations: React.FC = () => {
                                 fullWidth
                                 id="name"
                                 name="name"
-                                label="Tên vị trí"
+                                label="Tên điểm đổ"
                                 value={formik.values.name}
                                 onChange={formik.handleChange}
                                 error={formik.touched.name && Boolean(formik.errors.name)}

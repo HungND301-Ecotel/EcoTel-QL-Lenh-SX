@@ -150,7 +150,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                                                     fullWidth
                                                     options={users}
                                                     getOptionLabel={(option: any) =>
-                                                        `${option.salaryCode} - ${option.fullName || ''}`
+                                                        `${option.fullName || ''} - ${option.salaryCode || ''}`
                                                     }
                                                     value={users.find((p: any) => p._id === item.assignedTo) || null}
                                                     onChange={(event, newValue) => {

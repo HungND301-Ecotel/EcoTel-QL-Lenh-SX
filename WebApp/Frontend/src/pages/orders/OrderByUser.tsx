@@ -138,19 +138,19 @@ const OrderByUsers: React.FC = () => {
                                     zIndex: 3,
                                     minWidth: 150,
                                     border: '1px solid black'
-                                }}>Tên nhân viên</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 130, border: '1px solid black' }}>Số thẻ lương</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Giờ tạo lệnh</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black' }}>Ngày</TableCell>
+                                }}>Nhân viên</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 130, border: '1px solid black' }}>Mã thẻ lương</TableCell>
                                 <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black' }}>Ca</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black' }}>Ngày làm việc</TableCell>
                                 <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Công việc</TableCell>
                                 <TableCell align='center' sx={{ minWidth: 200, border: '1px solid black' }}>Nội dung</TableCell>
                                 <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Phương tiện</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Người ra lệnh</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Người tạo lệnh</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Thời gian tạo lệnh</TableCell>
                                 <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black' }}>Bắt đầu</TableCell>
                                 <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black' }}>Kết thúc</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Ghi chú</TableCell>
                                 <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Trạng thái</TableCell>
+                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Ghi chú</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -168,13 +168,10 @@ const OrderByUsers: React.FC = () => {
                                         {order.assignedTo?.salaryCode}
                                     </TableCell>
                                     <TableCell sx={{ border: '1px solid black' }}>
-                                        {order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm') : ''}
+                                        {order.shift?.name}
                                     </TableCell>
                                     <TableCell sx={{ border: '1px solid black' }}>
                                         {order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''}
-                                    </TableCell>
-                                    <TableCell sx={{ border: '1px solid black' }}>
-                                        {order.shift?.name}
                                     </TableCell>
                                     <TableCell sx={{ border: '1px solid black' }}>
                                         {order.job.name || ''}
@@ -197,13 +194,13 @@ const OrderByUsers: React.FC = () => {
                                         {order.createdBy.username || ''}
                                     </TableCell>
                                     <TableCell sx={{ border: '1px solid black' }}>
+                                        {order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm') : ''}
+                                    </TableCell>
+                                    <TableCell sx={{ border: '1px solid black' }}>
                                         {order.startTime ? format(new Date(order.startTime), 'HH:mm:ss') : ''}
                                     </TableCell>
                                     <TableCell sx={{ border: '1px solid black' }}>
                                         {order.endTime ? format(new Date(order.endTime), 'HH:mm:ss') : ''}
-                                    </TableCell>
-                                    <TableCell sx={{ border: '1px solid black' }}>
-                                        {order.temporaryError || ''}
                                     </TableCell>
                                     <TableCell sx={{ border: '1px solid black' }}>
                                         <Chip
@@ -218,6 +215,9 @@ const OrderByUsers: React.FC = () => {
                                                         order.status === 'in_progress' ? 'success' :
                                                             order.status === 'warning' ? 'warning' : 'default'}
                                         />
+                                    </TableCell>
+                                    <TableCell sx={{ border: '1px solid black' }}>
+                                        {order.temporaryError || ''}
                                     </TableCell>
 
                                 </TableRow>

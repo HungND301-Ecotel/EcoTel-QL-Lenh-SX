@@ -236,7 +236,7 @@ const ManagerDashboard: React.FC = () => {
             <Box sx={{ mt: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                     <Tabs value={tabIndex} onChange={handleTabChange} sx={{ mb: 2 }}>
-                        <Tab label="Bảng" icon={<ViewList />} />
+                        <Tab label="Phương tiện" icon={<ViewList />} />
                         <Tab label="Bản đồ" icon={<MapOutlined />} />
                     </Tabs>
                 </Box>
