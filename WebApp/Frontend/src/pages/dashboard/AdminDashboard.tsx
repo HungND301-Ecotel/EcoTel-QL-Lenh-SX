@@ -28,7 +28,9 @@ import {
 } from '@mui/icons-material';
 import api from '../../config/api.config';
 import { Order, Device, Department, Location } from '../../types';
-import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
+// import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { customIcon } from '../../fixLeafletIcon'
 
 
 const containerStyle = {
@@ -44,14 +46,14 @@ const defaultCenter = {
 const AdminDashboard: React.FC = () => {
     const [mapCoords, setMapCoords] = useState<{ lat: number, lng: number; } | null>(null);
     const [tabIndex, setTabIndex] = useState(0);
-    const apiKey = process.env.REACT_APP_MAP_API_KEY;
+    // const apiKey = process.env.REACT_APP_MAP_API_KEY;
 
-    if (!apiKey) {
-        throw new Error('REACT_APP_MAP_API_KEY is not defined');
-    }
-    const { isLoaded } = useJsApiLoader({
-        googleMapsApiKey: apiKey,
-    });
+    // if (!apiKey) {
+    //     throw new Error('REACT_APP_MAP_API_KEY is not defined');
+    // }
+    // const { isLoaded } = useJsApiLoader({
+    //     googleMapsApiKey: apiKey,
+    // });
     const { data: orders = [] } = useQuery({
         queryKey: ['orders'],
         queryFn: () => api.get('/orders').then(res => res.data.data),
@@ -401,7 +403,7 @@ const AdminDashboard: React.FC = () => {
                     </Paper>
                 </Box>}
                 {tabIndex === 1 && <Box>
-                    {isLoaded && (
+                    {/* {isLoaded && (
                         <GoogleMap
                             mapContainerStyle={containerStyle}
                             center={mapCoords || defaultCenter}
@@ -448,7 +450,36 @@ const AdminDashboard: React.FC = () => {
                                 );
                             })}
                         </GoogleMap>
-                    )}
+                    )} */}
+                    <MapContainer
+                        center={[defaultCenter.lat, defaultCenter.lng]}
+                        zoom={18}
+                        style={containerStyle}
+                    >
+                        {/* Giao diện bản đồ giống Google Maps (CartoDB) */}
+                        <TileLayer
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            attribution='&copy; OpenStreetMap contributors'
+                        />
+                        {locations.map((location: any) => {
+                            if (!location.coordinates?.coordinates) return null;
+                            const [lng, lat] = location.coordinates.coordinates;
+                            console.log([lat, lng])
+                            return (
+                                <Marker key={location._id} position={[lat, lng]}>
+                                    <Popup>{location.name}</Popup>
+                                </Marker>)
+                        })}
+                        {devices.map((device: any) => {
+                            if (!device.coordinates?.coordinates) return null;
+                            const [lng, lat] = device.coordinates.coordinates;
+                            console.log([lat, lng])
+                            return (
+                                <Marker key={device._id} position={[lat, lng]} icon={customIcon}>
+                                    <Popup>{device.code}</Popup>
+                                </Marker>)
+                        })}
+                    </MapContainer>
                 </Box>}
             </Box>
         </Box >

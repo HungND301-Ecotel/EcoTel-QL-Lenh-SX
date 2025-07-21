@@ -32,7 +32,9 @@ import { useFormik } from 'formik';
 import * as yup from 'yup';
 import api from '../../config/api.config';
 import { Department, Device, DeviceType } from '../../types';
-import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
+// import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import LocationSelector from '../../fixLeafletIcon';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 
@@ -76,14 +78,14 @@ const Vehicles: React.FC = () => {
     const [user, setUser] = useAtom(userAtom)
 
     const queryClient = useQueryClient();
-    const apiKey = process.env.REACT_APP_MAP_API_KEY;
+    // const apiKey = process.env.REACT_APP_MAP_API_KEY;
 
-    if (!apiKey) {
-        throw new Error('REACT_APP_MAP_API_KEY is not defined');
-    }
-    const { isLoaded } = useJsApiLoader({
-        googleMapsApiKey: apiKey,
-    });
+    // if (!apiKey) {
+    //     throw new Error('REACT_APP_MAP_API_KEY is not defined');
+    // }
+    // const { isLoaded } = useJsApiLoader({
+    //     googleMapsApiKey: apiKey,
+    // });
 
     const { data: vehicles = [], isLoading } = useQuery({
         queryKey: ['vehicles', q, department, status],
@@ -511,7 +513,7 @@ const Vehicles: React.FC = () => {
                                 id="coordinates"
                                 name="coordinates"
                                 label="Tọa độ (lng, lat)"
-                                value={`${formik.values.coordinates.lng}, ${formik.values.coordinates.lat}`}
+                                value={`${formik.values.coordinates.lat}, ${formik.values.coordinates.lng}`}
                                 onChange={(e) => {
                                     const [latStr, lngStr] = e.target.value.split(',');
                                     const lng = parseFloat(lngStr.trim());
@@ -528,7 +530,7 @@ const Vehicles: React.FC = () => {
                                     (formik.touched.coordinates?.lng && formik.errors.coordinates?.lng)
                                 }
                             />
-                            {isLoaded && (
+                            {/* {isLoaded && (
                                 <GoogleMap
                                     mapContainerStyle={containerStyle}
                                     center={mapCoords || defaultCenter}
@@ -543,7 +545,22 @@ const Vehicles: React.FC = () => {
                                         }}
                                     />}
                                 </GoogleMap>
-                            )}
+                            )} */}
+                            <MapContainer
+                                center={[defaultCenter.lat, defaultCenter.lng]}
+                                zoom={18}
+                                style={containerStyle}
+                            >
+                                {/* Giao diện bản đồ giống Google Maps (CartoDB) */}
+                                <TileLayer
+                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                    attribution='&copy; OpenStreetMap contributors'
+                                />
+                                <LocationSelector onSelect={(coords) => setMapCoords(coords)} />
+                                {mapCoords && <Marker
+                                    position={mapCoords}
+                                />}
+                            </MapContainer>
 
                         </Box>
                     </Box>

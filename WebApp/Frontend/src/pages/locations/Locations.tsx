@@ -10,7 +10,8 @@ import { useFormik } from 'formik';
 import * as yup from 'yup';
 import api from '../../config/api.config';
 import { Location } from '../../types';
-import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import LocationSelector from '../../fixLeafletIcon';
 
 const containerStyle = {
     width: '100%',
@@ -38,14 +39,14 @@ const Locations: React.FC = () => {
     const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(null);
 
     const queryClient = useQueryClient();
-    const apiKey = process.env.REACT_APP_MAP_API_KEY;
+    // const apiKey = process.env.REACT_APP_MAP_API_KEY;
 
-    if (!apiKey) {
-        throw new Error('REACT_APP_MAP_API_KEY is not defined');
-    }
-    const { isLoaded } = useJsApiLoader({
-        googleMapsApiKey: apiKey,
-    });
+    // if (!apiKey) {
+    //     throw new Error('REACT_APP_MAP_API_KEY is not defined');
+    // }
+    // const { isLoaded } = useJsApiLoader({
+    //     googleMapsApiKey: apiKey,
+    // });
 
     const { data: locations = [], isLoading } = useQuery({
         queryKey: ['locations', value],
@@ -251,7 +252,7 @@ const Locations: React.FC = () => {
                                     (formik.touched.coordinates?.lng && formik.errors.coordinates?.lng)
                                 }
                             />
-                            {isLoaded && (
+                            {/* {isLoaded && (
                                 <GoogleMap
                                     mapContainerStyle={containerStyle}
                                     center={mapCoords || defaultCenter}
@@ -266,7 +267,22 @@ const Locations: React.FC = () => {
                                         }}
                                     />}
                                 </GoogleMap>
-                            )}
+                            )} */}
+                            <MapContainer
+                                center={[defaultCenter.lat, defaultCenter.lng]}
+                                zoom={18}
+                                style={containerStyle}
+                            >
+                                {/* Giao diện bản đồ giống Google Maps (CartoDB) */}
+                                <TileLayer
+                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                    attribution='&copy; OpenStreetMap contributors'
+                                />
+                                <LocationSelector onSelect={(coords) => setMapCoords(coords)} />
+                                {mapCoords && <Marker
+                                    position={mapCoords}
+                                />}
+                            </MapContainer>
                             <TextField
                                 fullWidth
                                 id="distance"
