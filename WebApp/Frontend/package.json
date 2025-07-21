@@ -24,10 +24,14 @@
     "date-fns": "^2.29.3",
     "dayjs": "^1.11.13",
     "formik": "^2.4.5",
+    "install": "^0.13.0",
     "jotai": "^2.12.5",
+    "leaflet.markercluster": "^1.5.3",
+    "npm": "^11.4.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.50.1",
+    "react-leaflet": "^4.2.1",
     "react-router-dom": "^6.22.0",
     "react-scripts": "5.0.1",
     "socket.io": "^4.8.1",
@@ -64,6 +68,8 @@
     ]
   },
   "devDependencies": {
+    "@types/leaflet": "^1.9.20",
+    "@types/leaflet.markercluster": "^1.5.5",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "eslint": "^8.56.0",

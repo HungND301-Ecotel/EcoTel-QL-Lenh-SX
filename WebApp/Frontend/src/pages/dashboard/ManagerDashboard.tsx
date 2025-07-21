@@ -31,12 +31,13 @@ import {
 } from '@mui/icons-material';
 import api from '../../config/api.config';
 import { Order, Device, Department, Location } from '../../types';
-import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
-
+// import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { customIcon } from '../../fixLeafletIcon'
 
 const containerStyle = {
     width: '100%',
-    height: '500px',
+    height: '70vh',
 };
 const defaultCenter = {
     lat: 20.9926575,
@@ -49,12 +50,12 @@ const ManagerDashboard: React.FC = () => {
     const apiKey = process.env.REACT_APP_MAP_API_KEY;
 
 
-    if (!apiKey) {
-        throw new Error('REACT_APP_MAP_API_KEY is not defined');
-    }
-    const { isLoaded } = useJsApiLoader({
-        googleMapsApiKey: apiKey,
-    });
+    // if (!apiKey) {
+    //     throw new Error('REACT_APP_MAP_API_KEY is not defined');
+    // }
+    // const { isLoaded } = useJsApiLoader({
+    //     googleMapsApiKey: apiKey,
+    // });
 
 
     const { data: orders = [] } = useQuery({
@@ -147,6 +148,12 @@ const ManagerDashboard: React.FC = () => {
                                                 <OrderIcon color='error' fontSize='medium' />
                                             </Tooltip>
                                             <Typography>{orders.filter((o: Order) => o.status === "completed").length}</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', gap: 1 }}>
+                                            <Tooltip title={`Đã hủy: ${orders.filter((o: Order) => o.status === "cancel").length}`} placement='top'>
+                                                <OrderIcon color='secondary' fontSize='medium' />
+                                            </Tooltip>
+                                            <Typography>{orders.filter((o: Order) => o.status === "cancel").length}</Typography>
                                         </Box>
                                     </Box>
                                 </Box>
@@ -328,7 +335,7 @@ const ManagerDashboard: React.FC = () => {
                     </Paper>
                 </Box>}
                 {tabIndex === 1 && <Box>
-                    {isLoaded && (
+                    {/*{isLoaded && (
                         <GoogleMap
                             mapContainerStyle={containerStyle}
                             center={mapCoords || defaultCenter}
@@ -375,7 +382,36 @@ const ManagerDashboard: React.FC = () => {
                                 );
                             })}
                         </GoogleMap>
-                    )}
+                    )} */}
+                    <MapContainer
+                        center={[defaultCenter.lat, defaultCenter.lng]}
+                        zoom={18}
+                        style={containerStyle}
+                    >
+                        {/* Giao diện bản đồ giống Google Maps (CartoDB) */}
+                        <TileLayer
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            attribution='&copy; OpenStreetMap contributors'
+                        />
+                        {locations.map((location: any) => {
+                            if (!location.coordinates?.coordinates) return null;
+                            const [lng, lat] = location.coordinates.coordinates;
+                            console.log([lat, lng])
+                            return (
+                                <Marker key={location._id} position={[lat, lng]}>
+                                    <Popup>{location.name}</Popup>
+                                </Marker>)
+                        })}
+                        {devices.map((device: any) => {
+                            if (!device.coordinates?.coordinates) return null;
+                            const [lng, lat] = device.coordinates.coordinates;
+                            console.log([lat, lng])
+                            return (
+                                <Marker key={device._id} position={[lat, lng]} icon={customIcon}>
+                                    <Popup>{device.code}</Popup>
+                                </Marker>)
+                        })}
+                    </MapContainer>
                 </Box>}
             </Box>
         </Box >
