@@ -309,6 +309,11 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final user =
+        Provider.of<UserProvider>(
+          context,
+          listen: false,
+        ).user;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
@@ -499,7 +504,10 @@ class _HomePageState extends State<HomePage> {
                     ),
                     myLocationEnabled: true,
                     myLocationButtonEnabled: true,
-                    polygons: _areaPolygon,
+                    polygons:
+                        user?.role == "employee"
+                            ? _areaPolygon
+                            : <Polygon>{},
                     onMapCreated:
                         (controller) => {
                           _mapController = controller,
