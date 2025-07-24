@@ -71,7 +71,7 @@ class _TaskListPage extends State<TaskListPage> {
           style: TextStyle(color: Colors.white),
         ),
         centerTitle: true,
-        iconTheme: IconThemeData(color: Colors.white),
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             onPressed: getReload,
