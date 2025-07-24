@@ -27,6 +27,7 @@ import Shifts from './pages/shift/Shifts';
 import OrderByUsers from './pages/orders/OrderByUser';
 import './index.css'
 import { useSocket } from './hooks/useSocket';
+import PrivacyPolicy from './pages/PrivacyPolicy/PrivacyPolicy';
 
 
 interface PrivateRouteProps {
@@ -84,6 +85,7 @@ const App = () => {
         <BrowserRouter>
             <Routes>
                 <Route path="/login" element={<Login />} />
+                <Route path="/privacy_policy" element={<PrivacyPolicy />} />
                 <Route
                     path="/"
                     element={
