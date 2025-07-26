@@ -21,3 +21,7 @@ services:
       context: ./Frontend
     image: ${REGISTRY}/ktv_ecotel_frontend_img:${VERSION}
   
+  ktv_backup:
+    build:
+      context: ./backup
+    image: ${REGISTRY}/ktv_ecotel_backup_img:${VERSION}

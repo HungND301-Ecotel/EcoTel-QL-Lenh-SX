@@ -142,11 +142,10 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  mongo-backup:
+  ktv_backup:
     env_file:
-      - ./Backend/.env
-    image: mongo_backup_img
-    build: ./backup
+      - .env_backend
+    image: ecoteldev/ktv_ecotel_backup_img:staging
     container_name: mongo_backup
     depends_on:
       - ktv_db
