@@ -1,1 +1,3 @@
-.mongodb-data
+.ktv-mongodb-data
+.mongodb*
+.branch*
