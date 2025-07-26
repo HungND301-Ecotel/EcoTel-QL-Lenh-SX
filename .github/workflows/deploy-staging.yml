@@ -79,12 +79,10 @@ jobs:
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.STAGING_SSH_KEY }}
           script: |
-            # Change to staging deployment directory
+            ### Change to staging deployment directory
             cd /home/${{ secrets.STAGING_USER }}/ecotel_ktv/deployment/staging 
-            # Docker compose for deployment
-            docker compose -f staging-docker-compose.yaml down # always down first
-            docker compose -f staging-docker-compose.yaml pull # always pull the latest images
-            # run containers in detached mode
-            nohup docker compose -f staging-docker-compose.yaml up  -d > deploy.log 2>&1 & 
-            # Check built images
-            docker images
+            ### Clean up unused images
+            docker image prune -f # clean up unused images
+            ### Provide permissions and start the application
+            chmod +x start-app.sh
+            ./start-app.sh
