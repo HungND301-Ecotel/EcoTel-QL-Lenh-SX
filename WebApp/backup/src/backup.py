@@ -64,6 +64,27 @@ def run_backup():
     subprocess.run(mongodump_command, check=True)
                                 
     time.sleep(10)  # Wait a bit for everything to settle 
+    
+    ### Check the SHA-256 checksum of the archive
+    if not os.path.exists(archive_path):
+        raise FileNotFoundError(f"Backup archive {archive_path} does not exist!")
+    
+    logger.info("Calculating SHA-256 checksum of the backup archive...")
+    current_hash = sha256sum(archive_path)
+    logger.info(f"Current SHA-256 hash: {current_hash}")
+    
+    # Load last hash from file
+    last_hash = ""
+    if os.path.exists(f"{backup_dir}/last_hash.txt"):
+        last_hash = open(f"{backup_dir}/last_hash.txt").read().strip()
+        
+    if current_hash == last_hash:
+        logger.info("⏭️ No changes detected! Return to skipping upload!")
+        return
+    else:
+        logger.info("✅ Change detected, proceed with upload.")
+        # upload to S3
+        open(f"{backup_dir}/last_hash.txt", "w").write(current_hash)
 
     # Create a unique S3 object name based on the DB and backup_name with timestamp
     s3_object_name = f"backups/mongodb/{MONGODB_DATABASE}/{backup_name}.gz"
@@ -74,8 +95,7 @@ def run_backup():
         s3.upload_file(archive_path, S3_BUCKET_NAME, s3_object_name,  Config=config)
     except Exception as e:
         logger.error(f"❌ Failed to upload backup to S3: {e}")
-        raise
-        
+        raise        
     
     logger.info("Verifying S3 upload...")
     response = s3.head_object(Bucket=S3_BUCKET_NAME, Key=s3_object_name)

@@ -2,7 +2,16 @@ import os
 import glob
 import logging
 import logging.handlers
+import hashlib
 
+def sha256sum(file_path):
+    """Calculate the SHA-256 checksum of a file.
+    """
+    hasher = hashlib.sha256()
+    with open(file_path, 'rb') as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hasher.update(chunk)
+    return hasher.hexdigest()
 
 def setup_logger(name='app', log_file='backup.log', log_level=logging.INFO):
     """Set up a logger with rotating file handler."""
