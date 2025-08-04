@@ -1,4 +1,4 @@
-package com.example.job_manager
+package com.ecotel.ktv
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -31,8 +31,7 @@ import api from '../../config/api.config';
 import { SafetyMeasure } from '../../types';
 
 const validationSchema = yup.object({
-
-    content: yup.string(),
+    content: yup.string().required('Nhập nội dung'),
 });
 
 const SafetyMeasures: React.FC = () => {
