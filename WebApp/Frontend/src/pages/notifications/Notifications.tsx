@@ -125,7 +125,7 @@ const Notifications: React.FC = () => {
                     <Button variant='contained'>Chưa đọc</Button>
                 </Badge>
             </Box>
-            <TableContainer component={Paper} sx={{ height: '80vh' }}>
+            <TableContainer component={Paper}>
                 <Table>
                     <TableHead>
                         <TableRow>

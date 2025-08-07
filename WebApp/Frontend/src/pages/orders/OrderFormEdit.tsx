@@ -44,14 +44,12 @@ const validationSchema = yup.object({
 });
 
 interface OrderFormProps {
-    open: boolean;
     initialValues: any;
     onSubmit: (values: Partial<Order>) => void;
     onCancel: () => void;
 }
 
 const OrderFormEdit: React.FC<OrderFormProps> = ({
-    open,
     initialValues,
     onSubmit,
     onCancel,
@@ -128,10 +126,10 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                 : initialValues.material || undefined,
             workContent: initialValues.workContent || '',
             status: initialValues.status,
-            isScanned: initialValues.isScanned,
             note: initialValues.note || ''
         },
         validationSchema,
+        enableReinitialize: true, // Để cập nhật lại giá trị khi initialValues thay đổi
         onSubmit: (values) => {
             const order: Partial<Order> = {
                 assignedTo: values.assignedTo,
@@ -147,7 +145,6 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                 workContent: values.workContent,
                 safetyMeasure: values.safetyMeasure,
                 status: "pending",
-                isScanned: "pending",
                 temporaryError: '',
                 note: values.note
             };
@@ -169,11 +166,7 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
 
 
     return (
-        <Dialog open={open} onClose={onCancel} maxWidth="md" fullWidth>
-            <DialogTitle>
-                Sửa lệnh sản xuất
-            </DialogTitle>
-            <DialogContent>
+
                 <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
                     <Grid container spacing={2}>
                         <Grid item xs={6}>
@@ -476,8 +469,7 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                         </Button>
                     </Box>
                 </Box >
-            </DialogContent>
-        </Dialog >
+
     );
 };
 

@@ -120,7 +120,6 @@ class _TaskAssignmentCommonEdit
           "assignedTo": user?.id,
           "device": vehicleIds,
           "status": "pending",
-          "isScanned": "pending",
           "workContent": description,
           "temporaryError": null,
           "note": note,

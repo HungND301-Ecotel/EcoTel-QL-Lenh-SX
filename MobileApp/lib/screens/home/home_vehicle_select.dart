@@ -107,15 +107,6 @@ class _HomeVehicleSelect extends State<HomeVehicleSelect> {
                     },
                   ),
                 ),
-                SizedBox(width: 16),
-                IconButton(
-                  onPressed: () {},
-                  icon: Icon(
-                    Icons.build_circle_outlined,
-                    color: Colors.blue,
-                    size: 40,
-                  ),
-                ),
               ],
             ),
           ),
@@ -157,101 +148,27 @@ class _HomeVehicleSelect extends State<HomeVehicleSelect> {
                                           ), // Viền dưới
                                         ),
                                       ),
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            flex: 1,
-                                            child: Column(
-                                              children: [
-                                                Icon(
-                                                  Icons
-                                                      .navigation,
-                                                  color:
-                                                      Colors
-                                                          .blue,
-                                                  size: 30,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          Expanded(
-                                            flex: 2,
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment
-                                                      .start,
-                                              children: [
-                                                Text(
-                                                  item.code,
-                                                  style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.w800,
-                                                    color:
-                                                        Colors.deepPurpleAccent,
-                                                    fontSize:
-                                                        18,
-                                                  ),
-                                                ),
-                                                SizedBox(
-                                                  height: 8,
-                                                ),
-                                                Icon(
-                                                  Icons
-                                                      .cable_outlined,
-                                                ),
-                                                SizedBox(
-                                                  height: 8,
-                                                ),
-                                                Icon(
-                                                  Icons
-                                                      .av_timer_outlined,
-                                                ),
-                                                SizedBox(
-                                                  height: 8,
-                                                ),
-                                                Icon(
-                                                  Icons
-                                                      .power_settings_new_outlined,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          Expanded(
-                                            flex: 2,
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment
-                                                      .start,
-                                              children: [
-                                                Icon(
-                                                  Icons
-                                                      .my_location_outlined,
-                                                ),
-                                                SizedBox(
-                                                  height: 8,
-                                                ),
-                                                Icon(
-                                                  Icons
-                                                      .phone,
-                                                ),
-                                                SizedBox(
-                                                  height: 8,
-                                                ),
-                                                Icon(
-                                                  Icons
-                                                      .local_gas_station,
-                                                ),
-                                                SizedBox(
-                                                  height: 8,
-                                                ),
-                                                Icon(
-                                                  Icons
-                                                      .thermostat,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
+                                      child: ListTile(
+                                        leading: Icon(
+                                          Icons.navigation,
+                                          color:
+                                              Colors.blue,
+                                        ),
+                                        title: Text(
+                                          item.code,
+                                        ),
+                                        trailing: Icon(
+                                          Icons
+                                              .power_settings_new,
+                                          size: 30,
+                                          color:
+                                              item.status ==
+                                                      'active'
+                                                  ? Colors
+                                                      .green
+                                                  : Colors
+                                                      .red,
+                                        ),
                                       ),
                                     ),
                                   ),

@@ -99,7 +99,6 @@ class _TaskAssignmentOtherEdit
           "shift": _shift?.id,
           "assignedTo": user?.id,
           "status": "pending",
-          "isScanned": "pending",
           "workContent": description,
           "temporaryError": null,
           "note": note,

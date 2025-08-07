@@ -19,11 +19,19 @@ import {
     TextField,
     MenuItem,
     Alert,
+    Switch,
+    ListItemText,
+    Menu,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
 } from '@mui/material';
 import {
     Add as AddIcon,
     Edit as EditIcon,
     Delete as DeleteIcon,
+    Settings,
+    ExpandMore,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -43,6 +51,24 @@ const Jobs: React.FC = () => {
     const [selectedJob, setSelectedJob] = useState<Job | null>(null);
     const [value, setValue] = useState("")
     const queryClient = useQueryClient();
+    const [expanded, setExpanded] = useState(false);
+
+    const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
+        setExpanded(isExpanded);
+    };
+    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
+
+    const defaultColumns = [
+        { id: 'name', label: 'Tên công việc' },
+        { id: 'category', label: 'Loại công việc' },
+        { id: 'actions', label: 'Thao tác', width: 100 },
+    ]
+    const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
+
+    const handleToggleColumn = (id: string) => {
+        setVisibleColumns(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
+    }
+
 
     const { data: jobs = [], isLoading } = useQuery({
         queryKey: ['jobs', value],
@@ -55,6 +81,7 @@ const Jobs: React.FC = () => {
             api.post('/jobs', newJob).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['jobs'] });
+            alert('Thêm công việc thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -67,6 +94,7 @@ const Jobs: React.FC = () => {
             api.put(`/jobs/${updatedJob._id}`, updatedJob).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['jobs'] });
+            alert('Cập nhật công việc thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -78,6 +106,7 @@ const Jobs: React.FC = () => {
         mutationFn: (id: string) => api.delete(`/jobs/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['jobs'] });
+            alert('Xóa công việc thành công');
         },
         onError: (error: any) => {
             alert(error.response.data.message || error.response || 'Lỗi')
@@ -107,12 +136,14 @@ const Jobs: React.FC = () => {
             setSelectedJob(null);
             formik.resetForm();
         }
+        setExpanded(true);
         setOpen(true);
     };
 
     const handleClose = () => {
         setOpen(false);
         setSelectedJob(null);
+        setExpanded(false);
         formik.resetForm();
     };
 
@@ -126,9 +157,7 @@ const Jobs: React.FC = () => {
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
                 <Typography variant="h4">Quản lý công việc</Typography>
-                <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
-                    Thêm công việc
-                </Button>
+
             </Box>
             <Box sx={{ flex: 1, flexDirection: 'column' }}>
                 <Typography><h3>Tìm kiếm</h3></Typography>
@@ -137,78 +166,114 @@ const Jobs: React.FC = () => {
                     onChange={(e) => setValue(e.target.value)}>
                 </TextField>
             </Box>
+            <Accordion expanded={expanded} onChange={handleChangeAction}>
+                <AccordionSummary
+                    expandIcon={<ExpandMore />}
+                    aria-controls="panel1-content"
+                    id="panel1-header"
+                >
+                    <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
+                        Thêm công việc
+                    </Button>
+                </AccordionSummary>
+                <AccordionDetails>
+                    <DialogTitle>{selectedJob ? 'Sửa công việc' : 'Thêm công việc'}</DialogTitle>
+                    <DialogContent>
+                        <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <TextField
+                                    fullWidth
+                                    id="name"
+                                    name="name"
+                                    label="Tên công việc"
+                                    value={formik.values.name}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.name && Boolean(formik.errors.name)}
+                                    helperText={formik.touched.name && formik.errors.name}
+                                />
+                                <TextField
+                                    fullWidth
+                                    select
+                                    id="type"
+                                    name="type"
+                                    label="Loại công việc"
+                                    value={formik.values.type}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.type && Boolean(formik.errors.type)}
+                                    helperText={formik.touched.type && formik.errors.type}
+                                >
+                                    <MenuItem value="Vận hành xe">Vận hành xe</MenuItem>
+                                    <MenuItem value="Vận hành khoan">Vận hành khoan</MenuItem>
+                                    <MenuItem value="Vận hành xe phục vụ">Vận hành xe phục vụ</MenuItem>
+                                    <MenuItem value="Vận hành gạt">Vận hành gạt</MenuItem>
+                                    <MenuItem value="Vận hành xúc">Vận hành xúc</MenuItem>
+                                    <MenuItem value="Khác">Khác</MenuItem>
+                                </TextField>
+                            </Box>
+                        </Box>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleClose}>Hủy</Button>
+                        <Button onClick={() => formik.submitForm()} variant="contained">
+                            {selectedJob ? 'Cập nhật' : 'Thêm mới'}
+                        </Button>
+                    </DialogActions>
+                </AccordionDetails>
+            </Accordion>
+            <Box display="flex" justifyContent='space-between' alignItems='center' sx={{ mb: 2, mt: 2 }}>
+                <Typography variant="h3" sx={{ p: 2 }}>Bảng công việc</Typography>
+                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                    <Settings sx={{ fontSize: 30 }} />
+                </IconButton>
+                <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={() => setAnchorEl(null)}
+                    sx={{ maxHeight: 400 }}
+                >
+                    {defaultColumns.map((col) => (
+                        <MenuItem key={col.id} onClick={() => handleToggleColumn(col.id)}>
+                            <Switch checked={visibleColumns.includes(col.id)} />
+                            <ListItemText primary={col.label} />
+                        </MenuItem>
+                    ))}
+                </Menu>
+            </Box>
 
-            <TableContainer component={Paper} sx={{ height: '80vh' }}>
+            <TableContainer component={Paper}>
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell align='center' sx={{ border: '1px solid black' }}>Tên công việc</TableCell>
-                            <TableCell align='center' sx={{ border: '1px solid black' }}>Loại công việc</TableCell>
-                            <TableCell align='center' sx={{ border: '1px solid black' }}>Thao tác</TableCell>
+                            {defaultColumns.map((col) =>
+                                visibleColumns.includes(col.id) && (
+                                    <TableCell key={col.id} align="center" sx={{
+                                        backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: col.width, minWidth: col.width
+                                    }}>
+                                        {col.label}
+                                    </TableCell>
+                                )
+                            )}
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {!isLoading ? jobs.map((job: any) => (
                             <TableRow key={job._id}>
-                                <TableCell sx={{ border: '1px solid black' }}>{job.name}</TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>{job.type}</TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>
+                                {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black' }}>{job.name}</TableCell>}
+                                {visibleColumns.includes('category') && <TableCell sx={{ border: '1px solid black' }}>{job.type}</TableCell>}
+                                {visibleColumns.includes('actions') && <TableCell sx={{ border: '1px solid black' }}>
                                     <IconButton color="primary" onClick={() => handleOpen(job)}>
                                         <EditIcon />
                                     </IconButton>
                                     <IconButton color="error" onClick={() => handleDelete(job._id)}>
                                         <DeleteIcon />
                                     </IconButton>
-                                </TableCell>
+                                </TableCell>}
                             </TableRow>
                         )) : <Typography>Loading...</Typography>}
                     </TableBody>
                 </Table>
             </TableContainer>
 
-            <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-                <DialogTitle>{selectedJob ? 'Sửa công việc' : 'Thêm công việc'}</DialogTitle>
-                <DialogContent>
-                    <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <TextField
-                                fullWidth
-                                id="name"
-                                name="name"
-                                label="Tên công việc"
-                                value={formik.values.name}
-                                onChange={formik.handleChange}
-                                error={formik.touched.name && Boolean(formik.errors.name)}
-                                helperText={formik.touched.name && formik.errors.name}
-                            />
-                            <TextField
-                                fullWidth
-                                select
-                                id="type"
-                                name="type"
-                                label="Loại công việc"
-                                value={formik.values.type}
-                                onChange={formik.handleChange}
-                                error={formik.touched.type && Boolean(formik.errors.type)}
-                                helperText={formik.touched.type && formik.errors.type}
-                            >
-                                <MenuItem value="Vận hành xe">Vận hành xe</MenuItem>
-                                <MenuItem value="Vận hành khoan">Vận hành khoan</MenuItem>
-                                <MenuItem value="Vận hành xe phục vụ">Vận hành xe phục vụ</MenuItem>
-                                <MenuItem value="Vận hành gạt">Vận hành gạt</MenuItem>
-                                <MenuItem value="Vận hành xúc">Vận hành xúc</MenuItem>
-                                <MenuItem value="Khác">Khác</MenuItem>
-                            </TextField>
-                        </Box>
-                    </Box>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleClose}>Hủy</Button>
-                    <Button onClick={() => formik.submitForm()} variant="contained">
-                        {selectedJob ? 'Cập nhật' : 'Thêm mới'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
         </Box>
     );
 };

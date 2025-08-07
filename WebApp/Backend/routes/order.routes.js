@@ -19,32 +19,7 @@ const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 const { sendShiftNotification } = require('../utils/email');
 const CheckIn = require('../models/CheckIn');
 
-/**
- * @swagger
- * /api/orders:
- *   get:
- *     summary: Get all orders
- *     tags: [Orders]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: shift
- *         schema:
- *           type: string
- *       - in: query
- *         name: employee
- *         schema:
- *           type: string
- *       - in: query
- *         name: device
- *         schema:
- *           type: string
- *       - in: query
- *         name: status
- *         schema:
- *           type: string
- */
+
 router.get('/', verifyToken, async (req, res, next) => {
     try {
         const user = req.user
@@ -57,6 +32,10 @@ router.get('/', verifyToken, async (req, res, next) => {
         // Filter by employee
         if (req.query.employee) {
             query.assignedTo = req.query.employee;
+        }
+
+        if (req.query.status) {
+            query.status = req.query.status;
         }
 
         // Filter by device
@@ -132,40 +111,6 @@ router.get('/', verifyToken, async (req, res, next) => {
     }
 });
 
-/**
- * @swagger
- * /api/orders:
- *   post:
- *     summary: Create new order
- *     tags: [Orders]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - shift
- *               - employee
- *               - device
- *               - location
- *               - workContent
- *             properties:
- *               shift:
- *                 type: string
- *               employee:
- *                 type: string
- *               device:
- *                 type: string
- *               location:
- *                 type: string
- *               workContent:
- *                 type: string
- *               safetyMeasures:
- *                 type: string
- */
 router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
         const {
@@ -274,40 +219,6 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
     }
 });
 
-/**
- * @swagger
- * /api/orders/{id}:
- *   patch:
- *     summary: Update order
- *     tags: [Orders]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               status:
- *                 type: string
- *                 enum: [pending, in_progress, completed, cancelled]
- *               startTime:
- *                 type: string
- *                 format: date-time
- *               endTime:
- *                 type: string
- *                 format: date-time
- *               workResult:
- *                 type: string
- *               fuelConsumption:
- *                 type: number
- */
 router.put('/:id', verifyToken, async (req, res, next) => {
     try {
         const order = await Order.findById(req.params.id).populate('shiftReport');
@@ -321,6 +232,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
             req.params.id,
             {
                 ...req.body,
+                resumeTime: req.body.status === "in_progress" ? new Date() : order.resumeTime,
                 updatedBy: req.user._id
             },
             {
@@ -366,6 +278,8 @@ router.put('/:id', verifyToken, async (req, res, next) => {
             })
             .sort('-createdAt');
 
+
+
         const notification = await Notification.createNotification({
             title: "Trạng thái lệnh",
             message: updatedOrder.status === "warning" ? "Báo lệnh lỗi" : "Chỉnh sửa lệnh",
@@ -374,7 +288,9 @@ router.put('/:id', verifyToken, async (req, res, next) => {
             sender: req.userId
         });
 
-        if (updatedOrder.status === "warning" || updatedOrder.status === "cancel") {
+
+
+        if (updatedOrder.status === "warning" || updatedOrder.status === "cancel" || updatedOrder.status === "completed") {
 
             if (order && order.device && order.device.length > 0) {
                 const lastVehicle = order.device[order.device.length - 1];
@@ -432,7 +348,15 @@ router.delete('/:id', verifyToken, restrictTo('admin', 'dispatcher', 'manager'),
 });
 router.get('/user', verifyToken, async (req, res, next) => {
     try {
-        const orders = await Order.find({ assignedTo: req.user._id, status: { $ne: "cancel" } })
+        const query = {
+            assignedTo: req.user._id
+        }
+        if (req.query.status) {
+            query.status = req.query.status
+        } else {
+            query.status = { $ne: "cancel" }
+        }
+        const orders = await Order.find(query)
             .sort('-createdAt')
             .populate({
                 path: "assignedTo",
@@ -535,12 +459,6 @@ router.post('/scanWork', verifyToken, async (req, res, next) => {
             return res.status(404).send({ status: 'error', message: 'Không tìm thấy lệnh làm việc' });
         }
 
-        if (!order.shiftReport && order.isScanned === "in_progress") {
-            return res
-                .status(400)
-                .send({ status: "error", message: "Bạn cần báo công trước" });
-        }
-
         const vehicle = await Device.findById(deviceId)
         if (!vehicle) {
             return res.status(404).send({ status: 'error', message: 'Không tìm thấy thiết bị' });
@@ -548,9 +466,9 @@ router.post('/scanWork', verifyToken, async (req, res, next) => {
         if (vehicle.code !== deviceCode) {
             return res.status(400).send({ status: 'error', message: 'Thiết bị không khớp' });
         }
-        if (!vehicle.coordinates || !vehicle.coordinates.coordinates || vehicle.coordinates.coordinates.length !== 2) {
-            return res.status(400).send({ status: 'error', message: 'Thiết bị chưa có tọa độ hợp lệ' });
-        }
+        // if (!vehicle.coordinates || !vehicle.coordinates.coordinates || vehicle.coordinates.coordinates.length !== 2) {
+        //     return res.status(400).send({ status: 'error', message: 'Thiết bị chưa có tọa độ hợp lệ' });
+        // }
 
         // const [deviceLng, deviceLat] = vehicle.coordinates.coordinates; // GeoJSON lưu theo [lng, lat]
         // const distance = getDistanceFromLatLngInMeters(lat, lng, deviceLat, deviceLng);
@@ -568,17 +486,11 @@ router.post('/scanWork', verifyToken, async (req, res, next) => {
 
         if (!order.startTime) {
             startTime = new Date();
-            status = "in_progress"
-        } else if (order.isScanned === "in_progress" && !order.endTime) {
+        } else if (!order.endTime) {
             endTime = new Date();
-            status = "completed"
         }
-        if (order.isScanned === "pending") {
-            status = "in_progress"
-        }
+
         const orderUpdate = await Order.findByIdAndUpdate(orderId, {
-            isScanned: order.isScanned === "pending" ? "in_progress" : order.isScanned === "in_progress" ? "completed" : "completed",
-            resumeTime: order.isScanned === "pending" ? new Date() : order.resumeTime,
             startTime,
             endTime,
             status,
@@ -605,21 +517,6 @@ router.post('/scanWork', verifyToken, async (req, res, next) => {
         if (!orderUpdate) {
             return res.status(404).send({ status: 'error', message: 'Không tìm thấy lệnh làm việc' });
         }
-        if (orderUpdate.status === "completed") {
-
-            const snapshot = orderUpdate.toObject();
-
-            // Gán endTime bằng resumeTime
-            snapshot.endTime = orderUpdate.updatedAt;
-            snapshot.startTime = orderUpdate.resumeTime;
-            const newHistory = new History({
-                entity: orderUpdate._id,
-                changedBy: req.userId,
-                snapshot: snapshot
-            })
-            await newHistory.save();
-
-        }
 
 
         let deviceStatus = vehicle.status;
@@ -629,20 +526,10 @@ router.post('/scanWork', verifyToken, async (req, res, next) => {
             deviceStatus = "available"
         }
         const device = await Device.findByIdAndUpdate(deviceId, { status: deviceStatus }, { new: true });
-        if (!device) {
-            return res.status(404).send({ status: 'error', message: 'Không tìm thấy thiết bị' });
-        }
-        await Notification.createNotification({
-            title: "Trạng thái công việc",
-            message: orderUpdate.status === "in_progress" ? "Bắt đầu công việc" : "Kết thúc công việc",
-            type: "order",
-            recipient: orderUpdate.createdBy?._id,
-            sender: req.userId
-        });
 
         res.status(200).send({
             status: 'success',
-            message: orderUpdate.isScanned === "in_progress" ? 'Đã bắt đầu công việc' : 'Đã kết thúc công việc',
+            message: orderUpdate.status === "in_progress" ? 'Đã bắt đầu công việc' : 'Đã kết thúc công việc',
             data: orderUpdate
         });
 
@@ -654,9 +541,7 @@ router.post('/scanWork', verifyToken, async (req, res, next) => {
 
 router.post('/checkin', verifyToken, async (req, res, next) => {
     try {
-        const { lat, lng, orderId, file } = req.body;
-
-        console.log(req.body)
+        const { lat, lng, orderId, checkinFile, checkoutFile, checkinTime, checkoutTime } = req.body;
 
 
         const order = await Order.findById(orderId).populate('shiftReport')
@@ -664,12 +549,8 @@ router.post('/checkin', verifyToken, async (req, res, next) => {
             return res.status(404).send({ status: 'error', message: 'Không tìm thấy lệnh làm việc' });
         }
 
-        if (!file) {
-            return res.status(400).send({ status: 'error', message: 'Vui lòng thử lại' });
-        }
 
-
-        if (!order.shiftReport && order.isScanned === "in_progress") {
+        if (!order.shiftReport && order.status === "in_progress") {
             return res
                 .status(400)
                 .send({ status: "error", message: "Bạn cần báo công trước" });
@@ -699,20 +580,18 @@ router.post('/checkin', verifyToken, async (req, res, next) => {
         let status = order.status;
 
 
+        const parsedCheckInTime = checkinTime ? new Date(checkinTime) : null;
+        const parsedCheckOutTime = checkoutTime ? new Date(checkoutTime) : new Date();
 
-        if (!order.startTime) {
-            startTime = new Date();
-            status = "in_progress"
-        } else if (order.isScanned === "in_progress" && !order.endTime) {
-            endTime = new Date();
-            status = "completed"
+
+        if (checkinTime && !order.startTime) {
+            startTime = parsedCheckInTime;
         }
-        if (order.isScanned === "pending") {
-            status = "in_progress"
+        if (checkoutTime && !order.endTime) {
+            endTime = parsedCheckOutTime;
         }
+
         const orderUpdate = await Order.findByIdAndUpdate(orderId, {
-            isScanned: order.isScanned === "pending" ? "in_progress" : order.isScanned === "in_progress" ? "completed" : "completed",
-            resumeTime: order.isScanned === "pending" ? new Date() : order.resumeTime,
             startTime,
             endTime,
             status,
@@ -740,48 +619,30 @@ router.post('/checkin', verifyToken, async (req, res, next) => {
             return res.status(404).send({ status: 'error', message: 'Không tìm thấy lệnh làm việc' });
         }
 
-        const newCheckIn = new CheckIn({
-            orderId: orderUpdate._id,
-            imageUrl: file
-        })
-        await newCheckIn.save()
 
-        if (orderUpdate.status === "completed") {
 
-            const snapshot = orderUpdate.toObject();
-
-            // Gán endTime bằng resumeTime
-            snapshot.endTime = orderUpdate.updatedAt;
-            snapshot.startTime = orderUpdate.resumeTime;
-            const newHistory = new History({
-                entity: orderUpdate._id,
-                changedBy: req.userId,
-                snapshot: snapshot
-            })
-            await newHistory.save();
-
+        if (checkinFile) {
+            const newCheckIn = new CheckIn({
+                orderId: orderUpdate._id,
+                imageUrl: checkinFile,
+                createdAt: parsedCheckInTime,
+            });
+            await newCheckIn.save();
         }
 
-        if (order && order.device && order.device.length > 0) {
-            const lastVehicle = order.device[order.device.length - 1];
-
-            await Device.findByIdAndUpdate(lastVehicle, {
-                status: orderUpdate.status === "in_progress" ? "in_use" : "available"
-            }, { new: true });
+        if (checkoutFile) {
+            const newCheckOut = new CheckIn({
+                orderId: orderUpdate._id,
+                imageUrl: checkoutFile,
+                createdAt: parsedCheckOutTime,
+            });
+            await newCheckOut.save();
         }
-
-        await Notification.createNotification({
-            title: "Trạng thái công việc",
-            message: orderUpdate.status === "in_progress" ? "Bắt đầu công việc" : "Kết thúc công việc",
-            type: "order",
-            recipient: orderUpdate.createdBy?._id,
-            sender: req.userId
-        });
 
 
         res.status(200).send({
             status: 'success',
-            message: orderUpdate.isScanned === "in_progress" ? 'Đã bắt đầu công việc' : 'Đã kết thúc công việc',
+            message: orderUpdate.status === "in_progress" ? 'Check in thành công' : 'Check out thành công',
             data: orderUpdate
         });
 

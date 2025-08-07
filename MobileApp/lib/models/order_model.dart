@@ -49,11 +49,9 @@ class OrderModel {
   final String? workContent;
   final ShiftReportModel? shiftReport;
   String status;
-  String isScanned;
   String? note;
   String? temporaryError;
   SafetyMeasureModel? safetyMeasure;
-  bool active;
   List<UserModel>? assistants;
 
   OrderModel({
@@ -76,12 +74,10 @@ class OrderModel {
     this.workContent,
     this.shiftReport,
     required this.status,
-    required this.isScanned,
     this.assistants,
     this.note,
     this.safetyMeasure,
     this.temporaryError,
-    required this.active,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic>? json) {
@@ -142,7 +138,6 @@ class OrderModel {
               : null,
       workContent: json?['workContent'] ?? '',
       status: json?['status'] ?? '',
-      isScanned: json?['isScanned'] ?? '',
       assistants:
           (json?['assistants'] as List?)
               ?.map((e) => UserModel.fromJson(e))
@@ -156,18 +151,11 @@ class OrderModel {
               )
               : null,
       temporaryError: json?['temporaryError'] ?? '',
-      active: json?['active'],
     );
   }
   void updateFromJson(Map<String, dynamic> json) {
     if (json.containsKey('status')) {
       status = json['status'];
-    }
-    if (json.containsKey('active')) {
-      active = json['active'];
-    }
-    if (json.containsKey('isScanned')) {
-      isScanned = json['isScanned'];
     }
     if (json.containsKey('startTime') &&
         json['startTime'] != null) {

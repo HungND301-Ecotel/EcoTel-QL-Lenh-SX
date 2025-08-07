@@ -19,11 +19,19 @@ import {
     TextField,
     MenuItem,
     Alert,
+    Menu,
+    ListItemText,
+    Switch,
+    AccordionDetails,
+    AccordionSummary,
+    Accordion,
 } from '@mui/material';
 import {
     Add as AddIcon,
     Edit as EditIcon,
     Delete as DeleteIcon,
+    Settings,
+    ExpandMore,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -39,6 +47,27 @@ const SafetyMeasures: React.FC = () => {
     const [selectedSafetyMeasure, setSelectedSafetyMeasure] = useState<SafetyMeasure | null>(null);
     const [value, setValue] = useState("")
     const queryClient = useQueryClient();
+    const [expanded, setExpanded] = useState(false);
+
+    const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
+        setExpanded(isExpanded);
+    };
+    const defaultColumns = [
+        { id: 'number', label: 'STT', width: 100 },
+        { id: 'content', label: 'Nội dung' },
+        { id: 'actions', label: 'Thao tác', width: 100 },
+    ];
+
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(c => c.id));
+
+    const handleToggleColumn = (columnId: string) => {
+        setVisibleColumns(prev =>
+            prev.includes(columnId)
+                ? prev.filter(id => id !== columnId)
+                : [...prev, columnId]
+        );
+    };
 
     const { data: safetyMeasures = [], isLoading } = useQuery({
         queryKey: ['safetyMeasures', value],
@@ -51,6 +80,7 @@ const SafetyMeasures: React.FC = () => {
             api.post('/safetyMeasures', newsafetyMeasure).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['safetyMeasures'] });
+            alert('Thêm biện pháp an toàn thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -63,6 +93,7 @@ const SafetyMeasures: React.FC = () => {
             api.put(`/safetyMeasures/${updatedsafetyMeasure._id}`, updatedsafetyMeasure).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['safetyMeasures'] });
+            alert('Cập nhật biện pháp an toàn thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -74,6 +105,7 @@ const SafetyMeasures: React.FC = () => {
         mutationFn: (id: string) => api.delete(`/safetyMeasures/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['safetyMeasures'] });
+            alert('Xóa biện pháp an toàn thành công');
         },
         onError: (error: any) => {
             alert(error.response.data.message || error.response || 'Lỗi')
@@ -102,12 +134,15 @@ const SafetyMeasures: React.FC = () => {
             setSelectedSafetyMeasure(null);
             formik.resetForm();
         }
+        setExpanded(true);
+
         setOpen(true);
     };
 
     const handleClose = () => {
         setOpen(false);
         setSelectedSafetyMeasure(null);
+        setExpanded(false);
         formik.resetForm();
     };
 
@@ -121,71 +156,105 @@ const SafetyMeasures: React.FC = () => {
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
                 <Typography variant="h4">Quản lý biện pháp an toàn</Typography>
-                <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
-                    Thêm biện pháp an toàn
-                </Button>
-            </Box>
 
-            <TableContainer component={Paper} sx={{ height: '80vh' }}>
+
+            </Box>
+            <Accordion expanded={expanded} onChange={handleChangeAction}>
+                <AccordionSummary
+                    expandIcon={<ExpandMore />}
+                    aria-controls="panel1-content"
+                    id="panel1-header"
+                >
+                    <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
+                        Thêm biện pháp an toàn
+                    </Button>
+                </AccordionSummary>
+                <AccordionDetails>
+                    <DialogTitle>{selectedSafetyMeasure ? 'Sửa biện pháp an toàn' : 'Thêm biện pháp an toàn'}</DialogTitle>
+                    <DialogContent>
+                        <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <TextField
+                                    fullWidth
+                                    multiline
+                                    rows={5}
+                                    id="content"
+                                    name="content"
+                                    label="Nội dung"
+                                    value={formik.values.content}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.content && Boolean(formik.errors.content)}
+                                    helperText={formik.touched.content && formik.errors.content}
+                                />
+                            </Box>
+                        </Box>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleClose}>Hủy</Button>
+                        <Button onClick={() => formik.submitForm()} variant="contained">
+                            {selectedSafetyMeasure ? 'Cập nhật' : 'Thêm mới'}
+                        </Button>
+                    </DialogActions>
+                </AccordionDetails>
+            </Accordion>
+            <Box display="flex" justifyContent='space-between' alignItems='center' sx={{ mb: 2, mt: 2 }}>
+                <Typography variant="h3" sx={{ p: 2 }}>Bảng biện pháp an toàn</Typography>
+                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                    <Settings sx={{ fontSize: 30 }} />
+                </IconButton>
+                <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={() => setAnchorEl(null)}
+                    sx={{ maxHeight: 400 }}
+                >
+                    {defaultColumns.map((col) => (
+                        <MenuItem key={col.id} onClick={() => handleToggleColumn(col.id)}>
+                            <Switch checked={visibleColumns.includes(col.id)} />
+                            <ListItemText primary={col.label} />
+                        </MenuItem>
+                    ))}
+                </Menu>
+            </Box>
+            <TableContainer component={Paper}>
                 <Table sx={{ tableLayout: 'fixed', width: '100%' }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}>STT</TableCell>
-                            <TableCell align='center' sx={{ border: '1px solid black', width: '80%' }}>Nội dung</TableCell>
-                            <TableCell align='center' sx={{ border: '1px solid black', width: '15%' }}>Thao tác</TableCell>
+                            {defaultColumns.map((item) =>
+                                visibleColumns.includes(item.id) && (
+                                    <TableCell key={item.id} align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: item.width, minWidth: item.width }}>{item.label}</TableCell>
+                                )
+                            )}
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {!isLoading ? safetyMeasures.map((safetyMeasure: SafetyMeasure, index: number) => (
                             <TableRow key={safetyMeasure._id}>
-                                <TableCell sx={{ border: '1px solid black', }}>{index + 1}</TableCell>
-                                <TableCell sx={{
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    border: '1px solid black',
-                                }}>{safetyMeasure.content}</TableCell>
-                                <TableCell sx={{ border: '1px solid black', }}>
-                                    <IconButton color="primary" onClick={() => handleOpen(safetyMeasure)}>
-                                        <EditIcon />
-                                    </IconButton>
-                                    <IconButton color="error" onClick={() => handleDelete(safetyMeasure._id)}>
-                                        <DeleteIcon />
-                                    </IconButton>
-                                </TableCell>
+                                {visibleColumns.includes('number') &&
+                                    <TableCell align='center' sx={{ border: '1px solid black' }}>{index + 1}</TableCell>
+                                }
+                                {visibleColumns.includes('content') &&
+                                    <TableCell sx={{
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        border: '1px solid black',
+                                    }}>{safetyMeasure.content}</TableCell>}
+                                {visibleColumns.includes('actions') &&
+                                    <TableCell align='center' sx={{ border: '1px solid black', }}>
+                                        <IconButton color="primary" onClick={() => handleOpen(safetyMeasure)}>
+                                            <EditIcon />
+                                        </IconButton>
+                                        <IconButton color="error" onClick={() => handleDelete(safetyMeasure._id)}>
+                                            <DeleteIcon />
+                                        </IconButton>
+                                    </TableCell>}
                             </TableRow>
                         )) : <Typography>Loading...</Typography>}
                     </TableBody>
                 </Table>
             </TableContainer>
 
-            <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-                <DialogTitle>{selectedSafetyMeasure ? 'Sửa biện pháp an toàn' : 'Thêm biện pháp an toàn'}</DialogTitle>
-                <DialogContent>
-                    <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <TextField
-                                fullWidth
-                                multiline
-                                rows={5}
-                                id="content"
-                                name="content"
-                                label="Nội dung"
-                                value={formik.values.content}
-                                onChange={formik.handleChange}
-                                error={formik.touched.content && Boolean(formik.errors.content)}
-                                helperText={formik.touched.content && formik.errors.content}
-                            />
-                        </Box>
-                    </Box>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleClose}>Hủy</Button>
-                    <Button onClick={() => formik.submitForm()} variant="contained">
-                        {selectedSafetyMeasure ? 'Cập nhật' : 'Thêm mới'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
         </Box>
     );
 };

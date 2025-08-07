@@ -27,7 +27,6 @@ class _HomePageState extends State<HomePage> {
   LatLng?
   _currentPosition; //Biến lưu trữ vị trí hiện tại của người dùng (tọa độ latitude, longitude).
   String? _currentAddress;
-  Set<Polygon> _areaPolygon = {}; // Chứa vùng vẽ
 
   @override
   void initState() {
@@ -117,49 +116,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // cập nhật polygon
-  void _drawPolygonArea(List<LatLng> points) {
-    final polygon = Polygon(
-      polygonId: PolygonId('area'),
-      points: points,
-      strokeWidth: 2,
-      strokeColor: Colors.redAccent,
-      fillColor: Colors.redAccent.withOpacity(0.2),
-    );
-
-    setState(() {
-      _areaPolygon = {polygon};
-    });
-  }
-
-  void _updatePolygonFromDevicesAndLocations() {
-    List<LatLng> allPoints = [];
-
-    // Lấy điểm từ thiết bị
-    allPoints.addAll(
-      devices.map(
-        (d) => LatLng(
-          d.coordinates!.coordinates[1],
-          d.coordinates!.coordinates[0],
-        ),
-      ),
-    );
-
-    // Lấy điểm từ location
-    allPoints.addAll(
-      locations.map(
-        (l) => LatLng(
-          l.coordinates!.coordinates[1],
-          l.coordinates!.coordinates[0],
-        ),
-      ),
-    );
-
-    // Nếu đủ 3 điểm trở lên mới vẽ
-    if (allPoints.isNotEmpty) {
-      _drawPolygonArea(allPoints);
-    }
-  }
 
   final DeviceService _deviceService = DeviceService();
   final LocationService _locationService =
@@ -232,7 +188,6 @@ class _HomePageState extends State<HomePage> {
         devices.addAll(fetchedDevices);
         _deviceMarkers = markers;
       });
-      _updatePolygonFromDevicesAndLocations();
     }
   }
 
@@ -273,7 +228,6 @@ class _HomePageState extends State<HomePage> {
         locations.addAll(fetchedLocations);
         _locationMarkers = locationMarkers;
       });
-      _updatePolygonFromDevicesAndLocations();
     }
   }
 
@@ -504,10 +458,6 @@ class _HomePageState extends State<HomePage> {
                     ),
                     myLocationEnabled: true,
                     myLocationButtonEnabled: true,
-                    polygons:
-                        user?.role == "employee"
-                            ? _areaPolygon
-                            : <Polygon>{},
                     onMapCreated:
                         (controller) => {
                           _mapController = controller,

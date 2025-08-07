@@ -19,11 +19,19 @@ import {
     TextField,
     MenuItem,
     Alert,
+    Menu,
+    Switch,
+    ListItemText,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
 } from '@mui/material';
 import {
     Add as AddIcon,
     Edit as EditIcon,
     Delete as DeleteIcon,
+    Settings,
+    ExpandMore,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -41,13 +49,26 @@ const DeviceTypes: React.FC = () => {
     const [selectedDeviceType, setSelectedDeviceType] = useState<DeviceType | null>(null);
     const queryClient = useQueryClient();
     const [user, setUser] = useAtom(userAtom)
+    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
+    const [expanded, setExpanded] = useState(false);
+
+    const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
+        setExpanded(isExpanded);
+    };
+    const defaultColumns = [
+        { id: 'name', label: 'Tên loại phương tiện' },
+        { id: 'actions', label: 'Thao tác', width: 100 },
+    ]
+    const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
+
+    const handleToggleColumn = (id: string) => {
+        setVisibleColumns(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
+    }
 
     const { data: DeviceTypes = [], isLoading } = useQuery({
         queryKey: ['DeviceTypes'],
         queryFn: () => api.get(`/DeviceTypes`).then(res => res.data.data),
     });
-
-    console.log(user)
 
 
     const createMutation = useMutation({
@@ -55,6 +76,7 @@ const DeviceTypes: React.FC = () => {
             api.post('/DeviceTypes', newDeviceType).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['DeviceTypes'] });
+            alert('Thêm loại phương tiện thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -67,6 +89,7 @@ const DeviceTypes: React.FC = () => {
             api.put(`/DeviceTypes/${updatedDeviceType._id}`, updatedDeviceType).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['DeviceTypes'] });
+            alert('Cập nhật loại phương tiện thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -78,6 +101,7 @@ const DeviceTypes: React.FC = () => {
         mutationFn: (id: string) => api.delete(`/DeviceTypes/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['DeviceTypes'] });
+            alert('Xóa loại phương tiện thành công');
         },
         onError: (error: any) => {
             alert(error.response.data.message || error.response || 'Lỗi')
@@ -106,12 +130,14 @@ const DeviceTypes: React.FC = () => {
             setSelectedDeviceType(null);
             formik.resetForm();
         }
+        setExpanded(true);
         setOpen(true);
     };
 
     const handleClose = () => {
         setOpen(false);
         setSelectedDeviceType(null);
+        setExpanded(false);
         formik.resetForm();
     };
 
@@ -125,61 +151,89 @@ const DeviceTypes: React.FC = () => {
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
                 <Typography variant="h4">Quản lý loại phương tiện</Typography>
-                <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
-                    Thêm loại phương tiện
-                </Button>
+
             </Box>
-            <TableContainer component={Paper} sx={{ height: '80vh' }}>
+            <Accordion expanded={expanded} onChange={handleChangeAction}>
+                <AccordionSummary
+                    expandIcon={<ExpandMore />}
+                    aria-controls="panel1-content"
+                    id="panel1-header"
+                >
+                    <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
+                        Thêm loại phương tiện
+                    </Button>
+                </AccordionSummary>
+                <AccordionDetails>
+                    <DialogTitle>{selectedDeviceType ? 'Sửa loại phương tiện' : 'Thêm loại phương tiện'}</DialogTitle>
+                    <DialogContent>
+                        <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <TextField
+                                    fullWidth
+                                    id="name"
+                                    name="name"
+                                    label="Tên loại phương tiện"
+                                    value={formik.values.name}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.name && Boolean(formik.errors.name)}
+                                    helperText={formik.touched.name && formik.errors.name}
+                                />
+                            </Box>
+                        </Box>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleClose}>Hủy</Button>
+                        <Button onClick={() => formik.submitForm()} variant="contained">
+                            {selectedDeviceType ? 'Cập nhật' : 'Thêm mới'}
+                        </Button>
+                    </DialogActions>
+                </AccordionDetails>
+            </Accordion>
+            <Box display="flex" justifyContent='space-between' alignItems='center' sx={{ mb: 2, mt: 2 }}>
+                <Typography variant="h3" sx={{ p: 2 }}>Bảng loại phương tiện</Typography>
+                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                    <Settings sx={{ fontSize: 30 }} />
+                </IconButton>
+                <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={() => setAnchorEl(null)}
+                    sx={{ maxHeight: 400 }}
+                >
+                    {defaultColumns.map((col) => (
+                        <MenuItem key={col.id} onClick={() => handleToggleColumn(col.id)}>
+                            <Switch checked={visibleColumns.includes(col.id)} />
+                            <ListItemText primary={col.label} />
+                        </MenuItem>
+                    ))}
+                </Menu>
+            </Box>
+            <TableContainer component={Paper}>
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell align='center' sx={{ border: '1px solid black' }}>Tên loại phương tiện</TableCell>
-                            {user?.role !== 'dispatcher' && <TableCell align='center' sx={{ border: '1px solid black' }}>Thao tác</TableCell>}
+                            {visibleColumns.includes('name') && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Tên loại phương tiện</TableCell>}
+                            {visibleColumns.includes('actions') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: 100, minWidth: 100 }}>Thao tác</TableCell>)}
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {!isLoading ? DeviceTypes.map((DeviceType: any) => (
                             <TableRow key={DeviceType._id}>
-                                <TableCell sx={{ border: '1px solid black' }}>{DeviceType.name}</TableCell>
-                                {user?.role !== 'dispatcher' && <TableCell sx={{ border: '1px solid black' }}>
+                                {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black' }}>{DeviceType.name}</TableCell>}
+                                {visibleColumns.includes('actions') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                     <IconButton color="primary" onClick={() => handleOpen(DeviceType)}>
                                         <EditIcon />
                                     </IconButton>
                                     <IconButton color="error" onClick={() => handleDelete(DeviceType._id)}>
                                         <DeleteIcon />
                                     </IconButton>
-                                </TableCell>}
+                                </TableCell>)}
                             </TableRow>
                         )) : <Typography>Loading...</Typography>}
                     </TableBody>
                 </Table>
             </TableContainer>
 
-            <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-                <DialogTitle>{selectedDeviceType ? 'Sửa loại phương tiện' : 'Thêm loại phương tiện'}</DialogTitle>
-                <DialogContent>
-                    <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <TextField
-                                fullWidth
-                                id="name"
-                                name="name"
-                                label="Tên loại phương tiện"
-                                value={formik.values.name}
-                                onChange={formik.handleChange}
-                                error={formik.touched.name && Boolean(formik.errors.name)}
-                                helperText={formik.touched.name && formik.errors.name}
-                            />
-                        </Box>
-                    </Box>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleClose}>Hủy</Button>
-                    <Button onClick={() => formik.submitForm()} variant="contained">
-                        {selectedDeviceType ? 'Cập nhật' : 'Thêm mới'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
         </Box>
     );
 };

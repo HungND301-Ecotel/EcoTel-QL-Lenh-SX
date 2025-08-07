@@ -108,15 +108,6 @@ class _TaskAssignmentExcavatorSelect
                     },
                   ),
                 ),
-                SizedBox(width: 16),
-                IconButton(
-                  onPressed: () {},
-                  icon: Icon(
-                    Icons.build_circle_outlined,
-                    color: Colors.blue,
-                    size: 40,
-                  ),
-                ),
               ],
             ),
           ),

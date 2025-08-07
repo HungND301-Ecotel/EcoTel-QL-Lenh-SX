@@ -28,7 +28,7 @@ export interface Department {
 export interface Position {
     _id: string;
     name: string;
-    description?: string;
+    note?: string;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -90,7 +90,6 @@ export interface Order {
     workContent: string;
     assistants?: string[];
     status: 'pending' | 'in_progress' | 'completed' | 'warning' | 'cancel';
-    isScanned: 'pending' | 'in_progress' | 'completed';
     note?: string;
     safetyMeasure?: string;
     temporaryError?: string
