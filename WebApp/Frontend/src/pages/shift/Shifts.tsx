@@ -58,6 +58,13 @@ const Shifts: React.FC = () => {
 
     const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
         setExpanded(isExpanded);
+        if (isExpanded) {
+            setOpen(true);
+        } else {
+            setOpen(false);
+            setSelectedShift(null);
+            setExpanded(false);
+        }
     };
     const defaultColumns = [
         { id: 'name', label: 'Ca', width: 100 },
@@ -290,7 +297,16 @@ const Shifts: React.FC = () => {
                                 )}
                                 {visibleColumns.includes('actions') && (
                                     <TableCell align='center' sx={{ border: '1px solid black' }}>
-                                        <IconButton color="primary" onClick={() => handleOpen(shift)}>
+                                        <IconButton color="primary" onClick={() => {
+                                            if (open) {
+                                                const confirmed = window.confirm('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                                                if (confirmed) {
+                                                    handleOpen(shift);
+                                                }
+                                            } else {
+                                                handleOpen(shift);
+                                            }
+                                        }}>
                                             <EditIcon />
                                         </IconButton>
                                         <IconButton color="error" onClick={() => handleDelete(shift._id)}>

@@ -96,7 +96,7 @@ const DispatcherOrderFormAdd: React.FC<OrderFormProps> = ({
             note: '',
         },
         validationSchema,
-        onSubmit: (values) => {
+        onSubmit: async (values) => {
             const order: any = {
                 assignedTo: values.assignedTo,
                 devicesToProduce: values.devicesToProduce,
@@ -106,6 +106,22 @@ const DispatcherOrderFormAdd: React.FC<OrderFormProps> = ({
                 workContent: values.workContent,
                 department: department
             };
+            const duplicates = await
+                api.post(`/orders/checkExist`, {
+                    workingDate: order.workingDate,
+                    shift: order.shift,
+                    assignedTo: order.assignedTo
+                }
+                ).then(res =>
+                    res.data.data,
+                )
+
+            if (duplicates) {
+                const name = duplicates.assignedTo?.fullName
+
+                const confirm = window.confirm(`${name} đã có lệnh sản xuất trong ca này. Bạn có muốn tiếp tục?`);
+                if (!confirm) return;
+            }
             onSubmit(order);
         },
     });

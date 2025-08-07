@@ -14,7 +14,7 @@ import {
     styled,
     TextField,
 } from '@mui/material';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/api.config';
 import { Order, Device, Job, Location, Material, SafetyMeasure, Shift } from '../../types';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
@@ -52,6 +52,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
     onSubmit,
     onCancel,
 }) => {
+    const queryClient = useQueryClient();
 
     const { data: safetyMeasures = [] } = useQuery({
         queryKey: ['safetyMeasures'],
@@ -88,6 +89,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
     });
 
 
+
     const formik = useFormik({
         initialValues: {
             usersAndDevices: [
@@ -110,7 +112,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
         },
         enableReinitialize: true,
         validationSchema,
-        onSubmit: (values) => {
+        onSubmit: async (values) => {
             const orders: Partial<Order>[] = values.usersAndDevices.map(item => ({
                 assignedTo: item.assignedTo,
                 device: item.device,
@@ -126,7 +128,34 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                 safetyMeasure: values.safetyMeasure,
                 note: values.note,
             }));
-            orders.forEach(order => onSubmit(order));
+            const duplicates = await Promise.all(
+                orders.map(order =>
+                    api.post(`/orders/checkExist`, {
+                        workingDate: order.workingDate,
+                        shift: order.shift,
+                        assignedTo: order.assignedTo
+                    }
+                    ).then(res =>
+                        res.data.data,
+                    )
+                )
+            );
+            const existingOrders = duplicates.filter(order => order !== null);
+            if (existingOrders.length > 0) {
+                const names = existingOrders.map(o => {
+                    return o.assignedTo?.fullName || 'Không rõ';
+                }).join(', ');
+
+                const confirm = window.confirm(`${names} đã có lệnh sản xuất trong ca này. Bạn có muốn tiếp tục?`);
+                if (!confirm) return;
+            }
+            try {
+                await Promise.all(orders.map(order => onSubmit(order)));
+                queryClient.invalidateQueries({ queryKey: ['orders'] });
+                alert('Thêm lệnh sản xuất thành công');
+            } catch (error) {
+                console.error('Error submitting orders:', error);
+            }
         },
     });
 

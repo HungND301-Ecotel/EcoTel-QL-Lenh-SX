@@ -55,6 +55,13 @@ const Jobs: React.FC = () => {
 
     const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
         setExpanded(isExpanded);
+        if (isExpanded) {
+            setOpen(true);
+        } else {
+            setOpen(false);
+            setSelectedJob(null);
+            setExpanded(false);
+        }
     };
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
 
@@ -261,7 +268,16 @@ const Jobs: React.FC = () => {
                                 {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black' }}>{job.name}</TableCell>}
                                 {visibleColumns.includes('category') && <TableCell sx={{ border: '1px solid black' }}>{job.type}</TableCell>}
                                 {visibleColumns.includes('actions') && <TableCell sx={{ border: '1px solid black' }}>
-                                    <IconButton color="primary" onClick={() => handleOpen(job)}>
+                                    <IconButton color="primary" onClick={() => {
+                                        if (open) {
+                                            const confirmed = window.confirm('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                                            if (confirmed) {
+                                                handleOpen(job);
+                                            }
+                                        } else {
+                                            handleOpen(job);
+                                        }
+                                    }}>
                                         <EditIcon />
                                     </IconButton>
                                     <IconButton color="error" onClick={() => handleDelete(job._id)}>

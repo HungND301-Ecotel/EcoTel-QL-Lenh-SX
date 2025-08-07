@@ -110,7 +110,28 @@ router.get('/', verifyToken, async (req, res, next) => {
 
     }
 });
+router.post('/checkExist', verifyToken, async (req, res, next) => {
+    try {
+        const {
+            assignedTo,
+            workingDate,
+            shift,
+        } = req.body;
+        const exitOrder = await Order.findOne({ assignedTo: assignedTo, shift: shift, workingDate: workingDate })
+            .populate('assignedTo', 'fullName salaryCode')
 
+
+        res.status(200).json({
+            status: 'success',
+            data:
+                exitOrder
+
+        });
+    } catch (err) {
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+
+    }
+});
 router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
         const {
@@ -127,13 +148,6 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
             safetyMeasure,
             department
         } = req.body;
-
-
-        const exitOrder = await Order.findOne({ assignedTo: assignedTo, shift: shift, workingDate: workingDate, status: { $nin: ['warning', 'cancel'] } })
-
-        if (exitOrder) {
-            return res.status(400).send({ status: 'error', message: 'Không thể tạo nhiều lệnh cho 1 công nhân trong cùng 1 thời gian làm việc' })
-        }
 
 
         if (devicesToProduce?.length > 0) {

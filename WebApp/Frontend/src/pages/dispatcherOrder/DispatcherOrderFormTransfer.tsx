@@ -112,7 +112,7 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
         },
         enableReinitialize: true, // Để cập nhật lại giá trị khi initialValues thay đổi
         validationSchema,
-        onSubmit: (values) => {
+        onSubmit: async (values) => {
 
             const order: Partial<Order> = {
                 assignedTo: values.assignedTo,
@@ -124,6 +124,22 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
                 status: "pending",
                 note: values.note
             };
+            const duplicates = await
+                api.post(`/orders/checkExist`, {
+                    workingDate: order.workingDate,
+                    shift: order.shift,
+                    assignedTo: order.assignedTo
+                }
+                ).then(res =>
+                    res.data.data,
+                )
+
+            if (duplicates) {
+                const name = duplicates.assignedTo?.fullName
+
+                const confirm = window.confirm(`${name} đã có lệnh sản xuất trong ca này. Bạn có muốn tiếp tục?`);
+                if (!confirm) return;
+            }
             createMutation.mutate(order);
         },
     });

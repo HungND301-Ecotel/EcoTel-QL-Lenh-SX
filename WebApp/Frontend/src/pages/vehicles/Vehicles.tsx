@@ -89,6 +89,13 @@ const Vehicles: React.FC = () => {
 
     const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
         setExpanded(isExpanded);
+        if (isExpanded) {
+            setOpen(true);
+        } else {
+            setOpen(false);
+            setSelectedDevice(null);
+            setExpanded(false);
+        }
     };
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
 
@@ -295,19 +302,19 @@ const Vehicles: React.FC = () => {
                     />}
                 </Box>
             </Box>
-            <Accordion expanded={expanded} onChange={handleChangeAction}>
+            {user?.role !== "dispatcher" && <Accordion expanded={expanded} onChange={handleChangeAction}>
                 <AccordionSummary
                     expandIcon={<ExpandMore />}
                     aria-controls="panel1-content"
                     id="panel1-header"
                 >
-                    {user?.role !== "dispatcher" && <Button
+                    <Button
                         variant="contained"
                         startIcon={<AddIcon />}
                         onClick={() => handleOpen()}
                     >
                         Thêm Thông tin xe
-                    </Button>}
+                    </Button>
                 </AccordionSummary>
                 <AccordionDetails>
                     <DialogTitle>
@@ -484,7 +491,7 @@ const Vehicles: React.FC = () => {
                         </Button>
                     </DialogActions>
                 </AccordionDetails>
-            </Accordion>
+            </Accordion>}
             <Box display="flex" gap={2} alignItems={'center'} justifyContent='flex-end'>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='info' name="status" checked={status === ''}
@@ -607,7 +614,16 @@ const Vehicles: React.FC = () => {
                                         {visibleColumns.includes('actions') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ border: '1px solid black', minWidth: 130, }}>
                                             <IconButton
                                                 color="primary"
-                                                onClick={() => handleOpen(device)}
+                                                onClick={() => {
+                                                    if (open) {
+                                                        const confirmed = window.confirm('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                                                        if (confirmed) {
+                                                            handleOpen(device);
+                                                        }
+                                                    } else {
+                                                        handleOpen(device);
+                                                    }
+                                                }}
                                             >
                                                 <EditIcon />
                                             </IconButton>

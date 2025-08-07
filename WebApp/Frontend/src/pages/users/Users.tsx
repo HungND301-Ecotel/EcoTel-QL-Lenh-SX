@@ -87,6 +87,13 @@ const Users: React.FC = () => {
 
     const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
         setExpanded(isExpanded);
+        if (isExpanded) {
+            setOpen(true);
+        } else {
+            setOpen(false);
+            setSelectedUser(null);
+            setExpanded(false);
+        }
     };
     const handleTogglePassword = () => {
         setShowPassword((prev) => !prev);
@@ -321,7 +328,16 @@ const Users: React.FC = () => {
                     >
                         <InfoOutlined />
                     </IconButton>
-                    <IconButton color="primary" onClick={() => handleOpen(params.row)}>
+                    <IconButton color="primary" onClick={() => {
+                        if (open) {
+                            const confirmed = window.confirm('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                            if (confirmed) {
+                                handleOpen(params.row);
+                            }
+                        } else {
+                            handleOpen(params.row);
+                        }
+                    }}>
                         <EditIcon />
                     </IconButton>
                     {user._id !== params.row._id && <IconButton color="error" onClick={() => handleDelete(params.row._id)}>

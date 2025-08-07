@@ -49,6 +49,13 @@ const Locations: React.FC = () => {
 
     const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
         setExpanded(isExpanded);
+        if (isExpanded) {
+            setOpen(true);
+        } else {
+            setOpen(false);
+            setSelectedLocation(null);
+            setExpanded(false);
+        }
     };
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
 
@@ -346,7 +353,16 @@ const Locations: React.FC = () => {
                                     {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black' }}>{loc.name}</TableCell>}
                                     {visibleColumns.includes('coordinates') && <TableCell sx={{ border: '1px solid black' }}>{coordsDisplay}</TableCell>}
                                     {visibleColumns.includes('actions') && <TableCell sx={{ border: '1px solid black' }}>
-                                        <IconButton color="primary" onClick={() => handleOpen(loc)}>
+                                        <IconButton color="primary" onClick={() => {
+                                            if (open) {
+                                                const confirmed = window.confirm('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                                                if (confirmed) {
+                                                    handleOpen(loc);
+                                                }
+                                            } else {
+                                                handleOpen(loc);
+                                            }
+                                        }}>
                                             <EditIcon />
                                         </IconButton>
                                         <IconButton color="error" onClick={() => handleDelete(loc._id)}>

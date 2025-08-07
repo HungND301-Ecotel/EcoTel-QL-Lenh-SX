@@ -45,6 +45,13 @@ const Departments = () => {
 
     const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
         setExpanded(isExpanded);
+        if (isExpanded) {
+            setOpen(true);
+        } else {
+            setOpen(false);
+            setSelectedDepartment(null);
+            setExpanded(false);
+        }
     };
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
 
@@ -275,7 +282,16 @@ const Departments = () => {
                                 {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black' }}>{department.name}</TableCell>}
                                 {visibleColumns.includes('description') && <TableCell sx={{ border: '1px solid black' }}>{department.description}</TableCell>}
                                 {visibleColumns.includes('actions') && <TableCell sx={{ border: '1px solid black' }}>
-                                    <IconButton onClick={() => handleOpen(department)} color="primary">
+                                    <IconButton onClick={() => {
+                                        if (open) {
+                                            const confirmed = window.confirm('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                                            if (confirmed) {
+                                                handleOpen(department);
+                                            }
+                                        } else {
+                                            handleOpen(department);
+                                        }
+                                    }} color="primary">
                                         <EditIcon />
                                     </IconButton>
                                     <IconButton onClick={() => handleDelete(department._id)} color="error">

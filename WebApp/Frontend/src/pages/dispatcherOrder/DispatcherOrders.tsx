@@ -76,6 +76,8 @@ const DispatcherOrders: React.FC = () => {
     const [endTime, setEndTime] = useState<Dayjs | null>(null);
     const [department, setDepartment] = useState("");
     const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+    const [selectedRow, setSelectedRow] = useState<any | null>(null);
+
     const [status, setStatus] = useState('')
     const queryClient = useQueryClient();
 
@@ -83,6 +85,13 @@ const DispatcherOrders: React.FC = () => {
 
     const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
         setExpanded(isExpanded);
+        if (isExpanded) {
+            setOpen(true);
+        } else {
+            setOpen(false);
+            setTransfer(false);
+            setSelectedOrder(null);
+        }
     };
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
 
@@ -117,7 +126,7 @@ const DispatcherOrders: React.FC = () => {
 
     const { data: orders = [], isLoading, refetch } = useQuery({
         queryKey: ['orders', status],
-        queryFn: () => api.get(`/orders?status=${status}employee=${employee}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
+        queryFn: () => api.get(`/orders?status=${status}&employee=${employee}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
     });
     const { data: allOrders = [] } = useQuery({
         queryKey: ['allOrders'],
@@ -396,119 +405,133 @@ const DispatcherOrders: React.FC = () => {
                     ))}
                 </Menu>
             </Box>
-            <Paper sx={{ width: '100%', overflowX: "initial" }}>
-                <TableContainer sx={{ height: '80vh' }}>
-                    <Table stickyHeader aria-label="sticky table">
-                        <TableHead>
-                            <TableRow>
-                                {visibleColumns.includes('assignedTo') && <TableCell align='center' sx={{
-                                    position: 'sticky',
-                                    left: 0,
-                                    backgroundColor: 'white',
-                                    zIndex: 3,
-                                    minWidth: 150,
-                                    border: '1px solid black'
-                                }}>Nhân viên</TableCell>}
-                                {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{ minWidth: 130, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Mã thẻ lương</TableCell>}
-                                {visibleColumns.includes('shift') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ca</TableCell>}
-                                {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ngày làm việc</TableCell>}
-                                {visibleColumns.includes('job') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Công việc</TableCell>}
-                                {visibleColumns.includes('content') && <TableCell align='center' sx={{ minWidth: 200, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Nội dung</TableCell>}
-                                {visibleColumns.includes('device') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Phương tiện</TableCell>}
-                                {visibleColumns.includes('createdBy') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Người tạo lệnh</TableCell>}
-                                {visibleColumns.includes('startTime') && <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Bắt đầu</TableCell>}
-                                {visibleColumns.includes('endTime') && <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Kết thúc</TableCell>}
-                                {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Thời gian tạo lệnh</TableCell>}
-                                {visibleColumns.includes('status') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>}
-                                {visibleColumns.includes('note') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ghi chú</TableCell>}
-                                {visibleColumns.includes('actions') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Thao tác</TableCell>}
-                            </TableRow>
-                        </TableHead>
-                        {!isLoading ? <TableBody>
-                            {orders.map((order: any) => (
-                                <TableRow key={order._id}>
-                                    {visibleColumns.includes('assignedTo') && <TableCell sx={{
-                                        position: 'sticky',
-                                        left: 0,
-                                        backgroundColor: 'white',
-                                        zIndex: 1,
-                                        minWidth: 150,
-                                        border: '1px solid black'
-                                    }}>{order.assignedTo?.fullName}</TableCell>}
-                                    {visibleColumns.includes('salaryCode') && <TableCell sx={{ border: '1px solid black' }}>
-                                        {order.assignedTo?.salaryCode}
-                                    </TableCell>}
-                                    {visibleColumns.includes('shift') && <TableCell sx={{ border: '1px solid black' }}>
-                                        {order.shift?.name}
-                                    </TableCell>}
-                                    {visibleColumns.includes('workingDate') && <TableCell sx={{ border: '1px solid black' }}>
-                                        {order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''}
-                                    </TableCell>}
-                                    {visibleColumns.includes('job') && <TableCell sx={{ border: '1px solid black' }}>
-                                        {order.job.name || ''}
-                                    </TableCell>}
-                                    {visibleColumns.includes('content') && <TableCell sx={{
-                                        whiteSpace: 'pre-wrap',
-                                        overflow: 'hidden',
-                                        // textOverflow: 'ellipsis',
-                                        maxWidth: 400,
-                                        border: '1px solid black'
-                                    }}>
-                                        {order.workContent || ''}
-                                    </TableCell>}
-                                    {visibleColumns.includes('device') && <TableCell sx={{ border: '1px solid black' }}>
-                                        <Typography whiteSpace="pre-line" fontSize={14}>
-                                            {order.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')}
-                                        </Typography>
-                                    </TableCell>}
-                                    {visibleColumns.includes('createdBy') && <TableCell sx={{ border: '1px solid black' }}>
-                                        {order.createdBy.username || ''}
-                                    </TableCell>}
-                                    {visibleColumns.includes('createdAt') && <TableCell sx={{ border: '1px solid black' }}>
-                                        {order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm') : ''}
-                                    </TableCell>}
-                                    {visibleColumns.includes('startTime') && <TableCell sx={{ border: '1px solid black' }}>
-                                        {order.startTime ? format(new Date(order.startTime), 'HH:mm:ss') : ''}
-                                    </TableCell>}
-                                    {visibleColumns.includes('endTime') && <TableCell sx={{ border: '1px solid black' }}>
-                                        {order.endTime ? format(new Date(order.endTime), 'HH:mm:ss') : ''}
-                                    </TableCell>}
-                                    {visibleColumns.includes('status') && <TableCell sx={{ border: '1px solid black' }}>
-                                        <Chip
-                                            sx={{ width: '120px' }}
-                                            label={order.status === 'pending' ? 'Chưa nhận lệnh' :
-                                                order.status === 'in_progress' ? 'Đã nhận lệnh' :
-                                                    order.status === 'completed' ? 'Đã hoàn thành' :
-                                                        order.status === 'warning' ? 'Lỗi' : "Đã hủy"
-                                            }
-                                            color={
-                                                order.status === 'pending' ? 'default' :
-                                                    order.status === 'completed' ? 'error' :
-                                                        order.status === 'in_progress' ? 'success' :
-                                                            order.status === 'warning' ? 'warning' : 'secondary'}
-                                        />
-                                    </TableCell>}
-                                    {visibleColumns.includes('note') && <TableCell sx={{ border: '1px solid black' }}>
-                                        {order?.temporaryError || ''}
-                                    </TableCell>}
-                                    {visibleColumns.includes('actions') && <TableCell sx={{ border: '1px solid black' }}>
-                                        {['pending', 'warning'].includes(order?.status) && <IconButton
-                                            color="primary"
-                                            onClick={() => handleOpen(order)}
-                                        >
-                                            <Tooltip title="Sửa" placement='top'>
-                                                <EditIcon />
-                                            </Tooltip>
-                                        </IconButton>}
-                                        {['pending', 'warning'].includes(order?.status) && <IconButton
-                                            color="warning"
-                                            onClick={() => handleCancel(order)}
-                                        >
-                                            <Tooltip title="Hủy" placement='top'>
-                                                <CancelOutlined />
-                                            </Tooltip>
-                                        </IconButton>}
-                                        {/* {['completed'].includes(order?.status) && <IconButton
+            <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid item xs={12} sm={9}>
+                    <Paper sx={{ width: '100%', overflowX: "initial" }}>
+                        <TableContainer sx={{ height: '80vh' }}>
+                            <Table stickyHeader aria-label="sticky table">
+                                <TableHead>
+                                    <TableRow>
+                                        {visibleColumns.includes('assignedTo') && <TableCell align='center' sx={{
+                                            position: 'sticky',
+                                            left: 0,
+                                            zIndex: 3,
+                                            minWidth: 150,
+                                            border: '1px solid black',
+                                            fontWeight: 'bold', fontSize: 18
+                                        }}>Nhân viên</TableCell>}
+                                        {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{ minWidth: 130, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Mã thẻ lương</TableCell>}
+                                        {visibleColumns.includes('shift') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ca</TableCell>}
+                                        {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ngày làm việc</TableCell>}
+                                        {visibleColumns.includes('job') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Công việc</TableCell>}
+                                        {visibleColumns.includes('content') && <TableCell align='center' sx={{ minWidth: 200, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Nội dung</TableCell>}
+                                        {visibleColumns.includes('device') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Phương tiện</TableCell>}
+                                        {visibleColumns.includes('createdBy') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Người tạo lệnh</TableCell>}
+                                        {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Thời gian tạo lệnh</TableCell>}
+                                        {visibleColumns.includes('startTime') && <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Bắt đầu</TableCell>}
+                                        {visibleColumns.includes('endTime') && <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Kết thúc</TableCell>}
+                                        {visibleColumns.includes('status') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>}
+                                        {visibleColumns.includes('note') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ghi chú</TableCell>}
+                                        {visibleColumns.includes('actions') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Thao tác</TableCell>}
+                                    </TableRow>
+                                </TableHead>
+                                {!isLoading ? <TableBody>
+                                    {orders.map((order: any) => (
+                                        <TableRow key={order._id} sx={{
+                                            cursor: 'pointer', '&:hover': {
+                                                backgroundColor: '#f5f5f5',
+                                            },
+                                        }} onClick={() => setSelectedRow(order)}>
+                                            {visibleColumns.includes('assignedTo') && <TableCell sx={{
+                                                position: 'sticky',
+                                                left: 0,
+                                                zIndex: 1,
+                                                minWidth: 150,
+                                                border: '1px solid black'
+                                            }}>{order.assignedTo?.fullName}</TableCell>}
+                                            {visibleColumns.includes('salaryCode') && <TableCell sx={{ border: '1px solid black' }}>
+                                                {order.assignedTo?.salaryCode}
+                                            </TableCell>}
+                                            {visibleColumns.includes('shift') && <TableCell sx={{ border: '1px solid black' }}>
+                                                {order.shift?.name}
+                                            </TableCell>}
+                                            {visibleColumns.includes('workingDate') && <TableCell sx={{ border: '1px solid black' }}>
+                                                {order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''}
+                                            </TableCell>}
+                                            {visibleColumns.includes('job') && <TableCell sx={{ border: '1px solid black' }}>
+                                                {order.job.name || ''}
+                                            </TableCell>}
+                                            {visibleColumns.includes('content') && <TableCell sx={{
+                                                whiteSpace: 'pre-wrap',
+                                                overflow: 'hidden',
+                                                // textOverflow: 'ellipsis',
+                                                maxWidth: 400,
+                                                border: '1px solid black'
+                                            }}>
+                                                {order.workContent || ''}
+                                            </TableCell>}
+                                            {visibleColumns.includes('device') && <TableCell sx={{ border: '1px solid black' }}>
+                                                <Typography whiteSpace="pre-line" fontSize={14}>
+                                                    {order.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')}
+                                                </Typography>
+                                            </TableCell>}
+                                            {visibleColumns.includes('createdBy') && <TableCell sx={{ border: '1px solid black' }}>
+                                                {order.createdBy.username || ''}
+                                            </TableCell>}
+                                            {visibleColumns.includes('createdAt') && <TableCell sx={{ border: '1px solid black' }}>
+                                                {order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm') : ''}
+                                            </TableCell>}
+                                            {visibleColumns.includes('startTime') && <TableCell sx={{ border: '1px solid black' }}>
+                                                {order.startTime ? format(new Date(order.startTime), 'HH:mm:ss') : ''}
+                                            </TableCell>}
+                                            {visibleColumns.includes('endTime') && <TableCell sx={{ border: '1px solid black' }}>
+                                                {order.endTime ? format(new Date(order.endTime), 'HH:mm:ss') : ''}
+                                            </TableCell>}
+                                            {visibleColumns.includes('status') && <TableCell sx={{ border: '1px solid black' }}>
+                                                <Chip
+                                                    sx={{ width: '120px' }}
+                                                    label={order.status === 'pending' ? 'Chưa nhận lệnh' :
+                                                        order.status === 'in_progress' ? 'Đã nhận lệnh' :
+                                                            order.status === 'completed' ? 'Đã hoàn thành' :
+                                                                order.status === 'warning' ? 'Lỗi' : "Đã hủy"
+                                                    }
+                                                    color={
+                                                        order.status === 'pending' ? 'default' :
+                                                            order.status === 'completed' ? 'error' :
+                                                                order.status === 'in_progress' ? 'success' :
+                                                                    order.status === 'warning' ? 'warning' : 'secondary'}
+                                                />
+                                            </TableCell>}
+                                            {visibleColumns.includes('note') && <TableCell sx={{ border: '1px solid black' }}>
+                                                {order?.temporaryError || ''}
+                                            </TableCell>}
+                                            {visibleColumns.includes('actions') && <TableCell sx={{ border: '1px solid black' }}>
+                                                {['pending', 'warning'].includes(order?.status) && <IconButton
+                                                    color="primary"
+                                                    onClick={() => {
+                                                        if (open) {
+                                                            const confirmed = window.confirm('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                                                            if (confirmed) {
+                                                                handleOpen(order);
+                                                            }
+                                                        } else {
+                                                            handleOpen(order);
+                                                        }
+                                                    }}
+                                                >
+                                                    <Tooltip title="Sửa" placement='top'>
+                                                        <EditIcon />
+                                                    </Tooltip>
+                                                </IconButton>}
+                                                {['pending', 'warning'].includes(order?.status) && <IconButton
+                                                    color="warning"
+                                                    onClick={() => handleCancel(order)}
+                                                >
+                                                    <Tooltip title="Hủy" placement='top'>
+                                                        <CancelOutlined />
+                                                    </Tooltip>
+                                                </IconButton>}
+                                                {/* {['completed'].includes(order?.status) && <IconButton
                                             color="success"
                                             onClick={() => {
                                                 setSelectedOrder(order)
@@ -519,26 +542,26 @@ const DispatcherOrders: React.FC = () => {
                                                 <FileDownload />
                                             </Tooltip>
                                         </IconButton>} */}
-                                        {['pending', 'warning', 'cancel'].includes(order?.status) && <IconButton
-                                            color="error"
-                                            onClick={() => handleDelete(order._id)}
-                                        >
-                                            <Tooltip title="Xóa" placement='top'>
-                                                <DeleteIcon />
-                                            </Tooltip>
-                                        </IconButton>}
-                                        <IconButton
-                                            color="info"
-                                            onClick={() => {
-                                                setSelectedOrder(order)
-                                                setHistory(true)
-                                            }}
-                                        >
-                                            <Tooltip title="Lịch sử" placement='top'>
-                                                <InfoOutlined />
-                                            </Tooltip>
-                                        </IconButton>
-                                        {/* {order.status === "completed" && <IconButton
+                                                {['pending', 'warning', 'cancel'].includes(order?.status) && <IconButton
+                                                    color="error"
+                                                    onClick={() => handleDelete(order._id)}
+                                                >
+                                                    <Tooltip title="Xóa" placement='top'>
+                                                        <DeleteIcon />
+                                                    </Tooltip>
+                                                </IconButton>}
+                                                <IconButton
+                                                    color="info"
+                                                    onClick={() => {
+                                                        setSelectedOrder(order)
+                                                        setHistory(true)
+                                                    }}
+                                                >
+                                                    <Tooltip title="Lịch sử" placement='top'>
+                                                        <InfoOutlined />
+                                                    </Tooltip>
+                                                </IconButton>
+                                                {/* {order.status === "completed" && <IconButton
                                             color="info"
                                             onClick={() => {
                                                 setSelectedOrder(order)
@@ -549,16 +572,39 @@ const DispatcherOrders: React.FC = () => {
                                                 <SyncAlt />
                                             </Tooltip>
                                         </IconButton>} */}
-                                    </TableCell>}
-                                </TableRow>
-                            ))}
-                        </TableBody> : <Typography>Loading...</Typography>}
-                    </Table>
-                </TableContainer>
-            </Paper>
-
+                                            </TableCell>}
+                                        </TableRow>
+                                    ))}
+                                </TableBody> : <Typography>Loading...</Typography>}
+                            </Table>
+                        </TableContainer>
+                    </Paper>
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                    <Box sx={{ position: 'sticky', top: 0, height: '80vh', overflowY: 'auto', border: '1px solid #ccc', borderRadius: 2, p: 2 }}>
+                        <Typography variant="h6" sx={{ mb: 2 }}>Thông tin lệnh sản xuất</Typography>
+                        {selectedRow ? (
+                            <Box>
+                                <Typography><strong>Nhân viên:</strong> {selectedRow.assignedTo?.fullName}-{selectedRow.assignedTo?.salaryCode}</Typography>
+                                <Typography><strong>Ngày:</strong> {selectedRow.workingDate ? format(new Date(selectedRow.workingDate), 'yyyy-MM-dd') : ''}</Typography>
+                                <Typography><strong>Ca:</strong> {selectedRow.shift?.name}</Typography>
+                                <Typography><strong>Công việc:</strong> {selectedRow.job.name}</Typography>
+                                <Typography><strong>Nội dung:</strong> {selectedRow.workContent}</Typography>
+                                <Typography><strong>Phương tiện:</strong> {selectedRow.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')}</Typography>
+                                <Typography><strong>Trạng thái:</strong> {
+                                    selectedRow.status === 'pending' ? 'Chưa nhận lệnh' :
+                                        selectedRow.status === 'in_progress' ? 'Đã nhận lệnh' :
+                                            selectedRow.status === 'completed' ? 'Đã hoàn thành' :
+                                                selectedRow.status === 'warning' ? 'Lỗi' : "Đã hủy"}</Typography>
+                            </Box>
+                        ) : (
+                            <Typography>Chọn một lệnh sản xuất để xem chi tiết</Typography>
+                        )}
+                    </Box>
+                </Grid>
+            </Grid >
             <OrderHistories open={history} setOpen={setHistory} initialValues={selectedOrder} />
-        </Box>
+        </Box >
     );
 };
 

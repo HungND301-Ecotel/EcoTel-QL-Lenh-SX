@@ -51,6 +51,13 @@ const Positions: React.FC = () => {
 
     const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
         setExpanded(isExpanded);
+        if (isExpanded) {
+            setOpen(true);
+        } else {
+            setOpen(false);
+            setSelectedPosition(null);
+            setExpanded(false);
+        }
     };
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
 
@@ -258,7 +265,16 @@ const Positions: React.FC = () => {
                                     border: '1px solid black'
                                 }}>{position.note}</TableCell>}
                                 {visibleColumns.includes('actions') && <TableCell sx={{ border: '1px solid black' }}>
-                                    <IconButton color="primary" onClick={() => handleOpen(position)}>
+                                    <IconButton color="primary" onClick={() => {
+                                        if (open) {
+                                            const confirmed = window.confirm('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                                            if (confirmed) {
+                                                handleOpen(position);
+                                            }
+                                        } else {
+                                            handleOpen(position);
+                                        }
+                                    }}>
                                         <EditIcon />
                                     </IconButton>
                                     <IconButton color="error" onClick={() => handleDelete(position._id)}>

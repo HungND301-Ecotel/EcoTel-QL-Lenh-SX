@@ -50,7 +50,13 @@ const Materials: React.FC = () => {
 
     const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
         setExpanded(isExpanded);
-        formik.resetForm();
+        if (isExpanded) {
+            setOpen(true);
+        } else {
+            setOpen(false);
+            setSelectedMaterial(null);
+            setExpanded(false);
+        }
     };
     const defaultColumns = [
         { id: 'name', label: 'Tên vật liệu' },
@@ -265,7 +271,16 @@ const Materials: React.FC = () => {
                                 {visibleColumns.includes('density') && <TableCell sx={{ border: '1px solid black' }}>{material.density}</TableCell>}
                                 {visibleColumns.includes("mass") && <TableCell sx={{ border: '1px solid black' }}>{material.mass}</TableCell>}
                                 {visibleColumns.includes("actions") && <TableCell align='center' sx={{ border: '1px solid black' }}>
-                                    <IconButton color="primary" onClick={() => handleOpen(material)}>
+                                    <IconButton color="primary" onClick={() => {
+                                        if (open) {
+                                            const confirmed = window.confirm('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                                            if (confirmed) {
+                                                handleOpen(material);
+                                            }
+                                        } else {
+                                            handleOpen(material);
+                                        }
+                                    }}>
                                         <EditIcon />
                                     </IconButton>
                                     <IconButton color="error" onClick={() => handleDelete(material._id)}>
