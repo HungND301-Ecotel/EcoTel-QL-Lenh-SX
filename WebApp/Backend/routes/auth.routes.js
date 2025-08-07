@@ -202,7 +202,7 @@ router.post('/login', async (req, res) => {
             }
         });
     } catch (error) {
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).send({ status: 'error', message: error.message, stack: error.stack })
 
     }
 });

@@ -27,6 +27,12 @@ import {
     styled,
     Popper,
     Typography,
+    Menu,
+    Switch,
+    ListItemText,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
 } from '@mui/material';
 import { format } from 'date-fns';
 import {
@@ -40,6 +46,8 @@ import {
     InfoOutlined,
     SyncAlt,
     CancelOutlined,
+    Settings,
+    ExpandMore,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -68,16 +76,52 @@ const DispatcherOrders: React.FC = () => {
     const [endTime, setEndTime] = useState<Dayjs | null>(null);
     const [department, setDepartment] = useState("");
     const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+    const [status, setStatus] = useState('')
     const queryClient = useQueryClient();
 
+    const [expanded, setExpanded] = useState(false);
+
+    const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
+        setExpanded(isExpanded);
+    };
+    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
+
+    const defaultColumns = [
+        { id: 'assignedTo', label: 'Nhân viên' },
+        { id: 'salaryCode', label: 'Mã thẻ lương' },
+        { id: 'shift', label: 'Ca' },
+        { id: 'workingDate', label: 'Ngày làm việc' },
+        { id: 'job', label: 'Công việc' },
+        { id: 'content', label: 'Nội dung' },
+        { id: 'device', label: 'Phương tiện' },
+        { id: 'createdBy', label: 'Người tạo lệnh' },
+        { id: 'createdAt', label: 'Thời gian tạo lệnh' },
+        { id: 'startTime', label: 'Bắt đầu' },
+        { id: 'endTime', label: 'Kết thúc' },
+        { id: 'status', label: 'Trạng thái' },
+        { id: 'note', label: 'Ghi chú' },
+        { id: 'actions', label: 'Thao tác' },
+    ]
+    const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
+
+    const handleToggleColumn = (id: string) => {
+        setVisibleColumns(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
+    }
+    const handleChange = (value: string) => {
+        setStatus(prev => (prev === value ? '' : value)); // bỏ chọn nếu click lại
+    };
     const { data: users = [] } = useQuery({
         queryKey: ['users'],
         queryFn: () => api.get('/users').then(res => res.data.data),
     });
 
     const { data: orders = [], isLoading, refetch } = useQuery({
-        queryKey: ['orders'],
-        queryFn: () => api.get(`/orders?employee=${employee}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
+        queryKey: ['orders', status],
+        queryFn: () => api.get(`/orders?status=${status}employee=${employee}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
+    });
+    const { data: allOrders = [] } = useQuery({
+        queryKey: ['allOrders'],
+        queryFn: () => api.get(`/orders`).then(res => res.data.data),
     });
 
     const createMutation = useMutation({
@@ -85,6 +129,7 @@ const DispatcherOrders: React.FC = () => {
             api.post('/orders', newOrder).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
+            alert('Thêm lệnh sản xuất thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -117,6 +162,7 @@ const DispatcherOrders: React.FC = () => {
             }),
         onSuccess: () => {
             setSelectedOrder(null)
+            alert('Xuất file thành công');
         },
         onError: (error: any) => {
             alert(error.response.data.message || error.response || 'Lỗi')
@@ -128,6 +174,7 @@ const DispatcherOrders: React.FC = () => {
             api.put(`/orders/${updatedOrder._id}`, updatedOrder).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
+            alert('Cập nhật lệnh sản xuất thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -149,6 +196,7 @@ const DispatcherOrders: React.FC = () => {
         mutationFn: (id: string) => api.delete(`/orders/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
+            alert('Xóa lệnh sản xuất thành công');
         },
         onError: (error: any) => {
             alert(error.response.data.message || error.response || 'Lỗi')
@@ -161,12 +209,17 @@ const DispatcherOrders: React.FC = () => {
         } else {
             setSelectedOrder(null);
         }
+        setTransfer(false)
+        setExpanded(true)
         setOpen(true);
     };
 
+
     const handleClose = () => {
         setOpen(false);
+        setTransfer(false);
         setSelectedOrder(null);
+        setExpanded(false)
     };
 
     const handleSubmit = (values: Partial<Order>) => {
@@ -182,22 +235,12 @@ const DispatcherOrders: React.FC = () => {
         }
     };
 
-    if (isLoading) {
-        return <Typography>Loading...</Typography>;
-    }
 
 
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
                 <Typography variant="h4">Quản lý lệnh sản xuất</Typography>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => handleOpen()}
-                >
-                    Thêm lệnh sản xuất
-                </Button>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 2, mb: 3, flexWrap: 'wrap' }}>
                 <Box sx={{ flex: 1, flexDirection: 'column' }}>
@@ -271,88 +314,166 @@ const DispatcherOrders: React.FC = () => {
                     </Button>
                 </Box>
             </Box>
+            <Accordion expanded={expanded} onChange={handleChangeAction}>
+                <AccordionSummary
+                    expandIcon={<ExpandMore />}
+                    aria-controls="panel1-content"
+                    id="panel1-header"
+                >
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={() => handleOpen()}
+                    >
+                        Thêm lệnh sản xuất
+                    </Button>
+                </AccordionSummary>
+                <AccordionDetails>
+                    {selectedOrder && open && <OrderFormEdit
+                        initialValues={selectedOrder}
+                        onSubmit={handleSubmit}
+                        onCancel={handleClose}
+                    />}
+                    {!selectedOrder && open && <OrderFormAdd
+                        onSubmit={handleSubmit}
+                        onCancel={handleClose}
+                    />}
+                    {selectedOrder && transfer && < DispatcherOrderFormTransfer
+                        initialValues={selectedOrder}
+                        onCancel={handleClose}
+                    />}
+                </AccordionDetails>
+            </Accordion>
+            <Box display="flex" gap={2} alignItems={'center'} justifyContent='flex-end'>
+                <Box display="flex" alignItems={'center'}>
+                    <Checkbox color='info' name="status" checked={status === ''}
+                        onChange={() => handleChange('')} />
+                    <ListItemText primary={`Tất cả (${allOrders.length})`} sx={{ color: 'blue' }} />
+                </Box>
+                <Box display="flex" alignItems={'center'}>
+                    <Checkbox color='default' name="status" checked={status === 'pending'}
+                        onChange={() => handleChange('pending')} />
+                    <ListItemText primary={`Chưa nhận lệnh (${allOrders.filter((o: Order) => o.status === "pending").length})`} sx={{ color: 'grey' }} />
+                </Box>
+                <Box display="flex" alignItems={'center'}>
+                    <Checkbox color='success' name="status" checked={status === 'in_progress'}
+                        onChange={() => handleChange('in_progress')} />
+                    <ListItemText primary={`Đã nhận lệnh (${allOrders.filter((o: Order) => o.status === "in_progress").length})`} sx={{ color: 'green' }} />
+                </Box>
+                <Box display="flex" alignItems={'center'}>
+                    <Checkbox color='warning' name="status" checked={status === 'warning'}
+                        onChange={() => handleChange('warning')} />
+                    <ListItemText primary={`Lỗi (${allOrders.filter((o: Order) => o.status === "warning").length})`} sx={{ color: 'orange' }} />
+                </Box>
+                <Box display="flex" alignItems={'center'}>
+                    <Checkbox color='error' name="status" checked={status === 'completed'}
+                        onChange={() => handleChange('completed')} />
+                    <ListItemText primary={`Đã kết thúc (${allOrders.filter((o: Order) => o.status === "completed").length})`} sx={{ color: 'red' }} />
+                </Box>
+                <Box display="flex" alignItems={'center'}>
+                    <Checkbox color='secondary' name="status" checked={status === 'cancel'}
+                        onChange={() => handleChange('cancel')} />
+                    <ListItemText primary={`Đã hủy (${allOrders.filter((o: Order) => o.status === "cancel").length})`} sx={{ color: 'purple' }} />
+                </Box>
+            </Box>
 
+            <Box display="flex" justifyContent='space-between' alignItems='center' sx={{ mb: 2, mt: 2 }}>
+                <Typography variant="h3" sx={{ p: 2 }}>Bảng lệnh sản xuất</Typography>
+                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                    <Settings sx={{ fontSize: 30 }} />
+                </IconButton>
+                <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={() => setAnchorEl(null)}
+                    sx={{ maxHeight: 400 }}
+                >
+                    {defaultColumns.map((col) => (
+                        <MenuItem key={col.id} onClick={() => handleToggleColumn(col.id)}>
+                            <Switch checked={visibleColumns.includes(col.id)} />
+                            <ListItemText primary={col.label} />
+                        </MenuItem>
+                    ))}
+                </Menu>
+            </Box>
             <Paper sx={{ width: '100%', overflowX: "initial" }}>
                 <TableContainer sx={{ height: '80vh' }}>
                     <Table stickyHeader aria-label="sticky table">
                         <TableHead>
                             <TableRow>
-                                <TableCell align='center' sx={{
+                                {visibleColumns.includes('assignedTo') && <TableCell align='center' sx={{
                                     position: 'sticky',
                                     left: 0,
                                     backgroundColor: 'white',
                                     zIndex: 3,
                                     minWidth: 150,
                                     border: '1px solid black'
-                                }}>Nhân viên</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 130, border: '1px solid black' }}>Mã thẻ lương</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black' }}>Ca</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black' }}>Ngày làm việc</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Công việc</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 200, border: '1px solid black' }}>Nội dung</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Phương tiện</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Người tạo lệnh</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black' }}>Bắt đầu</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black' }}>Kết thúc</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Thời gian tạo lệnh</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Trạng thái</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Ghi chú</TableCell>
-                                <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black' }}>Thao tác</TableCell>
+                                }}>Nhân viên</TableCell>}
+                                {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{ minWidth: 130, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Mã thẻ lương</TableCell>}
+                                {visibleColumns.includes('shift') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ca</TableCell>}
+                                {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ngày làm việc</TableCell>}
+                                {visibleColumns.includes('job') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Công việc</TableCell>}
+                                {visibleColumns.includes('content') && <TableCell align='center' sx={{ minWidth: 200, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Nội dung</TableCell>}
+                                {visibleColumns.includes('device') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Phương tiện</TableCell>}
+                                {visibleColumns.includes('createdBy') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Người tạo lệnh</TableCell>}
+                                {visibleColumns.includes('startTime') && <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Bắt đầu</TableCell>}
+                                {visibleColumns.includes('endTime') && <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Kết thúc</TableCell>}
+                                {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Thời gian tạo lệnh</TableCell>}
+                                {visibleColumns.includes('status') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>}
+                                {visibleColumns.includes('note') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ghi chú</TableCell>}
+                                {visibleColumns.includes('actions') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Thao tác</TableCell>}
                             </TableRow>
                         </TableHead>
-                        <TableBody>
+                        {!isLoading ? <TableBody>
                             {orders.map((order: any) => (
                                 <TableRow key={order._id}>
-                                    <TableCell sx={{
+                                    {visibleColumns.includes('assignedTo') && <TableCell sx={{
                                         position: 'sticky',
                                         left: 0,
                                         backgroundColor: 'white',
                                         zIndex: 1,
                                         minWidth: 150,
                                         border: '1px solid black'
-                                    }}>{order.assignedTo?.fullName}</TableCell>
-                                    <TableCell sx={{ border: '1px solid black' }}>
+                                    }}>{order.assignedTo?.fullName}</TableCell>}
+                                    {visibleColumns.includes('salaryCode') && <TableCell sx={{ border: '1px solid black' }}>
                                         {order.assignedTo?.salaryCode}
-                                    </TableCell>
-                                    <TableCell sx={{ border: '1px solid black' }}>
+                                    </TableCell>}
+                                    {visibleColumns.includes('shift') && <TableCell sx={{ border: '1px solid black' }}>
                                         {order.shift?.name}
-                                    </TableCell>
-                                    <TableCell sx={{ border: '1px solid black' }}>
+                                    </TableCell>}
+                                    {visibleColumns.includes('workingDate') && <TableCell sx={{ border: '1px solid black' }}>
                                         {order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''}
-                                    </TableCell>
-                                    <TableCell sx={{ border: '1px solid black' }}>
+                                    </TableCell>}
+                                    {visibleColumns.includes('job') && <TableCell sx={{ border: '1px solid black' }}>
                                         {order.job.name || ''}
-                                    </TableCell>
-                                    <TableCell sx={{
-                                        whiteSpace: 'nowrap',
+                                    </TableCell>}
+                                    {visibleColumns.includes('content') && <TableCell sx={{
+                                        whiteSpace: 'pre-wrap',
                                         overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        maxWidth: 200,
+                                        // textOverflow: 'ellipsis',
+                                        maxWidth: 400,
                                         border: '1px solid black'
                                     }}>
                                         {order.workContent || ''}
-                                    </TableCell>
-                                    <TableCell sx={{ border: '1px solid black' }}>
+                                    </TableCell>}
+                                    {visibleColumns.includes('device') && <TableCell sx={{ border: '1px solid black' }}>
                                         <Typography whiteSpace="pre-line" fontSize={14}>
                                             {order.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')}
                                         </Typography>
-                                    </TableCell>
-                                    <TableCell sx={{ border: '1px solid black' }}>
+                                    </TableCell>}
+                                    {visibleColumns.includes('createdBy') && <TableCell sx={{ border: '1px solid black' }}>
                                         {order.createdBy.username || ''}
-                                    </TableCell>
-                                    <TableCell sx={{ border: '1px solid black' }}>
+                                    </TableCell>}
+                                    {visibleColumns.includes('createdAt') && <TableCell sx={{ border: '1px solid black' }}>
                                         {order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm') : ''}
-                                    </TableCell>
-                                    <TableCell sx={{ border: '1px solid black' }}>
+                                    </TableCell>}
+                                    {visibleColumns.includes('startTime') && <TableCell sx={{ border: '1px solid black' }}>
                                         {order.startTime ? format(new Date(order.startTime), 'HH:mm:ss') : ''}
-                                    </TableCell>
-                                    <TableCell sx={{ border: '1px solid black' }}>
+                                    </TableCell>}
+                                    {visibleColumns.includes('endTime') && <TableCell sx={{ border: '1px solid black' }}>
                                         {order.endTime ? format(new Date(order.endTime), 'HH:mm:ss') : ''}
-                                    </TableCell>
-                                    <TableCell sx={{ border: '1px solid black' }}>
-                                        <Checkbox checked={order.status === "cancel"} onChange={(e) => handleCancel(order)} disabled={order.status === "cancel"} />
-                                    </TableCell>
-                                    <TableCell sx={{ border: '1px solid black' }}>
+                                    </TableCell>}
+                                    {visibleColumns.includes('status') && <TableCell sx={{ border: '1px solid black' }}>
                                         <Chip
                                             sx={{ width: '120px' }}
                                             label={order.status === 'pending' ? 'Chưa nhận lệnh' :
@@ -366,11 +487,11 @@ const DispatcherOrders: React.FC = () => {
                                                         order.status === 'in_progress' ? 'success' :
                                                             order.status === 'warning' ? 'warning' : 'secondary'}
                                         />
-                                    </TableCell>
-                                    <TableCell sx={{ border: '1px solid black' }}>
+                                    </TableCell>}
+                                    {visibleColumns.includes('note') && <TableCell sx={{ border: '1px solid black' }}>
                                         {order?.temporaryError || ''}
-                                    </TableCell>
-                                    <TableCell sx={{ border: '1px solid black' }}>
+                                    </TableCell>}
+                                    {visibleColumns.includes('actions') && <TableCell sx={{ border: '1px solid black' }}>
                                         {['pending', 'warning'].includes(order?.status) && <IconButton
                                             color="primary"
                                             onClick={() => handleOpen(order)}
@@ -428,30 +549,15 @@ const DispatcherOrders: React.FC = () => {
                                                 <SyncAlt />
                                             </Tooltip>
                                         </IconButton>} */}
-                                    </TableCell>
+                                    </TableCell>}
                                 </TableRow>
                             ))}
-                        </TableBody>
+                        </TableBody> : <Typography>Loading...</Typography>}
                     </Table>
                 </TableContainer>
             </Paper>
 
             <OrderHistories open={history} setOpen={setHistory} initialValues={selectedOrder} />
-            {selectedOrder ? <OrderFormEdit
-                open={open}
-                initialValues={selectedOrder}
-                onSubmit={handleSubmit}
-                onCancel={handleClose}
-            /> : <OrderFormAdd
-                open={open}
-                onSubmit={handleSubmit}
-                onCancel={handleClose}
-            />}
-            {selectedOrder && <DispatcherOrderFormTransfer
-                open={transfer}
-                initialValues={selectedOrder}
-                onCancel={handleClose}
-            />}
         </Box>
     );
 };

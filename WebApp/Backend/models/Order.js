@@ -69,17 +69,8 @@ const orderSchema = new mongoose.Schema({
         enum: ['pending', 'in_progress', 'completed', 'warning', 'cancel'],
         default: 'pending'
     },
-    isScanned: {
-        type: String,
-        enum: ['pending', 'in_progress', 'completed'],
-        default: 'pending'
-    },
     note: {
         type: String,
-    },
-    active: {
-        type: Boolean,
-        default: false
     },
     cancel: {
         type: Boolean,

@@ -140,7 +140,6 @@ class _DispatcherAssignmentEdit
           "assignedTo": user?.id,
           "workContent": description,
           "status": "in_progress",
-          "isScanned": "pending",
           "temporaryError": null,
           "note": note,
         });

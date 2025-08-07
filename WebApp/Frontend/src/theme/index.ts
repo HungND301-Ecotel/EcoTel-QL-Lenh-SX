@@ -30,15 +30,7 @@ const theme = createTheme({
         },
     },
     typography: {
-        fontFamily: [
-            '-apple-system',
-            'BlinkMacSystemFont',
-            '"Segoe UI"',
-            'Roboto',
-            '"Helvetica Neue"',
-            'Arial',
-            'sans-serif',
-        ].join(','),
+        fontFamily: '"Times New Roman", Times, serif',
         h1: {
             fontSize: '2.5rem',
             fontWeight: 500,

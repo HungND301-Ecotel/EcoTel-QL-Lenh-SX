@@ -22,11 +22,20 @@ import {
     Autocomplete,
     styled,
     Popper,
+    Menu,
+    Switch,
+    ListItemText,
+    Checkbox,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
 } from '@mui/material';
 import {
     Add as AddIcon,
     Edit as EditIcon,
     Delete as DeleteIcon,
+    Settings,
+    ExpandMore,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -76,20 +85,44 @@ const Vehicles: React.FC = () => {
     const [mapCoords, setMapCoords] = useState<{ lat: number, lng: number; } | null>(null);
 
     const [user, setUser] = useAtom(userAtom)
+    const [expanded, setExpanded] = useState(false);
+
+    const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
+        setExpanded(isExpanded);
+    };
+    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
+
+    const defaultColumns = [
+        { id: 'name', label: 'Tên xe' },
+        { id: 'code', label: 'Biển số', width: 100 },
+        { id: 'vehicleNumber', label: 'Số xe' },
+        { id: 'category', label: 'Loại xe' },
+        { id: 'material', label: 'Chủng loại' },
+        { id: 'fuelType', label: 'Nhiên liệu' },
+        { id: 'capacity', label: 'Trọng tải' },
+        { id: 'coordinates', label: 'Vị trí' },
+        { id: 'department', label: 'Đơn vị' },
+        { id: 'status', label: 'Trạng thái' },
+        { id: 'actions', label: 'Thao tác', width: 100 },
+    ]
+    const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
+
+    const handleToggleColumn = (id: string) => {
+        setVisibleColumns(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
+    }
+    const handleChange = (value: string) => {
+        setStatus(prev => (prev === value ? '' : value)); // bỏ chọn nếu click lại
+    };
 
     const queryClient = useQueryClient();
-    // const apiKey = process.env.REACT_APP_MAP_API_KEY;
-
-    // if (!apiKey) {
-    //     throw new Error('REACT_APP_MAP_API_KEY is not defined');
-    // }
-    // const { isLoaded } = useJsApiLoader({
-    //     googleMapsApiKey: apiKey,
-    // });
 
     const { data: vehicles = [], isLoading } = useQuery({
         queryKey: ['vehicles', q, department, status],
-        queryFn: () => api.get(`/devices?q=${q}&department=${department}&status=${status}`).then(res => res.data.data?.filter((item: any) => item?.category?.name === "Vận tải")),
+        queryFn: () => api.get(`/devices?q=${q}&department=${department}&status=${status}`).then(res => res.data.data?.filter((item: any) => item?.category?.name.toLowerCase() === "vận tải".toLowerCase())),
+    });
+    const { data: allVehicles = [] } = useQuery({
+        queryKey: ['allVehicles', q, department],
+        queryFn: () => api.get(`/devices?q=${q}&department=${department}`).then(res => res.data.data?.filter((item: any) => item?.category?.name.toLowerCase() === "vận tải".toLowerCase())),
     });
     const { data: DeviceTypes = [] } = useQuery({
         queryKey: ['DeviceTypes'],
@@ -201,12 +234,14 @@ const Vehicles: React.FC = () => {
             }
             setMapCoords(null);
         }
+        setExpanded(true);
         setOpen(true);
     };
 
     const handleClose = () => {
         setOpen(false);
         setSelectedDevice(null);
+        setExpanded(false);
         formik.resetForm();
         setMapCoords(null);
     };
@@ -229,19 +264,6 @@ const Vehicles: React.FC = () => {
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
                 <Typography variant="h4">Quản lý Thông tin xe</Typography>
-                {user?.role !== "dispatcher" && <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => handleOpen()}
-                >
-                    Thêm Thông tin xe
-                </Button>}
-            </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3, gap: 2 }}>
-                <Typography><b style={{ color: 'green' }}>Chờ điều động:</b> {vehicles.filter((o: Device) => o.status === "available").length}</Typography>
-                <Typography><b style={{ color: 'red' }}>Đang hoạt động:</b> {vehicles.filter((o: Device) => o.status === "in_use").length}</Typography>
-                <Typography><b style={{ color: 'orange' }}>Hỏng:</b> {vehicles.filter((o: Device) => o.status === "maintenance").length}</Typography>
-                <Typography><b style={{ color: 'grey' }}>Niêm cất:</b> {vehicles.filter((o: Device) => o.status === "retired").length}</Typography>
             </Box>
             <Box sx={{ flex: 1, flexDirection: 'column', mb: 3 }}>
                 <Typography><h3>Tìm kiếm</h3></Typography>
@@ -268,48 +290,267 @@ const Vehicles: React.FC = () => {
                             />
                         )}
                     />}
-                    <TextField
-                        fullWidth
-                        select
-                        size='small'
-                        label="Lọc theo trạng thái"
-                        value={status}
-                        InputLabelProps={{ shrink: true }}
-                        SelectProps={{
-                            displayEmpty: true,
-                        }}
-                        onChange={(e) => setStatus(e.target.value)}>
-                        <MenuItem value="">Tất cả</MenuItem>
-                        <MenuItem value="available">Chờ điều động</MenuItem>
-                        <MenuItem value="in_use">Đang hoạt động</MenuItem>
-                        <MenuItem value="maintenance">Hỏng</MenuItem>
-                        <MenuItem value="retired">Niêm cất</MenuItem>
-                    </TextField>
                 </Box>
             </Box>
+            <Accordion expanded={expanded} onChange={handleChangeAction}>
+                <AccordionSummary
+                    expandIcon={<ExpandMore />}
+                    aria-controls="panel1-content"
+                    id="panel1-header"
+                >
+                    {user?.role !== "dispatcher" && <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={() => handleOpen()}
+                    >
+                        Thêm Thông tin xe
+                    </Button>}
+                </AccordionSummary>
+                <AccordionDetails>
+                    <DialogTitle>
+                        {selectedDevice ? 'Sửa Thông tin xe' : 'Thêm Thông tin xe'}
+                    </DialogTitle>
+                    <DialogContent>
+                        <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <TextField
+                                    fullWidth
+                                    id="code"
+                                    name="code"
+                                    label="Biển số"
+                                    value={formik.values.code}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.code && Boolean(formik.errors.code)}
+                                    helperText={formik.touched.code && formik.errors.code}
+                                />
+                                <TextField
+                                    fullWidth
+                                    id="name"
+                                    name="name"
+                                    label="Tên xe"
+                                    value={formik.values.name}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.name && Boolean(formik.errors.name)}
+                                    helperText={formik.touched.name && formik.errors.name}
+                                />
+                                <TextField
+                                    fullWidth
+                                    id="vehicleNumber"
+                                    name="vehicleNumber"
+                                    label="Số xe"
+                                    value={formik.values.vehicleNumber}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.vehicleNumber && Boolean(formik.errors.vehicleNumber)}
+                                    helperText={formik.touched.vehicleNumber && formik.errors.vehicleNumber}
+                                />
+                                <Autocomplete
+                                    fullWidth
+                                    options={DeviceTypes}
+                                    readOnly
+                                    getOptionLabel={(option: DeviceType) =>
+                                        option.name || ''
+                                    }
+                                    value={DeviceTypes.find((p: any) => p.name === 'Vận tải') || null}
+                                    onChange={(event, newValue) => {
+                                        formik.setFieldValue('category', newValue?._id || '');
+                                    }}
+                                    PopperComponent={StyledPopper}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Loại xe"
+                                            error={formik.touched.category && Boolean(formik.errors.category)}
+                                            helperText={formik.touched.category && typeof formik.errors.category === 'string' ? formik.errors.category : ''}
+                                        />
+                                    )}
+                                />
+                                <TextField
+                                    fullWidth
+                                    id="material"
+                                    name="material"
+                                    label="Chủng loại"
+                                    value={formik.values.material}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.material && Boolean(formik.errors.material)}
+                                    helperText={formik.touched.material && formik.errors.material}
+                                />
+                                <TextField
+                                    fullWidth
+                                    id="fuelType"
+                                    name="fuelType"
+                                    label="Nhiên liệu"
+                                    value={formik.values.fuelType}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.fuelType && Boolean(formik.errors.fuelType)}
+                                    helperText={formik.touched.fuelType && formik.errors.fuelType}
+                                />
+                                <TextField
+                                    fullWidth
+                                    type="number"
+                                    id="capacity"
+                                    name="capacity"
+                                    label="Trọng tải"
+                                    value={formik.values.capacity}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.capacity && Boolean(formik.errors.capacity)}
+                                    helperText={formik.touched.capacity && formik.errors.capacity}
+                                />
+                                <TextField
+                                    fullWidth
+                                    select
+                                    id="status"
+                                    name="status"
+                                    label="Trạng thái"
+                                    value={formik.values.status || 'available'}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.status && Boolean(formik.errors.status)}
+                                    helperText={formik.touched.status && formik.errors.status}
+                                >
+                                    <MenuItem value="available">Chờ điều động</MenuItem>
+                                    <MenuItem value="in_use">Đang hoạt động</MenuItem>
+                                    <MenuItem value="maintenance">Hỏng</MenuItem>
+                                    <MenuItem value="retired">Niêm cất</MenuItem>
+                                </TextField>
+                                <Autocomplete
+                                    fullWidth
+                                    options={departments}
+                                    getOptionLabel={(option: Department) =>
+                                        option.name || ''
+                                    }
+                                    value={departments.find((p: any) => p._id === (user?.role === 'manager?' ? user?.department?._id : formik.values.department)) || null}
+                                    readOnly={user?.role === 'manager'}
+                                    // disabled
+                                    onChange={(event, newValue) => {
+                                        formik.setFieldValue('department', newValue?._id || '');
+                                    }}
+                                    PopperComponent={StyledPopper}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Đơn vị"
+                                            error={formik.touched.department && Boolean(formik.errors.department)}
+                                            helperText={formik.touched.department && typeof formik.errors.department === 'string' ? formik.errors.department : ''}
+                                        />
+                                    )}
+                                />
+                                <TextField
+                                    fullWidth
+                                    id="coordinates"
+                                    name="coordinates"
+                                    label="Tọa độ (lng, lat)"
+                                    value={`${formik.values.coordinates.lat}, ${formik.values.coordinates.lng}`}
+                                    onChange={(e) => {
+                                        const [latStr, lngStr] = e.target.value.split(',');
+                                        const lng = parseFloat(lngStr.trim());
+                                        const lat = parseFloat(latStr.trim());
+                                        if (!isNaN(lat) && !isNaN(lng)) {
+                                            const coords = { lat, lng };
+                                            formik.setFieldValue('coordinates', coords);
+                                            setMapCoords(coords);
+                                        }
+                                    }}
+                                    error={formik.touched.coordinates && Boolean(formik.errors.coordinates)}
+                                    helperText={
+                                        (formik.touched.coordinates?.lat && formik.errors.coordinates?.lat) ||
+                                        (formik.touched.coordinates?.lng && formik.errors.coordinates?.lng)
+                                    }
+                                />
+                                <MapContainer
+                                    center={[defaultCenter.lat, defaultCenter.lng]}
+                                    zoom={18}
+                                    style={containerStyle}
+                                >
+                                    {/* Giao diện bản đồ giống Google Maps (CartoDB) */}
+                                    <TileLayer
+                                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                        attribution='&copy; OpenStreetMap contributors'
+                                    />
+                                    <LocationSelector onSelect={(coords) => setMapCoords(coords)} />
+                                    {mapCoords && <Marker
+                                        position={mapCoords}
+                                    />}
+                                </MapContainer>
+
+                            </Box>
+                        </Box>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleClose}>Hủy</Button>
+                        <Button onClick={() => formik.handleSubmit()} variant="contained">
+                            {selectedDevice ? 'Cập nhật' : 'Thêm mới'}
+                        </Button>
+                    </DialogActions>
+                </AccordionDetails>
+            </Accordion>
+            <Box display="flex" gap={2} alignItems={'center'} justifyContent='flex-end'>
+                <Box display="flex" alignItems={'center'}>
+                    <Checkbox color='info' name="status" checked={status === ''}
+                        onChange={() => handleChange('')} />
+                    <ListItemText primary={`Tất cả (${allVehicles.length})`} sx={{ color: 'blue' }} />
+                </Box>
+                <Box display="flex" alignItems={'center'}>
+                    <Checkbox color='success' name="status" checked={status === 'available'}
+                        onChange={() => handleChange('available')} />
+                    <ListItemText primary={`Chờ điều động (${allVehicles.filter((o: Device) => o.status === "available").length})`} sx={{ color: 'green' }} />
+                </Box>
+                <Box display="flex" alignItems={'center'}>
+                    <Checkbox color='error' name="status" checked={status === 'in_use'}
+                        onChange={() => handleChange('in_use')} />
+                    <ListItemText primary={`Đang hoạt động (${allVehicles.filter((o: Device) => o.status === "in_use").length})`} sx={{ color: 'red' }} />
+                </Box>
+                <Box display="flex" alignItems={'center'}>
+                    <Checkbox color='warning' name="status" checked={status === 'maintenance'}
+                        onChange={() => handleChange('maintenance')} />
+                    <ListItemText primary={`Hỏng (${allVehicles.filter((o: Device) => o.status === "maintenance").length})`} sx={{ color: 'orange' }} />
+                </Box>
+                <Box display="flex" alignItems={'center'}>
+                    <Checkbox color='default' name="status" checked={status === 'retired'}
+                        onChange={() => handleChange('retired')} />
+                    <ListItemText primary={`Niêm cất (${allVehicles.filter((o: Device) => o.status === "retired").length})`} sx={{ color: 'grey' }} />
+                </Box>
+            </Box>
+            <Box display="flex" justifyContent='space-between' alignItems='center' sx={{ mb: 2, mt: 2 }}>
+                <Typography variant="h3" sx={{ p: 2 }}>Bảng thông tin xe</Typography>
+                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                    <Settings sx={{ fontSize: 30 }} />
+                </IconButton>
+                <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={() => setAnchorEl(null)}
+                    sx={{ maxHeight: 400 }}
+                >
+                    {defaultColumns.map((col) => (
+                        <MenuItem key={col.id} onClick={() => handleToggleColumn(col.id)}>
+                            <Switch checked={visibleColumns.includes(col.id)} />
+                            <ListItemText primary={col.label} />
+                        </MenuItem>
+                    ))}
+                </Menu>
+            </Box>
             <Paper sx={{ width: '100%', overflowX: "initial" }}>
-                <TableContainer sx={{ height: '80vh' }}>
+                <TableContainer>
                     <Table stickyHeader aria-label="sticky table">
                         <TableHead>
                             <TableRow>
-                                <TableCell align='center' sx={{
+                                {visibleColumns.includes('code') && <TableCell align='center' sx={{
                                     position: 'sticky',
                                     left: 0,
-                                    backgroundColor: 'white',
                                     zIndex: 3,
                                     minWidth: 100,
-                                    border: '1px solid black'
-                                }}>Biển số</TableCell>
-                                <TableCell align='center' sx={{ border: '1px solid black' }}>Tên xe</TableCell>
-                                <TableCell align='center' sx={{ border: '1px solid black' }}>Số xe</TableCell>
-                                <TableCell align='center' sx={{ border: '1px solid black' }}>Loại xe</TableCell>
-                                <TableCell align='center' sx={{ border: '1px solid black' }}>Chủng loại</TableCell>
-                                <TableCell align='center' sx={{ border: '1px solid black' }}>Nhiên liệu</TableCell>
-                                <TableCell align='center' sx={{ border: '1px solid black' }}>Trọng tải</TableCell>
-                                <TableCell align='center' sx={{ border: '1px solid black' }}>Vị trí</TableCell>
-                                <TableCell align='center' sx={{ border: '1px solid black' }}>Đơn vị</TableCell>
-                                <TableCell align='center' sx={{ border: '1px solid black' }}>Trạng thái</TableCell>
-                                {user?.role !== 'dispatcher' && <TableCell align='center' sx={{ border: '1px solid black' }}>Thao tác</TableCell>}
+                                    border: '1px solid black',
+                                    fontWeight: 'bold', fontSize: 18
+                                }}>Biển số</TableCell>}
+                                {visibleColumns.includes('name') && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Tên xe</TableCell>}
+                                {visibleColumns.includes('vehicleNumber') && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Số xe</TableCell>}
+                                {visibleColumns.includes('category') && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Loại xe</TableCell>}
+                                {visibleColumns.includes('material') && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Chủng loại</TableCell>}
+                                {visibleColumns.includes('fuelType') && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Nhiên liệu</TableCell>}
+                                {visibleColumns.includes('capacity') && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Trọng tải</TableCell>}
+                                {visibleColumns.includes('coordinates') && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Vị trí</TableCell>}
+                                {visibleColumns.includes('department') && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Đơn vị</TableCell>}
+                                {visibleColumns.includes('status') && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>}
+                                {visibleColumns.includes('actions') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Thao tác</TableCell>)}
                             </TableRow>
                         </TableHead>
                         {!isLoading ? <TableBody>
@@ -327,27 +568,27 @@ const Vehicles: React.FC = () => {
                                 }
                                 return (
                                     <TableRow key={device._id}>
-                                        <TableCell sx={{
+                                        {visibleColumns.includes('name') && <TableCell sx={{
                                             position: 'sticky',
                                             left: 0,
                                             backgroundColor: 'white',
                                             zIndex: 1,
                                             minWidth: 100,
                                             border: '1px solid black'
-                                        }}>{device.code}</TableCell>
-                                        <TableCell sx={{ border: '1px solid black', minWidth: 150, }}>{device.name}</TableCell>
-                                        <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{device.vehicleNumber}</TableCell>
-                                        <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{device.category?.name}</TableCell>
-                                        <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{device.material}</TableCell>
-                                        <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{device.fuelType}</TableCell>
-                                        <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{device.capacity}</TableCell>
-                                        <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{coordsDisplay}</TableCell>
-                                        <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>
+                                        }}>{device.code}</TableCell>}
+                                        {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black', minWidth: 150, }}>{device.name}</TableCell>}
+                                        {visibleColumns.includes('vehicleNumber') && <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{device.vehicleNumber}</TableCell>}
+                                        {visibleColumns.includes('category') && <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{device.category?.name}</TableCell>}
+                                        {visibleColumns.includes('material') && <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{device.material}</TableCell>}
+                                        {visibleColumns.includes('fuelType') && <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{device.fuelType}</TableCell>}
+                                        {visibleColumns.includes('capacity') && <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{device.capacity}</TableCell>}
+                                        {visibleColumns.includes('coordinates') && <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{coordsDisplay}</TableCell>}
+                                        {visibleColumns.includes('department') && <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>
                                             {typeof device.department === 'object' && device.department !== null
                                                 ? device.department.name
                                                 : device.department || 'Chưa có'}
-                                        </TableCell>
-                                        <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>
+                                        </TableCell>}
+                                        {visibleColumns.includes('status') && <TableCell align='center' sx={{ border: '1px solid black', minWidth: 130, }}>
                                             <Chip
                                                 sx={{ width: '120px' }}
                                                 label={device.status === 'in_use' ? 'Đang hoạt động' :
@@ -359,8 +600,8 @@ const Vehicles: React.FC = () => {
                                                         device.status === 'retired' ? 'secondary' :
                                                             device.status === 'available' ? 'success' : 'default'}
                                             />
-                                        </TableCell>
-                                        {user?.role !== 'dispatcher' && <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>
+                                        </TableCell>}
+                                        {visibleColumns.includes('actions') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ border: '1px solid black', minWidth: 130, }}>
                                             <IconButton
                                                 color="primary"
                                                 onClick={() => handleOpen(device)}
@@ -373,7 +614,7 @@ const Vehicles: React.FC = () => {
                                             >
                                                 <DeleteIcon />
                                             </IconButton>
-                                        </TableCell>}
+                                        </TableCell>)}
                                     </TableRow>)
                             })}
                         </TableBody> : <Typography>Loading...</Typography>}
@@ -381,197 +622,6 @@ const Vehicles: React.FC = () => {
                 </TableContainer>
             </Paper>
 
-            <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-                <DialogTitle>
-                    {selectedDevice ? 'Sửa Thông tin xe' : 'Thêm Thông tin xe'}
-                </DialogTitle>
-                <DialogContent>
-                    <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <TextField
-                                fullWidth
-                                id="code"
-                                name="code"
-                                label="Biển số"
-                                value={formik.values.code}
-                                onChange={formik.handleChange}
-                                error={formik.touched.code && Boolean(formik.errors.code)}
-                                helperText={formik.touched.code && formik.errors.code}
-                            />
-                            <TextField
-                                fullWidth
-                                id="name"
-                                name="name"
-                                label="Tên xe"
-                                value={formik.values.name}
-                                onChange={formik.handleChange}
-                                error={formik.touched.name && Boolean(formik.errors.name)}
-                                helperText={formik.touched.name && formik.errors.name}
-                            />
-                            <TextField
-                                fullWidth
-                                id="vehicleNumber"
-                                name="vehicleNumber"
-                                label="Số xe"
-                                value={formik.values.vehicleNumber}
-                                onChange={formik.handleChange}
-                                error={formik.touched.vehicleNumber && Boolean(formik.errors.vehicleNumber)}
-                                helperText={formik.touched.vehicleNumber && formik.errors.vehicleNumber}
-                            />
-                            <Autocomplete
-                                fullWidth
-                                options={DeviceTypes}
-                                readOnly
-                                getOptionLabel={(option: DeviceType) =>
-                                    option.name || ''
-                                }
-                                value={DeviceTypes.find((p: any) => p.name === 'Vận tải') || null}
-                                onChange={(event, newValue) => {
-                                    formik.setFieldValue('category', newValue?._id || '');
-                                }}
-                                PopperComponent={StyledPopper}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        label="Loại xe"
-                                        error={formik.touched.category && Boolean(formik.errors.category)}
-                                        helperText={formik.touched.category && typeof formik.errors.category === 'string' ? formik.errors.category : ''}
-                                    />
-                                )}
-                            />
-                            <TextField
-                                fullWidth
-                                id="material"
-                                name="material"
-                                label="Chủng loại"
-                                value={formik.values.material}
-                                onChange={formik.handleChange}
-                                error={formik.touched.material && Boolean(formik.errors.material)}
-                                helperText={formik.touched.material && formik.errors.material}
-                            />
-                            <TextField
-                                fullWidth
-                                id="fuelType"
-                                name="fuelType"
-                                label="Nhiên liệu"
-                                value={formik.values.fuelType}
-                                onChange={formik.handleChange}
-                                error={formik.touched.fuelType && Boolean(formik.errors.fuelType)}
-                                helperText={formik.touched.fuelType && formik.errors.fuelType}
-                            />
-                            <TextField
-                                fullWidth
-                                type="number"
-                                id="capacity"
-                                name="capacity"
-                                label="Trọng tải"
-                                value={formik.values.capacity}
-                                onChange={formik.handleChange}
-                                error={formik.touched.capacity && Boolean(formik.errors.capacity)}
-                                helperText={formik.touched.capacity && formik.errors.capacity}
-                            />
-                            <TextField
-                                fullWidth
-                                select
-                                id="status"
-                                name="status"
-                                label="Trạng thái"
-                                value={formik.values.status || 'available'}
-                                onChange={formik.handleChange}
-                                error={formik.touched.status && Boolean(formik.errors.status)}
-                                helperText={formik.touched.status && formik.errors.status}
-                            >
-                                <MenuItem value="available">Chờ điều động</MenuItem>
-                                <MenuItem value="in_use">Đang hoạt động</MenuItem>
-                                <MenuItem value="maintenance">Hỏng</MenuItem>
-                                <MenuItem value="retired">Niêm cất</MenuItem>
-                            </TextField>
-                            <Autocomplete
-                                fullWidth
-                                options={departments}
-                                getOptionLabel={(option: Department) =>
-                                    option.name || ''
-                                }
-                                value={departments.find((p: any) => p._id === (user?.role === 'manager?' ? user?.department?._id : formik.values.department)) || null}
-                                readOnly={user?.role === 'manager'}
-                                // disabled
-                                onChange={(event, newValue) => {
-                                    formik.setFieldValue('department', newValue?._id || '');
-                                }}
-                                PopperComponent={StyledPopper}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        label="Đơn vị"
-                                        error={formik.touched.department && Boolean(formik.errors.department)}
-                                        helperText={formik.touched.department && typeof formik.errors.department === 'string' ? formik.errors.department : ''}
-                                    />
-                                )}
-                            />
-                            <TextField
-                                fullWidth
-                                id="coordinates"
-                                name="coordinates"
-                                label="Tọa độ (lng, lat)"
-                                value={`${formik.values.coordinates.lat}, ${formik.values.coordinates.lng}`}
-                                onChange={(e) => {
-                                    const [latStr, lngStr] = e.target.value.split(',');
-                                    const lng = parseFloat(lngStr.trim());
-                                    const lat = parseFloat(latStr.trim());
-                                    if (!isNaN(lat) && !isNaN(lng)) {
-                                        const coords = { lat, lng };
-                                        formik.setFieldValue('coordinates', coords);
-                                        setMapCoords(coords);
-                                    }
-                                }}
-                                error={formik.touched.coordinates && Boolean(formik.errors.coordinates)}
-                                helperText={
-                                    (formik.touched.coordinates?.lat && formik.errors.coordinates?.lat) ||
-                                    (formik.touched.coordinates?.lng && formik.errors.coordinates?.lng)
-                                }
-                            />
-                            {/* {isLoaded && (
-                                <GoogleMap
-                                    mapContainerStyle={containerStyle}
-                                    center={mapCoords || defaultCenter}
-                                    zoom={20}
-                                    onClick={handleMapClick}
-                                >
-                                    {mapCoords && <Marker
-                                        position={mapCoords}
-                                        icon={{
-                                            url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-                                            scaledSize: new window.google.maps.Size(40, 40),
-                                        }}
-                                    />}
-                                </GoogleMap>
-                            )} */}
-                            <MapContainer
-                                center={[defaultCenter.lat, defaultCenter.lng]}
-                                zoom={18}
-                                style={containerStyle}
-                            >
-                                {/* Giao diện bản đồ giống Google Maps (CartoDB) */}
-                                <TileLayer
-                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                    attribution='&copy; OpenStreetMap contributors'
-                                />
-                                <LocationSelector onSelect={(coords) => setMapCoords(coords)} />
-                                {mapCoords && <Marker
-                                    position={mapCoords}
-                                />}
-                            </MapContainer>
-
-                        </Box>
-                    </Box>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleClose}>Hủy</Button>
-                    <Button onClick={() => formik.handleSubmit()} variant="contained">
-                        {selectedDevice ? 'Cập nhật' : 'Thêm mới'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
         </Box>
     );
 };

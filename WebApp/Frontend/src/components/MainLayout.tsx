@@ -1,71 +1,47 @@
-import React, { useEffect, useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+// 👇 Bạn giữ nguyên các import (bỏ Drawer liên quan nếu không còn dùng)
+import React, { useState } from 'react';
 import {
     AppBar,
-    Box,
-    CssBaseline,
-    Drawer,
-    IconButton,
-    List,
-    ListItem,
-    ListItemIcon,
-    ListItemText,
     Toolbar,
+    IconButton,
     Typography,
-    Divider,
+    Box,
+    Avatar,
     Badge,
     Tooltip,
-    Avatar,
     Menu,
     MenuItem,
-    Collapse,
     Button,
     Popover,
+    Divider,
 } from '@mui/material';
 import {
-    Menu as MenuIcon,
-    Dashboard as DashboardIcon,
-    People as PeopleIcon,
-    Business as BusinessIcon,
-    Assignment as AssignmentIcon,
     Notifications as NotificationsIcon,
-    Settings as SettingsIcon,
-    Logout as LogoutIcon,
-    Devices as DevicesIcon,
-    AccessTime as AccessTimeIcon,
-    Description as DescriptionIcon,
-    Category,
-    LocationCity,
-    Work,
-    CreditCard,
-    RotateRightRounded,
-    RotateRight,
-    AssignmentInd,
-    LocalShipping,
     VpnKeyOutlined,
-    SafetyCheck,
-    Timelapse,
-    PrecisionManufacturing,
-    LocalOffer,
-    CategoryTwoTone,
-    LinkOff,
-    Link,
-    ExpandLess,
+    Logout as LogoutIcon,
+    Person as PersonIcon,
     ExpandMore,
-    Person,
 } from '@mui/icons-material';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import api from '../config/api.config';
-import socketService from '../services/socketService';
-import { useSocket } from '../hooks/useSocket';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAtom } from 'jotai';
 import { userAtom } from '../atoms/userAtoms';
 import ChangePassword from './ChangePassword/ChangePassword';
 import Profile from './Profile/Profile';
-
-const drawerWidth = 240;
-const miniDrawerWidth = 64;
-
+import { useQuery } from '@tanstack/react-query';
+import api from '../config/api.config';
+import {
+    Category,
+    LocationCity,
+    Work,
+    LocalOffer,
+    PrecisionManufacturing,
+    SafetyCheck,
+    Timelapse,
+    Business,
+    People,
+    LocalShipping,
+    AssignmentInd,
+} from '@mui/icons-material';
 
 interface MainLayoutProps {
     children?: React.ReactNode;
@@ -73,426 +49,176 @@ interface MainLayoutProps {
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     const navigate = useNavigate();
-    const [mobileOpen, setMobileOpen] = React.useState(false);
-    const queryClient = useQueryClient();
-    const [user, setUser] = useAtom(userAtom)
-    const [openDanhMuc, setOpenDanhMuc] = useState(false)
-    const [openprofile, setOpenprofile] = useState(false)
-    const [openPopover, setOpenPopover] = useState(false)
+    const [user, setUser] = useAtom(userAtom);
+    const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+    const [avatarAnchorEl, setAvatarAnchorEl] = useState<null | HTMLElement>(null);
+    const [openProfile, setOpenProfile] = useState(false);
+    const [openChangePassword, setOpenChangePassword] = useState(false);
 
-
-
+    const location = useLocation()
 
     const { data: notificationCount = 0 } = useQuery({
         queryKey: ['notificationCount'],
         queryFn: () => api.get('/notifications/unread/count').then(res => res.data.data),
     });
 
-
-    const menuItems = [
-        ["admin", "manager"].includes(user?.role) ? {
-            text: 'Ca làm việc', icon:
-                <Tooltip title="Ca làm việc" placement='right'>
-                    <Timelapse color='primary' />
-                </Tooltip>
-            , path: '/shifts'
-        } : null,
-        ["admin", "manager"].includes(user?.role) ? {
-            text: 'Biện pháp an toàn', icon:
-                <Tooltip title="Biện pháp an toàn" placement='right'>
-                    <SafetyCheck color='primary' />
-                </Tooltip>
-            , path: '/safetyMeasures'
-        } : null,
-        ["admin", "manager"].includes(user?.role) ? {
-            text: 'Loại vật liệu', icon:
-                <Tooltip title="Loại vật liệu" placement='right'>
-                    <Category color='primary' />
-                </Tooltip>
-            , path: '/materials'
-        } : null,
-        ["admin", "manager"].includes(user?.role) ? {
-            text: 'Loại phương tiện', icon:
-                <Tooltip title="Loại phương tiện" placement='right'>
-                    <LocalOffer color='primary' />
-                </Tooltip>
-            , path: '/deviceTypes'
-        } : null,
-        ["admin", "manager", "dispatcher"].includes(user?.role) ? {
-            text: 'Thông tin xe', icon:
-                <Tooltip title="Thông tin xe" placement='right'>
-                    <LocalShipping color='primary' />
-                </Tooltip>
-            , path: '/vehicles'
-        } : null,
-        ["admin", "manager", "dispatcher"].includes(user?.role) ? {
-            text: 'Thông tin máy', icon:
-                <Tooltip title="Thông tin máy" placement='right'>
-                    <PrecisionManufacturing color='primary' />
-                </Tooltip>
-            , path: '/machines'
-        } : null,
-        ["admin", "manager"].includes(user?.role) ? {
-            text: 'Vị trí', icon:
-                <Tooltip title="Vị trí" placement='right'>
-                    <LocationCity color='primary' />
-                </Tooltip>
-            , path: '/locations'
-        } : null,
-        ["admin", "manager"].includes(user?.role) ? {
-            text: 'Công việc', icon:
-                <Tooltip title="Công việc" placement='right'>
-                    <Work color='primary' />
-                </Tooltip>
-            , path: '/jobs'
-        } : null,
-        ["admin", "manager"].includes(user?.role) ? {
-            text: 'Chức danh nghề nghiệp', icon:
-                <Tooltip title="Chức danh nghề nghiệp" placement='right'>
-                    <AssignmentInd color='primary' />
-                </Tooltip>
-            , path: '/positions'
-        } : null,
-        ["admin", "manager"].includes(user?.role) ? {
-            text: 'Đơn vị', icon:
-                <Tooltip title="Đơn vị" placement='right'>
-                    <BusinessIcon color='primary' />
-                </Tooltip>
-            , path: '/departments'
-        } : null,
-        ["admin", "manager"].includes(user?.role) ? {
-            text: 'Cán bộ nhân viên', icon:
-                <Tooltip title="Cán bộ nhân viên" placement='right'>
-                    <PeopleIcon color='primary' />
-                </Tooltip>
-            , path: '/users'
-        } : null
-    ].filter(Boolean)
-
-
-    const handleDrawerToggle = () => {
-        setMobileOpen(!mobileOpen);
-    };
-
-    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-    const open = Boolean(anchorEl);
-    const [isOpenChangePassword, setIsOpenChangePassword] = useState(false)
-
-    const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-        setAnchorEl(event.currentTarget);
-    };
-
-    const handleClose = () => {
-        setAnchorEl(null);
-    };
-
-    const [anchorElPopover, setAnchorElPopover] = useState<HTMLElement | null>(null);
-    const handleAvatarClick = (event: React.MouseEvent<HTMLElement>) => {
-        setAnchorElPopover(event.currentTarget); // anchorEl sẽ là nút Avatar
-        setOpenPopover(true);
-    };
-
     const handleLogout = () => {
         localStorage.removeItem('token');
-        setUser(null)
+        setUser(null);
         navigate('/login');
     };
 
-    const drawer = (
-        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <Toolbar sx={{
-                justifyContent: mobileOpen ? 'initial' : 'center',
-                alignItems: 'center',
-                gap: 2
-            }}>
-                <Avatar src='/image/logo.jpg' sx={{ width: '70px' }} />
-                {mobileOpen && <Typography variant="h6" noWrap component="div">
-                    ESOFT
-                </Typography>}
-            </Toolbar>
-            <Divider />
-            <List sx={{ flex: 1, overflowY: 'auto' }}>
-                <ListItem
-                    button
-                    key="Dashboard"
-                    onClick={() => navigate("/")}
-                    sx={{
-                        justifyContent: mobileOpen ? 'initial' : 'center',
-                        px: 2.5,
-                        mb: mobileOpen ? 0 : 1
-                    }}
-                >
-                    <ListItemIcon sx={{
-                        minWidth: 0,
-                        mr: mobileOpen ? 2 : 'auto',
-                        justifyContent: 'center',
-                    }}>
-                        <Tooltip title="Dashboard" placement='right'>
-                            <DashboardIcon color='primary' />
-                        </Tooltip>
-                    </ListItemIcon>
-                    {mobileOpen && <ListItemText primary="Dashboard" />}
-                </ListItem>
-                <ListItem
-                    button
-                    key="Lệnh sản xuất"
-                    onClick={() => navigate("/orders")}
-                    sx={{
-                        justifyContent: mobileOpen ? 'initial' : 'center',
-                        px: 2.5,
-                        mb: mobileOpen ? 0 : 1
-                    }}
-                >
-                    <ListItemIcon sx={{
-                        minWidth: 0,
-                        mr: mobileOpen ? 2 : 'auto',
-                        justifyContent: 'center',
-                    }}>
-                        <Tooltip title="Lệnh sản xuất" placement='right'>
-                            <AssignmentIcon color='primary' />
-                        </Tooltip>
-                    </ListItemIcon>
-                    {mobileOpen && <ListItemText primary="Lệnh sản xuất" />}
-                </ListItem>
-                {["manager"].includes(user?.role) && <ListItem
-                    button
-                    key="Công việc của tôi"
-                    onClick={() => navigate("/orderByUsers")}
-                    sx={{
-                        justifyContent: mobileOpen ? 'initial' : 'center',
-                        px: 2.5,
-                        mb: mobileOpen ? 0 : 1
-                    }}
-                >
-                    <ListItemIcon sx={{
-                        minWidth: 0,
-                        mr: mobileOpen ? 2 : 'auto',
-                        justifyContent: 'center',
-                    }}>
-                        <Tooltip title="Công việc của tôi" placement='right'>
-                            <AssignmentInd color='primary' />
-                        </Tooltip>
-                    </ListItemIcon>
-                    {mobileOpen && <ListItemText primary="Công việc của tôi" />}
-                </ListItem>}
-                <ListItem
-                    button
-                    key="Danh mục"
-                    onClick={() => setOpenDanhMuc(!openDanhMuc)}
-                    sx={{
-                        justifyContent: mobileOpen ? 'initial' : 'center',
-                        px: 2.5,
-                        mb: mobileOpen ? 0 : 1
-                    }}
-                >
-                    <ListItemIcon sx={{
-                        minWidth: 0,
-                        mr: mobileOpen ? 2 : 'auto',
-                        justifyContent: 'center',
-                    }}>
-                        <Tooltip title="Danh mục" placement='right'>
-                            <Link color='primary' />
-                        </Tooltip>
-                    </ListItemIcon>
-                    {mobileOpen && <ListItemText primary="Danh mục" />}
-                    {mobileOpen && (openDanhMuc ? <ExpandLess /> : <ExpandMore />)}
-                </ListItem>
-                <Collapse in={openDanhMuc} timeout="auto" unmountOnExit>
-                    <List component="div" disablePadding>
-                        {menuItems.map((item) => (
-                            <ListItem
-                                button
-                                key={item?.text}
-                                onClick={() => navigate(item?.path!)}
-                                sx={{
-                                    justifyContent: mobileOpen ? 'initial' : 'center',
-                                    px: 2.5,
-                                    mb: mobileOpen ? 0 : 1,
-                                    pl: mobileOpen ? 6 : 2.5
-                                }}
-                            >
-                                <ListItemIcon sx={{
-                                    minWidth: 0,
-                                    mr: mobileOpen ? 2 : 'auto',
-                                    justifyContent: 'center',
-                                }}>{item?.icon}</ListItemIcon>
-                                {mobileOpen && <ListItemText primary={item?.text} />}
-                            </ListItem>
-                        ))}
-                    </List>
-                </Collapse>
-                {["admin", "manager", "dispatcher"].includes(user?.role) && <ListItem
-                    button
-                    key="Báo cáo"
-                    onClick={() => navigate("/reports")}
-                    sx={{
-                        justifyContent: mobileOpen ? 'initial' : 'center',
-                        px: 2.5,
-                        mb: mobileOpen ? 0 : 1
-                    }}
-                >
-                    <ListItemIcon sx={{
-                        minWidth: 0,
-                        mr: mobileOpen ? 2 : 'auto',
-                        justifyContent: 'center',
-                    }}>
-                        <Tooltip title="Báo cáo" placement='right'>
-                            <DescriptionIcon color='primary' />
-                        </Tooltip>
-                    </ListItemIcon>
-                    {mobileOpen && <ListItemText primary="Báo cáo" />}
-                </ListItem>}
-            </List>
-        </Box>
-    );
+    const menuItems = [
+        ["admin", "manager"].includes(user?.role) && {
+            text: 'Ca làm việc', icon: <Timelapse color='primary' />, path: '/shifts'
+        },
+        ["admin", "manager"].includes(user?.role) && {
+            text: 'Biện pháp an toàn', icon: <SafetyCheck color='primary' />, path: '/safetyMeasures'
+        },
+        ["admin", "manager"].includes(user?.role) && {
+            text: 'Loại vật liệu', icon: <Category color='primary' />, path: '/materials'
+        },
+        ["admin", "manager"].includes(user?.role) && {
+            text: 'Loại phương tiện', icon: <LocalOffer color='primary' />, path: '/deviceTypes'
+        },
+        ["admin", "manager", "dispatcher"].includes(user?.role) && {
+            text: 'Thông tin xe', icon: <LocalShipping color='primary' />, path: '/vehicles'
+        },
+        ["admin", "manager", "dispatcher"].includes(user?.role) && {
+            text: 'Thông tin máy', icon: <PrecisionManufacturing color='primary' />, path: '/machines'
+        },
+        ["admin", "manager"].includes(user?.role) && {
+            text: 'Vị trí', icon: <LocationCity color='primary' />, path: '/locations'
+        },
+        ["admin", "manager"].includes(user?.role) && {
+            text: 'Công việc', icon: <Work color='primary' />, path: '/jobs'
+        },
+        ["admin", "manager"].includes(user?.role) && {
+            text: 'Chức danh nghề nghiệp', icon: <AssignmentInd color='primary' />, path: '/positions'
+        },
+        ["admin", "manager"].includes(user?.role) && {
+            text: 'Đơn vị', icon: <Business color='primary' />, path: '/departments'
+        },
+        ["admin", "manager"].includes(user?.role) && {
+            text: 'Cán bộ nhân viên', icon: <People color='primary' />, path: '/users'
+        }
+    ].filter(Boolean);
 
     return (
-        <Box sx={{ display: 'flex' }}>
-            <CssBaseline />
-            <AppBar
-                position="fixed"
-                sx={{
-                    zIndex: (theme) => theme.zIndex.drawer + 1,
-                    ml: mobileOpen ? `${drawerWidth}px` : `${miniDrawerWidth}px`,
-                    width: mobileOpen
-                        ? `calc(100% - ${drawerWidth}px)`
-                        : `calc(100% - ${miniDrawerWidth}px)`,
-                    transition: 'width 0.3s, margin 0.3s',
-                }}
-            >
-                <Toolbar sx={{ display: 'flex', justifyContent: "space-between", alignItems: 'center' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <IconButton
-                            color="inherit"
-                            aria-label="open drawer"
-                            edge="start"
-                            onClick={handleDrawerToggle}
-                            sx={{ mr: 2, }}
-                        >
-                            <MenuIcon />
-                        </IconButton>
-                        <Typography variant="h6" noWrap component="div">
-                            Phần mềm giao ca, nhận lệnh sản xuất
-                        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+            <AppBar position="fixed">
+                <Toolbar sx={{ justifyContent: 'space-between' }}>
+                    <Box display="flex" alignItems="center" gap={5}>
+                        {/* Logo và tiêu đề */}
+                        <Box display="flex" alignItems="center" gap={2}>
+                            <img src="/image/logo.png" style={{ width: 60, height: 60 }} />
+                            <Typography variant="h6">PHẦN MỀM GIAO CA, NHẬN LỆNH SẢN XUẤT</Typography>
+                        </Box>
+
+                        {/* Menu chính ngang */}
+                        <Box display="flex" gap={2}>
+                            <Button color="inherit" sx={{ fontSize: 20, borderBottom: location.pathname === '/' ? '5px solid red' : '' }} onClick={() => navigate('/')}>Tổng quan</Button>
+                            <Button color="inherit" sx={{ fontSize: 20, borderBottom: location.pathname === '/orders' ? '5px solid red' : '' }} onClick={() => navigate('/orders')}>Lệnh sản xuất</Button>
+                            {["manager"].includes(user?.role) && (
+                                <Button color="inherit" sx={{ fontSize: 20, borderBottom: location.pathname === '/orderByUsers' ? '5px solid red' : '' }} onClick={() => navigate('/orderByUsers')}>Công việc của tôi</Button>
+                            )}
+                            {/* Danh mục dropdown */}
+                            {menuItems.length > 0 && (
+                                <>
+                                    <Button
+                                        color="inherit"
+                                        sx={{ fontSize: 20 }}
+                                        onClick={(e) => setMenuAnchorEl(e.currentTarget)}
+                                        endIcon={<ExpandMore />}
+                                    >
+                                        Danh mục
+                                    </Button>
+                                    <Menu
+                                        anchorEl={menuAnchorEl}
+                                        open={Boolean(menuAnchorEl)}
+                                        onClose={() => setMenuAnchorEl(null)}
+                                    >
+                                        {menuItems.map((item) => {
+                                            if (!item) return null; // nếu là false thì bỏ qua
+
+                                            return (
+                                                <MenuItem key={item!.text} sx={{ borderBottom: location.pathname === item.path ? '5px solid red' : '' }} onClick={() => {
+                                                    navigate(item!.path!);
+                                                    setMenuAnchorEl(null);
+                                                }}>
+                                                    <Box mr={1}>{item!.icon}</Box>
+                                                    {item!.text}
+                                                </MenuItem>
+                                            )
+                                        })}
+                                    </Menu>
+                                </>
+                            )}
+                            {["admin", "manager", "dispatcher"].includes(user?.role) && (
+                                <Button color="inherit" sx={{ fontSize: 20, borderBottom: location.pathname === '/reports' ? '5px solid red' : '' }} onClick={() => navigate('/reports')}>Báo cáo</Button>
+                            )}
+                        </Box>
+
                     </Box>
-                    <Box display={'flex'} gap={3}>
-                        <Tooltip title="Thông báo" placement='right'>
-                            <IconButton color="inherit" href='/notifications'>
-                                <Badge badgeContent={notificationCount || 0} color="error">
-                                    <NotificationsIcon color="inherit" />
+
+                    {/* Avatar, thông báo */}
+                    <Box display="flex" alignItems="center" gap={2}>
+                        <Tooltip title="Thông báo">
+                            <IconButton color="inherit" onClick={() => navigate('/notifications')}>
+                                <Badge badgeContent={notificationCount} color="error">
+                                    <NotificationsIcon />
                                 </Badge>
                             </IconButton>
                         </Tooltip>
-                        <Tooltip title="Cá nhân" placement='right'>
-                            <IconButton aria-owns='mouse-over-popover' color="inherit" onClick={handleAvatarClick}>
-                                <Avatar src={user?.avatar} sx={{
-                                    objectFit: 'contain',
-                                    bgcolor: 'white'
-                                }} />
+                        <Tooltip title="Tài khoản">
+                            <IconButton onClick={(e) => setAvatarAnchorEl(e.currentTarget)}>
+                                <Avatar src={user?.avatar} sx={{ bgcolor: 'white' }} />
                             </IconButton>
                         </Tooltip>
                         <Popover
-                            id="avatar-popover"
-                            open={openPopover}
-                            anchorEl={anchorElPopover}
-                            onClose={() => {
-                                setOpenPopover(false);
-                                setAnchorElPopover(null);
-                            }}
-                            anchorOrigin={{
-                                vertical: 'bottom',
-                                horizontal: 'right',
-                            }}
-                            transformOrigin={{
-                                vertical: 'top',
-                                horizontal: 'right',
-                            }}
+                            open={Boolean(avatarAnchorEl)}
+                            anchorEl={avatarAnchorEl}
+                            onClose={() => setAvatarAnchorEl(null)}
+                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
                         >
-                            <Box padding={2} display='flex' gap={2} flexDirection={'column'}>
-                                <Typography variant='h5' sx={{ alignSelf: 'center', }}>{user?.fullName}</Typography>
+                            <Box padding={2} display="flex" flexDirection="column" gap={1}>
+                                <Typography variant="h6" align="center">{user?.fullName}</Typography>
                                 <Divider />
                                 <MenuItem onClick={() => {
-                                    setOpenprofile(true)
-                                    setOpenPopover(false)
+                                    setOpenProfile(true);
+                                    setAvatarAnchorEl(null);
                                 }}>
-                                    <ListItemIcon>
-                                        <Person color='primary' fontSize="small" />
-                                    </ListItemIcon>
+                                    <PersonIcon sx={{ marginRight: 1 }} color="primary" fontSize="small" />
                                     Thông tin cá nhân
                                 </MenuItem>
-                                <MenuItem onClick={() => setIsOpenChangePassword(true)}>
-                                    <ListItemIcon>
-                                        <VpnKeyOutlined color='primary' fontSize="small" />
-                                    </ListItemIcon>
+                                <MenuItem onClick={() => {
+                                    setOpenChangePassword(true);
+                                    setAvatarAnchorEl(null);
+                                }}>
+                                    <VpnKeyOutlined sx={{ marginRight: 1 }} color="primary" fontSize="small" />
                                     Đổi mật khẩu
                                 </MenuItem>
                                 <MenuItem onClick={handleLogout}>
-                                    <ListItemIcon>
-                                        <LogoutIcon color='primary' fontSize="small" />
-                                    </ListItemIcon>
+                                    <LogoutIcon sx={{ marginRight: 1 }} color="primary" fontSize="small" />
                                     Đăng xuất
                                 </MenuItem>
                             </Box>
                         </Popover>
                     </Box>
                 </Toolbar>
-
             </AppBar>
-            <Box
-                component="nav"
-                sx={{ width: { sm: mobileOpen ? drawerWidth : miniDrawerWidth }, flexShrink: { sm: miniDrawerWidth } }}
-            >
-                <Drawer
-                    variant="permanent"
-                    open={mobileOpen}
-                    onClose={handleDrawerToggle}
-                    ModalProps={{
-                        keepMounted: true,
-                    }}
-                    sx={{
-                        width: mobileOpen ? drawerWidth : miniDrawerWidth,
-                        flexShrink: 0,
-                        '& .MuiDrawer-paper': {
-                            width: mobileOpen ? drawerWidth : miniDrawerWidth,
-                            overflowX: 'hidden',
-                            boxSizing: 'border-box',
-                            transition: 'width 0.3s',
-                        },
-                    }}
-                >
-                    {drawer}
-                </Drawer>
-                {/* <Drawer
-                    variant="permanent"
-                    open={mobileOpen}
-                    sx={{
-                        display: { xs: 'none', sm: mobileOpen ? 'block' : 'none' },
-                        '& .MuiDrawer-paper': {
-                            boxSizing: 'border-box',
-                            width: drawerWidth,
-                        },
-                    }}
-                >
-                    {drawer}
-                </Drawer> */}
-            </Box>
-            <Box
-                component="main"
-                sx={{
-                    flexGrow: 1,
-                    p: 3,
-                    width: `calc(100% - ${mobileOpen ? drawerWidth : miniDrawerWidth}px)`,
-                    height: '100vh',
-                    overflow: 'auto',
-                }}
-            >
-                <Toolbar />
+
+            {/* Nội dung chính */}
+            <Box sx={{ flex: 1, mt: 8, p: 3 }}>
                 {children || <Outlet />}
             </Box>
-            <ChangePassword open={isOpenChangePassword} setOpen={setIsOpenChangePassword} />
-            <Profile open={openprofile} setOpen={setOpenprofile} />
+
+            {/* Modal: Profile + Đổi mật khẩu */}
+            <ChangePassword open={openChangePassword} setOpen={setOpenChangePassword} />
+            <Profile open={openProfile} setOpen={setOpenProfile} />
         </Box >
     );
 };
 
-export default MainLayout; 
+export default MainLayout;

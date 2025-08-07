@@ -83,11 +83,10 @@ class _TaskDetailPage extends State<TaskDetailPage> {
 
     if (status == "warning") {
       body['status'] = "warning";
-      body['active'] = false;
     } else if (status == "end") {
-      body['active'] = false;
+      body['status'] = 'completed';
     } else if (status == "start") {
-      body['active'] = true;
+      body['status'] = 'in_progress';
     }
     var result = await _orderService.update(
       widget.orderId,
@@ -107,9 +106,9 @@ class _TaskDetailPage extends State<TaskDetailPage> {
         SnackBar(
           content: Text(
             status == 'start'
-                ? 'Check In để bắt đầu công việc'
+                ? 'Hãy Check In để ghi nhận thời gian bắt đầu.'
                 : status == 'end'
-                ? 'Check Out để kết thúc công việc'
+                ? 'Hãy Check Out để ghi nhận thời gian kết thúc.'
                 : 'Báo lỗi thành công',
           ),
           backgroundColor: Colors.green,
@@ -145,8 +144,6 @@ class _TaskDetailPage extends State<TaskDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedType = data?.job.type;
-    final route = typeToRoute[selectedType];
     return _isLoading
         ? Scaffold(
           body: Center(child: CircularProgressIndicator()),
@@ -168,10 +165,11 @@ class _TaskDetailPage extends State<TaskDetailPage> {
               },
             ),
             actions: [
-              if ((data?.active == true &&
-                      data?.status == "pending") ||
-                  (data?.active == false &&
-                      data?.status == "in_progress"))
+              if ([
+                    'completed',
+                    'in_progress',
+                  ].contains(data?.status) &&
+                  data?.endTime == null)
                 IconButton(
                   onPressed: () {
                     Navigator.pushNamed(
@@ -186,10 +184,11 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                     size: 30,
                   ),
                 ),
-              if ((data?.active == true &&
-                      data?.status == "pending") ||
-                  (data?.active == false &&
-                      data?.status == "in_progress"))
+              if ([
+                    'completed',
+                    'in_progress',
+                  ].contains(data?.status) &&
+                  data?.endTime == null)
                 IconButton(
                   onPressed: () {
                     Navigator.pushNamed(
@@ -401,47 +400,10 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                       CrossAxisAlignment.stretch,
                   children: [
                     // Nếu chưa nhận lệnh
-                    if (data?.active == false &&
-                        ['pending'].contains(data?.status))
+                    if (['pending'].contains(data?.status))
                       ElevatedButton(
                         onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder:
-                                (context) => AlertDialog(
-                                  title: const Text(
-                                    'Xác nhận',
-                                  ),
-                                  content: const Text(
-                                    'Bạn đồng ý bắt đầu công việc?',
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed:
-                                          () =>
-                                              Navigator.pop(
-                                                context,
-                                              ),
-                                      child: const Text(
-                                        'Bỏ qua',
-                                      ),
-                                    ),
-                                    TextButton(
-                                      onPressed: () {
-                                        update(
-                                          "start",
-                                        ); // Gọi API nhận lệnh
-                                        Navigator.pop(
-                                          context,
-                                        );
-                                      },
-                                      child: const Text(
-                                        'Nhận lệnh',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                          );
+                          update("start");
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue,
@@ -461,11 +423,11 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                       ),
 
                     // Nếu chưa hoàn thành hoặc lỗi => hiển thị các nút hành động
-                    if (data?.active == true &&
-                        ![
-                          'completed',
-                          'warning',
-                        ].contains(data?.status)) ...[
+                    if (![
+                      'pending',
+                      'completed',
+                      'warning',
+                    ].contains(data?.status)) ...[
                       const SizedBox(height: 8),
                       if ([
                         'Vận hành xúc',
@@ -486,48 +448,87 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                       const SizedBox(height: 8),
                       ElevatedButton(
                         onPressed: () {
-                          if (data?.isScanned ==
-                              "pending") {
-                            ScaffoldMessenger.of(
-                              context,
-                            ).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Bạn cần check in để thực hiện công việc',
-                                ),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          } else {
-                            if ([
-                              'Vận hành xe',
-                              'Vận hành xúc',
-                              'Vận hành khoan',
-                              'Vận hành gạt',
-                              'Vận hành xe phục vụ',
-                            ].contains(data?.job.type)) {
-                              if (data!.excavator!.length >
-                                  1) {
-                                Navigator.pushNamed(
+                          if ([
+                            'Vận hành xe',
+                            'Vận hành xúc',
+                            'Vận hành khoan',
+                            'Vận hành gạt',
+                            'Vận hành xe phục vụ',
+                          ].contains(data?.job.type)) {
+                            if (data!.excavator!.length >
+                                1) {
+                              Navigator.pushNamed(
+                                context,
+                                WorkLogRoutes
+                                    .directWorkMultiExcavatorReport,
+                                arguments: data,
+                              );
+                              if (data!.startTime == null &&
+                                  data?.shiftReport ==
+                                      null) {
+                                ScaffoldMessenger.of(
                                   context,
-                                  WorkLogRoutes
-                                      .directWorkMultiExcavatorReport,
-                                  arguments: data,
-                                );
-                              } else {
-                                Navigator.pushNamed(
-                                  context,
-                                  WorkLogRoutes
-                                      .directWorkMultiVehicleReport,
-                                  arguments: data,
+                                ).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Bạn đang báo công mà chưa check in',
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                    backgroundColor:
+                                        Colors.orange,
+                                  ),
                                 );
                               }
                             } else {
                               Navigator.pushNamed(
                                 context,
                                 WorkLogRoutes
-                                    .indirectWorkReport,
+                                    .directWorkMultiVehicleReport,
                                 arguments: data,
+                              );
+                              if (data!.startTime == null &&
+                                  data?.shiftReport ==
+                                      null) {
+                                ScaffoldMessenger.of(
+                                  context,
+                                ).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Bạn đang báo công mà chưa check in',
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                    backgroundColor:
+                                        Colors.orange,
+                                  ),
+                                );
+                              }
+                            }
+                          } else {
+                            Navigator.pushNamed(
+                              context,
+                              WorkLogRoutes
+                                  .indirectWorkReport,
+                              arguments: data,
+                            );
+                            if (data!.startTime == null &&
+                                data?.shiftReport == null) {
+                              ScaffoldMessenger.of(
+                                context,
+                              ).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Bạn đang báo công mà chưa check in',
+                                    style: TextStyle(
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  backgroundColor:
+                                      Colors.orange,
+                                ),
                               );
                             }
                           }

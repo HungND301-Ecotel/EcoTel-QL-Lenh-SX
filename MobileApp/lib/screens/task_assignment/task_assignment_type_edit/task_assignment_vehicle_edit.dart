@@ -167,7 +167,6 @@ class _TaskAssignmentVehicleEdit
           "liftHeight": liftheight,
           "material": material?.id,
           "status": "pending",
-          "isScanned": "pending",
           "workContent": description,
           "temporaryError": null,
           "note": note,

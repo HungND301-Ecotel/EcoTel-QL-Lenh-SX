@@ -90,7 +90,7 @@ const AdminDashboard: React.FC = () => {
     return (
         <Box>
             <Typography variant="h4" gutterBottom>
-                Dashboard
+                Tổng quan
             </Typography>
             <Grid container spacing={3}>
                 <Grid item xs={12} md={6} sx={{ height: '100%' }}>
@@ -106,54 +106,17 @@ const AdminDashboard: React.FC = () => {
                                 <Box>
                                     <Typography
                                         variant="h6"
-                                        color="text.secondary"
                                         gutterBottom
+                                        sx={{ fontWeight: 'bold', }}
                                     >
                                         Lệnh sản xuất
                                     </Typography>
                                     <Typography
                                         variant="h6"
-                                        color="text.secondary"
                                         gutterBottom
                                     >
                                         {orders.length}
                                     </Typography>
-                                    <Box sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 2
-                                    }}>
-                                        <Box sx={{ display: 'flex', gap: 1 }}>
-                                            <Tooltip title={`Chưa nhận lệnh: ${orders.filter((o: Order) => o.status === "pending").length}`} placement='top'>
-                                                <OrderIcon color='disabled' fontSize='medium' />
-                                            </Tooltip>
-                                            <Typography>{orders.filter((o: Order) => o.status === "pending").length}</Typography>
-                                        </Box>
-                                        <Box sx={{ display: 'flex', gap: 1 }}>
-                                            <Tooltip title={`Đã nhận lệnh: ${orders.filter((o: Order) => o.status === "in_progress").length}`} placement='top'>
-                                                <OrderIcon sx={{ color: 'green' }} fontSize='medium' />
-                                            </Tooltip>
-                                            <Typography>{orders.filter((o: Order) => o.status === "in_progress").length}</Typography>
-                                        </Box>
-                                        <Box sx={{ display: 'flex', gap: 1 }}>
-                                            <Tooltip title={`Lỗi: ${orders.filter((o: Order) => o.status === "warning").length}`} placement='top'>
-                                                <OrderIcon color='warning' fontSize='medium' />
-                                            </Tooltip>
-                                            <Typography>{orders.filter((o: Order) => o.status === "warning").length}</Typography>
-                                        </Box>
-                                        <Box sx={{ display: 'flex', gap: 1 }}>
-                                            <Tooltip title={`Đã kết thúc: ${orders.filter((o: Order) => o.status === "completed").length}`} placement='top'>
-                                                <OrderIcon color='error' fontSize='medium' />
-                                            </Tooltip>
-                                            <Typography>{orders.filter((o: Order) => o.status === "completed").length}</Typography>
-                                        </Box>
-                                        <Box sx={{ display: 'flex', gap: 1 }}>
-                                            <Tooltip title={`Đã hủy: ${orders.filter((o: Order) => o.status === "cancel").length}`} placement='top'>
-                                                <OrderIcon color='secondary' fontSize='medium' />
-                                            </Tooltip>
-                                            <Typography>{orders.filter((o: Order) => o.status === "cancel").length}</Typography>
-                                        </Box>
-                                    </Box>
                                 </Box>
                                 <Box
                                     sx={{
@@ -165,73 +128,45 @@ const AdminDashboard: React.FC = () => {
                                     <OrderIcon color='primary' fontSize='large' />
                                 </Box>
                             </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                        <CardContent>
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                }}
-                            >
-                                <Box>
-                                    <Typography
-                                        variant="h6"
-                                        color="text.secondary"
-                                        gutterBottom
-                                    >
-                                        Phương tiện
-                                    </Typography>
-                                    <Typography
-                                        variant="h6"
-                                        color="text.secondary"
-                                        gutterBottom
-                                    >
-                                        {devices.length}
-                                    </Typography>
-                                    <Box sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 2
-                                    }}>
-                                        <Box sx={{ display: 'flex', gap: 1 }}>
-                                            <Tooltip title={` Chờ điều động: ${devices.filter((o: Device) => o.status === "available").length}`} placement='top'>
-                                                <DeviceIcon sx={{ color: 'green' }} fontSize='medium' />
-                                            </Tooltip>
-                                            <Typography>{devices.filter((o: Device) => o.status === "available").length}</Typography>
-                                        </Box>
-                                        <Box sx={{ display: 'flex', gap: 1 }}>
-                                            <Tooltip title={`Đang hoạt động: ${devices.filter((o: Device) => o.status === "in_use").length}`} placement='top'>
-                                                <DeviceIcon color='error' fontSize='medium' />
-                                            </Tooltip>
-                                            <Typography>{devices.filter((o: Device) => o.status === "in_use").length}</Typography>
-                                        </Box>
-                                        <Box sx={{ display: 'flex', gap: 1 }}>
-                                            <Tooltip title={`Hỏng: ${devices.filter((o: Device) => o.status === "maintenance").length}`} placement='top'>
-                                                <DeviceIcon color='warning' fontSize='medium' />
-                                            </Tooltip>
-                                            <Typography>{devices.filter((o: Device) => o.status === "maintenance").length}</Typography>
-                                        </Box>
-                                        <Box sx={{ display: 'flex', gap: 1 }}>
-                                            <Tooltip title={`Niêm cất: ${devices.filter((o: Device) => o.status === "retired").length}`} placement='top'>
-                                                <DeviceIcon color='disabled' fontSize='medium' />
-                                            </Tooltip>
-                                            <Typography>{devices.filter((o: Device) => o.status === "retired").length}</Typography>
-                                        </Box>
+                            <Box sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 2
+                            }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Box display="flex" gap={2} alignItems={'center'}>
+                                        <OrderIcon color='disabled' fontSize='medium' />
+                                        <Typography variant='h6' sx={{ fontWeight: 'bold', }}>Chưa nhận lệnh</Typography>
                                     </Box>
+                                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{orders.filter((o: Order) => o.status === "pending").length}</Typography>
                                 </Box>
-                                <Box
-                                    sx={{
-                                        color: "#1976d2",
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                    }}
-                                >
-                                    <DeviceIcon color='primary' fontSize='large' />
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Box display="flex" gap={2} alignItems={'center'}>
+                                        <OrderIcon sx={{ color: 'green' }} fontSize='medium' />
+                                        <Typography variant='h6' sx={{ fontWeight: 'bold', }}>Đã nhận lệnh</Typography>
+                                    </Box>
+                                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{orders.filter((o: Order) => o.status === "in_progress").length}</Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Box display="flex" gap={2} alignItems={'center'}>
+                                        <OrderIcon color='warning' fontSize='medium' />
+                                        <Typography variant='h6' sx={{ fontWeight: 'bold', }}>Lỗi</Typography>
+                                    </Box>
+                                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{orders.filter((o: Order) => o.status === "warning").length}</Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Box display="flex" gap={2} alignItems={'center'}>
+                                        <OrderIcon color='error' fontSize='medium' />
+                                        <Typography variant='h6' sx={{ fontWeight: 'bold', }}>Đã hoàn thành</Typography>
+                                    </Box>
+                                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{orders.filter((o: Order) => o.status === "completed").length}</Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Box display="flex" gap={2} alignItems={'center'}>
+                                        <OrderIcon color='secondary' fontSize='medium' />
+                                        <Typography variant='h6' sx={{ fontWeight: 'bold', }}>Đã hủy</Typography>
+                                    </Box>
+                                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{orders.filter((o: Order) => o.status === "cancel").length}</Typography>
                                 </Box>
                             </Box>
                         </CardContent>
@@ -250,12 +185,85 @@ const AdminDashboard: React.FC = () => {
                                 <Box>
                                     <Typography
                                         variant="h6"
-                                        color="text.secondary"
                                         gutterBottom
+                                        sx={{ fontWeight: 'bold', }}
+                                    >
+                                        Phương tiện
+                                    </Typography>
+                                    <Typography
+                                        variant="h6"
+                                        gutterBottom
+                                        sx={{ fontWeight: 'bold', }}
+                                    >
+                                        {devices.length}
+                                    </Typography>
+                                </Box>
+                                <Box
+                                    sx={{
+                                        color: "#1976d2",
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                    }}
+                                >
+                                    <DeviceIcon color='primary' fontSize='large' />
+                                </Box>
+                            </Box>
+                            <Box sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 2
+                            }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Box display="flex" gap={2} alignItems={'center'}>
+                                        <DeviceIcon sx={{ color: 'green' }} fontSize='medium' />
+                                        <Typography variant='h6' sx={{ fontWeight: 'bold', }}>Chờ điều động</Typography>
+                                    </Box>
+                                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{devices.filter((o: Device) => o.status === "available").length}</Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Box display="flex" gap={2} alignItems={'center'}>
+                                        <DeviceIcon color='error' fontSize='medium' />
+                                        <Typography variant='h6' sx={{ fontWeight: 'bold', }}>Đang hoạt động</Typography>
+                                    </Box>
+                                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{devices.filter((o: Device) => o.status === "in_use").length}</Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Box display="flex" gap={2} alignItems={'center'}>
+                                        <DeviceIcon color='warning' fontSize='medium' />
+                                        <Typography variant='h6' sx={{ fontWeight: 'bold', }}>Hỏng</Typography>
+                                    </Box>
+                                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{devices.filter((o: Device) => o.status === "maintenance").length}</Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Box display="flex" gap={2} alignItems={'center'}>
+                                        <DeviceIcon color='disabled' fontSize='medium' />
+                                        <Typography variant='h6' sx={{ fontWeight: 'bold', }}>Niêm cất</Typography>
+                                    </Box>
+                                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{devices.filter((o: Device) => o.status === "retired").length}</Typography>
+                                </Box>
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                        <CardContent>
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                }}
+                            >
+                                <Box>
+                                    <Typography
+                                        variant="h6"
+                                        gutterBottom
+                                        sx={{ fontWeight: 'bold', }}
                                     >
                                         Đơn vị
                                     </Typography>
-                                    <Typography variant="h4">
+                                    <Typography variant="h4" sx={{ fontWeight: 'bold', }}>
                                         {departments.length}
                                     </Typography>
                                 </Box>
@@ -285,12 +293,12 @@ const AdminDashboard: React.FC = () => {
                                 <Box>
                                     <Typography
                                         variant="h6"
-                                        color="text.secondary"
                                         gutterBottom
+                                        sx={{ fontWeight: 'bold', }}
                                     >
                                         Nhân viên
                                     </Typography>
-                                    <Typography variant="h4">
+                                    <Typography variant="h4" sx={{ fontWeight: 'bold', }}>
                                         {users.length}
                                     </Typography>
                                 </Box>
@@ -327,16 +335,18 @@ const AdminDashboard: React.FC = () => {
                                             position: 'sticky',
                                             left: 0,
                                             top: 0,
-                                            backgroundColor: 'white',
                                             zIndex: 3,
+                                            fontWeight: 'bold',
+                                            fontSize: 18
                                         }}>Đơn vị</TableCell>
                                         {count.map((item: any) => (
                                             <TableCell align='center' colSpan={4} sx={{
                                                 border: '1px solid black',
                                                 position: 'sticky',
                                                 top: 0,
-                                                backgroundColor: 'white',
                                                 zIndex: 2,
+                                                fontWeight: 'bold',
+                                                fontSize: 18
                                             }}>{item.typeName}</TableCell>
                                         ))}
                                     </TableRow>
@@ -346,26 +356,33 @@ const AdminDashboard: React.FC = () => {
                                                 <TableCell align='center' sx={{
                                                     border: '1px solid black', minWidth: 150, position: 'sticky',
                                                     top: 56,
-                                                    backgroundColor: 'white',
                                                     zIndex: 1,
+                                                    fontWeight: 'bold',
+                                                    fontSize: 18,
+                                                    color: 'green',
                                                 }}>Chờ điều động</TableCell>
                                                 <TableCell align='center' sx={{
                                                     border: '1px solid black', minWidth: 150, position: 'sticky',
                                                     top: 56,
-                                                    backgroundColor: 'white',
                                                     zIndex: 1,
+                                                    fontWeight: 'bold',
+                                                    fontSize: 18,
+                                                    color: 'red',
                                                 }}>Đang hoạt động</TableCell>
                                                 <TableCell align='center' sx={{
                                                     border: '1px solid black', minWidth: 50, position: 'sticky',
                                                     top: 56,
-                                                    backgroundColor: 'white',
                                                     zIndex: 1,
+                                                    fontWeight: 'bold',
+                                                    fontSize: 18,
+                                                    color: 'orange',
                                                 }}>Hỏng</TableCell>
                                                 <TableCell align='center' sx={{
                                                     border: '1px solid black', minWidth: 100, position: 'sticky',
                                                     top: 56,
-                                                    backgroundColor: 'white',
                                                     zIndex: 1,
+                                                    fontWeight: 'bold',
+                                                    fontSize: 18
                                                 }}>Niêm cất</TableCell>
                                             </>
                                         ))}

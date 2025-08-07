@@ -26,6 +26,9 @@ import {
     Grid,
     Checkbox,
     Tooltip,
+    AccordionDetails,
+    AccordionSummary,
+    Accordion,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -37,6 +40,7 @@ import {
     UploadFile,
     Close,
     InfoOutlined,
+    ExpandMore,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -79,7 +83,11 @@ const Users: React.FC = () => {
     const [user, setUser] = useAtom(userAtom)
 
     const [showPassword, setShowPassword] = useState(false);
+    const [expanded, setExpanded] = useState(false);
 
+    const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
+        setExpanded(isExpanded);
+    };
     const handleTogglePassword = () => {
         setShowPassword((prev) => !prev);
     };
@@ -196,12 +204,15 @@ const Users: React.FC = () => {
             setSelectedUser(null);
             formik.resetForm();
         }
+        setExpanded(true);
         setOpen(true);
     };
 
     const handleClose = () => {
         setOpen(false);
         setSelectedUser(null);
+        setAvatar('');
+        setExpanded(false);
         formik.resetForm();
     };
 
@@ -251,10 +262,10 @@ const Users: React.FC = () => {
         {
             field: 'salaryCode',
             headerName: 'Thẻ lương',
-            width: 100,
+            width: 120,
             headerAlign: 'center'
         },
-        { field: 'gender', headerName: 'Giới tính', width: 70, headerAlign: 'center' },
+        { field: 'gender', headerName: 'Giới tính', width: 120, headerAlign: 'center' },
         { field: 'phone', headerName: 'Số điện thoại', width: 150, headerAlign: 'center' },
         { field: 'email', headerName: 'Email', width: 150, headerAlign: 'center' },
         {
@@ -324,13 +335,33 @@ const Users: React.FC = () => {
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
                 <Typography variant="h4">Quản lý người dùng</Typography>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => handleOpen()}
-                >
-                    Thêm người dùng
-                </Button>
+                <Box>
+                    <input
+                        id="upload-excel"
+                        type="file"
+                        accept=".xlsx, .xls"
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                                const formData = new FormData();
+                                formData.append('file', file);
+                                importFile.mutate(formData);
+                            }
+                            e.target.value = "";
+                        }}
+                    />
+
+                    <label htmlFor="upload-excel">
+                        <Button
+                            component="span"
+                            variant="contained"
+                            startIcon={<UploadFile />}
+                        >
+                            Import Excel
+                        </Button>
+                    </label>
+                </Box>
             </Box>
             <Box sx={{ flex: 1, flexDirection: 'column', mb: 2 }}>
                 <Typography><h3>Tìm kiếm</h3></Typography>
@@ -359,34 +390,195 @@ const Users: React.FC = () => {
                     />}
                 </Box>
             </Box>
-            <Box>
-                <input
-                    id="upload-excel"
-                    type="file"
-                    accept=".xlsx, .xls"
-                    style={{ display: 'none' }}
-                    onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                            const formData = new FormData();
-                            formData.append('file', file);
-                            importFile.mutate(formData);
-                        }
-                        e.target.value = "";
-                    }}
-                />
-
-                <label htmlFor="upload-excel">
+            <Accordion expanded={expanded} onChange={handleChangeAction}>
+                <AccordionSummary
+                    expandIcon={<ExpandMore />}
+                    aria-controls="panel1-content"
+                    id="panel1-header"
+                >
                     <Button
-                        component="span"
                         variant="contained"
-                        startIcon={<UploadFile />}
+                        startIcon={<AddIcon />}
+                        onClick={() => handleOpen()}
                     >
-                        Import Excel
+                        Thêm người dùng
                     </Button>
-                </label>
-            </Box>
-            <Paper sx={{ height: '80vh', width: '100%', overflowX: 'auto' }}>
+                </AccordionSummary>
+                <AccordionDetails>
+                    <DialogTitle>
+                        {selectedUser ? 'Sửa người dùng' : 'Thêm người dùng'}
+                    </DialogTitle>
+                    <DialogContent>
+                        <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <TextField
+                                    fullWidth
+                                    id="username"
+                                    name="username"
+                                    label="Tên đăng nhập"
+                                    value={formik.values.username}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.username && Boolean(formik.errors.username)}
+                                    helperText={formik.touched.username && formik.errors.username}
+                                />
+                                {!selectedUser && <TextField
+                                    fullWidth
+                                    id="password"
+                                    name="password"
+                                    label="Mật khẩu"
+                                    type={showPassword ? 'text' : 'password'}
+                                    InputProps={{
+                                        endAdornment: (
+                                            <InputAdornment position="end">
+                                                <IconButton onClick={handleTogglePassword} edge="end">
+                                                    {showPassword ? <Visibility /> : <VisibilityOff />}                                            </IconButton>
+                                            </InputAdornment>
+                                        )
+                                    }}
+                                    value={formik.values.password}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.password && Boolean(formik.errors.password)}
+                                    helperText={formik.touched.password && formik.errors.password}
+                                />}
+                                <TextField
+                                    fullWidth
+                                    id="fullName"
+                                    name="fullName"
+                                    label="Họ tên"
+                                    value={formik.values.fullName}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.fullName && Boolean(formik.errors.fullName)}
+                                    helperText={formik.touched.fullName && formik.errors.fullName}
+                                />
+                                <TextField
+                                    fullWidth
+                                    select
+                                    id="gender"
+                                    name="gender"
+                                    label="Giới tính"
+                                    value={formik.values.gender}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.gender && Boolean(formik.errors.gender)}
+                                    helperText={formik.touched.gender && formik.errors.gender}
+                                >
+                                    <MenuItem value="Nam">Nam</MenuItem>
+                                    <MenuItem value="Nữ">Nữ</MenuItem>
+                                </TextField>
+                                <TextField
+                                    fullWidth
+                                    id="salaryCode"
+                                    name="salaryCode"
+                                    label="Mã thẻ lương"
+                                    value={formik.values.salaryCode}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.salaryCode && Boolean(formik.errors.salaryCode)}
+                                    helperText={formik.touched.salaryCode && formik.errors.salaryCode}
+                                />
+                                <TextField
+                                    fullWidth
+                                    id="email"
+                                    name="email"
+                                    label="Email"
+                                    value={formik.values.email || ''}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.email && Boolean(formik.errors.email)}
+                                    helperText={formik.touched.email && formik.errors.email}
+                                />
+                                <TextField
+                                    fullWidth
+                                    id="phone"
+                                    name="phone"
+                                    label="Số điện thoại"
+                                    value={formik.values.phone || ''}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.phone && Boolean(formik.errors.phone)}
+                                    helperText={formik.touched.phone && formik.errors.phone}
+                                />
+                                <TextField
+                                    fullWidth
+                                    select
+                                    id="position"
+                                    name="position"
+                                    label="Chức danh, nghề nghiệp"
+                                    SelectProps={{
+                                        displayEmpty: true,
+                                        MenuProps: {
+                                            style: {
+                                                maxHeight: 300
+                                            }
+                                        }
+                                    }}
+                                    value={formik.values.position || ''}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.position && Boolean(formik.errors.position)}
+                                    helperText={formik.touched.position && formik.errors.position}
+                                >
+                                    {positions.map((position: any) => (
+                                        <MenuItem key={position._id} value={position._id}>{position.name}</MenuItem>
+                                    ))}
+                                </TextField>
+                                <Autocomplete
+                                    fullWidth
+                                    options={departments}
+                                    getOptionLabel={(option: Department) =>
+                                        option.name || ''
+                                    }
+                                    value={departments.find((p: any) => p._id === (user?.role === 'manager?' ? user?.department?._id : formik.values.department)) || null}
+                                    onChange={(event, newValue) => {
+                                        formik.setFieldValue('department', newValue?._id || '');
+                                    }}
+                                    readOnly={user?.role === 'manager'}
+                                    PopperComponent={StyledPopper}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Đơn vị"
+                                        />
+                                    )}
+                                />
+                                <TextField
+                                    fullWidth
+                                    select
+                                    id="role"
+                                    name="role"
+                                    label="Phân quyền"
+                                    SelectProps={{
+                                        displayEmpty: true,
+                                        MenuProps: {
+                                            style: {
+                                                maxHeight: 300
+                                            }
+                                        }
+                                    }}
+                                    value={formik.values.role || ''}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.role && Boolean(formik.errors.role)}
+                                    helperText={formik.touched.role && formik.errors.role}
+                                >
+                                    <MenuItem value="admin">Quản trị hệ thống</MenuItem>
+                                    <MenuItem value="dispatcher">Điều hành sản xuất</MenuItem>
+                                    <MenuItem value="manager">Quản lý</MenuItem>
+                                    <MenuItem value="employee">Nhân viên</MenuItem>
+                                </TextField>
+
+                                <Grid container spacing={2}>
+                                    <Grid item>{renderImageUploadBox('avatar', avatar)}</Grid>
+                                </Grid>
+                            </Box>
+                        </Box>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleClose}>Hủy</Button>
+                        <Button onClick={() => formik.handleSubmit()} variant="contained">
+                            {selectedUser ? 'Cập nhật' : 'Thêm mới'}
+                        </Button>
+                    </DialogActions>
+                </AccordionDetails>
+            </Accordion>
+            <Paper sx={{ width: '100%', overflowX: 'auto' }}>
+                <Typography variant="h3" sx={{ p: 2 }}>
+                    Bảng người dùng
+                </Typography>
                 <DataGrid
                     rows={users}
                     columns={userColumns}
@@ -402,188 +594,23 @@ const Users: React.FC = () => {
                     sx={{
                         '& .MuiDataGrid-cell': {
                             border: '1px solid black',
+
                         },
                         '& .MuiDataGrid-columnHeader': {
                             border: '1px solid black',
+                            backgroundColor: '#f5f5f5',
+
                         },
                         '& .MuiDataGrid-columnHeaderTitle': {
                             width: '100%',
                             textAlign: 'center',
+                            fontWeight: 'bold',
+                            fontSize: 18,
                         },
                     }}
                 />
             </Paper>
 
-            <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-                <DialogTitle>
-                    {selectedUser ? 'Sửa người dùng' : 'Thêm người dùng'}
-                </DialogTitle>
-                <DialogContent>
-                    <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <TextField
-                                fullWidth
-                                id="username"
-                                name="username"
-                                label="Tên đăng nhập"
-                                value={formik.values.username}
-                                onChange={formik.handleChange}
-                                error={formik.touched.username && Boolean(formik.errors.username)}
-                                helperText={formik.touched.username && formik.errors.username}
-                            />
-                            {!selectedUser && <TextField
-                                fullWidth
-                                id="password"
-                                name="password"
-                                label="Mật khẩu"
-                                type={showPassword ? 'text' : 'password'}
-                                InputProps={{
-                                    endAdornment: (
-                                        <InputAdornment position="end">
-                                            <IconButton onClick={handleTogglePassword} edge="end">
-                                                {showPassword ? <Visibility /> : <VisibilityOff />}                                            </IconButton>
-                                        </InputAdornment>
-                                    )
-                                }}
-                                value={formik.values.password}
-                                onChange={formik.handleChange}
-                                error={formik.touched.password && Boolean(formik.errors.password)}
-                                helperText={formik.touched.password && formik.errors.password}
-                            />}
-                            <TextField
-                                fullWidth
-                                id="fullName"
-                                name="fullName"
-                                label="Họ tên"
-                                value={formik.values.fullName}
-                                onChange={formik.handleChange}
-                                error={formik.touched.fullName && Boolean(formik.errors.fullName)}
-                                helperText={formik.touched.fullName && formik.errors.fullName}
-                            />
-                            <TextField
-                                fullWidth
-                                select
-                                id="gender"
-                                name="gender"
-                                label="Giới tính"
-                                value={formik.values.gender}
-                                onChange={formik.handleChange}
-                                error={formik.touched.gender && Boolean(formik.errors.gender)}
-                                helperText={formik.touched.gender && formik.errors.gender}
-                            >
-                                <MenuItem value="Nam">Nam</MenuItem>
-                                <MenuItem value="Nữ">Nữ</MenuItem>
-                            </TextField>
-                            <TextField
-                                fullWidth
-                                id="salaryCode"
-                                name="salaryCode"
-                                label="Mã thẻ lương"
-                                value={formik.values.salaryCode}
-                                onChange={formik.handleChange}
-                                error={formik.touched.salaryCode && Boolean(formik.errors.salaryCode)}
-                                helperText={formik.touched.salaryCode && formik.errors.salaryCode}
-                            />
-                            <TextField
-                                fullWidth
-                                id="email"
-                                name="email"
-                                label="Email"
-                                value={formik.values.email || ''}
-                                onChange={formik.handleChange}
-                                error={formik.touched.email && Boolean(formik.errors.email)}
-                                helperText={formik.touched.email && formik.errors.email}
-                            />
-                            <TextField
-                                fullWidth
-                                id="phone"
-                                name="phone"
-                                label="Số điện thoại"
-                                value={formik.values.phone || ''}
-                                onChange={formik.handleChange}
-                                error={formik.touched.phone && Boolean(formik.errors.phone)}
-                                helperText={formik.touched.phone && formik.errors.phone}
-                            />
-                            <TextField
-                                fullWidth
-                                select
-                                id="position"
-                                name="position"
-                                label="Chức danh, nghề nghiệp"
-                                SelectProps={{
-                                    displayEmpty: true,
-                                    MenuProps: {
-                                        style: {
-                                            maxHeight: 300
-                                        }
-                                    }
-                                }}
-                                value={formik.values.position || ''}
-                                onChange={formik.handleChange}
-                                error={formik.touched.position && Boolean(formik.errors.position)}
-                                helperText={formik.touched.position && formik.errors.position}
-                            >
-                                {positions.map((position: any) => (
-                                    <MenuItem key={position._id} value={position._id}>{position.name}</MenuItem>
-                                ))}
-                            </TextField>
-                            <Autocomplete
-                                fullWidth
-                                options={departments}
-                                getOptionLabel={(option: Department) =>
-                                    option.name || ''
-                                }
-                                value={departments.find((p: any) => p._id === (user?.role === 'manager?' ? user?.department?._id : formik.values.department)) || null}
-                                onChange={(event, newValue) => {
-                                    formik.setFieldValue('department', newValue?._id || '');
-                                }}
-                                readOnly={user?.role === 'manager'}
-                                PopperComponent={StyledPopper}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        label="Đơn vị"
-                                    />
-                                )}
-                            />
-                            <TextField
-                                fullWidth
-                                select
-                                id="role"
-                                name="role"
-                                label="Phân quyền"
-                                SelectProps={{
-                                    displayEmpty: true,
-                                    MenuProps: {
-                                        style: {
-                                            maxHeight: 300
-                                        }
-                                    }
-                                }}
-                                value={formik.values.role || ''}
-                                onChange={formik.handleChange}
-                                error={formik.touched.role && Boolean(formik.errors.role)}
-                                helperText={formik.touched.role && formik.errors.role}
-                            >
-                                <MenuItem value="admin">Quản trị hệ thống</MenuItem>
-                                <MenuItem value="dispatcher">Điều hành sản xuất</MenuItem>
-                                <MenuItem value="manager">Quản lý</MenuItem>
-                                <MenuItem value="employee">Nhân viên</MenuItem>
-                            </TextField>
-
-                            <Grid container spacing={2}>
-                                <Grid item>{renderImageUploadBox('avatar', avatar)}</Grid>
-                            </Grid>
-                        </Box>
-                    </Box>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleClose}>Hủy</Button>
-                    <Button onClick={() => formik.handleSubmit()} variant="contained">
-                        {selectedUser ? 'Cập nhật' : 'Thêm mới'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
             <UserHistories open={history} setOpen={setHistory} initialValues={selectedUser} />
         </Box>
     );
