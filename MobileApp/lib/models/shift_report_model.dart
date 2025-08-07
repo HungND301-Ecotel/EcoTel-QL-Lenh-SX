@@ -11,6 +11,9 @@ class Device {
       code: json?['code'] ?? '',
     );
   }
+  Map<String, dynamic> toJson() {
+    return {'id': id, 'code': code};
+  }
 }
 
 // vehicleShiftReportModel
@@ -45,6 +48,15 @@ class VehicleShiftReportModel {
       materialType: json?['materialType'],
       tripCount: json?['tripCount'],
     );
+  }
+  Map<String, dynamic> toJson() {
+    return {
+      'vehicle': vehicle?.toJson(),
+      'excavator': excavator?.toJson(),
+      'dumpingLocation': dumpingLocation,
+      'materialType': materialType,
+      'tripCount': tripCount,
+    };
   }
 }
 
@@ -92,6 +104,20 @@ class VehicleSummariesModel {
       gpsStatus: json?['gpsStatus'],
       sealStatus: json?['sealStatus'],
     );
+  }
+  Map<String, dynamic> toJson() {
+    return {
+      'vehicle': vehicle?.toJson(),
+      'travelHours': travelHours,
+      'repairHours': repairHours,
+      'fuelRemain': fuelRemain,
+      'fuelReceived': fuelReceived,
+      'fuelRemainEnd': fuelRemainEnd,
+      'status': status,
+      'note': note,
+      'gpsStatus': gpsStatus,
+      'sealStatus': sealStatus,
+    };
   }
 }
 
@@ -143,5 +169,19 @@ class ShiftReportModel {
       handoverNotes: json?['handoverNotes'],
       risks: json?['risks'],
     );
+  }
+  Map<String, dynamic> toJson() {
+    return {
+      'orderId': orderId,
+      'assignedTo': assignedTo,
+      'vehicleReports':
+          vehicleReports?.map((e) => e.toJson()).toList(),
+      'vehicleSummaries':
+          vehicleSummaries?.map((e) => e.toJson()).toList(),
+      'handoverHours': handoverHours,
+      'otherHours': otherHours,
+      'handoverNotes': handoverNotes,
+      'risks': risks,
+    };
   }
 }

@@ -125,34 +125,19 @@ class _Camera extends State<Camera> {
     if (widget.data.status == "in_progress" &&
         widget.data.shiftReport == null) {
       await saveImageLocally();
-      var result = await _orderService
-          .update(widget.data.id, {
-            'startTime':
-                (_checkinTime ?? DateTime.now())
-                    .toIso8601String(),
-          });
-      if (!mounted) return;
-      if (result['status'] == 'error') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message']),
-            backgroundColor: Colors.red,
-          ),
-        );
-      } else {
-        Navigator.popAndPushNamed(
-          context,
-          WorkLogRoutes.taskDetailPage,
-          arguments: widget.data.id,
-        );
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("xác nhận checkin thành công"),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
+
+      Navigator.popAndPushNamed(
+        context,
+        WorkLogRoutes.taskDetailPage,
+        arguments: widget.data.id,
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("xác nhận checkin thành công"),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
     }
 
     if (widget.data.status == "completed") {

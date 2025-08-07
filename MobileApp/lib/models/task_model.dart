@@ -1,10 +1,8 @@
-
 class TaskModel {
   final String id;
   final String name;
   final String type;
   final String? content;
-
 
   TaskModel({
     required this.id,
@@ -20,5 +18,13 @@ class TaskModel {
       type: json?['type'] ?? '',
       content: json?['content'] ?? '',
     );
+  }
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'type': type,
+      'content': content,
+    };
   }
 }

@@ -24,4 +24,13 @@ class DepartmentModel {
     this.description,
     this.isActive,
   });
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'code': code,
+      'description': description,
+      'isActive': isActive,
+    };
+  }
 }

@@ -25,6 +25,7 @@ class TaskItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print('TaskItem: ${data.status}');
     return Container(
       decoration: BoxDecoration(
         border: Border(

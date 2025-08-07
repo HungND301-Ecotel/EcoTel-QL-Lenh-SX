@@ -1,3 +1,4 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -26,7 +27,7 @@ class ApiService {
             seconds: 15,
           ), // ⬅️ tăng timeout lên 10s
           receiveTimeout: const Duration(
-            seconds: 15,  
+            seconds: 15,
           ), // ⬅️ nếu nhận dữ liệu chậm
           sendTimeout: const Duration(seconds: 15),
         ),
@@ -55,7 +56,7 @@ class ApiService {
         onError: (DioException error, handler) {
           // Log lỗi ở đây nếu cần
           print("❌ Dio Error: ${error.message}");
-          print(error.response?.statusCode);
+
           if (error.response?.statusCode == 401) {
             Future.microtask(() async {
               final prefs =
@@ -109,6 +110,16 @@ class ApiService {
       return response.data;
     } on DioException catch (e) {
       // Nếu có response từ server thì trả response.data, còn không thì trả message
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        return {
+          'status': 'error',
+          'message':
+              'Kết nối thất bại, vui lòng kiểm tra kết nối mạng của bạn.',
+        };
+      }
       if (e.response != null && e.response?.data != null) {
         return e.response?.data;
       } else {
@@ -138,6 +149,16 @@ class ApiService {
       return response.data;
     } on DioException catch (e) {
       // Nếu có response từ server thì trả response.data, còn không thì trả message
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        return {
+          'status': 'error',
+          'message':
+              'Kết nối thất bại, vui lòng kiểm tra kết nối mạng của bạn.',
+        };
+      }
       if (e.response != null && e.response?.data != null) {
         return e.response?.data;
       } else {
@@ -161,6 +182,16 @@ class ApiService {
       return response.data;
     } on DioException catch (e) {
       // Nếu có response từ server thì trả response.data, còn không thì trả message
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        return {
+          'status': 'error',
+          'message':
+              'Kết nối thất bại, vui lòng kiểm tra kết nối mạng của bạn.',
+        };
+      }
       if (e.response != null && e.response?.data != null) {
         return e.response?.data;
       } else {
@@ -185,6 +216,16 @@ class ApiService {
       return response.data;
     } on DioException catch (e) {
       // Nếu có response từ server thì trả response.data, còn không thì trả message
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        return {
+          'status': 'error',
+          'message':
+              'Kết nối thất bại, vui lòng kiểm tra kết nối mạng của bạn.',
+        };
+      }
       if (e.response != null && e.response?.data != null) {
         return e.response?.data;
       } else {

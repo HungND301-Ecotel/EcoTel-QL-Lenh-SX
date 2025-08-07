@@ -128,7 +128,8 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
             department
         } = req.body;
 
-        const exitOrder = await Order.findOne({ assignedTo: assignedTo, shift: shift, workingDate: workingDate })
+
+        const exitOrder = await Order.findOne({ assignedTo: assignedTo, shift: shift, workingDate: workingDate, status: { $nin: ['warning', 'cancel'] } })
 
         if (exitOrder) {
             return res.status(400).send({ status: 'error', message: 'Không thể tạo nhiều lệnh cho 1 công nhân trong cùng 1 thời gian làm việc' })

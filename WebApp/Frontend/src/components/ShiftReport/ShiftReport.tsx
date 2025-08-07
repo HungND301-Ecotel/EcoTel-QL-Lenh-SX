@@ -343,7 +343,7 @@ export default function ShiftReport({ open, setOpen, initialValues }: { open: bo
             </DialogContent>
             <DialogActions>
                 <Button onClick={handleClose}>Đóng</Button>
-                <Button variant="contained" onClick={() => formik.handleSubmit()}>Lưu lại</Button>
+                {!isOver48Hours && <Button variant="contained" onClick={() => formik.handleSubmit()}>Lưu lại</Button>}
             </DialogActions>
         </Dialog >
     )

@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soft/models/order_model.dart';
 import 'package:soft/services/order_service.dart';
 import 'package:soft/services/socket_service.dart';
@@ -16,6 +19,32 @@ class _TaskListPage extends State<TaskListPage> {
   bool _isLoading = true;
   final OrderService _orderService = OrderService();
 
+  Future<OrderModel?> getCachedOrder() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cachedOrderString = prefs.getString(
+      'cached_order',
+    );
+
+    if (cachedOrderString != null) {
+      final Map<String, dynamic> jsonMap = jsonDecode(
+        cachedOrderString,
+      );
+      return OrderModel.fromJson(jsonMap);
+    }
+    return null;
+  }
+
+  void loadOrderFromLocal() async {
+    final cachedOrder = await getCachedOrder();
+    setState(() {
+      taskList.clear();
+      taskList.addAll(
+        cachedOrder != null ? [cachedOrder] : [],
+      ); // Nếu không có dữ liệu, giữ danh sách trống
+      _isLoading = false;
+    });
+  }
+
   void getOrderByUser() async {
     var result = await _orderService.getByUser();
     if (!mounted) return;
@@ -26,6 +55,7 @@ class _TaskListPage extends State<TaskListPage> {
           backgroundColor: Colors.red,
         ),
       );
+      loadOrderFromLocal();
     } else {
       var data = result['data'];
       setState(() {

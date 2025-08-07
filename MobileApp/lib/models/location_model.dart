@@ -26,4 +26,12 @@ class LocationModel {
               : null,
     );
   }
+   Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'distance': distance,
+      'coordinates': coordinates?.toJson(),
+    };
+  }
 }

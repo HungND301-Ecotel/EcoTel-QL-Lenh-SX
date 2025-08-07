@@ -1,6 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:soft/models/device_model.dart';
 import 'package:soft/models/order_model.dart';
 import 'package:soft/providers/report_provider.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
@@ -47,11 +51,46 @@ class _TaskDetailPage extends State<TaskDetailPage> {
   final _formKey = GlobalKey<FormState>();
   final _noteController = TextEditingController();
 
-  void getOrderByUser() async {
+  Future<void> loadOrderFromCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cachedOrderString = prefs.getString(
+      'cached_order',
+    );
+    print('Cached Order: $cachedOrderString');
+    if (cachedOrderString != null) {
+      final Map<String, dynamic> jsonMap = jsonDecode(
+        cachedOrderString,
+      );
+      final cachedOrder = OrderModel.fromJson(jsonMap);
+
+      setState(() {
+        data = cachedOrder;
+        _isLoading = false;
+      });
+    }
+  }
+
+  void saveOrderLocally(OrderModel order) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      'cached_order',
+      jsonEncode(order.toJson()),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Lưu dữ liệu vào bộ nhớ tạm thành công',
+        ),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  Future<OrderModel?> getOrderByUser() async {
     var result = await _orderService.getbyId(
       widget.orderId,
     );
-    if (!mounted) return;
+    if (!mounted) return null;
     if (result['status'] == 'error') {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -59,20 +98,24 @@ class _TaskDetailPage extends State<TaskDetailPage> {
           backgroundColor: Colors.red,
         ),
       );
+      setState(() {
+        _isLoading = false;
+      });
+      return null;
     } else {
       var dataMap = result['data'];
+      final order = OrderModel.fromJson(dataMap);
       final provider = Provider.of<ReportDraftProvider>(
         context,
         listen: false,
       );
-      provider.setOrder(OrderModel.fromJson(dataMap));
+      provider.setOrder(order);
       setState(() {
-        data = OrderModel.fromJson(dataMap);
+        data = order;
+        _isLoading = false;
       });
+      return order;
     }
-    setState(() {
-      _isLoading = false;
-    });
   }
 
   void update(status) async {
@@ -101,7 +144,15 @@ class _TaskDetailPage extends State<TaskDetailPage> {
         ),
       );
     } else {
-      getOrderByUser();
+      final updatedOrder = await getOrderByUser();
+      if (updatedOrder != null) {
+        saveOrderLocally(updatedOrder);
+      }
+      if (status == 'end' || status == 'warning') {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('cached_order');
+        print('🧹 Đã xóa cached_order');
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -120,7 +171,9 @@ class _TaskDetailPage extends State<TaskDetailPage> {
   @override
   void initState() {
     super.initState();
-    getOrderByUser();
+    loadOrderFromCache().then((_) {
+      getOrderByUser();
+    });
   }
 
   void _callPhone(String phoneNumber) async {
@@ -463,24 +516,6 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                                     .directWorkMultiExcavatorReport,
                                 arguments: data,
                               );
-                              if (data!.startTime == null &&
-                                  data?.shiftReport ==
-                                      null) {
-                                ScaffoldMessenger.of(
-                                  context,
-                                ).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Bạn đang báo công mà chưa check in',
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                      ),
-                                    ),
-                                    backgroundColor:
-                                        Colors.orange,
-                                  ),
-                                );
-                              }
                             } else {
                               Navigator.pushNamed(
                                 context,
@@ -488,24 +523,6 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                                     .directWorkMultiVehicleReport,
                                 arguments: data,
                               );
-                              if (data!.startTime == null &&
-                                  data?.shiftReport ==
-                                      null) {
-                                ScaffoldMessenger.of(
-                                  context,
-                                ).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Bạn đang báo công mà chưa check in',
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                      ),
-                                    ),
-                                    backgroundColor:
-                                        Colors.orange,
-                                  ),
-                                );
-                              }
                             }
                           } else {
                             Navigator.pushNamed(
@@ -514,23 +531,6 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                                   .indirectWorkReport,
                               arguments: data,
                             );
-                            if (data!.startTime == null &&
-                                data?.shiftReport == null) {
-                              ScaffoldMessenger.of(
-                                context,
-                              ).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'Bạn đang báo công mà chưa check in',
-                                    style: TextStyle(
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                  backgroundColor:
-                                      Colors.orange,
-                                ),
-                              );
-                            }
                           }
                         },
                         child: const Text('Báo công'),

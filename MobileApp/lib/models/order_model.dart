@@ -27,6 +27,12 @@ class DevicesToProduceModel {
       quantity: json?['quantity'],
     );
   }
+  Map<String, dynamic> toJson() {
+    return {
+      'deviceType': deviceType.toJson(),
+      'quantity': quantity,
+    };
+  }
 }
 
 class OrderModel {
@@ -175,5 +181,36 @@ class OrderModel {
               .toList() ??
           [];
     }
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      '_id': id,
+      'assignedTo': assignedTo.toJson(),
+      'job': job.toJson(),
+      'workingDate': workingDate.toIso8601String(),
+      'shift': shift.toJson(),
+      'devicesToProduce':
+          devicesToProduce?.map((e) => e.toJson()).toList(),
+      'startTime': startTime?.toIso8601String(),
+      'endTime': endTime?.toIso8601String(),
+      'resumeTime': resumeTime?.toIso8601String(),
+      'createdBy': createdBy.toJson(),
+      'device': device?.map((e) => e.toJson()).toList(),
+      'excavator':
+          excavator?.map((e) => e.toJson()).toList(),
+      'distance': distance,
+      'liftHeight': liftHeight,
+      'location': location?.toJson(),
+      'material': material?.toJson(),
+      'workContent': workContent,
+      'shiftReport': shiftReport?.toJson(),
+      'status': status,
+      'note': note,
+      'temporaryError': temporaryError,
+      'safetyMeasure': safetyMeasure?.toJson(),
+      'assistants':
+          assistants?.map((e) => e.toJson()).toList(),
+    };
   }
 }

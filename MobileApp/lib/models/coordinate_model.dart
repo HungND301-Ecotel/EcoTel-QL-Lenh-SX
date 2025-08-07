@@ -16,4 +16,10 @@ class Coordinates {
               .toList(),
     );
   }
+   Map<String, dynamic> toJson() {
+    return {
+      'type': type,
+      'coordinates': coordinates,
+    };
+  }
 }

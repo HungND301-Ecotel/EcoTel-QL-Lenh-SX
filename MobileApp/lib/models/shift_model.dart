@@ -19,4 +19,12 @@ class ShiftModel {
       endTime: json?['endTime'] ?? '',
     );
   }
+   Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'startTime': startTime,
+      'endTime': endTime,
+    };
+  }
 }

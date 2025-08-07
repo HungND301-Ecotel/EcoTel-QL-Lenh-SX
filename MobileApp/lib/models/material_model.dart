@@ -2,10 +2,7 @@ class MaterialModel {
   final String id;
   final String name;
 
-  MaterialModel({
-    required this.id,
-    required this.name,
-  });
+  MaterialModel({required this.id, required this.name});
 
   factory MaterialModel.fromJson(
     Map<String, dynamic>? json,
@@ -14,5 +11,8 @@ class MaterialModel {
       id: json?['_id'] ?? '',
       name: json?['name'] ?? '',
     );
+  }
+  Map<String, dynamic> toJson() {
+    return {'id': id, 'name': name};
   }
 }

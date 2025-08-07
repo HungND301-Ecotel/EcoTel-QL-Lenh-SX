@@ -11,9 +11,11 @@ class SafetyMeasureModel {
     Map<String, dynamic>? json,
   ) {
     return SafetyMeasureModel(
-      id: json?['_id'],
-      content: json?['content'],
+      id: json?['_id'] ?? '',
+      content: json?['content'] ?? '',
     );
   }
-
+  Map<String, dynamic> toJson() {
+    return {'id': id, 'content': content};
+  }
 }

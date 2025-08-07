@@ -51,4 +51,18 @@ class DeviceModel {
               : null,
     );
   }
+   Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'code': code,
+      'name': name,
+      'vehicleNumber': vehicleNumber,
+      'category': category?.toJson(),
+      'material': material,
+      'fuelType': fuelType,
+      'department': department?.toJson(),
+      'status': status,
+      'coordinates': coordinates?.toJson(),
+    };
+  }
 }
