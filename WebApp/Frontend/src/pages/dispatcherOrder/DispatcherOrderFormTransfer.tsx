@@ -109,6 +109,7 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
             status: initialValues.status,
             note: initialValues?.shiftReport?.handoverNotes || ''
         },
+        enableReinitialize: true, // Để cập nhật lại giá trị khi initialValues thay đổi
         validationSchema,
         onSubmit: (values) => {
 

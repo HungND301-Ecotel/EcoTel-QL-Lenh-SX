@@ -99,6 +99,7 @@ const DispatcherOrderFormEdit: React.FC<OrderFormProps> = ({
             status: initialValues.status,
         },
         validationSchema,
+        enableReinitialize: true, // Để cập nhật lại giá trị khi initialValues thay đổi
         onSubmit: (values) => {
 
             const order: Partial<Order> = {

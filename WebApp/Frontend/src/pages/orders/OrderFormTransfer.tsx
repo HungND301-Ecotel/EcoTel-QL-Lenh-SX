@@ -144,6 +144,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                 .map((item: any) => `${item.vehicle.code} : ${item.note}`)
                 .join('\n') || ''
         },
+        enableReinitialize: true, // Để cập nhật lại giá trị khi initialValues thay đổi
         validationSchema,
         onSubmit: (values) => {
             const order: Partial<Order> = {

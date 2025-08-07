@@ -129,6 +129,7 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
             note: initialValues.note || ''
         },
         validationSchema,
+        enableReinitialize: true, // Để cập nhật lại giá trị khi initialValues thay đổi
         onSubmit: (values) => {
             const order: Partial<Order> = {
                 assignedTo: values.assignedTo,

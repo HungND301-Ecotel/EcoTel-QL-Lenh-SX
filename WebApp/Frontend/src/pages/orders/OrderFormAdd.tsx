@@ -108,6 +108,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
             note: '',
             safetyMeasure: undefined
         },
+        enableReinitialize: true,
         validationSchema,
         onSubmit: (values) => {
             const orders: Partial<Order>[] = values.usersAndDevices.map(item => ({
