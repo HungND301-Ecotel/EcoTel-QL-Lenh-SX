@@ -81,6 +81,7 @@ const Jobs: React.FC = () => {
             api.post('/jobs', newJob).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['jobs'] });
+            alert('Thêm công việc thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -93,6 +94,7 @@ const Jobs: React.FC = () => {
             api.put(`/jobs/${updatedJob._id}`, updatedJob).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['jobs'] });
+            alert('Cập nhật công việc thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -104,6 +106,7 @@ const Jobs: React.FC = () => {
         mutationFn: (id: string) => api.delete(`/jobs/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['jobs'] });
+            alert('Xóa công việc thành công');
         },
         onError: (error: any) => {
             alert(error.response.data.message || error.response || 'Lỗi')

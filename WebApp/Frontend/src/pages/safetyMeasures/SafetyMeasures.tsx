@@ -80,6 +80,7 @@ const SafetyMeasures: React.FC = () => {
             api.post('/safetyMeasures', newsafetyMeasure).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['safetyMeasures'] });
+            alert('Thêm biện pháp an toàn thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -92,6 +93,7 @@ const SafetyMeasures: React.FC = () => {
             api.put(`/safetyMeasures/${updatedsafetyMeasure._id}`, updatedsafetyMeasure).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['safetyMeasures'] });
+            alert('Cập nhật biện pháp an toàn thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -103,6 +105,7 @@ const SafetyMeasures: React.FC = () => {
         mutationFn: (id: string) => api.delete(`/safetyMeasures/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['safetyMeasures'] });
+            alert('Xóa biện pháp an toàn thành công');
         },
         onError: (error: any) => {
             alert(error.response.data.message || error.response || 'Lỗi')

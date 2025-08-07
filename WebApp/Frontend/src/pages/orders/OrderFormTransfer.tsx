@@ -94,6 +94,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
             api.post('/orders', newOrder).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
+            alert('Cập nhật lệnh sản xuất thành công');
             onCancel();
         },
         onError: (error: any) => {

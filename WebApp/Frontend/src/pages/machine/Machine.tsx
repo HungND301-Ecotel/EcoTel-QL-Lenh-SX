@@ -141,6 +141,7 @@ const Machines: React.FC = () => {
             api.post('/devices', newDevice).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['machines'] });
+            alert('Thêm thông tin máy thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -154,6 +155,7 @@ const Machines: React.FC = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['machines'] });
+            alert('Cập nhật thông tin máy thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -165,6 +167,7 @@ const Machines: React.FC = () => {
         mutationFn: (id: string) => api.delete(`/devices/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['machines'] });
+            alert('Xóa thông tin máy thành công');
         },
         onError: (error: any) => {
             alert(error.response.data.message || error.response || 'Lỗi')

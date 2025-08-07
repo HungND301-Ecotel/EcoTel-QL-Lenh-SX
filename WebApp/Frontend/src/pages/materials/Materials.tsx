@@ -77,6 +77,7 @@ const Materials: React.FC = () => {
             api.post('/materials', newMaterial).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['materials'] });
+            alert('Thêm vật liệu thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -90,6 +91,7 @@ const Materials: React.FC = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['materials'] });
+            alert('Cập nhật vật liệu thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -101,6 +103,7 @@ const Materials: React.FC = () => {
         mutationFn: (id: string) => api.delete(`/materials/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['materials'] });
+            alert('Xóa vật liệu thành công');
         },
         onError: (error: any) => {
             alert(error.response.data.message || error.response || 'Lỗi')

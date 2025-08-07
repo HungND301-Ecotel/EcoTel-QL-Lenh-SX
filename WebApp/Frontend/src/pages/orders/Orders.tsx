@@ -221,7 +221,6 @@ const Orders: React.FC = () => {
     }
 
     const handleOpen = (order?: any) => {
-        setSelectedOrder(null);
         if (order) {
             setSelectedOrder(order);
         } else {

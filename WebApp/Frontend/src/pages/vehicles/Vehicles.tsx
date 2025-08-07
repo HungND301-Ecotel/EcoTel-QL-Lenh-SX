@@ -141,6 +141,7 @@ const Vehicles: React.FC = () => {
             api.post('/devices', newDevice).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+            alert('Thêm phương tiện thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -154,6 +155,7 @@ const Vehicles: React.FC = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+            alert('Cập nhật phương tiện thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -165,6 +167,7 @@ const Vehicles: React.FC = () => {
         mutationFn: (id: string) => api.delete(`/devices/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+            alert('Xóa phương tiện thành công');
         },
         onError: (error: any) => {
             alert(error.response.data.message || error.response || 'Lỗi')

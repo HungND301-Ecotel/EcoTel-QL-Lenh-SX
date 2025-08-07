@@ -76,6 +76,7 @@ const DeviceTypes: React.FC = () => {
             api.post('/DeviceTypes', newDeviceType).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['DeviceTypes'] });
+            alert('Thêm loại phương tiện thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -88,6 +89,7 @@ const DeviceTypes: React.FC = () => {
             api.put(`/DeviceTypes/${updatedDeviceType._id}`, updatedDeviceType).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['DeviceTypes'] });
+            alert('Cập nhật loại phương tiện thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -99,6 +101,7 @@ const DeviceTypes: React.FC = () => {
         mutationFn: (id: string) => api.delete(`/DeviceTypes/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['DeviceTypes'] });
+            alert('Xóa loại phương tiện thành công');
         },
         onError: (error: any) => {
             alert(error.response.data.message || error.response || 'Lỗi')

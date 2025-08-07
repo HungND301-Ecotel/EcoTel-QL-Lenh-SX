@@ -111,6 +111,7 @@ const Users: React.FC = () => {
             api.post('/auth/register', newUser).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
+            alert('Thêm người dùng thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -137,6 +138,7 @@ const Users: React.FC = () => {
             api.put(`/users/update/${updatedUser._id}`, updatedUser).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
+            alert('Cập nhật người dùng thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -148,6 +150,7 @@ const Users: React.FC = () => {
         mutationFn: (id: string) => api.delete(`/users/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
+            alert('Xóa người dùng thành công');
         },
         onError: (error: any) => {
             alert(error.response.data.message || error.response || 'Lỗi')

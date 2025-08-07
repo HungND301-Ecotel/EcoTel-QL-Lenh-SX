@@ -70,6 +70,7 @@ const Departments = () => {
         mutationFn: (data: any) => api.post('/departments', data).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['departments'] });
+            alert('Thêm đơn vị thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -81,6 +82,7 @@ const Departments = () => {
         mutationFn: (data: any) => api.put(`/departments/${selectedDepartment?._id}`, data).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['departments'] });
+            alert('Cập nhật đơn vị thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -92,6 +94,7 @@ const Departments = () => {
         mutationFn: (id: string) => api.delete(`/departments/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['departments'] });
+            alert('Xóa đơn vị thành công');
         },
         onError: (error: any) => {
             alert(error.response.data.message || error.response || 'Lỗi')

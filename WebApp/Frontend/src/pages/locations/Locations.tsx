@@ -73,6 +73,7 @@ const Locations: React.FC = () => {
         mutationFn: (newLoc: Partial<Location>) => api.post('/locations', newLoc).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['locations'] });
+            alert('Thêm vị trí thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -85,6 +86,7 @@ const Locations: React.FC = () => {
             api.put(`/locations/${updatedLoc._id}`, updatedLoc).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['locations'] });
+            alert('Cập nhật vị trí thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -96,6 +98,7 @@ const Locations: React.FC = () => {
         mutationFn: (id: string) => api.delete(`/locations/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['locations'] });
+            alert('Xóa vị trí thành công');
         },
         onError: (error: any) => {
             alert(error.response.data.message || error.response || 'Lỗi')
