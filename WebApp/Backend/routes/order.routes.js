@@ -595,8 +595,8 @@ router.post('/checkin', verifyToken, async (req, res, next) => {
         let status = order.status;
 
 
-        const parsedCheckInTime = checkinTime ? new Date(checkinTime) : null;
-        const parsedCheckOutTime = checkoutTime ? new Date(checkoutTime) : new Date();
+        const parsedCheckInTime = checkinTime || null;
+        const parsedCheckOutTime = checkoutTime || new Date();
 
 
         if (checkinTime && !order.startTime) {
