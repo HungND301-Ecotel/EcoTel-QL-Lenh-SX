@@ -4,6 +4,7 @@ import { useFormik } from 'formik'
 import React, { Dispatch, SetStateAction, useEffect } from 'react'
 import api from '../../config/api.config';
 import { ShiftReportType } from '../../types';
+import { showErrorAlert, showSuccessAlert } from '../Alert';
 
 export default function ShiftReport({ open, setOpen, initialValues }: { open: boolean, setOpen: Dispatch<SetStateAction<boolean>>, initialValues: any }) {
 
@@ -13,10 +14,11 @@ export default function ShiftReport({ open, setOpen, initialValues }: { open: bo
             api.put(`/shiftReports/${updatedShiftReport._id}`, updatedShiftReport).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
+            showSuccessAlert('Cập nhật thông tin thành công')
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
     const formik = useFormik({

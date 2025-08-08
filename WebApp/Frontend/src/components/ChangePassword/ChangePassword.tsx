@@ -31,6 +31,7 @@ import {
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import api from '../../config/api.config';
+import { showErrorAlert, showSuccessAlert } from '../Alert';
 const validationSchema = yup.object({
     old_pass: yup.string().required('Vui lòng nhập mật khẩu cũ'),
     newpass: yup.string().required('Vui lòng nhập mật khẩu mới'),
@@ -53,10 +54,11 @@ const ChangePassword: React.FC<{ open: boolean, setOpen: Dispatch<SetStateAction
             api.put(`/users/changepass`, changepass).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['changepass'] });
+            showSuccessAlert('Đổi mật khẩu thành công');
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 

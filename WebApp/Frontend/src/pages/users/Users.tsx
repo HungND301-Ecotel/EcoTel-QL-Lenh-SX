@@ -51,6 +51,7 @@ import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import imageCompression from 'browser-image-compression';
 import UserHistories from '../../components/UserHistory/UserHistories';
+import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 
 
 const StyledPopper = styled(Popper)({
@@ -118,11 +119,11 @@ const Users: React.FC = () => {
             api.post('/auth/register', newUser).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
-            alert('Thêm người dùng thành công');
+            showSuccessAlert('Thêm người dùng thành công');
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -133,10 +134,10 @@ const Users: React.FC = () => {
             }).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
-            alert("Import thành công!");
+            showSuccessAlert("Import thành công!");
         },
         onError: (error: any) => {
-            alert(error.response?.data?.message || 'Lỗi khi import');
+            showErrorAlert(error.response?.data?.message || 'Lỗi khi import');
         }
     });
 
@@ -145,11 +146,11 @@ const Users: React.FC = () => {
             api.put(`/users/update/${updatedUser._id}`, updatedUser).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
-            alert('Cập nhật người dùng thành công');
+            showSuccessAlert('Cập nhật người dùng thành công');
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -157,10 +158,10 @@ const Users: React.FC = () => {
         mutationFn: (id: string) => api.delete(`/users/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
-            alert('Xóa người dùng thành công');
+            showSuccessAlert('Xóa người dùng thành công');
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -227,9 +228,15 @@ const Users: React.FC = () => {
     };
 
     const handleDelete = (id: string) => {
-        if (window.confirm('Bạn có chắc chắn muốn xóa người dùng này?')) {
-            deleteMutation.mutate(id);
+        if (!id) {
+            showErrorAlert('Không tìm thấy bản ghi');
+            return;
         }
+        showConfirmAlert('Bạn có muốn xóa bản ghi này?').then((result) => {
+            if (result.isConfirmed) {
+                deleteMutation.mutate(id);
+            }
+        });
     };
 
     const handleImageUpload = async (file: File, type: 'avatar') => {
@@ -328,10 +335,10 @@ const Users: React.FC = () => {
                     >
                         <InfoOutlined />
                     </IconButton>
-                    <IconButton color="primary" onClick={() => {
+                    <IconButton color="primary" onClick={async () => {
                         if (open) {
-                            const confirmed = window.confirm('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                            if (confirmed) {
+                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                            if (result.isConfirmed) {
                                 handleOpen(params.row);
                             }
                         } else {

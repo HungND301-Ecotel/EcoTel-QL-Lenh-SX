@@ -23,6 +23,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import 'dayjs/locale/en-gb';
 import utc from 'dayjs/plugin/utc';
+import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 
 dayjs.extend(utc);
 
@@ -94,11 +95,11 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
             api.post('/orders', newOrder).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
-            alert('Cập nhật lệnh sản xuất thành công');
+            showSuccessAlert('Cập nhật lệnh sản xuất thành công');
             onCancel();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -177,8 +178,8 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
             if (duplicates) {
                 const name = duplicates.assignedTo?.fullName
 
-                const confirm = window.confirm(`${name} đã có lệnh sản xuất trong ca này. Bạn có muốn tiếp tục?`);
-                if (!confirm) return;
+                const result = await showConfirmAlert(`${name} đã có lệnh sản xuất trong ca này. Bạn có muốn tiếp tục?`);
+                if (!result.isConfirmed) return;
             }
 
             createMutation.mutate(order);

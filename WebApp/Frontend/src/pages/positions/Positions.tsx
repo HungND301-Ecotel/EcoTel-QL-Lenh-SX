@@ -36,6 +36,7 @@ import { useFormik } from 'formik';
 import * as yup from 'yup';
 import api from '../../config/api.config';
 import { Job, Position } from '../../types';
+import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 
 const validationSchema = yup.object({
     name: yup.string().required('Vui lòng nhập tên chức danh'),
@@ -83,11 +84,11 @@ const Positions: React.FC = () => {
             api.post('/positions', newJob).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['positions'] });
-            alert('Thêm chức danh thành công');
+            showSuccessAlert('Thêm chức danh thành công');
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -96,11 +97,11 @@ const Positions: React.FC = () => {
             api.put(`/positions/${updatedPosition._id}`, updatedPosition).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['positions'] });
-            alert('Cập nhật chức danh thành công');
+            showSuccessAlert('Cập nhật chức danh thành công');
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -108,10 +109,10 @@ const Positions: React.FC = () => {
         mutationFn: (id: string) => api.delete(`/positions/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['positions'] });
-            alert('Xóa chức danh thành công');
+            showSuccessAlert('Xóa chức danh thành công');
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -153,9 +154,15 @@ const Positions: React.FC = () => {
     };
 
     const handleDelete = (id: string) => {
-        if (window.confirm('Bạn có chắc chắn muốn xóa chức danh này?')) {
-            deleteMutation.mutate(id);
+        if (!id) {
+            showErrorAlert('Không tìm thấy bản ghi');
+            return;
         }
+        showConfirmAlert('Bạn có muốn xóa bản ghi này?').then((result) => {
+            if (result.isConfirmed) {
+                deleteMutation.mutate(id);
+            }
+        });
     };
 
 
@@ -265,10 +272,10 @@ const Positions: React.FC = () => {
                                     border: '1px solid black'
                                 }}>{position.note}</TableCell>}
                                 {visibleColumns.includes('actions') && <TableCell sx={{ border: '1px solid black' }}>
-                                    <IconButton color="primary" onClick={() => {
+                                    <IconButton color="primary" onClick={async () => {
                                         if (open) {
-                                            const confirmed = window.confirm('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                                            if (confirmed) {
+                                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                                            if (result.isConfirmed) {
                                                 handleOpen(position);
                                             }
                                         } else {

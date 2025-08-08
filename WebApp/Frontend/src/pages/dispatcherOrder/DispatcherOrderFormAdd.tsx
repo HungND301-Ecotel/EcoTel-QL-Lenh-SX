@@ -20,6 +20,7 @@ import { Order, Device, Job, Location, Material, DeviceType, Department, Shift }
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { showConfirmAlert } from '../../components/Alert';
 
 const StyledPopper = styled(Popper)({
     '& .MuiAutocomplete-listbox': {
@@ -119,8 +120,10 @@ const DispatcherOrderFormAdd: React.FC<OrderFormProps> = ({
             if (duplicates) {
                 const name = duplicates.assignedTo?.fullName
 
-                const confirm = window.confirm(`${name} đã có lệnh sản xuất trong ca này. Bạn có muốn tiếp tục?`);
-                if (!confirm) return;
+                showConfirmAlert(`${name} đã có lệnh sản xuất trong ca này. Bạn có muốn tiếp tục?`).then((result) => {
+                    if (!result.isConfirmed) return
+                });
+
             }
             onSubmit(order);
         },

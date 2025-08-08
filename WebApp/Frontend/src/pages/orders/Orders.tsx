@@ -63,6 +63,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 import { useSocket } from '../../hooks/useSocket';
 import ShiftReport from '../../components/ShiftReport/ShiftReport';
+import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 
 const StyledPopper = styled(Popper)({
     '& .MuiAutocomplete-listbox': {
@@ -155,7 +156,7 @@ const Orders: React.FC = () => {
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -183,11 +184,11 @@ const Orders: React.FC = () => {
                 window.URL.revokeObjectURL(url);
             }),
         onSuccess: () => {
-            alert('Xuất file thành công');
+            showSuccessAlert('Xuất file thành công');
             setSelectedOrder(null)
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -196,11 +197,11 @@ const Orders: React.FC = () => {
             api.put(`/orders/${updatedOrder._id}`, updatedOrder).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
-            alert('Cập nhật lệnh sản xuất thành công');
+            showSuccessAlert('Cập nhật lệnh sản xuất thành công');
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -208,23 +209,25 @@ const Orders: React.FC = () => {
         mutationFn: (id: string) => api.delete(`/orders/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
-            alert('Xóa lệnh sản xuất thành công');
+            showSuccessAlert('Xóa lệnh sản xuất thành công');
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
     const handleCancel = (order: any) => {
         if (order.status === "in_progress") {
-            return alert('Lệnh đang thực hiện không thể hủy')
+            return showErrorAlert('Lệnh đang thực hiện không thể hủy')
         }
         if (order.status === "completed") {
-            return alert('Lệnh đã hoàn thành không thể hủy')
+            return showErrorAlert('Lệnh đã hoàn thành không thể hủy')
         }
-        if (window.confirm('Bạn có chắc chắn muốn hủy lệnh sản xuất này?. Bạn sẽ không thể thay đổi')) {
-            updateMutation.mutate({ _id: order._id, status: 'cancel' });
-        }
+        showConfirmAlert('Bạn có chắc chắn muốn hủy lệnh sản xuất này?. Bạn sẽ không thể thay đổi').then((result) => {
+            if (result.isConfirmed) {
+                updateMutation.mutate({ _id: order._id, status: 'cancel' });
+            }
+        })
     }
 
     const handleOpen = (order?: any) => {
@@ -253,9 +256,15 @@ const Orders: React.FC = () => {
         }
     };
     const handleDelete = (id: string) => {
-        if (window.confirm('Bạn có chắc chắn muốn xóa lệnh sản xuất này?')) {
-            deleteMutation.mutate(id);
+        if (!id) {
+            showErrorAlert('Không tìm thấy bản ghi');
+            return;
         }
+        showConfirmAlert('Bạn có muốn xóa bản ghi này?').then((result) => {
+            if (result.isConfirmed) {
+                deleteMutation.mutate(id);
+            }
+        });
     };
 
     return (
@@ -538,10 +547,10 @@ const Orders: React.FC = () => {
                                             {visibleColumns.includes('actions') && <TableCell sx={{ border: '1px solid black' }}>
                                                 {['pending', 'warning'].includes(order?.status) && <IconButton
                                                     color="primary"
-                                                    onClick={() => {
+                                                    onClick={async () => {
                                                         if (open) {
-                                                            const confirmed = window.confirm('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                                                            if (confirmed) {
+                                                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                                                            if (result.isConfirmed) {
                                                                 handleOpen(order);
                                                             }
                                                         } else {
@@ -585,10 +594,10 @@ const Orders: React.FC = () => {
                                                 </IconButton>}
                                                 {order.status === "completed" && <IconButton
                                                     color="info"
-                                                    onClick={() => {
+                                                    onClick={async () => {
                                                         if (open) {
-                                                            const confirmed = window.confirm('Bạn đang cập nhật một mục. Nếu tiếp tục, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                                                            if (confirmed) {
+                                                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                                                            if (result.isConfirmed) {
                                                                 setSelectedOrder(order)
                                                                 setOpen(false)
                                                                 setExpanded(true)

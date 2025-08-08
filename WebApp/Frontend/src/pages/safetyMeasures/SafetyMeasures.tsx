@@ -37,6 +37,7 @@ import { useFormik } from 'formik';
 import * as yup from 'yup';
 import api from '../../config/api.config';
 import { SafetyMeasure } from '../../types';
+import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 
 const validationSchema = yup.object({
     content: yup.string().required('Nhập nội dung'),
@@ -87,11 +88,11 @@ const SafetyMeasures: React.FC = () => {
             api.post('/safetyMeasures', newsafetyMeasure).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['safetyMeasures'] });
-            alert('Thêm biện pháp an toàn thành công');
+            showSuccessAlert('Thêm biện pháp an toàn thành công');
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -100,11 +101,11 @@ const SafetyMeasures: React.FC = () => {
             api.put(`/safetyMeasures/${updatedsafetyMeasure._id}`, updatedsafetyMeasure).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['safetyMeasures'] });
-            alert('Cập nhật biện pháp an toàn thành công');
+            showSuccessAlert('Cập nhật biện pháp an toàn thành công');
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -112,10 +113,10 @@ const SafetyMeasures: React.FC = () => {
         mutationFn: (id: string) => api.delete(`/safetyMeasures/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['safetyMeasures'] });
-            alert('Xóa biện pháp an toàn thành công');
+            showSuccessAlert('Xóa biện pháp an toàn thành công');
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -154,9 +155,15 @@ const SafetyMeasures: React.FC = () => {
     };
 
     const handleDelete = (id: string) => {
-        if (window.confirm('Bạn có chắc chắn muốn xóa biên pháp an toàn này này?')) {
-            deleteMutation.mutate(id);
+        if (!id) {
+            showErrorAlert('Không tìm thấy bản ghi');
+            return;
         }
+        showConfirmAlert('Bạn có muốn xóa bản ghi này?').then((result) => {
+            if (result.isConfirmed) {
+                deleteMutation.mutate(id);
+            }
+        });
     };
 
     return (
@@ -249,10 +256,10 @@ const SafetyMeasures: React.FC = () => {
                                     }}>{safetyMeasure.content}</TableCell>}
                                 {visibleColumns.includes('actions') &&
                                     <TableCell align='center' sx={{ border: '1px solid black', }}>
-                                        <IconButton color="primary" onClick={() => {
+                                        <IconButton color="primary" onClick={async () => {
                                             if (open) {
-                                                const confirmed = window.confirm('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                                                if (confirmed) {
+                                                const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                                                if (result.isConfirmed) {
                                                     handleOpen(safetyMeasure);
                                                 }
                                             } else {

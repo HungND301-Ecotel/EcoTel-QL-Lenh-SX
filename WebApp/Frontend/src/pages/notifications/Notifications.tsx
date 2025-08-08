@@ -32,6 +32,7 @@ import api from '../../config/api.config';
 import { Notification } from '../../types';
 import socketService from '../../services/socketService';
 import { useSocket } from '../../hooks/useSocket';
+import { showConfirmAlert, showErrorAlert } from '../../components/Alert';
 
 const validationSchema = yup.object({
     title: yup.string().required('Vui lòng nhập tiêu đề'),
@@ -107,9 +108,15 @@ const Notifications: React.FC = () => {
     };
 
     const handleDelete = (id: string) => {
-        if (window.confirm('Bạn có chắc chắn muốn xóa thông báo này?')) {
-            deleteMutation.mutate(id);
+        if (!id) {
+            showErrorAlert('Không tìm thấy bản ghi');
+            return;
         }
+        showConfirmAlert('Bạn có muốn xóa bản ghi này?').then((result) => {
+            if (result.isConfirmed) {
+                deleteMutation.mutate(id);
+            }
+        });
     };
 
     return (

@@ -23,6 +23,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import 'dayjs/locale/en-gb';
 import utc from 'dayjs/plugin/utc';
+import { showErrorAlert } from '../../components/Alert';
 
 dayjs.extend(utc);
 
@@ -210,7 +211,7 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                                         return;
                                     }
                                     if (formik.values.excavator?.length > 1 && selectedIds.length > 1) {
-                                        alert('Chỉ nên bổ sung phương tiện khi chỉ có một máy xúc.');
+                                        showErrorAlert('Chỉ nên bổ sung phương tiện khi chỉ có một máy xúc.');
                                         return;
                                     }
                                     formik.setFieldValue('device', selectedIds);
@@ -307,7 +308,7 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                                         return;
                                     }
                                     if (formik.values.device.length > 1 && selectedIds.length > 1) {
-                                        alert('Chỉ nên bổ sung máy xúc khi chỉ có một phương tiện.');
+                                        showErrorAlert('Chỉ nên bổ sung máy xúc khi chỉ có một phương tiện.');
                                         return;
                                     }
                                     formik.setFieldValue('excavator', selectedIds);

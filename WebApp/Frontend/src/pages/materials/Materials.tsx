@@ -36,6 +36,7 @@ import { useFormik } from 'formik';
 import * as yup from 'yup';
 import api from '../../config/api.config';
 import { Material } from '../../types';
+import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 
 const validationSchema = yup.object({
     name: yup.string().required('Vui lòng nhập tên vật liệu'),
@@ -83,11 +84,11 @@ const Materials: React.FC = () => {
             api.post('/materials', newMaterial).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['materials'] });
-            alert('Thêm vật liệu thành công');
+            showSuccessAlert('Thêm vật liệu thành công');
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -97,11 +98,11 @@ const Materials: React.FC = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['materials'] });
-            alert('Cập nhật vật liệu thành công');
+            showSuccessAlert('Cập nhật vật liệu thành công');
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -109,10 +110,10 @@ const Materials: React.FC = () => {
         mutationFn: (id: string) => api.delete(`/materials/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['materials'] });
-            alert('Xóa vật liệu thành công');
+            showSuccessAlert('Xóa vật liệu thành công');
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
 
     });
@@ -158,9 +159,15 @@ const Materials: React.FC = () => {
     };
 
     const handleDelete = (id: string) => {
-        if (window.confirm('Bạn có chắc chắn muốn xóa vật liệu này?')) {
-            deleteMutation.mutate(id);
+        if (!id) {
+            showErrorAlert('Không tìm thấy bản ghi');
+            return;
         }
+        showConfirmAlert('Bạn có muốn xóa bản ghi này?').then((result) => {
+            if (result.isConfirmed) {
+                deleteMutation.mutate(id);
+            }
+        });
     };
 
     return (
@@ -271,10 +278,10 @@ const Materials: React.FC = () => {
                                 {visibleColumns.includes('density') && <TableCell sx={{ border: '1px solid black' }}>{material.density}</TableCell>}
                                 {visibleColumns.includes("mass") && <TableCell sx={{ border: '1px solid black' }}>{material.mass}</TableCell>}
                                 {visibleColumns.includes("actions") && <TableCell align='center' sx={{ border: '1px solid black' }}>
-                                    <IconButton color="primary" onClick={() => {
+                                    <IconButton color="primary" onClick={async () => {
                                         if (open) {
-                                            const confirmed = window.confirm('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                                            if (confirmed) {
+                                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                                            if (result.isConfirmed) {
                                                 handleOpen(material);
                                             }
                                         } else {

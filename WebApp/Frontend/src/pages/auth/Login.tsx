@@ -29,6 +29,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/api.config';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
+import { showErrorAlert } from '../../components/Alert';
 
 const loginValidationSchema = yup.object({
     username: yup.string().required('Vui lòng nhập tên đăng nhập'),
@@ -53,13 +54,13 @@ const Login = () => {
             localStorage.setItem('token', data.data.token);
             setUser(data.data.user)
             if (data.data.user?.role === 'employee') {
-                alert('Bạn không có quyền truy cập hệ thống.');
+                showErrorAlert('Bạn không có quyền truy cập hệ thống.');
                 return;
             }
             navigate('/');
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Đăng nhập thất bại')
+            showErrorAlert(error.response.data.message || error.response || 'Đăng nhập thất bại')
         }
     });
 

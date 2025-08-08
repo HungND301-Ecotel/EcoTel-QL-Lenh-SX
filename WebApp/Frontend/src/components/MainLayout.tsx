@@ -146,7 +146,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                                                     navigate(item!.path!);
                                                     setMenuAnchorEl(null);
                                                 }}>
-                                                    <Box mr={1}>{item!.icon}</Box>
                                                     {item!.text}
                                                 </MenuItem>
                                             )

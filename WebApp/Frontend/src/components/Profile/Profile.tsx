@@ -10,6 +10,7 @@ import * as yup from 'yup'
 import { useFormik } from 'formik'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Department, User } from '../../types'
+import { showErrorAlert, showSuccessAlert } from '../Alert'
 
 export default function Profile({ open, setOpen }: { open: boolean, setOpen: Dispatch<SetStateAction<boolean>> }) {
     const [avatar, setAvatar] = useState('')
@@ -38,10 +39,11 @@ export default function Profile({ open, setOpen }: { open: boolean, setOpen: Dis
             api.put(`/users/update/${updatedUser._id}`, updatedUser).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['user'] })
+            showSuccessAlert('Cập nhật thông tin thành công')
             handleClose()
         },
         onError: (error: any) => {
-            alert(error.response?.data?.message || 'Lỗi')
+            showErrorAlert(error.response?.data?.message || 'Lỗi')
         }
     })
 

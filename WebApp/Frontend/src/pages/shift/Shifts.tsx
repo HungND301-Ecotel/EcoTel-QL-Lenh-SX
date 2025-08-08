@@ -41,6 +41,7 @@ import { Shift } from '../../types';
 import { DatePicker, LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
+import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 
 const validationSchema = yup.object({
     name: yup.number().required('Vui lòng nhập ca làm việc'),
@@ -95,11 +96,11 @@ const Shifts: React.FC = () => {
             api.post('/shifts', newShift).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['shifts'] });
-            alert('Thêm ca làm việc thành công');
+            showSuccessAlert('Thêm ca làm việc thành công');
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -108,11 +109,11 @@ const Shifts: React.FC = () => {
             api.put(`/shifts/${updatedShift._id}`, updatedShift).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['shifts'] });
-            alert('Cập nhật ca làm việc thành công');
+            showSuccessAlert('Cập nhật ca làm việc thành công');
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -120,10 +121,10 @@ const Shifts: React.FC = () => {
         mutationFn: (id: string) => api.delete(`/shifts/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['shifts'] });
-            alert('Xóa ca làm việc thành công');
+            showSuccessAlert('Xóa ca làm việc thành công');
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -163,9 +164,15 @@ const Shifts: React.FC = () => {
     };
 
     const handleDelete = (id: string) => {
-        if (window.confirm('Bạn có chắc chắn muốn xóa ca làm việc này?')) {
-            deleteMutation.mutate(id);
+        if (!id) {
+            showErrorAlert('Không tìm thấy bản ghi');
+            return;
         }
+        showConfirmAlert('Bạn có muốn xóa bản ghi này?').then((result) => {
+            if (result.isConfirmed) {
+                deleteMutation.mutate(id);
+            }
+        });
     };
 
     return (
@@ -297,10 +304,10 @@ const Shifts: React.FC = () => {
                                 )}
                                 {visibleColumns.includes('actions') && (
                                     <TableCell align='center' sx={{ border: '1px solid black' }}>
-                                        <IconButton color="primary" onClick={() => {
+                                        <IconButton color="primary" onClick={async () => {
                                             if (open) {
-                                                const confirmed = window.confirm('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                                                if (confirmed) {
+                                                const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                                                if (result.isConfirmed) {
                                                     handleOpen(shift);
                                                 }
                                             } else {

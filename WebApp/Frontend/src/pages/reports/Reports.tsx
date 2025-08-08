@@ -31,6 +31,7 @@ import ProductionReport from './ProductionReport';
 import WorkLogReport from './WorkLogReport';
 import mealRequestReport from './MealRepuestReport';
 import { Close, Edit } from '@mui/icons-material';
+import { showErrorAlert } from '../../components/Alert';
 
 
 function Reports() {
@@ -58,13 +59,13 @@ function Reports() {
         onSuccess: (signature: string) => {
             console.log(signature)
             if (!signature || signature === "") {
-                alert("Bạn không có chữ kí")
+                showErrorAlert("Bạn không có chữ kí")
             } else {
                 setSignatureUrl(signature);
             }
         },
         onError: (error: any) => {
-            alert(error.response?.data?.message || error.message || 'Lỗi');
+            showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
         }
     });
     const reportNames = [
@@ -151,7 +152,7 @@ function Reports() {
         },
         onSuccess: () => { },
         onError: (error: any) => {
-            alert(error.response?.data?.message || error.message || 'Lỗi');
+            showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
         }
     });
     const reportExcel = useMutation({
@@ -183,7 +184,7 @@ function Reports() {
         },
         onSuccess: () => { },
         onError: (error: any) => {
-            alert(error.response?.data?.message || error.message || 'Lỗi');
+            showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
         }
     });
 
@@ -275,7 +276,7 @@ function Reports() {
                         <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
                             <Button variant="contained" onClick={() => {
                                 if (!title) {
-                                    alert("Vui lòng chọn loại báo cáo");
+                                    showErrorAlert("Vui lòng chọn loại báo cáo");
                                     return;
                                 }
                                 reportView.mutate();
@@ -303,7 +304,7 @@ function Reports() {
                                 </Button>}
                             <Button variant="contained" onClick={() => {
                                 if (!title) {
-                                    alert("Vui lòng chọn loại báo cáo");
+                                    showErrorAlert("Vui lòng chọn loại báo cáo");
                                     return;
                                 }
                                 reportExcel.mutate();

@@ -21,6 +21,7 @@ import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
+import { showConfirmAlert, showSuccessAlert } from '../../components/Alert';
 dayjs.extend(utc);
 
 const StyledPopper = styled(Popper)({
@@ -146,13 +147,13 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                     return o.assignedTo?.fullName || 'Không rõ';
                 }).join(', ');
 
-                const confirm = window.confirm(`${names} đã có lệnh sản xuất trong ca này. Bạn có muốn tiếp tục?`);
-                if (!confirm) return;
+                const result = await showConfirmAlert(`${names} đã có lệnh sản xuất trong ca này. Bạn có muốn tiếp tục?`);
+                if (!result.isConfirmed) return;
             }
             try {
                 await Promise.all(orders.map(order => onSubmit(order)));
                 queryClient.invalidateQueries({ queryKey: ['orders'] });
-                alert('Thêm lệnh sản xuất thành công');
+                showSuccessAlert('Thêm lệnh sản xuất thành công');
             } catch (error) {
                 console.error('Error submitting orders:', error);
             }

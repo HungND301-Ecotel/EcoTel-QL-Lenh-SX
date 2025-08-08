@@ -46,6 +46,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import LocationSelector from '../../fixLeafletIcon';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
+import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 
 const containerStyle = {
     width: '100%',
@@ -148,11 +149,11 @@ const Vehicles: React.FC = () => {
             api.post('/devices', newDevice).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['vehicles'] });
-            alert('Thêm phương tiện thành công');
+            showSuccessAlert('Thêm phương tiện thành công');
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -162,11 +163,11 @@ const Vehicles: React.FC = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['vehicles'] });
-            alert('Cập nhật phương tiện thành công');
+            showSuccessAlert('Cập nhật phương tiện thành công');
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -174,10 +175,10 @@ const Vehicles: React.FC = () => {
         mutationFn: (id: string) => api.delete(`/devices/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['vehicles'] });
-            alert('Xóa phương tiện thành công');
+            showSuccessAlert('Xóa phương tiện thành công');
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -257,9 +258,15 @@ const Vehicles: React.FC = () => {
     };
 
     const handleDelete = (id: string) => {
-        if (window.confirm('Bạn có chắc chắn muốn xóa Thông tin xe này?')) {
-            deleteMutation.mutate(id);
+        if (!id) {
+            showErrorAlert('Không tìm thấy bản ghi');
+            return;
         }
+        showConfirmAlert('Bạn có muốn xóa bản ghi này?').then((result) => {
+            if (result.isConfirmed) {
+                deleteMutation.mutate(id);
+            }
+        });
     };
     const handleMapClick = (e: google.maps.MapMouseEvent) => {
         if (e.latLng) {
@@ -614,10 +621,10 @@ const Vehicles: React.FC = () => {
                                         {visibleColumns.includes('actions') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ border: '1px solid black', minWidth: 130, }}>
                                             <IconButton
                                                 color="primary"
-                                                onClick={() => {
+                                                onClick={async () => {
                                                     if (open) {
-                                                        const confirmed = window.confirm('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                                                        if (confirmed) {
+                                                        const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                                                        if (result.isConfirmed) {
                                                             handleOpen(device);
                                                         }
                                                     } else {

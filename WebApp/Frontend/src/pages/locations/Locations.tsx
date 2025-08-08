@@ -18,6 +18,7 @@ import api from '../../config/api.config';
 import { Location } from '../../types';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import LocationSelector from '../../fixLeafletIcon';
+import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 
 const containerStyle = {
     width: '100%',
@@ -80,11 +81,11 @@ const Locations: React.FC = () => {
         mutationFn: (newLoc: Partial<Location>) => api.post('/locations', newLoc).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['locations'] });
-            alert('Thêm vị trí thành công');
+            showSuccessAlert('Thêm vị trí thành công');
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -93,11 +94,11 @@ const Locations: React.FC = () => {
             api.put(`/locations/${updatedLoc._id}`, updatedLoc).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['locations'] });
-            alert('Cập nhật vị trí thành công');
+            showSuccessAlert('Cập nhật vị trí thành công');
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -105,10 +106,10 @@ const Locations: React.FC = () => {
         mutationFn: (id: string) => api.delete(`/locations/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['locations'] });
-            alert('Xóa vị trí thành công');
+            showSuccessAlert('Xóa vị trí thành công');
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -173,9 +174,15 @@ const Locations: React.FC = () => {
     };
 
     const handleDelete = (id: string) => {
-        if (window.confirm('Bạn có chắc chắn muốn xóa vị trí này?')) {
-            deleteMutation.mutate(id);
+        if (!id) {
+            showErrorAlert('Không tìm thấy bản ghi');
+            return;
         }
+        showConfirmAlert('Bạn có muốn xóa bản ghi này?').then((result) => {
+            if (result.isConfirmed) {
+                deleteMutation.mutate(id);
+            }
+        });
     };
 
     const handleMapClick = (e: google.maps.MapMouseEvent) => {
@@ -353,10 +360,10 @@ const Locations: React.FC = () => {
                                     {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black' }}>{loc.name}</TableCell>}
                                     {visibleColumns.includes('coordinates') && <TableCell sx={{ border: '1px solid black' }}>{coordsDisplay}</TableCell>}
                                     {visibleColumns.includes('actions') && <TableCell sx={{ border: '1px solid black' }}>
-                                        <IconButton color="primary" onClick={() => {
+                                        <IconButton color="primary" onClick={async () => {
                                             if (open) {
-                                                const confirmed = window.confirm('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                                                if (confirmed) {
+                                                const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                                                if (result.isConfirmed) {
                                                     handleOpen(loc);
                                                 }
                                             } else {

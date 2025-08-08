@@ -39,6 +39,7 @@ import api from '../../config/api.config';
 import { DeviceType } from '../../types';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
+import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 
 const validationSchema = yup.object({
     name: yup.string().required('Vui lòng nhập tên loại phương tiện'),
@@ -83,11 +84,11 @@ const DeviceTypes: React.FC = () => {
             api.post('/DeviceTypes', newDeviceType).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['DeviceTypes'] });
-            alert('Thêm loại phương tiện thành công');
+            showSuccessAlert('Thêm loại phương tiện thành công');
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -96,11 +97,11 @@ const DeviceTypes: React.FC = () => {
             api.put(`/DeviceTypes/${updatedDeviceType._id}`, updatedDeviceType).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['DeviceTypes'] });
-            alert('Cập nhật loại phương tiện thành công');
+            showSuccessAlert('Cập nhật loại phương tiện thành công');
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -108,10 +109,10 @@ const DeviceTypes: React.FC = () => {
         mutationFn: (id: string) => api.delete(`/DeviceTypes/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['DeviceTypes'] });
-            alert('Xóa loại phương tiện thành công');
+            showSuccessAlert('Xóa loại phương tiện thành công');
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -149,9 +150,15 @@ const DeviceTypes: React.FC = () => {
     };
 
     const handleDelete = (id: string) => {
-        if (window.confirm('Bạn có chắc chắn muốn xóa loại phương tiện này?')) {
-            deleteMutation.mutate(id);
+        if (!id) {
+            showErrorAlert('Không tìm thấy bản ghi');
+            return;
         }
+        showConfirmAlert('Bạn có muốn xóa bản ghi này?').then((result) => {
+            if (result.isConfirmed) {
+                deleteMutation.mutate(id);
+            }
+        });
     };
 
     return (
@@ -228,10 +235,10 @@ const DeviceTypes: React.FC = () => {
                             <TableRow key={DeviceType._id}>
                                 {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black' }}>{DeviceType.name}</TableCell>}
                                 {visibleColumns.includes('actions') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ border: '1px solid black' }}>
-                                    <IconButton color="primary" onClick={() => {
+                                    <IconButton color="primary" onClick={async () => {
                                         if (open) {
-                                            const confirmed = window.confirm('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                                            if (confirmed) {
+                                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                                            if (result.isConfirmed) {
                                                 handleOpen(DeviceType);
                                             }
                                         } else {

@@ -20,6 +20,7 @@ import { Order, Device, Job, Location, Material, DeviceType, Shift } from '../..
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
+import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 
 
 const StyledPopper = styled(Popper)({
@@ -78,11 +79,11 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
             api.post('/orders', newOrder).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
-            alert('Cập nhật lệnh sản xuất thành công');
+            showSuccessAlert('Cập nhật lệnh sản xuất thành công');
             onCancel();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -137,8 +138,8 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
             if (duplicates) {
                 const name = duplicates.assignedTo?.fullName
 
-                const confirm = window.confirm(`${name} đã có lệnh sản xuất trong ca này. Bạn có muốn tiếp tục?`);
-                if (!confirm) return;
+                const result = await showConfirmAlert(`${name} đã có lệnh sản xuất trong ca này. Bạn có muốn tiếp tục?`);
+                if (!result.isConfirmed) return;
             }
             createMutation.mutate(order);
         },

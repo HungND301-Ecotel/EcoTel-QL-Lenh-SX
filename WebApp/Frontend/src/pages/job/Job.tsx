@@ -37,6 +37,7 @@ import { useFormik } from 'formik';
 import * as yup from 'yup';
 import api from '../../config/api.config';
 import { Job } from '../../types';
+import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 
 const validationSchema = yup.object({
     name: yup.string().required('Vui lòng nhập tên công việc'),
@@ -88,11 +89,11 @@ const Jobs: React.FC = () => {
             api.post('/jobs', newJob).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['jobs'] });
-            alert('Thêm công việc thành công');
+            showSuccessAlert('Thêm công việc thành công');
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -101,11 +102,11 @@ const Jobs: React.FC = () => {
             api.put(`/jobs/${updatedJob._id}`, updatedJob).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['jobs'] });
-            alert('Cập nhật công việc thành công');
+            showSuccessAlert('Cập nhật công việc thành công');
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -113,10 +114,10 @@ const Jobs: React.FC = () => {
         mutationFn: (id: string) => api.delete(`/jobs/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['jobs'] });
-            alert('Xóa công việc thành công');
+            showSuccessAlert('Xóa công việc thành công');
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -155,9 +156,15 @@ const Jobs: React.FC = () => {
     };
 
     const handleDelete = (id: string) => {
-        if (window.confirm('Bạn có chắc chắn muốn xóa công việc này?')) {
-            deleteMutation.mutate(id);
+        if (!id) {
+            showErrorAlert('Không tìm thấy bản ghi');
+            return;
         }
+        showConfirmAlert('Bạn có muốn xóa bản ghi này?').then((result) => {
+            if (result.isConfirmed) {
+                deleteMutation.mutate(id);
+            }
+        });
     };
 
     return (
@@ -268,10 +275,10 @@ const Jobs: React.FC = () => {
                                 {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black' }}>{job.name}</TableCell>}
                                 {visibleColumns.includes('category') && <TableCell sx={{ border: '1px solid black' }}>{job.type}</TableCell>}
                                 {visibleColumns.includes('actions') && <TableCell sx={{ border: '1px solid black' }}>
-                                    <IconButton color="primary" onClick={() => {
+                                    <IconButton color="primary" onClick={async () => {
                                         if (open) {
-                                            const confirmed = window.confirm('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                                            if (confirmed) {
+                                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                                            if (result.isConfirmed) {
                                                 handleOpen(job);
                                             }
                                         } else {

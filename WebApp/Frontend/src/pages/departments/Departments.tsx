@@ -29,6 +29,7 @@ import { useFormik } from 'formik';
 import * as yup from 'yup';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/api.config';
+import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 
 const validationSchema = yup.object({
     name: yup.string().required('Vui lòng nhập tên đơn vị'),
@@ -77,11 +78,11 @@ const Departments = () => {
         mutationFn: (data: any) => api.post('/departments', data).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['departments'] });
-            alert('Thêm đơn vị thành công');
+            showSuccessAlert('Thêm đơn vị thành công');
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -89,11 +90,11 @@ const Departments = () => {
         mutationFn: (data: any) => api.put(`/departments/${selectedDepartment?._id}`, data).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['departments'] });
-            alert('Cập nhật đơn vị thành công');
+            showSuccessAlert('Cập nhật đơn vị thành công');
             handleClose();
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -101,10 +102,10 @@ const Departments = () => {
         mutationFn: (id: string) => api.delete(`/departments/${id}`).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['departments'] });
-            alert('Xóa đơn vị thành công');
+            showSuccessAlert('Xóa đơn vị thành công');
         },
         onError: (error: any) => {
-            alert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
         }
     });
 
@@ -148,11 +149,16 @@ const Departments = () => {
     };
 
     const handleDelete = (id: string) => {
-        if (window.confirm('Bạn có chắc chắn muốn xóa đơn vị này?')) {
-            deleteMutation.mutate(id);
+        if (!id) {
+            showErrorAlert('Không tìm thấy bản ghi');
+            return;
         }
-    };
-
+        showConfirmAlert('Bạn có muốn xóa bản ghi này?').then((result) => {
+            if (result.isConfirmed) {
+                deleteMutation.mutate(id);
+            }
+        });
+    }
 
     return (
         <Box>
@@ -282,10 +288,10 @@ const Departments = () => {
                                 {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black' }}>{department.name}</TableCell>}
                                 {visibleColumns.includes('description') && <TableCell sx={{ border: '1px solid black' }}>{department.description}</TableCell>}
                                 {visibleColumns.includes('actions') && <TableCell sx={{ border: '1px solid black' }}>
-                                    <IconButton onClick={() => {
+                                    <IconButton onClick={async () => {
                                         if (open) {
-                                            const confirmed = window.confirm('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                                            if (confirmed) {
+                                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                                            if (result.isConfirmed) {
                                                 handleOpen(department);
                                             }
                                         } else {
