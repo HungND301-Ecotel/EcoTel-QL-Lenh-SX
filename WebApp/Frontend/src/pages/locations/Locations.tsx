@@ -328,7 +328,9 @@ const Locations: React.FC = () => {
                 </Menu>
             </Box>
             <TableContainer component={Paper}>
-                <Table>
+                <Table sx={{
+                    "& td, & th": { padding: "4px 8px" },
+                }}>
                     <TableHead>
                         <TableRow>
                             {defaultColumns.map((col) =>

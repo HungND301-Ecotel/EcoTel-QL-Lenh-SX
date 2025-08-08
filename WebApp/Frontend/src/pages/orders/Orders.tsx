@@ -450,12 +450,15 @@ const Orders: React.FC = () => {
                 <Grid item xs={12} sm={9}>
                     <Paper sx={{ width: '100%', overflowX: "initial" }}>
                         <TableContainer sx={{ height: '80vh' }}>
-                            <Table stickyHeader aria-label="sticky table">
+                            <Table stickyHeader aria-label="sticky table" sx={{
+                                "& td, & th": { padding: "4px 8px" },
+                            }}>
                                 <TableHead>
                                     <TableRow>
                                         {visibleColumns.includes('assignedTo') && <TableCell align='center' sx={{
                                             position: 'sticky',
                                             left: 0,
+                                            top: 0,
                                             zIndex: 3,
                                             minWidth: 150,
                                             border: '1px solid black',
@@ -473,7 +476,7 @@ const Orders: React.FC = () => {
                                         {visibleColumns.includes('endTime') && <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Kết thúc</TableCell>}
                                         {visibleColumns.includes('status') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>}
                                         {visibleColumns.includes('note') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ghi chú</TableCell>}
-                                        {visibleColumns.includes('actions') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Thao tác</TableCell>}
+                                        {visibleColumns.includes('actions') && <TableCell align='center' sx={{ minWidth: 160, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Thao tác</TableCell>}
                                     </TableRow>
                                 </TableHead>
                                 {!isLoading ? <TableBody>
@@ -488,6 +491,7 @@ const Orders: React.FC = () => {
                                                 left: 0,
                                                 zIndex: 1,
                                                 minWidth: 150,
+                                                backgroundColor: 'white',
                                                 border: '1px solid black'
                                             }}>{order.assignedTo?.fullName}</TableCell>}
                                             {visibleColumns.includes('salaryCode') && <TableCell sx={{ border: '1px solid black' }}>
@@ -512,7 +516,7 @@ const Orders: React.FC = () => {
                                                 {order.workContent || ''}
                                             </TableCell>}
                                             {visibleColumns.includes('device') && <TableCell sx={{ border: '1px solid black' }}>
-                                                {order.device?.map((dev: any) => dev.code).join(', ')}
+                                                {order.device?.map((dev: any) => dev.code).join(', ') || order.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')}
                                             </TableCell>}
                                             {visibleColumns.includes('createdBy') && <TableCell sx={{ border: '1px solid black' }}>
                                                 {order.createdBy.username || ''}
@@ -653,7 +657,7 @@ const Orders: React.FC = () => {
                                 <Typography><strong>Ca:</strong> {selectedRow.shift?.name}</Typography>
                                 <Typography><strong>Công việc:</strong> {selectedRow.job.name}</Typography>
                                 <Typography><strong>Nội dung:</strong> {selectedRow.workContent}</Typography>
-                                <Typography><strong>Phương tiện:</strong> {selectedRow.device?.map((dev: any) => dev.code).join(', ')}</Typography>
+                                <Typography><strong>Phương tiện:</strong> {selectedRow.device?.map((dev: any) => dev.code).join(', ') || selectedRow.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')}</Typography>
                                 <Typography><strong>Trạng thái:</strong> {
                                     selectedRow.status === 'pending' ? 'Chưa nhận lệnh' :
                                         selectedRow.status === 'in_progress' ? 'Đã nhận lệnh' :

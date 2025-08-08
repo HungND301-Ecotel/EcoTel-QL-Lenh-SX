@@ -255,7 +255,9 @@ const Jobs: React.FC = () => {
             </Box>
 
             <TableContainer component={Paper}>
-                <Table>
+                <Table sx={{
+                    "& td, & th": { padding: "4px 8px" },
+                }}>
                     <TableHead>
                         <TableRow>
                             {defaultColumns.map((col) =>

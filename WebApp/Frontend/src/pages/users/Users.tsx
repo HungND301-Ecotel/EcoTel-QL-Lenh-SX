@@ -553,7 +553,6 @@ const Users: React.FC = () => {
                                     onChange={(event, newValue) => {
                                         formik.setFieldValue('department', newValue?._id || '');
                                     }}
-                                    readOnly={user?.role === 'manager'}
                                     PopperComponent={StyledPopper}
                                     renderInput={(params) => (
                                         <TextField

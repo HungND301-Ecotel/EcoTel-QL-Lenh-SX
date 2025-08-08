@@ -231,7 +231,7 @@ const SafetyMeasures: React.FC = () => {
                 </Menu>
             </Box>
             <TableContainer component={Paper}>
-                <Table sx={{ tableLayout: 'fixed', width: '100%' }}>
+                <Table sx={{ tableLayout: 'fixed', width: '100%', "& td, & th": { padding: "4px 8px" } }} >
                     <TableHead>
                         <TableRow>
                             {defaultColumns.map((item) =>

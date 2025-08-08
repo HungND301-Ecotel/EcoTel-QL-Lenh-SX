@@ -547,7 +547,9 @@ const Vehicles: React.FC = () => {
             </Box>
             <Paper sx={{ width: '100%', overflowX: "initial" }}>
                 <TableContainer>
-                    <Table stickyHeader aria-label="sticky table">
+                    <Table stickyHeader aria-label="sticky table" sx={{
+                        "& td, & th": { padding: "4px 8px" },
+                    }}>
                         <TableHead>
                             <TableRow>
                                 {visibleColumns.includes('code') && <TableCell align='center' sx={{

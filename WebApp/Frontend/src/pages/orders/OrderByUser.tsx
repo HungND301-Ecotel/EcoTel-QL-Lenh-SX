@@ -207,7 +207,9 @@ const OrderByUsers: React.FC = () => {
                 <Grid item xs={12} sm={9}>
                     <Paper sx={{ width: '100%', overflowX: "initial" }}>
                         <TableContainer sx={{ height: '80vh' }}>
-                            <Table stickyHeader aria-label="sticky table">
+                            <Table stickyHeader aria-label="sticky table" sx={{
+                                "& td, & th": { padding: "4px 8px" },
+                            }}>
                                 <TableHead>
                                     <TableRow>
                                         {visibleColumns.includes('assignedTo') && <TableCell align='center' sx={{
@@ -215,7 +217,7 @@ const OrderByUsers: React.FC = () => {
                                             left: 0,
                                             backgroundColor: 'white',
                                             zIndex: 3,
-                                            minWidth: 150,
+                                            minWidth: 100,
                                             border: '1px solid black',
                                             fontWeight: 'bold', fontSize: 18
                                         }}>Nhân viên</TableCell>}
@@ -245,6 +247,7 @@ const OrderByUsers: React.FC = () => {
                                                 left: 0,
                                                 zIndex: 1,
                                                 minWidth: 150,
+                                                backgroundColor: 'white',
                                                 border: '1px solid black'
                                             }}>{order.assignedTo?.fullName}</TableCell>}
                                             {visibleColumns.includes('salaryCode') && <TableCell sx={{ border: '1px solid black' }}>

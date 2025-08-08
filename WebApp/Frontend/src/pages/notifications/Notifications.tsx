@@ -133,7 +133,9 @@ const Notifications: React.FC = () => {
                 </Badge>
             </Box>
             <TableContainer component={Paper}>
-                <Table>
+                <Table sx={{
+                    "& td, & th": { padding: "4px 8px" },
+                }}>
                     <TableHead>
                         <TableRow>
                             <TableCell align='center' sx={{ border: '1px solid black' }}>Tiêu đề</TableCell>

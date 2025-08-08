@@ -418,7 +418,9 @@ const DispatcherOrders: React.FC = () => {
                 <Grid item xs={12} sm={9}>
                     <Paper sx={{ width: '100%', overflowX: "initial" }}>
                         <TableContainer sx={{ height: '80vh' }}>
-                            <Table stickyHeader aria-label="sticky table">
+                            <Table stickyHeader aria-label="sticky table" sx={{
+                                "& td, & th": { padding: "4px 8px" },
+                            }}>
                                 <TableHead>
                                     <TableRow>
                                         {visibleColumns.includes('assignedTo') && <TableCell align='center' sx={{
@@ -427,6 +429,7 @@ const DispatcherOrders: React.FC = () => {
                                             zIndex: 3,
                                             minWidth: 150,
                                             border: '1px solid black',
+                                            backgroundColor: 'white',
                                             fontWeight: 'bold', fontSize: 18
                                         }}>Nhân viên</TableCell>}
                                         {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{ minWidth: 130, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Mã thẻ lương</TableCell>}
@@ -441,7 +444,7 @@ const DispatcherOrders: React.FC = () => {
                                         {visibleColumns.includes('endTime') && <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Kết thúc</TableCell>}
                                         {visibleColumns.includes('status') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>}
                                         {visibleColumns.includes('note') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ghi chú</TableCell>}
-                                        {visibleColumns.includes('actions') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Thao tác</TableCell>}
+                                        {visibleColumns.includes('actions') && <TableCell align='center' sx={{ minWidth: 160, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Thao tác</TableCell>}
                                     </TableRow>
                                 </TableHead>
                                 {!isLoading ? <TableBody>
@@ -456,6 +459,7 @@ const DispatcherOrders: React.FC = () => {
                                                 left: 0,
                                                 zIndex: 1,
                                                 minWidth: 150,
+                                                backgroundColor: 'white',
                                                 border: '1px solid black'
                                             }}>{order.assignedTo?.fullName}</TableCell>}
                                             {visibleColumns.includes('salaryCode') && <TableCell sx={{ border: '1px solid black' }}>

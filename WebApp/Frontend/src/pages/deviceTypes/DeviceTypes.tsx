@@ -223,7 +223,9 @@ const DeviceTypes: React.FC = () => {
                 </Menu>
             </Box>
             <TableContainer component={Paper}>
-                <Table>
+                <Table sx={{
+                    "& td, & th": { padding: "4px 8px" },
+                }}>
                     <TableHead>
                         <TableRow>
                             {visibleColumns.includes('name') && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Tên loại phương tiện</TableCell>}
