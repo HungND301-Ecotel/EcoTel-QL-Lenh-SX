@@ -15,6 +15,8 @@ services:
       # HOST_PORT:CONTAINER_PORT
       - "6868:8888"
     stdin_open: true
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
     # restart: always
     networks:
       - frontnet
@@ -32,6 +34,8 @@ services:
     image: ecoteldev/ktv_ecotel_frontend_img:staging
     # target: development
     stdin_open: true
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
     volumes:
       # For development only, to synced src code to container
       # - ./ecotel_frontend:/usr/src/app
@@ -56,6 +60,8 @@ services:
     image: ecoteldev/ktv_ecotel_backend_img:staging
     # target: development
     stdin_open: true
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
     volumes:
       # For development only, to synced src code to container
       # - ./Backend:/usr/src/app
@@ -80,6 +86,7 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
+      TZ: Asia/Ho_Chi_Minh
     volumes:
       - .mongodb-data:/data/db
     networks:
@@ -100,6 +107,7 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
+      - TZ=Asia/Ho_Chi_Minh
     volumes:
       - grafana-storage:/var/lib/grafana
     networks:
@@ -113,6 +121,8 @@ services:
   ktv_loki:
     image: grafana/loki:2.9.0
     container_name: ktv_loki
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
     ports:
       - "3100:3100"
     command: -config.file=/etc/loki/local-config.yaml
@@ -127,6 +137,8 @@ services:
   ktv_promtail:
     image: grafana/promtail:2.9.0
     container_name: ktv_promtail
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
     volumes:
       - /var/log:/var/log
       - /etc/machine-id:/etc/machine-id
@@ -147,6 +159,8 @@ services:
       - .env_backend
     image: ecoteldev/ktv_ecotel_backup_img:staging
     container_name: mongo_backup
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
     depends_on:
       - ktv_db
     restart: unless-stopped

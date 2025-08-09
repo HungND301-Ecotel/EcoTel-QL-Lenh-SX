@@ -36,6 +36,7 @@ def restore_backup():
     # folder path like "backups/mongodb/{MONGODB_DATABASE}/mongodump-"
     BACKUP_PREFIX = f"backups/mongodb/{MONGODB_DATABASE}/mongodump-" 
 
+    logger.info(f"✅ BACKUP_PREFIX: {BACKUP_PREFIX}")
     # --- Step 1: Find the latest backup in S3 ---
     s3 = boto3.client("s3", region_name=AWS_REGION)
 
@@ -61,6 +62,7 @@ def restore_backup():
     # --- Step 3: Restore using mongorestore ---
     restore_cmd = [
         "mongorestore",
+        "--drop",
         f"--verbose",
         f"--host={MONGODB_HOST}",
         f"--port={MONGODB_PORT}",
