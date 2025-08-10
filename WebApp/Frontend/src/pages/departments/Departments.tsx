@@ -23,6 +23,7 @@ import {
     Accordion,
     AccordionSummary,
     AccordionDetails,
+    Checkbox,
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, Settings, ExpandMore, } from '@mui/icons-material';
 import { useFormik } from 'formik';
@@ -40,19 +41,17 @@ const validationSchema = yup.object({
 const Departments = () => {
     const [open, setOpen] = useState(false);
     const [selectedDepartment, setSelectedDepartment] = useState<any>(null);
+    const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
     const [value, setValue] = useState("")
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
 
-    const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
-        setExpanded(isExpanded);
-        if (isExpanded) {
-            setOpen(true);
-        } else {
-            setOpen(false);
-            setSelectedDepartment(null);
-            setExpanded(false);
-        }
+    const handleSelected = (departmentId: string) => {
+        setSelectedDepartments(prev =>
+            prev.includes(departmentId)
+                ? prev.filter(id => id !== departmentId)
+                : [...prev, departmentId]
+        );
     };
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
 
@@ -60,7 +59,7 @@ const Departments = () => {
         { id: 'code', label: 'Mã đơn vị' },
         { id: 'name', label: 'Tên đơn vị' },
         { id: 'description', label: 'Chức năng' },
-        { id: 'actions', label: 'Thao tác', width: 100 },
+        { id: 'edit', label: 'Sửa', width: 50 },
     ]
     const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
 
@@ -82,7 +81,7 @@ const Departments = () => {
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
@@ -94,18 +93,19 @@ const Departments = () => {
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (id: string) => api.delete(`/departments/${id}`).then(res => res.data),
-        onSuccess: () => {
+        mutationFn: (ids: string[]) => api.delete(`/departments`, { data: { ids } }).then(res => res.data.message),
+        onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['departments'] });
-            showSuccessAlert('Xóa đơn vị thành công');
+            setSelectedDepartments([]);
+            showSuccessAlert(message || 'Xóa thành công');
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
@@ -148,17 +148,17 @@ const Departments = () => {
         formik.resetForm();
     };
 
-    const handleDelete = (id: string) => {
-        if (!id) {
-            showErrorAlert('Không tìm thấy bản ghi');
+    const handleDelete = () => {
+        if (selectedDepartments.length === 0) {
+            showErrorAlert('Không tìm thấy bản ghi cần xóa');
             return;
         }
-        showConfirmAlert('Bạn có muốn xóa bản ghi này?').then((result) => {
+        showConfirmAlert(`Bạn có muốn xóa ${selectedDepartments.length} bản ghi?`).then((result) => {
             if (result.isConfirmed) {
-                deleteMutation.mutate(id);
+                deleteMutation.mutate(selectedDepartments);
             }
         });
-    }
+    };
 
     return (
         <Box>
@@ -174,19 +174,24 @@ const Departments = () => {
                     onChange={(e) => setValue(e.target.value)}>
                 </TextField>
             </Box>
-            <Accordion expanded={expanded} onChange={handleChangeAction}>
+            <Accordion expanded={expanded}>
                 <AccordionSummary
                     expandIcon={<ExpandMore />}
                     aria-controls="panel1-content"
                     id="panel1-header"
                 >
-                    <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={() => handleOpen()}
-                    >
-                        Thêm đơn vị
-                    </Button>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                        <Button
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={() => handleOpen()}
+                        >
+                            Thêm đơn vị
+                        </Button>
+                        <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
+                            Xóa
+                        </Button>
+                    </Box>
                 </AccordionSummary>
                 <AccordionDetails>
                     <DialogTitle>
@@ -272,6 +277,7 @@ const Departments = () => {
                 }}>
                     <TableHead>
                         <TableRow>
+                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}></TableCell>
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) && (
                                     <TableCell key={col.id} align="center" sx={{
@@ -286,10 +292,11 @@ const Departments = () => {
                     {!isLoading ? <TableBody>
                         {departments.map((department: any) => (
                             <TableRow key={department._id}>
+                                <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}><Checkbox onChange={() => handleSelected(department._id)} checked={selectedDepartments.includes(department._id)} /></TableCell>
                                 {visibleColumns.includes('code') && <TableCell sx={{ border: '1px solid black' }}>{department.code}</TableCell>}
                                 {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black' }}>{department.name}</TableCell>}
                                 {visibleColumns.includes('description') && <TableCell sx={{ border: '1px solid black' }}>{department.description}</TableCell>}
-                                {visibleColumns.includes('actions') && <TableCell sx={{ border: '1px solid black' }}>
+                                {visibleColumns.includes('edit') && <TableCell sx={{ border: '1px solid black' }}>
                                     <IconButton onClick={async () => {
                                         if (open) {
                                             const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
@@ -301,9 +308,6 @@ const Departments = () => {
                                         }
                                     }} color="primary">
                                         <EditIcon />
-                                    </IconButton>
-                                    <IconButton onClick={() => handleDelete(department._id)} color="error">
-                                        <DeleteIcon />
                                     </IconButton>
                                 </TableCell>}
                             </TableRow>

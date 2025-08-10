@@ -77,6 +77,7 @@ const Users: React.FC = () => {
     const [open, setOpen] = useState(false);
     const [history, setHistory] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
     const [value, setValue] = useState("")
     const [department, setDepartment] = useState("")
     const [avatar, setAvatar] = useState("")
@@ -86,16 +87,6 @@ const Users: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [expanded, setExpanded] = useState(false);
 
-    const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
-        setExpanded(isExpanded);
-        if (isExpanded) {
-            setOpen(true);
-        } else {
-            setOpen(false);
-            setSelectedUser(null);
-            setExpanded(false);
-        }
-    };
     const handleTogglePassword = () => {
         setShowPassword((prev) => !prev);
     };
@@ -123,7 +114,7 @@ const Users: React.FC = () => {
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
@@ -150,18 +141,19 @@ const Users: React.FC = () => {
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (id: string) => api.delete(`/users/${id}`).then(res => res.data),
-        onSuccess: () => {
+        mutationFn: (ids: string[]) => api.delete(`/users`, { data: { ids } }).then(res => res.data.message),
+        onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
-            showSuccessAlert('Xóa người dùng thành công');
+            setSelectedUsers([]);
+            showSuccessAlert(message || 'Xóa thành công');
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
@@ -227,14 +219,14 @@ const Users: React.FC = () => {
         formik.resetForm();
     };
 
-    const handleDelete = (id: string) => {
-        if (!id) {
-            showErrorAlert('Không tìm thấy bản ghi');
+    const handleDelete = () => {
+        if (selectedUsers.length === 0) {
+            showErrorAlert('Không tìm thấy bản ghi cần xóa');
             return;
         }
-        showConfirmAlert('Bạn có muốn xóa bản ghi này?').then((result) => {
+        showConfirmAlert(`Bạn có muốn xóa ${selectedUsers.length} bản ghi?`).then((result) => {
             if (result.isConfirmed) {
-                deleteMutation.mutate(id);
+                deleteMutation.mutate(selectedUsers);
             }
         });
     };
@@ -320,9 +312,9 @@ const Users: React.FC = () => {
             )
         },
         {
-            field: 'actions',
-            headerName: 'Thao tác',
-            width: 130,
+            field: 'info',
+            headerName: 'Xem',
+            width: 60,
             headerAlign: 'center',
             renderCell: (params) => (
                 <>
@@ -335,6 +327,18 @@ const Users: React.FC = () => {
                     >
                         <InfoOutlined />
                     </IconButton>
+                </>
+            ),
+            sortable: false,
+            filterable: false,
+        },
+        {
+            field: 'edit',
+            headerName: 'Sửa',
+            width: 60,
+            headerAlign: 'center',
+            renderCell: (params) => (
+                <>
                     <IconButton color="primary" onClick={async () => {
                         if (open) {
                             const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
@@ -347,9 +351,6 @@ const Users: React.FC = () => {
                     }}>
                         <EditIcon />
                     </IconButton>
-                    {user._id !== params.row._id && <IconButton color="error" onClick={() => handleDelete(params.row._id)}>
-                        <DeleteIcon />
-                    </IconButton>}
                 </>
             ),
             sortable: false,
@@ -384,7 +385,7 @@ const Users: React.FC = () => {
                             variant="contained"
                             startIcon={<UploadFile />}
                         >
-                            Import Excel
+                            Tải lên excel
                         </Button>
                     </label>
                 </Box>
@@ -416,19 +417,24 @@ const Users: React.FC = () => {
                     />}
                 </Box>
             </Box>
-            <Accordion expanded={expanded} onChange={handleChangeAction}>
+            <Accordion expanded={expanded}>
                 <AccordionSummary
                     expandIcon={<ExpandMore />}
                     aria-controls="panel1-content"
                     id="panel1-header"
                 >
-                    <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={() => handleOpen()}
-                    >
-                        Thêm người dùng
-                    </Button>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                        <Button
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={() => handleOpen()}
+                        >
+                            Thêm người dùng
+                        </Button>
+                        <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
+                            Xóa
+                        </Button>
+                    </Box>
                 </AccordionSummary>
                 <AccordionDetails>
                     <DialogTitle>
@@ -610,6 +616,11 @@ const Users: React.FC = () => {
                     getRowId={(row) => row._id}
                     rowsPerPageOptions={[10, 20, 50]}
                     autoHeight
+                    disableSelectionOnClick
+                    checkboxSelection
+                    onSelectionModelChange={(newSelection) => {
+                        setSelectedUsers(newSelection as string[]);
+                    }}
                     initialState={{
                         pagination: {
                             pageSize: 10,

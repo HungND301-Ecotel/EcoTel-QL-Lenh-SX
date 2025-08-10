@@ -58,7 +58,7 @@ const ChangePassword: React.FC<{ open: boolean, setOpen: Dispatch<SetStateAction
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 

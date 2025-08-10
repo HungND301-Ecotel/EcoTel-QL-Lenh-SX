@@ -18,7 +18,7 @@ export default function ShiftReport({ open, setOpen, initialValues }: { open: bo
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
     const formik = useFormik({
@@ -109,7 +109,7 @@ export default function ShiftReport({ open, setOpen, initialValues }: { open: bo
 
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-            <DialogContent>
+            {shiftReport ? <DialogContent>
                 <Typography variant="h6" gutterBottom>Mã thẻ lương: {initialValues?.assignedTo?.fullName} - {initialValues?.assignedTo?.salaryCode}</Typography>
                 <Typography variant="h5">Báo chuyến:</Typography>
                 {shiftReport?.vehicleReports?.map((item: any, index: number) => (<Box key={index}>
@@ -342,11 +342,11 @@ export default function ShiftReport({ open, setOpen, initialValues }: { open: bo
                         </Grid>
                     </Grid>
                 </Box>
-            </DialogContent>
-            <DialogActions>
+            </DialogContent> : <DialogContent><Typography>Người dùng chưa báo công</Typography></DialogContent>}
+            {shiftReport && <DialogActions>
                 <Button onClick={handleClose}>Đóng</Button>
                 {!isOver48Hours && <Button variant="contained" onClick={() => formik.handleSubmit()}>Lưu lại</Button>}
-            </DialogActions>
+            </DialogActions>}
         </Dialog >
     )
 }

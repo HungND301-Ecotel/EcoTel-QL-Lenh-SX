@@ -60,7 +60,7 @@ const Login = () => {
             navigate('/');
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Đăng nhập thất bại')
+            showErrorAlert(error.response.data.message || error.message || 'Đăng nhập thất bại')
         }
     });
 

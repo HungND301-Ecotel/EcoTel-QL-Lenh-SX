@@ -70,7 +70,7 @@ router.get('/', verifyToken, async (req, res, next) => {
         const notifications = await Notification.getUserNotifications(req.user._id, {
             type: req.query.type,
             read: req.query.read === 'true',
-            priority: req.query.priority,   
+            priority: req.query.priority,
             startDate: req.query.startDate,
             endDate: req.query.endDate,
             limit: parseInt(req.query.limit) || 20,
@@ -216,7 +216,7 @@ router.delete('/:id', verifyToken, async (req, res, next) => {
 
         await notification.remove();
 
-        res.status(204).json({
+        res.status(200).json({
             status: 'success',
             data: null
         });

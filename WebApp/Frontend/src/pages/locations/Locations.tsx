@@ -9,7 +9,8 @@ import {
     ListItemText,
     Accordion,
     AccordionSummary,
-    AccordionDetails
+    AccordionDetails,
+    Checkbox
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Settings, ExpandMore } from '@mui/icons-material';
 import { useFormik } from 'formik';
@@ -42,28 +43,26 @@ const validationSchema = yup.object({
 const Locations: React.FC = () => {
     const [open, setOpen] = useState(false);
     const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+    const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
     const [value, setValue] = useState("")
     const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(null);
 
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
 
-    const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
-        setExpanded(isExpanded);
-        if (isExpanded) {
-            setOpen(true);
-        } else {
-            setOpen(false);
-            setSelectedLocation(null);
-            setExpanded(false);
-        }
+    const handleSelected = (locationId: string) => {
+        setSelectedLocations(prev =>
+            prev.includes(locationId)
+                ? prev.filter(id => id !== locationId)
+                : [...prev, locationId]
+        );
     };
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
 
     const defaultColumns = [
         { id: 'name', label: 'Tên' },
         { id: 'coordinates', label: 'Tọa độ' },
-        { id: 'actions', label: 'Thao tác', width: 100 },
+        { id: 'edit', label: 'Sửa', width: 50 },
     ]
     const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
 
@@ -85,7 +84,7 @@ const Locations: React.FC = () => {
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
@@ -98,18 +97,19 @@ const Locations: React.FC = () => {
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (id: string) => api.delete(`/locations/${id}`).then(res => res.data),
-        onSuccess: () => {
+        mutationFn: (ids: string[]) => api.delete(`/locations`, { data: { ids } }).then(res => res.data.message),
+        onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['locations'] });
-            showSuccessAlert('Xóa vị trí thành công');
+            setSelectedLocations([]);
+            showSuccessAlert(message || 'Xóa thành công');
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
@@ -173,14 +173,14 @@ const Locations: React.FC = () => {
         setMapCoords(null);
     };
 
-    const handleDelete = (id: string) => {
-        if (!id) {
-            showErrorAlert('Không tìm thấy bản ghi');
+    const handleDelete = () => {
+        if (selectedLocations.length === 0) {
+            showErrorAlert('Không tìm thấy bản ghi cần xóa');
             return;
         }
-        showConfirmAlert('Bạn có muốn xóa bản ghi này?').then((result) => {
+        showConfirmAlert(`Bạn có muốn xóa ${selectedLocations.length} bản ghi?`).then((result) => {
             if (result.isConfirmed) {
-                deleteMutation.mutate(id);
+                deleteMutation.mutate(selectedLocations);
             }
         });
     };
@@ -207,15 +207,20 @@ const Locations: React.FC = () => {
                     onChange={(e) => setValue(e.target.value)}>
                 </TextField>
             </Box>
-            <Accordion expanded={expanded} onChange={handleChangeAction}>
+            <Accordion expanded={expanded}>
                 <AccordionSummary
                     expandIcon={<ExpandMore />}
                     aria-controls="panel1-content"
                     id="panel1-header"
                 >
-                    <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
-                        Thêm vị trí
-                    </Button>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                        <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
+                            Thêm vị trí
+                        </Button>
+                        <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
+                            Xóa
+                        </Button>
+                    </Box>
                 </AccordionSummary>
                 <AccordionDetails>
                     <DialogTitle>{selectedLocation ? 'Sửa vị trí' : 'Thêm vị trí'}</DialogTitle>
@@ -333,6 +338,7 @@ const Locations: React.FC = () => {
                 }}>
                     <TableHead>
                         <TableRow>
+                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}></TableCell>
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) && (
                                     <TableCell key={col.id} align="center" sx={{
@@ -359,9 +365,10 @@ const Locations: React.FC = () => {
                             }
                             return (
                                 <TableRow key={loc._id}>
+                                    <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}><Checkbox onChange={() => handleSelected(loc._id)} checked={selectedLocations.includes(loc._id)} /></TableCell>
                                     {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black' }}>{loc.name}</TableCell>}
                                     {visibleColumns.includes('coordinates') && <TableCell sx={{ border: '1px solid black' }}>{coordsDisplay}</TableCell>}
-                                    {visibleColumns.includes('actions') && <TableCell sx={{ border: '1px solid black' }}>
+                                    {visibleColumns.includes('edit') && <TableCell sx={{ border: '1px solid black' }}>
                                         <IconButton color="primary" onClick={async () => {
                                             if (open) {
                                                 const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
@@ -373,9 +380,6 @@ const Locations: React.FC = () => {
                                             }
                                         }}>
                                             <EditIcon />
-                                        </IconButton>
-                                        <IconButton color="error" onClick={() => handleDelete(loc._id)}>
-                                            <DeleteIcon />
                                         </IconButton>
                                     </TableCell>}
                                 </TableRow>

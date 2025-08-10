@@ -25,6 +25,7 @@ import {
     Accordion,
     AccordionSummary,
     AccordionDetails,
+    Checkbox,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -48,24 +49,22 @@ const validationSchema = yup.object({
 const DeviceTypes: React.FC = () => {
     const [open, setOpen] = useState(false);
     const [selectedDeviceType, setSelectedDeviceType] = useState<DeviceType | null>(null);
+    const [selectedDeviceTypes, setSelectedDeviceTypes] = useState<string[]>([]);
     const queryClient = useQueryClient();
     const [user, setUser] = useAtom(userAtom)
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
     const [expanded, setExpanded] = useState(false);
 
-    const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
-        setExpanded(isExpanded);
-        if (isExpanded) {
-            setOpen(true);
-        } else {
-            setOpen(false);
-            setSelectedDeviceType(null);
-            setExpanded(false);
-        }
+    const handleSelected = (deviceTypeId: string) => {
+        setSelectedDeviceTypes(prev =>
+            prev.includes(deviceTypeId)
+                ? prev.filter(id => id !== deviceTypeId)
+                : [...prev, deviceTypeId]
+        );
     };
     const defaultColumns = [
         { id: 'name', label: 'Tên loại phương tiện' },
-        { id: 'actions', label: 'Thao tác', width: 100 },
+        { id: 'edit', label: 'Sửa', width: 100 },
     ]
     const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
 
@@ -88,7 +87,7 @@ const DeviceTypes: React.FC = () => {
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
@@ -101,18 +100,19 @@ const DeviceTypes: React.FC = () => {
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (id: string) => api.delete(`/DeviceTypes/${id}`).then(res => res.data),
-        onSuccess: () => {
+        mutationFn: (ids: string[]) => api.delete(`/DeviceTypes`, { data: { ids } }).then(res => res.data.message),
+        onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['DeviceTypes'] });
-            showSuccessAlert('Xóa loại phương tiện thành công');
+            setSelectedDeviceTypes([]);
+            showSuccessAlert(message || 'Xóa thành công');
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
@@ -149,14 +149,14 @@ const DeviceTypes: React.FC = () => {
         formik.resetForm();
     };
 
-    const handleDelete = (id: string) => {
-        if (!id) {
-            showErrorAlert('Không tìm thấy bản ghi');
+    const handleDelete = () => {
+        if (selectedDeviceTypes.length === 0) {
+            showErrorAlert('Không tìm thấy bản ghi cần xóa');
             return;
         }
-        showConfirmAlert('Bạn có muốn xóa bản ghi này?').then((result) => {
+        showConfirmAlert(`Bạn có muốn xóa ${selectedDeviceTypes.length} bản ghi?`).then((result) => {
             if (result.isConfirmed) {
-                deleteMutation.mutate(id);
+                deleteMutation.mutate(selectedDeviceTypes);
             }
         });
     };
@@ -167,15 +167,20 @@ const DeviceTypes: React.FC = () => {
                 <Typography variant="h4">Quản lý loại phương tiện</Typography>
 
             </Box>
-            <Accordion expanded={expanded} onChange={handleChangeAction}>
+            <Accordion expanded={expanded}>
                 <AccordionSummary
                     expandIcon={<ExpandMore />}
                     aria-controls="panel1-content"
                     id="panel1-header"
                 >
-                    <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
-                        Thêm loại phương tiện
-                    </Button>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                        <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
+                            Thêm loại phương tiện
+                        </Button>
+                        <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
+                            Xóa
+                        </Button>
+                    </Box>
                 </AccordionSummary>
                 <AccordionDetails>
                     <DialogTitle>{selectedDeviceType ? 'Sửa loại phương tiện' : 'Thêm loại phương tiện'}</DialogTitle>
@@ -228,15 +233,17 @@ const DeviceTypes: React.FC = () => {
                 }}>
                     <TableHead>
                         <TableRow>
+                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}></TableCell>
                             {visibleColumns.includes('name') && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Tên loại phương tiện</TableCell>}
-                            {visibleColumns.includes('actions') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: 100, minWidth: 100 }}>Thao tác</TableCell>)}
+                            {visibleColumns.includes('edit') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: 100, minWidth: 100 }}>Sửa</TableCell>)}
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {!isLoading ? DeviceTypes.map((DeviceType: any) => (
                             <TableRow key={DeviceType._id}>
+                                <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}><Checkbox onChange={() => handleSelected(DeviceType._id)} checked={selectedDeviceTypes.includes(DeviceType._id)} /></TableCell>
                                 {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black' }}>{DeviceType.name}</TableCell>}
-                                {visibleColumns.includes('actions') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                {visibleColumns.includes('edit') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                     <IconButton color="primary" onClick={async () => {
                                         if (open) {
                                             const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
@@ -248,9 +255,6 @@ const DeviceTypes: React.FC = () => {
                                         }
                                     }}>
                                         <EditIcon />
-                                    </IconButton>
-                                    <IconButton color="error" onClick={() => handleDelete(DeviceType._id)}>
-                                        <DeleteIcon />
                                     </IconButton>
                                 </TableCell>)}
                             </TableRow>

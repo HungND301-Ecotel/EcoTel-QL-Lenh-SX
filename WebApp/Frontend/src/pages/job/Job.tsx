@@ -25,6 +25,7 @@ import {
     Accordion,
     AccordionSummary,
     AccordionDetails,
+    Checkbox,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -50,26 +51,24 @@ const validationSchema = yup.object({
 const Jobs: React.FC = () => {
     const [open, setOpen] = useState(false);
     const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+    const [selectedJobs, setSelectedJobs] = useState<string[]>([]);
     const [value, setValue] = useState("")
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
 
-    const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
-        setExpanded(isExpanded);
-        if (isExpanded) {
-            setOpen(true);
-        } else {
-            setOpen(false);
-            setSelectedJob(null);
-            setExpanded(false);
-        }
+    const handleSelected = (jobId: string) => {
+        setSelectedJobs(prev =>
+            prev.includes(jobId)
+                ? prev.filter(id => id !== jobId)
+                : [...prev, jobId]
+        );
     };
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
 
     const defaultColumns = [
         { id: 'name', label: 'Tên công việc' },
         { id: 'category', label: 'Loại công việc' },
-        { id: 'actions', label: 'Thao tác', width: 100 },
+        { id: 'edit', label: 'Sửa', width: 50 },
     ]
     const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
 
@@ -93,7 +92,7 @@ const Jobs: React.FC = () => {
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
@@ -106,18 +105,19 @@ const Jobs: React.FC = () => {
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (id: string) => api.delete(`/jobs/${id}`).then(res => res.data),
-        onSuccess: () => {
+        mutationFn: (ids: string[]) => api.delete(`/jobs`, { data: { ids } }).then(res => res.data.message),
+        onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['jobs'] });
-            showSuccessAlert('Xóa công việc thành công');
+            setSelectedJobs([]);
+            showSuccessAlert(message || 'Xóa thành công');
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
@@ -155,14 +155,14 @@ const Jobs: React.FC = () => {
         formik.resetForm();
     };
 
-    const handleDelete = (id: string) => {
-        if (!id) {
-            showErrorAlert('Không tìm thấy bản ghi');
+    const handleDelete = () => {
+        if (selectedJobs.length === 0) {
+            showErrorAlert('Không tìm thấy bản ghi cần xóa');
             return;
         }
-        showConfirmAlert('Bạn có muốn xóa bản ghi này?').then((result) => {
+        showConfirmAlert(`Bạn có muốn xóa ${selectedJobs.length} bản ghi?`).then((result) => {
             if (result.isConfirmed) {
-                deleteMutation.mutate(id);
+                deleteMutation.mutate(selectedJobs);
             }
         });
     };
@@ -180,15 +180,20 @@ const Jobs: React.FC = () => {
                     onChange={(e) => setValue(e.target.value)}>
                 </TextField>
             </Box>
-            <Accordion expanded={expanded} onChange={handleChangeAction}>
+            <Accordion expanded={expanded}>
                 <AccordionSummary
                     expandIcon={<ExpandMore />}
                     aria-controls="panel1-content"
                     id="panel1-header"
                 >
-                    <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
-                        Thêm công việc
-                    </Button>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                        <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
+                            Thêm công việc
+                        </Button>
+                        <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
+                            Xóa
+                        </Button>
+                    </Box>
                 </AccordionSummary>
                 <AccordionDetails>
                     <DialogTitle>{selectedJob ? 'Sửa công việc' : 'Thêm công việc'}</DialogTitle>
@@ -260,6 +265,7 @@ const Jobs: React.FC = () => {
                 }}>
                     <TableHead>
                         <TableRow>
+                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}></TableCell>
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) && (
                                     <TableCell key={col.id} align="center" sx={{
@@ -274,9 +280,10 @@ const Jobs: React.FC = () => {
                     <TableBody>
                         {!isLoading ? jobs.map((job: any) => (
                             <TableRow key={job._id}>
+                                <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}><Checkbox onChange={() => handleSelected(job._id)} checked={selectedJobs.includes(job._id)} /></TableCell>
                                 {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black' }}>{job.name}</TableCell>}
                                 {visibleColumns.includes('category') && <TableCell sx={{ border: '1px solid black' }}>{job.type}</TableCell>}
-                                {visibleColumns.includes('actions') && <TableCell sx={{ border: '1px solid black' }}>
+                                {visibleColumns.includes('edit') && <TableCell sx={{ border: '1px solid black' }}>
                                     <IconButton color="primary" onClick={async () => {
                                         if (open) {
                                             const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
@@ -288,9 +295,6 @@ const Jobs: React.FC = () => {
                                         }
                                     }}>
                                         <EditIcon />
-                                    </IconButton>
-                                    <IconButton color="error" onClick={() => handleDelete(job._id)}>
-                                        <DeleteIcon />
                                     </IconButton>
                                 </TableCell>}
                             </TableRow>

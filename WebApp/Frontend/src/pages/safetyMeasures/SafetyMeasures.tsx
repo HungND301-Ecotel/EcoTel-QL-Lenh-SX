@@ -25,6 +25,7 @@ import {
     AccordionDetails,
     AccordionSummary,
     Accordion,
+    Checkbox,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -49,21 +50,20 @@ const SafetyMeasures: React.FC = () => {
     const [value, setValue] = useState("")
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
+    const [selectedSafetyMeasures, setSelectedSafetyMeasures] = useState<string[]>([]);
 
-    const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
-        setExpanded(isExpanded);
-        if (isExpanded) {
-            setOpen(true);
-        } else {
-            setOpen(false);
-            setSelectedSafetyMeasure(null);
-            setExpanded(false);
-        }
+
+    const handleSelected = (safetyMeasureId: string) => {
+        setSelectedSafetyMeasures(prev =>
+            prev.includes(safetyMeasureId)
+                ? prev.filter(id => id !== safetyMeasureId)
+                : [...prev, safetyMeasureId]
+        );
     };
     const defaultColumns = [
-        { id: 'number', label: 'STT', width: 100 },
+        { id: 'number', label: 'STT', width: 50 },
         { id: 'content', label: 'Nội dung' },
-        { id: 'actions', label: 'Thao tác', width: 100 },
+        { id: 'edit', label: 'Sửa', width: 50 },
     ];
 
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -92,7 +92,7 @@ const SafetyMeasures: React.FC = () => {
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
@@ -105,18 +105,19 @@ const SafetyMeasures: React.FC = () => {
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (id: string) => api.delete(`/safetyMeasures/${id}`).then(res => res.data),
-        onSuccess: () => {
+        mutationFn: (ids: string[]) => api.delete(`/safetyMeasures`, { data: { ids } }).then(res => res.data.message),
+        onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['safetyMeasures'] });
-            showSuccessAlert('Xóa biện pháp an toàn thành công');
+            setSelectedSafetyMeasures([]);
+            showSuccessAlert(message || 'Xóa thành công');
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
@@ -154,14 +155,14 @@ const SafetyMeasures: React.FC = () => {
         formik.resetForm();
     };
 
-    const handleDelete = (id: string) => {
-        if (!id) {
-            showErrorAlert('Không tìm thấy bản ghi');
+    const handleDelete = () => {
+        if (selectedSafetyMeasures.length === 0) {
+            showErrorAlert('Không tìm thấy bản ghi cần xóa');
             return;
         }
-        showConfirmAlert('Bạn có muốn xóa bản ghi này?').then((result) => {
+        showConfirmAlert(`Bạn có muốn xóa ${selectedSafetyMeasures.length} bản ghi?`).then((result) => {
             if (result.isConfirmed) {
-                deleteMutation.mutate(id);
+                deleteMutation.mutate(selectedSafetyMeasures);
             }
         });
     };
@@ -173,15 +174,21 @@ const SafetyMeasures: React.FC = () => {
 
 
             </Box>
-            <Accordion expanded={expanded} onChange={handleChangeAction}>
+            <Accordion expanded={expanded}>
                 <AccordionSummary
                     expandIcon={<ExpandMore />}
                     aria-controls="panel1-content"
                     id="panel1-header"
                 >
-                    <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
-                        Thêm biện pháp an toàn
-                    </Button>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                        <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
+                            Thêm biện pháp an toàn
+                        </Button>
+                        <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
+                            Xóa
+                        </Button>
+
+                    </Box>
                 </AccordionSummary>
                 <AccordionDetails>
                     <DialogTitle>{selectedSafetyMeasure ? 'Sửa biện pháp an toàn' : 'Thêm biện pháp an toàn'}</DialogTitle>
@@ -234,6 +241,7 @@ const SafetyMeasures: React.FC = () => {
                 <Table sx={{ tableLayout: 'fixed', width: '100%', "& td, & th": { padding: "4px 8px" } }} >
                     <TableHead>
                         <TableRow>
+                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', width: 50 }}></TableCell>
                             {defaultColumns.map((item) =>
                                 visibleColumns.includes(item.id) && (
                                     <TableCell key={item.id} align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: item.width, minWidth: item.width }}>{item.label}</TableCell>
@@ -244,6 +252,7 @@ const SafetyMeasures: React.FC = () => {
                     <TableBody>
                         {!isLoading ? safetyMeasures.map((safetyMeasure: SafetyMeasure, index: number) => (
                             <TableRow key={safetyMeasure._id}>
+                                <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}><Checkbox onChange={() => handleSelected(safetyMeasure._id)} checked={selectedSafetyMeasures.includes(safetyMeasure._id)} /></TableCell>
                                 {visibleColumns.includes('number') &&
                                     <TableCell align='center' sx={{ border: '1px solid black' }}>{index + 1}</TableCell>
                                 }
@@ -254,7 +263,7 @@ const SafetyMeasures: React.FC = () => {
                                         textOverflow: 'ellipsis',
                                         border: '1px solid black',
                                     }}>{safetyMeasure.content}</TableCell>}
-                                {visibleColumns.includes('actions') &&
+                                {visibleColumns.includes('edit') &&
                                     <TableCell align='center' sx={{ border: '1px solid black', }}>
                                         <IconButton color="primary" onClick={async () => {
                                             if (open) {
@@ -267,9 +276,6 @@ const SafetyMeasures: React.FC = () => {
                                             }
                                         }}>
                                             <EditIcon />
-                                        </IconButton>
-                                        <IconButton color="error" onClick={() => handleDelete(safetyMeasure._id)}>
-                                            <DeleteIcon />
                                         </IconButton>
                                     </TableCell>}
                             </TableRow>

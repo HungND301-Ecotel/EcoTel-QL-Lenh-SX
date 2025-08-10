@@ -99,7 +99,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
             onCancel();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 

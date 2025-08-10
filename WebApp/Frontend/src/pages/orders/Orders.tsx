@@ -85,19 +85,18 @@ const Orders: React.FC = () => {
     const [device, setDevice] = useState("");
     const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
     const [selectedRow, setSelectedRow] = useState<any | null>(null);
+    const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
 
-    const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
-        setExpanded(isExpanded);
-        if (isExpanded) {
-            setOpen(true);
-        } else {
-            setOpen(false);
-            setTransfer(false);
-            setSelectedOrder(null);
-        }
+    const handleSelected = (orderId: string) => {
+        setSelectedOrders(prev =>
+            prev.includes(orderId)
+                ? prev.filter(id => id !== orderId)
+                : [...prev, orderId]
+        );
     };
+
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
 
     const defaultColumns = [
@@ -114,7 +113,11 @@ const Orders: React.FC = () => {
         { id: 'endTime', label: 'Kết thúc' },
         { id: 'status', label: 'Trạng thái' },
         { id: 'note', label: 'Ghi chú' },
-        { id: 'actions', label: 'Thao tác' },
+        { id: 'view', label: 'Xem' },
+        { id: 'edit', label: 'Sửa' },
+        { id: 'cancel', label: 'Hủy' },
+        { id: 'transfer', label: 'Chuyển ca' },
+
     ]
     const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
 
@@ -156,13 +159,13 @@ const Orders: React.FC = () => {
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
     const reportExcel = useMutation({
         mutationFn: () =>
-            api.get(`/exports/order/${selectedOrder?._id}`, {
+            api.post(`/exports/order/bulk`, { ids: selectedOrders }, {
                 responseType: 'blob',
             }).then(res => {
                 const blob = new Blob([res.data], {
@@ -185,10 +188,11 @@ const Orders: React.FC = () => {
             }),
         onSuccess: () => {
             showSuccessAlert('Xuất file thành công');
-            setSelectedOrder(null)
+            setSelectedOrders([])
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            console.log(error)
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
@@ -201,18 +205,19 @@ const Orders: React.FC = () => {
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (id: string) => api.delete(`/orders/${id}`).then(res => res.data),
-        onSuccess: () => {
+        mutationFn: (ids: string[]) => api.delete(`/orders`, { data: { ids } }).then(res => res.data.message),
+        onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
-            showSuccessAlert('Xóa lệnh sản xuất thành công');
+            setSelectedOrders([]);
+            showSuccessAlert(message || 'Xóa thành công');
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
@@ -255,14 +260,14 @@ const Orders: React.FC = () => {
             createMutation.mutate(values);
         }
     };
-    const handleDelete = (id: string) => {
-        if (!id) {
-            showErrorAlert('Không tìm thấy bản ghi');
+    const handleDelete = () => {
+        if (selectedOrders.length === 0) {
+            showErrorAlert('Không tìm thấy bản ghi cần xóa');
             return;
         }
-        showConfirmAlert('Bạn có muốn xóa bản ghi này?').then((result) => {
+        showConfirmAlert(`Bạn có muốn xóa ${selectedOrders.length} bản ghi?`).then((result) => {
             if (result.isConfirmed) {
-                deleteMutation.mutate(id);
+                deleteMutation.mutate(selectedOrders);
             }
         });
     };
@@ -365,19 +370,36 @@ const Orders: React.FC = () => {
                     </Button>
                 </Box>
             </Box>
-            <Accordion expanded={expanded} onChange={handleChangeAction}>
+            <Accordion expanded={expanded}>
                 <AccordionSummary
                     expandIcon={<ExpandMore />}
                     aria-controls="panel1-content"
                     id="panel1-header"
                 >
-                    <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={() => handleOpen()}
-                    >
-                        Thêm lệnh sản xuất
-                    </Button>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                        <Button
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={() => handleOpen()}
+                        >
+                            Thêm lệnh sản xuất
+                        </Button>
+                        <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
+                            Xóa
+                        </Button>
+                        <Button variant="contained" startIcon={<InfoOutlined />} color='inherit' onClick={() => setHistory(true)}>
+                            Lịch sử
+                        </Button>
+                        <Button variant="contained" startIcon={<FileDownload />} color='success' onClick={() => {
+                            if (selectedOrders.length > 0) {
+                                reportExcel.mutate();
+                            } else {
+                                showErrorAlert('Vui lòng chọn bản ghi cần tải xuống');
+                            }
+                        }}>
+                            Tải xuống
+                        </Button>
+                    </Box>
                 </AccordionSummary>
                 <AccordionDetails>
                     {selectedOrder && open && <OrderFormEdit
@@ -455,9 +477,18 @@ const Orders: React.FC = () => {
                             }}>
                                 <TableHead>
                                     <TableRow>
-                                        {visibleColumns.includes('assignedTo') && <TableCell align='center' sx={{
+                                        <TableCell align='center' sx={{
                                             position: 'sticky',
                                             left: 0,
+                                            top: 0,
+                                            zIndex: 3,
+                                            width: 50,
+                                            border: '1px solid black',
+                                            fontWeight: 'bold', fontSize: 18
+                                        }}></TableCell>
+                                        {visibleColumns.includes('assignedTo') && <TableCell align='center' sx={{
+                                            position: 'sticky',
+                                            left: 60,
                                             top: 0,
                                             zIndex: 3,
                                             minWidth: 150,
@@ -476,31 +507,66 @@ const Orders: React.FC = () => {
                                         {visibleColumns.includes('endTime') && <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Kết thúc</TableCell>}
                                         {visibleColumns.includes('status') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>}
                                         {visibleColumns.includes('note') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ghi chú</TableCell>}
-                                        {visibleColumns.includes('actions') && <TableCell align='center' sx={{ minWidth: 160, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Thao tác</TableCell>}
+                                        {visibleColumns.includes('view') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Xem</TableCell>}
+                                        {visibleColumns.includes('edit') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Sửa</TableCell>}
+                                        {visibleColumns.includes('cancel') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Hủy</TableCell>}
+                                        {visibleColumns.includes('transfer') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Chuyển ca</TableCell>}
+
                                     </TableRow>
                                 </TableHead>
                                 {!isLoading ? <TableBody>
                                     {orders.map((order: any) => (
                                         <TableRow key={order._id} sx={{
-                                            cursor: 'pointer', '&:hover': {
-                                                backgroundColor: '#f5f5f5',
-                                            },
+                                            cursor: 'pointer',
+                                            backgroundColor: order.status === 'pending'
+                                                ? 'white' // xám nhạt
+                                                : order.status === 'completed'
+                                                    ? '#ffe5e5' // đỏ nhạt
+                                                    : order.status === 'in_progress'
+                                                        ? '#e5f7e5' // xanh lá nhạt
+                                                        : order.status === 'warning'
+                                                            ? '#fff8e1' // vàng nhạt
+                                                            : '#ede7f6', // tím nhạt
                                         }} onClick={() => setSelectedRow(order)}>
-                                            {visibleColumns.includes('assignedTo') && <TableCell sx={{
+                                            <TableCell align='center' sx={{
                                                 position: 'sticky',
                                                 left: 0,
                                                 zIndex: 1,
+                                                width: 50,
+                                                backgroundColor: order.status === 'pending'
+                                                    ? 'white' // xám nhạt
+                                                    : order.status === 'completed'
+                                                        ? '#ffe5e5' // đỏ nhạt
+                                                        : order.status === 'in_progress'
+                                                            ? '#e5f7e5' // xanh lá nhạt
+                                                            : order.status === 'warning'
+                                                                ? '#fff8e1' // vàng nhạt
+                                                                : '#ede7f6', // tím nhạt
+                                                border: '1px solid black'
+                                            }}><Checkbox onChange={() => handleSelected(order._id)} checked={selectedOrders.includes(order._id)} /></TableCell>
+                                            {visibleColumns.includes('assignedTo') && <TableCell sx={{
+                                                position: 'sticky',
+                                                left: 60,
+                                                zIndex: 1,
                                                 minWidth: 150,
-                                                backgroundColor: 'white',
+                                                backgroundColor: order.status === 'pending'
+                                                    ? 'white' // xám nhạt
+                                                    : order.status === 'completed'
+                                                        ? '#ffe5e5' // đỏ nhạt
+                                                        : order.status === 'in_progress'
+                                                            ? '#e5f7e5' // xanh lá nhạt
+                                                            : order.status === 'warning'
+                                                                ? '#fff8e1' // vàng nhạt
+                                                                : '#ede7f6', // tím nhạt,
                                                 border: '1px solid black'
                                             }}>{order.assignedTo?.fullName}</TableCell>}
-                                            {visibleColumns.includes('salaryCode') && <TableCell sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                                 {order.assignedTo?.salaryCode}
                                             </TableCell>}
-                                            {visibleColumns.includes('shift') && <TableCell sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('shift') && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                                 {order.shift?.name}
                                             </TableCell>}
-                                            {visibleColumns.includes('workingDate') && <TableCell sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                                 {order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''}
                                             </TableCell>}
                                             {visibleColumns.includes('job') && <TableCell sx={{ border: '1px solid black' }}>
@@ -521,13 +587,13 @@ const Orders: React.FC = () => {
                                             {visibleColumns.includes('createdBy') && <TableCell sx={{ border: '1px solid black' }}>
                                                 {order.createdBy.username || ''}
                                             </TableCell>}
-                                            {visibleColumns.includes('createdAt') && <TableCell sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                                 {order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm') : ''}
                                             </TableCell>}
-                                            {visibleColumns.includes('startTime') && <TableCell sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('startTime') && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                                 {order.startTime ? format(new Date(order.startTime), 'HH:mm:ss') : ''}
                                             </TableCell>}
-                                            {visibleColumns.includes('endTime') && <TableCell sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('endTime') && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                                 {order.endTime ? format(new Date(order.endTime), 'HH:mm:ss') : ''}
                                             </TableCell>}
                                             {visibleColumns.includes('status') && <TableCell sx={{ border: '1px solid black' }}>
@@ -548,8 +614,22 @@ const Orders: React.FC = () => {
                                             {visibleColumns.includes('note') && <TableCell sx={{ border: '1px solid black' }}>
                                                 {order.temporaryError || ''}
                                             </TableCell>}
-                                            {visibleColumns.includes('actions') && <TableCell sx={{ border: '1px solid black' }}>
-                                                {['pending', 'warning'].includes(order?.status) && <IconButton
+                                            {visibleColumns.includes('view') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                                <IconButton
+                                                    color="secondary"
+                                                    onClick={() => {
+                                                        setSelectedOrder(order)
+                                                        setShiftReport(true)
+                                                    }}
+                                                >
+                                                    <Tooltip title="Báo công" placement='top'>
+                                                        <Visibility />
+                                                    </Tooltip>
+                                                </IconButton>
+
+                                            </TableCell>}
+                                            {visibleColumns.includes('edit') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                                <IconButton
                                                     color="primary"
                                                     onClick={async () => {
                                                         if (open) {
@@ -565,38 +645,20 @@ const Orders: React.FC = () => {
                                                     <Tooltip title="Sửa" placement='top'>
                                                         <EditIcon />
                                                     </Tooltip>
-                                                </IconButton>}
-                                                {['pending', 'warning'].includes(order?.status) && <IconButton
+                                                </IconButton>
+                                            </TableCell>}
+                                            {visibleColumns.includes('cancel') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                                <IconButton
                                                     color="warning"
                                                     onClick={() => handleCancel(order)}
                                                 >
                                                     <Tooltip title="Hủy" placement='top'>
                                                         <CancelOutlined />
                                                     </Tooltip>
-                                                </IconButton>}
-                                                <IconButton
-                                                    color="info"
-                                                    onClick={() => {
-                                                        setSelectedOrder(order)
-                                                        setHistory(true)
-                                                    }}
-                                                >
-                                                    <Tooltip title="Lịch sử" placement='top'>
-                                                        <InfoOutlined />
-                                                    </Tooltip>
                                                 </IconButton>
-                                                {order.status === "completed" && <IconButton
-                                                    color="secondary"
-                                                    onClick={() => {
-                                                        setSelectedOrder(order)
-                                                        setShiftReport(true)
-                                                    }}
-                                                >
-                                                    <Tooltip title="Báo công" placement='top'>
-                                                        <Visibility />
-                                                    </Tooltip>
-                                                </IconButton>}
-                                                {order.status === "completed" && <IconButton
+                                            </TableCell>}
+                                            {visibleColumns.includes('transfer') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                                <IconButton
                                                     color="info"
                                                     onClick={async () => {
                                                         if (open) {
@@ -615,29 +677,10 @@ const Orders: React.FC = () => {
                                                         }
                                                     }}
                                                 >
-                                                    <Tooltip title="Chuyển giao ca" placement='top'>
+                                                    <Tooltip title="Chuyển ca" placement='top'>
                                                         <SyncAlt />
                                                     </Tooltip>
-                                                </IconButton>}
-                                                {['completed'].includes(order?.status) && <IconButton
-                                                    color="success"
-                                                    onClick={() => {
-                                                        setSelectedOrder(order)
-                                                        reportExcel.mutate();
-                                                    }}
-                                                >
-                                                    <Tooltip title="Xuất file" placement='top'>
-                                                        <FileDownload />
-                                                    </Tooltip>
-                                                </IconButton>}
-                                                {['pending', 'warning', 'cancel'].includes(order?.status) && <IconButton
-                                                    color="error"
-                                                    onClick={() => handleDelete(order._id)}
-                                                >
-                                                    <Tooltip title="Xóa" placement='top'>
-                                                        <DeleteIcon />
-                                                    </Tooltip>
-                                                </IconButton>}
+                                                </IconButton>
 
                                             </TableCell>}
                                         </TableRow>
@@ -670,7 +713,7 @@ const Orders: React.FC = () => {
                     </Box>
                 </Grid>
             </Grid>
-            <OrderHistories open={history} setOpen={setHistory} initialValues={selectedOrder} />
+            <OrderHistories open={history} setOpen={setHistory} selectedOrders={selectedOrders} setSelectedOrders={setSelectedOrders} />
             <ShiftReport open={shiftReport} setOpen={setShiftReport} initialValues={selectedOrder} />
         </Box >
     );

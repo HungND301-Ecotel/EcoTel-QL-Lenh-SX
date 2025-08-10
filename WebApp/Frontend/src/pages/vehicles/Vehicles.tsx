@@ -80,6 +80,7 @@ const validationSchema = yup.object({
 const Vehicles: React.FC = () => {
     const [open, setOpen] = useState(false);
     const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+    const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
     const [q, setQ] = useState("")
     const [status, setStatus] = useState("")
     const [department, setDepartment] = useState("")
@@ -88,15 +89,12 @@ const Vehicles: React.FC = () => {
     const [user, setUser] = useAtom(userAtom)
     const [expanded, setExpanded] = useState(false);
 
-    const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
-        setExpanded(isExpanded);
-        if (isExpanded) {
-            setOpen(true);
-        } else {
-            setOpen(false);
-            setSelectedDevice(null);
-            setExpanded(false);
-        }
+    const handleSelected = (deviceId: string) => {
+        setSelectedDevices(prev =>
+            prev.includes(deviceId)
+                ? prev.filter(id => id !== deviceId)
+                : [...prev, deviceId]
+        );
     };
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
 
@@ -111,7 +109,7 @@ const Vehicles: React.FC = () => {
         { id: 'coordinates', label: 'Vị trí' },
         { id: 'department', label: 'Đơn vị' },
         { id: 'status', label: 'Trạng thái' },
-        { id: 'actions', label: 'Thao tác', width: 100 },
+        { id: 'edit', label: 'Sửa', width: 50 },
     ]
     const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
 
@@ -153,7 +151,7 @@ const Vehicles: React.FC = () => {
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
@@ -167,18 +165,19 @@ const Vehicles: React.FC = () => {
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (id: string) => api.delete(`/devices/${id}`).then(res => res.data),
-        onSuccess: () => {
+        mutationFn: (ids: string[]) => api.delete(`/devices`, { data: { ids } }).then(res => res.data.message),
+        onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['vehicles'] });
-            showSuccessAlert('Xóa phương tiện thành công');
+            setSelectedDevices([]);
+            showSuccessAlert(message || 'Xóa thành công');
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
@@ -257,17 +256,18 @@ const Vehicles: React.FC = () => {
         setMapCoords(null);
     };
 
-    const handleDelete = (id: string) => {
-        if (!id) {
-            showErrorAlert('Không tìm thấy bản ghi');
+    const handleDelete = () => {
+        if (selectedDevices.length === 0) {
+            showErrorAlert('Không tìm thấy bản ghi cần xóa');
             return;
         }
-        showConfirmAlert('Bạn có muốn xóa bản ghi này?').then((result) => {
+        showConfirmAlert(`Bạn có muốn xóa ${selectedDevices.length} bản ghi?`).then((result) => {
             if (result.isConfirmed) {
-                deleteMutation.mutate(id);
+                deleteMutation.mutate(selectedDevices);
             }
         });
     };
+
     const handleMapClick = (e: google.maps.MapMouseEvent) => {
         if (e.latLng) {
             setMapCoords({
@@ -309,19 +309,24 @@ const Vehicles: React.FC = () => {
                     />}
                 </Box>
             </Box>
-            {user?.role !== "dispatcher" && <Accordion expanded={expanded} onChange={handleChangeAction}>
+            {user?.role !== "dispatcher" && <Accordion expanded={expanded}>
                 <AccordionSummary
                     expandIcon={<ExpandMore />}
                     aria-controls="panel1-content"
                     id="panel1-header"
                 >
-                    <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={() => handleOpen()}
-                    >
-                        Thêm Thông tin xe
-                    </Button>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                        <Button
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={() => handleOpen()}
+                        >
+                            Thêm Thông tin xe
+                        </Button>
+                        <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
+                            Xóa
+                        </Button>
+                    </Box>
                 </AccordionSummary>
                 <AccordionDetails>
                     <DialogTitle>
@@ -552,6 +557,7 @@ const Vehicles: React.FC = () => {
                     }}>
                         <TableHead>
                             <TableRow>
+                                <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}></TableCell>
                                 {visibleColumns.includes('code') && <TableCell align='center' sx={{
                                     position: 'sticky',
                                     left: 0,
@@ -569,7 +575,7 @@ const Vehicles: React.FC = () => {
                                 {visibleColumns.includes('coordinates') && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Vị trí</TableCell>}
                                 {visibleColumns.includes('department') && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Đơn vị</TableCell>}
                                 {visibleColumns.includes('status') && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>}
-                                {visibleColumns.includes('actions') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Thao tác</TableCell>)}
+                                {visibleColumns.includes('edit') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: 50 }}>Sửa</TableCell>)}
                             </TableRow>
                         </TableHead>
                         {!isLoading ? <TableBody>
@@ -587,7 +593,8 @@ const Vehicles: React.FC = () => {
                                 }
                                 return (
                                     <TableRow key={device._id}>
-                                        {visibleColumns.includes('name') && <TableCell sx={{
+                                        <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}><Checkbox onChange={() => handleSelected(device._id)} checked={selectedDevices.includes(device._id)} /></TableCell>
+                                        {visibleColumns.includes('name') && <TableCell align='center' sx={{
                                             position: 'sticky',
                                             left: 0,
                                             backgroundColor: 'white',
@@ -595,12 +602,12 @@ const Vehicles: React.FC = () => {
                                             minWidth: 100,
                                             border: '1px solid black'
                                         }}>{device.code}</TableCell>}
-                                        {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black', minWidth: 150, }}>{device.name}</TableCell>}
-                                        {visibleColumns.includes('vehicleNumber') && <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{device.vehicleNumber}</TableCell>}
-                                        {visibleColumns.includes('category') && <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{device.category?.name}</TableCell>}
-                                        {visibleColumns.includes('material') && <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{device.material}</TableCell>}
-                                        {visibleColumns.includes('fuelType') && <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{device.fuelType}</TableCell>}
-                                        {visibleColumns.includes('capacity') && <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{device.capacity}</TableCell>}
+                                        {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black', minWidth: 100, }}>{device.name}</TableCell>}
+                                        {visibleColumns.includes('vehicleNumber') && <TableCell align='center' sx={{ border: '1px solid black', minWidth: 50, }}>{device.vehicleNumber}</TableCell>}
+                                        {visibleColumns.includes('category') && <TableCell align='center' sx={{ border: '1px solid black', minWidth: 70, }}>{device.category?.name}</TableCell>}
+                                        {visibleColumns.includes('material') && <TableCell align='center' sx={{ border: '1px solid black', minWidth: 100, }}>{device.material}</TableCell>}
+                                        {visibleColumns.includes('fuelType') && <TableCell align="center" sx={{ border: '1px solid black', minWidth: 130, }}>{device.fuelType}</TableCell>}
+                                        {visibleColumns.includes('capacity') && <TableCell align='center' sx={{ border: '1px solid black', minWidth: 100, }}>{device.capacity}</TableCell>}
                                         {visibleColumns.includes('coordinates') && <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{coordsDisplay}</TableCell>}
                                         {visibleColumns.includes('department') && <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>
                                             {typeof device.department === 'object' && device.department !== null
@@ -620,7 +627,7 @@ const Vehicles: React.FC = () => {
                                                             device.status === 'available' ? 'success' : 'default'}
                                             />
                                         </TableCell>}
-                                        {visibleColumns.includes('actions') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ border: '1px solid black', minWidth: 130, }}>
+                                        {visibleColumns.includes('edit') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                             <IconButton
                                                 color="primary"
                                                 onClick={async () => {
@@ -635,12 +642,6 @@ const Vehicles: React.FC = () => {
                                                 }}
                                             >
                                                 <EditIcon />
-                                            </IconButton>
-                                            <IconButton
-                                                color="error"
-                                                onClick={() => handleDelete(device._id)}
-                                            >
-                                                <DeleteIcon />
                                             </IconButton>
                                         </TableCell>)}
                                     </TableRow>)

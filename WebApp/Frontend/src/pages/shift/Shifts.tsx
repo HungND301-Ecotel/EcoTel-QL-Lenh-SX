@@ -53,25 +53,23 @@ const validationSchema = yup.object({
 const Shifts: React.FC = () => {
     const [open, setOpen] = useState(false);
     const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+    const [selectedShifts, setSelectedShifts] = useState<string[]>([]);
     const [value, setValue] = useState("")
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
 
-    const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
-        setExpanded(isExpanded);
-        if (isExpanded) {
-            setOpen(true);
-        } else {
-            setOpen(false);
-            setSelectedShift(null);
-            setExpanded(false);
-        }
+    const handleSelected = (shiftId: string) => {
+        setSelectedShifts(prev =>
+            prev.includes(shiftId)
+                ? prev.filter(id => id !== shiftId)
+                : [...prev, shiftId]
+        );
     };
     const defaultColumns = [
-        { id: 'name', label: 'Ca', width: 100 },
+        { id: 'name', label: 'Ca', width: 50 },
         { id: 'startTime', label: 'Thời gian bắt đầu' },
         { id: 'endTime', label: 'Thời gian kết thúc' },
-        { id: 'actions', label: 'Thao tác', width: 100 },
+        { id: 'edit', label: 'Sửa', width: 50 },
     ];
 
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -100,7 +98,7 @@ const Shifts: React.FC = () => {
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
@@ -113,18 +111,19 @@ const Shifts: React.FC = () => {
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (id: string) => api.delete(`/shifts/${id}`).then(res => res.data),
-        onSuccess: () => {
+        mutationFn: (ids: string[]) => api.delete(`/shifts`, { data: { ids } }).then(res => res.data.message),
+        onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['shifts'] });
-            showSuccessAlert('Xóa ca làm việc thành công');
+            setSelectedShifts([]);
+            showSuccessAlert(message || 'Xóa thành công');
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
@@ -163,14 +162,14 @@ const Shifts: React.FC = () => {
         formik.resetForm();
     };
 
-    const handleDelete = (id: string) => {
-        if (!id) {
-            showErrorAlert('Không tìm thấy bản ghi');
+    const handleDelete = () => {
+        if (selectedShifts.length === 0) {
+            showErrorAlert('Không tìm thấy bản ghi cần xóa');
             return;
         }
-        showConfirmAlert('Bạn có muốn xóa bản ghi này?').then((result) => {
+        showConfirmAlert(`Bạn có muốn xóa ${selectedShifts.length} bản ghi?`).then((result) => {
             if (result.isConfirmed) {
-                deleteMutation.mutate(id);
+                deleteMutation.mutate(selectedShifts);
             }
         });
     };
@@ -181,15 +180,20 @@ const Shifts: React.FC = () => {
                 <Typography variant="h4">Quản lý ca làm việc</Typography>
 
             </Box>
-            <Accordion expanded={expanded} onChange={handleChangeAction}>
+            <Accordion expanded={expanded}>
                 <AccordionSummary
                     expandIcon={<ExpandMore />}
                     aria-controls="panel1-content"
                     id="panel1-header"
                 >
-                    <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
-                        Thêm ca làm việc
-                    </Button>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                        <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
+                            Thêm ca làm việc
+                        </Button>
+                        <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
+                            Xóa
+                        </Button>
+                    </Box>
                 </AccordionSummary>
                 <AccordionDetails>
                     <DialogTitle>{selectedShift ? 'Sửa ca làm việc' : 'Thêm ca làm việc'}</DialogTitle>
@@ -206,7 +210,6 @@ const Shifts: React.FC = () => {
                                     onChange={formik.handleChange}
                                     error={formik.touched.name && Boolean(formik.errors.name)}
                                     helperText={formik.touched.name && formik.errors.name}
-                                    InputLabelProps={{ shrink: true }}
                                 />
                                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                                     <TimePicker
@@ -281,6 +284,10 @@ const Shifts: React.FC = () => {
                 }}>
                     <TableHead>
                         <TableRow>
+                            <TableCell align="center" sx={{
+                                backgroundColor: '#f5f5f5', border: '1px solid black',
+                            }}>
+                            </TableCell>
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) && (
                                     <TableCell key={col.id} align="center" sx={{
@@ -295,6 +302,7 @@ const Shifts: React.FC = () => {
                     <TableBody>
                         {!isLoading ? shifts.map((shift: Shift) => (
                             <TableRow key={shift._id}>
+                                <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}><Checkbox onChange={() => handleSelected(shift._id)} checked={selectedShifts.includes(shift._id)} /></TableCell>
                                 {visibleColumns.includes('name') && (
                                     <TableCell align='center' sx={{ border: '1px solid black' }}>{shift.name}</TableCell>
                                 )}
@@ -304,7 +312,7 @@ const Shifts: React.FC = () => {
                                 {visibleColumns.includes('endTime') && (
                                     <TableCell sx={{ border: '1px solid black' }}>{shift.endTime}</TableCell>
                                 )}
-                                {visibleColumns.includes('actions') && (
+                                {visibleColumns.includes('edit') && (
                                     <TableCell align='center' sx={{ border: '1px solid black' }}>
                                         <IconButton color="primary" onClick={async () => {
                                             if (open) {
@@ -317,9 +325,6 @@ const Shifts: React.FC = () => {
                                             }
                                         }}>
                                             <EditIcon />
-                                        </IconButton>
-                                        <IconButton color="error" onClick={() => handleDelete(shift._id)}>
-                                            <DeleteIcon />
                                         </IconButton>
                                     </TableCell>
                                 )}

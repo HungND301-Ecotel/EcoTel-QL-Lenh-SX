@@ -18,14 +18,16 @@ router.post('/', verifyToken, async (req, res, next) => {
     }
 });
 
-router.get('/:id', verifyToken, async (req, res) => {
+router.post('/bulk', verifyToken, async (req, res) => {
     try {
+        const { ids } = req.body;
 
-        const historys = await History.find({ entity: req.params.id }).populate("changedBy", "fullName")
+        const historys = await History.find({ entity: { $in: ids } })
+            .populate("changedBy", "fullName");
 
         res.status(200).send({ status: 'success', data: historys });
     } catch (err) {
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
     }
 });
 

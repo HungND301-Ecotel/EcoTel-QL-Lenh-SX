@@ -261,6 +261,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
             .populate('job', 'name type content')
             .populate('device', 'code')
             .populate('excavator', 'code')
+            .populate('devicesToProduce.deviceType', 'name')
             .populate('location', 'name')
             .populate('material', 'name')
             .populate('safetyMeasure')
@@ -338,6 +339,53 @@ router.put('/:id', verifyToken, async (req, res, next) => {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
+router.delete('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+    try {
+        const { ids } = req.body;
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).send({ status: 'error', message: 'Vui lòng chọn bản ghi cần xóa' });
+        }
+
+        // Lấy danh sách order có trong ids
+        const orders = await Order.find({ _id: { $in: ids } }).populate('shiftReport');
+
+        // Lấy tất cả ID của shiftReport
+        const shiftReportIds = orders
+            .filter(o => o.shiftReport)
+            .map(o => o.shiftReport._id);
+
+        // Xóa tất cả ShiftReport liên quan
+        if (shiftReportIds.length > 0) {
+            await ShiftReport.deleteMany({ _id: { $in: shiftReportIds } });
+        }
+        // Xóa các order
+        const result = await Order.deleteMany({ _id: { $in: ids } });
+        if (result.deletedCount === 0) {
+            return res.status(200).send({ status: 'error', message: 'Không tìm thấy bản ghi để xóa' });
+        }
+
+
+        // Gửi thông báo cho từng người phụ trách
+        for (const order of orders) {
+            await Notification.createNotification({
+                title: "Xóa lệnh",
+                message: "Xóa lệnh",
+                type: "order",
+                recipient: order.assignedTo,
+                sender: req.userId
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            message: `Đã xóa ${result.deletedCount} bản ghi`
+        });
+
+    } catch (err) {
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+});
+
 router.delete('/:id', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
         const order = await Order.findByIdAndDelete(req.params.id).populate('shiftReport')
@@ -354,9 +402,8 @@ router.delete('/:id', verifyToken, restrictTo('admin', 'dispatcher', 'manager'),
             recipient: order.assignedTo,
             sender: req.userId
         });
-
-
         res.status(200).send({ status: 'success', message: 'Xóa thành công' });
+
     } catch (err) {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }

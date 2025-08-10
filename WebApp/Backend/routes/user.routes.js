@@ -208,18 +208,21 @@ router.put('/addphone', verifyToken, async (req, res) => {
 });
 
 // Delete user
-router.delete('/:id', verifyToken, async (req, res) => {
+router.delete('/', verifyToken, async (req, res) => {
     try {
-        const user = await User.findByIdAndDelete(req.params.id);
-        if (!user) {
-            return res.status(404).json({
-                status: 'error',
-                message: 'Không tìm thấy người dùng'
-            });
+        const { ids } = req.body;
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).send({ status: 'error', message: 'Vui lòng chọn bản ghi cần xóa' });
         }
-        res.json({
+
+        const result = await User.deleteMany({ _id: { $in: ids } });
+        if (result.deletedCount === 0) {
+            return res.status(200).send({ status: 'error', message: 'Không tìm thấy bản ghi để xóa' });
+        }
+
+        res.status(200).json({
             status: 'success',
-            message: 'Xóa người dùng thành công'
+            message: `Đã xóa ${result.deletedCount} bản ghi`
         });
     } catch (error) {
         res.status(500).json({

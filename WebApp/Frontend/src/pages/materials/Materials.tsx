@@ -24,6 +24,7 @@ import {
     Accordion,
     AccordionSummary,
     AccordionDetails,
+    Checkbox,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -45,25 +46,23 @@ const validationSchema = yup.object({
 const Materials: React.FC = () => {
     const [open, setOpen] = useState(false);
     const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
+    const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
     const [value, setValue] = useState("")
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
 
-    const handleChangeAction = (event: React.SyntheticEvent, isExpanded: boolean) => {
-        setExpanded(isExpanded);
-        if (isExpanded) {
-            setOpen(true);
-        } else {
-            setOpen(false);
-            setSelectedMaterial(null);
-            setExpanded(false);
-        }
+    const handleSelected = (materialId: string) => {
+        setSelectedMaterials(prev =>
+            prev.includes(materialId)
+                ? prev.filter(id => id !== materialId)
+                : [...prev, materialId]
+        );
     };
     const defaultColumns = [
         { id: 'name', label: 'Tên vật liệu' },
         { id: 'density', label: 'Tỉ trọng' },
         { id: 'mass', label: 'Khối lượng' },
-        { id: 'actions', label: 'Thao tác', width: 100 },
+        { id: 'edit', label: 'Sửa', width: 50 },
     ]
 
     const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
@@ -88,7 +87,7 @@ const Materials: React.FC = () => {
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
@@ -102,18 +101,19 @@ const Materials: React.FC = () => {
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (id: string) => api.delete(`/materials/${id}`).then(res => res.data),
-        onSuccess: () => {
+        mutationFn: (ids: string[]) => api.delete(`/materials`, { data: { ids } }).then(res => res.data.message),
+        onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['materials'] });
-            showSuccessAlert('Xóa vật liệu thành công');
+            setSelectedMaterials([]);
+            showSuccessAlert(message || 'Xóa thành công');
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.response || 'Lỗi')
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
 
     });
@@ -158,14 +158,14 @@ const Materials: React.FC = () => {
         formik.resetForm();
     };
 
-    const handleDelete = (id: string) => {
-        if (!id) {
-            showErrorAlert('Không tìm thấy bản ghi');
+    const handleDelete = () => {
+        if (selectedMaterials.length === 0) {
+            showErrorAlert('Không tìm thấy bản ghi cần xóa');
             return;
         }
-        showConfirmAlert('Bạn có muốn xóa bản ghi này?').then((result) => {
+        showConfirmAlert(`Bạn có muốn xóa ${selectedMaterials.length} bản ghi?`).then((result) => {
             if (result.isConfirmed) {
-                deleteMutation.mutate(id);
+                deleteMutation.mutate(selectedMaterials);
             }
         });
     };
@@ -183,15 +183,20 @@ const Materials: React.FC = () => {
                     onChange={(e) => setValue(e.target.value)}>
                 </TextField>
             </Box>
-            <Accordion expanded={expanded} onChange={handleChangeAction}>
+            <Accordion expanded={expanded}>
                 <AccordionSummary
                     expandIcon={<ExpandMore />}
                     aria-controls="panel1-content"
                     id="panel1-header"
                 >
-                    <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
-                        Thêm vật liệu
-                    </Button>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                        <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
+                            Thêm vật liệu
+                        </Button>
+                        <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
+                            Xóa
+                        </Button>
+                    </Box>
                 </AccordionSummary>
                 <AccordionDetails>
                     <DialogTitle>{selectedMaterial ? 'Sửa vật liệu' : 'Thêm vật liệu'}</DialogTitle>
@@ -267,6 +272,7 @@ const Materials: React.FC = () => {
                 }}>
                     <TableHead>
                         <TableRow>
+                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', width: 50 }}></TableCell>
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) &&
                                 <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: col?.width, minWidth: col?.width }}>{col.label}</TableCell>
@@ -276,10 +282,11 @@ const Materials: React.FC = () => {
                     <TableBody>
                         {!isLoading ? materials.map((material: Material) => (
                             <TableRow key={material._id}>
+                                <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}><Checkbox onChange={() => handleSelected(material._id)} checked={selectedMaterials.includes(material._id)} /></TableCell>
                                 {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black' }}>{material.name}</TableCell>}
                                 {visibleColumns.includes('density') && <TableCell sx={{ border: '1px solid black' }}>{material.density}</TableCell>}
                                 {visibleColumns.includes("mass") && <TableCell sx={{ border: '1px solid black' }}>{material.mass}</TableCell>}
-                                {visibleColumns.includes("actions") && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                {visibleColumns.includes("edit") && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                     <IconButton color="primary" onClick={async () => {
                                         if (open) {
                                             const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
@@ -291,9 +298,6 @@ const Materials: React.FC = () => {
                                         }
                                     }}>
                                         <EditIcon />
-                                    </IconButton>
-                                    <IconButton color="error" onClick={() => handleDelete(material._id)}>
-                                        <DeleteIcon />
                                     </IconButton>
                                 </TableCell>}
                             </TableRow>

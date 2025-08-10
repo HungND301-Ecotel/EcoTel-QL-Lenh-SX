@@ -238,25 +238,39 @@ const OrderByUsers: React.FC = () => {
                                 {!isLoading ? <TableBody>
                                     {orderByUser.map((order: any) => (
                                         <TableRow key={order._id} sx={{
-                                            cursor: 'pointer', '&:hover': {
-                                                backgroundColor: '#f5f5f5',
-                                            },
+                                            cursor: 'pointer', backgroundColor: order.status === 'pending'
+                                                ? 'white' // xám nhạt
+                                                : order.status === 'completed'
+                                                    ? '#ffe5e5' // đỏ nhạt
+                                                    : order.status === 'in_progress'
+                                                        ? '#e5f7e5' // xanh lá nhạt
+                                                        : order.status === 'warning'
+                                                            ? '#fff8e1' // vàng nhạt
+                                                            : '#ede7f6', // tím nhạt
                                         }} onClick={() => setSelectedRow(order)}>
                                             {visibleColumns.includes('assignedTo') && <TableCell sx={{
                                                 position: 'sticky',
                                                 left: 0,
                                                 zIndex: 1,
                                                 minWidth: 150,
-                                                backgroundColor: 'white',
+                                                backgroundColor: order.status === 'pending'
+                                                    ? 'white' // xám nhạt
+                                                    : order.status === 'completed'
+                                                        ? '#ffe5e5' // đỏ nhạt
+                                                        : order.status === 'in_progress'
+                                                            ? '#e5f7e5' // xanh lá nhạt
+                                                            : order.status === 'warning'
+                                                                ? '#fff8e1' // vàng nhạt
+                                                                : '#ede7f6', // tím nhạt
                                                 border: '1px solid black'
                                             }}>{order.assignedTo?.fullName}</TableCell>}
-                                            {visibleColumns.includes('salaryCode') && <TableCell sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                                 {order.assignedTo?.salaryCode}
                                             </TableCell>}
-                                            {visibleColumns.includes('shift') && <TableCell sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('shift') && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                                 {order.shift?.name}
                                             </TableCell>}
-                                            {visibleColumns.includes('workingDate') && <TableCell sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                                 {order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''}
                                             </TableCell>}
                                             {visibleColumns.includes('job') && <TableCell sx={{ border: '1px solid black' }}>
@@ -277,16 +291,16 @@ const OrderByUsers: React.FC = () => {
                                             {visibleColumns.includes('createdBy') && <TableCell sx={{ border: '1px solid black' }}>
                                                 {order.createdBy.username || ''}
                                             </TableCell>}
-                                            {visibleColumns.includes('createdAt') && <TableCell sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                                 {order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm') : ''}
                                             </TableCell>}
-                                            {visibleColumns.includes('startTime') && <TableCell sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('startTime') && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                                 {order.startTime ? format(new Date(order.startTime), 'HH:mm:ss') : ''}
                                             </TableCell>}
-                                            {visibleColumns.includes('endTime') && <TableCell sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('endTime') && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                                 {order.endTime ? format(new Date(order.endTime), 'HH:mm:ss') : ''}
                                             </TableCell>}
-                                            {visibleColumns.includes('status') && <TableCell sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('status') && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                                 <Chip
                                                     sx={{ width: '120px' }}
                                                     label={order.status === 'pending' ? 'Chưa nhận lệnh' :
