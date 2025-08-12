@@ -74,8 +74,9 @@ const OrderByUsers: React.FC = () => {
     const defaultColumns = [
         { id: 'assignedTo', label: 'Nhân viên' },
         { id: 'salaryCode', label: 'Mã thẻ lương' },
-        { id: 'shift', label: 'Ca' },
         { id: 'workingDate', label: 'Ngày làm việc' },
+        { id: 'shift', label: 'Ca' },
+        { id: 'shiftHour', label: 'Giờ làm việc' },
         { id: 'job', label: 'Công việc' },
         { id: 'content', label: 'Nội dung' },
         { id: 'device', label: 'Phương tiện' },
@@ -215,15 +216,15 @@ const OrderByUsers: React.FC = () => {
                                         {visibleColumns.includes('assignedTo') && <TableCell align='center' sx={{
                                             position: 'sticky',
                                             left: 0,
-                                            backgroundColor: 'white',
                                             zIndex: 3,
                                             minWidth: 100,
                                             border: '1px solid black',
                                             fontWeight: 'bold', fontSize: 18
                                         }}>Nhân viên</TableCell>}
                                         {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{ minWidth: 130, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Mã thẻ lương</TableCell>}
-                                        {visibleColumns.includes('shift') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ca</TableCell>}
                                         {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ngày làm việc</TableCell>}
+                                        {visibleColumns.includes('shift') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ca</TableCell>}
+                                        {visibleColumns.includes('shiftHour') && <TableCell align='center' sx={{ minWidth: 100, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Giờ làm</TableCell>}
                                         {visibleColumns.includes('job') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Công việc</TableCell>}
                                         {visibleColumns.includes('content') && <TableCell align='center' sx={{ minWidth: 200, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Nội dung</TableCell>}
                                         {visibleColumns.includes('device') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Phương tiện</TableCell>}
@@ -267,11 +268,14 @@ const OrderByUsers: React.FC = () => {
                                             {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                                 {order.assignedTo?.salaryCode}
                                             </TableCell>}
+                                            {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                                {order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''}
+                                            </TableCell>}
                                             {visibleColumns.includes('shift') && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                                 {order.shift?.name}
                                             </TableCell>}
-                                            {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{ border: '1px solid black' }}>
-                                                {order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''}
+                                            {visibleColumns.includes('shiftHour') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                                {order.shiftHour}
                                             </TableCell>}
                                             {visibleColumns.includes('job') && <TableCell sx={{ border: '1px solid black' }}>
                                                 {order.job.name || ''}

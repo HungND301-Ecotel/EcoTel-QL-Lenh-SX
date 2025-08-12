@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:soft/models/safety_measure_model.dart';
 import 'package:soft/services/safety_measure_service.dart';
 
-class TaskAssignmentSafetyMeasureSelect extends StatefulWidget {
+class TaskAssignmentSafetyMeasureSelect
+    extends StatefulWidget {
   const TaskAssignmentSafetyMeasureSelect({super.key});
 
   @override
@@ -19,7 +20,8 @@ class _TaskAssignmentSafetyMeasureSelect
       SafetyMeasureService();
 
   void getAllLocation() async {
-    var result = await _safetyMeasureService.getAllSafetyMeasure();
+    var result =
+        await _safetyMeasureService.getAllSafetyMeasure();
 
     if (!mounted) return;
     if (result['status'] == 'error') {
@@ -151,7 +153,7 @@ class _TaskAssignmentSafetyMeasureSelect
                                       onTap: () {
                                         Navigator.pop(
                                           context,
-                                          item,
+                                          item.content,
                                         );
                                       },
                                     ),

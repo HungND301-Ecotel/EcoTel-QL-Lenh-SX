@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { FieldArray, FormikProvider, getIn, useFormik } from 'formik';
 import * as yup from 'yup';
 import {
@@ -17,7 +17,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/api.config';
 import { Order, Device, Job, Location, Material, DeviceType, Shift } from '../../types';
-import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { DatePicker, DesktopTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
@@ -43,6 +43,7 @@ const validationSchema = yup.object({
     job: yup.string().required('Vui lòng chọn loại công việc'),
     workingDate: yup.string().required('Vui lòng chọn ngày làm việc'),
     shift: yup.string().required('Vui lòng chọn ca làm việc'),
+    shiftHour: yup.string().required('Vui lòng nhập giờ làm việc'),
     workContent: yup.string().required('Vui lòng nhập nội dung'),
 });
 
@@ -56,6 +57,7 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
     onCancel,
 }) => {
     const queryClient = useQueryClient();
+
     const { data: users = [] } = useQuery({
         queryKey: ['users'],
         queryFn: () => api.get('/users').then(res => res.data.data),
@@ -107,6 +109,7 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
             shift: initialValues.shift !== null && typeof initialValues.shift === 'object'
                 ? initialValues.shift._id
                 : initialValues.shift || '',
+            shiftHour: initialValues.shiftHour || '',
             workContent: initialValues.workContent || '',
             status: initialValues.status,
             note: initialValues?.shiftReport?.handoverNotes || ''
@@ -121,6 +124,7 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
                 job: values.job,
                 workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
                 shift: values.shift,
+                shiftHour: values.shiftHour,
                 workContent: values.workContent,
                 status: "pending",
                 note: values.note
@@ -270,20 +274,6 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
                 </FieldArray>
                 <Grid container spacing={2}>
                     <Grid item xs={12} sm={6}>
-                        {/* <TextField
-                                    fullWidth
-                                    id="workingDate"
-                                    name="workingDate"
-                                    label="Ngày làm việc"
-                                    type="date"
-                                    value={formik.values.workingDate}
-                                    onChange={formik.handleChange}
-                                    InputLabelProps={{ shrink: true }}
-                                    error={formik.touched.workingDate && Boolean(formik.errors.workingDate)}
-                                    helperText={formik.touched.workingDate && typeof formik.errors.workingDate === "string"
-                                        ? formik.errors.workingDate
-                                        : ''}
-                                /> */}
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
                             <DatePicker
                                 label="Ngày làm việc"
@@ -307,7 +297,7 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
                             />
                         </LocalizationProvider>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={6} sm={3}>
                         <TextField
                             fullWidth
                             select
@@ -315,7 +305,18 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
                             name="shift"
                             label="Ca làm việc"
                             value={formik.values.shift}
-                            onChange={formik.handleChange}
+                            onChange={(e) => {
+                                formik.handleChange(e);
+                                // Tìm ca vừa chọn
+                                const selectedShift = shifts.find((shift: Shift) => shift._id === e.target.value);
+                                // Nếu có ca, set giờ ca theo startTime
+                                if (selectedShift && selectedShift.startTime) {
+                                    // startTime có thể là chuỗi "HH:mm"
+                                    formik.setFieldValue('shiftHour', dayjs(selectedShift.startTime, 'HH:mm').format('HH:mm'));
+                                } else {
+                                    formik.setFieldValue('shiftHour', '');
+                                }
+                            }}
                             error={formik.touched.shift && Boolean(formik.errors.shift)}
                             helperText={formik.touched.shift && typeof formik.errors.shift === 'string'
                                 ? formik.errors.shift
@@ -325,6 +326,31 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
                                 <MenuItem key={shift._id} value={shift._id}>Ca {shift.name} ({shift.startTime})</MenuItem>
                             ))}
                         </TextField>
+                    </Grid>
+                    <Grid item xs={6} sm={3}>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DesktopTimePicker
+                                label="Giờ ca"
+                                ampm={false}
+                                inputFormat="HH:mm" // v5 vẫn hỗ trợ
+                                value={formik.values.shiftHour ? dayjs(formik.values.shiftHour, 'HH:mm') : null}
+                                onChange={(value) => {
+                                    formik.setFieldValue('shiftHour', value ? value?.format('HH:mm') : '');
+                                }}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        fullWidth
+                                        error={formik.touched.shiftHour && Boolean(formik.errors.shiftHour)}
+                                        helperText={
+                                            formik.touched.shiftHour && typeof formik.errors.shiftHour === 'string'
+                                                ? formik.errors.shiftHour
+                                                : ''
+                                        }
+                                    />
+                                )}
+                            />
+                        </LocalizationProvider>
                     </Grid>
                     <Grid item xs={12}>
                         <TextField

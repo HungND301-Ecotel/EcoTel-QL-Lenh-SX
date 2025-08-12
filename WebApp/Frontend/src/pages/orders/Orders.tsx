@@ -85,15 +85,15 @@ const Orders: React.FC = () => {
     const [device, setDevice] = useState("");
     const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
     const [selectedRow, setSelectedRow] = useState<any | null>(null);
-    const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+    const [selectedOrders, setSelectedOrders] = useState<any[]>([]);
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
 
-    const handleSelected = (orderId: string) => {
+    const handleSelected = (order: any) => {
         setSelectedOrders(prev =>
-            prev.includes(orderId)
-                ? prev.filter(id => id !== orderId)
-                : [...prev, orderId]
+            prev.some(o => o._id === order._id)
+                ? prev.filter(o => o._id !== order._id)
+                : [...prev, order]
         );
     };
 
@@ -102,8 +102,9 @@ const Orders: React.FC = () => {
     const defaultColumns = [
         { id: 'assignedTo', label: 'Nhân viên' },
         { id: 'salaryCode', label: 'Mã thẻ lương' },
-        { id: 'shift', label: 'Ca' },
         { id: 'workingDate', label: 'Ngày làm việc' },
+        { id: 'shift', label: 'Ca' },
+        { id: 'shiftHour', label: 'Giờ làm việc' },
         { id: 'job', label: 'Công việc' },
         { id: 'content', label: 'Nội dung' },
         { id: 'device', label: 'Phương tiện' },
@@ -165,7 +166,7 @@ const Orders: React.FC = () => {
 
     const reportExcel = useMutation({
         mutationFn: () =>
-            api.post(`/exports/order/bulk`, { ids: selectedOrders }, {
+            api.post(`/exports/order/bulk`, { ids: selectedOrders.map(o => o._id) }, {
                 responseType: 'blob',
             }).then(res => {
                 const blob = new Blob([res.data], {
@@ -265,9 +266,17 @@ const Orders: React.FC = () => {
             showErrorAlert('Không tìm thấy bản ghi cần xóa');
             return;
         }
+        for (const order of selectedOrders) {
+            if (order.status === "in_progress") {
+                return showErrorAlert(`Công việc ${order?.assignedTo?.fullName}-${order?.assignedTo?.salaryCode} đang thực hiện không thể xóa`);
+            }
+            if (order.status === "completed") {
+                return showErrorAlert(`Công việc ${order?.assignedTo?.fullName}-${order?.assignedTo?.salaryCode} đã hoàn thành không thể xóa`);
+            }
+        }
         showConfirmAlert(`Bạn có muốn xóa ${selectedOrders.length} bản ghi?`).then((result) => {
             if (result.isConfirmed) {
-                deleteMutation.mutate(selectedOrders);
+                deleteMutation.mutate(selectedOrders.map(o => o._id));
             }
         });
     };
@@ -485,7 +494,18 @@ const Orders: React.FC = () => {
                                             width: 50,
                                             border: '1px solid black',
                                             fontWeight: 'bold', fontSize: 18
-                                        }}></TableCell>
+                                        }}> <Checkbox
+                                                color="primary"
+                                                checked={orders.length > 0 && selectedOrders.length === orders.length}
+                                                indeterminate={selectedOrders.length > 0 && selectedOrders.length < orders.length}
+                                                onChange={() => {
+                                                    if (selectedOrders.length === orders.length) {
+                                                        setSelectedOrders([]);
+                                                    } else {
+                                                        setSelectedOrders(orders);
+                                                    }
+                                                }}
+                                            /></TableCell>
                                         {visibleColumns.includes('assignedTo') && <TableCell align='center' sx={{
                                             position: 'sticky',
                                             left: 60,
@@ -496,8 +516,9 @@ const Orders: React.FC = () => {
                                             fontWeight: 'bold', fontSize: 18
                                         }}>Nhân viên</TableCell>}
                                         {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{ minWidth: 130, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Mã thẻ lương</TableCell>}
-                                        {visibleColumns.includes('shift') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ca</TableCell>}
                                         {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ngày làm việc</TableCell>}
+                                        {visibleColumns.includes('shift') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ca</TableCell>}
+                                        {visibleColumns.includes('shiftHour') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Giờ làm</TableCell>}
                                         {visibleColumns.includes('job') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Công việc</TableCell>}
                                         {visibleColumns.includes('content') && <TableCell align='center' sx={{ minWidth: 200, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Nội dung</TableCell>}
                                         {visibleColumns.includes('device') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Phương tiện</TableCell>}
@@ -507,7 +528,7 @@ const Orders: React.FC = () => {
                                         {visibleColumns.includes('endTime') && <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Kết thúc</TableCell>}
                                         {visibleColumns.includes('status') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>}
                                         {visibleColumns.includes('note') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ghi chú</TableCell>}
-                                        {visibleColumns.includes('view') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Xem</TableCell>}
+                                        {visibleColumns.includes('view') && <TableCell align='center' sx={{ minWidth: 100, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Xem báo công</TableCell>}
                                         {visibleColumns.includes('edit') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Sửa</TableCell>}
                                         {visibleColumns.includes('cancel') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Hủy</TableCell>}
                                         {visibleColumns.includes('transfer') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Chuyển ca</TableCell>}
@@ -543,7 +564,7 @@ const Orders: React.FC = () => {
                                                                 ? '#fff8e1' // vàng nhạt
                                                                 : '#ede7f6', // tím nhạt
                                                 border: '1px solid black'
-                                            }}><Checkbox onChange={() => handleSelected(order._id)} checked={selectedOrders.includes(order._id)} /></TableCell>
+                                            }}><Checkbox onChange={() => handleSelected(order)} checked={selectedOrders.some(o => o._id === order._id)} /></TableCell>
                                             {visibleColumns.includes('assignedTo') && <TableCell sx={{
                                                 position: 'sticky',
                                                 left: 60,
@@ -563,11 +584,14 @@ const Orders: React.FC = () => {
                                             {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                                 {order.assignedTo?.salaryCode}
                                             </TableCell>}
+                                            {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                                {order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''}
+                                            </TableCell>}
                                             {visibleColumns.includes('shift') && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                                 {order.shift?.name}
                                             </TableCell>}
-                                            {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{ border: '1px solid black' }}>
-                                                {order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''}
+                                            {visibleColumns.includes('shiftHour') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                                {order.shiftHour || ''}
                                             </TableCell>}
                                             {visibleColumns.includes('job') && <TableCell sx={{ border: '1px solid black' }}>
                                                 {order.job.name || ''}
@@ -621,6 +645,7 @@ const Orders: React.FC = () => {
                                                         setSelectedOrder(order)
                                                         setShiftReport(true)
                                                     }}
+                                                    disabled={!['completed'].includes(order.status)}
                                                 >
                                                     <Tooltip title="Báo công" placement='top'>
                                                         <Visibility />
@@ -631,6 +656,7 @@ const Orders: React.FC = () => {
                                             {visibleColumns.includes('edit') && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                                 <IconButton
                                                     color="primary"
+                                                    disabled={!['pending', 'warning'].includes(order.status)}
                                                     onClick={async () => {
                                                         if (open) {
                                                             const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
@@ -649,6 +675,7 @@ const Orders: React.FC = () => {
                                             </TableCell>}
                                             {visibleColumns.includes('cancel') && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                                 <IconButton
+                                                    disabled={!['pending', 'warning'].includes(order.status)}
                                                     color="warning"
                                                     onClick={() => handleCancel(order)}
                                                 >
@@ -660,6 +687,7 @@ const Orders: React.FC = () => {
                                             {visibleColumns.includes('transfer') && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                                 <IconButton
                                                     color="info"
+                                                    disabled={!['completed'].includes(order.status)}
                                                     onClick={async () => {
                                                         if (open) {
                                                             const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');

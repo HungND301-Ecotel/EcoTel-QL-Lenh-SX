@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { FieldArray, FormikProvider, useFormik } from 'formik';
 import * as yup from 'yup';
 import {
@@ -9,6 +9,8 @@ import {
     DialogContent,
     DialogTitle,
     Grid,
+    IconButton,
+    Menu,
     MenuItem,
     Popper,
     styled,
@@ -17,11 +19,12 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/api.config';
 import { Order, Device, Job, Location, Material, SafetyMeasure, Shift } from '../../types';
-import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { DatePicker, DesktopTimePicker, LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { showConfirmAlert, showSuccessAlert } from '../../components/Alert';
+import { ContentCopy } from '@mui/icons-material';
 dayjs.extend(utc);
 
 const StyledPopper = styled(Popper)({
@@ -41,6 +44,7 @@ const validationSchema = yup.object({
     job: yup.string().required('Vui lòng chọn loại công việc'),
     workingDate: yup.string().required('Vui lòng chọn ngày làm việc'),
     shift: yup.string().required('Vui lòng chọn ca làm việc'),
+    shiftHour: yup.string().required('Vui lòng nhập giờ làm việc'),
     workContent: yup.string().required('Vui lòng nhập nội dung'),
 });
 
@@ -54,6 +58,18 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
     onCancel,
 }) => {
     const queryClient = useQueryClient();
+
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+    const safetyTextFieldRef = useRef<HTMLInputElement>(null);
+
+    const handleCloseMenu = () => {
+        setAnchorEl(null);
+    };
+    const handleSelectSample = (content: string) => {
+        formik.setFieldValue('safetyMeasure', content);
+        setAnchorEl(null);
+    };
 
     const { data: safetyMeasures = [] } = useQuery({
         queryKey: ['safetyMeasures'],
@@ -100,8 +116,9 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                 },
             ],
             job: '',
-            workingDate: '',
+            workingDate: new Date(),
             shift: '',
+            shiftHour: '',
             excavator: [],
             location: undefined,
             material: undefined,
@@ -109,7 +126,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
             liftHeight: undefined,
             workContent: '',
             note: '',
-            safetyMeasure: undefined
+            safetyMeasure: ''
         },
         enableReinitialize: true,
         validationSchema,
@@ -121,6 +138,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                 workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
                 excavator: values.excavator,
                 shift: values.shift,
+                shiftHour: values.shiftHour,
                 location: values.location,
                 material: values.material,
                 distance: values.distance,
@@ -165,6 +183,52 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
 
         <FormikProvider value={formik}>
             <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
+                <Grid container spacing={2} mb={2}>
+                    <Grid item xs={12} sm={6}>
+                        <Autocomplete
+                            fullWidth
+                            options={excavators}
+                            getOptionLabel={(option: Device) =>
+                                option.code || ''
+                            }
+                            value={excavators.find((p: any) => p._id === formik.values.excavator[0]) || null}
+                            onChange={(event, newValue) => {
+                                formik.setFieldValue('excavator', newValue?._id ? [newValue?._id] : []);
+                            }}
+                            PopperComponent={StyledPopper}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="Máy xúc"
+                                    error={formik.touched.excavator && Boolean(formik.errors.excavator)}
+                                    helperText={formik.touched.excavator && typeof formik.errors.excavator === 'string' ? formik.errors.excavator : ''}
+                                />
+                            )}
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <Autocomplete
+                            fullWidth
+                            options={jobs}
+                            getOptionLabel={(option: Job) =>
+                                option.name || ''
+                            }
+                            value={jobs.find((p: any) => p._id === formik.values.job) || null}
+                            onChange={(event, newValue) => {
+                                formik.setFieldValue('job', newValue?._id || '');
+                            }}
+                            PopperComponent={StyledPopper}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="Công việc"
+                                    error={formik.touched.job && Boolean(formik.errors.job)}
+                                    helperText={formik.touched.job && typeof formik.errors.job === 'string' ? formik.errors.job : ''}
+                                />
+                            )}
+                        />
+                    </Grid>
+                </Grid>
                 <FieldArray name="usersAndDevices">
                     {({ push, remove }) => (
                         <>
@@ -241,29 +305,6 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                 </FieldArray>
                 <Grid container spacing={2}>
                     <Grid item xs={12} sm={6}>
-                        <Autocomplete
-                            fullWidth
-                            options={jobs}
-                            getOptionLabel={(option: Job) =>
-                                option.name || ''
-                            }
-                            value={jobs.find((p: any) => p._id === formik.values.job) || null}
-                            onChange={(event, newValue) => {
-                                formik.setFieldValue('job', newValue?._id || '');
-                            }}
-                            PopperComponent={StyledPopper}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    label="Công việc"
-                                    error={formik.touched.job && Boolean(formik.errors.job)}
-                                    helperText={formik.touched.job && typeof formik.errors.job === 'string' ? formik.errors.job : ''}
-                                />
-                            )}
-                        />
-                    </Grid>
-
-                    <Grid item xs={12} sm={6}>
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
                             <DatePicker
                                 label="Ngày làm việc"
@@ -287,7 +328,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                             />
                         </LocalizationProvider>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={6} sm={3}>
                         <TextField
                             fullWidth
                             select
@@ -295,7 +336,18 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                             name="shift"
                             label="Ca làm việc"
                             value={formik.values.shift}
-                            onChange={formik.handleChange}
+                            onChange={(e) => {
+                                formik.handleChange(e);
+                                // Tìm ca vừa chọn
+                                const selectedShift = shifts.find((shift: Shift) => shift._id === e.target.value);
+                                // Nếu có ca, set giờ ca theo startTime
+                                if (selectedShift && selectedShift.startTime) {
+                                    // startTime có thể là chuỗi "HH:mm"
+                                    formik.setFieldValue('shiftHour', dayjs(selectedShift.startTime, 'HH:mm').format('HH:mm'));
+                                } else {
+                                    formik.setFieldValue('shiftHour', '');
+                                }
+                            }}
                             error={formik.touched.shift && Boolean(formik.errors.shift)}
                             helperText={formik.touched.shift && typeof formik.errors.shift === 'string'
                                 ? formik.errors.shift
@@ -306,57 +358,30 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                             ))}
                         </TextField>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <Autocomplete
-                            fullWidth
-                            options={excavators}
-                            getOptionLabel={(option: Device) =>
-                                option.code || ''
-                            }
-                            value={excavators.find((p: any) => p._id === formik.values.excavator[0]) || null}
-                            onChange={(event, newValue) => {
-                                formik.setFieldValue('excavator', newValue?._id ? [newValue?._id] : []);
-                            }}
-                            PopperComponent={StyledPopper}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    label="Máy xúc"
-                                    error={formik.touched.excavator && Boolean(formik.errors.excavator)}
-                                    helperText={formik.touched.excavator && typeof formik.errors.excavator === 'string' ? formik.errors.excavator : ''}
-                                />
-                            )}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            fullWidth
-                            id="distance"
-                            name="distance"
-                            label="Cung độ"
-                            type="number"
-                            value={formik.values.distance}
-                            onChange={formik.handleChange}
-                            error={formik.touched.distance && Boolean(formik.errors.distance)}
-                            helperText={formik.touched.distance && typeof formik.errors.distance === 'number'
-                                ? formik.errors.distance
-                                : ''}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            fullWidth
-                            id="liftHeight"
-                            name="liftHeight"
-                            label="Chiều cao nâng tải"
-                            type="number"
-                            value={formik.values.liftHeight}
-                            onChange={formik.handleChange}
-                            error={formik.touched.liftHeight && Boolean(formik.errors.liftHeight)}
-                            helperText={formik.touched.liftHeight && typeof formik.errors.liftHeight === 'number'
-                                ? formik.errors.liftHeight
-                                : ''}
-                        />
+                    <Grid item xs={6} sm={3}>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DesktopTimePicker
+                                label="Giờ ca"
+                                ampm={false}
+                                inputFormat="HH:mm" // v5 vẫn hỗ trợ
+                                value={formik.values.shiftHour ? dayjs(formik.values.shiftHour, 'HH:mm') : null}
+                                onChange={(value) => {
+                                    formik.setFieldValue('shiftHour', value ? value?.format('HH:mm') : '');
+                                }}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        fullWidth
+                                        error={formik.touched.shiftHour && Boolean(formik.errors.shiftHour)}
+                                        helperText={
+                                            formik.touched.shiftHour && typeof formik.errors.shiftHour === 'string'
+                                                ? formik.errors.shiftHour
+                                                : ''
+                                        }
+                                    />
+                                )}
+                            />
+                        </LocalizationProvider>
                     </Grid>
                     <Grid item xs={12} sm={6}>
                         <Autocomplete
@@ -403,7 +428,36 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                             )}
                         />
                     </Grid>
-
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            fullWidth
+                            id="distance"
+                            name="distance"
+                            label="Cung độ"
+                            type="number"
+                            value={formik.values.distance}
+                            onChange={formik.handleChange}
+                            error={formik.touched.distance && Boolean(formik.errors.distance)}
+                            helperText={formik.touched.distance && typeof formik.errors.distance === 'number'
+                                ? formik.errors.distance
+                                : ''}
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            fullWidth
+                            id="liftHeight"
+                            name="liftHeight"
+                            label="Chiều cao nâng tải"
+                            type="number"
+                            value={formik.values.liftHeight}
+                            onChange={formik.handleChange}
+                            error={formik.touched.liftHeight && Boolean(formik.errors.liftHeight)}
+                            helperText={formik.touched.liftHeight && typeof formik.errors.liftHeight === 'number'
+                                ? formik.errors.liftHeight
+                                : ''}
+                        />
+                    </Grid>
                     <Grid item xs={12}>
                         <TextField
                             fullWidth
@@ -437,27 +491,59 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                         />
                     </Grid>
                     <Grid item xs={12}>
-                        <Autocomplete
-                            fullWidth
-                            options={safetyMeasures}
-                            getOptionLabel={(option: SafetyMeasure) =>
-                                option.content || ''
-                            }
-                            value={safetyMeasures.find((p: any) => p._id === formik.values.safetyMeasure) || null}
-                            onChange={(event, newValue) => {
-                                formik.setFieldValue('safetyMeasure', newValue?._id || '');
-                            }}
-                            PopperComponent={StyledPopper}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    label="Biện pháp an toàn"
-                                    error={formik.touched.safetyMeasure && Boolean(formik.errors.safetyMeasure)}
-                                    helperText={formik.touched.safetyMeasure && typeof formik.errors.safetyMeasure === 'string' ? formik.errors.safetyMeasure : ''}
-                                />
-                            )}
-                        />
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <TextField
+                                fullWidth
+                                multiline
+                                rows={5}
+                                id="safetyMeasure"
+                                name="safetyMeasure"
+                                label="Biện pháp an toàn"
+                                value={formik.values.safetyMeasure}
+                                onChange={formik.handleChange}
+                                error={formik.touched.safetyMeasure && Boolean(formik.errors.safetyMeasure)}
+                                helperText={formik.touched.safetyMeasure && typeof formik.errors.safetyMeasure === 'string' ? formik.errors.safetyMeasure : ''}
+                                inputRef={safetyTextFieldRef}
+                                InputProps={{
+                                    endAdornment: (
+                                        <IconButton
+                                            onClick={(e) => {
+                                                setAnchorEl(safetyTextFieldRef.current);
+                                            }}
+                                            title="Chọn mẫu"
+                                        >
+                                            <ContentCopy />
+                                        </IconButton>
+                                    ),
 
+                                }}
+                            />
+                            <Menu
+                                anchorEl={anchorEl}
+                                open={Boolean(anchorEl)}
+                                onClose={handleCloseMenu}
+                                PaperProps={{
+                                    sx: {
+                                        width: safetyTextFieldRef.current ? safetyTextFieldRef.current.offsetWidth : 400,
+                                        maxWidth: '100%',
+                                        maxHeight: 300,
+                                    }
+                                }}
+                            >
+                                {safetyMeasures.map((item: SafetyMeasure) => (
+                                    <MenuItem
+                                        key={item._id}
+                                        onClick={() => handleSelectSample(item.content)}
+                                        sx={{
+                                            whiteSpace: 'pre-line',
+                                            minHeight: 48,
+                                        }}
+                                    >
+                                        {item.content}
+                                    </MenuItem>
+                                ))}
+                            </Menu>
+                        </Box>
                     </Grid>
                 </Grid>
 

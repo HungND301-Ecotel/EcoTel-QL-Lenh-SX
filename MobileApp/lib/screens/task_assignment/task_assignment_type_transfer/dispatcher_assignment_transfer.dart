@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:soft/models/order_model.dart';
 import 'package:soft/models/shift_model.dart';
 import 'package:soft/models/task_model.dart';
@@ -9,6 +10,7 @@ import 'package:soft/services/order_service.dart';
 import 'package:soft/widgets/date_picker_button.dart';
 import 'package:soft/widgets/device_type_button.dart';
 import 'package:soft/widgets/pay_roll_input.dart';
+import 'package:soft/widgets/time_picker_button.dart';
 
 class DispatcherAssignmentTransfer extends StatefulWidget {
   final TaskModel data;
@@ -31,6 +33,7 @@ class _DispatcherAssignmentTransfer
   List<Map<String, dynamic>?> deviceToProduce = [];
   UserModel? user;
   ShiftModel? _shift;
+  String? _shiftHour;
 
   @override
   void initState() {
@@ -56,6 +59,7 @@ class _DispatcherAssignmentTransfer
       // Gán lại ngày làm việc nếu có
       _selectedDateTime = order.workingDate;
       _shift = order.shift;
+      _shiftHour = (order.shiftHour ?? '').trim();
 
       _descriptionController.text = order.workContent ?? '';
       _noteController.text =
@@ -72,6 +76,7 @@ class _DispatcherAssignmentTransfer
   void _updateShift(ShiftModel? selectedShift) {
     setState(() {
       _shift = selectedShift;
+      _shiftHour = (selectedShift?.startTime ?? '').trim();
     });
   }
 
@@ -87,6 +92,39 @@ class _DispatcherAssignmentTransfer
 
     setState(() {
       _selectedDateTime = date;
+    });
+  }
+
+  Future<void> _pickTime() async {
+    TimeOfDay initialTime;
+    if (_shiftHour != null && _shiftHour!.isNotEmpty) {
+      final parts = _shiftHour!.split(':');
+      final hour = int.tryParse(parts[0]) ?? 0;
+      final minute =
+          int.tryParse(parts.length > 1 ? parts[1] : '0') ??
+          0;
+      initialTime = TimeOfDay(hour: hour, minute: minute);
+    } else {
+      initialTime = TimeOfDay.now();
+    }
+    TimeOfDay? time = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+    );
+
+    if (time == null) return;
+
+    // Chuyển về chuỗi 24h
+    final now = DateTime.now();
+    final dt = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      time.hour,
+      time.minute,
+    );
+    setState(() {
+      _shiftHour = DateFormat('HH:mm').format(dt);
     });
   }
 
@@ -138,6 +176,7 @@ class _DispatcherAssignmentTransfer
             _selectedDateTime!.day,
           ).toIso8601String(),
       "shift": _shift?.id,
+      "shiftHour": _shiftHour,
       "devicesToProduce": validDevices,
       "assignedTo": user?.id,
       "workContent": description,
@@ -280,6 +319,16 @@ class _DispatcherAssignmentTransfer
                 ShiftSelect(
                   initialShift: _shift,
                   onSelected: _updateShift,
+                ),
+                Text(
+                  'Giờ làm việc',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TimePickerButton(
+                  selectedDateTime: _shiftHour,
+                  onPressed: _pickTime,
                 ),
                 Text(
                   'Nội dung công việc',

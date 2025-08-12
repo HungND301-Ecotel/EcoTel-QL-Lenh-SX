@@ -19,6 +19,9 @@ const orderSchema = new mongoose.Schema({
         ref: 'Shift',
         required: [true, 'Shift is required']
     },
+    shiftHour: {
+        type: String,
+    },
     devicesToProduce: [{
         deviceType: {
             type: mongoose.Schema.Types.ObjectId,
@@ -80,8 +83,7 @@ const orderSchema = new mongoose.Schema({
         type: String,
     },
     safetyMeasure: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'SafetyMeasure',
+        type: String
     },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,

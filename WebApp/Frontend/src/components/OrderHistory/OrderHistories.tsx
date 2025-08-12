@@ -15,7 +15,7 @@ import {
 import { format } from 'date-fns';
 import api from '../../config/api.config';
 
-const OrderHistories: React.FC<{ open: boolean, setOpen: Dispatch<SetStateAction<boolean>>, selectedOrders: string[], setSelectedOrders: Dispatch<SetStateAction<string[]>> }> = ({ open, setOpen, selectedOrders, setSelectedOrders }) => {
+const OrderHistories: React.FC<{ open: boolean, setOpen: Dispatch<SetStateAction<boolean>>, selectedOrders: any[], setSelectedOrders: Dispatch<SetStateAction<any[]>> }> = ({ open, setOpen, selectedOrders, setSelectedOrders }) => {
     const [tabIndexes, setTabIndexes] = useState<Record<string, number>>({});
 
     const handleTabChange = (orderId: string, newValue: number) => {
@@ -24,13 +24,13 @@ const OrderHistories: React.FC<{ open: boolean, setOpen: Dispatch<SetStateAction
 
     const { data: histories = [] } = useQuery({
         queryKey: ['histories', selectedOrders],
-        queryFn: () => api.post(`/histories/bulk`, { ids: selectedOrders }).then(res => res.data.data),
+        queryFn: () => api.post(`/histories/bulk`, { ids: selectedOrders.map(o => o._id) }).then(res => res.data.data),
         enabled: !!selectedOrders.length,
     });
 
     const { data: checkIns = [] } = useQuery({
         queryKey: ['checkIns', selectedOrders],
-        queryFn: () => api.post(`/checkIns/bulk`, { ids: selectedOrders }).then(res => res.data.data),
+        queryFn: () => api.post(`/checkIns/bulk`, { ids: selectedOrders.map(o => o._id) }).then(res => res.data.data),
         enabled: !!selectedOrders.length,
     });
 
@@ -57,20 +57,20 @@ const OrderHistories: React.FC<{ open: boolean, setOpen: Dispatch<SetStateAction
         <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
             <DialogTitle>Lịch sử</DialogTitle>
             <DialogContent>
-                {selectedOrders.map(orderId => {
-                    const tabIndex = tabIndexes[orderId] ?? 0;
-                    const orderHistories = historiesByOrder[orderId] || [];
-                    const orderCheckIns = checkInsByOrder[orderId] || [];
+                {selectedOrders.map(order => {
+                    const tabIndex = tabIndexes[order._id] ?? 0;
+                    const orderHistories = historiesByOrder[order._id] || [];
+                    const orderCheckIns = checkInsByOrder[order._id] || [];
 
                     return (
-                        <Box key={orderId} sx={{ mb: 4 }}>
+                        <Box key={order._id} sx={{ mb: 4 }}>
                             <Divider sx={{ mb: 2 }} />
                             <Typography variant="h6" sx={{ mb: 1 }}>
-                                Mã lệnh: {orderId}
+                                {order?.assignedTo?.fullName} - {order?.assignedTo?.salaryCode} - {order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''} - Ca: {order?.shift?.name}
                             </Typography>
                             <Tabs
                                 value={tabIndex}
-                                onChange={(e, val) => handleTabChange(orderId, val)}
+                                onChange={(e, val) => handleTabChange(order._id, val)}
                             >
                                 <Tab label="Chi tiết" />
                                 <Tab label="Ảnh" />

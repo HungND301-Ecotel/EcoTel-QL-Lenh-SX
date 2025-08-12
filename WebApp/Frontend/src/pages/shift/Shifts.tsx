@@ -287,6 +287,18 @@ const Shifts: React.FC = () => {
                             <TableCell align="center" sx={{
                                 backgroundColor: '#f5f5f5', border: '1px solid black',
                             }}>
+                                <Checkbox
+                                    color="primary"
+                                    checked={shifts.length > 0 && selectedShifts.length === shifts.length}
+                                    indeterminate={selectedShifts.length > 0 && selectedShifts.length < shifts.length}
+                                    onChange={() => {
+                                        if (selectedShifts.length === shifts.length) {
+                                            setSelectedShifts([]);
+                                        } else {
+                                            setSelectedShifts(shifts.map((shift: Shift) => shift._id));
+                                        }
+                                    }}
+                                />
                             </TableCell>
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) && (

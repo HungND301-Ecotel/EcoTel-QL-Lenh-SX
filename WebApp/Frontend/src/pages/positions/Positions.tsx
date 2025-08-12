@@ -256,7 +256,20 @@ const Positions: React.FC = () => {
                 }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}></TableCell>
+                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>
+                                <Checkbox
+                                    color="primary"
+                                    checked={positions.length > 0 && selectedPositions.length === positions.length}
+                                    indeterminate={selectedPositions.length > 0 && selectedPositions.length < positions.length}
+                                    onChange={() => {
+                                        if (selectedPositions.length === positions.length) {
+                                            setSelectedPositions([]);
+                                        } else {
+                                            setSelectedPositions(positions.map((item: Position) => item._id));
+                                        }
+                                    }}
+                                />
+                            </TableCell>
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) && (
                                     <TableCell key={col.id} align="center" sx={{

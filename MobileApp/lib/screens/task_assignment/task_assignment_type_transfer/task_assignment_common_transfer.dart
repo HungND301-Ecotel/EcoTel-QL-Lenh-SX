@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:soft/models/order_model.dart';
 import 'package:soft/models/safety_measure_model.dart';
 import 'package:soft/models/shift_model.dart';
@@ -10,6 +11,7 @@ import 'package:soft/screens/work_log/widgets/shift_select.dart';
 import 'package:soft/services/order_service.dart';
 import 'package:soft/widgets/date_picker_button.dart';
 import 'package:soft/widgets/pay_roll_input.dart';
+import 'package:soft/widgets/time_picker_button.dart';
 import 'package:soft/widgets/vehicle_button.dart';
 
 class TaskAssignmentCommonAddTransfer
@@ -34,7 +36,7 @@ class _TaskAssignmentCommonAddTransfer
   List<Map<String, dynamic>?> userAndDevice = [];
   UserModel? user;
   ShiftModel? _shift;
-  SafetyMeasureModel? safetyMeasure;
+  String? _shiftHour;
 
   @override
   void initState() {
@@ -50,13 +52,12 @@ class _TaskAssignmentCommonAddTransfer
           "device": order.device!.last.id,
         });
       }
-      if (order.safetyMeasure != null) {
-        safetyMeasure = order.safetyMeasure;
-      }
+      _safetyController.text = order.safetyMeasure ?? '';
+
       // Gán lại ngày làm việc nếu có
       _selectedDateTime = order.workingDate;
       _shift = order.shift;
-
+      _shiftHour = order.shiftHour ?? '';
       _descriptionController.text = order.workContent ?? '';
       _noteController.text =
           order.shiftReport?.vehicleSummaries
@@ -86,6 +87,38 @@ class _TaskAssignmentCommonAddTransfer
     });
   }
 
+  Future<void> _pickTime() async {
+    TimeOfDay initialTime;
+    if (_shiftHour != null && _shiftHour!.isNotEmpty) {
+      final parts = _shiftHour!.split(':');
+      final hour = int.tryParse(parts[0]) ?? 0;
+      final minute =
+          int.tryParse(parts.length > 1 ? parts[1] : '0') ??
+          0;
+      initialTime = TimeOfDay(hour: hour, minute: minute);
+    } else {
+      initialTime = TimeOfDay.now();
+    }
+    TimeOfDay? time = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+    );
+
+    if (time == null) return;
+
+    // Chuyển về chuỗi 24h
+    final now = DateTime.now();
+    final dt = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      time.hour,
+      time.minute,
+    );
+    setState(() {
+      _shiftHour = DateFormat('HH:mm').format(dt);
+    });
+  }
   // void _updateVehicle(String selectedVehicle) {
   //   setState(() {
   //     vehicle = [selectedVehicle];
@@ -95,6 +128,7 @@ class _TaskAssignmentCommonAddTransfer
   void _updateShift(ShiftModel? selectedShift) {
     setState(() {
       _shift = selectedShift;
+      _shiftHour = (selectedShift?.startTime ?? '').trim();
     });
   }
 
@@ -102,11 +136,14 @@ class _TaskAssignmentCommonAddTransfer
       TextEditingController();
   final TextEditingController _noteController =
       TextEditingController();
+  final TextEditingController _safetyController =
+      TextEditingController();
   final OrderService _orderService = OrderService();
 
   void createOrders() async {
     String description = _descriptionController.text.trim();
     String note = _noteController.text.trim();
+    String safetyMeasure = _safetyController.text.trim();
 
     for (var item in userAndDevice) {
       if (item?['user'] == null ||
@@ -143,11 +180,12 @@ class _TaskAssignmentCommonAddTransfer
               _selectedDateTime!.day,
             ).toIso8601String(),
         "shift": _shift?.id,
+        "shiftHour": _shiftHour,
         "assignedTo": item?["user"].id,
         "device": item?["device"],
         "workContent": description,
         "note": note,
-        "safetyMeasure": safetyMeasure?.id,
+        "safetyMeasure": safetyMeasure,
       });
 
       if (!mounted) return;
@@ -280,6 +318,16 @@ class _TaskAssignmentCommonAddTransfer
                   onSelected: _updateShift,
                 ),
                 Text(
+                  'Giờ làm việc',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TimePickerButton(
+                  selectedDateTime: _shiftHour,
+                  onPressed: _pickTime,
+                ),
+                Text(
                   'Nội dung công việc',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
@@ -307,40 +355,32 @@ class _TaskAssignmentCommonAddTransfer
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton.icon(
-                    icon: Icon(Icons.safety_check),
-                    onPressed: () async {
-                      final selectedSafetyMeasure =
-                          await Navigator.of(
-                            context,
-                            rootNavigator: true,
-                          ).pushNamed(
-                            AppRoute.safetyMeastureSelect,
-                          );
-                      if (selectedSafetyMeasure != null &&
-                          selectedSafetyMeasure
-                              is SafetyMeasureModel) {
-                        setState(() {
-                          safetyMeasure =
-                              selectedSafetyMeasure;
-                        });
-                      }
-                    },
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.black,
-                      backgroundColor: Colors.grey.shade300,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          0,
-                        ),
-                      ),
-                      alignment: Alignment.centerLeft,
-                    ),
-                    label: Text(
-                      safetyMeasure?.content ??
-                          'Biện pháp an toàn',
+                TextField(
+                  controller: _safetyController,
+                  maxLines: null,
+                  minLines: 5,
+                  decoration: InputDecoration(
+                    hintText:
+                        'Nhập/ghi chú biện pháp an toàn...',
+                    suffixIcon: IconButton(
+                      icon: Icon(Icons.library_add),
+                      tooltip: 'Chọn mẫu',
+                      onPressed: () async {
+                        final selected = await Navigator.of(
+                          context,
+                          rootNavigator: true,
+                        ).pushNamed(
+                          AppRoute.safetyMeastureSelect,
+                        );
+                        if (!mounted) return;
+                        if (selected is String &&
+                            selected.trim().isNotEmpty) {
+                          setState(() {
+                            _safetyController.text =
+                                selected;
+                          });
+                        }
+                      },
                     ),
                   ),
                 ),

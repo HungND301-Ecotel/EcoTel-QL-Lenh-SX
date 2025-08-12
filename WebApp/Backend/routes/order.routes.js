@@ -75,7 +75,6 @@ router.get('/', verifyToken, async (req, res, next) => {
                 path: "assistants",
                 select: "username fullName",
             })
-            .populate('safetyMeasure')
             .populate({
                 path: "shiftReport",
                 populate: [
@@ -143,6 +142,7 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
             distance,
             liftHeight,
             shift,
+            shiftHour,
             excavator, location, material, workContent,
             note,
             safetyMeasure,
@@ -206,6 +206,7 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
             workingDate,
             device,
             shift,
+            shiftHour,
             distance,
             liftHeight,
             safetyMeasure,
@@ -264,7 +265,6 @@ router.put('/:id', verifyToken, async (req, res, next) => {
             .populate('devicesToProduce.deviceType', 'name')
             .populate('location', 'name')
             .populate('material', 'name')
-            .populate('safetyMeasure')
             .populate('shift')
             .populate({
                 path: "assistants",
@@ -430,7 +430,6 @@ router.get('/user', verifyToken, async (req, res, next) => {
             .populate('excavator', 'code')
             .populate('location', 'name')
             .populate('material', 'name')
-            .populate('safetyMeasure')
             .populate('shift')
             .populate({
                 path: "assistants",
@@ -476,7 +475,6 @@ router.get('/:id', verifyToken, async (req, res, next) => {
             .populate('excavator', 'code')
             .populate('location', 'name')
             .populate('material', 'name')
-            .populate('safetyMeasure')
             .populate('shift')
             .populate({
                 path: "assistants",
@@ -503,9 +501,8 @@ router.get('/:id', verifyToken, async (req, res, next) => {
                 path: "createdBy",
                 select: "fullName phone salaryCode",
             })
-            .sort({ createdAt: -1 })
 
-
+        console.log(orders)
         res.status(200).send({ status: 'success', data: orders });
     } catch (err) {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
@@ -566,7 +563,6 @@ router.post('/scanWork', verifyToken, async (req, res, next) => {
             .populate('excavator', 'code')
             .populate('location', 'name')
             .populate('material', 'name')
-            .populate('safetyMeasure')
             .populate('shift')
             .populate({
                 path: "assistants",
@@ -667,7 +663,6 @@ router.post('/checkin', verifyToken, async (req, res, next) => {
             .populate('excavator', 'code')
             .populate('location', 'name')
             .populate('material', 'name')
-            .populate('safetyMeasure')
             .populate('shift')
             .populate({
                 path: "assistants",

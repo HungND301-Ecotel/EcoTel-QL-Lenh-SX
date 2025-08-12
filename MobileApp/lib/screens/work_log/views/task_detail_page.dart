@@ -298,7 +298,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        "Ca: ${data?.shift.name} (${data?.shift.startTime})",
+                        "Ca: ${data?.shift.name} (${data?.shiftHour != '' ? data?.shiftHour : data?.shift.startTime})",
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                         ),
@@ -427,9 +427,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      Text(
-                        data?.safetyMeasure?.content ?? '',
-                      ),
+                      Text(data?.safetyMeasure ?? ''),
                       const SizedBox(height: 10),
                       if (data?.note != null &&
                           data!.note!.isNotEmpty)
@@ -533,7 +531,11 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                             );
                           }
                         },
-                        child: const Text('Báo công'),
+                        child: Text(
+                          data?.shiftReport == null
+                              ? 'Báo công'
+                              : 'Đã báo công',
+                        ),
                       ),
                       const SizedBox(height: 8),
                       ElevatedButton(

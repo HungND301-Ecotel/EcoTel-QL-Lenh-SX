@@ -265,7 +265,20 @@ const Jobs: React.FC = () => {
                 }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}></TableCell>
+                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>
+                                <Checkbox
+                                    color="primary"
+                                    checked={jobs.length > 0 && selectedJobs.length === jobs.length}
+                                    indeterminate={selectedJobs.length > 0 && selectedJobs.length < jobs.length}
+                                    onChange={() => {
+                                        if (selectedJobs.length === jobs.length) {
+                                            setSelectedJobs([]);
+                                        } else {
+                                            setSelectedJobs(jobs.map((item: Job) => item._id));
+                                        }
+                                    }}
+                                />
+                            </TableCell>
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) && (
                                     <TableCell key={col.id} align="center" sx={{

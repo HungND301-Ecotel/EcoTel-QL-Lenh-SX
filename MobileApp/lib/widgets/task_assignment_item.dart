@@ -74,9 +74,7 @@ class TaskAssignItem extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    DateFormat(
-                      'dd/MM/yyyy',
-                    ).format(data.workingDate),
+                    "${DateFormat('dd/MM/yyyy').format(data.workingDate)} (${data.shiftHour != '' ? data.shiftHour : data.shift.startTime})",
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey,
@@ -100,6 +98,16 @@ class TaskAssignItem extends StatelessWidget {
                       color: Colors.grey,
                     ),
                   ),
+                  if (data.status == "completed" &&
+                      data.endTime == null)
+                    Text(
+                      'Chưa checkout ghi nhận công',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                      ),
+                    ),
                 ],
               ),
             ),

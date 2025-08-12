@@ -100,6 +100,13 @@ notificationSchema.statics.getUnreadCount = async function (userId) {
     });
 };
 
+notificationSchema.statics.getReadCount = async function (userId) {
+    return await this.countDocuments({
+        recipient: userId,
+        read: true
+    });
+};
+
 // Method to get notifications for a user
 notificationSchema.statics.getUserNotifications = async function (userId, options = {}) {
     const {

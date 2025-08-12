@@ -134,7 +134,7 @@ class _TaskAssignmentDetail
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        "Ca: ${widget.data.shift.name} (${widget.data.shift.startTime})",
+                        "Ca: ${widget.data.shift.name} (${widget.data.shiftHour != '' ? widget.data.shiftHour : widget.data.shift.startTime})",
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                         ),
@@ -362,13 +362,7 @@ class _TaskAssignmentDetail
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      Text(
-                        widget
-                                .data
-                                .safetyMeasure
-                                ?.content ??
-                            '',
-                      ),
+                      Text(widget.data.safetyMeasure ?? ''),
                     ],
                   ),
                 ),

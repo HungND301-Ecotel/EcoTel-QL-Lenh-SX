@@ -233,7 +233,20 @@ const DeviceTypes: React.FC = () => {
                 }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}></TableCell>
+                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>
+                                <Checkbox
+                                    color="primary"
+                                    checked={DeviceTypes.length > 0 && selectedDeviceTypes.length === DeviceTypes.length}
+                                    indeterminate={selectedDeviceTypes.length > 0 && selectedDeviceTypes.length < DeviceTypes.length}
+                                    onChange={() => {
+                                        if (selectedDeviceTypes.length === DeviceTypes.length) {
+                                            setSelectedDeviceTypes([]);
+                                        } else {
+                                            setSelectedDeviceTypes(DeviceTypes.map((item: DeviceType) => item._id));
+                                        }
+                                    }}
+                                />
+                            </TableCell>
                             {visibleColumns.includes('name') && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Tên loại phương tiện</TableCell>}
                             {visibleColumns.includes('edit') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: 100, minWidth: 100 }}>Sửa</TableCell>)}
                         </TableRow>

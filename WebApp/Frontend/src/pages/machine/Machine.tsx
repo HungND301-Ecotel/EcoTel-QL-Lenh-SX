@@ -553,7 +553,20 @@ const Machines: React.FC = () => {
                     }}>
                         <TableHead>
                             <TableRow>
-                                <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}></TableCell>
+                                <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>
+                                    <Checkbox
+                                        color="primary"
+                                        checked={machines.length > 0 && selectedDevices.length === machines.length}
+                                        indeterminate={selectedDevices.length > 0 && selectedDevices.length < machines.length}
+                                        onChange={() => {
+                                            if (selectedDevices.length === machines.length) {
+                                                setSelectedDevices([]);
+                                            } else {
+                                                setSelectedDevices(machines.map((item: Device) => item._id));
+                                            }
+                                        }}
+                                    />
+                                </TableCell>
                                 {visibleColumns.includes('code') && <TableCell align='center' sx={{
                                     position: 'sticky',
                                     left: 0,

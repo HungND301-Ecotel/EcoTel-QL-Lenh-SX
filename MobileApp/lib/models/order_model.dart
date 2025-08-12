@@ -2,7 +2,6 @@ import 'package:soft/models/device_model.dart';
 import 'package:soft/models/device_type_model.dart';
 import 'package:soft/models/location_model.dart';
 import 'package:soft/models/material_model.dart';
-import 'package:soft/models/safety_measure_model.dart';
 import 'package:soft/models/shift_model.dart';
 import 'package:soft/models/shift_report_model.dart';
 import 'package:soft/models/task_model.dart';
@@ -41,6 +40,7 @@ class OrderModel {
   final TaskModel job;
   final DateTime workingDate;
   final ShiftModel shift;
+  String? shiftHour;
   List<DevicesToProduceModel>? devicesToProduce;
   DateTime? startTime;
   DateTime? endTime;
@@ -57,7 +57,7 @@ class OrderModel {
   String status;
   String? note;
   String? temporaryError;
-  SafetyMeasureModel? safetyMeasure;
+  String? safetyMeasure;
   List<UserModel>? assistants;
 
   OrderModel({
@@ -66,6 +66,7 @@ class OrderModel {
     required this.job,
     required this.workingDate,
     required this.shift,
+    this.shiftHour,
     this.devicesToProduce,
     this.startTime,
     this.endTime,
@@ -94,6 +95,7 @@ class OrderModel {
       workingDate:
           DateTime.parse(json?['workingDate']).toLocal(),
       shift: ShiftModel.fromJson(json?['shift']),
+      shiftHour: json?['shiftHour'] ?? '',
       devicesToProduce:
           (json?['devicesToProduce'] as List?)
               ?.map(
@@ -150,12 +152,7 @@ class OrderModel {
               .toList() ??
           [],
       note: json?['note'] ?? '',
-      safetyMeasure:
-          json?['safetyMeasure'] != null
-              ? SafetyMeasureModel.fromJson(
-                json?['safetyMeasure'],
-              )
-              : null,
+      safetyMeasure: json?['safetyMeasure'] ?? '',
       temporaryError: json?['temporaryError'] ?? '',
     );
   }
@@ -190,6 +187,7 @@ class OrderModel {
       'job': job.toJson(),
       'workingDate': workingDate.toIso8601String(),
       'shift': shift.toJson(),
+      'shiftHour': shiftHour,
       'devicesToProduce':
           devicesToProduce?.map((e) => e.toJson()).toList(),
       'startTime': startTime?.toIso8601String(),
@@ -208,7 +206,7 @@ class OrderModel {
       'status': status,
       'note': note,
       'temporaryError': temporaryError,
-      'safetyMeasure': safetyMeasure?.toJson(),
+      'safetyMeasure': safetyMeasure,
       'assistants':
           assistants?.map((e) => e.toJson()).toList(),
     };

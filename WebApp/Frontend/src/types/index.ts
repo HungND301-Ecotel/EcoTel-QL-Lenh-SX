@@ -75,6 +75,7 @@ export interface Order {
     job: string;
     workingDate: Date;
     shift: string;
+    shiftHour: string;
     devicesToProduce?: {
         deviceType: string,
         quantity: number,

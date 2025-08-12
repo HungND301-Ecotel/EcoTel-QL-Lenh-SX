@@ -272,7 +272,20 @@ const Materials: React.FC = () => {
                 }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', width: 50 }}></TableCell>
+                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', width: 50 }}>
+                                <Checkbox
+                                    color="primary"
+                                    checked={materials.length > 0 && selectedMaterials.length === materials.length}
+                                    indeterminate={selectedMaterials.length > 0 && selectedMaterials.length < materials.length}
+                                    onChange={() => {
+                                        if (selectedMaterials.length === materials.length) {
+                                            setSelectedMaterials([]);
+                                        } else {
+                                            setSelectedMaterials(materials.map((item: Material) => item._id));
+                                        }
+                                    }}
+                                />
+                            </TableCell>
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) &&
                                 <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: col?.width, minWidth: col?.width }}>{col.label}</TableCell>

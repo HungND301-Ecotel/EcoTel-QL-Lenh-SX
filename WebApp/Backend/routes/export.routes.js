@@ -98,6 +98,8 @@ router.post('/order/bulk', verifyToken, restrictTo('admin', 'dispatcher', 'manag
             const ngay = workingDate ? workingDate.toLocaleDateString('vi-VN') : '';
             worksheet.getCell('G3').value = ngay;
 
+            worksheet.getCell('H3').value = order.shiftHour || '';
+
 
             worksheet.getCell('I3').value = 'Ca';
             worksheet.getCell('I3').font = { bold: true };
@@ -172,17 +174,6 @@ router.post('/order/bulk', verifyToken, restrictTo('admin', 'dispatcher', 'manag
             worksheet.getCell('H8').font = { bold: true };
             worksheet.getCell('I8').value = order?.shiftReport?.vehicleSummaries.reduce((sum, report) => { return sum + report?.travelHours }, 0) || '';
 
-            for (let row = 3; row <= 9; row++) {
-                for (let col = 1; col <= 13; col++) { // A = 1, M = 13
-                    const cell = worksheet.getRow(row).getCell(col);
-                    cell.border = {};
-                    cell.fill = {
-                        type: 'pattern',
-                        pattern: 'solid',
-                        fgColor: { argb: 'FFFFFFFF' }
-                    }; // Xóa tất cả border
-                }
-            }
 
             worksheet.mergeCells('A10:M10');
             const product = worksheet.getCell('A10');
@@ -237,6 +228,7 @@ router.post('/order/bulk', verifyToken, restrictTo('admin', 'dispatcher', 'manag
 
             };
             const totalRow = (order.shiftReport?.vehicleReports?.length || 0) + 13;
+            addTableBorders(worksheet, 10, totalRow + 1, 1, 13);
             worksheet.mergeCells(`A${totalRow}:B${totalRow}`);
             worksheet.getCell(`A${totalRow}`).value = 'Tổng cộng';
             worksheet.getCell(`A${totalRow}`).font = { bold: true };
@@ -285,6 +277,13 @@ router.post('/order/bulk', verifyToken, restrictTo('admin', 'dispatcher', 'manag
             worksheet.getCell(`J${totalRow + 3}`).font = { bold: true };
             worksheet.getCell(`J${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle' };
 
+
+            const fuelHeaderRow = totalRow + 2;
+            const fuelRows = order.shiftReport?.vehicleSummaries?.length || 0;
+            const fuelEndRow = fuelHeaderRow + fuelRows + 1;
+            console.log(order.shiftReport?.vehicleSummaries?.length)
+
+            addTableBorders(worksheet, fuelHeaderRow, fuelEndRow, 1, 13);
             for (let index = 0; index < (order.shiftReport?.vehicleSummaries?.length || 0); index++) {
                 const rep = order.shiftReport?.vehicleSummaries[index];
 
@@ -311,33 +310,20 @@ router.post('/order/bulk', verifyToken, restrictTo('admin', 'dispatcher', 'manag
             worksheet.getCell(`B${totalRow + 7 + deviceRow}`).value = 'NGƯỜI NHẬN LỆNH';
             worksheet.getCell(`B${totalRow + 7 + deviceRow}`).font = { bold: true };
             worksheet.getCell(`B${totalRow + 7 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.mergeCells(`B${totalRow + 9 + deviceRow}:D${totalRow + 9 + deviceRow}`)
-            worksheet.getCell(`B${totalRow + 9 + deviceRow}`).font = { bold: true };
-            worksheet.getCell(`B${totalRow + 9 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`B${totalRow + 9 + deviceRow}`).value = order.assignedTo?.fullName || "";
+            worksheet.mergeCells(`B${totalRow + 10 + deviceRow}:D${totalRow + 10 + deviceRow}`)
+            worksheet.getCell(`B${totalRow + 10 + deviceRow}`).font = { bold: true };
+            worksheet.getCell(`B${totalRow + 10 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+            worksheet.getCell(`B${totalRow + 10 + deviceRow}`).value = order.assignedTo?.fullName || "";
 
 
             worksheet.mergeCells(`I${totalRow + 7 + deviceRow}:M${totalRow + 7 + deviceRow}`)
             worksheet.getCell(`I${totalRow + 7 + deviceRow}`).value = 'NGƯỜI RA LỆNH';
             worksheet.getCell(`I${totalRow + 7 + deviceRow}`).font = { bold: true };
             worksheet.getCell(`I${totalRow + 7 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.mergeCells(`I${totalRow + 9 + deviceRow}:M${totalRow + 9 + deviceRow}`)
-            worksheet.getCell(`I${totalRow + 9 + deviceRow}`).font = { bold: true };
-            worksheet.getCell(`I${totalRow + 9 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`I${totalRow + 9 + deviceRow}`).value = order.createdBy?.fullName || "";
-
-            for (let row = totalRow + 6 + deviceRow; row <= totalRow + 11 + deviceRow; row++) {
-                for (let col = 1; col <= 13; col++) { // A = 1, M = 13
-                    const cell = worksheet.getRow(row).getCell(col);
-                    cell.border = {};
-                    cell.fill = {
-                        type: 'pattern',
-                        pattern: 'solid',
-                        fgColor: { argb: 'FFFFFFFF' }
-                    }; // Xóa tất cả border
-                }
-            }
-
+            worksheet.mergeCells(`I${totalRow + 10 + deviceRow}:M${totalRow + 10 + deviceRow}`)
+            worksheet.getCell(`I${totalRow + 10 + deviceRow}`).font = { bold: true };
+            worksheet.getCell(`I${totalRow + 10 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+            worksheet.getCell(`I${totalRow + 10 + deviceRow}`).value = order.createdBy?.fullName || "";
 
 
             worksheet.columns.forEach((column) => {
@@ -688,17 +674,17 @@ router.post('/carReport', verifyToken, restrictTo('admin', 'dispatcher', 'manage
                 worksheet.getCell('K6').font = { bold: true };
 
 
-                for (let row = 1; row <= 4; row++) {
-                    for (let col = 1; col <= 21; col++) {
-                        const cell = worksheet.getRow(row).getCell(col);
-                        cell.border = {};
-                        cell.fill = {
-                            type: 'pattern',
-                            pattern: 'solid',
-                            fgColor: { argb: 'FFFFFFFF' }
-                        }; // Xóa tất cả border
-                    }
-                }
+                // for (let row = 1; row <= 4; row++) {
+                //     for (let col = 1; col <= 21; col++) {
+                //         const cell = worksheet.getRow(row).getCell(col);
+                //         cell.border = {};
+                //         cell.fill = {
+                //             type: 'pattern',
+                //             pattern: 'solid',
+                //             fgColor: { argb: 'FFFFFFFF' }
+                //         }; // Xóa tất cả border
+                //     }
+                // }
 
 
                 // === DÒNG 7: Header chi tiết ===
@@ -1695,17 +1681,17 @@ router.post('/worklog', verifyToken, restrictTo('admin', 'dispatcher', 'manager'
                 setCell(worksheet, `C${length + 7}:D${length + 7}`, 'TỔ TRƯỞNG')
                 setCell(worksheet, `H${length + 7}:I${length + 7}`, 'QUẢN ĐỐC')
 
-                for (let row = length + 6; row <= length + 10; row++) {
-                    for (let col = 1; col <= 9; col++) { // A = 1, M = 13
-                        const cell = worksheet.getRow(row).getCell(col);
-                        cell.border = {};
-                        cell.fill = {
-                            type: 'pattern',
-                            pattern: 'solid',
-                            fgColor: { argb: 'FFFFFFFF' }
-                        }; // Xóa tất cả border
-                    }
-                }
+                // for (let row = length + 6; row <= length + 10; row++) {
+                //     for (let col = 1; col <= 9; col++) { // A = 1, M = 13
+                //         const cell = worksheet.getRow(row).getCell(col);
+                //         cell.border = {};
+                //         cell.fill = {
+                //             type: 'pattern',
+                //             pattern: 'solid',
+                //             fgColor: { argb: 'FFFFFFFF' }
+                //         }; // Xóa tất cả border
+                //     }
+                // }
 
 
                 if (signature) {
@@ -1888,17 +1874,17 @@ router.post('/meal_request', verifyToken, restrictTo('admin', 'dispatcher', 'man
                 const length = formattedData.length
                 setCell(worksheet, `E${length + 7}:G${length + 7}`, 'CÁN BỘ ĐI CA')
 
-                for (let row = length + 6; row <= length + 10; row++) {
-                    for (let col = 1; col <= 7; col++) { // A = 1, M = 13
-                        const cell = worksheet.getRow(row).getCell(col);
-                        cell.border = {};
-                        cell.fill = {
-                            type: 'pattern',
-                            pattern: 'solid',
-                            fgColor: { argb: 'FFFFFFFF' }
-                        }; // Xóa tất cả border
-                    }
-                }
+                // for (let row = length + 6; row <= length + 10; row++) {
+                //     for (let col = 1; col <= 7; col++) { // A = 1, M = 13
+                //         const cell = worksheet.getRow(row).getCell(col);
+                //         cell.border = {};
+                //         cell.fill = {
+                //             type: 'pattern',
+                //             pattern: 'solid',
+                //             fgColor: { argb: 'FFFFFFFF' }
+                //         }; // Xóa tất cả border
+                //     }
+                // }
 
                 if (signature) {
                     const response = await axios.get(signature, { responseType: 'arraybuffer' });
@@ -2360,4 +2346,28 @@ function setCell(ws, range, value) {
 function formatDate(date) {
     return date.toLocaleDateString('vi-VN'); // dạng 10/07/2025
 }
+const addTableBorders = (
+    ws,
+    startRow,
+    endRow,
+    startCol,
+    endCol
+) => {
+    const thin = { style: 'medium' };
+    const medium = { style: 'medium' };
+
+    for (let r = startRow; r <= endRow; r++) {
+        const row = ws.getRow(r);
+        for (let c = startCol; c <= endCol; c++) {
+            const cell = row.getCell(c);
+
+            cell.border = {
+                top: medium,
+                bottom: medium,
+                left: medium,
+                right: medium,
+            };
+        }
+    }
+};
 module.exports = router; 

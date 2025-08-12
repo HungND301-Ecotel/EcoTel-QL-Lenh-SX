@@ -241,7 +241,20 @@ const SafetyMeasures: React.FC = () => {
                 <Table sx={{ tableLayout: 'fixed', width: '100%', "& td, & th": { padding: "4px 8px" } }} >
                     <TableHead>
                         <TableRow>
-                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', width: 50 }}></TableCell>
+                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', width: 50 }}>
+                                <Checkbox
+                                    color="primary"
+                                    checked={safetyMeasures.length > 0 && selectedSafetyMeasures.length === safetyMeasures.length}
+                                    indeterminate={selectedSafetyMeasures.length > 0 && selectedSafetyMeasures.length < safetyMeasures.length}
+                                    onChange={() => {
+                                        if (selectedSafetyMeasures.length === safetyMeasures.length) {
+                                            setSelectedSafetyMeasures([]);
+                                        } else {
+                                            setSelectedSafetyMeasures(safetyMeasures.map((item: SafetyMeasure) => item._id));
+                                        }
+                                    }}
+                                />
+                            </TableCell>
                             {defaultColumns.map((item) =>
                                 visibleColumns.includes(item.id) && (
                                     <TableCell key={item.id} align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: item.width, minWidth: item.width }}>{item.label}</TableCell>

@@ -67,9 +67,13 @@ router.post('/', verifyToken, async (req, res, next) => {
  */
 router.get('/', verifyToken, async (req, res, next) => {
     try {
+        const readParam = req.query.read;
+        let read;
+        if (readParam === 'true') read = true;
+        else if (readParam === 'false') read = false;
         const notifications = await Notification.getUserNotifications(req.user._id, {
             type: req.query.type,
-            read: req.query.read === 'true',
+            read: read,
             priority: req.query.priority,
             startDate: req.query.startDate,
             endDate: req.query.endDate,
@@ -112,7 +116,20 @@ router.get('/unread/count', verifyToken, async (req, res, next) => {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
+router.get('/read/count', verifyToken, async (req, res, next) => {
+    try {
+        const count = await Notification.getReadCount(req.userId);
 
+        res.status(200).json({
+            status: 'success',
+            data:
+                count
+
+        });
+    } catch (err) {
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+});
 /**
  * @swagger
  * /api/notifications/{id}/read:
@@ -203,18 +220,11 @@ router.patch('/read/all', verifyToken, async (req, res, next) => {
  */
 router.delete('/:id', verifyToken, async (req, res, next) => {
     try {
-        const notification = await Notification.findById(req.params.id);
+        const notification = await Notification.findByIdAndDelete(req.params.id);
 
         if (!notification) {
             return next(new AppError('No notification found with that ID', 404));
         }
-
-        // Check if user is the recipient
-        if (notification.recipient.toString() !== req.user.id) {
-            return next(new AppError('You do not have permission to delete this notification', 403));
-        }
-
-        await notification.remove();
 
         res.status(200).json({
             status: 'success',

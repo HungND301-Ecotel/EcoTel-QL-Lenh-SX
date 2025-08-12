@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:soft/models/device_model.dart';
 import 'package:soft/models/location_model.dart';
 import 'package:soft/models/material_model.dart';
@@ -13,6 +14,7 @@ import 'package:soft/screens/work_log/widgets/shift_select.dart';
 import 'package:soft/services/order_service.dart';
 import 'package:soft/widgets/date_picker_button.dart';
 import 'package:soft/widgets/pay_roll_input.dart';
+import 'package:soft/widgets/time_picker_button.dart';
 import 'package:soft/widgets/vehicle_button.dart';
 
 class TaskAssignmentVehicleAdd extends StatefulWidget {
@@ -37,9 +39,9 @@ class _TaskAssignmentVehicleAdd
   DeviceModel? excavator;
   LocationModel? dump;
   MaterialModel? material;
-  SafetyMeasureModel? safetyMeasure;
   UserModel? user;
   ShiftModel? _shift;
+  String? _shiftHour;
 
   @override
   void initState() {
@@ -63,20 +65,16 @@ class _TaskAssignmentVehicleAdd
       if (order.material != null) {
         material = order.material;
       }
-
-      if (order.safetyMeasure != null) {
-        safetyMeasure = order.safetyMeasure;
-      }
       // Gán lại ngày làm việc nếu có
       _selectedDateTime = order.workingDate;
       _shift = order.shift;
-
+      _shiftHour = order.shiftHour ?? '';
       _descriptionController.text = order.workContent ?? '';
       _noteController.text = order.note ?? '';
       _distanceController.text = order.distance.toString();
       _liftHeightController.text =
           order.liftHeight.toString();
-      _noteController.text = order.note ?? '';
+      _safetyController.text = order.safetyMeasure ?? '';
     } else {
       userAndDevice.add({"user": null, "device": null});
     }
@@ -97,9 +95,43 @@ class _TaskAssignmentVehicleAdd
     });
   }
 
+  Future<void> _pickTime() async {
+    TimeOfDay initialTime;
+    if (_shiftHour != null && _shiftHour!.isNotEmpty) {
+      final parts = _shiftHour!.split(':');
+      final hour = int.tryParse(parts[0]) ?? 0;
+      final minute =
+          int.tryParse(parts.length > 1 ? parts[1] : '0') ??
+          0;
+      initialTime = TimeOfDay(hour: hour, minute: minute);
+    } else {
+      initialTime = TimeOfDay.now();
+    }
+    TimeOfDay? time = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+    );
+
+    if (time == null) return;
+
+    // Chuyển về chuỗi 24h
+    final now = DateTime.now();
+    final dt = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      time.hour,
+      time.minute,
+    );
+    setState(() {
+      _shiftHour = DateFormat('HH:mm').format(dt);
+    });
+  }
+
   void _updateShift(ShiftModel? selectedShift) {
     setState(() {
       _shift = selectedShift;
+      _shiftHour = (selectedShift?.startTime ?? '').trim();
     });
   }
 
@@ -111,11 +143,14 @@ class _TaskAssignmentVehicleAdd
       TextEditingController();
   final TextEditingController _noteController =
       TextEditingController();
+  final TextEditingController _safetyController =
+      TextEditingController();
   final OrderService _orderService = OrderService();
 
   void createOrder() async {
     String description = _descriptionController.text.trim();
     String note = _noteController.text.trim();
+    String safetyMeasure = _safetyController.text.trim();
 
     final distace = num.tryParse(_distanceController.text);
     final liftheight = num.tryParse(
@@ -156,6 +191,7 @@ class _TaskAssignmentVehicleAdd
               _selectedDateTime!.day,
             ).toIso8601String(),
         "shift": _shift?.id,
+        "shiftHour": _shiftHour,
         "assignedTo": item?["user"].id,
         "device": item?["device"],
         "location": dump?.id,
@@ -165,7 +201,7 @@ class _TaskAssignmentVehicleAdd
         "material": material?.id,
         "workContent": description,
         "note": note,
-        "safetyMeasure": safetyMeasure?.id,
+        "safetyMeasure": safetyMeasure,
       });
       if (!mounted) return;
       if (result['status'] == 'error') {
@@ -292,6 +328,16 @@ class _TaskAssignmentVehicleAdd
                 ShiftSelect(
                   initialShift: _shift,
                   onSelected: _updateShift,
+                ),
+                Text(
+                  'Giờ làm việc',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TimePickerButton(
+                  selectedDateTime: _shiftHour,
+                  onPressed: _pickTime,
                 ),
                 Text(
                   'Máy xúc',
@@ -460,40 +506,32 @@ class _TaskAssignmentVehicleAdd
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton.icon(
-                    icon: Icon(Icons.safety_check),
-                    onPressed: () async {
-                      final selectedSafetyMeasure =
-                          await Navigator.of(
-                            context,
-                            rootNavigator: true,
-                          ).pushNamed(
-                            AppRoute.safetyMeastureSelect,
-                          );
-                      if (selectedSafetyMeasure != null &&
-                          selectedSafetyMeasure
-                              is SafetyMeasureModel) {
-                        setState(() {
-                          safetyMeasure =
-                              selectedSafetyMeasure;
-                        });
-                      }
-                    },
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.black,
-                      backgroundColor: Colors.grey.shade300,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          0,
-                        ),
-                      ),
-                      alignment: Alignment.centerLeft,
-                    ),
-                    label: Text(
-                      safetyMeasure?.content ??
-                          'Biện pháp an toàn',
+                TextField(
+                  controller: _safetyController,
+                  maxLines: null,
+                  minLines: 5,
+                  decoration: InputDecoration(
+                    hintText:
+                        'Nhập/ghi chú biện pháp an toàn...',
+                    suffixIcon: IconButton(
+                      icon: Icon(Icons.library_add),
+                      tooltip: 'Chọn mẫu',
+                      onPressed: () async {
+                        final selected = await Navigator.of(
+                          context,
+                          rootNavigator: true,
+                        ).pushNamed(
+                          AppRoute.safetyMeastureSelect,
+                        );
+                        if (!mounted) return;
+                        if (selected is String &&
+                            selected.trim().isNotEmpty) {
+                          setState(() {
+                            _safetyController.text =
+                                selected;
+                          });
+                        }
+                      },
                     ),
                   ),
                 ),

@@ -31,6 +31,7 @@ import * as yup from 'yup';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/api.config';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
+import { Department } from '../../types';
 
 const validationSchema = yup.object({
     name: yup.string().required('Vui lòng nhập tên đơn vị'),
@@ -277,7 +278,20 @@ const Departments = () => {
                 }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}></TableCell>
+                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>
+                                <Checkbox
+                                    color="primary"
+                                    checked={departments.length > 0 && selectedDepartments.length === departments.length}
+                                    indeterminate={selectedDepartments.length > 0 && selectedDepartments.length < departments.length}
+                                    onChange={() => {
+                                        if (selectedDepartments.length === departments.length) {
+                                            setSelectedDepartments([]);
+                                        } else {
+                                            setSelectedDepartments(departments.map((item: Department) => item._id));
+                                        }
+                                    }}
+                                />
+                            </TableCell>
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) && (
                                     <TableCell key={col.id} align="center" sx={{

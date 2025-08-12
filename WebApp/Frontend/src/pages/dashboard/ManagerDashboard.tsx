@@ -139,7 +139,7 @@ const ManagerDashboard: React.FC = () => {
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <Box display="flex" gap={2} alignItems={'center'}>
                                         <OrderIcon color='disabled' fontSize='medium' />
-                                        <Typography variant='h6'>Chưa nhận lệnh</Typography>
+                                        <Typography variant='h6' sx={{ fontWeight: 'bold', }}>Chưa nhận lệnh</Typography>
                                     </Box>
                                     <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{orders.filter((o: Order) => o.status === "pending").length}</Typography>
                                 </Box>
