@@ -594,7 +594,7 @@ const Orders: React.FC = () => {
                                                 {order.shiftHour || ''}
                                             </TableCell>}
                                             {visibleColumns.includes('job') && <TableCell sx={{ border: '1px solid black' }}>
-                                                {order.job.name || ''}
+                                                {order.job?.name || ''}
                                             </TableCell>}
                                             {visibleColumns.includes('content') && <TableCell sx={{
                                                 whiteSpace: 'pre-wrap',
@@ -609,7 +609,7 @@ const Orders: React.FC = () => {
                                                 {order.device?.map((dev: any) => dev.code).join(', ') || order.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')}
                                             </TableCell>}
                                             {visibleColumns.includes('createdBy') && <TableCell sx={{ border: '1px solid black' }}>
-                                                {order.createdBy.username || ''}
+                                                {order.createdBy?.username || ''}
                                             </TableCell>}
                                             {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                                 {order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm') : ''}

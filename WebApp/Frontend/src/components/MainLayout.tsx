@@ -88,7 +88,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             text: 'Thông tin máy', icon: <PrecisionManufacturing color='primary' />, path: '/machines'
         },
         ["admin", "manager"].includes(user?.role) && {
-            text: 'Vị trí', icon: <LocationCity color='primary' />, path: '/locations'
+            text: 'Điểm đổ tải', icon: <LocationCity color='primary' />, path: '/locations'
         },
         ["admin", "manager"].includes(user?.role) && {
             text: 'Công việc', icon: <Work color='primary' />, path: '/jobs'

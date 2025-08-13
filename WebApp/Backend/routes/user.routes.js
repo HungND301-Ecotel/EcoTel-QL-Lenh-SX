@@ -6,6 +6,9 @@ const History = require('../models/History');
 const bcrypt = require('bcryptjs')
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 const xlsx = require('xlsx');
+const ExcelJS = require('exceljs');
+const Position = require('../models/Position')
+const Department = require('../models/Department')
 
 
 // Get all users
@@ -262,6 +265,102 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
             message: 'Tải thất bại',
             error: error.message
         });
+    }
+});
+router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+    try {
+        const users = await User.find()
+            .populate('department', 'name code')
+            .populate('position', 'name');
+        const departments = await Department.find();
+        const positions = await Position.find();
+
+        const workbook = new ExcelJS.Workbook();
+        const refSheet = workbook.addWorksheet('_refs', { state: 'hidden' });
+
+        // Ghi danh sách vào cột A (dept), B (pos) từ dòng 1
+        refSheet.getColumn('A').values = ['departments', ...departments.map(d => d.code)];
+        refSheet.getColumn('B').values = ['positions', ...positions.map(p => p.name)];
+
+        // Tạo named ranges cho 2 danh sách
+        const deptLen = departments.length;
+        const posLen = positions.length;
+
+        // Định nghĩa lại phạm vi tên
+        // Sử dụng $A$2:$A${deptLen + 1}
+        workbook.definedNames.add('DeptList', `_refs!$A$2:$A$${deptLen + 1}`);
+        workbook.definedNames.add('PosList', `_refs!$B$2:$B$${posLen + 1}`);
+
+        const worksheet = workbook.addWorksheet('DS.nguoi_dung');
+
+        // Định nghĩa tiêu đề và thuộc tính cột
+        worksheet.columns = [
+            { header: 'fullName', key: 'fullName', width: 25 },
+            { header: 'username', key: 'username', width: 15 },
+            { header: 'password', key: 'password', width: 15 },
+            { header: 'salaryCode', key: 'salaryCode', width: 15 },
+            { header: 'gender', key: 'gender', width: 10 },
+            { header: 'phone', key: 'phone', width: 15 },
+            { header: 'email', key: 'email', width: 30 },
+            { header: 'position', key: 'position', width: 20 },
+            { header: 'department', key: 'department', width: 20 },
+        ];
+
+        // Điền dữ liệu
+        const formattedUsers = users.map(user => ({
+            fullName: user?.fullName || '',
+            username: user?.username || '',
+            password: '',
+            salaryCode: user?.salaryCode || '',
+            gender: user?.gender || '',
+            phone: user?.phone || '',
+            email: user?.email || '',
+            position: user?.position?.name || '',
+            department: user?.department?.code || '',
+        }));
+        worksheet.addRows(formattedUsers);
+
+        // Thiết lập style
+        worksheet.eachRow((row, rowNumber) => {
+            row.eachCell(cell => {
+                cell.font = { size: (rowNumber === 1) ? 9 : 8, bold: (rowNumber === 1) };
+                cell.alignment = {
+                    vertical: 'middle',
+                    wrapText: (rowNumber === 1),
+                };
+            });
+            row.height = (rowNumber === 1) ? 40 : 20;
+        });
+
+        // Áp dụng Data Validation
+        const MAX_ROWS = Math.max(formattedUsers.length + 100, 1000);
+        for (let r = 2; r <= MAX_ROWS; r++) {
+            worksheet.getCell(`H${r}`).dataValidation = {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['PosList'],
+                showErrorMessage: true,
+                errorTitle: 'Invalid',
+                error: 'Vui lòng chọn từ danh sách Position.',
+            };
+            worksheet.getCell(`I${r}`).dataValidation = {
+                type: 'list',
+                allowBlank: true,
+                formulae: ['DeptList'],
+                showErrorMessage: true,
+                errorTitle: 'Invalid',
+                error: 'Vui lòng chọn từ danh sách Department.',
+            };
+        }
+
+        // Ghi và gửi file
+        const buffer = await workbook.xlsx.writeBuffer();
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=' + 'danh_sach_nguoi_dung.xlsx');
+        res.send(buffer);
+
+    } catch (err) {
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
     }
 });
 module.exports = router; 

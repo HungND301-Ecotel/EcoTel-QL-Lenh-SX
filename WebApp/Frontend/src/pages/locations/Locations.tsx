@@ -32,7 +32,7 @@ const defaultCenter = {
 };
 
 const validationSchema = yup.object({
-    name: yup.string().required('Vui lòng nhập tên vị trí'),
+    name: yup.string().required('Vui lòng nhập tên điểm đổ tải'),
     coordinates: yup.object({
         lat: yup.number().required('Vui lòng chọn vĩ độ'),
         lng: yup.number().required('Vui lòng chọn kinh độ'),
@@ -80,7 +80,7 @@ const Locations: React.FC = () => {
         mutationFn: (newLoc: Partial<Location>) => api.post('/locations', newLoc).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['locations'] });
-            showSuccessAlert('Thêm vị trí thành công');
+            showSuccessAlert('Thêm điểm đổ tải thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -93,7 +93,7 @@ const Locations: React.FC = () => {
             api.put(`/locations/${updatedLoc._id}`, updatedLoc).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['locations'] });
-            showSuccessAlert('Cập nhật vị trí thành công');
+            showSuccessAlert('Cập nhật điểm đổ tải thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -197,13 +197,13 @@ const Locations: React.FC = () => {
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h4">Quản lý vị trí</Typography>
+                <Typography variant="h4">Quản lý điểm đổ tải</Typography>
 
             </Box>
             <Box sx={{ flex: 1, flexDirection: 'column' }}>
                 <Typography><h3>Tìm kiếm</h3></Typography>
                 <TextField fullWidth size="small" value={value}
-                    placeholder='Tìm kiếm theo tên vị trí'
+                    placeholder='Tìm kiếm theo tên điểm đổ tải'
                     onChange={(e) => setValue(e.target.value)}>
                 </TextField>
             </Box>
@@ -215,7 +215,7 @@ const Locations: React.FC = () => {
                 >
                     <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                         <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
-                            Thêm vị trí
+                            Thêm điểm đổ tải
                         </Button>
                         <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
                             Xóa
@@ -223,7 +223,7 @@ const Locations: React.FC = () => {
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
-                    <DialogTitle>{selectedLocation ? 'Sửa vị trí' : 'Thêm vị trí'}</DialogTitle>
+                    <DialogTitle>{selectedLocation ? 'Sửa điểm đổ tải' : 'Thêm điểm đổ tải'}</DialogTitle>
                     <DialogContent>
                         <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -314,7 +314,7 @@ const Locations: React.FC = () => {
                 </AccordionDetails>
             </Accordion>
             <Box display="flex" justifyContent='space-between' alignItems='center' sx={{ mb: 2, mt: 2 }}>
-                <Typography variant="h3" sx={{ p: 2 }}>Bảng vị trí</Typography>
+                <Typography variant="h3" sx={{ p: 2 }}>Bảng điểm đổ tải</Typography>
                 <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
                     <Settings sx={{ fontSize: 30 }} />
                 </IconButton>

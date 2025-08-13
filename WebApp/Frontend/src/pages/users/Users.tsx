@@ -41,6 +41,7 @@ import {
     Close,
     InfoOutlined,
     ExpandMore,
+    Download,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -131,6 +132,33 @@ const Users: React.FC = () => {
             showErrorAlert(error.response?.data?.message || 'Lỗi khi import');
         }
     });
+
+    const exportExcel = useMutation({
+        mutationFn: () => {
+            return api.post('/users/exportFile', {}, {
+                responseType: 'blob',
+            }).then(res => {
+                const blob = new Blob([res.data], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                });
+
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `*.xlsx`);
+
+                document.body.appendChild(link);
+                link.click();
+                link.parentNode?.removeChild(link);
+                window.URL.revokeObjectURL(url);
+            });
+        },
+        onSuccess: () => { },
+        onError: (error: any) => {
+            showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
+        }
+    });
+
 
     const updateMutation = useMutation({
         mutationFn: (updatedUser: Partial<User>) =>
@@ -362,7 +390,7 @@ const Users: React.FC = () => {
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
                 <Typography variant="h4">Quản lý người dùng</Typography>
-                <Box>
+                <Box display="flex" gap={2}>
                     <input
                         id="upload-excel"
                         type="file"
@@ -388,6 +416,14 @@ const Users: React.FC = () => {
                             Tải lên excel
                         </Button>
                     </label>
+                    <Button
+                        component="span"
+                        variant="contained"
+                        startIcon={<Download />}
+                        onClick={() => exportExcel.mutate()}
+                    >
+                        Tải xuống
+                    </Button>
                 </Box>
             </Box>
             <Box sx={{ flex: 1, flexDirection: 'column', mb: 2 }}>

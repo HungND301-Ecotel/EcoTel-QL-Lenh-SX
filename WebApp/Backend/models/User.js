@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema({
     salaryCode: { type: String },
     department: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
     position: { type: mongoose.Schema.Types.ObjectId, ref: 'Position' },
-    role: { type: String },
+    role: { type: String, default: "employee" },
     active: {
         type: Boolean,
         default: true
