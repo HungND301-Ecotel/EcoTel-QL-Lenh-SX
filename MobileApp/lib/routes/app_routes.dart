@@ -8,6 +8,7 @@ import 'package:soft/screens/signin/signin.dart';
 import 'package:soft/screens/task_assignment/task_assignment_device_type_select.dart';
 import 'package:soft/screens/task_assignment/task_assignment_dump_site_select.dart';
 import 'package:soft/screens/task_assignment/task_assignment_excavator_select.dart';
+import 'package:soft/screens/task_assignment/task_assignment_material_select.dart';
 import 'package:soft/screens/task_assignment/task_assignment_safety_measure_select.dart';
 import 'package:soft/screens/task_assignment/task_assignment_vehicle_select.dart';
 
@@ -26,6 +27,7 @@ class AppRoute {
   static const String excavatorSelect = '/excavatorSelect';
   static const String safetyMeastureSelect =
       '/safetyMeastureSelect';
+  static const String materialSelect = '/materialSelect';
 
   static Route<dynamic> generateRoute(
     RouteSettings settings,
@@ -62,6 +64,10 @@ class AppRoute {
       case deviceTypeSelect:
         return MaterialPageRoute(
           builder: (_) => TaskAssignmentDeviceTypeSelect(),
+        );
+      case materialSelect:
+        return MaterialPageRoute(
+          builder: (_) => TaskAssignmentMaterialSelect(),
         );
       case excavatorSelect:
         return MaterialPageRoute(

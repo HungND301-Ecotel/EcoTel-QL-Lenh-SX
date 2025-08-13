@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:soft/models/material_model.dart';
 import 'package:soft/models/order_model.dart';
 import 'package:soft/models/user_model.dart';
+import 'package:soft/routes/app_routes.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
 import 'package:soft/services/shift_report_service.dart';
 import 'package:soft/widgets/pay_roll_input.dart';
@@ -76,10 +78,9 @@ class _DirectWorkDozer extends State<DirectWorkDozer> {
         final controller =
             _vehicleControllers[item.vehicle.id];
         if (controller != null) {
-          controller.materialType.text =
-              item.materialType?.toString() ?? '';
-          controller.production.text =
-              item.production?.toString() ?? '';
+          controller.materialType = item.materialType;
+          controller.workingMinutes.text =
+              item.workingMinutes?.toString() ?? '';
         }
       }
       for (var item in report.vehicleSummaries ?? []) {
@@ -121,9 +122,9 @@ class _DirectWorkDozer extends State<DirectWorkDozer> {
 
       vehiclesReport.add({
         "vehicle": id,
-        "materialType": widget.order.material?.id,
-        "production": int.tryParse(
-          controller.production.text,
+        "materialType": controller.materialType?.id,
+        "workingMinutes": int.tryParse(
+          controller.workingMinutes.text,
         ),
       });
     }
@@ -264,16 +265,62 @@ class _DirectWorkDozer extends State<DirectWorkDozer> {
                                   ),
                                 ),
                                 SizedBox(height: 16),
-                                Text(
-                                  " Chủng loại: ${widget.order.material?.name}",
-                                  style: TextStyle(
-                                    fontWeight:
-                                        FontWeight.bold,
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: TextButton.icon(
+                                    icon: Icon(
+                                      Icons.casino_sharp,
+                                    ),
+                                    onPressed: () async {
+                                      final selectedMaterial =
+                                          await Navigator.of(
+                                            context,
+                                            rootNavigator:
+                                                true,
+                                          ).pushNamed(
+                                            AppRoute
+                                                .materialSelect,
+                                          );
+
+                                      if (selectedMaterial !=
+                                              null &&
+                                          selectedMaterial
+                                              is MaterialModel) {
+                                        setState(() {
+                                          deviceController
+                                                  .materialType =
+                                              selectedMaterial;
+                                        });
+                                      }
+                                    },
+                                    style: TextButton.styleFrom(
+                                      foregroundColor:
+                                          Colors.black,
+                                      backgroundColor:
+                                          Colors
+                                              .grey
+                                              .shade300,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(
+                                              0,
+                                            ),
+                                      ),
+                                      alignment:
+                                          Alignment
+                                              .centerLeft,
+                                    ),
+                                    label: Text(
+                                      deviceController
+                                              .materialType
+                                              ?.name ??
+                                          'Loại hàng',
+                                    ),
                                   ),
                                 ),
                                 SizedBox(height: 16),
                                 Text(
-                                  "Số chuyến:",
+                                  "Giờ sản phẩm:",
                                   style: TextStyle(
                                     fontWeight:
                                         FontWeight.bold,
@@ -282,7 +329,7 @@ class _DirectWorkDozer extends State<DirectWorkDozer> {
                                 TextField(
                                   controller:
                                       deviceController
-                                          .production,
+                                          .workingMinutes,
                                   keyboardType:
                                       TextInputType.number,
                                   inputFormatters: [

@@ -1,27 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:soft/models/location_model.dart';
 import 'package:soft/models/material_model.dart';
 import 'package:soft/models/order_model.dart';
 import 'package:soft/models/user_model.dart';
 import 'package:soft/routes/app_routes.dart';
+import 'package:soft/routes/task_assignment_route.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
 import 'package:soft/services/shift_report_service.dart';
 import 'package:soft/widgets/pay_roll_input.dart';
 import 'package:soft/screens/work_log/views/ReportTask/DirectWork/controller.dart';
 
-class DirectWorkExcavator extends StatefulWidget {
+class DirectWorkServiceVehicle extends StatefulWidget {
   final OrderModel order;
-  const DirectWorkExcavator({
+  const DirectWorkServiceVehicle({
     super.key,
     required this.order,
   });
   @override
   State<StatefulWidget> createState() =>
-      _DirectWorkExcavator();
+      _DirectWorkServiceVehicle();
 }
 
-class _DirectWorkExcavator
-    extends State<DirectWorkExcavator> {
+class _DirectWorkServiceVehicle
+    extends State<DirectWorkServiceVehicle> {
   UserModel? user;
   final Map<String, VehicleReportControllers>
   _vehicleControllers = {};
@@ -83,7 +85,19 @@ class _DirectWorkExcavator
         final controller =
             _vehicleControllers[item.vehicle.id];
         if (controller != null) {
-          controller.materialType = item.materialType;
+          if (item.fromLocation != null) {
+            controller.fromLocation = item.fromLocation;
+          }
+          if (item.toLocation != null) {
+            controller.toLocation = item.toLocation;
+          }
+          if (item.materialType != null) {
+            controller.materialType = item.materialType;
+          }
+          controller.workingMinutes.text =
+              item.workingMinutes?.toString() ?? '';
+          controller.distanceKm.text =
+              item.distanceKm?.toString() ?? '';
           controller.tripCount.text =
               item.tripCount?.toString() ?? '';
         }
@@ -128,6 +142,14 @@ class _DirectWorkExcavator
       vehiclesReport.add({
         "vehicle": id,
         "materialType": controller.materialType?.id,
+        "fromLocation": controller.fromLocation?.id,
+        "toLocation": controller.toLocation?.id,
+        "workingMinutes": int.tryParse(
+          controller.workingMinutes.text,
+        ),
+        "distanceKm": int.tryParse(
+          controller.distanceKm.text,
+        ),
         "tripCount": int.tryParse(
           controller.tripCount.text,
         ),
@@ -209,11 +231,6 @@ class _DirectWorkExcavator
 
   @override
   Widget build(BuildContext context) {
-    final excavator =
-        (widget.order.excavator != null &&
-                widget.order.excavator!.isNotEmpty)
-            ? widget.order.excavator!.last
-            : null;
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -267,6 +284,131 @@ class _DirectWorkExcavator
                                   style: TextStyle(
                                     fontWeight:
                                         FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  "Từ điểm:",
+                                  style: TextStyle(
+                                    fontWeight:
+                                        FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: TextButton.icon(
+                                    icon: Icon(
+                                      Icons.casino_sharp,
+                                    ),
+                                    onPressed: () async {
+                                      final selectedLocation =
+                                          await Navigator.of(
+                                            context,
+                                            rootNavigator:
+                                                true,
+                                          ).pushNamed(
+                                            AppRoute
+                                                .locationSelect,
+                                          );
+
+                                      if (selectedLocation !=
+                                              null &&
+                                          selectedLocation
+                                              is LocationModel) {
+                                        print(
+                                          'Đã chọn địa điểm: ${selectedLocation.name}',
+                                        );
+                                        setState(() {
+                                          deviceController
+                                                  .fromLocation =
+                                              selectedLocation;
+                                        });
+                                      }
+                                    },
+                                    style: TextButton.styleFrom(
+                                      foregroundColor:
+                                          Colors.black,
+                                      backgroundColor:
+                                          Colors
+                                              .grey
+                                              .shade300,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(
+                                              0,
+                                            ),
+                                      ),
+                                      alignment:
+                                          Alignment
+                                              .centerLeft,
+                                    ),
+                                    label: Text(
+                                      deviceController
+                                              .fromLocation
+                                              ?.name ??
+                                          'Từ điểm',
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  "Đến điểm:",
+                                  style: TextStyle(
+                                    fontWeight:
+                                        FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: TextButton.icon(
+                                    icon: Icon(
+                                      Icons.casino_sharp,
+                                    ),
+                                    onPressed: () async {
+                                      final selectedLocation =
+                                          await Navigator.of(
+                                            context,
+                                            rootNavigator:
+                                                true,
+                                          ).pushNamed(
+                                            AppRoute
+                                                .locationSelect,
+                                          );
+
+                                      if (selectedLocation !=
+                                              null &&
+                                          selectedLocation
+                                              is LocationModel) {
+                                        setState(() {
+                                          deviceController
+                                                  .toLocation =
+                                              selectedLocation;
+                                        });
+                                      }
+                                    },
+                                    style: TextButton.styleFrom(
+                                      foregroundColor:
+                                          Colors.black,
+                                      backgroundColor:
+                                          Colors
+                                              .grey
+                                              .shade300,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(
+                                              0,
+                                            ),
+                                      ),
+                                      alignment:
+                                          Alignment
+                                              .centerLeft,
+                                    ),
+                                    label: Text(
+                                      deviceController
+                                              .toLocation
+                                              ?.name ??
+                                          'Đến điểm',
+                                    ),
                                   ),
                                 ),
                                 SizedBox(height: 16),
@@ -335,6 +477,44 @@ class _DirectWorkExcavator
                                   controller:
                                       deviceController
                                           .tripCount,
+                                  keyboardType:
+                                      TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter
+                                        .digitsOnly,
+                                  ],
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  "Km di chuyển:",
+                                  style: TextStyle(
+                                    fontWeight:
+                                        FontWeight.bold,
+                                  ),
+                                ),
+                                TextField(
+                                  controller:
+                                      deviceController
+                                          .distanceKm,
+                                  keyboardType:
+                                      TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter
+                                        .digitsOnly,
+                                  ],
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  "Giờ hoạt động:",
+                                  style: TextStyle(
+                                    fontWeight:
+                                        FontWeight.bold,
+                                  ),
+                                ),
+                                TextField(
+                                  controller:
+                                      deviceController
+                                          .workingMinutes,
                                   keyboardType:
                                       TextInputType.number,
                                   inputFormatters: [

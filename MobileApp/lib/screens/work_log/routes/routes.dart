@@ -6,6 +6,7 @@ import 'package:soft/screens/work_log/views/QrCode/qr_code.dart';
 import 'package:soft/screens/work_log/views/ReportTask/DirectWork/dozer/direct_work_dozer.dart';
 import 'package:soft/screens/work_log/views/ReportTask/DirectWork/drilling/direct_work_drilling.dart';
 import 'package:soft/screens/work_log/views/ReportTask/DirectWork/excavator/direct_work_excavator.dart';
+import 'package:soft/screens/work_log/views/ReportTask/DirectWork/serviceVehicle/direct_work_service_vehicle.dart';
 import 'package:soft/screens/work_log/views/ReportTask/DirectWork/vehicle/direct_work_multi_excavator_report.dart';
 import 'package:soft/screens/work_log/views/ReportTask/DirectWork/vehicle/direct_work_multi_vehiclereport.dart';
 import 'package:soft/screens/work_log/views/ReportTask/IndirectWork/indirect_work_report.dart';
@@ -214,8 +215,15 @@ class WorkLogRoute extends StatelessWidget {
           case WorkLogRoutes.directWorkDozer:
             final order = settings.arguments as OrderModel;
             return MaterialPageRoute(
+              builder: (_) => DirectWorkDozer(order: order),
+            );
+          case WorkLogRoutes.directWorkServiceVehicle:
+            final order = settings.arguments as OrderModel;
+            return MaterialPageRoute(
               builder:
-                  (_) => DirectWorkDozer(order: order),
+                  (_) => DirectWorkServiceVehicle(
+                    order: order,
+                  ),
             );
           case WorkLogRoutes.directWorkMultiExcavatorReport:
             final order = settings.arguments as OrderModel;
@@ -313,6 +321,8 @@ class WorkLogRoutes {
   static const String directWorkExcavator =
       '/directWorkExcavator';
   static const String directWorkDozer = '/directWorkDozer';
+  static const String directWorkServiceVehicle =
+      '/directWorkServiceVehicle';
   static const String directWorkMultiExcavatorReport =
       '/directWorkMultiExcavatorReport';
   static const String indirectWorkReport =

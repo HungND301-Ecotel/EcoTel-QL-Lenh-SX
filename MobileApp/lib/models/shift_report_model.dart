@@ -1,4 +1,7 @@
 // device model
+import 'package:soft/models/location_model.dart';
+import 'package:soft/models/material_model.dart';
+
 class Device {
   final String id;
   final String code;
@@ -21,9 +24,13 @@ class VehicleShiftReportModel {
   final Device? vehicle;
   final Device? excavator;
   final String? dumpingLocation;
-  final String? materialType;
+  final MaterialModel? materialType;
+  final LocationModel? fromLocation;
+  final LocationModel? toLocation;
   final num? drillDepth;
   final num? hardness;
+  final num? workingMinutes;
+  final num? distanceKm;
   final num? production;
   final num? tripCount;
 
@@ -34,6 +41,10 @@ class VehicleShiftReportModel {
     this.materialType,
     this.drillDepth,
     this.hardness,
+    this.fromLocation,
+    this.toLocation,
+    this.workingMinutes,
+    this.distanceKm,
     this.production,
     this.tripCount,
   });
@@ -51,9 +62,26 @@ class VehicleShiftReportModel {
               ? Device.fromJson(json?['excavator'])
               : null,
       dumpingLocation: json?['dumpingLocation'],
-      materialType: json?['materialType'],
+      materialType:
+          json?['materialType'] != null
+              ? MaterialModel.fromJson(
+                json?['materialType'],
+              )
+              : null,
       drillDepth: json?['drillDepth'],
       hardness: json?['hardness'],
+      fromLocation:
+          json?['fromLocation'] != null
+              ? LocationModel.fromJson(
+                json?['fromLocation'],
+              )
+              : null,
+      toLocation:
+          json?['toLocation'] != null
+              ? LocationModel.fromJson(json?['toLocation'])
+              : null,
+      workingMinutes: json?['workingMinutes'],
+      distanceKm: json?['distanceKm'],
       production: json?['production'],
       tripCount: json?['tripCount'],
     );
@@ -63,9 +91,13 @@ class VehicleShiftReportModel {
       'vehicle': vehicle?.toJson(),
       'excavator': excavator?.toJson(),
       'dumpingLocation': dumpingLocation,
-      'materialType': materialType,
+      'materialType': materialType?.toJson(),
       'drillDepth': drillDepth,
       'hardness': hardness,
+      'fromLocation': fromLocation?.toJson(),
+      'toLocation': toLocation?.toJson(),
+      'workingMinutes': workingMinutes,
+      'distanceKm': distanceKm,
       'production': production,
       'tripCount': tripCount,
     };

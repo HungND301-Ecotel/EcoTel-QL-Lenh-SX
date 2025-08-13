@@ -501,7 +501,6 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                         onPressed: () {
                           if ([
                             'Vận hành xe',
-                            'Vận hành xe phục vụ',
                           ].contains(data?.job.type)) {
                             if (data!.excavator!.length >
                                 1) {
@@ -543,6 +542,15 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                             Navigator.pushNamed(
                               context,
                               WorkLogRoutes.directWorkDozer,
+                              arguments: data,
+                            );
+                          } else if ([
+                            'Vận hành xe phục vụ',
+                          ].contains(data?.job.type)) {
+                            Navigator.pushNamed(
+                              context,
+                              WorkLogRoutes
+                                  .directWorkServiceVehicle,
                               arguments: data,
                             );
                           } else {

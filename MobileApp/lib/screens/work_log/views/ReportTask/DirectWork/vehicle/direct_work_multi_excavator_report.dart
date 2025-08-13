@@ -100,8 +100,7 @@ class _DirectWorkMultiExcavatorReport
         if (controller != null) {
           controller.dumpingLocation.text =
               item.dumpingLocation?.toString() ?? '';
-          controller.materialType.text =
-              item.materialType?.toString() ?? '';
+          controller.materialType = item.materialType;
           controller.tripCount.text =
               item.tripCount?.toString() ?? '';
         }

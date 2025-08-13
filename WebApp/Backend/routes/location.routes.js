@@ -73,11 +73,6 @@ router.get('/', verifyToken, async (req, res) => {
             const regex = new RegExp(req.query.name, 'i');
             query.name = regex;
         }
-        if (req.user?.role === "employee") {
-            const order = await Order.findOne({ assignedTo: req.userId, status: { $nin: ["completed", "cancel"] } })
-
-            query._id = order?.location;
-        }
         const locations = await Location.find(query);
         res.status(200).send({ status: 'success', data: locations });
     } catch (err) {

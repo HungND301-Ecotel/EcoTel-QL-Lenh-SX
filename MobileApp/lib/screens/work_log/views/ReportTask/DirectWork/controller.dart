@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:soft/models/location_model.dart';
+import 'package:soft/models/material_model.dart';
 
 class VehicleReportControllers {
   final TextEditingController dumpingLocation =
       TextEditingController();
-  final TextEditingController materialType =
-      TextEditingController();
+  MaterialModel? materialType;
   final TextEditingController drillDepth =
       TextEditingController();
   final TextEditingController hardness =
       TextEditingController();
   final TextEditingController production =
+      TextEditingController();
+  LocationModel? fromLocation;
+  LocationModel? toLocation;
+  final TextEditingController workingMinutes =
+      TextEditingController();
+  final TextEditingController distanceKm =
       TextEditingController();
   final TextEditingController tripCount =
       TextEditingController();

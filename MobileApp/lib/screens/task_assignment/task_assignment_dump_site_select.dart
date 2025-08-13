@@ -149,6 +149,9 @@ class _TaskAssignmentDumpSiteSelect
                                         item.name,
                                       ),
                                       onTap: () {
+                                        print(
+                                          "Đã chọn địa điểm: ${item.name}",
+                                        );
                                         Navigator.pop(
                                           context,
                                           item,
