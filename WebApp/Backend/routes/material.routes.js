@@ -8,7 +8,7 @@ const Order = require('../models/Order');
 
 router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
-        const { name, density, masss } = req.body
+        const { name, density, mass } = req.body
         const existingMaterial = await Material.findOne({ name });
         if (existingMaterial) {
             return res.status(400).send({ status: 'error', message: 'Tên hàng hóa đã tồn tại' });
