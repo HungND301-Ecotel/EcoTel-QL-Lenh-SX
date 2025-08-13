@@ -248,13 +248,36 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
         const sheet = workbook.SheetNames[0];
         const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheet]);
-        if (req.user.role === 'manager' && req.user.department) {
-            for (const row of data) {
-                row.department = req.user.department?._id;
+        const usersToImport = data.filter(row => row.fullName);
+
+        if (usersToImport.length === 0) {
+            return res.status(400).json({ status: 'error', message: 'Không tìm thấy dữ liệu người dùng hợp lệ trong file.' });
+        }
+        console.log(usersToImport)
+        const processedUsers = [];
+        for (const row of usersToImport) {
+            const newUser = { ...row };
+            if (newUser.password) {
+                const salt = await bcrypt.genSalt(10);
+                newUser.password = await bcrypt.hash(newUser.password.toString(), salt);
             }
+            if (newUser.department) {
+                const department = await Department.findOne({ code: newUser.department })
+                if (department) {
+                    newUser.department = department?._id
+                }
+            }
+            if (newUser.position) {
+                const position = await Position.findOne({ name: newUser.position })
+                if (position) {
+                    newUser.position = position?._id
+                }
+            }
+            processedUsers.push(newUser);
+            console.log(newUser)
         }
 
-        await User.insertMany(data);
+        await User.insertMany(processedUsers);
         res.status(200).json({
             status: 'success',
             message: 'Tải thành cồng',
@@ -269,27 +292,22 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
 });
 router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
-        const users = await User.find()
-            .populate('department', 'name code')
-            .populate('position', 'name');
+        const user = req.user
+        const query = {}
+
+        if (user?.role === "manager") {
+            query.department = user?.department?._id;
+        }
+
+        if (req.query.department) {
+            query.department = req.query.department
+        }
+        const users = await User.find(query).populate('department', 'name code').populate('position', 'name');
         const departments = await Department.find();
         const positions = await Position.find();
 
         const workbook = new ExcelJS.Workbook();
-        const refSheet = workbook.addWorksheet('_refs', { state: 'hidden' });
 
-        // Ghi danh sách vào cột A (dept), B (pos) từ dòng 1
-        refSheet.getColumn('A').values = ['departments', ...departments.map(d => d.code)];
-        refSheet.getColumn('B').values = ['positions', ...positions.map(p => p.name)];
-
-        // Tạo named ranges cho 2 danh sách
-        const deptLen = departments.length;
-        const posLen = positions.length;
-
-        // Định nghĩa lại phạm vi tên
-        // Sử dụng $A$2:$A${deptLen + 1}
-        workbook.definedNames.add('DeptList', `_refs!$A$2:$A$${deptLen + 1}`);
-        workbook.definedNames.add('PosList', `_refs!$B$2:$B$${posLen + 1}`);
 
         const worksheet = workbook.addWorksheet('DS.nguoi_dung');
 
@@ -304,6 +322,7 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
             { header: 'email', key: 'email', width: 30 },
             { header: 'position', key: 'position', width: 20 },
             { header: 'department', key: 'department', width: 20 },
+            { header: 'role', key: 'role', width: 20 },
         ];
 
         // Điền dữ liệu
@@ -317,6 +336,7 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
             email: user?.email || '',
             position: user?.position?.name || '',
             department: user?.department?.code || '',
+            role: user?.role || '',
         }));
         worksheet.addRows(formattedUsers);
 
@@ -324,34 +344,50 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
         worksheet.eachRow((row, rowNumber) => {
             row.eachCell(cell => {
                 cell.font = { size: (rowNumber === 1) ? 9 : 8, bold: (rowNumber === 1) };
-                cell.alignment = {
-                    vertical: 'middle',
-                    wrapText: (rowNumber === 1),
-                };
+                cell.alignment = { vertical: 'middle', wrapText: (rowNumber === 1) };
             });
             row.height = (rowNumber === 1) ? 40 : 20;
         });
 
+        const posList = [...new Set(positions.map(p => p.name).filter(Boolean))];
+        const deptList = [...new Set(departments.map(d => d.code).filter(Boolean))];
+
+        worksheet.getColumn('X').values = ['positions', ...posList];
+        worksheet.getColumn('Y').values = ['departments', ...deptList];
+        worksheet.getColumn('X').hidden = true;
+        worksheet.getColumn('Y').hidden = true;
+
         // Áp dụng Data Validation
-        const MAX_ROWS = Math.max(formattedUsers.length + 100, 1000);
-        for (let r = 2; r <= MAX_ROWS; r++) {
-            worksheet.getCell(`H${r}`).dataValidation = {
-                type: 'list',
-                allowBlank: true,
-                formulae: ['PosList'],
-                showErrorMessage: true,
-                errorTitle: 'Invalid',
-                error: 'Vui lòng chọn từ danh sách Position.',
-            };
-            worksheet.getCell(`I${r}`).dataValidation = {
-                type: 'list',
-                allowBlank: true,
-                formulae: ['DeptList'],
-                showErrorMessage: true,
-                errorTitle: 'Invalid',
-                error: 'Vui lòng chọn từ danh sách Department.',
-            };
-        }
+        const MAX = Math.max(worksheet.rowCount + 100, 1000); // dư dòng để người dùng thêm
+        worksheet.dataValidations.add(`E2:E${MAX}`, {
+            type: 'list',
+            allowBlank: true,
+            formulae: ['"Nam,Nữ"'], // phải có dấu " ... "
+            showErrorMessage: true,
+            errorTitle: 'Giá trị không hợp lệ',
+            error: 'Chỉ được chọn Nam hoặc Nữ.',
+        });
+        worksheet.dataValidations.add(`J2:J${MAX}`, {
+            type: 'list',
+            allowBlank: true,
+            formulae: ['"manager,employee"'], // phải có dấu " ... "
+            showErrorMessage: true,
+            errorTitle: 'Giá trị không hợp lệ',
+        });
+        worksheet.dataValidations.add(`H2:H${MAX}`, {
+            type: 'list',
+            allowBlank: true,
+            formulae: [`=$X$2:$X$${posList.length + 1}`],   // nguồn position
+            showErrorMessage: true,
+            errorTitle: 'Giá trị không hợp lệ',
+        });
+        worksheet.dataValidations.add(`I2:I${MAX}`, {
+            type: 'list',
+            allowBlank: true,
+            formulae: [`=$Y$2:$Y$${deptList.length + 1}`], // nguồn department
+            showErrorMessage: true,
+            errorTitle: 'Giá trị không hợp lệ',
+        });
 
         // Ghi và gửi file
         const buffer = await workbook.xlsx.writeBuffer();

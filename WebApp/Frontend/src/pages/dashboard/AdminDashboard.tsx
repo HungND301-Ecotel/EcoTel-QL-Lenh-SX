@@ -353,12 +353,17 @@ const AdminDashboard: React.FC = () => {
                                             }}>{item.typeName}</TableCell>
                                         ))}
                                     </TableRow>
-                                    <TableRow>
+                                    <TableRow sx={{
+                                        position: 'sticky',
+                                        top: 34,
+                                        zIndex: 1,
+                                    }}>
                                         {count.map((item: any) => (
                                             <>
                                                 <TableCell align='center' sx={{
-                                                    border: '1px solid black', minWidth: 150, position: 'sticky',
-                                                    top: 56,
+                                                    border: '1px solid black', minWidth: 150,
+                                                    position: 'sticky',
+                                                    top: 100,
                                                     zIndex: 1,
                                                     fontWeight: 'bold',
                                                     fontSize: 18,
@@ -366,7 +371,7 @@ const AdminDashboard: React.FC = () => {
                                                 }}>Chờ điều động</TableCell>
                                                 <TableCell align='center' sx={{
                                                     border: '1px solid black', minWidth: 150, position: 'sticky',
-                                                    top: 56,
+                                                    top: 100,
                                                     zIndex: 1,
                                                     fontWeight: 'bold',
                                                     fontSize: 18,
@@ -374,7 +379,7 @@ const AdminDashboard: React.FC = () => {
                                                 }}>Đang hoạt động</TableCell>
                                                 <TableCell align='center' sx={{
                                                     border: '1px solid black', minWidth: 50, position: 'sticky',
-                                                    top: 56,
+                                                    top: 100,
                                                     zIndex: 1,
                                                     fontWeight: 'bold',
                                                     fontSize: 18,
@@ -382,7 +387,7 @@ const AdminDashboard: React.FC = () => {
                                                 }}>Hỏng</TableCell>
                                                 <TableCell align='center' sx={{
                                                     border: '1px solid black', minWidth: 100, position: 'sticky',
-                                                    top: 56,
+                                                    top: 100,
                                                     zIndex: 1,
                                                     fontWeight: 'bold',
                                                     fontSize: 18

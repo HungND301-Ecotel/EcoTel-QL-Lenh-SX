@@ -285,7 +285,10 @@ const ManagerDashboard: React.FC = () => {
                                             }}>{item.typeName}</TableCell>
                                         ))}
                                     </TableRow>
-                                    <TableRow>
+                                    <TableRow sx={{
+                                        position: 'sticky',
+                                        top: 34,
+                                    }}>
                                         {count.map((item: any) => (
                                             <>
                                                 <TableCell align='center' sx={{
