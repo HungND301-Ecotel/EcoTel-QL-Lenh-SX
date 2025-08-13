@@ -105,15 +105,16 @@ const AdminDashboard: React.FC = () => {
                             >
                                 <Box>
                                     <Typography
-                                        variant="h6"
+                                        variant="h4"
                                         gutterBottom
                                         sx={{ fontWeight: 'bold', }}
                                     >
                                         Lệnh sản xuất
                                     </Typography>
                                     <Typography
-                                        variant="h6"
+                                        variant="h4"
                                         gutterBottom
+                                        sx={{ fontWeight: 'bold', }}
                                     >
                                         {orders.length}
                                     </Typography>
@@ -184,14 +185,14 @@ const AdminDashboard: React.FC = () => {
                             >
                                 <Box>
                                     <Typography
-                                        variant="h6"
+                                        variant="h4"
                                         gutterBottom
                                         sx={{ fontWeight: 'bold', }}
                                     >
                                         Phương tiện
                                     </Typography>
                                     <Typography
-                                        variant="h6"
+                                        variant="h4"
                                         gutterBottom
                                         sx={{ fontWeight: 'bold', }}
                                     >
@@ -257,7 +258,7 @@ const AdminDashboard: React.FC = () => {
                             >
                                 <Box>
                                     <Typography
-                                        variant="h6"
+                                        variant="h4"
                                         gutterBottom
                                         sx={{ fontWeight: 'bold', }}
                                     >
@@ -292,7 +293,7 @@ const AdminDashboard: React.FC = () => {
                             >
                                 <Box>
                                     <Typography
-                                        variant="h6"
+                                        variant="h4"
                                         gutterBottom
                                         sx={{ fontWeight: 'bold', }}
                                     >
@@ -326,7 +327,9 @@ const AdminDashboard: React.FC = () => {
                 {tabIndex === 0 && <Box>
                     <Paper sx={{ width: '100%', overflowX: "initial" }}>
                         <TableContainer sx={{ height: '80vh' }}>
-                            <Table stickyHeader aria-label="sticky table">
+                            <Table stickyHeader aria-label="sticky table" sx={{
+                                "& td, & th": { padding: "4px 8px", top: 0 },
+                            }}>
                                 <TableHead>
                                     <TableRow>
                                         <TableCell align='center' rowSpan={2} sx={{

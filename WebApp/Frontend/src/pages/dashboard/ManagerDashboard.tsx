@@ -107,14 +107,14 @@ const ManagerDashboard: React.FC = () => {
                             >
                                 <Box>
                                     <Typography
-                                        variant="h6"
+                                        variant="h4"
                                         gutterBottom
                                         sx={{ fontWeight: 'bold', }}
                                     >
                                         Lệnh sản xuất
                                     </Typography>
                                     <Typography
-                                        variant="h6"
+                                        variant="h4"
                                         gutterBottom
                                         sx={{ fontWeight: 'bold', }}
                                     >
@@ -187,14 +187,14 @@ const ManagerDashboard: React.FC = () => {
                             >
                                 <Box>
                                     <Typography
-                                        variant="h6"
+                                        variant="h4"
                                         gutterBottom
                                         sx={{ fontWeight: 'bold', }}
                                     >
                                         Phương tiện
                                     </Typography>
                                     <Typography
-                                        variant="h6"
+                                        variant="h4"
                                         gutterBottom
                                         sx={{ fontWeight: 'bold', }}
                                     >
@@ -259,7 +259,9 @@ const ManagerDashboard: React.FC = () => {
                 {tabIndex === 0 && <Box>
                     <Paper sx={{ width: '100%', overflowX: "initial" }}>
                         <TableContainer sx={{ height: '80vh' }}>
-                            <Table stickyHeader aria-label="sticky table">
+                            <Table stickyHeader aria-label="sticky table" sx={{
+                                "& td, & th": { padding: "4px 8px", top: 0 },
+                            }}>
                                 <TableHead>
                                     <TableRow>
                                         <TableCell align='center' rowSpan={2} sx={{
@@ -329,6 +331,7 @@ const ManagerDashboard: React.FC = () => {
                                                 position: 'sticky',
                                                 left: 0,
                                                 fontWeight: 'bold',
+                                                backgroundColor: 'white',
                                                 fontSize: 18,
                                                 zIndex: 1,
                                                 minWidth: 150
