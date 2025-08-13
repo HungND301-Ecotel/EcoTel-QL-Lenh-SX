@@ -17,6 +17,8 @@ const Shiftreport = new mongoose.Schema({
             excavator: { type: mongoose.Schema.Types.ObjectId, ref: 'Device' },
             dumpingLocation: { type: mongoose.Schema.Types.ObjectId, ref: 'Location' },
             materialType: { type: mongoose.Schema.Types.ObjectId, ref: 'Material' },
+            drillDepth: Number,
+            hardness: Number,
             tripCount: Number,
         }
     ],

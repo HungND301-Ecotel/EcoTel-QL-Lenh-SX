@@ -22,6 +22,9 @@ class VehicleShiftReportModel {
   final Device? excavator;
   final String? dumpingLocation;
   final String? materialType;
+  final num? drillDepth;
+  final num? hardness;
+  final num? production;
   final num? tripCount;
 
   VehicleShiftReportModel({
@@ -29,6 +32,9 @@ class VehicleShiftReportModel {
     this.excavator,
     this.dumpingLocation,
     this.materialType,
+    this.drillDepth,
+    this.hardness,
+    this.production,
     this.tripCount,
   });
 
@@ -46,6 +52,9 @@ class VehicleShiftReportModel {
               : null,
       dumpingLocation: json?['dumpingLocation'],
       materialType: json?['materialType'],
+      drillDepth: json?['drillDepth'],
+      hardness: json?['hardness'],
+      production: json?['production'],
       tripCount: json?['tripCount'],
     );
   }
@@ -55,6 +64,9 @@ class VehicleShiftReportModel {
       'excavator': excavator?.toJson(),
       'dumpingLocation': dumpingLocation,
       'materialType': materialType,
+      'drillDepth': drillDepth,
+      'hardness': hardness,
+      'production': production,
       'tripCount': tripCount,
     };
   }

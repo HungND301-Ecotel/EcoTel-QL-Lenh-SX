@@ -145,7 +145,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
       );
     } else {
       final updatedOrder = await getOrderByUser();
-      if (updatedOrder != null) {
+      if (status == 'start' && updatedOrder != null) {
         saveOrderLocally(updatedOrder);
       }
       if (status == 'end' || status == 'warning') {
@@ -157,9 +157,9 @@ class _TaskDetailPage extends State<TaskDetailPage> {
         SnackBar(
           content: Text(
             status == 'start'
-                ? 'Hãy Check In để ghi nhận thời gian bắt đầu.'
+                ? 'Công việc đã bắt đầu'
                 : status == 'end'
-                ? 'Hãy Check Out để ghi nhận thời gian kết thúc.'
+                ? 'Công việc đã kết thúc'
                 : 'Báo lỗi thành công',
           ),
           backgroundColor: Colors.green,
@@ -218,11 +218,10 @@ class _TaskDetailPage extends State<TaskDetailPage> {
               },
             ),
             actions: [
-              if ([
-                    'completed',
-                    'in_progress',
-                  ].contains(data?.status) &&
-                  data?.endTime == null)
+              if (![
+                'pending',
+                'warning',
+              ].contains(data?.status))
                 IconButton(
                   onPressed: () {
                     Navigator.pushNamed(
@@ -237,11 +236,10 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                     size: 30,
                   ),
                 ),
-              if ([
-                    'completed',
-                    'in_progress',
-                  ].contains(data?.status) &&
-                  data?.endTime == null)
+              if (![
+                'pending',
+                'warning',
+              ].contains(data?.status))
                 IconButton(
                   onPressed: () {
                     Navigator.pushNamed(
@@ -389,9 +387,11 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                             ), // Điền sau nếu có
                           ],
                         ),
-                      if (data?.excavator != null)
+                      if (data?.excavator?.isNotEmpty ==
+                          true)
                         const SizedBox(height: 10),
-                      if (data?.excavator != null)
+                      if (data?.excavator?.isNotEmpty ==
+                          true)
                         Row(
                           children: [
                             Text(
@@ -501,9 +501,6 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                         onPressed: () {
                           if ([
                             'Vận hành xe',
-                            'Vận hành xúc',
-                            'Vận hành khoan',
-                            'Vận hành gạt',
                             'Vận hành xe phục vụ',
                           ].contains(data?.job.type)) {
                             if (data!.excavator!.length >
@@ -522,6 +519,32 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                                 arguments: data,
                               );
                             }
+                          } else if ([
+                            'Vận hành khoan',
+                          ].contains(data?.job.type)) {
+                            Navigator.pushNamed(
+                              context,
+                              WorkLogRoutes
+                                  .directWorkDrilling,
+                              arguments: data,
+                            );
+                          } else if ([
+                            'Vận hành xúc',
+                          ].contains(data?.job.type)) {
+                            Navigator.pushNamed(
+                              context,
+                              WorkLogRoutes
+                                  .directWorkExcavator,
+                              arguments: data,
+                            );
+                          } else if ([
+                            'Vận hành gạt',
+                          ].contains(data?.job.type)) {
+                            Navigator.pushNamed(
+                              context,
+                              WorkLogRoutes.directWorkDozer,
+                              arguments: data,
+                            );
                           } else {
                             Navigator.pushNamed(
                               context,

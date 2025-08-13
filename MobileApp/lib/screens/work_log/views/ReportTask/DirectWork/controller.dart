@@ -5,6 +5,12 @@ class VehicleReportControllers {
       TextEditingController();
   final TextEditingController materialType =
       TextEditingController();
+  final TextEditingController drillDepth =
+      TextEditingController();
+  final TextEditingController hardness =
+      TextEditingController();
+  final TextEditingController production =
+      TextEditingController();
   final TextEditingController tripCount =
       TextEditingController();
 }

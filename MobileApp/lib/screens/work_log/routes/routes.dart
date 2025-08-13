@@ -3,8 +3,11 @@ import 'package:soft/models/order_model.dart';
 import 'package:soft/screens/work_log/views/AddMachineAssistant/add_machine_assistant_page.dart';
 import 'package:soft/screens/work_log/views/Camera/camera.dart';
 import 'package:soft/screens/work_log/views/QrCode/qr_code.dart';
-import 'package:soft/screens/work_log/views/ReportTask/DirectWork/direct_work_multi_excavator_report.dart';
-import 'package:soft/screens/work_log/views/ReportTask/DirectWork/direct_work_multi_vehiclereport.dart';
+import 'package:soft/screens/work_log/views/ReportTask/DirectWork/dozer/direct_work_dozer.dart';
+import 'package:soft/screens/work_log/views/ReportTask/DirectWork/drilling/direct_work_drilling.dart';
+import 'package:soft/screens/work_log/views/ReportTask/DirectWork/excavator/direct_work_excavator.dart';
+import 'package:soft/screens/work_log/views/ReportTask/DirectWork/vehicle/direct_work_multi_excavator_report.dart';
+import 'package:soft/screens/work_log/views/ReportTask/DirectWork/vehicle/direct_work_multi_vehiclereport.dart';
 import 'package:soft/screens/work_log/views/ReportTask/IndirectWork/indirect_work_report.dart';
 import 'package:soft/screens/work_log/views/TripList/Dozer/dozer_input_quantity.dart';
 import 'package:soft/screens/work_log/views/TripList/Dozer/dozer_product_list.dart';
@@ -196,6 +199,24 @@ class WorkLogRoute extends StatelessWidget {
                     order: order,
                   ),
             );
+          case WorkLogRoutes.directWorkDrilling:
+            final order = settings.arguments as OrderModel;
+            return MaterialPageRoute(
+              builder:
+                  (_) => DirectWorkDrilling(order: order),
+            );
+          case WorkLogRoutes.directWorkExcavator:
+            final order = settings.arguments as OrderModel;
+            return MaterialPageRoute(
+              builder:
+                  (_) => DirectWorkExcavator(order: order),
+            );
+          case WorkLogRoutes.directWorkDozer:
+            final order = settings.arguments as OrderModel;
+            return MaterialPageRoute(
+              builder:
+                  (_) => DirectWorkDozer(order: order),
+            );
           case WorkLogRoutes.directWorkMultiExcavatorReport:
             final order = settings.arguments as OrderModel;
             return MaterialPageRoute(
@@ -287,6 +308,11 @@ class WorkLogRoutes {
   //ReportTask
   static const String directWorkMultiVehicleReport =
       '/directWorkMultiVehicleReport';
+  static const String directWorkDrilling =
+      '/directWorkDrilling';
+  static const String directWorkExcavator =
+      '/directWorkExcavator';
+  static const String directWorkDozer = '/directWorkDozer';
   static const String directWorkMultiExcavatorReport =
       '/directWorkMultiExcavatorReport';
   static const String indirectWorkReport =

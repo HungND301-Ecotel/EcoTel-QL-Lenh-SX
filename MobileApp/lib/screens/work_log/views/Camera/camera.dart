@@ -122,8 +122,7 @@ class _Camera extends State<Camera> {
   void handleCheckinCheckout() async {
     if (_imageFile == null) return;
 
-    if (widget.data.status == "in_progress" &&
-        widget.data.shiftReport == null) {
+    if (widget.data.status == "in_progress") {
       await saveImageLocally();
 
       Navigator.popAndPushNamed(
@@ -133,8 +132,8 @@ class _Camera extends State<Camera> {
       );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("xác nhận checkin thành công"),
-          backgroundColor: Colors.orange,
+          content: Text("Xác nhận checkin thành công"),
+          backgroundColor: Colors.green,
         ),
       );
       return;
@@ -233,9 +232,8 @@ class _Camera extends State<Camera> {
           'checkoutTime': DateTime.now().toIso8601String(),
         });
 
-        Navigator.of(context, rootNavigator: true).pop();
-
         if (result['status'] == 'error') {
+          Navigator.of(context, rootNavigator: true).pop();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(result['message']),
@@ -243,7 +241,7 @@ class _Camera extends State<Camera> {
             ),
           );
         } else {
-          // Xóa file tạm nếu tồn tại
+          Navigator.of(context, rootNavigator: true).pop();
           try {
             final savedImageFile = File(savedImagePath);
             final timestampFile = File(timestampPath);
@@ -257,7 +255,6 @@ class _Camera extends State<Camera> {
             print("Không thể xóa file tạm: $e");
           }
 
-          widget.data.updateFromJson(result['data']);
           Navigator.popAndPushNamed(
             context,
             WorkLogRoutes.taskDetailPage,

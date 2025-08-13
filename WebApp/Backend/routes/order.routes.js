@@ -237,17 +237,24 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
 
 router.put('/:id', verifyToken, async (req, res, next) => {
     try {
+        const body = req.body
         const order = await Order.findById(req.params.id).populate('shiftReport');
 
         if (!order) {
             return res.status(404).send({ status: 'error', message: 'No order found with that ID' });
         }
 
+        if (req.body.status === "in_progress") {
+            body.startTime = new Date()
+        }
+        if (req.body.status === "completed") {
+            body.endTime = new Date()
+        }
         // Update order
         const updatedOrder = await Order.findByIdAndUpdate(
             req.params.id,
             {
-                ...req.body,
+                ...body,
                 resumeTime: req.body.status === "in_progress" ? new Date() : order.resumeTime,
                 updatedBy: req.user._id
             },
@@ -633,54 +640,15 @@ router.post('/checkin', verifyToken, async (req, res, next) => {
         //         message: `Khoảng cách quá xa. Vui lòng đến gần thiết bị hơn.`,
         //     });
         // }
-        let startTime = order.startTime;
-        let endTime = order.endTime;
-        let status = order.status;
 
 
         const parsedCheckInTime = checkinTime || null;
         const parsedCheckOutTime = checkoutTime || new Date();
 
 
-        if (checkinTime && !order.startTime) {
-            startTime = parsedCheckInTime;
-        }
-        if (checkoutTime && !order.endTime) {
-            endTime = parsedCheckOutTime;
-        }
-
-        const orderUpdate = await Order.findByIdAndUpdate(orderId, {
-            startTime,
-            endTime,
-            status,
-        }, { new: true }).populate({
-            path: "assignedTo",
-            select: "username fullName phone salaryCode",
-
-        })
-            .populate('job', 'name type content')
-            .populate('device', 'code')
-            .populate('excavator', 'code')
-            .populate('location', 'name')
-            .populate('material', 'name')
-            .populate('shift')
-            .populate({
-                path: "assistants",
-                select: "username fullName",
-            })
-            .populate({
-                path: "createdBy",
-                select: "_id fullName phone salaryCode",
-            })
-        if (!orderUpdate) {
-            return res.status(404).send({ status: 'error', message: 'Không tìm thấy lệnh làm việc' });
-        }
-
-
-
         if (checkinFile) {
             const newCheckIn = new CheckIn({
-                orderId: orderUpdate._id,
+                orderId: orderId,
                 imageUrl: checkinFile,
                 createdAt: parsedCheckInTime,
             });
@@ -689,7 +657,7 @@ router.post('/checkin', verifyToken, async (req, res, next) => {
 
         if (checkoutFile) {
             const newCheckOut = new CheckIn({
-                orderId: orderUpdate._id,
+                orderId: orderId,
                 imageUrl: checkoutFile,
                 createdAt: parsedCheckOutTime,
             });
@@ -699,8 +667,7 @@ router.post('/checkin', verifyToken, async (req, res, next) => {
 
         res.status(200).send({
             status: 'success',
-            message: orderUpdate.status === "in_progress" ? 'Check in thành công' : 'Check out thành công',
-            data: orderUpdate
+            message: 'Thành công',
         });
 
     } catch (err) {

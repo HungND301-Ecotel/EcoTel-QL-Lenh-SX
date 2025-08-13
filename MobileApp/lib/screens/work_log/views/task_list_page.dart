@@ -130,6 +130,16 @@ class _TaskListPage extends State<TaskListPage> {
 
           return _isLoading
               ? Center(child: CircularProgressIndicator())
+              : taskList.isEmpty
+              ? const Center(
+                child: Text(
+                  'Không có dữ liệu',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                  ),
+                ),
+              )
               : SingleChildScrollView(
                 child: Column(
                   children:

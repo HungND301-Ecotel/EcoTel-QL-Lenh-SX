@@ -115,6 +115,16 @@ class _TaskAssignmentList
 
           return _isLoading
               ? Center(child: CircularProgressIndicator())
+              : tasks.isEmpty
+              ? const Center(
+                child: Text(
+                  'Không có dữ liệu',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                  ),
+                ),
+              )
               : SingleChildScrollView(
                 child: Column(
                   children:

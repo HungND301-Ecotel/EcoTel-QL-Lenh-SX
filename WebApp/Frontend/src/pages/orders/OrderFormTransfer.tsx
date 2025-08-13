@@ -424,7 +424,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                         )}
                     />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                {/* <Grid item xs={12} sm={6}>
                     <TextField
                         fullWidth
                         id="distance"
@@ -453,7 +453,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                             ? formik.errors.liftHeight
                             : ''}
                     />
-                </Grid>
+                </Grid> */}
                 <Grid item xs={12}>
                     <TextField
                         fullWidth
