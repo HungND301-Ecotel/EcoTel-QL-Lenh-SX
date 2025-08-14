@@ -480,7 +480,7 @@ const Orders: React.FC = () => {
             <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={12} sm={9}>
                     <Paper sx={{ width: '100%', overflowX: "initial" }}>
-                        <TableContainer sx={{ height: '80vh' }}>
+                        <TableContainer sx={{ maxHeight: '80vh' }}>
                             <Table stickyHeader aria-label="sticky table" sx={{
                                 "& td, & th": { padding: "4px 8px" },
                             }}>
@@ -719,7 +719,7 @@ const Orders: React.FC = () => {
                     </Paper>
                 </Grid>
                 <Grid item xs={12} sm={3}>
-                    <Box sx={{ position: 'sticky', top: 0, height: '80vh', overflowY: 'auto', border: '1px solid #ccc', borderRadius: 2, p: 2 }}>
+                    <Box sx={{ position: 'sticky', top: 0, maxHeight: '80vh', overflowY: 'auto', border: '1px solid #ccc', borderRadius: 2, p: 2 }}>
                         <Typography variant="h6" sx={{ mb: 2 }}>Thông tin lệnh sản xuất</Typography>
                         {selectedRow ? (
                             <Box>

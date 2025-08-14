@@ -7,9 +7,9 @@ const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 
 router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
-        const { content } = req.body
+        const { content, master_content, jobType } = req.body
         const newSafetyMeasure = new SafetyMeasure({
-            content: content,
+            content, master_content, jobType
         });
         await newSafetyMeasure.save();
         res.status(200).send({ status: 'success', message: "Tạo thành công" });

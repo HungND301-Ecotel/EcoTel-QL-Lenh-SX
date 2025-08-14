@@ -123,14 +123,16 @@ const SafetyMeasures: React.FC = () => {
 
     const formik = useFormik({
         initialValues: {
-            content: ''
+            content: '',
+            master_content: '',
+            jobType: ''
         },
         validationSchema: validationSchema,
         onSubmit: (values) => {
             if (selectedSafetyMeasure) {
-                updateMutation.mutate({ ...values, _id: selectedSafetyMeasure._id });
+                updateMutation.mutate({ ...values, _id: selectedSafetyMeasure._id, jobType: values.jobType as SafetyMeasure['jobType'] });
             } else {
-                createMutation.mutate(values);
+                createMutation.mutate({ ...values, jobType: values.jobType as SafetyMeasure['jobType'] });
             }
         },
     });
@@ -201,12 +203,42 @@ const SafetyMeasures: React.FC = () => {
                                     rows={5}
                                     id="content"
                                     name="content"
-                                    label="Nội dung"
+                                    label="Biện pháp riêng"
                                     value={formik.values.content}
                                     onChange={formik.handleChange}
                                     error={formik.touched.content && Boolean(formik.errors.content)}
                                     helperText={formik.touched.content && formik.errors.content}
                                 />
+                                <TextField
+                                    fullWidth
+                                    multiline
+                                    rows={5}
+                                    id="master_content"
+                                    name="master_content"
+                                    label="Biện pháp chung"
+                                    value={formik.values.master_content}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.master_content && Boolean(formik.errors.master_content)}
+                                    helperText={formik.touched.master_content && formik.errors.master_content}
+                                />
+                                <TextField
+                                    fullWidth
+                                    select
+                                    id="jobType"
+                                    name="jobType"
+                                    label="Loại công việc"
+                                    value={formik.values.jobType}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.jobType && Boolean(formik.errors.jobType)}
+                                    helperText={formik.touched.jobType && formik.errors.jobType}
+                                >
+                                    <MenuItem value="Vận hành xe">Vận hành xe</MenuItem>
+                                    <MenuItem value="Vận hành khoan">Vận hành khoan</MenuItem>
+                                    <MenuItem value="Vận hành xe phục vụ">Vận hành xe phục vụ</MenuItem>
+                                    <MenuItem value="Vận hành gạt">Vận hành gạt</MenuItem>
+                                    <MenuItem value="Vận hành xúc">Vận hành xúc</MenuItem>
+                                    <MenuItem value="Khác">Khác</MenuItem>
+                                </TextField>
                             </Box>
                         </Box>
                     </DialogContent>

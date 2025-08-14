@@ -326,7 +326,7 @@ const AdminDashboard: React.FC = () => {
                 </Box>
                 {tabIndex === 0 && <Box>
                     <Paper sx={{ width: '100%', overflowX: "initial" }}>
-                        <TableContainer sx={{ height: '80vh' }}>
+                        <TableContainer sx={{ maxHeight: '80vh' }}>
                             <Table stickyHeader aria-label="sticky table" sx={{
                                 "& td, & th": { padding: "4px 8px", top: 0 },
                             }}>

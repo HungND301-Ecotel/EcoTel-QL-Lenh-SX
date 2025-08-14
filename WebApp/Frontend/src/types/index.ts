@@ -42,6 +42,8 @@ export interface DeviceType {
 export interface SafetyMeasure {
     _id: string;
     content: string;
+    master_content: string;
+    jobType: 'Vận hành xe' | 'Vận hành khoan' | 'Vận hành xe phục vụ' | 'Vận hành gạt' | 'Vận hành xúc' | 'Khác',
     createdAt?: string;
     updatedAt?: string;
 }
@@ -94,7 +96,7 @@ export interface Order {
     note?: string;
     safetyMeasure?: string;
     temporaryError?: string
-    department?:string;
+    department?: string;
     createdBy: string;
     updatedBy?: string;
     createdAt?: string;

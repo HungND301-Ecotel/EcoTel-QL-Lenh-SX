@@ -36,6 +36,8 @@ import {
     Delete as DeleteIcon,
     Settings,
     ExpandMore,
+    UploadFile,
+    Download,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -141,6 +143,46 @@ const Vehicles: React.FC = () => {
         queryFn: () => api.get('/departments').then(res => res.data.data),
     });
 
+
+    const importFile = useMutation({
+        mutationFn: (formData: FormData) =>
+            api.post('/devices/importFile', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            }).then(res => res.data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['machines'] });
+            showSuccessAlert("Import thành công!");
+        },
+        onError: (error: any) => {
+            showErrorAlert(error.response?.data?.message || 'Lỗi khi import');
+        }
+    });
+
+    const exportExcel = useMutation({
+        mutationFn: () => {
+            return api.post('/devices/exportFile', { data: vehicles }, {
+                responseType: 'blob',
+            }).then(res => {
+                const blob = new Blob([res.data], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                });
+
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `*.xlsx`);
+
+                document.body.appendChild(link);
+                link.click();
+                link.parentNode?.removeChild(link);
+                window.URL.revokeObjectURL(url);
+            });
+        },
+        onSuccess: () => { },
+        onError: (error: any) => {
+            showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
+        }
+    });
 
     const createMutation = useMutation({
         mutationFn: (newDevice: Partial<Device>) =>
@@ -281,6 +323,41 @@ const Vehicles: React.FC = () => {
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
                 <Typography variant="h4">Quản lý Thông tin xe</Typography>
+                <Box display="flex" gap={2}>
+                    <input
+                        id="upload-excel"
+                        type="file"
+                        accept=".xlsx, .xls"
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                                const formData = new FormData();
+                                formData.append('file', file);
+                                importFile.mutate(formData);
+                            }
+                            e.target.value = "";
+                        }}
+                    />
+
+                    <label htmlFor="upload-excel">
+                        <Button
+                            component="span"
+                            variant="contained"
+                            startIcon={<UploadFile />}
+                        >
+                            Tải lên excel
+                        </Button>
+                    </label>
+                    <Button
+                        component="span"
+                        variant="contained"
+                        startIcon={<Download />}
+                        onClick={() => exportExcel.mutate()}
+                    >
+                        Tải xuống
+                    </Button>
+                </Box>
             </Box>
             <Box sx={{ flex: 1, flexDirection: 'column', mb: 3 }}>
                 <Typography><h3>Tìm kiếm</h3></Typography>

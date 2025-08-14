@@ -253,7 +253,6 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         if (usersToImport.length === 0) {
             return res.status(400).json({ status: 'error', message: 'Không tìm thấy dữ liệu người dùng hợp lệ trong file.' });
         }
-        console.log(usersToImport)
         const processedUsers = [];
         for (const row of usersToImport) {
             const newUser = { ...row };

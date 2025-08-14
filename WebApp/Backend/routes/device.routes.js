@@ -4,6 +4,8 @@ const { AppError } = require('../utils/errorHandler');
 const Device = require('../models/Device');
 const DeviceType = require('../models/DeviceType');
 const Department = require('../models/Department');
+const ExcelJS = require('exceljs')
+const xlsx = require('xlsx')
 
 
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
@@ -263,5 +265,143 @@ router.get('/count/status', verifyToken, restrictTo('admin', 'manager', 'dispatc
     }
 })
 
+
+
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
+// Delete user
+router.post('/importFile', upload.single('file'), verifyToken, async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ status: 'error', message: 'Vui lòng chọn file' });
+        }
+
+        const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+        const sheet = workbook.SheetNames[0];
+        const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheet]);
+        const devicesImport = data.filter(row => row.code);
+
+        if (devicesImport.length === 0) {
+            return res.status(400).json({ status: 'error', message: 'Không tìm thấy dữ liệu phương tiện hợp lệ trong file.' });
+        }
+        const processedDevices = [];
+        for (const row of devicesImport) {
+            const newDevice = { ...row };
+            if (newDevice.department) {
+                const department = await Department.findOne({ code: newDevice.department })
+                if (department) {
+                    newDevice.department = department?._id
+                }
+            }
+            if (newDevice.category) {
+                const category = await DeviceType.findOne({ name: newDevice.category })
+                if (category) {
+                    newDevice.category = category?._id
+                }
+            }
+            processedDevices.push(newDevice);
+        }
+
+        await Device.insertMany(processedDevices);
+        res.status(200).json({
+            status: 'success',
+            message: 'Tải thành cồng',
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            message: 'Tải thất bại',
+            error: error.message
+        });
+    }
+});
+router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+    try {
+        const data = req.body.data
+        const user = req.user
+        const query = {}
+        if (user.role === "manager") {
+            query.department = user.department._id;
+        }
+
+        const departments = await Department.find();
+        const deviceTypes = await DeviceType.find();
+
+        const workbook = new ExcelJS.Workbook();
+
+
+        const worksheet = workbook.addWorksheet('DS.phuong_tien');
+
+        // Định nghĩa tiêu đề và thuộc tính cột
+        worksheet.columns = [
+            { header: 'code', key: 'code', width: 25 },
+            { header: 'name', key: 'name', width: 15 },
+            { header: 'vehicleNumber', key: 'vehicleNumber', width: 15 },
+            { header: 'category', key: 'category', width: 10 },
+            { header: 'material', key: 'material', width: 15 },
+            { header: 'fuelType', key: 'fuelType', width: 30 },
+            { header: 'capacity', key: 'capacity', width: 20 },
+            { header: 'power', key: 'power', width: 20 },
+            { header: 'department', key: 'department', width: 15 },
+        ];
+
+        // Điền dữ liệu
+        const formattedDevices = (data || []).map(device => ({
+            code: device?.code || '',
+            name: device?.name || '',
+            vehicleNumber: device?.vehicleNumber || '',
+            category: device?.category?.name || '',
+            material: device?.material || '',
+            fuelType: device?.fuelType || '',
+            capacity: device?.capacity || '',
+            power: device?.power || '',
+            department: device?.department?.code || '',
+        }));
+        worksheet.addRows(formattedDevices);
+
+        // Thiết lập style
+        worksheet.eachRow((row, rowNumber) => {
+            row.eachCell(cell => {
+                cell.font = { size: (rowNumber === 1) ? 9 : 8, bold: (rowNumber === 1) };
+                cell.alignment = { vertical: 'middle', wrapText: (rowNumber === 1) };
+            });
+            row.height = (rowNumber === 1) ? 40 : 20;
+        });
+
+        const typeList = [...new Set(deviceTypes.map(p => p.name).filter(Boolean))];
+        const deptList = [...new Set(departments.map(d => d.code).filter(Boolean))];
+
+        worksheet.getColumn('X').values = ['devicetypes', ...typeList];
+        worksheet.getColumn('Y').values = ['departments', ...deptList];
+        worksheet.getColumn('X').hidden = true;
+        worksheet.getColumn('Y').hidden = true;
+
+        // Áp dụng Data Validation
+        const MAX = Math.max(worksheet.rowCount + 100, 1000); // dư dòng để người dùng thêm
+        worksheet.dataValidations.add(`D2:D${MAX}`, {
+            type: 'list',
+            allowBlank: true,
+            formulae: [`=$X$2:$X$${typeList.length + 1}`],
+            showErrorMessage: true,
+            errorTitle: 'Giá trị không hợp lệ',
+        });
+        worksheet.dataValidations.add(`I2:I${MAX}`, {
+            type: 'list',
+            allowBlank: true,
+            formulae: [`=$Y$2:$Y$${deptList.length + 1}`], // nguồn department
+            showErrorMessage: true,
+            errorTitle: 'Giá trị không hợp lệ',
+        });
+
+        // Ghi và gửi file
+        const buffer = await workbook.xlsx.writeBuffer();
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=' + 'danh_sach_nguoi_dung.xlsx');
+        res.send(buffer);
+
+    } catch (err) {
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
+    }
+});
 
 module.exports = router; 
