@@ -19,91 +19,6 @@ class Device {
   }
 }
 
-// vehicleShiftReportModel
-class VehicleShiftReportModel {
-  final Device? vehicle;
-  final Device? excavator;
-  final String? dumpingLocation;
-  final MaterialModel? materialType;
-  final LocationModel? fromLocation;
-  final LocationModel? toLocation;
-  final num? drillDepth;
-  final num? hardness;
-  final num? workingMinutes;
-  final num? distanceKm;
-  final num? production;
-  final num? tripCount;
-
-  VehicleShiftReportModel({
-    this.vehicle,
-    this.excavator,
-    this.dumpingLocation,
-    this.materialType,
-    this.drillDepth,
-    this.hardness,
-    this.fromLocation,
-    this.toLocation,
-    this.workingMinutes,
-    this.distanceKm,
-    this.production,
-    this.tripCount,
-  });
-
-  factory VehicleShiftReportModel.fromJson(
-    Map<String, dynamic>? json,
-  ) {
-    return VehicleShiftReportModel(
-      vehicle:
-          json?['vehicle'] != null
-              ? Device.fromJson(json?['vehicle'])
-              : null,
-      excavator:
-          json?['excavator'] != null
-              ? Device.fromJson(json?['excavator'])
-              : null,
-      dumpingLocation: json?['dumpingLocation'],
-      materialType:
-          json?['materialType'] != null
-              ? MaterialModel.fromJson(
-                json?['materialType'],
-              )
-              : null,
-      drillDepth: json?['drillDepth'],
-      hardness: json?['hardness'],
-      fromLocation:
-          json?['fromLocation'] != null
-              ? LocationModel.fromJson(
-                json?['fromLocation'],
-              )
-              : null,
-      toLocation:
-          json?['toLocation'] != null
-              ? LocationModel.fromJson(json?['toLocation'])
-              : null,
-      workingMinutes: json?['workingMinutes'],
-      distanceKm: json?['distanceKm'],
-      production: json?['production'],
-      tripCount: json?['tripCount'],
-    );
-  }
-  Map<String, dynamic> toJson() {
-    return {
-      'vehicle': vehicle?.toJson(),
-      'excavator': excavator?.toJson(),
-      'dumpingLocation': dumpingLocation,
-      'materialType': materialType?.toJson(),
-      'drillDepth': drillDepth,
-      'hardness': hardness,
-      'fromLocation': fromLocation?.toJson(),
-      'toLocation': toLocation?.toJson(),
-      'workingMinutes': workingMinutes,
-      'distanceKm': distanceKm,
-      'production': production,
-      'tripCount': tripCount,
-    };
-  }
-}
-
 // vehicleSummariesModel
 class VehicleSummariesModel {
   final Device? vehicle;
@@ -168,9 +83,9 @@ class VehicleSummariesModel {
 // shiftReport Model
 
 class ShiftReportModel {
+  final String id;
   final String orderId;
   final String? assignedTo;
-  final List<VehicleShiftReportModel>? vehicleReports;
   final List<VehicleSummariesModel>? vehicleSummaries;
   final num? handoverHours;
   final num? otherHours;
@@ -178,9 +93,9 @@ class ShiftReportModel {
   final String? risks;
 
   ShiftReportModel({
+    required this.id,
     required this.orderId,
     this.assignedTo,
-    this.vehicleReports,
     this.vehicleSummaries,
     this.handoverHours,
     this.otherHours,
@@ -192,15 +107,9 @@ class ShiftReportModel {
     Map<String, dynamic>? json,
   ) {
     return ShiftReportModel(
+      id: json?['_id'],
       orderId: json?['orderId'],
-      assignedTo: json?['assignedTo'],
-      vehicleReports:
-          (json?['vehicleReports'] as List?)
-              ?.map(
-                (e) => VehicleShiftReportModel.fromJson(e),
-              )
-              .toList() ??
-          [],
+      assignedTo: json?['assignedTo'] ?? '',
       vehicleSummaries:
           (json?['vehicleSummaries'] as List?)
               ?.map(
@@ -216,10 +125,9 @@ class ShiftReportModel {
   }
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'orderId': orderId,
       'assignedTo': assignedTo,
-      'vehicleReports':
-          vehicleReports?.map((e) => e.toJson()).toList(),
       'vehicleSummaries':
           vehicleSummaries?.map((e) => e.toJson()).toList(),
       'handoverHours': handoverHours,

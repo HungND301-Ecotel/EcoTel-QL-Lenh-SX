@@ -1,30 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:soft/models/material_model.dart';
 import 'package:soft/models/order_model.dart';
 import 'package:soft/models/user_model.dart';
-import 'package:soft/routes/app_routes.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
 import 'package:soft/services/shift_report_service.dart';
 import 'package:soft/widgets/pay_roll_input.dart';
 import 'package:soft/screens/work_log/views/ReportTask/DirectWork/controller.dart';
 
-class DirectWorkExcavator extends StatefulWidget {
+class DirectWorkOtherReport extends StatefulWidget {
   final OrderModel order;
-  const DirectWorkExcavator({
+  const DirectWorkOtherReport({
     super.key,
     required this.order,
   });
   @override
   State<StatefulWidget> createState() =>
-      _DirectWorkExcavator();
+      _DirectWorkOtherReport();
 }
 
-class _DirectWorkExcavator
-    extends State<DirectWorkExcavator> {
+class _DirectWorkOtherReport
+    extends State<DirectWorkOtherReport> {
   UserModel? user;
-  final Map<String, VehicleReportControllers>
-  _vehicleControllers = {};
+
   final Map<String, VehicleSummariesControllers>
   _deviceSummaryControllers = {};
 
@@ -63,8 +60,6 @@ class _DirectWorkExcavator
   void initState() {
     super.initState();
     for (var device in widget.order.device ?? []) {
-      _vehicleControllers[device.id] =
-          VehicleReportControllers();
       _deviceSummaryControllers[device.id] =
           VehicleSummariesControllers();
     }
@@ -79,15 +74,6 @@ class _DirectWorkExcavator
           report.handoverNotes ?? '';
       _risksController.text = report.risks ?? '';
 
-      for (var item in report.vehicleReports ?? []) {
-        final controller =
-            _vehicleControllers[item.vehicle.id];
-        if (controller != null) {
-          controller.materialType = item.materialType;
-          controller.tripCount.text =
-              item.tripCount?.toString() ?? '';
-        }
-      }
       for (var item in report.vehicleSummaries ?? []) {
         final controller =
             _deviceSummaryControllers[item.vehicle.id];
@@ -118,21 +104,7 @@ class _DirectWorkExcavator
   final ShiftReportService _shiftReportService =
       ShiftReportService();
   void create() async {
-    final List<Map<String, dynamic>> vehiclesReport = [];
     final List<Map<String, dynamic>> vehicleSummaries = [];
-
-    for (var entry in _vehicleControllers.entries) {
-      final id = entry.key;
-      final controller = entry.value;
-
-      vehiclesReport.add({
-        "vehicle": id,
-        "materialType": controller.materialType?.id,
-        "tripCount": int.tryParse(
-          controller.tripCount.text,
-        ),
-      });
-    }
 
     for (var entry in _deviceSummaryControllers.entries) {
       final id = entry.key;
@@ -183,7 +155,6 @@ class _DirectWorkExcavator
     var result = await _shiftReportService.create({
       "orderId": widget.order.id,
       "assignedTo": user?.id,
-      "vehicleReports": vehiclesReport,
       "vehicleSummaries": vehicleSummaries,
       "handoverHours": handoverHours,
       "otherHours": otherHours,
@@ -207,13 +178,84 @@ class _DirectWorkExcavator
     }
   }
 
+  void update(String shiftReportId) async {
+    final List<Map<String, dynamic>> vehicleSummaries = [];
+
+    for (var entry in _deviceSummaryControllers.entries) {
+      final id = entry.key;
+      final controller = entry.value;
+
+      vehicleSummaries.add({
+        "vehicle": id,
+        "travelHours": int.tryParse(
+          controller.travelHours.text,
+        ),
+        "repairHours": int.tryParse(
+          controller.repairHours.text,
+        ),
+        "fuelRemain": int.tryParse(
+          controller.fuelRemain.text,
+        ),
+        "fuelReceived": int.tryParse(
+          controller.fuelReceived.text,
+        ),
+        "fuelRemainEnd": int.tryParse(
+          controller.fuelRemainEnd.text,
+        ),
+        "status": controller.status,
+        "note": controller.note.text,
+        "gpsStatus": controller.gpsStatus,
+        "sealStatus": controller.sealStatus,
+      });
+    }
+    final handoverHours = int.tryParse(
+      _handoverHoursController.text.trim(),
+    );
+    final otherHours = int.tryParse(
+      _otherHoursController.text.trim(),
+    );
+    final handoverNotes =
+        _handoverNotesController.text.trim();
+    final risks = _risksController.text.trim();
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Vui lòng nhập thẻ lương."),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    var result = await _shiftReportService
+        .update(shiftReportId, {
+          "orderId": widget.order.id,
+          "assignedTo": user?.id,
+          "vehicleSummaries": vehicleSummaries,
+          "handoverHours": handoverHours,
+          "otherHours": otherHours,
+          "handoverNotes": handoverNotes,
+          "risks": risks,
+        });
+    if (!mounted) return;
+    if (result['status'] == 'error') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      Navigator.pushNamed(
+        context,
+        WorkLogRoutes.taskDetailPage,
+        arguments: widget.order.id,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final excavator =
-        (widget.order.excavator != null &&
-                widget.order.excavator!.isNotEmpty)
-            ? widget.order.excavator!.last
-            : null;
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -248,12 +290,9 @@ class _DirectWorkExcavator
                       crossAxisAlignment:
                           CrossAxisAlignment.start,
                       children:
-                          (widget.order.device ?? []).map((
+                          ((widget.order.device) ?? []).map((
                             item,
                           ) {
-                            final deviceController =
-                                _vehicleControllers[item
-                                    .id]!;
                             final summaryController =
                                 _deviceSummaryControllers[item
                                     .id]!;
@@ -270,71 +309,17 @@ class _DirectWorkExcavator
                                   ),
                                 ),
                                 SizedBox(height: 16),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: TextButton.icon(
-                                    icon: Icon(
-                                      Icons.casino_sharp,
-                                    ),
-                                    onPressed: () async {
-                                      final selectedMaterial =
-                                          await Navigator.of(
-                                            context,
-                                            rootNavigator:
-                                                true,
-                                          ).pushNamed(
-                                            AppRoute
-                                                .materialSelect,
-                                          );
-
-                                      if (selectedMaterial !=
-                                              null &&
-                                          selectedMaterial
-                                              is MaterialModel) {
-                                        setState(() {
-                                          deviceController
-                                                  .materialType =
-                                              selectedMaterial;
-                                        });
-                                      }
-                                    },
-                                    style: TextButton.styleFrom(
-                                      foregroundColor:
-                                          Colors.black,
-                                      backgroundColor:
-                                          Colors
-                                              .grey
-                                              .shade300,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(
-                                              0,
-                                            ),
-                                      ),
-                                      alignment:
-                                          Alignment
-                                              .centerLeft,
-                                    ),
-                                    label: Text(
-                                      deviceController
-                                              .materialType
-                                              ?.name ??
-                                          'Chủng loại',
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(height: 16),
                                 Text(
-                                  "Số chuyến:",
+                                  'Giờ di chuyển(phút)',
                                   style: TextStyle(
                                     fontWeight:
-                                        FontWeight.bold,
+                                        FontWeight.w600,
                                   ),
                                 ),
                                 TextField(
                                   controller:
-                                      deviceController
-                                          .tripCount,
+                                      summaryController
+                                          .travelHours,
                                   keyboardType:
                                       TextInputType.number,
                                   inputFormatters: [
@@ -649,35 +634,43 @@ class _DirectWorkExcavator
               ),
             ),
           ),
-          if (widget.order.shiftReport == null)
-            Container(
-              padding: const EdgeInsets.all(8.0),
-              width: double.infinity,
-              color: Colors.white,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: create,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 14,
-                        ),
+          Container(
+            padding: const EdgeInsets.all(8.0),
+            width: double.infinity,
+            color: Colors.white,
+            child: Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (widget.order.shiftReport !=
+                          null) {
+                        update(
+                          widget.order.shiftReport!.id,
+                        );
+                      } else {
+                        create();
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 14,
                       ),
-                      child: const Text(
-                        'Lưu lại',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    ),
+                    child: const Text(
+                      'Lưu lại',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
+          ),
         ],
       ),
     );

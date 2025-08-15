@@ -96,8 +96,7 @@ class _ServiceVehicleTripList
             onPressed: () {
               Navigator.pushNamed(
                 context,
-                WorkLogRoutes
-                    .serviceVehicleSelectVehicle,
+                WorkLogRoutes.serviceVehicleSelectVehicle,
               );
             },
             icon: Icon(Icons.add, color: Colors.white),
@@ -115,6 +114,8 @@ class _ServiceVehicleTripList
                             (item) =>
                                 ServiceVehicleTripItem(
                                   data: item,
+                                  getReportByOrder:
+                                      getReportByOrder,
                                 ),
                           )
                           .toList(),

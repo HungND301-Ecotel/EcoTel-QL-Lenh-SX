@@ -31,4 +31,16 @@ router.get('/getByOrder/:orderId', verifyToken, async (req, res, next) => {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 })
+
+router.delete('/:id', verifyToken, async (req, res, next) => {
+    try {
+        const reports = await Report.findByIdAndDelete(req.params.id)
+        if (!reports) {
+            res.status(404).send({ status: 'error', message: 'Không tìm thấy dữ liệu' })
+        }
+        res.status(200).send({ status: 'success', message: 'Xóa thành công', data: reports });
+    } catch (err) {
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+})
 module.exports = router

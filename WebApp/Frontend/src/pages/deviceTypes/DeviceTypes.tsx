@@ -26,6 +26,7 @@ import {
     AccordionSummary,
     AccordionDetails,
     Checkbox,
+    TablePagination,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -44,6 +45,7 @@ import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../compon
 
 const validationSchema = yup.object({
     name: yup.string().required('Vui lòng nhập tên loại phương tiện'),
+    group: yup.string().required('Vui lòng chọn nhóm phương tiện'),
 });
 
 const DeviceTypes: React.FC = () => {
@@ -64,6 +66,7 @@ const DeviceTypes: React.FC = () => {
     };
     const defaultColumns = [
         { id: 'name', label: 'Tên loại phương tiện' },
+        { id: 'group', label: 'Nhóm phương tiện' },
         { id: 'edit', label: 'Sửa', width: 100 },
     ]
     const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
@@ -119,13 +122,14 @@ const DeviceTypes: React.FC = () => {
     const formik = useFormik({
         initialValues: {
             name: '',
+            group: ''
         },
         validationSchema: validationSchema,
         onSubmit: (values) => {
             if (selectedDeviceType) {
-                updateMutation.mutate({ ...values, _id: selectedDeviceType._id });
+                updateMutation.mutate({ ...values, _id: selectedDeviceType._id, group: values.group as DeviceType["group"] });
             } else {
-                createMutation.mutate(values);
+                createMutation.mutate({ ...values, group: values.group as DeviceType["group"] });
             }
         },
     });
@@ -140,6 +144,7 @@ const DeviceTypes: React.FC = () => {
         }
         setExpanded(true);
         setOpen(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleClose = () => {
@@ -161,6 +166,23 @@ const DeviceTypes: React.FC = () => {
         });
     };
 
+    const [page, setPage] = React.useState(0);
+    const [pageSize, setPageSize] = React.useState(10);
+
+    const handleChangePage = (event: React.MouseEvent<HTMLButtonElement, MouseEvent> | null, page: number) => {
+        setPage(page);
+    };
+
+    const pageData = (DeviceTypes: any[], page: number, pageSize: number) => {
+        let data;
+        if (!page && !pageSize) {
+            data = DeviceTypes
+        } else {
+            data = DeviceTypes.slice(page * pageSize, (page + 1) * pageSize)
+        }
+        return data
+    }
+    const paginatedData = pageData(DeviceTypes, page, pageSize);
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -197,6 +219,20 @@ const DeviceTypes: React.FC = () => {
                                     error={formik.touched.name && Boolean(formik.errors.name)}
                                     helperText={formik.touched.name && formik.errors.name}
                                 />
+                                <TextField
+                                    fullWidth
+                                    id="group"
+                                    select
+                                    name="group"
+                                    label="Nhóm phương tiện"
+                                    value={formik.values.group}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.group && Boolean(formik.errors.group)}
+                                    helperText={formik.touched.group && formik.errors.group}
+                                >
+                                    <MenuItem value="Xe">Xe</MenuItem>
+                                    <MenuItem value="Máy">Máy</MenuItem>
+                                </TextField>
                             </Box>
                         </Box>
                     </DialogContent>
@@ -248,14 +284,16 @@ const DeviceTypes: React.FC = () => {
                                 />
                             </TableCell>
                             {visibleColumns.includes('name') && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Tên loại phương tiện</TableCell>}
+                            {visibleColumns.includes('group') && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: 150 }}>Nhóm phương tiện</TableCell>}
                             {visibleColumns.includes('edit') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: 100, minWidth: 100 }}>Sửa</TableCell>)}
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {!isLoading ? DeviceTypes.map((DeviceType: any) => (
+                        {!isLoading ? paginatedData.map((DeviceType: any) => (
                             <TableRow key={DeviceType._id}>
                                 <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}><Checkbox onChange={() => handleSelected(DeviceType._id)} checked={selectedDeviceTypes.includes(DeviceType._id)} /></TableCell>
                                 {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black' }}>{DeviceType.name}</TableCell>}
+                                {visibleColumns.includes('group') && <TableCell align='center' sx={{ border: '1px solid black' }}>{DeviceType.group}</TableCell>}
                                 {visibleColumns.includes('edit') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                     <IconButton color="primary" onClick={async () => {
                                         if (open) {
@@ -274,6 +312,17 @@ const DeviceTypes: React.FC = () => {
                         )) : <Typography>Loading...</Typography>}
                     </TableBody>
                 </Table>
+                <TablePagination
+                    component="div"
+                    count={DeviceTypes.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={pageSize}
+                    onRowsPerPageChange={(event) => {
+                        setPageSize(parseInt(event.target.value, 10));
+                        setPage(0);
+                    }}
+                />
             </TableContainer>
 
         </Box>

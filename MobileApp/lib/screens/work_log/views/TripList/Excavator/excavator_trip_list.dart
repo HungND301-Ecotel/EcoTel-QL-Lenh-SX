@@ -113,6 +113,8 @@ class _ExcavatorTripList extends State<ExcavatorTripList> {
                           .map(
                             (item) => ExcavatorTripItem(
                               data: item,
+                              getReportByOrder:
+                                  getReportByOrder,
                             ),
                           )
                           .toList(),

@@ -26,6 +26,7 @@ import {
     AccordionSummary,
     Accordion,
     Checkbox,
+    TablePagination,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -168,7 +169,23 @@ const SafetyMeasures: React.FC = () => {
             }
         });
     };
+    const [page, setPage] = React.useState(0);
+    const [pageSize, setPageSize] = React.useState(10);
 
+    const handleChangePage = (event: React.MouseEvent<HTMLButtonElement, MouseEvent> | null, page: number) => {
+        setPage(page);
+    };
+
+    const pageData = (safetyMeasures: any[], page: number, pageSize: number) => {
+        let data;
+        if (!page && !pageSize) {
+            data = safetyMeasures
+        } else {
+            data = safetyMeasures.slice(page * pageSize, (page + 1) * pageSize)
+        }
+        return data
+    }
+    const paginatedData = pageData(safetyMeasures, page, pageSize);
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -295,7 +312,7 @@ const SafetyMeasures: React.FC = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {!isLoading ? safetyMeasures.map((safetyMeasure: SafetyMeasure, index: number) => (
+                        {!isLoading ? paginatedData.map((safetyMeasure: SafetyMeasure, index: number) => (
                             <TableRow key={safetyMeasure._id}>
                                 <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}><Checkbox onChange={() => handleSelected(safetyMeasure._id)} checked={selectedSafetyMeasures.includes(safetyMeasure._id)} /></TableCell>
                                 {visibleColumns.includes('number') &&
@@ -327,6 +344,17 @@ const SafetyMeasures: React.FC = () => {
                         )) : <Typography>Loading...</Typography>}
                     </TableBody>
                 </Table>
+                <TablePagination
+                    component="div"
+                    count={safetyMeasures.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={pageSize}
+                    onRowsPerPageChange={(event) => {
+                        setPageSize(parseInt(event.target.value, 10));
+                        setPage(0);
+                    }}
+                />
             </TableContainer>
 
         </Box>

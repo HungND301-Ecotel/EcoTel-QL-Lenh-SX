@@ -33,6 +33,8 @@ import {
     Accordion,
     AccordionSummary,
     AccordionDetails,
+    Pagination,
+    TablePagination,
 } from '@mui/material';
 import { format } from 'date-fns';
 import {
@@ -265,7 +267,23 @@ const DispatcherOrders: React.FC = () => {
         });
     };
 
+    const [page, setPage] = React.useState(0);
+    const [pageSize, setPageSize] = React.useState(10);
 
+    const handleChangePage = (event: React.MouseEvent<HTMLButtonElement, MouseEvent> | null, page: number) => {
+        setPage(page);
+    };
+
+    const pageData = (orders: any[], page: number, pageSize: number) => {
+        let data;
+        if (!page && !pageSize) {
+            data = orders
+        } else {
+            data = orders.slice(page * pageSize, (page + 1) * pageSize)
+        }
+        return data
+    }
+    const paginatedOrders = pageData(orders, page, pageSize);
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -471,9 +489,18 @@ const DispatcherOrders: React.FC = () => {
                                                     }
                                                 }}
                                             /></TableCell>
+                                        <TableCell align='center' sx={{
+                                            position: 'sticky',
+                                            left: 50,
+                                            top: 0,
+                                            zIndex: 3,
+                                            width: 50,
+                                            border: '1px solid black',
+                                            fontWeight: 'bold', fontSize: 18
+                                        }}>STT</TableCell>
                                         {visibleColumns.includes('assignedTo') && <TableCell align='center' sx={{
                                             position: 'sticky',
-                                            left: 60,
+                                            left: 100,
                                             top: 0,
                                             zIndex: 3,
                                             minWidth: 150,
@@ -498,7 +525,7 @@ const DispatcherOrders: React.FC = () => {
                                     </TableRow>
                                 </TableHead>
                                 {!isLoading ? <TableBody>
-                                    {orders.map((order: any) => (
+                                    {paginatedOrders.map((order: any, index: number) => (
                                         <TableRow key={order._id} sx={{
                                             cursor: 'pointer', backgroundColor: order.status === 'pending'
                                                 ? 'white' // xám nhạt
@@ -526,9 +553,25 @@ const DispatcherOrders: React.FC = () => {
                                                                 : '#ede7f6', // tím nhạt
                                                 border: '1px solid black'
                                             }}><Checkbox onChange={() => handleSelected(order)} checked={selectedOrders.some(o => o._id === order._id)} /></TableCell>
+                                            <TableCell align='center' sx={{
+                                                position: 'sticky',
+                                                left: 50,
+                                                zIndex: 1,
+                                                width: 50,
+                                                backgroundColor: order.status === 'pending'
+                                                    ? 'white' // xám nhạt
+                                                    : order.status === 'completed'
+                                                        ? '#ffe5e5' // đỏ nhạt
+                                                        : order.status === 'in_progress'
+                                                            ? '#e5f7e5' // xanh lá nhạt
+                                                            : order.status === 'warning'
+                                                                ? '#fff8e1' // vàng nhạt
+                                                                : '#ede7f6', // tím nhạt
+                                                border: '1px solid black'
+                                            }}>{index + 1}</TableCell>
                                             {visibleColumns.includes('assignedTo') && <TableCell sx={{
                                                 position: 'sticky',
-                                                left: 60,
+                                                left: 100,
                                                 zIndex: 1,
                                                 minWidth: 150,
                                                 backgroundColor: order.status === 'pending'
@@ -555,7 +598,7 @@ const DispatcherOrders: React.FC = () => {
                                                 {order.shiftHour || ''}
                                             </TableCell>}
                                             {visibleColumns.includes('job') && <TableCell sx={{ border: '1px solid black' }}>
-                                                {order.job.name || ''}
+                                                {order.job?.name || ''}
                                             </TableCell>}
                                             {visibleColumns.includes('content') && <TableCell sx={{
                                                 whiteSpace: 'pre-wrap',
@@ -572,7 +615,7 @@ const DispatcherOrders: React.FC = () => {
                                                 </Typography>
                                             </TableCell>}
                                             {visibleColumns.includes('createdBy') && <TableCell sx={{ border: '1px solid black' }}>
-                                                {order.createdBy.username || ''}
+                                                {order.createdBy?.username || ''}
                                             </TableCell>}
                                             {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                                 {order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm') : ''}
@@ -637,6 +680,17 @@ const DispatcherOrders: React.FC = () => {
                                 </TableBody> : <Typography>Loading...</Typography>}
                             </Table>
                         </TableContainer>
+                        <TablePagination
+                            component="div"
+                            count={orders.length}
+                            page={page}
+                            onPageChange={handleChangePage}
+                            rowsPerPage={pageSize}
+                            onRowsPerPageChange={(event) => {
+                                setPageSize(parseInt(event.target.value, 10));
+                                setPage(0);
+                            }}
+                        />
                     </Paper>
                 </Grid>
                 <Grid item xs={12} sm={3}>
@@ -647,7 +701,7 @@ const DispatcherOrders: React.FC = () => {
                                 <Typography><strong>Nhân viên:</strong> {selectedRow.assignedTo?.fullName}-{selectedRow.assignedTo?.salaryCode}</Typography>
                                 <Typography><strong>Ngày:</strong> {selectedRow.workingDate ? format(new Date(selectedRow.workingDate), 'yyyy-MM-dd') : ''}</Typography>
                                 <Typography><strong>Ca:</strong> {selectedRow.shift?.name}</Typography>
-                                <Typography><strong>Công việc:</strong> {selectedRow.job.name}</Typography>
+                                <Typography><strong>Công việc:</strong> {selectedRow.job?.name}</Typography>
                                 <Typography><strong>Nội dung:</strong> {selectedRow.workContent}</Typography>
                                 <Typography><strong>Phương tiện:</strong> {selectedRow.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')}</Typography>
                                 <Typography><strong>Trạng thái:</strong> {

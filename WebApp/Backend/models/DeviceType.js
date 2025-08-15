@@ -6,6 +6,10 @@ const DeviceType = new mongoose.Schema({
         required: [true, 'DeviceType is required'],
         trim: true
     },
+    group:{
+        type:String,
+        num:['Xe','Máy']
+    }
 },
     {
         timestamps: true

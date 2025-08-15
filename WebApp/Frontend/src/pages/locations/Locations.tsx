@@ -10,7 +10,8 @@ import {
     Accordion,
     AccordionSummary,
     AccordionDetails,
-    Checkbox
+    Checkbox,
+    TablePagination
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Settings, ExpandMore } from '@mui/icons-material';
 import { useFormik } from 'formik';
@@ -194,6 +195,24 @@ const Locations: React.FC = () => {
         }
     };
 
+    const [page, setPage] = React.useState(0);
+    const [pageSize, setPageSize] = React.useState(10);
+
+    const handleChangePage = (event: React.MouseEvent<HTMLButtonElement, MouseEvent> | null, page: number) => {
+        setPage(page);
+    };
+
+    const pageData = (locations: any[], page: number, pageSize: number) => {
+        let data;
+        if (!page && !pageSize) {
+            data = locations
+        } else {
+            data = locations.slice(page * pageSize, (page + 1) * pageSize)
+        }
+        return data
+    }
+    const paginatedData = pageData(locations, page, pageSize);
+
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -364,7 +383,7 @@ const Locations: React.FC = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {locations.map((loc: any) => {
+                        {paginatedData.map((loc: any) => {
                             let coordsDisplay = '';
                             if (
                                 loc.coordinates &&
@@ -400,6 +419,17 @@ const Locations: React.FC = () => {
                         })}
                     </TableBody>
                 </Table>
+                <TablePagination
+                    component="div"
+                    count={locations.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={pageSize}
+                    onRowsPerPageChange={(event) => {
+                        setPageSize(parseInt(event.target.value, 10));
+                        setPage(0);
+                    }}
+                />
             </TableContainer>
 
         </Box >

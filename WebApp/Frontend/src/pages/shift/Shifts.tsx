@@ -26,6 +26,7 @@ import {
     Accordion,
     AccordionSummary,
     AccordionDetails,
+    TablePagination,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -174,6 +175,24 @@ const Shifts: React.FC = () => {
         });
     };
 
+    const [page, setPage] = React.useState(0);
+    const [pageSize, setPageSize] = React.useState(10);
+
+    const handleChangePage = (event: React.MouseEvent<HTMLButtonElement, MouseEvent> | null, page: number) => {
+        setPage(page);
+    };
+
+    const pageData = (shifts: any[], page: number, pageSize: number) => {
+        let data;
+        if (!page && !pageSize) {
+            data = shifts
+        } else {
+            data = shifts.slice(page * pageSize, (page + 1) * pageSize)
+        }
+        return data
+    }
+    const paginatedData = pageData(shifts, page, pageSize);
+
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -278,74 +297,87 @@ const Shifts: React.FC = () => {
                     ))}
                 </Menu>
             </Box>
-            <TableContainer component={Paper}>
-                <Table sx={{
-                    "& td, & th": { padding: "4px 8px" },
-                }}>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell align="center" sx={{
-                                backgroundColor: '#f5f5f5', border: '1px solid black',
-                            }}>
-                                <Checkbox
-                                    color="primary"
-                                    checked={shifts.length > 0 && selectedShifts.length === shifts.length}
-                                    indeterminate={selectedShifts.length > 0 && selectedShifts.length < shifts.length}
-                                    onChange={() => {
-                                        if (selectedShifts.length === shifts.length) {
-                                            setSelectedShifts([]);
-                                        } else {
-                                            setSelectedShifts(shifts.map((shift: Shift) => shift._id));
-                                        }
-                                    }}
-                                />
-                            </TableCell>
-                            {defaultColumns.map((col) =>
-                                visibleColumns.includes(col.id) && (
-                                    <TableCell key={col.id} align="center" sx={{
-                                        backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: col.width, minWidth: col.width
-                                    }}>
-                                        {col.label}
-                                    </TableCell>
-                                )
-                            )}
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {!isLoading ? shifts.map((shift: Shift) => (
-                            <TableRow key={shift._id}>
-                                <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}><Checkbox onChange={() => handleSelected(shift._id)} checked={selectedShifts.includes(shift._id)} /></TableCell>
-                                {visibleColumns.includes('name') && (
-                                    <TableCell align='center' sx={{ border: '1px solid black' }}>{shift.name}</TableCell>
-                                )}
-                                {visibleColumns.includes('startTime') && (
-                                    <TableCell sx={{ border: '1px solid black' }}>{shift.startTime}</TableCell>
-                                )}
-                                {visibleColumns.includes('endTime') && (
-                                    <TableCell sx={{ border: '1px solid black' }}>{shift.endTime}</TableCell>
-                                )}
-                                {visibleColumns.includes('edit') && (
-                                    <TableCell align='center' sx={{ border: '1px solid black' }}>
-                                        <IconButton color="primary" onClick={async () => {
-                                            if (open) {
-                                                const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                                                if (result.isConfirmed) {
-                                                    handleOpen(shift);
-                                                }
+            <Paper>
+                <TableContainer component={Paper}>
+                    <Table sx={{
+                        "& td, & th": { padding: "4px 8px" },
+                    }}>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell align="center" sx={{
+                                    backgroundColor: '#f5f5f5', border: '1px solid black',
+                                }}>
+                                    <Checkbox
+                                        color="primary"
+                                        checked={shifts.length > 0 && selectedShifts.length === shifts.length}
+                                        indeterminate={selectedShifts.length > 0 && selectedShifts.length < shifts.length}
+                                        onChange={() => {
+                                            if (selectedShifts.length === shifts.length) {
+                                                setSelectedShifts([]);
                                             } else {
-                                                handleOpen(shift);
+                                                setSelectedShifts(shifts.map((shift: Shift) => shift._id));
                                             }
+                                        }}
+                                    />
+                                </TableCell>
+                                {defaultColumns.map((col) =>
+                                    visibleColumns.includes(col.id) && (
+                                        <TableCell key={col.id} align="center" sx={{
+                                            backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: col.width, minWidth: col.width
                                         }}>
-                                            <EditIcon />
-                                        </IconButton>
-                                    </TableCell>
+                                            {col.label}
+                                        </TableCell>
+                                    )
                                 )}
                             </TableRow>
-                        )) : <Typography>Loading...</Typography>}
-                    </TableBody>
+                        </TableHead>
+                        <TableBody>
+                            {!isLoading ? paginatedData.map((shift: Shift) => (
+                                <TableRow key={shift._id}>
+                                    <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}><Checkbox onChange={() => handleSelected(shift._id)} checked={selectedShifts.includes(shift._id)} /></TableCell>
+                                    {visibleColumns.includes('name') && (
+                                        <TableCell align='center' sx={{ border: '1px solid black' }}>{shift.name}</TableCell>
+                                    )}
+                                    {visibleColumns.includes('startTime') && (
+                                        <TableCell sx={{ border: '1px solid black' }}>{shift.startTime}</TableCell>
+                                    )}
+                                    {visibleColumns.includes('endTime') && (
+                                        <TableCell sx={{ border: '1px solid black' }}>{shift.endTime}</TableCell>
+                                    )}
+                                    {visibleColumns.includes('edit') && (
+                                        <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                            <IconButton color="primary" onClick={async () => {
+                                                if (open) {
+                                                    const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                                                    if (result.isConfirmed) {
+                                                        handleOpen(shift);
+                                                    }
+                                                } else {
+                                                    handleOpen(shift);
+                                                }
+                                            }}>
+                                                <EditIcon />
+                                            </IconButton>
+                                        </TableCell>
+                                    )}
+                                </TableRow>
+                            )) : <Typography>Loading...</Typography>}
+                        </TableBody>
 
-                </Table>
-            </TableContainer>
+                    </Table>
+                </TableContainer>
+                <TablePagination
+                    component="div"
+                    count={shifts.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={pageSize}
+                    onRowsPerPageChange={(event) => {
+                        setPageSize(parseInt(event.target.value, 10));
+                        setPage(0);
+                    }}
+                />
+            </Paper>
 
         </Box>
     );

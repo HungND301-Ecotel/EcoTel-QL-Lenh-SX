@@ -101,7 +101,7 @@ class _AddMachineAssistantPage
                     CrossAxisAlignment.start,
                 children: List.generate(5, (index) {
                   print(
-                    selectedAssistants[index]?.salaryCode,
+                    'Phụ máy ${index + 1} ${selectedAssistants[index]?.salaryCode}',
                   );
                   return PayRollInput(
                     title: 'Phụ máy ${index + 1}',

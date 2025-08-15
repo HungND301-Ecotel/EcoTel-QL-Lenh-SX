@@ -25,7 +25,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
     "Vận hành xúc": WorkLogRoutes.excavatorTripList,
     "Vận hành khoan": WorkLogRoutes.drillingProductList,
     "Vận hành gạt": WorkLogRoutes.dozerProductList,
-    "Vận hành xe vục vụ":
+    "Vận hành xe phục vụ":
         WorkLogRoutes.serviceVehicleTripList,
   };
   String getActionLabel(String type) {
@@ -236,24 +236,24 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                     size: 30,
                   ),
                 ),
-              if (![
-                'pending',
-                'warning',
-              ].contains(data?.status))
-                IconButton(
-                  onPressed: () {
-                    Navigator.pushNamed(
-                      context,
-                      WorkLogRoutes.camera,
-                      arguments: data,
-                    );
-                  },
-                  icon: Icon(
-                    Icons.photo_camera,
-                    color: Colors.white,
-                    size: 30,
-                  ),
-                ),
+              // if (![
+              //   'pending',
+              //   'warning',
+              // ].contains(data?.status))
+              //   IconButton(
+              //     onPressed: () {
+              //       Navigator.pushNamed(
+              //         context,
+              //         WorkLogRoutes.camera,
+              //         arguments: data,
+              //       );
+              //     },
+              //     icon: Icon(
+              //       Icons.photo_camera,
+              //       color: Colors.white,
+              //       size: 30,
+              //     ),
+              //   ),
             ],
             title: Text(
               data?.job.name ?? '',
@@ -497,60 +497,48 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                           child: const Text('Phụ máy'),
                         ),
                       const SizedBox(height: 8),
+                      if (typeToRoute.containsKey(
+                        data?.job.type,
+                      ))
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.pushNamed(
+                              context,
+                              typeToRoute[data!.job.type]!,
+                              arguments: data?.id,
+                            );
+                          },
+                          child: Text(
+                            getActionLabel(data!.job.type),
+                          ),
+                        ),
+                      const SizedBox(height: 8),
                       ElevatedButton(
                         onPressed: () {
                           if ([
-                            'Vận hành xe',
-                          ].contains(data?.job.type)) {
-                            if (data!.excavator!.length >
-                                1) {
-                              Navigator.pushNamed(
-                                context,
-                                WorkLogRoutes
-                                    .directWorkMultiExcavatorReport,
-                                arguments: data,
-                              );
-                            } else {
-                              Navigator.pushNamed(
-                                context,
-                                WorkLogRoutes
-                                    .directWorkMultiVehicleReport,
-                                arguments: data,
-                              );
-                            }
-                          } else if ([
-                            'Vận hành khoan',
-                          ].contains(data?.job.type)) {
+                            'vận hành khoan'.toLowerCase(),
+                            'vận hành gạt'.toLowerCase(),
+                            'vận hành xe'.toLowerCase(),
+                            'vận hành xe phục vụ'
+                                .toLowerCase(),
+                          ].contains(
+                            data?.job.type.toLowerCase(),
+                          )) {
                             Navigator.pushNamed(
                               context,
                               WorkLogRoutes
-                                  .directWorkDrilling,
+                                  .directWorkOtherReport,
                               arguments: data,
                             );
                           } else if ([
-                            'Vận hành xúc',
-                          ].contains(data?.job.type)) {
+                            'vận hành xúc'.toLowerCase(),
+                          ].contains(
+                            data?.job.type.toLowerCase(),
+                          )) {
                             Navigator.pushNamed(
                               context,
                               WorkLogRoutes
-                                  .directWorkExcavator,
-                              arguments: data,
-                            );
-                          } else if ([
-                            'Vận hành gạt',
-                          ].contains(data?.job.type)) {
-                            Navigator.pushNamed(
-                              context,
-                              WorkLogRoutes.directWorkDozer,
-                              arguments: data,
-                            );
-                          } else if ([
-                            'Vận hành xe phục vụ',
-                          ].contains(data?.job.type)) {
-                            Navigator.pushNamed(
-                              context,
-                              WorkLogRoutes
-                                  .directWorkServiceVehicle,
+                                  .directWorkExcavatorReport,
                               arguments: data,
                             );
                           } else {
@@ -562,11 +550,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                             );
                           }
                         },
-                        child: Text(
-                          data?.shiftReport == null
-                              ? 'Báo công'
-                              : 'Đã báo công',
-                        ),
+                        child: const Text('Báo công'),
                       ),
                       const SizedBox(height: 8),
                       ElevatedButton(

@@ -103,7 +103,10 @@ class _VehicleTripList extends State<VehicleTripList> {
           children:
               _allData
                   .map(
-                    (item) => VehicleTripItem(data: item),
+                    (item) => VehicleTripItem(
+                      data: item,
+                      getReportByOrder: getOrderByUser,
+                    ),
                   )
                   .toList(),
         ),

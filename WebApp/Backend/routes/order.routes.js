@@ -73,31 +73,11 @@ router.get('/', verifyToken, async (req, res, next) => {
             .populate('shift')
             .populate({
                 path: "assistants",
-                select: "username fullName",
+                select: "username fullName salaryCode",
             })
             .populate({
                 path: "shiftReport",
                 populate: [
-                    {
-                        path: "vehicleReports.vehicle",
-                        select: "code"  // chọn field cần thiết
-                    },
-                    {
-                        path: "vehicleReports.excavator",
-                        select: "code"
-                    },
-                    {
-                        path: "vehicleReports.materialType",
-                        select: "name"  // chọn field cần thiết
-                    },
-                    {
-                        path: "vehicleReports.fromLocation",
-                        select: "name"  // chọn field cần thiết
-                    },
-                    {
-                        path: "vehicleReports.toLocation",
-                        select: "name"  // chọn field cần thiết
-                    },
                     {
                         path: "vehicleSummaries.vehicle",
                         select: "code"
@@ -287,31 +267,11 @@ router.put('/:id', verifyToken, async (req, res, next) => {
             .populate('shift')
             .populate({
                 path: "assistants",
-                select: "username fullName",
+                select: "username fullName salaryCode",
             })
             .populate({
                 path: "shiftReport",
                 populate: [
-                    {
-                        path: "vehicleReports.vehicle",
-                        select: "code"  // chọn field cần thiết
-                    },
-                    {
-                        path: "vehicleReports.excavator",
-                        select: "code"
-                    },
-                    {
-                        path: "vehicleReports.materialType",
-                        select: "name"  // chọn field cần thiết
-                    },
-                    {
-                        path: "vehicleReports.fromLocation",
-                        select: "name"  // chọn field cần thiết
-                    },
-                    {
-                        path: "vehicleReports.toLocation",
-                        select: "name"  // chọn field cần thiết
-                    },
                     {
                         path: "vehicleSummaries.vehicle",
                         select: "code"
@@ -464,31 +424,11 @@ router.get('/user', verifyToken, async (req, res, next) => {
             .populate('shift')
             .populate({
                 path: "assistants",
-                select: "username fullName",
+                select: "username fullName salaryCode",
             })
             .populate({
                 path: "shiftReport",
                 populate: [
-                    {
-                        path: "vehicleReports.vehicle",
-                        select: "code"  // chọn field cần thiết
-                    },
-                    {
-                        path: "vehicleReports.materialType",
-                        select: "name"  // chọn field cần thiết
-                    },
-                    {
-                        path: "vehicleReports.fromLocation",
-                        select: "name"  // chọn field cần thiết
-                    },
-                    {
-                        path: "vehicleReports.toLocation",
-                        select: "name"  // chọn field cần thiết
-                    },
-                    {
-                        path: "vehicleReports.excavator",
-                        select: "code"
-                    },
                     {
                         path: "vehicleSummaries.vehicle",
                         select: "code"
@@ -521,31 +461,11 @@ router.get('/:id', verifyToken, async (req, res, next) => {
             .populate('shift')
             .populate({
                 path: "assistants",
-                select: "username fullName",
+                select: "username fullName salaryCode",
             })
             .populate({
                 path: "shiftReport",
                 populate: [
-                    {
-                        path: "vehicleReports.vehicle",
-                        select: "code"  // chọn field cần thiết
-                    },
-                    {
-                        path: "vehicleReports.excavator",
-                        select: "code"
-                    },
-                    {
-                        path: "vehicleReports.materialType",
-                        select: "name"  // chọn field cần thiết
-                    },
-                    {
-                        path: "vehicleReports.fromLocation",
-                        select: "name"  // chọn field cần thiết
-                    },
-                    {
-                        path: "vehicleReports.toLocation",
-                        select: "name"  // chọn field cần thiết
-                    },
                     {
                         path: "vehicleSummaries.vehicle",
                         select: "code"
@@ -621,7 +541,7 @@ router.post('/scanWork', verifyToken, async (req, res, next) => {
             .populate('shift')
             .populate({
                 path: "assistants",
-                select: "username fullName",
+                select: "username fullName salaryCode",
             })
             .populate({
                 path: "createdBy",

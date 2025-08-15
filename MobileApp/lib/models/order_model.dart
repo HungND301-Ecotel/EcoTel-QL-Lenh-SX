@@ -89,7 +89,7 @@ class OrderModel {
 
   factory OrderModel.fromJson(Map<String, dynamic>? json) {
     return OrderModel(
-      id: json?['_id'] ?? '',
+      id: json?['_id'],
       assignedTo: UserModel.fromJson(json?['assignedTo']),
       job: TaskModel.fromJson(json?['job']),
       workingDate:

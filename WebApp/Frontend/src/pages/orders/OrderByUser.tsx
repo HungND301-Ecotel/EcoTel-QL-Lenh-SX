@@ -27,6 +27,8 @@ import {
     Switch,
     Menu,
     ListItemText,
+    Pagination,
+    TablePagination,
 } from '@mui/material';
 import { format } from 'date-fns';
 import {
@@ -105,7 +107,23 @@ const OrderByUsers: React.FC = () => {
         queryKey: ['allOrders'],
         queryFn: () => api.get(`/orders/user`).then(res => res.data.data),
     });
+    const [page, setPage] = React.useState(0);
+    const [pageSize, setPageSize] = React.useState(10);
 
+    const handleChangePage = (event: React.MouseEvent<HTMLButtonElement, MouseEvent> | null, page: number) => {
+        setPage(page);
+    };
+
+    const pageData = (orders: any[], page: number, pageSize: number) => {
+        let data;
+        if (!page && !pageSize) {
+            data = orders
+        } else {
+            data = orders.slice(page * pageSize, (page + 1) * pageSize)
+        }
+        return data
+    }
+    const paginatedOrders = pageData(orderByUser, page, pageSize);
     return (
         <Box>
             <Typography variant="h4">Công việc của tôi</Typography>
@@ -213,9 +231,17 @@ const OrderByUsers: React.FC = () => {
                             }}>
                                 <TableHead>
                                     <TableRow>
-                                        {visibleColumns.includes('assignedTo') && <TableCell align='center' sx={{
+                                        <TableCell align='center' sx={{
                                             position: 'sticky',
                                             left: 0,
+                                            zIndex: 3,
+                                            width: 50,
+                                            border: '1px solid black',
+                                            fontWeight: 'bold', fontSize: 18
+                                        }}>STT</TableCell>
+                                        {visibleColumns.includes('assignedTo') && <TableCell align='center' sx={{
+                                            position: 'sticky',
+                                            left: 50,
                                             zIndex: 3,
                                             minWidth: 100,
                                             border: '1px solid black',
@@ -237,7 +263,7 @@ const OrderByUsers: React.FC = () => {
                                     </TableRow>
                                 </TableHead>
                                 {!isLoading ? <TableBody>
-                                    {orderByUser.map((order: any) => (
+                                    {paginatedOrders.map((order: any, index: number) => (
                                         <TableRow key={order._id} sx={{
                                             cursor: 'pointer', backgroundColor: order.status === 'pending'
                                                 ? 'white' // xám nhạt
@@ -249,9 +275,25 @@ const OrderByUsers: React.FC = () => {
                                                             ? '#fff8e1' // vàng nhạt
                                                             : '#ede7f6', // tím nhạt
                                         }} onClick={() => setSelectedRow(order)}>
-                                            {visibleColumns.includes('assignedTo') && <TableCell sx={{
+                                            <TableCell align='center' sx={{
                                                 position: 'sticky',
                                                 left: 0,
+                                                zIndex: 1,
+                                                width: 50,
+                                                backgroundColor: order.status === 'pending'
+                                                    ? 'white' // xám nhạt
+                                                    : order.status === 'completed'
+                                                        ? '#ffe5e5' // đỏ nhạt
+                                                        : order.status === 'in_progress'
+                                                            ? '#e5f7e5' // xanh lá nhạt
+                                                            : order.status === 'warning'
+                                                                ? '#fff8e1' // vàng nhạt
+                                                                : '#ede7f6', // tím nhạt
+                                                border: '1px solid black'
+                                            }}>{index + 1}</TableCell>
+                                            {visibleColumns.includes('assignedTo') && <TableCell sx={{
+                                                position: 'sticky',
+                                                left: 50,
                                                 zIndex: 1,
                                                 minWidth: 150,
                                                 backgroundColor: order.status === 'pending'
@@ -293,7 +335,7 @@ const OrderByUsers: React.FC = () => {
                                                 {order.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')}
                                             </TableCell>}
                                             {visibleColumns.includes('createdBy') && <TableCell sx={{ border: '1px solid black' }}>
-                                                {order.createdBy.username || ''}
+                                                {order.createdBy?.username || ''}
                                             </TableCell>}
                                             {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{ border: '1px solid black' }}>
                                                 {order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm') : ''}
@@ -327,6 +369,17 @@ const OrderByUsers: React.FC = () => {
                                 </TableBody> : <Typography>Loading...</Typography>}
                             </Table>
                         </TableContainer>
+                        <TablePagination
+                            component="div"
+                            count={orderByUser.length}
+                            page={page}
+                            onPageChange={handleChangePage}
+                            rowsPerPage={pageSize}
+                            onRowsPerPageChange={(event) => {
+                                setPageSize(parseInt(event.target.value, 10));
+                                setPage(0);
+                            }}
+                        />
                     </Paper>
                 </Grid>
                 <Grid item xs={12} sm={3}>

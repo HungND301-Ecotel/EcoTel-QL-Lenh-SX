@@ -24,6 +24,7 @@ import {
     AccordionSummary,
     AccordionDetails,
     Checkbox,
+    TablePagination,
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, Settings, ExpandMore, } from '@mui/icons-material';
 import { useFormik } from 'formik';
@@ -161,6 +162,23 @@ const Departments = () => {
         });
     };
 
+    const [page, setPage] = React.useState(0);
+    const [pageSize, setPageSize] = React.useState(10);
+
+    const handleChangePage = (event: React.MouseEvent<HTMLButtonElement, MouseEvent> | null, page: number) => {
+        setPage(page);
+    };
+
+    const pageData = (departments: any[], page: number, pageSize: number) => {
+        let data;
+        if (!page && !pageSize) {
+            data = departments
+        } else {
+            data = departments.slice(page * pageSize, (page + 1) * pageSize)
+        }
+        return data
+    }
+    const paginatedData = pageData(departments, page, pageSize);
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -304,7 +322,7 @@ const Departments = () => {
                         </TableRow>
                     </TableHead>
                     {!isLoading ? <TableBody>
-                        {departments.map((department: any) => (
+                        {paginatedData.map((department: any) => (
                             <TableRow key={department._id}>
                                 <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}><Checkbox onChange={() => handleSelected(department._id)} checked={selectedDepartments.includes(department._id)} /></TableCell>
                                 {visibleColumns.includes('code') && <TableCell sx={{ border: '1px solid black' }}>{department.code}</TableCell>}
@@ -328,6 +346,17 @@ const Departments = () => {
                         ))}
                     </TableBody> : <Typography>Loading...</Typography>}
                 </Table>
+                <TablePagination
+                    component="div"
+                    count={departments.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={pageSize}
+                    onRowsPerPageChange={(event) => {
+                        setPageSize(parseInt(event.target.value, 10));
+                        setPage(0);
+                    }}
+                />
             </TableContainer>
 
         </Box>

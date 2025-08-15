@@ -32,7 +32,7 @@ class ReportModel {
   });
   factory ReportModel.fromJson(Map<String, dynamic>? json) {
     return ReportModel(
-      id: json?['_id'],
+      id: json?['_id'] ?? '',
       orderId: json?['orderId'],
       device: DeviceModel.fromJson(json?['device']),
       excavator: DeviceModel.fromJson(json?['excavator']),

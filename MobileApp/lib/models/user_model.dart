@@ -1,5 +1,3 @@
-
-
 class UserModel {
   final String id;
   final String? username;
@@ -21,7 +19,7 @@ class UserModel {
 
   factory UserModel.fromJson(Map<String, dynamic>? json) {
     return UserModel(
-      id: json?['_id'],
+      id: json?['_id'] ?? '',
       username: json?['username'] ?? '',
       fullName: json?['fullName'] ?? '',
       email: json?['email'] ?? '',

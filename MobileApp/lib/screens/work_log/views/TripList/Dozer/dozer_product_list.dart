@@ -111,8 +111,11 @@ class _DozerProductList extends State<DozerProductList> {
                   children:
                       _allData
                           .map(
-                            (item) =>
-                                PerformanceItem(data: item),
+                            (item) => PerformanceItem(
+                              data: item,
+                              getReportByOrder:
+                                  getOrderByUser,
+                            ),
                           )
                           .toList(),
                 ),

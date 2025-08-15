@@ -13,4 +13,11 @@ class ShiftReportService {
   Future<Map<String, dynamic>> getOne(String id) async {
     return await _apiService.get('/shiftReports/$id');
   }
+
+  Future<Map<String, dynamic>> update(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
+    return await _apiService.put('/shiftReports/$id', data);
+  }
 }

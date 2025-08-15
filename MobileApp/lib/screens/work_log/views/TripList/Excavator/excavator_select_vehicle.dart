@@ -32,9 +32,9 @@ class _ExcavatorSelectVehicle
           ).order;
       setState(() {
         devices.clear(); // Nếu cần làm sạch danh sách trước
-        if (order?.device != null) {
+        if (order?.excavator != null) {
           devices.addAll(
-            order?.device as List<DeviceModel>,
+            order?.excavator as List<DeviceModel>,
           );
         }
         _isLoading = false;

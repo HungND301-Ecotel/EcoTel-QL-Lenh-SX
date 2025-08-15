@@ -9,9 +9,12 @@ class ReportService {
   ) async {
     return await _apiService.post('/reports', data);
   }
-  Future<Map<String, dynamic>> getByOrder(
-    String id,
-  ) async {
+
+  Future<Map<String, dynamic>> getByOrder(String id) async {
     return await _apiService.get('/reports/getByOrder/$id');
+  }
+
+  Future<Map<String, dynamic>> delete(String id) async {
+    return await _apiService.delete('/reports/$id');
   }
 }

@@ -25,13 +25,6 @@ export default function ShiftReport({ open, setOpen, initialValues }: { open: bo
         initialValues: {
             orderId: '',
             assignedTo: '',
-            vehicleReports: [{
-                vehicle: undefined,
-                excavator: undefined,
-                dumpingLocation: undefined,
-                materialType: undefined,
-                tripCount: undefined,
-            }],
             vehicleSummaries: [{
                 vehicle: undefined,
                 repairHours: undefined,
@@ -62,13 +55,6 @@ export default function ShiftReport({ open, setOpen, initialValues }: { open: bo
             formik.setValues({
                 orderId: initialValues._id,
                 assignedTo: initialValues?.assignedTo?._id,
-                vehicleReports: shiftReport?.vehicleReports?.map((v: any) => ({
-                    vehicle: v?.vehicle?._id,
-                    excavator: v?.excavator?._id,
-                    dumpingLocation: v?.dumpingLocation?._id,
-                    materialType: v?.materialType?._id,
-                    tripCount: v?.tripCount,
-                })) || [],
                 vehicleSummaries: shiftReport?.vehicleSummaries?.map((v: any) => ({
                     vehicle: v?.vehicle?._id,
                     repairHours: v?.repairHours,
@@ -111,51 +97,6 @@ export default function ShiftReport({ open, setOpen, initialValues }: { open: bo
         <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
             {shiftReport ? <DialogContent>
                 <Typography variant="h6" gutterBottom>Mã thẻ lương: {initialValues?.assignedTo?.fullName} - {initialValues?.assignedTo?.salaryCode}</Typography>
-                <Typography variant="h5">Báo chuyến:</Typography>
-                {shiftReport?.vehicleReports?.map((item: any, index: number) => (<Box key={index}>
-                    <Grid container spacing={2} mb={2}>
-                        <Grid item xs={3}>
-                            <Typography variant='h6'>+ Phương tiện:</Typography>
-                        </Grid>
-                        <Grid item xs={9}>
-                            <Typography>{item.vehicle?.code}</Typography>
-                        </Grid>
-                        <Grid item xs={3}>
-                            <Typography>Máy xúc:</Typography>
-                        </Grid>
-                        <Grid item xs={9}>
-                            <Typography>{item.excavator?.code}</Typography>
-                        </Grid>
-                        <Grid item xs={3}>
-                            <Typography>Điểm đổ:</Typography>
-                        </Grid>
-                        <Grid item xs={9}>
-                            <Typography>{initialValues?.location?.name}</Typography>
-                        </Grid>
-
-                        <Grid item xs={3}>
-                            <Typography>Vật liệu:</Typography>
-                        </Grid>
-                        <Grid item xs={9}>
-                            <Typography>{initialValues?.material?.name}</Typography>
-                        </Grid>
-
-                        <Grid item xs={3}>
-                            <Typography>Số chuyến:</Typography>
-                        </Grid>
-                        <Grid item xs={9}>
-                            <TextField
-                                fullWidth
-                                type="number"
-                                size='small'
-                                name={`vehicleReports[${index}].tripCount`}
-                                value={formik.values.vehicleReports[index]?.tripCount || ''}
-                                onChange={formik.handleChange}
-                            />
-                        </Grid>
-                    </Grid>
-                </Box>))}
-
                 <Typography variant="h5">Tình trạng phương tiện:</Typography>
                 {shiftReport?.vehicleSummaries?.map((item: any, index: number) => (<Box key={index}>
                     <Grid container spacing={2} mb={2} key={index}>

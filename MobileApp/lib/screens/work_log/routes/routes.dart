@@ -3,12 +3,8 @@ import 'package:soft/models/order_model.dart';
 import 'package:soft/screens/work_log/views/AddMachineAssistant/add_machine_assistant_page.dart';
 import 'package:soft/screens/work_log/views/Camera/camera.dart';
 import 'package:soft/screens/work_log/views/QrCode/qr_code.dart';
-import 'package:soft/screens/work_log/views/ReportTask/DirectWork/dozer/direct_work_dozer.dart';
-import 'package:soft/screens/work_log/views/ReportTask/DirectWork/drilling/direct_work_drilling.dart';
-import 'package:soft/screens/work_log/views/ReportTask/DirectWork/excavator/direct_work_excavator.dart';
-import 'package:soft/screens/work_log/views/ReportTask/DirectWork/serviceVehicle/direct_work_service_vehicle.dart';
-import 'package:soft/screens/work_log/views/ReportTask/DirectWork/vehicle/direct_work_multi_excavator_report.dart';
-import 'package:soft/screens/work_log/views/ReportTask/DirectWork/vehicle/direct_work_multi_vehiclereport.dart';
+import 'package:soft/screens/work_log/views/ReportTask/DirectWork/direct_work_excavator_report.dart';
+import 'package:soft/screens/work_log/views/ReportTask/DirectWork/direct_work_other_report.dart';
 import 'package:soft/screens/work_log/views/ReportTask/IndirectWork/indirect_work_report.dart';
 import 'package:soft/screens/work_log/views/TripList/Dozer/dozer_input_quantity.dart';
 import 'package:soft/screens/work_log/views/TripList/Dozer/dozer_product_list.dart';
@@ -192,46 +188,19 @@ class WorkLogRoute extends StatelessWidget {
               builder: (_) => ServiceVehicleTripInput(),
             );
           //ReportTask
-          case WorkLogRoutes.directWorkMultiVehicleReport:
+          case WorkLogRoutes.directWorkOtherReport:
             final order = settings.arguments as OrderModel;
             return MaterialPageRoute(
               builder:
-                  (_) => DirectWorkMultiVehiclereport(
-                    order: order,
-                  ),
+                  (_) =>
+                      DirectWorkOtherReport(order: order),
             );
-          case WorkLogRoutes.directWorkDrilling:
+          case WorkLogRoutes.directWorkExcavatorReport:
             final order = settings.arguments as OrderModel;
             return MaterialPageRoute(
               builder:
-                  (_) => DirectWorkDrilling(order: order),
-            );
-          case WorkLogRoutes.directWorkExcavator:
-            final order = settings.arguments as OrderModel;
-            return MaterialPageRoute(
-              builder:
-                  (_) => DirectWorkExcavator(order: order),
-            );
-          case WorkLogRoutes.directWorkDozer:
-            final order = settings.arguments as OrderModel;
-            return MaterialPageRoute(
-              builder: (_) => DirectWorkDozer(order: order),
-            );
-          case WorkLogRoutes.directWorkServiceVehicle:
-            final order = settings.arguments as OrderModel;
-            return MaterialPageRoute(
-              builder:
-                  (_) => DirectWorkServiceVehicle(
-                    order: order,
-                  ),
-            );
-          case WorkLogRoutes.directWorkMultiExcavatorReport:
-            final order = settings.arguments as OrderModel;
-            return MaterialPageRoute(
-              builder:
-                  (_) => DirectWorkMultiExcavatorReport(
-                    order: order,
-                  ),
+                  (_) =>
+                      DirectWorkExcavatorReport(order: order),
             );
           case WorkLogRoutes.indirectWorkReport:
             final order = settings.arguments as OrderModel;
@@ -314,17 +283,10 @@ class WorkLogRoutes {
   static const String serviceVehicleTripInput =
       '/serviceVehicleTripInput';
   //ReportTask
-  static const String directWorkMultiVehicleReport =
-      '/directWorkMultiVehicleReport';
-  static const String directWorkDrilling =
-      '/directWorkDrilling';
-  static const String directWorkExcavator =
-      '/directWorkExcavator';
-  static const String directWorkDozer = '/directWorkDozer';
-  static const String directWorkServiceVehicle =
-      '/directWorkServiceVehicle';
-  static const String directWorkMultiExcavatorReport =
-      '/directWorkMultiExcavatorReport';
+  static const String directWorkOtherReport =
+      '/directWorkOtherReport';
+  static const String directWorkExcavatorReport =
+      '/directWorkExcavatorReport';
   static const String indirectWorkReport =
       '/indirectWorkReport';
 }

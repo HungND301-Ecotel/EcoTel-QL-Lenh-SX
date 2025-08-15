@@ -36,22 +36,6 @@ router.post('/order/bulk', verifyToken, restrictTo('admin', 'dispatcher', 'manag
                 path: "shiftReport",
                 populate: [
                     {
-                        path: "vehicleReports.vehicle",
-                        select: "code"  // chọn field cần thiết
-                    },
-                    {
-                        path: "vehicleReports.excavator",
-                        select: "code"
-                    },
-                    {
-                        path: "vehicleReports.dumpingLocation",
-                        select: "name"
-                    },
-                    {
-                        path: "vehicleReports.materialType",
-                        select: "name"
-                    },
-                    {
                         path: "vehicleSummaries.vehicle",
                         select: "code"
                     }

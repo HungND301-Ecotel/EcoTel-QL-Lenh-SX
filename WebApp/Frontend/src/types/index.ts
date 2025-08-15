@@ -35,6 +35,7 @@ export interface Position {
 export interface DeviceType {
     _id: string;
     name: string;
+    group: 'Xe' | 'Máy',
     createdAt?: string;
     updatedAt?: string;
 }
@@ -130,14 +131,6 @@ export interface ShiftReportType {
     _id: string;
     orderId: string,
     assignedTo: string,
-    vehicleReports:
-    {
-        vehicle?: string,
-        excavator?: string,
-        dumpingLocation?: string,
-        materialType?: string,
-        tripCount?: number,
-    }[],
     vehicleSummaries:
     {
         vehicle?: string,

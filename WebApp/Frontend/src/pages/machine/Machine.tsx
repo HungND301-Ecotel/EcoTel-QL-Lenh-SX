@@ -29,6 +29,7 @@ import {
     Accordion,
     AccordionSummary,
     AccordionDetails,
+    TablePagination,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -312,6 +313,23 @@ const Machines: React.FC = () => {
         }
     };
 
+    const [page, setPage] = React.useState(0);
+    const [pageSize, setPageSize] = React.useState(10);
+
+    const handleChangePage = (event: React.MouseEvent<HTMLButtonElement, MouseEvent> | null, page: number) => {
+        setPage(page);
+    };
+
+    const pageData = (machines: any[], page: number, pageSize: number) => {
+        let data;
+        if (!page && !pageSize) {
+            data = machines
+        } else {
+            data = machines.slice(page * pageSize, (page + 1) * pageSize)
+        }
+        return data
+    }
+    const paginatedData = pageData(machines, page, pageSize);
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -444,11 +462,11 @@ const Machines: React.FC = () => {
                                 />
                                 <Autocomplete
                                     fullWidth
-                                    options={DeviceTypes.filter((item: DeviceType) => item.name !== "Vận tải")}
+                                    options={DeviceTypes.filter((p: DeviceType) => p.group === "Máy")}
                                     getOptionLabel={(option: DeviceType) =>
                                         option.name || ''
                                     }
-                                    value={DeviceTypes.find((p: any) => p._id === formik.values.category) || null}
+                                    value={DeviceTypes.find((p: DeviceType) => p._id === formik.values.category) || null}
                                     onChange={(event, newValue) => {
                                         formik.setFieldValue('category', newValue?._id || '');
                                     }}
@@ -664,7 +682,7 @@ const Machines: React.FC = () => {
                             </TableRow>
                         </TableHead>
                         {!isLoading ? <TableBody>
-                            {machines.map((device: any) => {
+                            {paginatedData.map((device: any) => {
                                 let coordsDisplay = '';
                                 if (
                                     device.coordinates &&
@@ -734,6 +752,17 @@ const Machines: React.FC = () => {
                         </TableBody> : <Typography>Loading...</Typography>}
                     </Table>
                 </TableContainer>
+                <TablePagination
+                    component="div"
+                    count={machines.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={pageSize}
+                    onRowsPerPageChange={(event) => {
+                        setPageSize(parseInt(event.target.value, 10));
+                        setPage(0);
+                    }}
+                />
             </Paper>
 
         </Box>

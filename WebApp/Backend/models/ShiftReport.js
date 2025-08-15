@@ -11,22 +11,6 @@ const Shiftreport = new mongoose.Schema({
         ref: "User",
     },
 
-    vehicleReports: [
-        {
-            vehicle: { type: mongoose.Schema.Types.ObjectId, ref: 'Device' },
-            excavator: { type: mongoose.Schema.Types.ObjectId, ref: 'Device' },
-            dumpingLocation: { type: mongoose.Schema.Types.ObjectId, ref: 'Location' },
-            fromLocation: { type: mongoose.Schema.Types.ObjectId, ref: 'Location' },
-            toLocation: { type: mongoose.Schema.Types.ObjectId, ref: 'Location' },
-            workingMinutes: Number,
-            distanceKm: Number,
-            materialType: { type: mongoose.Schema.Types.ObjectId, ref: 'Material' },
-            drillDepth: Number,
-            hardness: Number,
-            tripCount: Number,
-        }
-    ],
-
     vehicleSummaries: [
         {
             vehicle: { type: mongoose.Schema.Types.ObjectId, ref: 'Device' },

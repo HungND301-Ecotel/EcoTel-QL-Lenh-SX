@@ -7,13 +7,13 @@ const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 
 router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
-        const { name } = req.body
-        const existingDeviceType = await DeviceType.findOne({ name });
+        const { name, group } = req.body
+        const existingDeviceType = await DeviceType.findOne({ name, group });
         if (existingDeviceType) {
             return res.status(400).send({ status: 'error', message: 'Tên loại phương tiện đã tồn tại' });
         }
         const newDeviceType = new DeviceType({
-            name: name,
+            name, group
         });
         await newDeviceType.save();
         res.status(200).send({ status: 'success', message: "Tạo thành công" });
@@ -44,9 +44,9 @@ router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res,
 });
 router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
-        const DeviceType = await DeviceType.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const deviceType = await DeviceType.findByIdAndUpdate(req.params.id, req.body, { new: true });
 
-        if (!DeviceType) {
+        if (!deviceType) {
             return res.status(404).send({ status: 'error', message: 'Sửa thất bại ' });
         }
 

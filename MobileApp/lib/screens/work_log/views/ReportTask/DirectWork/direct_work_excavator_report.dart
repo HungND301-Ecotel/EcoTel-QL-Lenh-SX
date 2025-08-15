@@ -7,22 +7,21 @@ import 'package:soft/services/shift_report_service.dart';
 import 'package:soft/widgets/pay_roll_input.dart';
 import 'package:soft/screens/work_log/views/ReportTask/DirectWork/controller.dart';
 
-class DirectWorkMultiVehiclereport extends StatefulWidget {
+class DirectWorkExcavatorReport extends StatefulWidget {
   final OrderModel order;
-  const DirectWorkMultiVehiclereport({
+  const DirectWorkExcavatorReport({
     super.key,
     required this.order,
   });
   @override
   State<StatefulWidget> createState() =>
-      _DirectWorkMultiVehiclereport();
+      _DirectWorkExcavatorReport();
 }
 
-class _DirectWorkMultiVehiclereport
-    extends State<DirectWorkMultiVehiclereport> {
+class _DirectWorkExcavatorReport
+    extends State<DirectWorkExcavatorReport> {
   UserModel? user;
-  final Map<String, VehicleReportControllers>
-  _vehicleControllers = {};
+
   final Map<String, VehicleSummariesControllers>
   _deviceSummaryControllers = {};
 
@@ -60,9 +59,7 @@ class _DirectWorkMultiVehiclereport
   @override
   void initState() {
     super.initState();
-    for (var device in widget.order.device ?? []) {
-      _vehicleControllers[device.id] =
-          VehicleReportControllers();
+    for (var device in widget.order.excavator ?? []) {
       _deviceSummaryControllers[device.id] =
           VehicleSummariesControllers();
     }
@@ -77,17 +74,6 @@ class _DirectWorkMultiVehiclereport
           report.handoverNotes ?? '';
       _risksController.text = report.risks ?? '';
 
-      for (var item in report.vehicleReports ?? []) {
-        final controller =
-            _vehicleControllers[item.vehicle.id];
-        if (controller != null) {
-          controller.dumpingLocation.text =
-              item.dumpingLocation?.toString() ?? '';
-          controller.materialType = item.materialType;
-          controller.tripCount.text =
-              item.tripCount?.toString() ?? '';
-        }
-      }
       for (var item in report.vehicleSummaries ?? []) {
         final controller =
             _deviceSummaryControllers[item.vehicle.id];
@@ -118,27 +104,7 @@ class _DirectWorkMultiVehiclereport
   final ShiftReportService _shiftReportService =
       ShiftReportService();
   void create() async {
-    final List<Map<String, dynamic>> vehiclesReport = [];
     final List<Map<String, dynamic>> vehicleSummaries = [];
-
-    for (var entry in _vehicleControllers.entries) {
-      final id = entry.key;
-      final controller = entry.value;
-
-      vehiclesReport.add({
-        "vehicle": id,
-        "excavator":
-            (widget.order.excavator != null &&
-                    widget.order.excavator!.isNotEmpty)
-                ? widget.order.excavator!.last.id
-                : null,
-        "dumpingLocation": widget.order.location?.id,
-        "materialType": widget.order.material?.id,
-        "tripCount": int.tryParse(
-          controller.tripCount.text,
-        ),
-      });
-    }
 
     for (var entry in _deviceSummaryControllers.entries) {
       final id = entry.key;
@@ -189,7 +155,6 @@ class _DirectWorkMultiVehiclereport
     var result = await _shiftReportService.create({
       "orderId": widget.order.id,
       "assignedTo": user?.id,
-      "vehicleReports": vehiclesReport,
       "vehicleSummaries": vehicleSummaries,
       "handoverHours": handoverHours,
       "otherHours": otherHours,
@@ -213,13 +178,84 @@ class _DirectWorkMultiVehiclereport
     }
   }
 
+  void update(String shiftReportId) async {
+    final List<Map<String, dynamic>> vehicleSummaries = [];
+
+    for (var entry in _deviceSummaryControllers.entries) {
+      final id = entry.key;
+      final controller = entry.value;
+
+      vehicleSummaries.add({
+        "vehicle": id,
+        "travelHours": int.tryParse(
+          controller.travelHours.text,
+        ),
+        "repairHours": int.tryParse(
+          controller.repairHours.text,
+        ),
+        "fuelRemain": int.tryParse(
+          controller.fuelRemain.text,
+        ),
+        "fuelReceived": int.tryParse(
+          controller.fuelReceived.text,
+        ),
+        "fuelRemainEnd": int.tryParse(
+          controller.fuelRemainEnd.text,
+        ),
+        "status": controller.status,
+        "note": controller.note.text,
+        "gpsStatus": controller.gpsStatus,
+        "sealStatus": controller.sealStatus,
+      });
+    }
+    final handoverHours = int.tryParse(
+      _handoverHoursController.text.trim(),
+    );
+    final otherHours = int.tryParse(
+      _otherHoursController.text.trim(),
+    );
+    final handoverNotes =
+        _handoverNotesController.text.trim();
+    final risks = _risksController.text.trim();
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Vui lòng nhập thẻ lương."),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    var result = await _shiftReportService
+        .update(shiftReportId, {
+          "orderId": widget.order.id,
+          "assignedTo": user?.id,
+          "vehicleSummaries": vehicleSummaries,
+          "handoverHours": handoverHours,
+          "otherHours": otherHours,
+          "handoverNotes": handoverNotes,
+          "risks": risks,
+        });
+    if (!mounted) return;
+    if (result['status'] == 'error') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      Navigator.pushNamed(
+        context,
+        WorkLogRoutes.taskDetailPage,
+        arguments: widget.order.id,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final excavator =
-        (widget.order.excavator != null &&
-                widget.order.excavator!.isNotEmpty)
-            ? widget.order.excavator!.last
-            : null;
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -254,12 +290,9 @@ class _DirectWorkMultiVehiclereport
                       crossAxisAlignment:
                           CrossAxisAlignment.start,
                       children:
-                          (widget.order.device ?? []).map((
+                          (widget.order.excavator ?? []).map((
                             item,
                           ) {
-                            final deviceController =
-                                _vehicleControllers[item
-                                    .id]!;
                             final summaryController =
                                 _deviceSummaryControllers[item
                                     .id]!;
@@ -274,49 +307,6 @@ class _DirectWorkMultiVehiclereport
                                     fontWeight:
                                         FontWeight.bold,
                                   ),
-                                ),
-                                SizedBox(height: 16),
-                                Text(
-                                  " Máy xúc: ${excavator?.code}",
-                                  style: TextStyle(
-                                    fontWeight:
-                                        FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 16),
-                                Text(
-                                  " Điểm đổ: ${widget.order.location?.name}",
-                                  style: TextStyle(
-                                    fontWeight:
-                                        FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 16),
-                                Text(
-                                  " Loại hàng: ${widget.order.material?.name}",
-                                  style: TextStyle(
-                                    fontWeight:
-                                        FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 16),
-                                Text(
-                                  " Số chuyến:",
-                                  style: TextStyle(
-                                    fontWeight:
-                                        FontWeight.bold,
-                                  ),
-                                ),
-                                TextField(
-                                  controller:
-                                      deviceController
-                                          .tripCount,
-                                  keyboardType:
-                                      TextInputType.number,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter
-                                        .digitsOnly,
-                                  ],
                                 ),
                                 SizedBox(height: 16),
                                 Text(
@@ -644,35 +634,43 @@ class _DirectWorkMultiVehiclereport
               ),
             ),
           ),
-          if (widget.order.shiftReport == null)
-            Container(
-              padding: const EdgeInsets.all(8.0),
-              width: double.infinity,
-              color: Colors.white,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: create,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 14,
-                        ),
+          Container(
+            padding: const EdgeInsets.all(8.0),
+            width: double.infinity,
+            color: Colors.white,
+            child: Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (widget.order.shiftReport !=
+                          null) {
+                        update(
+                          widget.order.shiftReport!.id,
+                        );
+                      } else {
+                        create();
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 14,
                       ),
-                      child: const Text(
-                        'Lưu lại',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    ),
+                    child: const Text(
+                      'Lưu lại',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
+          ),
         ],
       ),
     );

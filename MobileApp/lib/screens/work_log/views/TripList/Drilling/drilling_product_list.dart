@@ -113,8 +113,11 @@ class _DrillingProductList
                   children:
                       _allData
                           .map(
-                            (item) =>
-                                PerformanceItem(data: item),
+                            (item) => PerformanceItem(
+                              data: item,
+                              getReportByOrder:
+                                  getOrderByUser,
+                            ),
                           )
                           .toList(),
                 ),

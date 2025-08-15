@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Box,
@@ -29,6 +29,7 @@ import {
     Accordion,
     AccordionSummary,
     AccordionDetails,
+    TablePagination,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -87,9 +88,10 @@ const Vehicles: React.FC = () => {
     const [status, setStatus] = useState("")
     const [department, setDepartment] = useState("")
     const [mapCoords, setMapCoords] = useState<{ lat: number, lng: number; } | null>(null);
-
     const [user, setUser] = useAtom(userAtom)
     const [expanded, setExpanded] = useState(false);
+    const formScrollRef = useRef<HTMLDivElement>(null);
+    const [formKey, setFormKey] = useState(0);
 
     const handleSelected = (deviceId: string) => {
         setSelectedDevices(prev =>
@@ -319,6 +321,23 @@ const Vehicles: React.FC = () => {
         }
     };
 
+    const [page, setPage] = React.useState(0);
+    const [pageSize, setPageSize] = React.useState(10);
+
+    const handleChangePage = (event: React.MouseEvent<HTMLButtonElement, MouseEvent> | null, page: number) => {
+        setPage(page);
+    };
+
+    const pageData = (vehicles: any[], page: number, pageSize: number) => {
+        let data;
+        if (!page && !pageSize) {
+            data = vehicles
+        } else {
+            data = vehicles.slice(page * pageSize, (page + 1) * pageSize)
+        }
+        return data
+    }
+    const paginatedData = pageData(vehicles, page, pageSize);
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -405,174 +424,175 @@ const Vehicles: React.FC = () => {
                         </Button>
                     </Box>
                 </AccordionSummary>
-                <AccordionDetails>
-                    <DialogTitle>
-                        {selectedDevice ? 'Sửa Thông tin xe' : 'Thêm Thông tin xe'}
-                    </DialogTitle>
-                    <DialogContent>
-                        <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                <TextField
-                                    fullWidth
-                                    id="code"
-                                    name="code"
-                                    label="Biển số"
-                                    value={formik.values.code}
-                                    onChange={formik.handleChange}
-                                    error={formik.touched.code && Boolean(formik.errors.code)}
-                                    helperText={formik.touched.code && formik.errors.code}
-                                />
-                                <TextField
-                                    fullWidth
-                                    id="name"
-                                    name="name"
-                                    label="Tên xe"
-                                    value={formik.values.name}
-                                    onChange={formik.handleChange}
-                                    error={formik.touched.name && Boolean(formik.errors.name)}
-                                    helperText={formik.touched.name && formik.errors.name}
-                                />
-                                <TextField
-                                    fullWidth
-                                    id="vehicleNumber"
-                                    name="vehicleNumber"
-                                    label="Số xe"
-                                    value={formik.values.vehicleNumber}
-                                    onChange={formik.handleChange}
-                                    error={formik.touched.vehicleNumber && Boolean(formik.errors.vehicleNumber)}
-                                    helperText={formik.touched.vehicleNumber && formik.errors.vehicleNumber}
-                                />
-                                <Autocomplete
-                                    fullWidth
-                                    options={DeviceTypes}
-                                    readOnly
-                                    getOptionLabel={(option: DeviceType) =>
-                                        option.name || ''
-                                    }
-                                    value={DeviceTypes.find((p: any) => p.name === 'Vận tải') || null}
-                                    onChange={(event, newValue) => {
-                                        formik.setFieldValue('category', newValue?._id || '');
-                                    }}
-                                    PopperComponent={StyledPopper}
-                                    renderInput={(params) => (
-                                        <TextField
-                                            {...params}
-                                            label="Loại xe"
-                                            error={formik.touched.category && Boolean(formik.errors.category)}
-                                            helperText={formik.touched.category && typeof formik.errors.category === 'string' ? formik.errors.category : ''}
-                                        />
-                                    )}
-                                />
-                                <TextField
-                                    fullWidth
-                                    id="material"
-                                    name="material"
-                                    label="Chủng loại"
-                                    value={formik.values.material}
-                                    onChange={formik.handleChange}
-                                    error={formik.touched.material && Boolean(formik.errors.material)}
-                                    helperText={formik.touched.material && formik.errors.material}
-                                />
-                                <TextField
-                                    fullWidth
-                                    id="fuelType"
-                                    name="fuelType"
-                                    label="Nhiên liệu"
-                                    value={formik.values.fuelType}
-                                    onChange={formik.handleChange}
-                                    error={formik.touched.fuelType && Boolean(formik.errors.fuelType)}
-                                    helperText={formik.touched.fuelType && formik.errors.fuelType}
-                                />
-                                <TextField
-                                    fullWidth
-                                    type="number"
-                                    id="capacity"
-                                    name="capacity"
-                                    label="Trọng tải"
-                                    value={formik.values.capacity}
-                                    onChange={formik.handleChange}
-                                    error={formik.touched.capacity && Boolean(formik.errors.capacity)}
-                                    helperText={formik.touched.capacity && formik.errors.capacity}
-                                />
-                                <TextField
-                                    fullWidth
-                                    select
-                                    id="status"
-                                    name="status"
-                                    label="Trạng thái"
-                                    value={formik.values.status || 'available'}
-                                    onChange={formik.handleChange}
-                                    error={formik.touched.status && Boolean(formik.errors.status)}
-                                    helperText={formik.touched.status && formik.errors.status}
-                                >
-                                    <MenuItem value="available">Chờ điều động</MenuItem>
-                                    <MenuItem value="in_use">Đang hoạt động</MenuItem>
-                                    <MenuItem value="maintenance">Hỏng</MenuItem>
-                                    <MenuItem value="retired">Niêm cất</MenuItem>
-                                </TextField>
-                                <Autocomplete
-                                    fullWidth
-                                    options={departments}
-                                    getOptionLabel={(option: Department) =>
-                                        option.name || ''
-                                    }
-                                    value={departments.find((p: any) => p._id === (user?.role === 'manager?' ? user?.department?._id : formik.values.department)) || null}
-                                    readOnly={user?.role === 'manager'}
-                                    // disabled
-                                    onChange={(event, newValue) => {
-                                        formik.setFieldValue('department', newValue?._id || '');
-                                    }}
-                                    PopperComponent={StyledPopper}
-                                    renderInput={(params) => (
-                                        <TextField
-                                            {...params}
-                                            label="Đơn vị"
-                                            error={formik.touched.department && Boolean(formik.errors.department)}
-                                            helperText={formik.touched.department && typeof formik.errors.department === 'string' ? formik.errors.department : ''}
-                                        />
-                                    )}
-                                />
-                                <TextField
-                                    fullWidth
-                                    id="coordinates"
-                                    name="coordinates"
-                                    label="Tọa độ (lng, lat)"
-                                    value={`${formik.values.coordinates.lat}, ${formik.values.coordinates.lng}`}
-                                    onChange={(e) => {
-                                        const [latStr, lngStr] = e.target.value.split(',');
-                                        const lng = parseFloat(lngStr.trim());
-                                        const lat = parseFloat(latStr.trim());
-                                        if (!isNaN(lat) && !isNaN(lng)) {
-                                            const coords = { lat, lng };
-                                            formik.setFieldValue('coordinates', coords);
-                                            setMapCoords(coords);
-                                        }
-                                    }}
-                                    error={formik.touched.coordinates && Boolean(formik.errors.coordinates)}
-                                    helperText={
-                                        (formik.touched.coordinates?.lat && formik.errors.coordinates?.lat) ||
-                                        (formik.touched.coordinates?.lng && formik.errors.coordinates?.lng)
-                                    }
-                                />
-                                <MapContainer
-                                    center={[defaultCenter.lat, defaultCenter.lng]}
-                                    zoom={18}
-                                    style={containerStyle}
-                                >
-                                    {/* Giao diện bản đồ giống Google Maps (CartoDB) */}
-                                    <TileLayer
-                                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                        attribution='&copy; OpenStreetMap contributors'
+                <AccordionDetails key={formKey}>
+                    <Box ref={formScrollRef}>
+                        <DialogTitle>
+                            {selectedDevice ? 'Sửa Thông tin xe' : 'Thêm Thông tin xe'}
+                        </DialogTitle>
+                        <DialogContent>
+                            <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                    <TextField
+                                        fullWidth
+                                        id="code"
+                                        name="code"
+                                        label="Biển số"
+                                        value={formik.values.code}
+                                        onChange={formik.handleChange}
+                                        error={formik.touched.code && Boolean(formik.errors.code)}
+                                        helperText={formik.touched.code && formik.errors.code}
                                     />
-                                    <LocationSelector onSelect={(coords) => setMapCoords(coords)} />
-                                    {mapCoords && <Marker
-                                        position={mapCoords}
-                                    />}
-                                </MapContainer>
+                                    <TextField
+                                        fullWidth
+                                        id="name"
+                                        name="name"
+                                        label="Tên xe"
+                                        value={formik.values.name}
+                                        onChange={formik.handleChange}
+                                        error={formik.touched.name && Boolean(formik.errors.name)}
+                                        helperText={formik.touched.name && formik.errors.name}
+                                    />
+                                    <TextField
+                                        fullWidth
+                                        id="vehicleNumber"
+                                        name="vehicleNumber"
+                                        label="Số xe"
+                                        value={formik.values.vehicleNumber}
+                                        onChange={formik.handleChange}
+                                        error={formik.touched.vehicleNumber && Boolean(formik.errors.vehicleNumber)}
+                                        helperText={formik.touched.vehicleNumber && formik.errors.vehicleNumber}
+                                    />
+                                    <Autocomplete
+                                        fullWidth
+                                        options={DeviceTypes.filter((p: DeviceType) => p.group === "Xe")}
+                                        getOptionLabel={(option: DeviceType) =>
+                                            option.name || ''
+                                        }
+                                        value={DeviceTypes.find((p: DeviceType) => p._id === formik.values.category) || null}
+                                        onChange={(event, newValue) => {
+                                            formik.setFieldValue('category', newValue?._id || '');
+                                        }}
+                                        PopperComponent={StyledPopper}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                label="Loại xe"
+                                                error={formik.touched.category && Boolean(formik.errors.category)}
+                                                helperText={formik.touched.category && typeof formik.errors.category === 'string' ? formik.errors.category : ''}
+                                            />
+                                        )}
+                                    />
+                                    <TextField
+                                        fullWidth
+                                        id="material"
+                                        name="material"
+                                        label="Chủng loại"
+                                        value={formik.values.material}
+                                        onChange={formik.handleChange}
+                                        error={formik.touched.material && Boolean(formik.errors.material)}
+                                        helperText={formik.touched.material && formik.errors.material}
+                                    />
+                                    <TextField
+                                        fullWidth
+                                        id="fuelType"
+                                        name="fuelType"
+                                        label="Nhiên liệu"
+                                        value={formik.values.fuelType}
+                                        onChange={formik.handleChange}
+                                        error={formik.touched.fuelType && Boolean(formik.errors.fuelType)}
+                                        helperText={formik.touched.fuelType && formik.errors.fuelType}
+                                    />
+                                    <TextField
+                                        fullWidth
+                                        type="number"
+                                        id="capacity"
+                                        name="capacity"
+                                        label="Trọng tải"
+                                        value={formik.values.capacity}
+                                        onChange={formik.handleChange}
+                                        error={formik.touched.capacity && Boolean(formik.errors.capacity)}
+                                        helperText={formik.touched.capacity && formik.errors.capacity}
+                                    />
+                                    <TextField
+                                        fullWidth
+                                        select
+                                        id="status"
+                                        name="status"
+                                        label="Trạng thái"
+                                        value={formik.values.status || 'available'}
+                                        onChange={formik.handleChange}
+                                        error={formik.touched.status && Boolean(formik.errors.status)}
+                                        helperText={formik.touched.status && formik.errors.status}
+                                    >
+                                        <MenuItem value="available">Chờ điều động</MenuItem>
+                                        <MenuItem value="in_use">Đang hoạt động</MenuItem>
+                                        <MenuItem value="maintenance">Hỏng</MenuItem>
+                                        <MenuItem value="retired">Niêm cất</MenuItem>
+                                    </TextField>
+                                    <Autocomplete
+                                        fullWidth
+                                        options={departments}
+                                        getOptionLabel={(option: Department) =>
+                                            option.name || ''
+                                        }
+                                        value={departments.find((p: any) => p._id === (user?.role === 'manager' ? user?.department?._id : formik.values.department)) || null}
+                                        readOnly={user?.role === 'manager'}
+                                        // disabled
+                                        onChange={(event, newValue) => {
+                                            formik.setFieldValue('department', newValue?._id || '');
+                                        }}
+                                        PopperComponent={StyledPopper}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                label="Đơn vị"
+                                                error={formik.touched.department && Boolean(formik.errors.department)}
+                                                helperText={formik.touched.department && typeof formik.errors.department === 'string' ? formik.errors.department : ''}
+                                            />
+                                        )}
+                                    />
+                                    <TextField
+                                        fullWidth
+                                        id="coordinates"
+                                        name="coordinates"
+                                        label="Tọa độ (lng, lat)"
+                                        value={`${formik.values.coordinates.lat}, ${formik.values.coordinates.lng}`}
+                                        onChange={(e) => {
+                                            const [latStr, lngStr] = e.target.value.split(',');
+                                            const lng = parseFloat(lngStr.trim());
+                                            const lat = parseFloat(latStr.trim());
+                                            if (!isNaN(lat) && !isNaN(lng)) {
+                                                const coords = { lat, lng };
+                                                formik.setFieldValue('coordinates', coords);
+                                                setMapCoords(coords);
+                                            }
+                                        }}
+                                        error={formik.touched.coordinates && Boolean(formik.errors.coordinates)}
+                                        helperText={
+                                            (formik.touched.coordinates?.lat && formik.errors.coordinates?.lat) ||
+                                            (formik.touched.coordinates?.lng && formik.errors.coordinates?.lng)
+                                        }
+                                    />
+                                    <MapContainer
+                                        center={[defaultCenter.lat, defaultCenter.lng]}
+                                        zoom={18}
+                                        style={containerStyle}
+                                    >
+                                        {/* Giao diện bản đồ giống Google Maps (CartoDB) */}
+                                        <TileLayer
+                                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                            attribution='&copy; OpenStreetMap contributors'
+                                        />
+                                        <LocationSelector onSelect={(coords) => setMapCoords(coords)} />
+                                        {mapCoords && <Marker
+                                            position={mapCoords}
+                                        />}
+                                    </MapContainer>
 
+                                </Box>
                             </Box>
-                        </Box>
-                    </DialogContent>
+                        </DialogContent>
+                    </Box>
                     <DialogActions>
                         <Button onClick={handleClose}>Hủy</Button>
                         <Button onClick={() => formik.handleSubmit()} variant="contained">
@@ -669,7 +689,7 @@ const Vehicles: React.FC = () => {
                             </TableRow>
                         </TableHead>
                         {!isLoading ? <TableBody>
-                            {vehicles.map((device: any) => {
+                            {paginatedData.map((device: any) => {
                                 let coordsDisplay = '';
                                 if (
                                     device.coordinates &&
@@ -739,6 +759,17 @@ const Vehicles: React.FC = () => {
                         </TableBody> : <Typography>Loading...</Typography>}
                     </Table>
                 </TableContainer>
+                <TablePagination
+                    component="div"
+                    count={vehicles.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={pageSize}
+                    onRowsPerPageChange={(event) => {
+                        setPageSize(parseInt(event.target.value, 10));
+                        setPage(0);
+                    }}
+                />
             </Paper>
 
         </Box>

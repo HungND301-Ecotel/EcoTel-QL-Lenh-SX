@@ -13,9 +13,9 @@ class PositionModel {
     Map<String, dynamic>? json,
   ) {
     return PositionModel(
-      id: json?['_id'],
-      name: json?['name'],
-      note: json?['note'],
+      id: json?['_id']??'',
+      name: json?['name']??'',
+      note: json?['note']??'',
     );
   }
 

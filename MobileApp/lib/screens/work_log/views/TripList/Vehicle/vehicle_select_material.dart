@@ -72,7 +72,7 @@ class _VehicleSelectMaterial
       appBar: AppBar(
         backgroundColor: Colors.blue,
         title: Text(
-          'Vật liệu',
+          'Chủng loại',
           style: TextStyle(
             color: Colors.white,
             fontSize: 18,

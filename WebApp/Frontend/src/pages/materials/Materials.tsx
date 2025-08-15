@@ -25,6 +25,7 @@ import {
     AccordionSummary,
     AccordionDetails,
     Checkbox,
+    TablePagination,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -169,7 +170,23 @@ const Materials: React.FC = () => {
             }
         });
     };
+    const [page, setPage] = React.useState(0);
+    const [pageSize, setPageSize] = React.useState(10);
 
+    const handleChangePage = (event: React.MouseEvent<HTMLButtonElement, MouseEvent> | null, page: number) => {
+        setPage(page);
+    };
+
+    const pageData = (materials: Material[], page: number, pageSize: number) => {
+        let data;
+        if (!page && !pageSize) {
+            data = materials
+        } else {
+            data = materials.slice(page * pageSize, (page + 1) * pageSize)
+        }
+        return data
+    }
+    const paginatedData = pageData(materials, page, pageSize);
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -293,7 +310,7 @@ const Materials: React.FC = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {!isLoading ? materials.map((material: Material) => (
+                        {!isLoading ? paginatedData.map((material: Material) => (
                             <TableRow key={material._id}>
                                 <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}><Checkbox onChange={() => handleSelected(material._id)} checked={selectedMaterials.includes(material._id)} /></TableCell>
                                 {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black' }}>{material.name}</TableCell>}
@@ -317,6 +334,17 @@ const Materials: React.FC = () => {
                         )) : <Typography>Loading...</Typography>}
                     </TableBody>
                 </Table>
+                <TablePagination
+                    component="div"
+                    count={materials.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={pageSize}
+                    onRowsPerPageChange={(event) => {
+                        setPageSize(parseInt(event.target.value, 10));
+                        setPage(0);
+                    }}
+                />
             </TableContainer>
 
         </Box>

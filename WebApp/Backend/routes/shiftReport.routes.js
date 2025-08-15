@@ -9,7 +9,7 @@ const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 
 router.post('/', verifyToken, async (req, res, next) => {
     try {
-        const { orderId, assignedTo, vehicleReports, vehicleSummaries, handoverHours, otherHours, handoverNotes, risks } = req.body
+        const { orderId, assignedTo, vehicleSummaries, handoverHours, otherHours, handoverNotes, risks } = req.body
 
         if (vehicleSummaries) {
             for (var item of vehicleSummaries) {
@@ -19,7 +19,7 @@ router.post('/', verifyToken, async (req, res, next) => {
             }
         }
         const newShiftReport = new ShiftReport({
-            orderId, assignedTo, vehicleReports, vehicleSummaries, handoverHours, otherHours, handoverNotes, risks
+            orderId, assignedTo, vehicleSummaries, handoverHours, otherHours, handoverNotes, risks
         });
         await newShiftReport.save();
         res.status(200).send({ status: 'success', message: "Tạo thành công" });
