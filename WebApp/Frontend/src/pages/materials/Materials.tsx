@@ -26,6 +26,8 @@ import {
     AccordionDetails,
     Checkbox,
     TablePagination,
+    Breadcrumbs,
+    InputAdornment,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -33,6 +35,7 @@ import {
     Delete as DeleteIcon,
     Settings,
     ExpandMore,
+    Search,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -189,30 +192,48 @@ const Materials: React.FC = () => {
     const paginatedData = pageData(materials, page, pageSize);
     return (
         <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h4">Quản lý vật liệu</Typography>
-
-            </Box>
-            <Box sx={{ flex: 1, flexDirection: 'column' }}>
-                <Typography><h3>Tìm kiếm</h3></Typography>
-                <TextField fullWidth size="small" value={value}
-                    placeholder='Tìm kiếm theo tên loại vật liệu'
-                    onChange={(e) => setValue(e.target.value)}>
-                </TextField>
+            <Breadcrumbs aria-label="breadcrumb">
+                <Typography>Danh mục</Typography>
+                <Typography>Vật liệu</Typography>
+            </Breadcrumbs>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, mt: 3 }}>
+                <Typography variant="h3" color={'blue'}>Vật liệu</Typography>
             </Box>
             <Accordion expanded={expanded}>
                 <AccordionSummary
-                    expandIcon={<ExpandMore />}
+                    expandIcon={<IconButton onClick={(e) => setMenuAnchorEl(e.currentTarget)}>
+                        <Settings sx={{ fontSize: 30 }} />
+                    </IconButton>}
                     aria-controls="panel1-content"
                     id="panel1-header"
+                    sx={{
+                        backgroundColor: 'white', '&.Mui-focusVisible': {
+                            backgroundColor: 'white',
+                        },
+                    }}
                 >
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                        <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
-                            Thêm vật liệu
-                        </Button>
-                        <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
-                            Xóa
-                        </Button>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', width: '100%' }}>
+                        <Box display={'flex'} gap={2}>
+                            <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
+                                Thêm vật liệu
+                            </Button>
+                            <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
+                                Xóa
+                            </Button>
+                        </Box>
+                        <Box flex={2}>
+                            <TextField fullWidth size="small" value={value}
+                                placeholder='Tìm kiếm theo tên loại vật liệu'
+                                onChange={(e) => setValue(e.target.value)}
+                                InputProps={{
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <Search sx={{ fontSize: 24 }} />
+                                        </InputAdornment>
+                                    )
+                                }}>
+                            </TextField>
+                        </Box>
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -265,10 +286,6 @@ const Materials: React.FC = () => {
                 </AccordionDetails>
             </Accordion>
             <Box display="flex" justifyContent='space-between' alignItems='center' sx={{ mb: 2, mt: 2 }}>
-                <Typography variant="h3" sx={{ p: 2 }}>Bảng loại vật liệu</Typography>
-                <IconButton onClick={(e) => setMenuAnchorEl(e.currentTarget)}>
-                    <Settings sx={{ fontSize: 30 }} />
-                </IconButton>
                 <Menu
                     anchorEl={menuAnchorEl}
                     open={Boolean(menuAnchorEl)}
@@ -289,7 +306,7 @@ const Materials: React.FC = () => {
                 }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', width: 50 }}>
+                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', width: 50 }}>
                                 <Checkbox
                                     color="primary"
                                     checked={materials.length > 0 && selectedMaterials.length === materials.length}
@@ -305,18 +322,21 @@ const Materials: React.FC = () => {
                             </TableCell>
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) &&
-                                <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: col?.width, minWidth: col?.width }}>{col.label}</TableCell>
+                                <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: col?.width, minWidth: col?.width }}>{col.label}</TableCell>
                             )}
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {!isLoading ? paginatedData.map((material: Material) => (
-                            <TableRow key={material._id}>
-                                <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}><Checkbox onChange={() => handleSelected(material._id)} checked={selectedMaterials.includes(material._id)} /></TableCell>
-                                {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black' }}>{material.name}</TableCell>}
-                                {visibleColumns.includes('density') && <TableCell sx={{ border: '1px solid black' }}>{material.density}</TableCell>}
-                                {visibleColumns.includes("mass") && <TableCell sx={{ border: '1px solid black' }}>{material.mass}</TableCell>}
-                                {visibleColumns.includes("edit") && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                        {!isLoading ? paginatedData.map((material: Material, index: number) => (
+                            <TableRow key={material._id} sx={{
+                                // Dùng chỉ mục index để tạo màu xen kẽ
+                                backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
+                            }}>
+                                <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(material._id)} checked={selectedMaterials.includes(material._id)} /></TableCell>
+                                {visibleColumns.includes('name') && <TableCell sx={{}}>{material.name}</TableCell>}
+                                {visibleColumns.includes('density') && <TableCell sx={{}}>{material.density}</TableCell>}
+                                {visibleColumns.includes("mass") && <TableCell sx={{}}>{material.mass}</TableCell>}
+                                {visibleColumns.includes("edit") && <TableCell align='center' sx={{}}>
                                     <IconButton color="primary" onClick={async () => {
                                         if (open) {
                                             const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');

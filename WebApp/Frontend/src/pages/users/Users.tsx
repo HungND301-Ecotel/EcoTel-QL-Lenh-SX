@@ -29,6 +29,7 @@ import {
     AccordionDetails,
     AccordionSummary,
     Accordion,
+    Breadcrumbs,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -42,6 +43,7 @@ import {
     InfoOutlined,
     ExpandMore,
     Download,
+    Search,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -388,88 +390,105 @@ const Users: React.FC = () => {
 
     return (
         <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h4">Quản lý người dùng</Typography>
-                <Box display="flex" gap={2}>
-                    <input
-                        id="upload-excel"
-                        type="file"
-                        accept=".xlsx, .xls"
-                        style={{ display: 'none' }}
-                        onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                                const formData = new FormData();
-                                formData.append('file', file);
-                                importFile.mutate(formData);
-                            }
-                            e.target.value = "";
-                        }}
-                    />
-
-                    <label htmlFor="upload-excel">
-                        <Button
-                            component="span"
-                            variant="contained"
-                            startIcon={<UploadFile />}
-                        >
-                            Tải lên excel
-                        </Button>
-                    </label>
-                    <Button
-                        component="span"
-                        variant="contained"
-                        startIcon={<Download />}
-                        onClick={() => exportExcel.mutate()}
-                    >
-                        Tải xuống
-                    </Button>
-                </Box>
-            </Box>
-            <Box sx={{ flex: 1, flexDirection: 'column', mb: 2 }}>
-                <Typography><h3>Tìm kiếm</h3></Typography>
-                <Box sx={{ display: 'flex', gap: 4 }}>
-                    <TextField fullWidth size="small" value={value}
-                        placeholder='Tìm kiếm theo tên, mã thẻ lương cán bộ, nhân viên'
-                        onChange={(e) => setValue(e.target.value)}>
-                    </TextField>
-                    {user?.role !== 'manager' && <Autocomplete
-                        fullWidth
-                        size='small'
-                        options={departments}
-                        getOptionLabel={(option: Department) =>
-                            option.code || ''
-                        }
-                        onChange={(event, newValue) => {
-                            setDepartment(newValue?._id || '')
-                        }}
-                        PopperComponent={StyledPopper}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                label="Tìm kiếm theo đơn vị"
-                            />
-                        )}
-                    />}
-                </Box>
+            <Breadcrumbs aria-label="breadcrumb">
+                <Typography>Danh mục</Typography>
+                <Typography>Người dùng</Typography>
+            </Breadcrumbs>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, mt: 3 }}>
+                <Typography variant="h3" color={'blue'}>Người dùng</Typography>
             </Box>
             <Accordion expanded={expanded}>
                 <AccordionSummary
-                    expandIcon={<ExpandMore />}
+                    expandIcon={<></>}
                     aria-controls="panel1-content"
                     id="panel1-header"
+                    sx={{
+                        backgroundColor: 'white', '&.Mui-focusVisible': {
+                            backgroundColor: 'white',
+                        },
+                    }}
                 >
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                        <Button
-                            variant="contained"
-                            startIcon={<AddIcon />}
-                            onClick={() => handleOpen()}
-                        >
-                            Thêm người dùng
-                        </Button>
-                        <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
-                            Xóa
-                        </Button>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', width: '100%' }}>
+                        <Box display="flex" gap={2}>
+                            <Button
+                                variant="contained"
+                                startIcon={<AddIcon />}
+                                onClick={() => handleOpen()}
+                            >
+                                Thêm người dùng
+                            </Button>
+                            <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
+                                Xóa
+                            </Button>
+                        </Box>
+                        <Box flex={1}>
+                            <Box sx={{ display: 'flex', gap: 4 }}>
+                                <TextField fullWidth size="small" value={value}
+                                    placeholder='Tìm kiếm theo tên, mã thẻ lương cán bộ, nhân viên'
+                                    onChange={(e) => setValue(e.target.value)}
+                                    InputProps={{
+                                        endAdornment: (
+                                            <InputAdornment position="end">
+                                                <Search sx={{ fontSize: 24 }} />
+                                            </InputAdornment>
+                                        )
+                                    }}>
+                                </TextField>
+                                {user?.role !== 'manager' && <Autocomplete
+                                    fullWidth
+                                    size='small'
+                                    options={departments}
+                                    getOptionLabel={(option: Department) =>
+                                        option.code || ''
+                                    }
+                                    onChange={(event, newValue) => {
+                                        setDepartment(newValue?._id || '')
+                                    }}
+                                    PopperComponent={StyledPopper}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Tìm kiếm theo đơn vị"
+                                        />
+                                    )}
+                                />}
+                            </Box>
+                        </Box>
+                        <Box display="flex" gap={2}>
+                            <input
+                                id="upload-excel"
+                                type="file"
+                                accept=".xlsx, .xls"
+                                style={{ display: 'none' }}
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        const formData = new FormData();
+                                        formData.append('file', file);
+                                        importFile.mutate(formData);
+                                    }
+                                    e.target.value = "";
+                                }}
+                            />
+
+                            <label htmlFor="upload-excel">
+                                <Button
+                                    component="span"
+                                    variant="contained"
+                                    startIcon={<UploadFile />}
+                                >
+                                    Tải lên excel
+                                </Button>
+                            </label>
+                            <Button
+                                component="span"
+                                variant="contained"
+                                startIcon={<Download />}
+                                onClick={() => exportExcel.mutate()}
+                            >
+                                Tải xuống
+                            </Button>
+                        </Box>
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -642,10 +661,7 @@ const Users: React.FC = () => {
                     </DialogActions>
                 </AccordionDetails>
             </Accordion>
-            <Paper sx={{ width: '100%', overflowX: 'auto' }}>
-                <Typography variant="h3" sx={{ p: 2 }}>
-                    Bảng người dùng
-                </Typography>
+            <Paper sx={{ width: '100%', overflowX: 'auto', mt: 3 }}>
                 <DataGrid
                     rows={users}
                     columns={userColumns}
@@ -664,20 +680,17 @@ const Users: React.FC = () => {
                     }}
                     loading={isLoading}
                     sx={{
-                        '& .MuiDataGrid-cell': {
-                            border: '1px solid black',
-
-                        },
-                        '& .MuiDataGrid-columnHeader': {
-                            border: '1px solid black',
-                            backgroundColor: '#f5f5f5',
-
-                        },
                         '& .MuiDataGrid-columnHeaderTitle': {
                             width: '100%',
                             textAlign: 'center',
                             fontWeight: 'bold',
                             fontSize: 18,
+                        },
+                        '& .MuiDataGrid-row:nth-of-type(odd)': {
+                            backgroundColor: '#e3f2fd',
+                        },
+                        '& .MuiDataGrid-row:nth-of-type(even)': {
+                            backgroundColor: 'white',
                         },
                     }}
                 />

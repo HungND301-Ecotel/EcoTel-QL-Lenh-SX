@@ -27,6 +27,8 @@ import {
     AccordionDetails,
     Checkbox,
     TablePagination,
+    InputAdornment,
+    Breadcrumbs,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -34,6 +36,7 @@ import {
     Delete as DeleteIcon,
     Settings,
     ExpandMore,
+    Search,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -186,30 +189,48 @@ const Jobs: React.FC = () => {
     const paginatedData = pageData(jobs, page, pageSize);
     return (
         <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h4">Quản lý công việc</Typography>
-
-            </Box>
-            <Box sx={{ flex: 1, flexDirection: 'column' }}>
-                <Typography><h3>Tìm kiếm</h3></Typography>
-                <TextField fullWidth size="small" value={value}
-                    placeholder='Tìm kiếm theo tên công việc'
-                    onChange={(e) => setValue(e.target.value)}>
-                </TextField>
+            <Breadcrumbs aria-label="breadcrumb">
+                <Typography>Danh mục</Typography>
+                <Typography>Công việc</Typography>
+            </Breadcrumbs>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, mt: 3 }}>
+                <Typography variant="h3" color={'blue'}>Công việc</Typography>
             </Box>
             <Accordion expanded={expanded}>
                 <AccordionSummary
-                    expandIcon={<ExpandMore />}
+                    expandIcon={<IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                        <Settings sx={{ fontSize: 30 }} />
+                    </IconButton>}
                     aria-controls="panel1-content"
                     id="panel1-header"
+                    sx={{
+                        backgroundColor: 'white', '&.Mui-focusVisible': {
+                            backgroundColor: 'white',
+                        },
+                    }}
                 >
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                        <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
-                            Thêm công việc
-                        </Button>
-                        <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
-                            Xóa
-                        </Button>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', width: '100%' }}>
+                        <Box display={'flex'} gap={2}>
+                            <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
+                                Thêm công việc
+                            </Button>
+                            <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
+                                Xóa
+                            </Button>
+                        </Box>
+                        <Box flex={2}>
+                            <TextField fullWidth size="small" value={value}
+                                placeholder='Tìm kiếm theo tên công việc'
+                                onChange={(e) => setValue(e.target.value)}
+                                InputProps={{
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <Search sx={{ fontSize: 24 }} />
+                                        </InputAdornment>
+                                    )
+                                }}>
+                            </TextField>
+                        </Box>
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -257,10 +278,6 @@ const Jobs: React.FC = () => {
                 </AccordionDetails>
             </Accordion>
             <Box display="flex" justifyContent='space-between' alignItems='center' sx={{ mb: 2, mt: 2 }}>
-                <Typography variant="h3" sx={{ p: 2 }}>Bảng công việc</Typography>
-                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                    <Settings sx={{ fontSize: 30 }} />
-                </IconButton>
                 <Menu
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}
@@ -282,7 +299,7 @@ const Jobs: React.FC = () => {
                 }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>
+                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>
                                 <Checkbox
                                     color="primary"
                                     checked={jobs.length > 0 && selectedJobs.length === jobs.length}
@@ -299,7 +316,7 @@ const Jobs: React.FC = () => {
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) && (
                                     <TableCell key={col.id} align="center" sx={{
-                                        backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: col.width, minWidth: col.width
+                                        backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: col.width, minWidth: col.width
                                     }}>
                                         {col.label}
                                     </TableCell>
@@ -308,12 +325,15 @@ const Jobs: React.FC = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {!isLoading ? paginatedData.map((job: any) => (
-                            <TableRow key={job._id}>
-                                <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}><Checkbox onChange={() => handleSelected(job._id)} checked={selectedJobs.includes(job._id)} /></TableCell>
-                                {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black' }}>{job.name}</TableCell>}
-                                {visibleColumns.includes('category') && <TableCell sx={{ border: '1px solid black' }}>{job.type}</TableCell>}
-                                {visibleColumns.includes('edit') && <TableCell sx={{ border: '1px solid black' }}>
+                        {!isLoading ? paginatedData.map((job: any, index: number) => (
+                            <TableRow key={job._id} sx={{
+                                // Dùng chỉ mục index để tạo màu xen kẽ
+                                backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
+                            }}>
+                                <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(job._id)} checked={selectedJobs.includes(job._id)} /></TableCell>
+                                {visibleColumns.includes('name') && <TableCell sx={{}}>{job.name}</TableCell>}
+                                {visibleColumns.includes('category') && <TableCell sx={{}}>{job.type}</TableCell>}
+                                {visibleColumns.includes('edit') && <TableCell sx={{}}>
                                     <IconButton color="primary" onClick={async () => {
                                         if (open) {
                                             const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');

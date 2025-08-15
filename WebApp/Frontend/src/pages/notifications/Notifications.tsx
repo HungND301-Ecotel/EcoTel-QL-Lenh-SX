@@ -20,6 +20,7 @@ import {
     MenuItem,
     Chip,
     Badge,
+    TablePagination,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -99,6 +100,24 @@ const Notifications: React.FC = () => {
         });
     };
 
+    const [page, setPage] = React.useState(0);
+    const [pageSize, setPageSize] = React.useState(10);
+
+    const handleChangePage = (event: React.MouseEvent<HTMLButtonElement, MouseEvent> | null, page: number) => {
+        setPage(page);
+    };
+
+    const pageData = (notifications: any[], page: number, pageSize: number) => {
+        let data;
+        if (!page && !pageSize) {
+            data = notifications
+        } else {
+            data = notifications.slice(page * pageSize, (page + 1) * pageSize)
+        }
+        return data
+    }
+    const paginatedData = pageData(notifications, page, pageSize);
+
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -112,38 +131,41 @@ const Notifications: React.FC = () => {
                     <Button variant='contained' onClick={() => setType(false)}>Chưa đọc</Button>
                 </Badge>
             </Box>
-            <TableContainer component={Paper}>
+            <TableContainer component={Paper} sx={{ boxShadow: 4 }}>
                 <Table sx={{
                     "& td, & th": { padding: "4px 8px" },
                 }}>
-                    <TableHead>
+                    <TableHead sx={{ backgroundColor: '#f5f5f5', }}>
                         <TableRow>
-                            <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Tiêu đề</TableCell>
-                            <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Nội dung</TableCell>
-                            <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Người gửi</TableCell>
-                            <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>
-                            <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ngày tạo</TableCell>
-                            <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: 50 }}>Đánh dấu</TableCell>
-                            <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: 50 }}>Xóa</TableCell>
+                            <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Tiêu đề</TableCell>
+                            <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Nội dung</TableCell>
+                            <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Người gửi</TableCell>
+                            <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>
+                            <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Ngày tạo</TableCell>
+                            <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18, width: 100 }}>Đánh dấu</TableCell>
+                            <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18, width: 50 }}>Xóa</TableCell>
                         </TableRow>
                     </TableHead>
                     {!isLoading ? <TableBody>
-                        {notifications.map((notification: any) => (
-                            <TableRow key={notification._id}>
-                                <TableCell sx={{ border: '1px solid black' }}>{notification.title}</TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>
+                        {paginatedData.map((notification: any, index: number) => (
+                            <TableRow key={notification._id} sx={{
+                                // Dùng chỉ mục index để tạo màu xen kẽ
+                                backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
+                            }}>
+                                <TableCell sx={{}}>{notification.title}</TableCell>
+                                <TableCell sx={{}}>
                                     {notification.message}
                                 </TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>{notification.recipient?.fullName}</TableCell>
-                                <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                <TableCell sx={{}}>{notification.recipient?.fullName}</TableCell>
+                                <TableCell align='center' sx={{}}>
                                     <Chip
                                         label={notification.read ? 'Đã đọc' : 'Chưa đọc'}
                                         color={notification.read ? 'success' : 'default'}
                                         size="small"
                                     />
                                 </TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>{new Date(notification.createdAt).toLocaleString('vi-VN')}</TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>
+                                <TableCell sx={{}}>{new Date(notification.createdAt).toLocaleString('vi-VN')}</TableCell>
+                                <TableCell sx={{}}>
                                     <IconButton
                                         color="primary"
                                         onClick={() => updateMutation.mutate(notification._id)}
@@ -151,7 +173,7 @@ const Notifications: React.FC = () => {
                                         {notification.read ? <Check /> : <Close />}
                                     </IconButton>
                                 </TableCell>
-                                <TableCell sx={{ border: '1px solid black' }}>
+                                <TableCell sx={{}}>
                                     <IconButton
                                         color="error"
                                         onClick={() => handleDelete(notification._id)}
@@ -163,6 +185,17 @@ const Notifications: React.FC = () => {
                         ))}
                     </TableBody> : <Typography>Loading...</Typography>}
                 </Table>
+                <TablePagination
+                    component="div"
+                    count={notifications.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={pageSize}
+                    onRowsPerPageChange={(event) => {
+                        setPageSize(parseInt(event.target.value, 10));
+                        setPage(0);
+                    }}
+                />
             </TableContainer>
         </Box>
     );

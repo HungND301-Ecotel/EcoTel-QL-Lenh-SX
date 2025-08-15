@@ -26,6 +26,8 @@ import {
     AccordionDetails,
     Checkbox,
     TablePagination,
+    Breadcrumbs,
+    InputAdornment,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -33,6 +35,7 @@ import {
     Delete as DeleteIcon,
     Settings,
     ExpandMore,
+    Search,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -185,30 +188,48 @@ const Positions: React.FC = () => {
     const paginatedData = pageData(positions, page, pageSize);
     return (
         <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h4">Quản lý chức danh, nghề nghiệp</Typography>
-
-            </Box>
-            <Box sx={{ flex: 1, flexDirection: 'column' }}>
-                <Typography><h3>Tìm kiếm</h3></Typography>
-                <TextField fullWidth size="small" value={value}
-                    placeholder='Tìm kiếm theo tên chức danh'
-                    onChange={(e) => setValue(e.target.value)}>
-                </TextField>
+            <Breadcrumbs aria-label="breadcrumb">
+                <Typography>Danh mục</Typography>
+                <Typography>Chức danh, nghề nghiệp</Typography>
+            </Breadcrumbs>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, mt: 3 }}>
+                <Typography variant="h3" color={'blue'}>Chức danh, nghề nghiệp</Typography>
             </Box>
             <Accordion expanded={expanded}>
                 <AccordionSummary
-                    expandIcon={<ExpandMore />}
+                    expandIcon={<IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                        <Settings sx={{ fontSize: 30 }} />
+                    </IconButton>}
                     aria-controls="panel1-content"
                     id="panel1-header"
+                    sx={{
+                        backgroundColor: 'white', '&.Mui-focusVisible': {
+                            backgroundColor: 'white',
+                        },
+                    }}
                 >
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                        <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
-                            Thêm chức danh
-                        </Button>
-                        <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
-                            Xóa
-                        </Button>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', width: '100%' }}>
+                        <Box display={'flex'} gap={2}>
+                            <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
+                                Thêm chức danh
+                            </Button>
+                            <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
+                                Xóa
+                            </Button>
+                        </Box>
+                        <Box flex={2}>
+                            <TextField fullWidth size="small" value={value}
+                                placeholder='Tìm kiếm theo tên chức danh, nghề nghiệp'
+                                onChange={(e) => setValue(e.target.value)}
+                                InputProps={{
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <Search sx={{ fontSize: 24 }} />
+                                        </InputAdornment>
+                                    )
+                                }}>
+                            </TextField>
+                        </Box>
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -249,10 +270,6 @@ const Positions: React.FC = () => {
                 </AccordionDetails>
             </Accordion>
             <Box display="flex" justifyContent='space-between' alignItems='center' sx={{ mb: 2, mt: 2 }}>
-                <Typography variant="h3" sx={{ p: 2 }}>Bảng chức danh, nghề nghiệp</Typography>
-                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                    <Settings sx={{ fontSize: 30 }} />
-                </IconButton>
                 <Menu
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}
@@ -273,7 +290,7 @@ const Positions: React.FC = () => {
                 }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>
+                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>
                                 <Checkbox
                                     color="primary"
                                     checked={positions.length > 0 && selectedPositions.length === positions.length}
@@ -290,7 +307,7 @@ const Positions: React.FC = () => {
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) && (
                                     <TableCell key={col.id} align="center" sx={{
-                                        backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: col.width, minWidth: col.width
+                                        backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: col.width, minWidth: col.width
                                     }}>
                                         {col.label}
                                     </TableCell>
@@ -299,18 +316,20 @@ const Positions: React.FC = () => {
                         </TableRow>
                     </TableHead>
                     {!isLoading ? <TableBody>
-                        {paginatedData.map((position: Position) => (
-                            <TableRow key={position._id}>
-                                <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}><Checkbox onChange={() => handleSelected(position._id)} checked={selectedPositions.includes(position._id)} /></TableCell>
-                                {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black' }}>{position.name}</TableCell>}
+                        {paginatedData.map((position: Position, index: number) => (
+                            <TableRow key={position._id} sx={{
+                                // Dùng chỉ mục index để tạo màu xen kẽ
+                                backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
+                            }}>
+                                <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(position._id)} checked={selectedPositions.includes(position._id)} /></TableCell>
+                                {visibleColumns.includes('name') && <TableCell sx={{}}>{position.name}</TableCell>}
                                 {visibleColumns.includes('note') && <TableCell sx={{
                                     whiteSpace: 'nowrap',
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
                                     maxWidth: 400,
-                                    border: '1px solid black'
                                 }}>{position.note}</TableCell>}
-                                {visibleColumns.includes('edit') && <TableCell sx={{ border: '1px solid black' }}>
+                                {visibleColumns.includes('edit') && <TableCell sx={{}}>
                                     <IconButton color="primary" onClick={async () => {
                                         if (open) {
                                             const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');

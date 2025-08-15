@@ -30,6 +30,8 @@ import {
     AccordionSummary,
     AccordionDetails,
     TablePagination,
+    Breadcrumbs,
+    InputAdornment,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -39,6 +41,7 @@ import {
     ExpandMore,
     UploadFile,
     Download,
+    Search,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -332,95 +335,108 @@ const Machines: React.FC = () => {
     const paginatedData = pageData(machines, page, pageSize);
     return (
         <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h4">Quản lý thông tin máy</Typography>
-                <Box display="flex" gap={2}>
-                    <input
-                        id="upload-excel"
-                        type="file"
-                        accept=".xlsx, .xls"
-                        style={{ display: 'none' }}
-                        onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                                const formData = new FormData();
-                                formData.append('file', file);
-                                importFile.mutate(formData);
-                            }
-                            e.target.value = "";
-                        }}
-                    />
-
-                    <label htmlFor="upload-excel">
-                        <Button
-                            component="span"
-                            variant="contained"
-                            startIcon={<UploadFile />}
-                        >
-                            Tải lên excel
-                        </Button>
-                    </label>
-                    <Button
-                        component="span"
-                        variant="contained"
-                        startIcon={<Download />}
-                        onClick={() => exportExcel.mutate()}
-                    >
-                        Tải xuống
-                    </Button>
-                </Box>
-
+            <Breadcrumbs aria-label="breadcrumb">
+                <Typography>Danh mục</Typography>
+                <Typography>Thông tin máy</Typography>
+            </Breadcrumbs>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, mt: 3 }}>
+                <Typography variant="h3" color={'blue'}>Thông tin máy</Typography>
             </Box>
-            {/* <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3, gap: 2 }}>
-                <Typography><b style={{ color: 'green' }}>Chờ điều động:</b> {machines.filter((o: Device) => o.status === "available").length}</Typography>
-                <Typography><b style={{ color: 'red' }}>Đang hoạt động:</b> {machines.filter((o: Device) => o.status === "in_use").length}</Typography>
-                <Typography><b style={{ color: 'orange' }}>Hỏng:</b> {machines.filter((o: Device) => o.status === "maintenance").length}</Typography>
-                <Typography><b style={{ color: 'grey' }}>Niêm cất:</b> {machines.filter((o: Device) => o.status === "retired").length}</Typography>
-            </Box> */}
-            <Box sx={{ flex: 1, flexDirection: 'column', mb: 3 }}>
-                <Typography><h3>Tìm kiếm</h3></Typography>
-                <Box sx={{ display: 'flex', gap: 4 }}>
-                    <TextField fullWidth size="small" value={q}
-                        placeholder='Tìm kiếm theo tên, biển số, số máy, chủng loại'
-                        onChange={(e) => setQ(e.target.value)}>
-                    </TextField>
-                    {user?.role !== 'manager' && <Autocomplete
-                        fullWidth
-                        size='small'
-                        options={departments}
-                        getOptionLabel={(option: Department) =>
-                            option.code || ''
-                        }
-                        onChange={(event, newValue) => {
-                            setDepartment(newValue?._id || '')
-                        }}
-                        PopperComponent={StyledPopper}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                label="Tìm kiếm theo đơn vị"
-                            />
-                        )}
-                    />}
-                </Box>
-            </Box>
-            {user?.role !== "dispatcher" && <Accordion expanded={expanded}>
+            <Accordion expanded={expanded}>
                 <AccordionSummary
-                    expandIcon={<ExpandMore />}
+                    expandIcon={
+                        <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                            <Settings sx={{ fontSize: 30 }} />
+                        </IconButton>}
                     aria-controls="panel1-content"
                     id="panel1-header"
+                    sx={{
+                        backgroundColor: 'white', '&.Mui-focusVisible': {
+                            backgroundColor: 'white',
+                        },
+                    }}
                 >
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                        <Button
-                            variant="contained"
-                            startIcon={<AddIcon />}
-                            onClick={() => handleOpen()}
-                        >
-                            Thêm thông tin máy
-                        </Button>
-                        <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
-                            Xóa
-                        </Button>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', width: '100%' }}>
+                        {user?.role !== "dispatcher" && <Box display="flex" gap={2}>
+                            <Button
+                                variant="contained"
+                                startIcon={<AddIcon />}
+                                onClick={() => handleOpen()}
+                            >
+                                Thêm Thông tin máy
+                            </Button>
+                            <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
+                                Xóa
+                            </Button>
+                        </Box>}
+                        <Box flex={1}>
+                            <Box sx={{ display: 'flex', gap: 4 }}>
+                                <TextField fullWidth size="small" value={q}
+                                    placeholder='Tìm kiếm theo tên, biển số, số máy, chủng loại'
+                                    onChange={(e) => setQ(e.target.value)}
+                                    InputProps={{
+                                        endAdornment: (
+                                            <InputAdornment position="end">
+                                                <Search sx={{ fontSize: 24 }} />
+                                            </InputAdornment>
+                                        )
+                                    }}>
+                                </TextField>
+                                {user?.role !== 'manager' && <Autocomplete
+                                    fullWidth
+                                    size='small'
+                                    options={departments}
+                                    getOptionLabel={(option: Department) =>
+                                        option.code || ''
+                                    }
+                                    onChange={(event, newValue) => {
+                                        setDepartment(newValue?._id || '')
+                                    }}
+                                    PopperComponent={StyledPopper}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Tìm kiếm theo đơn vị"
+                                        />
+                                    )}
+                                />}
+                            </Box>
+                        </Box>
+                        <Box display="flex" gap={2}>
+                            <input
+                                id="upload-excel"
+                                type="file"
+                                accept=".xlsx, .xls"
+                                style={{ display: 'none' }}
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        const formData = new FormData();
+                                        formData.append('file', file);
+                                        importFile.mutate(formData);
+                                    }
+                                    e.target.value = "";
+                                }}
+                            />
+
+                            <label htmlFor="upload-excel">
+                                <Button
+                                    component="span"
+                                    variant="contained"
+                                    startIcon={<UploadFile />}
+                                >
+                                    Tải lên excel
+                                </Button>
+                            </label>
+                            <Button
+                                component="span"
+                                variant="contained"
+                                startIcon={<Download />}
+                                onClick={() => exportExcel.mutate()}
+                            >
+                                Tải xuống
+                            </Button>
+                        </Box>
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -598,7 +614,7 @@ const Machines: React.FC = () => {
                         </Button>
                     </DialogActions>
                 </AccordionDetails>
-            </Accordion>}
+            </Accordion>
             <Box display="flex" gap={2} alignItems={'center'} justifyContent='flex-end'>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='info' name="status" checked={status === ''}
@@ -622,10 +638,6 @@ const Machines: React.FC = () => {
                 </Box>
             </Box>
             <Box display="flex" justifyContent='space-between' alignItems='center' sx={{ mb: 2, mt: 2 }}>
-                <Typography variant="h3" sx={{ p: 2 }}>Bảng thông tin máy</Typography>
-                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                    <Settings sx={{ fontSize: 30 }} />
-                </IconButton>
                 <Menu
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}
@@ -647,7 +659,7 @@ const Machines: React.FC = () => {
                     }}>
                         <TableHead>
                             <TableRow>
-                                <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>
+                                <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>
                                     <Checkbox
                                         color="primary"
                                         checked={machines.length > 0 && selectedDevices.length === machines.length}
@@ -666,23 +678,23 @@ const Machines: React.FC = () => {
                                     left: 0,
                                     zIndex: 3,
                                     minWidth: 80,
-                                    border: '1px solid black',
+
                                     fontWeight: 'bold', fontSize: 18
                                 }}>Biển số</TableCell>}
-                                {visibleColumns.includes('name') && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18, minWidth: 80, }}>Tên máy</TableCell>}
-                                {visibleColumns.includes('vehicleNumber') && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Số máy</TableCell>}
-                                {visibleColumns.includes('category') && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Loại máy</TableCell>}
-                                {visibleColumns.includes('material') && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Chủng loại</TableCell>}
-                                {visibleColumns.includes('fuelType') && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Nhiên liệu</TableCell>}
-                                {visibleColumns.includes('power') && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Công suất</TableCell>}
-                                {visibleColumns.includes('coordinates') && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Vị trí</TableCell>}
-                                {visibleColumns.includes('department') && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Đơn vị</TableCell>}
-                                {visibleColumns.includes('status') && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>}
-                                {visibleColumns.includes('edit') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Sửa</TableCell>)}
+                                {visibleColumns.includes('name') && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18, minWidth: 80, }}>Tên máy</TableCell>}
+                                {visibleColumns.includes('vehicleNumber') && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Số máy</TableCell>}
+                                {visibleColumns.includes('category') && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Loại máy</TableCell>}
+                                {visibleColumns.includes('material') && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Chủng loại</TableCell>}
+                                {visibleColumns.includes('fuelType') && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Nhiên liệu</TableCell>}
+                                {visibleColumns.includes('power') && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Công suất</TableCell>}
+                                {visibleColumns.includes('coordinates') && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Vị trí</TableCell>}
+                                {visibleColumns.includes('department') && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Đơn vị</TableCell>}
+                                {visibleColumns.includes('status') && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>}
+                                {visibleColumns.includes('edit') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Sửa</TableCell>)}
                             </TableRow>
                         </TableHead>
                         {!isLoading ? <TableBody>
-                            {paginatedData.map((device: any) => {
+                            {paginatedData.map((device: any, index: number) => {
                                 let coordsDisplay = '';
                                 if (
                                     device.coordinates &&
@@ -695,29 +707,31 @@ const Machines: React.FC = () => {
                                     coordsDisplay = 'Không có tọa độ';
                                 }
                                 return (
-                                    <TableRow key={device._id}>
-                                        <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}><Checkbox onChange={() => handleSelected(device._id)} checked={selectedDevices.includes(device._id)} /></TableCell>
-                                        {visibleColumns.includes('name') && <TableCell align='center' sx={{
+                                    <TableRow key={device._id} sx={{
+                                        // Dùng chỉ mục index để tạo màu xen kẽ
+                                        backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
+                                    }}>
+                                        <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(device._id)} checked={selectedDevices.includes(device._id)} /></TableCell>
+                                        {visibleColumns.includes('code') && <TableCell align='center' sx={{
                                             position: 'sticky',
                                             left: 0,
-                                            backgroundColor: 'white',
+                                            backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
                                             zIndex: 1,
                                             minWidth: 80,
-                                            border: '1px solid black'
                                         }}>{device.code}</TableCell>}
-                                        {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black', minWidth: 100, }}>{device.name}</TableCell>}
-                                        {visibleColumns.includes('vehicleNumber') && <TableCell align='center' sx={{ border: '1px solid black', minWidth: 70, }}>{device.vehicleNumber}</TableCell>}
-                                        {visibleColumns.includes('category') && <TableCell align="center" sx={{ border: '1px solid black', minWidth: 100, }}>{device.category?.name}</TableCell>}
-                                        {visibleColumns.includes('material') && <TableCell align="center" sx={{ border: '1px solid black', minWidth: 100, }}>{device.material}</TableCell>}
-                                        {visibleColumns.includes('fuelType') && <TableCell align="center" sx={{ border: '1px solid black', minWidth: 100, }}>{device.fuelType}</TableCell>}
-                                        {visibleColumns.includes('power') && <TableCell align="center" sx={{ border: '1px solid black', minWidth: 100, }}>{device.power}</TableCell>}
-                                        {visibleColumns.includes('coordinates') && <TableCell sx={{ border: '1px solid black', minWidth: 130, }}>{coordsDisplay}</TableCell>}
-                                        {visibleColumns.includes('department') && <TableCell sx={{ border: '1px solid black', minWidth: 140, }}>
+                                        {visibleColumns.includes('name') && <TableCell sx={{ minWidth: 100, }}>{device.name}</TableCell>}
+                                        {visibleColumns.includes('vehicleNumber') && <TableCell align='center' sx={{ minWidth: 70, }}>{device.vehicleNumber}</TableCell>}
+                                        {visibleColumns.includes('category') && <TableCell align="center" sx={{ minWidth: 100, }}>{device.category?.name}</TableCell>}
+                                        {visibleColumns.includes('material') && <TableCell align="center" sx={{ minWidth: 100, }}>{device.material}</TableCell>}
+                                        {visibleColumns.includes('fuelType') && <TableCell align="center" sx={{ minWidth: 100, }}>{device.fuelType}</TableCell>}
+                                        {visibleColumns.includes('power') && <TableCell align="center" sx={{ minWidth: 100, }}>{device.power}</TableCell>}
+                                        {visibleColumns.includes('coordinates') && <TableCell sx={{ minWidth: 130, }}>{coordsDisplay}</TableCell>}
+                                        {visibleColumns.includes('department') && <TableCell sx={{ minWidth: 140, }}>
                                             {typeof device.department === 'object' && device.department !== null
                                                 ? device.department.name
                                                 : device.department || 'Chưa có'}
                                         </TableCell>}
-                                        {visibleColumns.includes('status') && <TableCell align='center' sx={{ border: '1px solid black', minWidth: 130, }}>
+                                        {visibleColumns.includes('status') && <TableCell align='center' sx={{ minWidth: 130, }}>
                                             <Chip
                                                 sx={{ width: '120px' }}
                                                 label={device.status === 'in_use' ? 'Đang hoạt động' :
@@ -730,7 +744,7 @@ const Machines: React.FC = () => {
                                                             device.status === 'available' ? 'success' : 'default'}
                                             />
                                         </TableCell>}
-                                        {visibleColumns.includes('edit') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ border: '1px solid black', minWidth: 50, }}>
+                                        {visibleColumns.includes('edit') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ minWidth: 50, }}>
                                             <IconButton
                                                 color="primary"
                                                 onClick={async () => {

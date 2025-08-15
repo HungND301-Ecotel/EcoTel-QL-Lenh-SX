@@ -27,6 +27,7 @@ import {
     AccordionSummary,
     AccordionDetails,
     TablePagination,
+    Breadcrumbs,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -195,13 +196,19 @@ const Shifts: React.FC = () => {
 
     return (
         <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h4">Quản lý ca làm việc</Typography>
-
+            <Breadcrumbs aria-label="breadcrumb">
+                <Typography>Danh mục</Typography>
+                <Typography>Ca làm việc</Typography>
+            </Breadcrumbs>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3, mb: 3 }}>
+                <Typography variant="h3" color={'blue'}>Ca làm việc</Typography>
             </Box>
             <Accordion expanded={expanded}>
                 <AccordionSummary
-                    expandIcon={<ExpandMore />}
+                    expandIcon={
+                        <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                            <Settings sx={{ fontSize: 30 }} />
+                        </IconButton>}
                     aria-controls="panel1-content"
                     id="panel1-header"
                 >
@@ -279,10 +286,6 @@ const Shifts: React.FC = () => {
                 </AccordionDetails>
             </Accordion>
             <Box display="flex" justifyContent='space-between' alignItems='center' sx={{ mb: 2, mt: 2 }}>
-                <Typography variant="h3" sx={{ p: 2 }}>Bảng ca làm việc</Typography>
-                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                    <Settings sx={{ fontSize: 30 }} />
-                </IconButton>
                 <Menu
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}
@@ -298,14 +301,14 @@ const Shifts: React.FC = () => {
                 </Menu>
             </Box>
             <Paper>
-                <TableContainer component={Paper}>
+                <TableContainer>
                     <Table sx={{
                         "& td, & th": { padding: "4px 8px" },
                     }}>
                         <TableHead>
                             <TableRow>
                                 <TableCell align="center" sx={{
-                                    backgroundColor: '#f5f5f5', border: '1px solid black',
+                                    backgroundColor: '#f5f5f5',
                                 }}>
                                     <Checkbox
                                         color="primary"
@@ -323,7 +326,7 @@ const Shifts: React.FC = () => {
                                 {defaultColumns.map((col) =>
                                     visibleColumns.includes(col.id) && (
                                         <TableCell key={col.id} align="center" sx={{
-                                            backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: col.width, minWidth: col.width
+                                            backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: col.width, minWidth: col.width
                                         }}>
                                             {col.label}
                                         </TableCell>
@@ -332,20 +335,23 @@ const Shifts: React.FC = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {!isLoading ? paginatedData.map((shift: Shift) => (
-                                <TableRow key={shift._id}>
-                                    <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}><Checkbox onChange={() => handleSelected(shift._id)} checked={selectedShifts.includes(shift._id)} /></TableCell>
+                            {!isLoading ? paginatedData.map((shift: Shift, index: number) => (
+                                <TableRow key={shift._id} sx={{
+                                    // Dùng chỉ mục index để tạo màu xen kẽ
+                                    backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
+                                }}>
+                                    <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(shift._id)} checked={selectedShifts.includes(shift._id)} /></TableCell>
                                     {visibleColumns.includes('name') && (
-                                        <TableCell align='center' sx={{ border: '1px solid black' }}>{shift.name}</TableCell>
+                                        <TableCell align='center' sx={{}}>{shift.name}</TableCell>
                                     )}
                                     {visibleColumns.includes('startTime') && (
-                                        <TableCell sx={{ border: '1px solid black' }}>{shift.startTime}</TableCell>
+                                        <TableCell sx={{}}>{shift.startTime}</TableCell>
                                     )}
                                     {visibleColumns.includes('endTime') && (
-                                        <TableCell sx={{ border: '1px solid black' }}>{shift.endTime}</TableCell>
+                                        <TableCell sx={{}}>{shift.endTime}</TableCell>
                                     )}
                                     {visibleColumns.includes('edit') && (
-                                        <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                        <TableCell align='center' sx={{}}>
                                             <IconButton color="primary" onClick={async () => {
                                                 if (open) {
                                                     const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');

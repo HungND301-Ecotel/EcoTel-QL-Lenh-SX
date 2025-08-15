@@ -126,10 +126,9 @@ const OrderByUsers: React.FC = () => {
     const paginatedOrders = pageData(orderByUser, page, pageSize);
     return (
         <Box>
-            <Typography variant="h4">Công việc của tôi</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-                <Box sx={{ flex: 1, flexDirection: 'column' }}>
-                    <Typography>Từ ngày:</Typography>
+            <Typography variant="h3" color='blue'>Công việc của tôi</Typography>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mt: 3, mb: 3, border: '1px solid white', p: 1, boxShadow: 2 }}>
+                <Box display={'flex'} gap={2} flex={1}>
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
                         <DatePicker
                             label="Từ ngày"
@@ -145,10 +144,7 @@ const OrderByUsers: React.FC = () => {
                             )}
                         />
                     </LocalizationProvider>
-                </Box>
 
-                <Box sx={{ flex: 1, flexDirection: 'column' }}>
-                    <Typography>Đến ngày:</Typography>
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
                         <DatePicker
                             label="Đến ngày"
@@ -165,17 +161,16 @@ const OrderByUsers: React.FC = () => {
                         />
                     </LocalizationProvider>
                 </Box>
-
-
-                <Box>
-                    <Button
-                        variant="contained"
-                        startIcon={<Search />}
-                        onClick={() => refetch()}
-                    >
-                        Tìm
-                    </Button>
-                </Box>
+                <Button
+                    variant="contained"
+                    startIcon={<Search />}
+                    onClick={() => refetch()}
+                >
+                    Tìm
+                </Button>
+                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                    <Settings sx={{ fontSize: 30 }} />
+                </IconButton>
             </Box>
             <Box display="flex" gap={2} alignItems={'center'} justifyContent='flex-end'>
                 <Box display="flex" alignItems={'center'}>
@@ -205,10 +200,6 @@ const OrderByUsers: React.FC = () => {
                 </Box>
             </Box>
             <Box display="flex" justifyContent='space-between' alignItems='center' sx={{ mb: 2, mt: 2 }}>
-                <Typography variant="h3" sx={{ p: 2 }}>Bảng lệnh sản xuất</Typography>
-                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                    <Settings sx={{ fontSize: 30 }} />
-                </IconButton>
                 <Menu
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}

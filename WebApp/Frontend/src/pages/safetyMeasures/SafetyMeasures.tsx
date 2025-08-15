@@ -27,6 +27,7 @@ import {
     Accordion,
     Checkbox,
     TablePagination,
+    Breadcrumbs,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -188,14 +189,19 @@ const SafetyMeasures: React.FC = () => {
     const paginatedData = pageData(safetyMeasures, page, pageSize);
     return (
         <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h4">Quản lý biện pháp an toàn</Typography>
-
-
+            <Breadcrumbs aria-label="breadcrumb">
+                <Typography>Danh mục</Typography>
+                <Typography>Biện pháp an toàn</Typography>
+            </Breadcrumbs>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, mt: 3 }}>
+                <Typography variant="h3" color={'blue'}>Biện pháp an toàn</Typography>
             </Box>
             <Accordion expanded={expanded}>
                 <AccordionSummary
-                    expandIcon={<ExpandMore />}
+                    expandIcon={
+                        <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                            <Settings sx={{ fontSize: 30 }} />
+                        </IconButton>}
                     aria-controls="panel1-content"
                     id="panel1-header"
                 >
@@ -268,10 +274,6 @@ const SafetyMeasures: React.FC = () => {
                 </AccordionDetails>
             </Accordion>
             <Box display="flex" justifyContent='space-between' alignItems='center' sx={{ mb: 2, mt: 2 }}>
-                <Typography variant="h3" sx={{ p: 2 }}>Bảng biện pháp an toàn</Typography>
-                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                    <Settings sx={{ fontSize: 30 }} />
-                </IconButton>
                 <Menu
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}
@@ -290,7 +292,7 @@ const SafetyMeasures: React.FC = () => {
                 <Table sx={{ tableLayout: 'fixed', width: '100%', "& td, & th": { padding: "4px 8px" } }} >
                     <TableHead>
                         <TableRow>
-                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', width: 50 }}>
+                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', width: 50 }}>
                                 <Checkbox
                                     color="primary"
                                     checked={safetyMeasures.length > 0 && selectedSafetyMeasures.length === safetyMeasures.length}
@@ -306,27 +308,29 @@ const SafetyMeasures: React.FC = () => {
                             </TableCell>
                             {defaultColumns.map((item) =>
                                 visibleColumns.includes(item.id) && (
-                                    <TableCell key={item.id} align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: item.width, minWidth: item.width }}>{item.label}</TableCell>
+                                    <TableCell key={item.id} align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: item.width, minWidth: item.width }}>{item.label}</TableCell>
                                 )
                             )}
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {!isLoading ? paginatedData.map((safetyMeasure: SafetyMeasure, index: number) => (
-                            <TableRow key={safetyMeasure._id}>
-                                <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}><Checkbox onChange={() => handleSelected(safetyMeasure._id)} checked={selectedSafetyMeasures.includes(safetyMeasure._id)} /></TableCell>
+                            <TableRow key={safetyMeasure._id} sx={{
+                                // Dùng chỉ mục index để tạo màu xen kẽ
+                                backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
+                            }}>
+                                <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(safetyMeasure._id)} checked={selectedSafetyMeasures.includes(safetyMeasure._id)} /></TableCell>
                                 {visibleColumns.includes('number') &&
-                                    <TableCell align='center' sx={{ border: '1px solid black' }}>{index + 1}</TableCell>
+                                    <TableCell align='center' sx={{}}>{index + 1}</TableCell>
                                 }
                                 {visibleColumns.includes('content') &&
                                     <TableCell sx={{
                                         whiteSpace: 'nowrap',
                                         overflow: 'hidden',
                                         textOverflow: 'ellipsis',
-                                        border: '1px solid black',
                                     }}>{safetyMeasure.content}</TableCell>}
                                 {visibleColumns.includes('edit') &&
-                                    <TableCell align='center' sx={{ border: '1px solid black', }}>
+                                    <TableCell align='center' sx={{}}>
                                         <IconButton color="primary" onClick={async () => {
                                             if (open) {
                                                 const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
@@ -355,9 +359,9 @@ const SafetyMeasures: React.FC = () => {
                         setPage(0);
                     }}
                 />
-            </TableContainer>
+            </TableContainer >
 
-        </Box>
+        </Box >
     );
 };
 

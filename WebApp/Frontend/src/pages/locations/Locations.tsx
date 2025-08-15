@@ -11,9 +11,11 @@ import {
     AccordionSummary,
     AccordionDetails,
     Checkbox,
-    TablePagination
+    TablePagination,
+    Breadcrumbs,
+    InputAdornment
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Settings, ExpandMore } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Settings, ExpandMore, Search } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import api from '../../config/api.config';
@@ -215,30 +217,48 @@ const Locations: React.FC = () => {
 
     return (
         <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h4">Quản lý điểm đổ tải</Typography>
-
-            </Box>
-            <Box sx={{ flex: 1, flexDirection: 'column' }}>
-                <Typography><h3>Tìm kiếm</h3></Typography>
-                <TextField fullWidth size="small" value={value}
-                    placeholder='Tìm kiếm theo tên điểm đổ tải'
-                    onChange={(e) => setValue(e.target.value)}>
-                </TextField>
+            <Breadcrumbs aria-label="breadcrumb">
+                <Typography>Danh mục</Typography>
+                <Typography>Điểm đổ tải</Typography>
+            </Breadcrumbs>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, mt: 3 }}>
+                <Typography variant="h3" color={'blue'}>Điểm đổ tải</Typography>
             </Box>
             <Accordion expanded={expanded}>
                 <AccordionSummary
-                    expandIcon={<ExpandMore />}
+                    expandIcon={<IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                        <Settings sx={{ fontSize: 30 }} />
+                    </IconButton>}
                     aria-controls="panel1-content"
                     id="panel1-header"
+                    sx={{
+                        backgroundColor: 'white', '&.Mui-focusVisible': {
+                            backgroundColor: 'white',
+                        },
+                    }}
                 >
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                        <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
-                            Thêm điểm đổ tải
-                        </Button>
-                        <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
-                            Xóa
-                        </Button>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', width: '100%' }}>
+                        <Box display={'flex'} gap={2}>
+                            <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
+                                Thêm điểm đổ tải
+                            </Button>
+                            <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
+                                Xóa
+                            </Button>
+                        </Box>
+                        <Box flex={2}>
+                            <TextField fullWidth size="small" value={value}
+                                placeholder='Tìm kiếm theo tên điểm đổ tải'
+                                onChange={(e) => setValue(e.target.value)}
+                                InputProps={{
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <Search sx={{ fontSize: 24 }} />
+                                        </InputAdornment>
+                                    )
+                                }}>
+                            </TextField>
+                        </Box>
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -333,10 +353,6 @@ const Locations: React.FC = () => {
                 </AccordionDetails>
             </Accordion>
             <Box display="flex" justifyContent='space-between' alignItems='center' sx={{ mb: 2, mt: 2 }}>
-                <Typography variant="h3" sx={{ p: 2 }}>Bảng điểm đổ tải</Typography>
-                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                    <Settings sx={{ fontSize: 30 }} />
-                </IconButton>
                 <Menu
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}
@@ -357,7 +373,7 @@ const Locations: React.FC = () => {
                 }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>
+                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>
                                 <Checkbox
                                     color="primary"
                                     checked={locations.length > 0 && selectedLocations.length === locations.length}
@@ -374,7 +390,7 @@ const Locations: React.FC = () => {
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) && (
                                     <TableCell key={col.id} align="center" sx={{
-                                        backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: col.width, minWidth: col.width
+                                        backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: col.width, minWidth: col.width
                                     }}>
                                         {col.label}
                                     </TableCell>
@@ -383,7 +399,7 @@ const Locations: React.FC = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {paginatedData.map((loc: any) => {
+                        {paginatedData.map((loc: any, index: number) => {
                             let coordsDisplay = '';
                             if (
                                 loc.coordinates &&
@@ -396,11 +412,14 @@ const Locations: React.FC = () => {
                                 coordsDisplay = 'Không có tọa độ';
                             }
                             return (
-                                <TableRow key={loc._id}>
-                                    <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}><Checkbox onChange={() => handleSelected(loc._id)} checked={selectedLocations.includes(loc._id)} /></TableCell>
-                                    {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black' }}>{loc.name}</TableCell>}
-                                    {visibleColumns.includes('coordinates') && <TableCell sx={{ border: '1px solid black' }}>{coordsDisplay}</TableCell>}
-                                    {visibleColumns.includes('edit') && <TableCell sx={{ border: '1px solid black' }}>
+                                <TableRow key={loc._id} sx={{
+                                    // Dùng chỉ mục index để tạo màu xen kẽ
+                                    backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
+                                }}>
+                                    <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(loc._id)} checked={selectedLocations.includes(loc._id)} /></TableCell>
+                                    {visibleColumns.includes('name') && <TableCell sx={{}}>{loc.name}</TableCell>}
+                                    {visibleColumns.includes('coordinates') && <TableCell sx={{}}>{coordsDisplay}</TableCell>}
+                                    {visibleColumns.includes('edit') && <TableCell sx={{}}>
                                         <IconButton color="primary" onClick={async () => {
                                             if (open) {
                                                 const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');

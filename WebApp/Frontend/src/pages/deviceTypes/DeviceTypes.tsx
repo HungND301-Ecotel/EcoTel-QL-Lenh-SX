@@ -27,6 +27,7 @@ import {
     AccordionDetails,
     Checkbox,
     TablePagination,
+    Breadcrumbs,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -185,17 +186,22 @@ const DeviceTypes: React.FC = () => {
     const paginatedData = pageData(DeviceTypes, page, pageSize);
     return (
         <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h4">Quản lý loại phương tiện</Typography>
-
+            <Breadcrumbs aria-label="breadcrumb">
+                <Typography>Danh mục</Typography>
+                <Typography>Loại phương tiện</Typography>
+            </Breadcrumbs>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, mt: 3 }}>
+                <Typography variant="h3" color={'blue'}>Loại phương tiện</Typography>
             </Box>
             <Accordion expanded={expanded}>
                 <AccordionSummary
-                    expandIcon={<ExpandMore />}
+                    expandIcon={<IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                        <Settings sx={{ fontSize: 30 }} />
+                    </IconButton>}
                     aria-controls="panel1-content"
                     id="panel1-header"
                 >
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', width: '100%' }}>
                         <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
                             Thêm loại phương tiện
                         </Button>
@@ -245,10 +251,6 @@ const DeviceTypes: React.FC = () => {
                 </AccordionDetails>
             </Accordion>
             <Box display="flex" justifyContent='space-between' alignItems='center' sx={{ mb: 2, mt: 2 }}>
-                <Typography variant="h3" sx={{ p: 2 }}>Bảng loại phương tiện</Typography>
-                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                    <Settings sx={{ fontSize: 30 }} />
-                </IconButton>
                 <Menu
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}
@@ -269,7 +271,7 @@ const DeviceTypes: React.FC = () => {
                 }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>
+                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>
                                 <Checkbox
                                     color="primary"
                                     checked={DeviceTypes.length > 0 && selectedDeviceTypes.length === DeviceTypes.length}
@@ -283,18 +285,21 @@ const DeviceTypes: React.FC = () => {
                                     }}
                                 />
                             </TableCell>
-                            {visibleColumns.includes('name') && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Tên loại phương tiện</TableCell>}
-                            {visibleColumns.includes('group') && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: 150 }}>Nhóm phương tiện</TableCell>}
-                            {visibleColumns.includes('edit') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', border: '1px solid black', fontWeight: 'bold', fontSize: 18, width: 100, minWidth: 100 }}>Sửa</TableCell>)}
+                            {visibleColumns.includes('name') && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>Tên loại phương tiện</TableCell>}
+                            {visibleColumns.includes('group') && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 150 }}>Nhóm phương tiện</TableCell>}
+                            {visibleColumns.includes('edit') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 100, minWidth: 100 }}>Sửa</TableCell>)}
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {!isLoading ? paginatedData.map((DeviceType: any) => (
-                            <TableRow key={DeviceType._id}>
-                                <TableCell align='center' sx={{ border: '1px solid black', width: 50 }}><Checkbox onChange={() => handleSelected(DeviceType._id)} checked={selectedDeviceTypes.includes(DeviceType._id)} /></TableCell>
-                                {visibleColumns.includes('name') && <TableCell sx={{ border: '1px solid black' }}>{DeviceType.name}</TableCell>}
-                                {visibleColumns.includes('group') && <TableCell align='center' sx={{ border: '1px solid black' }}>{DeviceType.group}</TableCell>}
-                                {visibleColumns.includes('edit') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                        {!isLoading ? paginatedData.map((DeviceType: any, index: number) => (
+                            <TableRow key={DeviceType._id} sx={{
+                                // Dùng chỉ mục index để tạo màu xen kẽ
+                                backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
+                            }}>
+                                <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(DeviceType._id)} checked={selectedDeviceTypes.includes(DeviceType._id)} /></TableCell>
+                                {visibleColumns.includes('name') && <TableCell sx={{}}>{DeviceType.name}</TableCell>}
+                                {visibleColumns.includes('group') && <TableCell align='center' sx={{}}>{DeviceType.group}</TableCell>}
+                                {visibleColumns.includes('edit') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{}}>
                                     <IconButton color="primary" onClick={async () => {
                                         if (open) {
                                             const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');

@@ -307,130 +307,129 @@ const Orders: React.FC = () => {
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h4">Quản lý lệnh sản xuất</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-                <Box sx={{ flex: 1, flexDirection: 'column' }}>
-                    <Typography>Nhân viên:</Typography>
-                    <Autocomplete
-                        fullWidth
-                        options={users}
-                        getOptionLabel={(option: any) =>
-                            `${option?.fullName || ""}-${option?.salaryCode || ''}`
-                        }
-                        value={users.find((p: any) => p._id === employee) || null}
-                        onChange={(event, newValue) => {
-                            setEmployee(newValue?._id || '');
-                        }}
-                        PopperComponent={StyledPopper}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                size='small'
-                                label="Nhân viên"
-                            />
-                        )}
-                    />
-                </Box>
-                <Box sx={{ flex: 1, flexDirection: 'column' }}>
-                    <Typography>Phương tiện:</Typography>
-                    <Autocomplete
-                        fullWidth
-                        options={devices}
-                        getOptionLabel={(option: any) =>
-                            option.code || ''
-                        }
-                        value={devices.find((p: any) => p._id === device) || null}
-                        onChange={(event, newValue) => {
-                            setDevice(newValue?._id || '');
-                        }}
-                        PopperComponent={StyledPopper}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                size='small'
-                                label="Phương tiện"
-                            />
-                        )}
-                    />
-                </Box>
-                <Box sx={{ flex: 1, flexDirection: 'column' }}>
-                    <Typography>Từ ngày:</Typography>
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <DatePicker
-                            label="Từ ngày"
-                            inputFormat="DD/MM/YYYY" // v5 vẫn hỗ trợ
-                            value={startTime ? dayjs(startTime) : null}
-                            onChange={(value) => setStartTime(value)}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    fullWidth
-                                    size="small"
-                                />
-                            )}
-                        />
-                    </LocalizationProvider>
-                </Box>
-
-                <Box sx={{ flex: 1, flexDirection: 'column' }}>
-                    <Typography>Đến ngày:</Typography>
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <DatePicker
-                            label="Đến ngày"
-                            inputFormat="DD/MM/YYYY" // v5 vẫn hỗ trợ
-                            value={endTime ? dayjs(endTime) : null}
-                            onChange={(value) => setEndTime(value)}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    fullWidth
-                                    size="small"
-                                />
-                            )}
-                        />
-                    </LocalizationProvider>
-                </Box>
-
-                <Box>
-                    <Button
-                        variant="contained"
-                        startIcon={<Search />}
-                        onClick={() => refetch()}
-                    >
-                        Tìm
-                    </Button>
-                </Box>
+                <Typography variant="h3" color={'blue'}>Lệnh sản xuất</Typography>
             </Box>
             <Accordion expanded={expanded}>
                 <AccordionSummary
-                    expandIcon={<ExpandMore />}
+                    expandIcon={
+                        <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                            <Settings sx={{ fontSize: 30 }} />
+                        </IconButton>}
                     aria-controls="panel1-content"
                     id="panel1-header"
+                    sx={{
+                        backgroundColor: 'white', '&.Mui-focusVisible': {
+                            backgroundColor: 'white',
+                        },
+                    }}
                 >
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                        <Button
-                            variant="contained"
-                            startIcon={<AddIcon />}
-                            onClick={() => handleOpen()}
-                        >
-                            Thêm lệnh sản xuất
-                        </Button>
-                        <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
-                            Xóa
-                        </Button>
-                        <Button variant="contained" startIcon={<InfoOutlined />} color='inherit' onClick={() => setHistory(true)}>
-                            Lịch sử
-                        </Button>
-                        <Button variant="contained" startIcon={<FileDownload />} color='success' onClick={() => {
-                            if (selectedOrders.length > 0) {
-                                reportExcel.mutate();
-                            } else {
-                                showErrorAlert('Vui lòng chọn bản ghi cần tải xuống');
-                            }
-                        }}>
-                            Tải xuống
-                        </Button>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', width: "100%" }}>
+                        <Box display={'flex'} gap={2}>
+                            <Button
+                                variant="contained"
+                                startIcon={<AddIcon />}
+                                onClick={() => handleOpen()}
+                            >
+                                Thêm lệnh sản xuất
+                            </Button>
+                            <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
+                                Xóa
+                            </Button>
+                            <Button variant="contained" startIcon={<InfoOutlined />} color='inherit' onClick={() => setHistory(true)}>
+                                Lịch sử
+                            </Button>
+                            <Button variant="contained" startIcon={<FileDownload />} color='success' onClick={() => {
+                                if (selectedOrders.length > 0) {
+                                    reportExcel.mutate();
+                                } else {
+                                    showErrorAlert('Vui lòng chọn bản ghi cần tải xuống');
+                                }
+                            }}>
+                                Tải xuống
+                            </Button>
+                        </Box>
+                        <Box sx={{ display: 'flex', flex: 1, gap: 2, alignItems: 'center' }}>
+                            <Autocomplete
+                                fullWidth
+                                options={users}
+                                getOptionLabel={(option: any) =>
+                                    `${option?.fullName || ""}-${option?.salaryCode || ''}`
+                                }
+                                value={users.find((p: any) => p._id === employee) || null}
+                                onChange={(event, newValue) => {
+                                    setEmployee(newValue?._id || '');
+                                }}
+                                PopperComponent={StyledPopper}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        size='small'
+                                        label="Nhân viên"
+                                    />
+                                )}
+                            />
+                            <Autocomplete
+                                fullWidth
+                                options={devices}
+                                getOptionLabel={(option: any) =>
+                                    option.code || ''
+                                }
+                                value={devices.find((p: any) => p._id === device) || null}
+                                onChange={(event, newValue) => {
+                                    setDevice(newValue?._id || '');
+                                }}
+                                PopperComponent={StyledPopper}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        size='small'
+                                        label="Phương tiện"
+                                    />
+                                )}
+                            />
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                <DatePicker
+                                    label="Từ ngày"
+                                    inputFormat="DD/MM/YYYY" // v5 vẫn hỗ trợ
+                                    value={startTime ? dayjs(startTime) : null}
+                                    onChange={(value) => setStartTime(value)}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            fullWidth
+                                            size="small"
+                                        />
+                                    )}
+                                />
+                            </LocalizationProvider>
+
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                <DatePicker
+                                    label="Đến ngày"
+                                    inputFormat="DD/MM/YYYY" // v5 vẫn hỗ trợ
+                                    value={endTime ? dayjs(endTime) : null}
+                                    onChange={(value) => setEndTime(value)}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            fullWidth
+                                            size="small"
+                                        />
+                                    )}
+                                />
+                            </LocalizationProvider>
+
+                            <Box>
+                                <Button
+                                    variant="contained"
+                                    startIcon={<Search />}
+                                    onClick={() => refetch()}
+                                >
+                                    Tìm
+                                </Button>
+                            </Box>
+                        </Box>
+
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -482,10 +481,6 @@ const Orders: React.FC = () => {
                 </Box>
             </Box>
             <Box display="flex" justifyContent='space-between' alignItems='center' sx={{ mb: 2, mt: 2 }}>
-                <Typography variant="h3" sx={{ p: 2 }}>Bảng lệnh sản xuất</Typography>
-                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                    <Settings sx={{ fontSize: 30 }} />
-                </IconButton>
                 <Menu
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}
