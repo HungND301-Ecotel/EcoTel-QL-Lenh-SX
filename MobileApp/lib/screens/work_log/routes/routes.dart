@@ -3,8 +3,7 @@ import 'package:soft/models/order_model.dart';
 import 'package:soft/screens/work_log/views/AddMachineAssistant/add_machine_assistant_page.dart';
 import 'package:soft/screens/work_log/views/Camera/camera.dart';
 import 'package:soft/screens/work_log/views/QrCode/qr_code.dart';
-import 'package:soft/screens/work_log/views/ReportTask/DirectWork/direct_work_excavator_report.dart';
-import 'package:soft/screens/work_log/views/ReportTask/DirectWork/direct_work_other_report.dart';
+import 'package:soft/screens/work_log/views/ReportTask/DirectWork/direct_work_report.dart';
 import 'package:soft/screens/work_log/views/ReportTask/IndirectWork/indirect_work_report.dart';
 import 'package:soft/screens/work_log/views/TripList/Dozer/dozer_input_quantity.dart';
 import 'package:soft/screens/work_log/views/TripList/Dozer/dozer_product_list.dart';
@@ -188,19 +187,11 @@ class WorkLogRoute extends StatelessWidget {
               builder: (_) => ServiceVehicleTripInput(),
             );
           //ReportTask
-          case WorkLogRoutes.directWorkOtherReport:
+          case WorkLogRoutes.directWorkReport:
             final order = settings.arguments as OrderModel;
             return MaterialPageRoute(
               builder:
-                  (_) =>
-                      DirectWorkOtherReport(order: order),
-            );
-          case WorkLogRoutes.directWorkExcavatorReport:
-            final order = settings.arguments as OrderModel;
-            return MaterialPageRoute(
-              builder:
-                  (_) =>
-                      DirectWorkExcavatorReport(order: order),
+                  (_) => DirectWorkeport(order: order),
             );
           case WorkLogRoutes.indirectWorkReport:
             final order = settings.arguments as OrderModel;
@@ -283,10 +274,8 @@ class WorkLogRoutes {
   static const String serviceVehicleTripInput =
       '/serviceVehicleTripInput';
   //ReportTask
-  static const String directWorkOtherReport =
-      '/directWorkOtherReport';
-  static const String directWorkExcavatorReport =
-      '/directWorkExcavatorReport';
+  static const String directWorkReport =
+      '/directWorkReport';
   static const String indirectWorkReport =
       '/indirectWorkReport';
 }

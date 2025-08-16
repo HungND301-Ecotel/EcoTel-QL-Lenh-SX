@@ -43,4 +43,19 @@ router.delete('/:id', verifyToken, async (req, res, next) => {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 })
+
+router.put('/:id', verifyToken, async (req, res) => {
+    try {
+
+        const update = await Report.findByIdAndUpdate(req.params.id, req.body, { $new: true })
+
+        if (!update) {
+            return res.status(500).send({ status: 'error', message: "Not found", stack: err.stack })
+        }
+
+        res.status(200).send({ status: 'success', message: "Sửa thành công" });
+    } catch (err) {
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+});
 module.exports = router

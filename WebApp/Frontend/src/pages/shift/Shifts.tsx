@@ -214,7 +214,7 @@ const Shifts: React.FC = () => {
                 >
                     <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                         <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
-                            Thêm ca làm việc
+                            Thêm
                         </Button>
                         <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
                             Xóa

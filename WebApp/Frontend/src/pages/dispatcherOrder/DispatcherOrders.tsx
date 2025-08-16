@@ -50,6 +50,7 @@ import {
     CancelOutlined,
     Settings,
     ExpandMore,
+    CopyAll,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -310,7 +311,7 @@ const DispatcherOrders: React.FC = () => {
                                 startIcon={<AddIcon />}
                                 onClick={() => handleOpen()}
                             >
-                                Thêm lệnh sản xuất
+                                Thêm
                             </Button>
                             <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
                                 Xóa
@@ -519,6 +520,7 @@ const DispatcherOrders: React.FC = () => {
                                         {visibleColumns.includes('note') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ghi chú</TableCell>}
                                         {visibleColumns.includes('edit') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Sửa</TableCell>}
                                         {visibleColumns.includes('cancel') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Hủy</TableCell>}
+                                        <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Sao chép</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 {!isLoading ? <TableBody>
@@ -672,6 +674,31 @@ const DispatcherOrders: React.FC = () => {
                                                     </Tooltip>
                                                 </IconButton>
                                             </TableCell>}
+                                            <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                                <IconButton
+                                                    color="success"
+                                                    onClick={async () => {
+                                                        if (open) {
+                                                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                                                            if (result.isConfirmed) {
+                                                                setSelectedOrder(order)
+                                                                setOpen(false)
+                                                                setExpanded(true)
+                                                                setTransfer(true)
+                                                            }
+                                                        } else {
+                                                            setSelectedOrder(order)
+                                                            setOpen(false)
+                                                            setExpanded(true)
+                                                            setTransfer(true)
+                                                        }
+                                                    }}
+                                                >
+                                                    <Tooltip title="Copy" placement='top'>
+                                                        <CopyAll />
+                                                    </Tooltip>
+                                                </IconButton>
+                                            </TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody> : <Typography>Loading...</Typography>}

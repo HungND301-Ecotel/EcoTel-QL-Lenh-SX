@@ -371,7 +371,7 @@ const Vehicles: React.FC = () => {
                                 startIcon={<AddIcon />}
                                 onClick={() => handleOpen()}
                             >
-                                Thêm Thông tin xe
+                                Thêm
                             </Button>
                             <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
                                 Xóa

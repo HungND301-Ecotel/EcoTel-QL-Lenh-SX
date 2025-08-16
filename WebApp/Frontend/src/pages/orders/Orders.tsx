@@ -330,7 +330,7 @@ const Orders: React.FC = () => {
                                 startIcon={<AddIcon />}
                                 onClick={() => handleOpen()}
                             >
-                                Thêm lệnh sản xuất
+                                Thêm
                             </Button>
                             <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
                                 Xóa
@@ -778,10 +778,10 @@ const Orders: React.FC = () => {
                             <Box>
                                 <Typography><strong>Nhân viên:</strong> {selectedRow.assignedTo?.fullName}-{selectedRow.assignedTo?.salaryCode}</Typography>
                                 <Typography><strong>Ngày:</strong> {selectedRow.workingDate ? format(new Date(selectedRow.workingDate), 'yyyy-MM-dd') : ''}</Typography>
-                                <Typography><strong>Ca:</strong> {selectedRow.shift?.name}</Typography>
+                                <Typography><strong>Ca:</strong> {selectedRow.shift?.name} {selectedRow.shiftHour ?? ''}</Typography>
                                 <Typography><strong>Công việc:</strong> {selectedRow.job.name}</Typography>
-                                <Typography><strong>Nội dung:</strong> {selectedRow.workContent}</Typography>
                                 <Typography><strong>Phương tiện:</strong> {selectedRow.device?.map((dev: any) => dev.code).join(', ') || selectedRow.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')}</Typography>
+                                <Typography><strong>Nội dung:</strong> {selectedRow.workContent}</Typography>
                                 <Typography><strong>Trạng thái:</strong> {
                                     selectedRow.status === 'pending' ? 'Chưa nhận lệnh' :
                                         selectedRow.status === 'in_progress' ? 'Đã nhận lệnh' :

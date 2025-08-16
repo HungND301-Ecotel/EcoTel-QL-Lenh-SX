@@ -212,7 +212,7 @@ const Jobs: React.FC = () => {
                     <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', width: '100%' }}>
                         <Box display={'flex'} gap={2}>
                             <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
-                                Thêm công việc
+                                Thêm
                             </Button>
                             <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
                                 Xóa

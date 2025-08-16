@@ -363,7 +363,7 @@ const Machines: React.FC = () => {
                                 startIcon={<AddIcon />}
                                 onClick={() => handleOpen()}
                             >
-                                Thêm Thông tin máy
+                                Thêm
                             </Button>
                             <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
                                 Xóa

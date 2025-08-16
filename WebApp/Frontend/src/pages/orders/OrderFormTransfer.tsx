@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FieldArray, FormikProvider, useFormik } from 'formik';
 import * as yup from 'yup';
 import {
@@ -60,7 +60,11 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
 }) => {
     const queryClient = useQueryClient();
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [selectedJob, setSelectedJob] = useState<Job | null>(null)
 
+    useEffect(() => {
+        setSelectedJob(initialValues?.job || null)
+    }, [initialValues])
     const safetyTextFieldRef = useRef<HTMLInputElement>(null);
 
     const handleCloseMenu = () => {
@@ -160,7 +164,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
             status: initialValues?.status,
             note: initialValues?.shiftReport?.vehicleSummaries
                 ?.filter((item: any) => item.note?.trim()) // bỏ null, undefined, chuỗi rỗng
-                .map((item: any) => `${item.vehicle.code} : ${item.note}`)
+                .map((item: any) => `${item.vehicle?.code} : ${item.note}`)
                 .join('\n') || ''
         },
         enableReinitialize: true, // Để cập nhật lại giá trị khi initialValues thay đổi
@@ -209,6 +213,51 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
 
         <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
             <Grid container spacing={2}>
+                <Grid item xs={12}>
+                    <Autocomplete
+                        fullWidth
+                        options={jobs}
+                        getOptionLabel={(option: Job) =>
+                            option.name || ''
+                        }
+                        value={jobs.find((p: any) => p._id === formik.values.job) || null}
+                        onChange={(event, newValue) => {
+                            formik.setFieldValue('job', newValue?._id || '');
+                            formik.setFieldValue('safetyMeasure', safetyMeasures.find((i: SafetyMeasure) => i?.jobType === newValue?.type)?.master_content || '')
+                        }}
+                        PopperComponent={StyledPopper}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label="Công việc"
+                                error={formik.touched.job && Boolean(formik.errors.job)}
+                                helperText={formik.touched.job && typeof formik.errors.job === 'string' ? formik.errors.job : ''}
+                            />
+                        )}
+                    />
+                </Grid>
+                {selectedJob?.type === "Vận hành xe" && <Grid item xs={12}>
+                    <Autocomplete
+                        fullWidth
+                        options={excavators}
+                        getOptionLabel={(option: Device) =>
+                            option?.code || ''
+                        }
+                        value={excavators.find((d: any) => d._id === formik.values.excavator[0]) || null}
+                        onChange={(event, newValue) => {
+                            formik.setFieldValue('excavator', newValue ? [newValue._id] : []);
+                        }}
+                        PopperComponent={StyledPopper}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label="Máy xúc"
+                                error={formik.touched.excavator && Boolean(formik.errors.excavator)}
+                                helperText={formik.touched.excavator && typeof formik.errors.excavator === 'string' ? formik.errors.excavator : ''}
+                            />
+                        )}
+                    />
+                </Grid>}
                 <Grid item xs={6}>
                     <Autocomplete
                         fullWidth
@@ -232,12 +281,12 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                     />
                 </Grid>
 
-                <Grid item xs={6}>
+                {["Vận hành xe", "Vận hành xúc", "Vận hành gạt", "Vận hành khoan", "Vận hành xe", "Vận hành xe phục vụ"].includes(selectedJob?.type ?? "") && <Grid item xs={6}>
                     <Autocomplete
                         fullWidth
                         options={devices}
                         getOptionLabel={(option: any) =>
-                            option.code || ''
+                            option?.code || ''
                         }
                         value={devices.find((d: any) => d._id === formik.values.device[0]) || null}
                         onChange={(event, newValue) => {
@@ -253,30 +302,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                             />
                         )}
                     />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                    <Autocomplete
-                        fullWidth
-                        options={jobs}
-                        getOptionLabel={(option: Job) =>
-                            option.name || ''
-                        }
-                        value={jobs.find((p: any) => p._id === formik.values.job) || null}
-                        onChange={(event, newValue) => {
-                            formik.setFieldValue('job', newValue?._id || '');
-                            formik.setFieldValue('safetyMeasure', safetyMeasures.find((i: SafetyMeasure) => i?.jobType === newValue?.type)?.master_content || '')
-                        }}
-                        PopperComponent={StyledPopper}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                label="Công việc"
-                                error={formik.touched.job && Boolean(formik.errors.job)}
-                                helperText={formik.touched.job && typeof formik.errors.job === 'string' ? formik.errors.job : ''}
-                            />
-                        )}
-                    />
-                </Grid>
+                </Grid>}
 
                 <Grid item xs={12} sm={6}>
 
@@ -358,29 +384,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                         />
                     </LocalizationProvider>
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                    <Autocomplete
-                        fullWidth
-                        options={excavators}
-                        getOptionLabel={(option: Device) =>
-                            option.code || ''
-                        }
-                        value={excavators.find((d: any) => d._id === formik.values.excavator[0]) || null}
-                        onChange={(event, newValue) => {
-                            formik.setFieldValue('excavator', newValue ? [newValue._id] : []);
-                        }}
-                        PopperComponent={StyledPopper}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                label="Máy xúc"
-                                error={formik.touched.excavator && Boolean(formik.errors.excavator)}
-                                helperText={formik.touched.excavator && typeof formik.errors.excavator === 'string' ? formik.errors.excavator : ''}
-                            />
-                        )}
-                    />
-                </Grid>
-                <Grid item xs={12} sm={6}>
+                {selectedJob?.type === "Vận hành xe" && <Grid item xs={12} sm={6}>
                     <Autocomplete
                         fullWidth
                         options={locations}
@@ -401,9 +405,9 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                             />
                         )}
                     />
-                </Grid>
+                </Grid>}
 
-                <Grid item xs={12} sm={6}>
+                {selectedJob?.type === "Vận hành xe" && <Grid item xs={12} sm={6}>
                     <Autocomplete
                         fullWidth
                         options={materials}
@@ -424,7 +428,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                             />
                         )}
                     />
-                </Grid>
+                </Grid>}
                 {/* <Grid item xs={12} sm={6}>
                     <TextField
                         fullWidth

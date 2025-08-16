@@ -73,7 +73,7 @@ const OrderHistories: React.FC<{ open: boolean, setOpen: Dispatch<SetStateAction
                                 onChange={(e, val) => handleTabChange(order._id, val)}
                             >
                                 <Tab label="Chi tiết" />
-                                <Tab label="Ảnh" />
+                                {/* <Tab label="Ảnh" /> */}
                             </Tabs>
                             <Divider sx={{ mb: 2 }} />
 
@@ -108,7 +108,7 @@ const OrderHistories: React.FC<{ open: boolean, setOpen: Dispatch<SetStateAction
                                     </Typography>
                                 ))}
 
-                            {tabIndex === 1 && (
+                            {/* {tabIndex === 1 && (
                                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                                     {orderCheckIns.map((checkin: any, idx: number) => (
                                         <Box key={checkin._id} sx={{ width: 180 }}>
@@ -130,7 +130,7 @@ const OrderHistories: React.FC<{ open: boolean, setOpen: Dispatch<SetStateAction
                                         </Box>
                                     ))}
                                 </Box>
-                            )}
+                            )} */}
                         </Box>
                     );
                 })}

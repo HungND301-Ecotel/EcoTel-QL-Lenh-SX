@@ -3,25 +3,42 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFormik } from 'formik'
 import React, { Dispatch, SetStateAction, useEffect } from 'react'
 import api from '../../config/api.config';
-import { ShiftReportType } from '../../types';
+import { ShiftReportType, Report, Job } from '../../types';
 import { showErrorAlert, showSuccessAlert } from '../Alert';
 
 export default function ShiftReport({ open, setOpen, initialValues }: { open: boolean, setOpen: Dispatch<SetStateAction<boolean>>, initialValues: any }) {
 
     const queryClient = useQueryClient()
+
+    const { data: reports = [] } = useQuery({
+        queryKey: ['reports', initialValues],
+        queryFn: () => api.get(`/reports/getByOrder/${initialValues._id}`).then(res => res.data.data),
+    });
     const updateMutation = useMutation({
         mutationFn: (updatedShiftReport: ShiftReportType) =>
             api.put(`/shiftReports/${updatedShiftReport._id}`, updatedShiftReport).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
-            showSuccessAlert('Cập nhật thông tin thành công')
+            // showSuccessAlert('Cập nhật thông tin thành công')
             handleClose();
         },
         onError: (error: any) => {
             showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
-    const formik = useFormik({
+    const updateReportMutation = useMutation({
+        mutationFn: (updateReport: Report) =>
+            api.put(`/reports/${updateReport._id}`, updateReport).then(res => res.data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
+            // showSuccessAlert('Cập nhật thông tin thành công')
+            handleClose();
+        },
+        onError: (error: any) => {
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
+        }
+    });
+    const shiftReportFormik = useFormik({
         initialValues: {
             orderId: '',
             assignedTo: '',
@@ -42,17 +59,34 @@ export default function ShiftReport({ open, setOpen, initialValues }: { open: bo
             handoverNotes: "",
             risks: "",
         },
-        enableReinitialize: true,
         onSubmit: (values) => {
-            updateMutation.mutate({ ...values, _id: initialValues?.shiftReport._id })
         },
     })
 
+    const reportFormik = useFormik({
+        initialValues: {
+            orderId: '',
+            vehicleReports: [{
+                device: undefined,
+                excavator: undefined,
+                fromLocation: undefined,
+                toLocation: undefined,
+                material: undefined,
+                distanceKm: undefined,
+                drillDepth: undefined,
+                hardnessF: undefined,
+                workingMinutes: undefined,
+                quantity: undefined,
+            }],
+        },
+        onSubmit: (values) => {
+        },
+    })
     useEffect(() => {
         if (initialValues && open) {
             const shiftReport = initialValues?.shiftReport;
 
-            formik.setValues({
+            shiftReportFormik.setValues({
                 orderId: initialValues._id,
                 assignedTo: initialValues?.assignedTo?._id,
                 vehicleSummaries: shiftReport?.vehicleSummaries?.map((v: any) => ({
@@ -74,11 +108,49 @@ export default function ShiftReport({ open, setOpen, initialValues }: { open: bo
             });
         }
     }, [initialValues, open]);
+    useEffect(() => {
+        if (reports.length > 0 && open) {
+            reportFormik.setValues({
+                orderId: initialValues._id,
+                vehicleReports: reports.map((v: any) => ({
+                    _id: v._id,
+                    device: v.device?._id,
+                    excavator: v.excavator?._id,
+                    fromLocation: v.fromLocation?._id,
+                    toLocation: v.toLocation?._id,
+                    material: v.material?._id,
+                    distanceKm: v?.distanceKm,
+                    drillDepth: v?.drillDepth,
+                    hardnessF: v?.hardnessF,
+                    workingMinutes: v?.workingMinutes,
+                    quantity: v?.quantity,
+                })) || [],
+            });
+        }
+    }, [open, reports]);
 
+    const handleUpdateAll = async () => {
+        try {
+            await Promise.all(
+                [updateMutation.mutateAsync({ ...shiftReportFormik.values, _id: initialValues?.shiftReport._id })]
+                    .concat(
+                        reports.length > 0
+                            ? reportFormik.values.vehicleReports.map((r: any) => updateReportMutation.mutateAsync(r))
+                            : []
+                    )
+            );
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
+            showSuccessAlert("Cập nhật thành công!");
+            handleClose();
+        } catch (err: any) {
+            showErrorAlert(err.response?.data?.message || err.message || "Lỗi");
+        }
+    };
 
     const handleClose = () => {
         setOpen(false)
-        formik.resetForm()
+        shiftReportFormik.resetForm()
+        reportFormik.resetForm()
     }
 
     const shiftReport = initialValues?.shiftReport
@@ -95,139 +167,236 @@ export default function ShiftReport({ open, setOpen, initialValues }: { open: bo
 
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-            {shiftReport ? <DialogContent>
-                <Typography variant="h6" gutterBottom>Mã thẻ lương: {initialValues?.assignedTo?.fullName} - {initialValues?.assignedTo?.salaryCode}</Typography>
-                <Typography variant="h5">Tình trạng phương tiện:</Typography>
-                {shiftReport?.vehicleSummaries?.map((item: any, index: number) => (<Box key={index}>
-                    <Grid container spacing={2} mb={2} key={index}>
-                        <Grid item xs={3}>
-                            <Typography variant='h6'>+ Phương tiện:</Typography>
+            <DialogContent>
+                <Typography variant="h6" gutterBottom>Mã thẻ lương: {initialValues?.assignedTo?.fullName} - {initialValues?.assignedTo?.salaryCode} - {initialValues?.job?.name}</Typography>
+                {["Vận hành xe", "Vận hành xúc", "Vận hành gạt", "Vận hành khoan", "Vận hành xe phục vụ"].includes(initialValues?.job?.type ?? "") && <Box>
+                    <Typography variant="h5">Báo chuyến/ sản lượng:</Typography>
+                    {reports.length > 0 ? (reports?.map((item: any, index: number) => (<Box key={index}>
+                        <Grid container spacing={2} mb={2} key={index}>
+                            <Grid item xs={3}>
+                                <Typography variant='h6'>+ Phương tiện:</Typography>
+                            </Grid>
+                            <Grid item xs={9}>
+                                <Typography>{item.device?.code}</Typography>
+                            </Grid>
+                            {["Vận hành xe"].includes(initialValues.job?.type ?? "") && <Grid item xs={3}>
+                                <Typography>Từ máy xúc:</Typography>
+                            </Grid>}
+                            {["Vận hành xe"].includes(initialValues.job?.type ?? "") && <Grid item xs={9}>
+                                <Typography>{item.excavator?.code}</Typography>
+                            </Grid>}
+                            {["Vận hành xe phục vụ"].includes(initialValues.job?.type ?? "") && <Grid item xs={3}>
+                                <Typography>Từ điểm:</Typography>
+                            </Grid>}
+                            {["Vận hành xe phục vụ"].includes(initialValues.job?.type ?? "") && <Grid item xs={9}>
+                                <Typography>{item.fromLocation?.name}</Typography>
+                            </Grid>}
+                            {["Vận hành xe", "Vận hành xe phục vụ"].includes(initialValues.job?.type ?? "") && <Grid item xs={3}>
+                                <Typography>Đến điểm:</Typography>
+                            </Grid>}
+                            {["Vận hành xe", "Vận hành xe phục vụ"].includes(initialValues.job?.type ?? "") && <Grid item xs={9}>
+                                <Typography>{item.toLocation?.name}</Typography>
+                            </Grid>}
+                            <Grid item xs={3}>
+                                <Typography>Chủng loại:</Typography>
+                            </Grid>
+                            <Grid item xs={9}>
+                                <Typography>{item.material?.name}</Typography>
+                            </Grid>
+                            {["Vận hành khoan"].includes(initialValues.job?.type ?? "") && <Grid item xs={3}>
+                                <Typography>Mét khoan sâu:</Typography>
+                            </Grid>}
+                            {["Vận hành khoan"].includes(initialValues.job?.type ?? "") && <Grid item xs={9}>
+                                <TextField
+                                    fullWidth
+                                    type="number"
+                                    size='small'
+                                    name={`vehicleReports[${index}].drillDepth`}
+                                    value={reportFormik.values.vehicleReports[index]?.drillDepth || ''}
+                                    onChange={reportFormik.handleChange} />
+                            </Grid>}
+                            {["Vận hành khoan"].includes(initialValues.job?.type as Job["type"] ?? "") && <Grid item xs={3}>
+                                <Typography>Độ cứng:</Typography>
+                            </Grid>}
+                            {["Vận hành khoan"].includes(initialValues.job?.type as Job["type"] ?? "") && <Grid item xs={9}>
+                                <TextField
+                                    fullWidth
+                                    type="number"
+                                    size='small'
+                                    name={`vehicleReports[${index}].hardnessF`}
+                                    value={reportFormik.values.vehicleReports[index]?.hardnessF || ''}
+                                    onChange={reportFormik.handleChange} />
+                            </Grid>}
+                            {["Vận hành xe", "Vận hành xúc", "Vận hành xe phục vụ"].includes(initialValues?.job?.type as Job["type"] ?? "") && <Grid item xs={3}>
+                                <Typography>Số chuyến:</Typography>
+                            </Grid>}
+                            {["Vận hành xe", "Vận hành xúc", "Vận hành xe phục vụ"].includes(initialValues?.job?.type as Job["type"] ?? "") && <Grid item xs={9}>
+                                <TextField
+                                    fullWidth
+                                    type="number"
+                                    size='small'
+                                    name={`vehicleReports[${index}].quantity`}
+                                    value={reportFormik.values.vehicleReports[index]?.quantity || ''}
+                                    onChange={reportFormik.handleChange} />
+                            </Grid>}
+                            {["Vận hành xe phục vụ"].includes(initialValues?.job?.type as Job["type"] ?? "") && <Grid item xs={3}>
+                                <Typography>Km di chuyến:</Typography>
+                            </Grid>}
+                            {["Vận hành xe phục vụ"].includes(initialValues?.job?.type as Job["type"] ?? "") && <Grid item xs={9}>
+                                <TextField
+                                    fullWidth
+                                    type="number"
+                                    size='small'
+                                    name={`vehicleReports[${index}].distanceKm`}
+                                    value={reportFormik.values.vehicleReports[index]?.distanceKm || ''}
+                                    onChange={reportFormik.handleChange} />
+                            </Grid>}
+                            {["Vận hành gạt", "Vận hành xe phục vụ"].includes(initialValues?.job?.type ?? "") && <Grid item xs={3}>
+                                <Typography>Giờ sản phẩm (phút):</Typography>
+                            </Grid>}
+                            {["Vận hành gạt", "Vận hành xe phục vụ"].includes(initialValues?.job?.type ?? "") && <Grid item xs={9}>
+                                <TextField
+                                    fullWidth
+                                    type="number"
+                                    size='small'
+                                    name={`vehicleReports[${index}].workingMinutes`}
+                                    value={reportFormik.values.vehicleReports[index]?.workingMinutes || ''}
+                                    onChange={reportFormik.handleChange} />
+                            </Grid>}
                         </Grid>
-                        <Grid item xs={9}>
-                            <Typography>{item.vehicle?.code}</Typography>
+                    </Box>))) : <Typography align='center'>Chưa có dữ liệu</Typography>}
+                    <Typography variant="h5">Tình trạng phương tiện:</Typography>
+                    {shiftReport?.vehicleSummaries?.map((item: any, index: number) => (<Box key={index}>
+                        <Grid container spacing={2} mb={2} key={index}>
+                            <Grid item xs={3}>
+                                <Typography variant='h6'>+ Phương tiện:</Typography>
+                            </Grid>
+                            <Grid item xs={9}>
+                                <Typography>{item.vehicle?.code}</Typography>
+                            </Grid>
+                            <Grid item xs={3}>
+                                <Typography>Giờ sửa chữa:</Typography>
+                            </Grid>
+                            <Grid item xs={9}>
+                                <TextField
+                                    fullWidth
+                                    type="number"
+                                    size='small'
+                                    name={`vehicleSummaries[${index}].repairHours`}
+                                    value={shiftReportFormik.values.vehicleSummaries[index]?.repairHours || ''}
+                                    onChange={shiftReportFormik.handleChange} />
+                            </Grid>
+                            <Grid item xs={3}>
+                                <Typography>Giờ di chuyển:</Typography>
+                            </Grid>
+                            <Grid item xs={9}>
+                                <TextField
+                                    fullWidth
+                                    type="number"
+                                    size='small'
+                                    name={`vehicleSummaries[${index}].travelHours`}
+                                    value={shiftReportFormik.values.vehicleSummaries[index]?.travelHours || ''}
+                                    onChange={shiftReportFormik.handleChange}
+                                />
+                            </Grid>
+                            <Grid item xs={3}>
+                                <Typography>Tồn dầu:</Typography>
+                            </Grid>
+                            <Grid item xs={9}>
+                                <TextField
+                                    fullWidth
+                                    type="number"
+                                    size='small'
+                                    name={`vehicleSummaries[${index}].fuelRemain`}
+                                    value={shiftReportFormik.values.vehicleSummaries[index]?.fuelRemain || ''}
+                                    onChange={shiftReportFormik.handleChange}
+                                />
+                            </Grid>
+                            <Grid item xs={3}>
+                                <Typography>Lĩnh trong ca:</Typography>
+                            </Grid>
+                            <Grid item xs={9}>
+                                <TextField
+                                    fullWidth
+                                    type="number"
+                                    size='small'
+                                    name={`vehicleSummaries[${index}].fuelReceived`}
+                                    value={shiftReportFormik.values.vehicleSummaries[index]?.fuelReceived || ''}
+                                    onChange={shiftReportFormik.handleChange} />
+                            </Grid>
+                            <Grid item xs={3}>
+                                <Typography>Tồn cuối ca:</Typography>
+                            </Grid>
+                            <Grid item xs={9}>
+                                <TextField
+                                    fullWidth
+                                    type="number"
+                                    size='small'
+                                    name={`vehicleSummaries[${index}].fuelRemainEnd`}
+                                    value={shiftReportFormik.values.vehicleSummaries[index]?.fuelRemainEnd || ''}
+                                    onChange={shiftReportFormik.handleChange} />
+                            </Grid>
+                            <Grid item xs={3}>
+                                <Typography>Tình trạng xe:</Typography>
+                            </Grid>
+                            <Grid item xs={9}>
+                                <TextField
+                                    fullWidth
+                                    select
+                                    name={`vehicleSummaries[${index}].status`}
+                                    value={shiftReportFormik.values.vehicleSummaries[index]?.status || ''}
+                                    onChange={shiftReportFormik.handleChange} >
+                                    <MenuItem value="fail">Hỏng</MenuItem>
+                                    <MenuItem value="good">Tốt</MenuItem>
+                                </TextField>
+                            </Grid>
+                            {shiftReportFormik.values.vehicleSummaries[index]?.status === "fail" &&
+                                <>
+                                    <Grid item xs={3}>
+                                        <Typography>Lý do hỏng*:</Typography>
+                                    </Grid>
+                                    <Grid item xs={9}>
+                                        <TextField
+                                            fullWidth
+                                            multiline
+                                            rows={2}
+                                            name={`vehicleSummaries[${index}].note`}
+                                            value={shiftReportFormik.values.vehicleSummaries[index]?.note || ''}
+                                            onChange={shiftReportFormik.handleChange} />
+                                    </Grid>
+                                </>
+                            }
+                            <Grid item xs={3}>
+                                <Typography>GPS:</Typography>
+                            </Grid>
+                            <Grid item xs={9}>
+                                <TextField
+                                    fullWidth
+                                    select
+                                    name={`vehicleSummaries[${index}].gpsStatus`}
+                                    value={shiftReportFormik.values.vehicleSummaries[index]?.gpsStatus || ''}
+                                    onChange={shiftReportFormik.handleChange} >
+                                    <MenuItem value="Hoạt động bình thường">Hoạt động bình thường</MenuItem>
+                                    <MenuItem value="Mất tín hiệu">Mất tín hiệu</MenuItem>
+                                </TextField>
+                            </Grid>
+                            <Grid item xs={3}>
+                                <Typography>Kẹp chì/ niêm phong:</Typography>
+                            </Grid>
+                            <Grid item xs={9}>
+                                <TextField
+                                    fullWidth
+                                    select
+                                    name={`vehicleSummaries[${index}].sealStatus`}
+                                    value={shiftReportFormik.values.vehicleSummaries[index]?.sealStatus || ''}
+                                    onChange={shiftReportFormik.handleChange}  >
+                                    <MenuItem value="Tốt">Tốt</MenuItem>
+                                    <MenuItem value="Hỏng">Hỏng</MenuItem>
+                                </TextField>
+                            </Grid>
                         </Grid>
-                        <Grid item xs={3}>
-                            <Typography>Giờ sửa chữa:</Typography>
-                        </Grid>
-                        <Grid item xs={9}>
-                            <TextField
-                                fullWidth
-                                type="number"
-                                size='small'
-                                name={`vehicleSummaries[${index}].repairHours`}
-                                value={formik.values.vehicleSummaries[index]?.repairHours || ''}
-                                onChange={formik.handleChange} />
-                        </Grid>
-                        <Grid item xs={3}>
-                            <Typography>Giờ di chuyển:</Typography>
-                        </Grid>
-                        <Grid item xs={9}>
-                            <TextField
-                                fullWidth
-                                type="number"
-                                size='small'
-                                name={`vehicleSummaries[${index}].travelHours`}
-                                value={formik.values.vehicleSummaries[index]?.travelHours || ''}
-                                onChange={formik.handleChange}
-                            />
-                        </Grid>
-                        <Grid item xs={3}>
-                            <Typography>Tồn dầu:</Typography>
-                        </Grid>
-                        <Grid item xs={9}>
-                            <TextField
-                                fullWidth
-                                type="number"
-                                size='small'
-                                name={`vehicleSummaries[${index}].fuelRemain`}
-                                value={formik.values.vehicleSummaries[index]?.fuelRemain || ''}
-                                onChange={formik.handleChange}
-                            />
-                        </Grid>
-                        <Grid item xs={3}>
-                            <Typography>Lĩnh trong ca:</Typography>
-                        </Grid>
-                        <Grid item xs={9}>
-                            <TextField
-                                fullWidth
-                                type="number"
-                                size='small'
-                                name={`vehicleSummaries[${index}].fuelReceived`}
-                                value={formik.values.vehicleSummaries[index]?.fuelReceived || ''}
-                                onChange={formik.handleChange} />
-                        </Grid>
-                        <Grid item xs={3}>
-                            <Typography>Tồn cuối ca:</Typography>
-                        </Grid>
-                        <Grid item xs={9}>
-                            <TextField
-                                fullWidth
-                                type="number"
-                                size='small'
-                                name={`vehicleSummaries[${index}].fuelRemainEnd`}
-                                value={formik.values.vehicleSummaries[index]?.fuelRemainEnd || ''}
-                                onChange={formik.handleChange} />
-                        </Grid>
-                        <Grid item xs={3}>
-                            <Typography>Tình trạng xe:</Typography>
-                        </Grid>
-                        <Grid item xs={9}>
-                            <TextField
-                                fullWidth
-                                select
-                                name={`vehicleSummaries[${index}].status`}
-                                value={formik.values.vehicleSummaries[index]?.status || ''}
-                                onChange={formik.handleChange} >
-                                <MenuItem value="fail">Hỏng</MenuItem>
-                                <MenuItem value="good">Tốt</MenuItem>
-                            </TextField>
-                        </Grid>
-                        {formik.values.vehicleSummaries[index]?.status === "fail" &&
-                            <>
-                                <Grid item xs={3}>
-                                    <Typography>Lý do hỏng*:</Typography>
-                                </Grid>
-                                <Grid item xs={9}>
-                                    <TextField
-                                        fullWidth
-                                        multiline
-                                        rows={2}
-                                        name={`vehicleSummaries[${index}].note`}
-                                        value={formik.values.vehicleSummaries[index]?.note || ''}
-                                        onChange={formik.handleChange} />
-                                </Grid>
-                            </>
-                        }
-                        <Grid item xs={3}>
-                            <Typography>GPS:</Typography>
-                        </Grid>
-                        <Grid item xs={9}>
-                            <TextField
-                                fullWidth
-                                select
-                                name={`vehicleSummaries[${index}].gpsStatus`}
-                                value={formik.values.vehicleSummaries[index]?.gpsStatus || ''}
-                                onChange={formik.handleChange} >
-                                <MenuItem value="Hoạt động bình thường">Hoạt động bình thường</MenuItem>
-                                <MenuItem value="Mất tín hiệu">Mất tín hiệu</MenuItem>
-                            </TextField>
-                        </Grid>
-                        <Grid item xs={3}>
-                            <Typography>Kẹp chì/ niêm phong:</Typography>
-                        </Grid>
-                        <Grid item xs={9}>
-                            <TextField
-                                fullWidth
-                                select
-                                name={`vehicleSummaries[${index}].sealStatus`}
-                                value={formik.values.vehicleSummaries[index]?.sealStatus || ''}
-                                onChange={formik.handleChange}  >
-                                <MenuItem value="Tốt">Tốt</MenuItem>
-                                <MenuItem value="Hỏng">Hỏng</MenuItem>
-                            </TextField>
-                        </Grid>
-                    </Grid>
-                </Box>))}
+                    </Box>))}
+                </Box>}
                 <Typography variant="h5">Khác:</Typography>
                 <Box>
                     <Grid container spacing={2}>
@@ -240,8 +409,8 @@ export default function ShiftReport({ open, setOpen, initialValues }: { open: bo
                                 type="number"
                                 size='small'
                                 name="handoverHours"
-                                value={formik.values.handoverHours || ''}
-                                onChange={formik.handleChange} />
+                                value={shiftReportFormik.values.handoverHours || ''}
+                                onChange={shiftReportFormik.handleChange} />
                         </Grid>
                         <Grid item xs={3}>
                             <Typography>Giờ khác:</Typography>
@@ -252,8 +421,8 @@ export default function ShiftReport({ open, setOpen, initialValues }: { open: bo
                                 type="number"
                                 size='small'
                                 name="otherHours"
-                                value={formik.values.otherHours || ''}
-                                onChange={formik.handleChange} />
+                                value={shiftReportFormik.values.otherHours || ''}
+                                onChange={shiftReportFormik.handleChange} />
                         </Grid>
                         <Grid item xs={3}>
                             <Typography>Nội dung bàn giao ca:</Typography>
@@ -265,8 +434,8 @@ export default function ShiftReport({ open, setOpen, initialValues }: { open: bo
                                 fullWidth
                                 size='small'
                                 name="handoverNotes"
-                                value={formik.values.handoverNotes || ''}
-                                onChange={formik.handleChange} />
+                                value={shiftReportFormik.values.handoverNotes || ''}
+                                onChange={shiftReportFormik.handleChange} />
                         </Grid>
                         <Grid item xs={3}>
                             <Typography>Kiến nghị, rủi ro:</Typography>
@@ -278,15 +447,15 @@ export default function ShiftReport({ open, setOpen, initialValues }: { open: bo
                                 fullWidth
                                 size='small'
                                 name="risks"
-                                value={formik.values.risks || ''}
-                                onChange={formik.handleChange} />
+                                value={shiftReportFormik.values.risks || ''}
+                                onChange={shiftReportFormik.handleChange} />
                         </Grid>
                     </Grid>
                 </Box>
-            </DialogContent> : <DialogContent><Typography>Người dùng chưa báo công</Typography></DialogContent>}
+            </DialogContent>
             {shiftReport && <DialogActions>
                 <Button onClick={handleClose}>Đóng</Button>
-                {!isOver48Hours && <Button variant="contained" onClick={() => formik.handleSubmit()}>Lưu lại</Button>}
+                {!isOver48Hours && <Button variant="contained" onClick={handleUpdateAll}>Lưu lại</Button>}
             </DialogActions>}
         </Dialog >
     )

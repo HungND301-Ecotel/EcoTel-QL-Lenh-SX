@@ -519,6 +519,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                             'vận hành khoan'.toLowerCase(),
                             'vận hành gạt'.toLowerCase(),
                             'vận hành xe'.toLowerCase(),
+                            'vận hành xúc'.toLowerCase(),
                             'vận hành xe phục vụ'
                                 .toLowerCase(),
                           ].contains(
@@ -527,18 +528,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                             Navigator.pushNamed(
                               context,
                               WorkLogRoutes
-                                  .directWorkOtherReport,
-                              arguments: data,
-                            );
-                          } else if ([
-                            'vận hành xúc'.toLowerCase(),
-                          ].contains(
-                            data?.job.type.toLowerCase(),
-                          )) {
-                            Navigator.pushNamed(
-                              context,
-                              WorkLogRoutes
-                                  .directWorkExcavatorReport,
+                                  .directWorkReport,
                               arguments: data,
                             );
                           } else {

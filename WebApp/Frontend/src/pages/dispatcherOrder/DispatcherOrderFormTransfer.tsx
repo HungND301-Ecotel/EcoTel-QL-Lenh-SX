@@ -368,22 +368,6 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
                                 : ''}
                         />
                     </Grid>
-                    <Grid item xs={12}>
-                        <TextField
-                            fullWidth
-                            multiline
-                            rows={5}
-                            id="note"
-                            name="note"
-                            label="Nội dung bàn giao ca trước"
-                            value={formik.values.note}
-                            onChange={formik.handleChange}
-                            error={formik.touched.note && Boolean(formik.errors.note)}
-                            helperText={formik.touched.note && typeof formik.errors.note === 'string'
-                                ? formik.errors.note
-                                : ''}
-                        />
-                    </Grid>
                 </Grid>
 
                 <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>

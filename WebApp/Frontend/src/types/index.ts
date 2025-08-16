@@ -151,6 +151,20 @@ export interface ShiftReportType {
     createdAt?: string;
     updatedAt?: string;
 }
+
+export interface Report {
+    _id: string;
+    device: string,
+    excavator?: string,
+    fromLocation?: string,
+    toLocation?: string,
+    material?: string,
+    distanceKm?: number,
+    drillDepth?: number,
+    hardnessF?: number,
+    workingMinutes?: number,
+    quantity?: number,
+}
 export interface Location {
     _id: string;
     name: string;

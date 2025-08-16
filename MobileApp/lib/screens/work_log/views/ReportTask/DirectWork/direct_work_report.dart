@@ -7,19 +7,19 @@ import 'package:soft/services/shift_report_service.dart';
 import 'package:soft/widgets/pay_roll_input.dart';
 import 'package:soft/screens/work_log/views/ReportTask/DirectWork/controller.dart';
 
-class DirectWorkOtherReport extends StatefulWidget {
+class DirectWorkeport extends StatefulWidget {
   final OrderModel order;
-  const DirectWorkOtherReport({
+  const DirectWorkeport({
     super.key,
     required this.order,
   });
   @override
   State<StatefulWidget> createState() =>
-      _DirectWorkOtherReport();
+      _DirectWorkeport();
 }
 
-class _DirectWorkOtherReport
-    extends State<DirectWorkOtherReport> {
+class _DirectWorkeport
+    extends State<DirectWorkeport> {
   UserModel? user;
 
   final Map<String, VehicleSummariesControllers>

@@ -415,7 +415,7 @@ const Users: React.FC = () => {
                                 startIcon={<AddIcon />}
                                 onClick={() => handleOpen()}
                             >
-                                Thêm người dùng
+                                Thêm
                             </Button>
                             <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
                                 Xóa

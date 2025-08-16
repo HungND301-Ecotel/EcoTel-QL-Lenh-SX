@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FieldArray, FormikProvider, useFormik } from 'formik';
 import * as yup from 'yup';
 import {
@@ -62,6 +62,11 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
 }) => {
 
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [selectedJob, setSelectedJob] = useState<Job | null>(null)
+
+    useEffect(() => {
+        setSelectedJob(initialValues?.job || null)
+    }, [initialValues])
 
     const safetyTextFieldRef = useRef<HTMLInputElement>(null);
 
@@ -186,6 +191,64 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
 
         <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
             <Grid container spacing={2}>
+                <Grid item xs={12}>
+                    <Autocomplete
+                        fullWidth
+                        options={jobs}
+                        getOptionLabel={(option: Job) =>
+                            option.name || ''
+                        }
+                        value={jobs.find((p: any) => p._id === formik.values.job) || null}
+                        onChange={(event, newValue) => {
+                            formik.setFieldValue('job', newValue?._id || '');
+                            formik.setFieldValue('safetyMeasure', safetyMeasures.find((i: SafetyMeasure) => i?.jobType === newValue?.type)?.master_content)
+                            setSelectedJob(newValue)
+                        }}
+                        PopperComponent={StyledPopper}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label="Công việc"
+                                error={formik.touched.job && Boolean(formik.errors.job)}
+                                helperText={formik.touched.job && typeof formik.errors.job === 'string' ? formik.errors.job : ''}
+                            />
+                        )}
+                    />
+                </Grid>
+                {selectedJob?.type === "Vận hành xe" && <Grid item xs={12}>
+                    <Autocomplete
+                        fullWidth
+                        multiple // 👈 Cho phép chọn nhiều
+                        options={excavators}
+                        getOptionLabel={(option: Device) => option.code || ''}
+                        value={excavators.filter((p: any) => formik.values.excavator?.includes(p._id))}
+                        onChange={(event, newValue) => {
+                            const selectedIds = newValue.map((item: any) => item._id);
+                            const hasDeletedInitial = initialExcavatorIds.some((id: String) => !selectedIds.includes(id));
+                            if (hasDeletedInitial) {
+                                return;
+                            }
+                            // if (formik.values.device.length > 1 && selectedIds.length > 1) {
+                            //     showErrorAlert('Chỉ nên bổ sung máy xúc khi chỉ có một phương tiện.');
+                            //     return;
+                            // }
+                            formik.setFieldValue('excavator', selectedIds);
+                        }}
+                        PopperComponent={StyledPopper}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label="Máy xúc"
+                                error={formik.touched.excavator && Boolean(formik.errors.excavator)}
+                                helperText={
+                                    formik.touched.excavator && typeof formik.errors.excavator === 'string'
+                                        ? formik.errors.excavator
+                                        : ''
+                                }
+                            />
+                        )}
+                    />
+                </Grid>}
                 <Grid item xs={6}>
                     <Autocomplete
                         fullWidth
@@ -209,7 +272,7 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                     />
                 </Grid>
 
-                <Grid item xs={6}>
+                {["Vận hành xe", "Vận hành xúc", "Vận hành gạt", "Vận hành khoan", "Vận hành xe", "Vận hành xe phục vụ"].includes(selectedJob?.type ?? "") && <Grid item xs={6}>
                     <Autocomplete
                         fullWidth
                         multiple
@@ -226,10 +289,10 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                             if (hasDeletedInitial) {
                                 return;
                             }
-                            if (formik.values.excavator?.length > 1 && selectedIds.length > 1) {
-                                showErrorAlert('Chỉ nên bổ sung phương tiện khi chỉ có một máy xúc.');
-                                return;
-                            }
+                            // if (formik.values.excavator?.length > 1 && selectedIds.length > 1) {
+                            //     showErrorAlert('Chỉ nên bổ sung phương tiện khi chỉ có một máy xúc.');
+                            //     return;
+                            // }
                             formik.setFieldValue('device', selectedIds);
                         }}
                         PopperComponent={StyledPopper}
@@ -242,30 +305,7 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                             />
                         )}
                     />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                    <Autocomplete
-                        fullWidth
-                        options={jobs}
-                        getOptionLabel={(option: Job) =>
-                            option.name || ''
-                        }
-                        value={jobs.find((p: any) => p._id === formik.values.job) || null}
-                        onChange={(event, newValue) => {
-                            formik.setFieldValue('job', newValue?._id || '');
-                            formik.setFieldValue('safetyMeasure', safetyMeasures.find((i: SafetyMeasure) => i?.jobType === newValue?.type)?.master_content)
-                        }}
-                        PopperComponent={StyledPopper}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                label="Công việc"
-                                error={formik.touched.job && Boolean(formik.errors.job)}
-                                helperText={formik.touched.job && typeof formik.errors.job === 'string' ? formik.errors.job : ''}
-                            />
-                        )}
-                    />
-                </Grid>
+                </Grid>}
 
                 <Grid item xs={12} sm={6}>
 
@@ -347,41 +387,7 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                         />
                     </LocalizationProvider>
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                    <Autocomplete
-                        fullWidth
-                        multiple // 👈 Cho phép chọn nhiều
-                        options={excavators}
-                        getOptionLabel={(option: Device) => option.code || ''}
-                        value={excavators.filter((p: any) => formik.values.excavator?.includes(p._id))}
-                        onChange={(event, newValue) => {
-                            const selectedIds = newValue.map((item: any) => item._id);
-                            const hasDeletedInitial = initialExcavatorIds.some((id: String) => !selectedIds.includes(id));
-                            if (hasDeletedInitial) {
-                                return;
-                            }
-                            if (formik.values.device.length > 1 && selectedIds.length > 1) {
-                                showErrorAlert('Chỉ nên bổ sung máy xúc khi chỉ có một phương tiện.');
-                                return;
-                            }
-                            formik.setFieldValue('excavator', selectedIds);
-                        }}
-                        PopperComponent={StyledPopper}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                label="Máy xúc"
-                                error={formik.touched.excavator && Boolean(formik.errors.excavator)}
-                                helperText={
-                                    formik.touched.excavator && typeof formik.errors.excavator === 'string'
-                                        ? formik.errors.excavator
-                                        : ''
-                                }
-                            />
-                        )}
-                    />
-                </Grid>
-                <Grid item xs={12} sm={6}>
+                {selectedJob?.type === "Vận hành xe" && <Grid item xs={12} sm={6}>
                     <Autocomplete
                         fullWidth
                         options={locations}
@@ -402,9 +408,9 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                             />
                         )}
                     />
-                </Grid>
+                </Grid>}
 
-                <Grid item xs={12} sm={6}>
+                {selectedJob?.type === "Vận hành xe" && <Grid item xs={12} sm={6}>
                     <Autocomplete
                         fullWidth
                         options={materials}
@@ -425,7 +431,7 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                             />
                         )}
                     />
-                </Grid>
+                </Grid>}
                 {/* <Grid item xs={12} sm={6}>
                     <TextField
                         fullWidth
