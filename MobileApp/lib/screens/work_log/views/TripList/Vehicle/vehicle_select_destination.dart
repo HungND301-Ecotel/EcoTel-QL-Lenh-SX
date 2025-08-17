@@ -20,7 +20,7 @@ class _VehicleSelectDestination
   final List<LocationModel> locations = [];
   final LocationService _locationService =
       LocationService();
-  void getAllMaterial() async {
+  void getAllLocation() async {
     var result = await _locationService.getAllLocation();
 
     if (!mounted) return;
@@ -42,6 +42,30 @@ class _VehicleSelectDestination
               .toList(),
         );
       });
+      final order =
+          Provider.of<ReportDraftProvider>(
+            context,
+            listen: false,
+          ).order;
+      if (order?.location != null &&
+          order!.location!.isNotEmpty) {
+        final selectedIds =
+            order.location!.map((m) => m.id).toList();
+        _selectedLocation = selectedIds.last;
+        setState(() {
+          _onSelectLocation(order.location!.last.id);
+          locations.sort((a, b) {
+            if (selectedIds.contains(a.id) &&
+                !selectedIds.contains(b.id)) {
+              return -1;
+            } else if (!selectedIds.contains(a.id) &&
+                selectedIds.contains(b.id)) {
+              return 1;
+            }
+            return 0;
+          });
+        });
+      }
     }
     setState(() {
       _isLoading = false;
@@ -51,7 +75,20 @@ class _VehicleSelectDestination
   @override
   void initState() {
     super.initState();
-    getAllMaterial();
+    getAllLocation();
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   final order =
+    //       Provider.of<ReportDraftProvider>(
+    //         context,
+    //         listen: false,
+    //       ).order;
+    //   if (order?.location != null) {
+    //     _selectedLocation = order!.location!.first.id;
+    //     setState(() {
+    //       _onSelectLocation(order.location!.first.id);
+    //     });
+    //   }
+    // });
   }
 
   String? _selectedLocation;

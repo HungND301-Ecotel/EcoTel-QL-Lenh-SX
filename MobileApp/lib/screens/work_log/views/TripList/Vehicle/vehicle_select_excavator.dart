@@ -40,6 +40,30 @@ class _VehicleSelectExcavator
               .toList(),
         );
       });
+      final order =
+          Provider.of<ReportDraftProvider>(
+            context,
+            listen: false,
+          ).order;
+      if (order?.excavator != null &&
+          order!.excavator!.isNotEmpty) {
+        final selectedIds =
+            order.excavator!.map((m) => m.id).toList();
+        _selectedDevice = selectedIds.last;
+        setState(() {
+          _onSelectDevice(order.excavator!.last.id);
+          devices.sort((a, b) {
+            if (selectedIds.contains(a.id) &&
+                !selectedIds.contains(b.id)) {
+              return -1;
+            } else if (!selectedIds.contains(a.id) &&
+                selectedIds.contains(b.id)) {
+              return 1;
+            }
+            return 0;
+          });
+        });
+      }
     }
     setState(() {
       _isLoading = false;
@@ -50,19 +74,19 @@ class _VehicleSelectExcavator
   void initState() {
     super.initState();
     getAllDevice();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final order =
-          Provider.of<ReportDraftProvider>(
-            context,
-            listen: false,
-          ).order;
-      if (order?.excavator != null) {
-        _selectedDevice = order!.excavator!.first.id;
-        setState(() {
-          _onSelectDevice(order.excavator!.first.id);
-        });
-      }
-    });
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   final order =
+    //       Provider.of<ReportDraftProvider>(
+    //         context,
+    //         listen: false,
+    //       ).order;
+    //   if (order?.excavator != null) {
+    //     _selectedDevice = order!.excavator!.first.id;
+    //     setState(() {
+    //       _onSelectDevice(order.excavator!.first.id);
+    //     });
+    //   }
+    // });
   }
 
   String? _selectedDevice;

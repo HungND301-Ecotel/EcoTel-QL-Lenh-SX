@@ -7,4 +7,8 @@ class MaterialService {
   Future<Map<String, dynamic>> getAllMaterial() async {
     return await _apiService.get('/materials');
   }
+
+  Future<Map<String, dynamic>> getById(String id) async {
+    return await _apiService.get('/materials/$id');
+  }
 }

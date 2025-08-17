@@ -333,7 +333,7 @@ const AdminDashboard: React.FC = () => {
                                 <TableHead>
                                     <TableRow>
                                         <TableCell align='center' rowSpan={2} sx={{
-                                            border: '1px solid black',
+
                                             minWidth: 150,
                                             position: 'sticky',
                                             left: 0,
@@ -344,7 +344,7 @@ const AdminDashboard: React.FC = () => {
                                         }}>Đơn vị</TableCell>
                                         {count.map((item: any) => (
                                             <TableCell align='center' colSpan={4} sx={{
-                                                border: '1px solid black',
+
                                                 position: 'sticky',
                                                 top: 0,
                                                 zIndex: 2,
@@ -361,7 +361,7 @@ const AdminDashboard: React.FC = () => {
                                         {count.map((item: any) => (
                                             <>
                                                 <TableCell align='center' sx={{
-                                                    border: '1px solid black', minWidth: 150,
+                                                    minWidth: 150,
                                                     position: 'sticky',
                                                     top: 100,
                                                     zIndex: 1,
@@ -370,7 +370,7 @@ const AdminDashboard: React.FC = () => {
                                                     color: 'green',
                                                 }}>Chờ điều động</TableCell>
                                                 <TableCell align='center' sx={{
-                                                    border: '1px solid black', minWidth: 150, position: 'sticky',
+                                                    minWidth: 150, position: 'sticky',
                                                     top: 100,
                                                     zIndex: 1,
                                                     fontWeight: 'bold',
@@ -378,7 +378,7 @@ const AdminDashboard: React.FC = () => {
                                                     color: 'red',
                                                 }}>Đang hoạt động</TableCell>
                                                 <TableCell align='center' sx={{
-                                                    border: '1px solid black', minWidth: 50, position: 'sticky',
+                                                    minWidth: 50, position: 'sticky',
                                                     top: 100,
                                                     zIndex: 1,
                                                     fontWeight: 'bold',
@@ -386,11 +386,12 @@ const AdminDashboard: React.FC = () => {
                                                     color: 'orange',
                                                 }}>Hỏng</TableCell>
                                                 <TableCell align='center' sx={{
-                                                    border: '1px solid black', minWidth: 100, position: 'sticky',
+                                                    minWidth: 100, position: 'sticky',
                                                     top: 100,
                                                     zIndex: 1,
                                                     fontWeight: 'bold',
-                                                    fontSize: 18
+                                                    fontSize: 18,
+                                                    borderRight: '1px solid grey',
                                                 }}>Niêm cất</TableCell>
                                             </>
                                         ))}
@@ -400,23 +401,22 @@ const AdminDashboard: React.FC = () => {
                                     {departments.map((item: Department, index: number) => (
                                         <TableRow key={index}>
                                             <TableCell align='center' sx={{
-                                                border: '1px solid black',
                                                 position: 'sticky',
                                                 left: 0,
-                                                backgroundColor: 'white',
+                                                backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
                                                 zIndex: 1,
-                                                minWidth: 150
+                                                minWidth: 150,
                                             }}>{item.code}</TableCell>
                                             {count.map((type: any, typeIndex: number) => {
                                                 const org = type.organizations.find((o: any) => o.departmentName === item.code);
                                                 const s = org?.statusCounts ?? {};
-
+                                                const bgColor = index % 2 === 0 ? 'white' : '#e3f2fd';
                                                 return (
                                                     <React.Fragment key={typeIndex}>
-                                                        <TableCell align='center' sx={{ border: '1px solid black' }}>{s.available || 0}</TableCell>
-                                                        <TableCell align='center' sx={{ border: '1px solid black' }}>{s.in_use || 0}</TableCell>
-                                                        <TableCell align='center' sx={{ border: '1px solid black' }}>{s.maintenance || 0}</TableCell>
-                                                        <TableCell align='center' sx={{ border: '1px solid black' }}>{s.retired || 0}</TableCell>
+                                                        <TableCell align='center' sx={{ backgroundColor: bgColor }}>{s.available || 0}</TableCell>
+                                                        <TableCell align='center' sx={{ backgroundColor: bgColor }}>{s.in_use || 0}</TableCell>
+                                                        <TableCell align='center' sx={{ backgroundColor: bgColor }}>{s.maintenance || 0}</TableCell>
+                                                        <TableCell align='center' sx={{ backgroundColor: bgColor }}>{s.retired || 0}</TableCell>
                                                     </React.Fragment>
                                                 );
                                             })}

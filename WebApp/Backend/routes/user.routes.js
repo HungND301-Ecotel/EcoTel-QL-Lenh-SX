@@ -256,9 +256,24 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         const processedUsers = [];
         for (const row of usersToImport) {
             const newUser = { ...row };
-            if (newUser.password) {
-                const salt = await bcrypt.genSalt(10);
-                newUser.password = await bcrypt.hash(newUser.password.toString(), salt);
+            const salt = await bcrypt.genSalt(10);
+            newUser.password = await bcrypt.hash('123456', salt);
+            if (!newUser.username) {
+                return res.status(400).json({ status: 'error', message: 'Username là bắt buộc' });
+            } else {
+                const existingUser = await User.findOne({ username: newUser.username })
+                if (existingUser) {
+                    return res.status(400).json({ status: 'error', message: 'Username không được trùng.' });
+                }
+            }
+            if (!newUser.fullName) {
+                return res.status(400).json({ status: 'error', message: 'Fullname là bắt buộc' });
+            }
+            if (newUser.salaryCode) {
+                const existingUser = await User.findOne({ salaryCode: newUser.salaryCode })
+                if (existingUser) {
+                    return res.status(400).json({ status: 'error', message: 'Thẻ lương (salaryCode) không được trùng.' });
+                }
             }
             if (newUser.department) {
                 const department = await Department.findOne({ code: newUser.department })
@@ -314,7 +329,6 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
         worksheet.columns = [
             { header: 'fullName', key: 'fullName', width: 25 },
             { header: 'username', key: 'username', width: 15 },
-            { header: 'password', key: 'password', width: 15 },
             { header: 'salaryCode', key: 'salaryCode', width: 15 },
             { header: 'gender', key: 'gender', width: 10 },
             { header: 'phone', key: 'phone', width: 15 },
@@ -328,7 +342,6 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
         const formattedUsers = users.map(user => ({
             fullName: user?.fullName || '',
             username: user?.username || '',
-            password: '',
             salaryCode: user?.salaryCode || '',
             gender: user?.gender || '',
             phone: user?.phone || '',
@@ -342,7 +355,7 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
         // Thiết lập style
         worksheet.eachRow((row, rowNumber) => {
             row.eachCell(cell => {
-                cell.font = { size: (rowNumber === 1) ? 9 : 8, bold: (rowNumber === 1) };
+                cell.font = { size: (rowNumber === 1) ? 8 : 7, bold: (rowNumber === 1) };
                 cell.alignment = { vertical: 'middle', wrapText: (rowNumber === 1) };
             });
             row.height = (rowNumber === 1) ? 40 : 20;
@@ -358,7 +371,7 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
 
         // Áp dụng Data Validation
         const MAX = Math.max(worksheet.rowCount + 100, 1000); // dư dòng để người dùng thêm
-        worksheet.dataValidations.add(`E2:E${MAX}`, {
+        worksheet.dataValidations.add(`D2:D${MAX}`, {
             type: 'list',
             allowBlank: true,
             formulae: ['"Nam,Nữ"'], // phải có dấu " ... "
@@ -366,21 +379,21 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
             errorTitle: 'Giá trị không hợp lệ',
             error: 'Chỉ được chọn Nam hoặc Nữ.',
         });
-        worksheet.dataValidations.add(`J2:J${MAX}`, {
+        worksheet.dataValidations.add(`I2:I${MAX}`, {
             type: 'list',
             allowBlank: true,
             formulae: ['"manager,employee"'], // phải có dấu " ... "
             showErrorMessage: true,
             errorTitle: 'Giá trị không hợp lệ',
         });
-        worksheet.dataValidations.add(`H2:H${MAX}`, {
+        worksheet.dataValidations.add(`G2:G${MAX}`, {
             type: 'list',
             allowBlank: true,
             formulae: [`=$X$2:$X$${posList.length + 1}`],   // nguồn position
             showErrorMessage: true,
             errorTitle: 'Giá trị không hợp lệ',
         });
-        worksheet.dataValidations.add(`I2:I${MAX}`, {
+        worksheet.dataValidations.add(`H2:H${MAX}`, {
             type: 'list',
             allowBlank: true,
             formulae: [`=$Y$2:$Y$${deptList.length + 1}`], // nguồn department

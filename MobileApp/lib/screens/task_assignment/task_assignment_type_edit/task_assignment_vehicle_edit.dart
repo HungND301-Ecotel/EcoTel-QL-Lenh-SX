@@ -15,9 +15,11 @@ import 'package:soft/services/order_service.dart';
 import 'package:soft/widgets/date_picker_button.dart';
 import 'package:soft/widgets/date_time_picker_button.dart';
 import 'package:soft/widgets/excavator_button.dart';
+import 'package:soft/widgets/location_button.dart';
 import 'package:soft/widgets/pay_roll_input.dart';
 import 'package:soft/widgets/time_picker_button.dart';
 import 'package:soft/widgets/vehicle_button.dart';
+import 'package:soft/widgets/material_select_button.dart';
 
 class TaskAssignmentVehicleEdit extends StatefulWidget {
   final TaskModel data;
@@ -39,8 +41,8 @@ class _TaskAssignmentVehicleEdit
   DateTime? _selectedDateTime;
   List<String?> vehicle = [];
   List<String?> excavator = [];
-  LocationModel? dump;
-  MaterialModel? material;
+  List<String?> dump = [];
+  List<String?> material = [];
   UserModel? user;
   ShiftModel? _shift;
   String? safetyMeasure;
@@ -64,9 +66,13 @@ class _TaskAssignmentVehicleEdit
       }
       // Gán lại vehicle nếu có
       if (order.material != null) {
-        material = order.material;
+        material =
+            order.material!.map((d) => d.id).toList();
       }
-
+      // Gán lại vehicle nếu có
+      if (order.location != null) {
+        dump = order.location!.map((d) => d.id).toList();
+      }
       _safetyController.text = order.safetyMeasure ?? '';
 
       // Gán lại ngày làm việc nếu có
@@ -150,6 +156,18 @@ class _TaskAssignmentVehicleEdit
     });
   }
 
+  void _updateMaterial(int index, String selectedMaterial) {
+    setState(() {
+      material[index] = selectedMaterial;
+    });
+  }
+
+  void _updateLocation(int index, String selectedLocation) {
+    setState(() {
+      dump[index] = selectedLocation;
+    });
+  }
+
   void _updateUser(UserModel? selectedUser) {
     setState(() {
       user = selectedUser;
@@ -202,11 +220,11 @@ class _TaskAssignmentVehicleEdit
           "shiftHour": _shiftHour,
           "assignedTo": user?.id,
           "device": vehicleIds,
-          "location": dump?.id,
+          "location": dump,
           "excavator": excavatorIds,
           "distance": distace,
           "liftHeight": liftheight,
-          "material": material?.id,
+          "material": material,
           "status": "pending",
           "workContent": description,
           "temporaryError": null,
@@ -292,20 +310,20 @@ class _TaskAssignmentVehicleEdit
                     IconButton(
                       onPressed: () {
                         setState(() {
-                          if (excavator.length > 1) {
-                            ScaffoldMessenger.of(
-                              context,
-                            ).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Chỉ nên thêm phương tiện khi có một máy xúc.',
-                                ),
-                                backgroundColor:
-                                    Colors.orange,
-                              ),
-                            );
-                            return;
-                          }
+                          // if (excavator.length > 1) {
+                          //   ScaffoldMessenger.of(
+                          //     context,
+                          //   ).showSnackBar(
+                          //     SnackBar(
+                          //       content: Text(
+                          //         'Chỉ nên thêm phương tiện khi có một máy xúc.',
+                          //       ),
+                          //       backgroundColor:
+                          //           Colors.orange,
+                          //     ),
+                          //   );
+                          //   return;
+                          // }
                           vehicle.add("");
                         });
                       },
@@ -360,20 +378,20 @@ class _TaskAssignmentVehicleEdit
                     IconButton(
                       onPressed: () {
                         setState(() {
-                          if (vehicle.length > 1) {
-                            ScaffoldMessenger.of(
-                              context,
-                            ).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Chỉ nên thêm máy xúc khi có một phương tiện.',
-                                ),
-                                backgroundColor:
-                                    Colors.orange,
-                              ),
-                            );
-                            return;
-                          }
+                          // if (vehicle.length > 1) {
+                          //   ScaffoldMessenger.of(
+                          //     context,
+                          //   ).showSnackBar(
+                          //     SnackBar(
+                          //       content: Text(
+                          //         'Chỉ nên thêm máy xúc khi có một phương tiện.',
+                          //       ),
+                          //       backgroundColor:
+                          //           Colors.orange,
+                          //     ),
+                          //   );
+                          //   return;
+                          // }
                           excavator.add("");
                         });
                       },
@@ -420,103 +438,138 @@ class _TaskAssignmentVehicleEdit
                         ),
                       );
                     })),
-                Text(
-                  'Cung độ',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                TextField(
-                  controller: _distanceController,
-                  keyboardType: TextInputType.number,
-                ),
-                Text(
-                  'Độ cao nâng tải',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                TextField(
-                  controller: _liftHeightController,
-                  keyboardType: TextInputType.number,
-                ),
-                Text(
-                  'Điểm đổ',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton.icon(
-                    icon: Icon(Icons.casino_sharp),
-                    onPressed: () async {
-                      final selectedDump =
-                          await Navigator.pushNamed(
-                            context,
-                            TaskAssignmentRoutes
-                                .taskAssignmentDumpSiteSelect,
-                          );
-                      if (selectedDump != null &&
-                          selectedDump is LocationModel) {
+                // Text(
+                //   'Cung độ',
+                //   style: TextStyle(
+                //     fontWeight: FontWeight.bold,
+                //   ),
+                // ),
+                // TextField(
+                //   controller: _distanceController,
+                //   keyboardType: TextInputType.number,
+                // ),
+                // Text(
+                //   'Độ cao nâng tải',
+                //   style: TextStyle(
+                //     fontWeight: FontWeight.bold,
+                //   ),
+                // ),
+                // TextField(
+                //   controller: _liftHeightController,
+                //   keyboardType: TextInputType.number,
+                // ),
+                Row(
+                  children: [
+                    Text(
+                      'Điểm đổ',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
                         setState(() {
-                          dump = selectedDump;
+                          dump.add("");
                         });
-                      }
-                    },
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.black,
-                      backgroundColor: Colors.grey.shade300,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          0,
+                      },
+                      icon: Icon(
+                        Icons.add_circle,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ],
+                ),
+                ...(dump.isEmpty
+                    ? <Widget>[
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: 8.0,
+                        ),
+                        child: LocationButton(
+                          location: null,
+                          onSelectLocation: (selected) {
+                            setState(() {
+                              dump = [
+                                selected,
+                              ]; // Khởi tạo danh sách mới
+                            });
+                          },
                         ),
                       ),
-                      alignment: Alignment.centerLeft,
+                    ]
+                    : List.generate(dump.length, (index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: 8.0,
+                        ),
+                        child: LocationButton(
+                          location: dump[index],
+                          onSelectLocation: (selected) {
+                            _updateLocation(
+                              index,
+                              selected,
+                            );
+                          },
+                        ),
+                      );
+                    })),
+                Row(
+                  children: [
+                    Text(
+                      'Vật liệu',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    label: Text(dump?.name ?? 'Điểm đổ'),
-                  ),
-                ),
-                Text(
-                  'Vật liệu',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton.icon(
-                    icon: Icon(Icons.group_work_outlined),
-                    onPressed: () async {
-                      final selectedMaterial =
-                          await Navigator.pushNamed(
-                            context,
-                            TaskAssignmentRoutes
-                                .taskAssignmentMaterialSelect,
-                          );
-                      if (selectedMaterial != null &&
-                          selectedMaterial
-                              is MaterialModel) {
+                    IconButton(
+                      onPressed: () {
                         setState(() {
-                          material = selectedMaterial;
+                          material.add("");
                         });
-                      }
-                    },
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.black,
-                      backgroundColor: Colors.grey.shade300,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          0,
+                      },
+                      icon: Icon(
+                        Icons.add_circle,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ],
+                ),
+                ...(material.isEmpty
+                    ? <Widget>[
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: 8.0,
+                        ),
+                        child: MaterialSelectButton(
+                          material: null,
+                          onSelectMaterial: (selected) {
+                            setState(() {
+                              material = [
+                                selected,
+                              ]; // Khởi tạo danh sách mới
+                            });
+                          },
                         ),
                       ),
-                      alignment: Alignment.centerLeft,
-                    ),
-                    label: Text(
-                      material?.name ?? 'Vật liệu',
-                    ),
-                  ),
-                ),
+                    ]
+                    : List.generate(material.length, (
+                      index,
+                    ) {
+                      return Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: 8.0,
+                        ),
+                        child: MaterialSelectButton(
+                          material: material[index],
+                          onSelectMaterial: (selected) {
+                            _updateMaterial(
+                              index,
+                              selected,
+                            );
+                          },
+                        ),
+                      );
+                    })),
                 Text(
                   'Nội dung công việc',
                   style: TextStyle(

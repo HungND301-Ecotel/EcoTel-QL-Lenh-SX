@@ -28,6 +28,7 @@ import {
     Grid3x3,
     Grid3x3Sharp,
     ViewList,
+    BorderRight,
 } from '@mui/icons-material';
 import api from '../../config/api.config';
 import { Order, Device, Department, Location } from '../../types';
@@ -265,7 +266,7 @@ const ManagerDashboard: React.FC = () => {
                                 <TableHead>
                                     <TableRow>
                                         <TableCell align='center' rowSpan={2} sx={{
-                                            border: '1px solid black',
+
                                             minWidth: 150,
                                             position: 'sticky',
                                             left: 0,
@@ -276,7 +277,7 @@ const ManagerDashboard: React.FC = () => {
                                         }}>Đơn vị</TableCell>
                                         {count.map((item: any, index: number) => (
                                             <TableCell align='center' colSpan={4} key={index} sx={{
-                                                border: '1px solid black',
+
                                                 position: 'sticky',
                                                 top: 0,
                                                 fontWeight: 'bold',
@@ -292,7 +293,7 @@ const ManagerDashboard: React.FC = () => {
                                         {count.map((item: any) => (
                                             <>
                                                 <TableCell align='center' sx={{
-                                                    border: '1px solid black', minWidth: 150, position: 'sticky',
+                                                    minWidth: 150, position: 'sticky',
                                                     top: 56,
                                                     fontWeight: 'bold',
                                                     fontSize: 18,
@@ -300,7 +301,7 @@ const ManagerDashboard: React.FC = () => {
                                                     color: 'green',
                                                 }}>Chờ điều động</TableCell>
                                                 <TableCell align='center' sx={{
-                                                    border: '1px solid black', minWidth: 150, position: 'sticky',
+                                                    minWidth: 150, position: 'sticky',
                                                     top: 56,
                                                     fontWeight: 'bold',
                                                     fontSize: 18,
@@ -308,7 +309,7 @@ const ManagerDashboard: React.FC = () => {
                                                     color: 'red',
                                                 }}>Đang hoạt động</TableCell>
                                                 <TableCell align='center' sx={{
-                                                    border: '1px solid black', minWidth: 50, position: 'sticky',
+                                                    minWidth: 50, position: 'sticky',
                                                     top: 56,
                                                     fontWeight: 'bold',
                                                     fontSize: 18,
@@ -316,11 +317,12 @@ const ManagerDashboard: React.FC = () => {
                                                     color: 'orange',
                                                 }}>Hỏng</TableCell>
                                                 <TableCell align='center' sx={{
-                                                    border: '1px solid black', minWidth: 100, position: 'sticky',
+                                                    minWidth: 100, position: 'sticky',
                                                     top: 56,
                                                     fontWeight: 'bold',
                                                     fontSize: 18,
                                                     zIndex: 1,
+                                                    borderRight: '1px solid grey',
                                                 }}>Niêm cất</TableCell>
                                             </>
                                         ))}
@@ -330,14 +332,13 @@ const ManagerDashboard: React.FC = () => {
                                     {departments.map((item: string, index: number) => (
                                         <TableRow key={index}>
                                             <TableCell align='center' sx={{
-                                                border: '1px solid black',
                                                 position: 'sticky',
                                                 left: 0,
                                                 fontWeight: 'bold',
                                                 backgroundColor: 'white',
                                                 fontSize: 18,
                                                 zIndex: 1,
-                                                minWidth: 150
+                                                minWidth: 150,
                                             }}>{item}</TableCell>
                                             {count.map((type: any, typeIndex: number) => {
                                                 const org = type.organizations.find((o: any) => o.departmentName === item);
@@ -345,10 +346,10 @@ const ManagerDashboard: React.FC = () => {
 
                                                 return (
                                                     <React.Fragment key={typeIndex}>
-                                                        <TableCell align='center' sx={{ border: '1px solid black' }}>{s.available || 0}</TableCell>
-                                                        <TableCell align='center' sx={{ border: '1px solid black' }}>{s.in_use || 0}</TableCell>
-                                                        <TableCell align='center' sx={{ border: '1px solid black' }}>{s.maintenance || 0}</TableCell>
-                                                        <TableCell align='center' sx={{ border: '1px solid black' }}>{s.retired || 0}</TableCell>
+                                                        <TableCell align='center' sx={{}}>{s.available || 0}</TableCell>
+                                                        <TableCell align='center'>{s.in_use || 0}</TableCell>
+                                                        <TableCell align='center'>{s.maintenance || 0}</TableCell>
+                                                        <TableCell align='center'>{s.retired || 0}</TableCell>
                                                     </React.Fragment>
                                                 );
                                             })}

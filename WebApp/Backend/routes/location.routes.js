@@ -80,4 +80,19 @@ router.get('/', verifyToken, async (req, res) => {
     }
 });
 
+router.get('/:id', verifyToken, async (req, res, next) => {
+    try {
+        const location = await Location.findById(req.params.id)
+        if (!location) {
+            return res.status(200).send({ status: 'error', message: 'No location found with that ID' });
+        }
+
+        res.status(200).json({
+            status: 'success',
+
+        });
+    } catch (err) {
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+});
 module.exports = router; 

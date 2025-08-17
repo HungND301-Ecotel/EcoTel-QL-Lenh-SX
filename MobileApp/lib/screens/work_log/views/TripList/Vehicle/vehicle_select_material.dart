@@ -43,6 +43,30 @@ class _VehicleSelectMaterial
               .toList(),
         );
       });
+      final order =
+          Provider.of<ReportDraftProvider>(
+            context,
+            listen: false,
+          ).order;
+      if (order?.material != null &&
+          order!.material!.isNotEmpty) {
+        final selectedIds =
+            order.material!.map((m) => m.id).toList();
+        _selectedMaterial = selectedIds.last;
+        setState(() {
+          _onSelectedMaterial(order.material!.last.id);
+          materials.sort((a, b) {
+            if (selectedIds.contains(a.id) &&
+                !selectedIds.contains(b.id)) {
+              return -1;
+            } else if (!selectedIds.contains(a.id) &&
+                selectedIds.contains(b.id)) {
+              return 1;
+            }
+            return 0;
+          });
+        });
+      }
     }
     setState(() {
       _isLoading = false;
@@ -53,6 +77,32 @@ class _VehicleSelectMaterial
   void initState() {
     super.initState();
     getAllMaterial();
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   final order =
+    //       Provider.of<ReportDraftProvider>(
+    //         context,
+    //         listen: false,
+    //       ).order;
+    //   if (order?.material != null &&
+    //       order!.material!.isNotEmpty) {
+    //     final selectedIds =
+    //         order.material!.map((m) => m.id).toList();
+    //     _selectedMaterial = selectedIds.first;
+    //     setState(() {
+    //       _onSelectedMaterial(order.material!.first.id);
+    //       materials.sort((a, b) {
+    //         if (selectedIds.contains(a.id) &&
+    //             !selectedIds.contains(b.id)) {
+    //           return -1;
+    //         } else if (!selectedIds.contains(a.id) &&
+    //             selectedIds.contains(b.id)) {
+    //           return 1;
+    //         }
+    //         return 0;
+    //       });
+    //     });
+    //   }
+    // });
   }
 
   String? _selectedMaterial;

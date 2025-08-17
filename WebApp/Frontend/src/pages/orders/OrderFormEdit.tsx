@@ -139,12 +139,16 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                     : [],
             distance: initialValues.distance,
             liftHeight: initialValues.liftHeight,
-            location: initialValues.location !== null && typeof initialValues.location === 'object'
-                ? initialValues.location._id
-                : initialValues.location || undefined,
-            material: initialValues.material !== null && typeof initialValues.material === 'object'
-                ? initialValues.material._id
-                : initialValues.material || undefined,
+            location: Array.isArray(initialValues.location)
+                ? initialValues.location.map((d: any) => typeof d === 'object' ? d._id : d)
+                : initialValues.location
+                    ? [typeof initialValues.location === 'object' ? initialValues.location._id : initialValues.location]
+                    : [],
+            material: Array.isArray(initialValues.material)
+                ? initialValues.material.map((d: any) => typeof d === 'object' ? d._id : d)
+                : initialValues.material
+                    ? [typeof initialValues.material === 'object' ? initialValues.material._id : initialValues.material]
+                    : [],
             workContent: initialValues.workContent || '',
             status: initialValues.status,
             note: initialValues.note || ''
@@ -185,7 +189,16 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
             ? initialValues.excavator.map((d: any) => typeof d === 'object' ? d._id : d)
             : [];
     }, [initialValues.excavator]);
-
+    const initialLocationIds = useMemo(() => {
+        return Array.isArray(initialValues.location)
+            ? initialValues.location.map((d: any) => typeof d === 'object' ? d._id : d)
+            : [];
+    }, [initialValues.location]);
+    const initialMaterialIds = useMemo(() => {
+        return Array.isArray(initialValues.material)
+            ? initialValues.material.map((d: any) => typeof d === 'object' ? d._id : d)
+            : [];
+    }, [initialValues.material]);
 
     return (
 
@@ -289,10 +302,7 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                             if (hasDeletedInitial) {
                                 return;
                             }
-                            // if (formik.values.excavator?.length > 1 && selectedIds.length > 1) {
-                            //     showErrorAlert('Chỉ nên bổ sung phương tiện khi chỉ có một máy xúc.');
-                            //     return;
-                            // }
+
                             formik.setFieldValue('device', selectedIds);
                         }}
                         PopperComponent={StyledPopper}
@@ -390,13 +400,22 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                 {selectedJob?.type === "Vận hành xe" && <Grid item xs={12} sm={6}>
                     <Autocomplete
                         fullWidth
+                        multiple
                         options={locations}
                         getOptionLabel={(option: Location) =>
                             option.name || ''
                         }
-                        value={locations.find((p: any) => p._id === formik.values.location) || null}
+                        value={locations.filter((d: any) =>
+                            formik.values.location.includes(d._id)
+                        )}
                         onChange={(event, newValue) => {
-                            formik.setFieldValue('location', newValue?._id || '');
+                            const selectedIds = newValue.map((item: any) => item._id);
+                            const hasDeletedInitial = initialLocationIds.some((id: String) => !selectedIds.includes(id));
+                            if (hasDeletedInitial) {
+                                return;
+                            }
+
+                            formik.setFieldValue('location', selectedIds);
                         }}
                         PopperComponent={StyledPopper}
                         renderInput={(params) => (
@@ -413,13 +432,22 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                 {selectedJob?.type === "Vận hành xe" && <Grid item xs={12} sm={6}>
                     <Autocomplete
                         fullWidth
+                        multiple
                         options={materials}
                         getOptionLabel={(option: Material) =>
                             option.name || ''
                         }
-                        value={materials.find((p: any) => p._id === formik.values.material) || null}
+                        value={materials.filter((d: any) =>
+                            formik.values.material.includes(d._id)
+                        )}
                         onChange={(event, newValue) => {
-                            formik.setFieldValue('material', newValue?._id || '');
+                            const selectedIds = newValue.map((item: any) => item._id);
+                            const hasDeletedInitial = initialMaterialIds.some((id: String) => !selectedIds.includes(id));
+                            if (hasDeletedInitial) {
+                                return;
+                            }
+
+                            formik.setFieldValue('material', selectedIds);
                         }}
                         PopperComponent={StyledPopper}
                         renderInput={(params) => (

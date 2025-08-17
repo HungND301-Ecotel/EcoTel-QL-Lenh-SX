@@ -65,14 +65,12 @@ const OrderHistories: React.FC<{ open: boolean, setOpen: Dispatch<SetStateAction
                     return (
                         <Box key={order._id} sx={{ mb: 4 }}>
                             <Divider sx={{ mb: 2 }} />
-                            <Typography variant="h6" sx={{ mb: 1 }}>
-                                {order?.assignedTo?.fullName} - {order?.assignedTo?.salaryCode} - {order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''} - Ca: {order?.shift?.name}
-                            </Typography>
                             <Tabs
                                 value={tabIndex}
                                 onChange={(e, val) => handleTabChange(order._id, val)}
+                                variant="fullWidth"
                             >
-                                <Tab label="Chi tiết" />
+                                <Tab sx={{ alignItems: 'flex-start', fontWeight: 'bold' }} label={`Chi tiết: ${order?.assignedTo?.fullName} - ${order?.assignedTo?.salaryCode} - ${order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''} - Ca: ${order?.shift?.name}`} />
                                 {/* <Tab label="Ảnh" /> */}
                             </Tabs>
                             <Divider sx={{ mb: 2 }} />

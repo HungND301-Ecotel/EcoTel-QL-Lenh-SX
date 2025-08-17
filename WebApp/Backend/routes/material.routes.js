@@ -78,5 +78,19 @@ router.get('/', verifyToken, async (req, res) => {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
+router.get('/:id', verifyToken, async (req, res, next) => {
+    try {
+        const material = await Material.findById(req.params.id)
+        if (!material) {
+            return res.status(200).send({ status: 'error', message: 'No material found with that ID' });
+        }
 
+        res.status(200).json({
+            status: 'success',
+
+        });
+    } catch (err) {
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+});
 module.exports = router; 

@@ -510,7 +510,7 @@ const Orders: React.FC = () => {
                                             top: 0,
                                             zIndex: 3,
                                             width: 50,
-                                            border: '1px solid black',
+
                                             fontWeight: 'bold', fontSize: 18
                                         }}> <Checkbox
                                                 color="primary"
@@ -530,7 +530,7 @@ const Orders: React.FC = () => {
                                             top: 0,
                                             zIndex: 3,
                                             width: 50,
-                                            border: '1px solid black',
+
                                             fontWeight: 'bold', fontSize: 18
                                         }}>STT</TableCell>
                                         {visibleColumns.includes('assignedTo') && <TableCell align='center' sx={{
@@ -539,26 +539,26 @@ const Orders: React.FC = () => {
                                             top: 0,
                                             zIndex: 3,
                                             minWidth: 150,
-                                            border: '1px solid black',
+
                                             fontWeight: 'bold', fontSize: 18
                                         }}>Nhân viên</TableCell>}
-                                        {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{ minWidth: 130, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Mã thẻ lương</TableCell>}
-                                        {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ngày làm việc</TableCell>}
-                                        {visibleColumns.includes('shift') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ca</TableCell>}
-                                        {visibleColumns.includes('shiftHour') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Giờ làm</TableCell>}
-                                        {visibleColumns.includes('job') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Công việc</TableCell>}
-                                        {visibleColumns.includes('content') && <TableCell align='center' sx={{ minWidth: 200, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Nội dung</TableCell>}
-                                        {visibleColumns.includes('device') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Phương tiện</TableCell>}
-                                        {visibleColumns.includes('createdBy') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Người tạo lệnh</TableCell>}
-                                        {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Thời gian tạo lệnh</TableCell>}
-                                        {visibleColumns.includes('startTime') && <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Bắt đầu</TableCell>}
-                                        {visibleColumns.includes('endTime') && <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Kết thúc</TableCell>}
-                                        {visibleColumns.includes('status') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>}
-                                        {visibleColumns.includes('note') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ghi chú</TableCell>}
-                                        {visibleColumns.includes('view') && <TableCell align='center' sx={{ minWidth: 100, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Xem báo công</TableCell>}
-                                        {visibleColumns.includes('edit') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Sửa</TableCell>}
-                                        {visibleColumns.includes('cancel') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Hủy</TableCell>}
-                                        {visibleColumns.includes('transfer') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Chuyển ca</TableCell>}
+                                        {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{ minWidth: 130, fontWeight: 'bold', fontSize: 18 }}>Mã thẻ lương</TableCell>}
+                                        {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{ minWidth: 120, fontWeight: 'bold', fontSize: 18 }}>Ngày làm việc</TableCell>}
+                                        {visibleColumns.includes('shift') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Ca</TableCell>}
+                                        {visibleColumns.includes('shiftHour') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Giờ làm</TableCell>}
+                                        {visibleColumns.includes('job') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Công việc</TableCell>}
+                                        {visibleColumns.includes('content') && <TableCell align='center' sx={{ minWidth: 200, fontWeight: 'bold', fontSize: 18 }}>Nội dung</TableCell>}
+                                        {visibleColumns.includes('device') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Phương tiện</TableCell>}
+                                        {visibleColumns.includes('createdBy') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Người tạo lệnh</TableCell>}
+                                        {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Thời gian tạo lệnh</TableCell>}
+                                        {visibleColumns.includes('startTime') && <TableCell align='center' sx={{ minWidth: 120, fontWeight: 'bold', fontSize: 18 }}>Bắt đầu</TableCell>}
+                                        {visibleColumns.includes('endTime') && <TableCell align='center' sx={{ minWidth: 120, fontWeight: 'bold', fontSize: 18 }}>Kết thúc</TableCell>}
+                                        {visibleColumns.includes('status') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>}
+                                        {visibleColumns.includes('note') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Ghi chú</TableCell>}
+                                        {visibleColumns.includes('view') && <TableCell align='center' sx={{ minWidth: 100, fontWeight: 'bold', fontSize: 18 }}>Xem báo công</TableCell>}
+                                        {visibleColumns.includes('edit') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Sửa</TableCell>}
+                                        {visibleColumns.includes('cancel') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Hủy</TableCell>}
+                                        {visibleColumns.includes('transfer') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Chuyển ca</TableCell>}
 
                                     </TableRow>
                                 </TableHead>
@@ -590,7 +590,6 @@ const Orders: React.FC = () => {
                                                             : order.status === 'warning'
                                                                 ? '#fff8e1' // vàng nhạt
                                                                 : '#ede7f6', // tím nhạt
-                                                border: '1px solid black'
                                             }}><Checkbox onChange={() => handleSelected(order)} checked={selectedOrders.some(o => o._id === order._id)} /></TableCell>
                                             <TableCell align='center' sx={{
                                                 position: 'sticky',
@@ -606,7 +605,6 @@ const Orders: React.FC = () => {
                                                             : order.status === 'warning'
                                                                 ? '#fff8e1' // vàng nhạt
                                                                 : '#ede7f6', // tím nhạt,
-                                                border: '1px solid black'
                                             }}>{index + 1}</TableCell>
                                             {visibleColumns.includes('assignedTo') && <TableCell sx={{
                                                 position: 'sticky',
@@ -622,21 +620,20 @@ const Orders: React.FC = () => {
                                                             : order.status === 'warning'
                                                                 ? '#fff8e1' // vàng nhạt
                                                                 : '#ede7f6', // tím nhạt,
-                                                border: '1px solid black'
                                             }}>{order.assignedTo?.fullName}</TableCell>}
-                                            {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{}}>
                                                 {order.assignedTo?.salaryCode}
                                             </TableCell>}
-                                            {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{}}>
                                                 {order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''}
                                             </TableCell>}
-                                            {visibleColumns.includes('shift') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('shift') && <TableCell align='center' sx={{}}>
                                                 {order.shift?.name}
                                             </TableCell>}
-                                            {visibleColumns.includes('shiftHour') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('shiftHour') && <TableCell align='center' sx={{}}>
                                                 {order.shiftHour || ''}
                                             </TableCell>}
-                                            {visibleColumns.includes('job') && <TableCell sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('job') && <TableCell sx={{}}>
                                                 {order.job?.name || ''}
                                             </TableCell>}
                                             {visibleColumns.includes('content') && <TableCell sx={{
@@ -644,26 +641,25 @@ const Orders: React.FC = () => {
                                                 overflow: 'hidden',
                                                 // textOverflow: 'ellipsis',
                                                 maxWidth: 400,
-                                                border: '1px solid black'
                                             }}>
                                                 {order.workContent || ''}
                                             </TableCell>}
-                                            {visibleColumns.includes('device') && <TableCell sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('device') && <TableCell sx={{}}>
                                                 {order.device?.map((dev: any) => dev.code).join(', ') || order.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')}
                                             </TableCell>}
-                                            {visibleColumns.includes('createdBy') && <TableCell sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('createdBy') && <TableCell sx={{}}>
                                                 {order.createdBy?.username || ''}
                                             </TableCell>}
-                                            {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{}}>
                                                 {order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm') : ''}
                                             </TableCell>}
-                                            {visibleColumns.includes('startTime') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('startTime') && <TableCell align='center' sx={{}}>
                                                 {order.startTime ? format(new Date(order.startTime), 'HH:mm:ss') : ''}
                                             </TableCell>}
-                                            {visibleColumns.includes('endTime') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('endTime') && <TableCell align='center' sx={{}}>
                                                 {order.endTime ? format(new Date(order.endTime), 'HH:mm:ss') : ''}
                                             </TableCell>}
-                                            {visibleColumns.includes('status') && <TableCell sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('status') && <TableCell sx={{}}>
                                                 <Chip
                                                     sx={{ width: '120px' }}
                                                     label={order.status === 'pending' ? 'Chưa nhận lệnh' :
@@ -678,10 +674,10 @@ const Orders: React.FC = () => {
                                                                     order.status === 'warning' ? 'warning' : 'secondary'}
                                                 />
                                             </TableCell>}
-                                            {visibleColumns.includes('note') && <TableCell sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('note') && <TableCell sx={{}}>
                                                 {order.temporaryError || ''}
                                             </TableCell>}
-                                            {visibleColumns.includes('view') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('view') && <TableCell align='center' sx={{}}>
                                                 <IconButton
                                                     color="secondary"
                                                     onClick={() => {
@@ -695,7 +691,7 @@ const Orders: React.FC = () => {
                                                 </IconButton>
 
                                             </TableCell>}
-                                            {visibleColumns.includes('edit') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('edit') && <TableCell align='center' sx={{}}>
                                                 <IconButton
                                                     color="primary"
                                                     disabled={!['pending', 'warning'].includes(order.status)}
@@ -715,7 +711,7 @@ const Orders: React.FC = () => {
                                                     </Tooltip>
                                                 </IconButton>
                                             </TableCell>}
-                                            {visibleColumns.includes('cancel') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('cancel') && <TableCell align='center' sx={{}}>
                                                 <IconButton
                                                     disabled={!['pending', 'warning'].includes(order.status)}
                                                     color="warning"
@@ -726,7 +722,7 @@ const Orders: React.FC = () => {
                                                     </Tooltip>
                                                 </IconButton>
                                             </TableCell>}
-                                            {visibleColumns.includes('transfer') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                            {visibleColumns.includes('transfer') && <TableCell align='center' sx={{}}>
                                                 <IconButton
                                                     color="info"
                                                     disabled={!['completed'].includes(order.status)}

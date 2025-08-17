@@ -287,6 +287,14 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         const processedDevices = [];
         for (const row of devicesImport) {
             const newDevice = { ...row };
+            if (!newDevice.code) {
+                return res.status(400).json({ status: 'error', message: 'Biển số (code) là bắt buộc' });
+            } else {
+                const existingDevice = await Device.findOne({ code: newDevice.code })
+                if (existingDevice) {
+                    return res.status(400).json({ status: 'error', message: 'Biển số (code) không được phép trùng.' });
+                }
+            }
             if (newDevice.department) {
                 const department = await Department.findOne({ code: newDevice.department })
                 if (department) {

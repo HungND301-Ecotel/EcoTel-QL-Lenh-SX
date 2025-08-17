@@ -473,8 +473,7 @@ const DispatcherOrders: React.FC = () => {
                                             top: 0,
                                             zIndex: 3,
                                             width: 50,
-                                            border: '1px solid black',
-                                            fontWeight: 'bold', fontSize: 18
+                                            fontWeight: 'bold', fontSize: 18,
                                         }}><Checkbox
                                                 color="primary"
                                                 checked={orders.length > 0 && selectedOrders.length === orders.length}
@@ -493,7 +492,7 @@ const DispatcherOrders: React.FC = () => {
                                             top: 0,
                                             zIndex: 3,
                                             width: 50,
-                                            border: '1px solid black',
+
                                             fontWeight: 'bold', fontSize: 18
                                         }}>STT</TableCell>
                                         {visibleColumns.includes('assignedTo') && <TableCell align='center' sx={{
@@ -502,25 +501,25 @@ const DispatcherOrders: React.FC = () => {
                                             top: 0,
                                             zIndex: 3,
                                             minWidth: 150,
-                                            border: '1px solid black',
+
                                             fontWeight: 'bold', fontSize: 18
                                         }}>Nhân viên</TableCell>}
-                                        {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{ minWidth: 130, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Mã thẻ lương</TableCell>}
-                                        {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ngày làm việc</TableCell>}
-                                        {visibleColumns.includes('shift') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ca</TableCell>}
-                                        {visibleColumns.includes('shiftHour') && <TableCell align='center' sx={{ minWidth: 100, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Giờ làm</TableCell>}
-                                        {visibleColumns.includes('job') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Công việc</TableCell>}
-                                        {visibleColumns.includes('content') && <TableCell align='center' sx={{ minWidth: 200, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Nội dung</TableCell>}
-                                        {visibleColumns.includes('device') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Phương tiện</TableCell>}
-                                        {visibleColumns.includes('createdBy') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Người tạo lệnh</TableCell>}
-                                        {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Thời gian tạo lệnh</TableCell>}
-                                        {visibleColumns.includes('startTime') && <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Bắt đầu</TableCell>}
-                                        {visibleColumns.includes('endTime') && <TableCell align='center' sx={{ minWidth: 120, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Kết thúc</TableCell>}
-                                        {visibleColumns.includes('status') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>}
-                                        {visibleColumns.includes('note') && <TableCell align='center' sx={{ minWidth: 150, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Ghi chú</TableCell>}
-                                        {visibleColumns.includes('edit') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Sửa</TableCell>}
-                                        {visibleColumns.includes('cancel') && <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Hủy</TableCell>}
-                                        <TableCell align='center' sx={{ minWidth: 50, border: '1px solid black', fontWeight: 'bold', fontSize: 18 }}>Sao chép</TableCell>
+                                        {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{ minWidth: 130, fontWeight: 'bold', fontSize: 18 }}>Mã thẻ lương</TableCell>}
+                                        {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{ minWidth: 120, fontWeight: 'bold', fontSize: 18 }}>Ngày làm việc</TableCell>}
+                                        {visibleColumns.includes('shift') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Ca</TableCell>}
+                                        {visibleColumns.includes('shiftHour') && <TableCell align='center' sx={{ minWidth: 100, fontWeight: 'bold', fontSize: 18 }}>Giờ làm</TableCell>}
+                                        {visibleColumns.includes('job') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Công việc</TableCell>}
+                                        {visibleColumns.includes('content') && <TableCell align='center' sx={{ minWidth: 200, fontWeight: 'bold', fontSize: 18 }}>Nội dung</TableCell>}
+                                        {visibleColumns.includes('device') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Phương tiện</TableCell>}
+                                        {visibleColumns.includes('createdBy') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Người tạo lệnh</TableCell>}
+                                        {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Thời gian tạo lệnh</TableCell>}
+                                        {visibleColumns.includes('startTime') && <TableCell align='center' sx={{ minWidth: 120, fontWeight: 'bold', fontSize: 18 }}>Bắt đầu</TableCell>}
+                                        {visibleColumns.includes('endTime') && <TableCell align='center' sx={{ minWidth: 120, fontWeight: 'bold', fontSize: 18 }}>Kết thúc</TableCell>}
+                                        {visibleColumns.includes('status') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>}
+                                        {visibleColumns.includes('note') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Ghi chú</TableCell>}
+                                        {visibleColumns.includes('edit') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Sửa</TableCell>}
+                                        {visibleColumns.includes('cancel') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Hủy</TableCell>}
+                                        <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Sao chép</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 {!isLoading ? <TableBody>

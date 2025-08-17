@@ -63,7 +63,10 @@ class _TaskAssignmentVehicleTransfer
       }
       // Gán lại vehicle nếu có
       if (order.material != null) {
-        material = order.material;
+        material = order.material!.last;
+      }
+      if (order.location != null) {
+        dump = order.location!.last;
       }
       _safetyController.text = order.safetyMeasure ?? '';
 
@@ -401,26 +404,26 @@ class _TaskAssignmentVehicleTransfer
                     ),
                   ),
                 ),
-                Text(
-                  'Cung độ',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                TextField(
-                  controller: _distanceController,
-                  keyboardType: TextInputType.number,
-                ),
-                Text(
-                  'Độ cao nâng tải',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                TextField(
-                  controller: _liftHeightController,
-                  keyboardType: TextInputType.number,
-                ),
+                // Text(
+                //   'Cung độ',
+                //   style: TextStyle(
+                //     fontWeight: FontWeight.bold,
+                //   ),
+                // ),
+                // TextField(
+                //   controller: _distanceController,
+                //   keyboardType: TextInputType.number,
+                // ),
+                // Text(
+                //   'Độ cao nâng tải',
+                //   style: TextStyle(
+                //     fontWeight: FontWeight.bold,
+                //   ),
+                // ),
+                // TextField(
+                //   controller: _liftHeightController,
+                //   keyboardType: TextInputType.number,
+                // ),
                 Text(
                   'Điểm đổ',
                   style: TextStyle(

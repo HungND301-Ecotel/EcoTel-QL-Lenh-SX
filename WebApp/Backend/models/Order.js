@@ -46,14 +46,14 @@ const orderSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Device',
     }],
-    location: {
+    location: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Location',
-    },
-    material: {
+    }],
+    material: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Material',
-    },
+    }],
     distance: {
         type: Number
     },

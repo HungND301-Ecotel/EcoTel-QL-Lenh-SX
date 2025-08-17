@@ -154,12 +154,16 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                 : [],
             distance: initialValues?.distance,
             liftHeight: initialValues?.liftHeight,
-            location: initialValues?.location !== null && typeof initialValues?.location === 'object'
-                ? initialValues?.location?._id
-                : initialValues?.location || undefined,
-            material: initialValues?.material !== null && typeof initialValues?.material === 'object'
-                ? initialValues?.material._id
-                : initialValues?.material || undefined,
+            location: Array.isArray(initialValues?.location) && initialValues.location.length > 0
+                ? [typeof initialValues.location.at(-1) === 'object'
+                    ? initialValues.location.at(-1)?._id
+                    : initialValues.location.at(-1)]
+                : [],
+            material: Array.isArray(initialValues?.material) && initialValues.material.length > 0
+                ? [typeof initialValues.material.at(-1) === 'object'
+                    ? initialValues.material.at(-1)?._id
+                    : initialValues.material.at(-1)]
+                : [],
             workContent: initialValues?.workContent || '',
             status: initialValues?.status,
             note: initialValues?.shiftReport?.vehicleSummaries

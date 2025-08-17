@@ -50,8 +50,8 @@ class OrderModel {
   final List<DeviceModel>? excavator;
   final num? distance;
   final num? liftHeight;
-  final LocationModel? location;
-  final MaterialModel? material;
+  final List<LocationModel>? location;
+  final List<MaterialModel>? material;
   final String? workContent;
   final ShiftReportModel? shiftReport;
   String status;
@@ -131,13 +131,15 @@ class OrderModel {
       distance: json?['distance'],
       liftHeight: json?['liftHeight'],
       location:
-          json?['location'] != null
-              ? LocationModel.fromJson(json?['location'])
-              : null,
+          (json?['location'] as List?)
+              ?.map((e) => LocationModel.fromJson(e))
+              .toList() ??
+          [],
       material:
-          json?['material'] != null
-              ? MaterialModel.fromJson(json?['material'])
-              : null,
+          (json?['material'] as List?)
+              ?.map((e) => MaterialModel.fromJson(e))
+              .toList() ??
+          [],
       shiftReport:
           json?['shiftReport'] != null
               ? ShiftReportModel.fromJson(
@@ -199,8 +201,8 @@ class OrderModel {
           excavator?.map((e) => e.toJson()).toList(),
       'distance': distance,
       'liftHeight': liftHeight,
-      'location': location?.toJson(),
-      'material': material?.toJson(),
+      'location': location?.map((e) => e.toJson()).toList(),
+      'material': material?.map((e) => e.toJson()).toList(),
       'workContent': workContent,
       'shiftReport': shiftReport?.toJson(),
       'status': status,

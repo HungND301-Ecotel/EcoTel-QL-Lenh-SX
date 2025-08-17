@@ -63,7 +63,11 @@ class _TaskAssignmentVehicleAdd
       }
       // Gán lại vehicle nếu có
       if (order.material != null) {
-        material = order.material;
+        material = order.material!.last;
+      }
+      // Gán lại vehicle nếu có
+      if (order.location != null) {
+        dump = order.location!.last;
       }
       // Gán lại ngày làm việc nếu có
       _selectedDateTime = order.workingDate;
@@ -380,26 +384,26 @@ class _TaskAssignmentVehicleAdd
                     ),
                   ),
                 ),
-                Text(
-                  'Cung độ',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                TextField(
-                  controller: _distanceController,
-                  keyboardType: TextInputType.number,
-                ),
-                Text(
-                  'Độ cao nâng tải',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                TextField(
-                  controller: _liftHeightController,
-                  keyboardType: TextInputType.number,
-                ),
+                // Text(
+                //   'Cung độ',
+                //   style: TextStyle(
+                //     fontWeight: FontWeight.bold,
+                //   ),
+                // ),
+                // TextField(
+                //   controller: _distanceController,
+                //   keyboardType: TextInputType.number,
+                // ),
+                // Text(
+                //   'Độ cao nâng tải',
+                //   style: TextStyle(
+                //     fontWeight: FontWeight.bold,
+                //   ),
+                // ),
+                // TextField(
+                //   controller: _liftHeightController,
+                //   keyboardType: TextInputType.number,
+                // ),
                 Text(
                   'Điểm đổ',
                   style: TextStyle(

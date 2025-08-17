@@ -13,4 +13,8 @@ class LocationService {
   ) async {
     return await _apiService.post('/locations', data);
   }
+
+  Future<Map<String, dynamic>> getById(String id) async {
+    return await _apiService.get('/locations/$id');
+  }
 }

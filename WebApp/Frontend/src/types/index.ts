@@ -87,8 +87,8 @@ export interface Order {
     endTime?: Date;
     device?: string[];
     excavator?: string[];
-    location?: string;
-    material?: string;
+    location?: string[];
+    material?: string[];
     distance?: number;
     liftHeight?: number;
     workContent: string;

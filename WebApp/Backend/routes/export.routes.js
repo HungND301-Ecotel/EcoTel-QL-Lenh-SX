@@ -4,6 +4,8 @@ const axios = require('axios')
 const ExcelJS = require('exceljs');
 const Order = require('../models/Order');
 const Shift = require('../models/Shift');
+const Report = require('../models/Report');
+
 
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 
@@ -55,14 +57,21 @@ router.post('/order/bulk', verifyToken, restrictTo('admin', 'dispatcher', 'manag
                 }
             })
 
+
         const workbook = new ExcelJS.Workbook();
         for (const order of orders) {
-            const sheetName = `${order.assignedTo?.username}_${formatDate(order.workingDate)}_${order.shift?.name}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
+            const reports = await Report.find({ orderId: order._id })
+                .populate("device", "code")
+                .populate("material", "name")
+                .populate("excavator", "code")
+                .populate("fromLocation", "name")
+                .populate("toLocation", "name")
+            const sheetName = `${order.assignedTo?.username}_${formatDate(order.workingDate)}_${order.shift?.name}_${order._id}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
 
             const worksheet = workbook.addWorksheet(sheetName);
 
             // Tiêu đề bảng
-            worksheet.mergeCells('A1:M2');
+            worksheet.mergeCells('A1:L2');
             const header = worksheet.getCell('A1');
             header.value = `LỆNH SẢN XUẤT`;
             header.font = { bold: true, size: 14 };
@@ -159,28 +168,27 @@ router.post('/order/bulk', verifyToken, restrictTo('admin', 'dispatcher', 'manag
             worksheet.getCell('I8').value = order?.shiftReport?.vehicleSummaries.reduce((sum, report) => { return sum + report?.travelHours }, 0) || '';
 
 
-            worksheet.mergeCells('A10:M10');
+            worksheet.mergeCells('A10:L10');
             const product = worksheet.getCell('A10');
             product.value = `I. SẢN PHẨM`;
             product.font = { bold: true, size: 14 };
             product.alignment = { horizontal: 'center', vertical: 'middle' };
 
             worksheet.getCell('A11').value = 'STT';
-            worksheet.getCell('B11').value = 'Nhận tải';
-            worksheet.getCell('C11').value = 'Đổ tải \n(dừng/đổ)';
+            worksheet.getCell('B11').value = 'Điểm đi';
+            worksheet.getCell('C11').value = 'Điểm đến';
             worksheet.getCell('D11').value = 'Loại hàng';
             worksheet.getCell('E11').value = 'Cung độ \n(km)';
-            worksheet.getCell('F11').value = 'Chiều cao \nnăng tải';
+            worksheet.getCell('F11').value = 'Định mức';
             worksheet.getCell('G11').value = 'Số chuyển \nthực hiện';
-            worksheet.getCell('H11').value = 'Khối lượng \nm3';
-            worksheet.getCell('I11').value = 'Trọng lượng \ntấn';
-            worksheet.getCell('J11').value = 'Sản lượng \n(tkm)';
-            worksheet.getCell('K11').value = 'Nhiên liệu \nđịnh mức';
-            worksheet.getCell('L11').value = 'Điểm lương';
-            worksheet.getCell('M11').value = 'Ghi chú';
+            worksheet.getCell('H11').value = 'Thời gian \n thực hiện';
+            worksheet.getCell('I11').value = 'Nhiên liệu \n định mức';
+            worksheet.getCell('J11').value = 'Điểm lương';
+            worksheet.getCell('K11').value = 'Mức bồi dưỡng';
+            worksheet.getCell('L11').value = 'Ghi chứ';
 
             const headerRow = worksheet.getRow(11);
-            for (let col = 1; col <= 13; col++) {
+            for (let col = 1; col <= 12; col++) {
                 const cell = headerRow.getCell(col);
                 cell.font = { bold: true };
                 cell.alignment = {
@@ -192,47 +200,46 @@ router.post('/order/bulk', verifyToken, restrictTo('admin', 'dispatcher', 'manag
             }
             headerRow.height = 40;
 
-            for (let index = 0; index < (order.shiftReport?.vehicleReports?.length || 0); index++) {
-                const report = order.shiftReport?.vehicleReports[index];
+            for (let index = 0; index < (reports?.length || 0); index++) {
+                const report = reports[index];
 
                 const rowIndex = index + 12;
-                worksheet.getCell(`A${rowIndex}`).value = index;
-                worksheet.getCell(`B${rowIndex}`).value = report.excavator?.code || '';
-                worksheet.getCell(`C${rowIndex}`).value = report.dumpingLocation?.name || '';
-                worksheet.getCell(`D${rowIndex}`).value = report.materialType?.name || '';
-                worksheet.getCell(`E${rowIndex}`).value = order?.distance ?? '';
-                worksheet.getCell(`F${rowIndex}`).value = order?.liftHeight ?? '';
-                worksheet.getCell(`G${rowIndex}`).value = report?.tripCount || "";
-                worksheet.getCell(`H${rowIndex}`).value = "";
+                worksheet.getCell(`A${rowIndex}`).value = index + 1;
+                worksheet.getCell(`B${rowIndex}`).value = report.fromLocation?.name || report.excavator?.code || '';
+                worksheet.getCell(`C${rowIndex}`).value = report.toLocation?.name || '';
+                worksheet.getCell(`D${rowIndex}`).value = report.material?.name || '';
+                worksheet.getCell(`E${rowIndex}`).value = '';
+                worksheet.getCell(`F${rowIndex}`).value = '';
+                worksheet.getCell(`G${rowIndex}`).value = report?.quantity || "";
+                worksheet.getCell(`H${rowIndex}`).value = report?.workingMinute || '';
                 worksheet.getCell(`I${rowIndex}`).value = "";
                 worksheet.getCell(`J${rowIndex}`).value = "";
                 worksheet.getCell(`K${rowIndex}`).value = "";
                 worksheet.getCell(`L${rowIndex}`).value = "";
-                worksheet.getCell(`M${rowIndex}`).value = "";
 
             };
-            const totalRow = (order.shiftReport?.vehicleReports?.length || 0) + 13;
-            addTableBorders(worksheet, 10, totalRow + 1, 1, 13);
+            const totalRow = (reports?.length || 0) + 13;
+            addTableBorders(worksheet, 10, totalRow + 1, 1, 12);
             worksheet.mergeCells(`A${totalRow}:B${totalRow}`);
             worksheet.getCell(`A${totalRow}`).value = 'Tổng cộng';
             worksheet.getCell(`A${totalRow}`).font = { bold: true };
             worksheet.getCell(`A${totalRow}`).alignment = { horizontal: 'right' }
 
             worksheet.mergeCells(`C${totalRow}:G${totalRow}`);
-            worksheet.getCell(`C${totalRow}`).value = order?.shiftReport?.vehicleReports.reduce((sum, report) => { return sum + report.tripCount }, 0) || '';
+            worksheet.getCell(`C${totalRow}`).value = reports.reduce((sum, report) => { return sum + report.quantity }, 0) || '';
             worksheet.getCell(`C${totalRow}`).font = { bold: true };
 
             worksheet.getCell(`H${totalRow}`).value = '';
             worksheet.getCell(`I${totalRow}`).value = '';
             worksheet.getCell(`J${totalRow}`).value = '';
 
-            worksheet.mergeCells(`K${totalRow}:M${totalRow}`);
+            worksheet.mergeCells(`K${totalRow}:L${totalRow}`);
             worksheet.getCell(`K${totalRow}`).value = '';
 
-            worksheet.mergeCells(`A${totalRow + 1}:M${totalRow + 1}`);
+            worksheet.mergeCells(`A${totalRow + 1}:L${totalRow + 1}`);
             worksheet.getCell(`A${totalRow + 1}`).value = 'Mức bồi dưỡng (x1000đ):';
 
-            worksheet.mergeCells(`A${totalRow + 2}:M${totalRow + 2}`);
+            worksheet.mergeCells(`A${totalRow + 2}:L${totalRow + 2}`);
             const header3 = worksheet.getCell(`A${totalRow + 2}`);
             header3.value = `II.NHIÊN LIỆU`;
             header3.font = { bold: true, size: 14 };
@@ -256,7 +263,7 @@ router.post('/order/bulk', verifyToken, restrictTo('admin', 'dispatcher', 'manag
             worksheet.getCell(`H${totalRow + 3}`).value = 'Sử dụng vượt';
             worksheet.getCell(`H${totalRow + 3}`).font = { bold: true };
             worksheet.getCell(`H${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.mergeCells(`J${totalRow + 3}:M${totalRow + 3}`)
+            worksheet.mergeCells(`J${totalRow + 3}:L${totalRow + 3}`)
             worksheet.getCell(`J${totalRow + 3}`).value = 'Ghi chú';
             worksheet.getCell(`J${totalRow + 3}`).font = { bold: true };
             worksheet.getCell(`J${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle' };
@@ -264,10 +271,9 @@ router.post('/order/bulk', verifyToken, restrictTo('admin', 'dispatcher', 'manag
 
             const fuelHeaderRow = totalRow + 2;
             const fuelRows = order.shiftReport?.vehicleSummaries?.length || 0;
-            const fuelEndRow = fuelHeaderRow + fuelRows + 1;
-            console.log(order.shiftReport?.vehicleSummaries?.length)
+            const fuelEndRow = fuelHeaderRow + fuelRows + 2;
 
-            addTableBorders(worksheet, fuelHeaderRow, fuelEndRow, 1, 13);
+            addTableBorders(worksheet, fuelHeaderRow, fuelEndRow, 1, 12);
             for (let index = 0; index < (order.shiftReport?.vehicleSummaries?.length || 0); index++) {
                 const rep = order.shiftReport?.vehicleSummaries[index];
 
@@ -279,15 +285,54 @@ router.post('/order/bulk', verifyToken, restrictTo('admin', 'dispatcher', 'manag
                     (rep?.fuelRemain ?? 0) + (rep?.fuelReceived ?? 0) - (rep?.fuelRemainEnd ?? 0);
 
                 worksheet.getCell(`F${totalRow + 4 + index}`).value = '';
-                worksheet.getCell(`G${totalRow + 4 + index}`).value = '';
 
                 worksheet.mergeCells(`H${totalRow + 4 + index}:I${totalRow + 4 + index}`);
                 worksheet.getCell(`H${totalRow + 4 + index}`).value = '';
 
-                worksheet.mergeCells(`J${totalRow + 4 + index}:M${totalRow + 4 + index}`);
+                worksheet.mergeCells(`J${totalRow + 4 + index}:L${totalRow + 4 + index}`);
                 worksheet.getCell(`J${totalRow + 4 + index}`).value = '';
             }
 
+            worksheet.mergeCells(`A${fuelEndRow}:L${fuelEndRow}`);
+            const follow = worksheet.getCell(`A${fuelEndRow}`);
+            follow.value = `III. THEO DÕI SỬ DỤNG THIẾT BỊ`;
+            follow.font = { bold: true, size: 14 };
+            follow.alignment = { horizontal: 'center', vertical: 'middle' };
+
+            worksheet.getCell(`A${fuelEndRow + 1}`).value = 'Sản phẩm';
+            worksheet.getCell(`B${fuelEndRow + 1}`).value = 'Di chuyển';
+            worksheet.getCell(`C${fuelEndRow + 1}`).value = 'Phục vụ';
+            worksheet.getCell(`D${fuelEndRow + 1}`).value = 'Tổng';
+            worksheet.getCell(`E${fuelEndRow + 1}`).value = 'Giao ca';
+            worksheet.getCell(`F${fuelEndRow + 1}`).value = 'Sửa chữa';
+            worksheet.getCell(`G${fuelEndRow + 1}`).value = 'Tránh mìn';
+            worksheet.getCell(`H${fuelEndRow + 1}`).value = 'Gạt nền';
+            worksheet.getCell(`I${fuelEndRow + 1}`).value = 'Mất điện \nchờ nước';
+            worksheet.getCell(`J${fuelEndRow + 1}`).value = 'nguyên nhân \n khác';
+            worksheet.getCell(`K${fuelEndRow + 1}`).value = 'Tổng';
+            worksheet.getCell(`L${fuelEndRow + 1}`).value = 'Giờ lũy kế';
+            const headerFollow = worksheet.getRow(fuelEndRow + 1);
+            for (let col = 1; col <= 12; col++) {
+                const cell = headerFollow.getCell(col);
+                cell.font = { bold: true };
+                cell.alignment = {
+                    ...cell.alignment,
+                    wrapText: true,
+                    vertical: 'middle',
+                    horizontal: 'center',
+                };
+            }
+            addTableBorders(worksheet, fuelEndRow, fuelEndRow + 2, 1, 12);
+            worksheet.getCell(`A${fuelEndRow + 2}`).value = '';
+            worksheet.getCell(`B${fuelEndRow + 2}`).value = '';
+            worksheet.getCell(`C${fuelEndRow + 2}`).value = '';
+            worksheet.getCell(`D${fuelEndRow + 2}`).value = '';
+            worksheet.getCell(`E${fuelEndRow + 2}`).value = order.shiftReport?.handoverHours || '';
+            worksheet.getCell(`F${fuelEndRow + 2}`).value = '';
+            worksheet.getCell(`G${fuelEndRow + 2}`).value = "";
+            worksheet.getCell(`H${fuelEndRow + 2}`).value = '';
+            worksheet.mergeCells(`I${fuelEndRow + 2}:L${fuelEndRow + 2}`);
+            worksheet.getCell(`I${fuelEndRow + 2}`).value = '';
 
             const deviceRow = order.device.length
             worksheet.mergeCells(`B${totalRow + 7 + deviceRow}:D${totalRow + 7 + deviceRow}`)
@@ -431,7 +476,7 @@ router.post('/vehicleShiftReport', verifyToken, restrictTo('admin', 'dispatcher'
 
                 worksheet.mergeCells('A1:E1');
                 const infoRow = worksheet.getCell('A1');
-                infoRow.value = `Ca:                   , ngày:                                 Tên cán bộ:`;
+                infoRow.value = `Ca: ${ca.name}                  , ngày:    ${formatDate(d)}                             Tên cán bộ: ${req.user?.fullName}`;
                 infoRow.font = { italic: true, size: 12 };
                 infoRow.alignment = { horizontal: 'left', vertical: 'middle' };
                 // Tiêu đề bảng
@@ -543,10 +588,6 @@ router.post('/carReport/view', verifyToken, restrictTo('admin', 'dispatcher', 'm
                         path: "vehicleSummaries.vehicle",
                         select: "code vehicleNumber"
                     },
-                    {
-                        path: "vehicleReports.vehicle",
-                        select: "code vehicleNumber"
-                    }
                 ]
             })
             .populate('assignedTo', 'fullName salaryCode')
@@ -588,14 +629,6 @@ router.post('/carReport', verifyToken, restrictTo('admin', 'dispatcher', 'manage
                                 path: "vehicleSummaries.vehicle",
                                 select: "code vehicleNumber"
                             },
-                            {
-                                path: "vehicleReports.excavator",
-                                select: "code vehicleNumber"
-                            },
-                            {
-                                path: "vehicleReports.vehicle",
-                                select: "code vehicleNumber"
-                            }
                         ]
                     })
                     .populate('assignedTo', 'fullName salaryCode')
@@ -612,7 +645,7 @@ router.post('/carReport', verifyToken, restrictTo('admin', 'dispatcher', 'manage
                 const worksheet = workbook.addWorksheet(sheetName);
 
                 // === DÒNG 1: Tiêu đề bảng ===
-                worksheet.mergeCells('A1:U1');
+                worksheet.mergeCells('A1:M1');
                 const header = worksheet.getCell('A1');
                 header.value = title;
                 header.font = { bold: true, size: 15 };
@@ -652,23 +685,10 @@ router.post('/carReport', verifyToken, restrictTo('admin', 'dispatcher', 'manage
                 worksheet.getCell('H4').value = req.user?.position?.name || '';
 
 
-                worksheet.mergeCells('K6:P6'); // Nhiên liệu
-                worksheet.getCell('K6').value = 'Nhiên liệu (lít)';
-                worksheet.getCell('K6').alignment = { horizontal: 'center', vertical: 'middle' };
-                worksheet.getCell('K6').font = { bold: true };
-
-
-                // for (let row = 1; row <= 4; row++) {
-                //     for (let col = 1; col <= 21; col++) {
-                //         const cell = worksheet.getRow(row).getCell(col);
-                //         cell.border = {};
-                //         cell.fill = {
-                //             type: 'pattern',
-                //             pattern: 'solid',
-                //             fgColor: { argb: 'FFFFFFFF' }
-                //         }; // Xóa tất cả border
-                //     }
-                // }
+                worksheet.mergeCells('I6:K6'); // Nhiên liệu
+                worksheet.getCell('I6').value = 'Nhiên liệu (lít)';
+                worksheet.getCell('I6').alignment = { horizontal: 'center', vertical: 'middle' };
+                worksheet.getCell('I6').font = { bold: true };
 
 
                 // === DÒNG 7: Header chi tiết ===
@@ -678,23 +698,15 @@ router.post('/carReport', verifyToken, restrictTo('admin', 'dispatcher', 'manage
                     'Họ và tên',
                     'Số thẻ',
                     'Biển số',
-                    'Nghề nghiệp/ công việc',
-                    'Thiết bị nhận đổ tải',
-                    'Vị trí đổ tải',
-                    'Loại hàng',
-                    'Chiều cao nâng tải(m)',
-                    'Cung độ thực hiện(km)',
+                    'Vị trí \nnhận tải',
+                    'Vị trí \nđổ tải',
+                    'Chủng loại',
+                    'Cung độ \ntạm tính',
                     'Tồn dầu',
-                    'Lĩnh',
-                    'Tồn cuối',
+                    'Lĩnh dầu',
                     'Tiêu thụ',
-                    'ĐM',
-                    'Tiết kiệm',
-                    'Vượt',
-                    'Kẹp chì niêm phong',
-                    'GPS',
-                    'Bồi dưỡng (đồng)',
-                    'Lương (Tạm tính)'
+                    'Phụ cấp/ \nbồi dưỡng',
+                    'Lương tạm tính'
                 ];
                 headerRow.font = { bold: true };
                 headerRow.eachCell(cell => {
@@ -704,28 +716,25 @@ router.post('/carReport', verifyToken, restrictTo('admin', 'dispatcher', 'manage
                 let index = 1;
                 for (const order of orders) {
                     const shiftReport = order.shiftReport;
+                    const reports = await Report.find({ orderId: order._id })
+                        .populate("device", "code")
+                        .populate("material", "name")
+                        .populate("excavator", "code")
+                        .populate("toLocation", "name")
                     // if (!shiftReport) continue;
 
                     const row = worksheet.addRow([
                         index++,
                         order?.assignedTo?.fullName || '',
                         order?.assignedTo?.salaryCode || '',
-                        order?.device?.map(item => item?.code).join('\n') || '',
-                        order?.job?.name || '',
-                        order?.excavator?.map(item => item?.code).join('\n') || '',
-                        order?.location?.name || '',
-                        order?.material?.name || '',
-                        order?.liftHeight || '',
-                        order?.distance || '',
-                        shiftReport?.vehicleSummaries?.map(item => item?.fuelRemain).join('\n') || '',
-                        shiftReport?.vehicleSummaries?.map(item => item?.fuelReceived).join('\n') || '',
-                        shiftReport?.vehicleSummaries?.map(item => item?.fuelRemainEnd).join('\n') || '',
-                        shiftReport?.vehicleSummaries?.map(item => (item?.fuelRemain || 0) + (item?.fuelReceived || 0) - (item?.fuelRemainEnd || 0)).join('\n') || '',
+                        order?.device?.map(item => (item?.code || '')).join('\n') || '',
+                        reports.map(item => (item?.excavator?.code || '')).join('\n') || '',
+                        reports.map(item => (item?.toLocation?.name || '')).join('\n') || '',
+                        reports.map(item => (item?.material?.name || '')).join('\n') || '',
                         '',
-                        '',
-                        '',
-                        shiftReport?.vehicleSummaries?.map(item => item?.sealStatus).join('\n') || '',
-                        shiftReport?.vehicleSummaries?.map(item => item?.gpsStatus).join('\n') || '',
+                        shiftReport?.vehicleSummaries?.map(item => (item?.fuelRemain || '')).join('\n') || '',
+                        shiftReport?.vehicleSummaries?.map(item => (item?.fuelReceived || '')).join('\n') || '',
+                        shiftReport?.vehicleSummaries?.map(item => (item?.fuelRemainEnd || '')).join('\n') || '',
                         '',
                         ''
                     ]);
@@ -736,7 +745,11 @@ router.post('/carReport', verifyToken, restrictTo('admin', 'dispatcher', 'manage
 
 
                 // === Set độ rộng các cột ===
-                const columnWidths = [6, 20, 7, 10, 20, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 15, 10, 10];
+                const columnWidths = [6, 15, 10, 10, 7, 10, 10, 10, 7, 7, 7, 7, 7];
+                worksheet.getColumn(1).alignment = {
+                    horizontal: 'center',
+                    vertical: 'middle'
+                };
                 columnWidths.forEach((w, i) => {
                     const colIndex = i + 1;
                     worksheet.getColumn(colIndex).width = w;
@@ -828,10 +841,6 @@ router.post('/excavatorTripReport/view', verifyToken, restrictTo('admin', 'dispa
                         path: "vehicleSummaries.vehicle",
                         select: "code vehicleNumber"
                     },
-                    {
-                        path: "vehicleReports.vehicle",
-                        select: "code vehicleNumber",
-                    }
                 ]
             })
             .populate('assignedTo', 'fullName salaryCode department')
@@ -900,10 +909,7 @@ router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher
                                 path: "vehicleSummaries.vehicle",
                                 select: "code vehicleNumber"
                             },
-                            {
-                                path: "vehicleReports.vehicle",
-                                select: "code vehicleNumber",
-                            }
+
                         ]
                     })
                     .populate('assignedTo', 'fullName salaryCode department')
@@ -1055,14 +1061,6 @@ router.post('/carTripReport/view', verifyToken, restrictTo('admin', 'dispatcher'
                         path: "vehicleSummaries.vehicle",
                         select: "_id code vehicleNumber"
                     },
-                    {
-                        path: "vehicleReports.vehicle",
-                        select: "_id code vehicleNumber",
-                    },
-                    {
-                        path: "vehicleReports.materialType",
-                        select: "_id name",
-                    }
                 ]
             })
             .populate({
@@ -1135,14 +1133,6 @@ router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
                             {
                                 path: "vehicleSummaries.vehicle",
                                 select: "_id code vehicleNumber"
-                            },
-                            {
-                                path: "vehicleReports.vehicle",
-                                select: "_id code vehicleNumber",
-                            },
-                            {
-                                path: "vehicleReports.materialType",
-                                select: "_id name",
                             },
                         ]
                     })
@@ -1305,14 +1295,6 @@ router.post('/productReport/view', verifyToken, restrictTo('admin', 'dispatcher'
                         path: "vehicleSummaries.vehicle",
                         select: "code vehicleNumber"
                     },
-                    {
-                        path: "vehicleReports.vehicle",
-                        select: "code vehicleNumber",
-                    },
-                    {
-                        path: "vehicleReports.materialType",
-                        select: "name",
-                    }
                 ]
             })
             .populate('assignedTo', 'fullName salaryCode department')
@@ -1381,14 +1363,6 @@ router.post('/productReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
                             {
                                 path: "vehicleSummaries.vehicle",
                                 select: "code vehicleNumber"
-                            },
-                            {
-                                path: "vehicleReports.vehicle",
-                                select: "code vehicleNumber",
-                            },
-                            {
-                                path: "vehicleReports.materialType",
-                                select: "name",
                             },
                         ]
                     })
