@@ -114,6 +114,7 @@ const DeviceTypes: React.FC = () => {
             queryClient.invalidateQueries({ queryKey: ['DeviceTypes'] });
             setSelectedDeviceTypes([]);
             showSuccessAlert(message || 'Xóa thành công');
+            handleClose()
         },
         onError: (error: any) => {
             showErrorAlert(error.response.data.message || error.message || 'Lỗi')

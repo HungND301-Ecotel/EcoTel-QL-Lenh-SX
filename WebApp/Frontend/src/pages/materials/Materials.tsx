@@ -115,6 +115,7 @@ const Materials: React.FC = () => {
             queryClient.invalidateQueries({ queryKey: ['materials'] });
             setSelectedMaterials([]);
             showSuccessAlert(message || 'Xóa thành công');
+            handleClose()
         },
         onError: (error: any) => {
             showErrorAlert(error.response.data.message || error.message || 'Lỗi')

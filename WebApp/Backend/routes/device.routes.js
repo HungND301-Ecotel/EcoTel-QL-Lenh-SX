@@ -269,7 +269,17 @@ router.get('/count/status', verifyToken, restrictTo('admin', 'manager', 'dispatc
 
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
-// Delete user
+const columnMapping = {
+    'Biển số': 'code',
+    'Tên xe/máy': 'name',
+    'Số xe/máy': 'vehicleNumber',
+    'Loại xe': 'category',
+    'Chủng loại': 'material',
+    'Nhiên liệu': 'fuelType',
+    'Trọng tải': 'capacity',
+    'Công suất máy': 'power',
+    'Đơn vị': 'department',
+};
 router.post('/importFile', upload.single('file'), verifyToken, async (req, res) => {
     try {
         if (!req.file) {
@@ -277,45 +287,97 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         }
 
         const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
-        const sheet = workbook.SheetNames[0];
-        const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheet]);
-        const devicesImport = data.filter(row => row.code);
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
 
-        if (devicesImport.length === 0) {
+        const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1, range: 0, raw: true })[0];
+        const mappedHeaders = headers.map(header => columnMapping[header] || header);
+
+        const data = xlsx.utils.sheet_to_json(worksheet, { header: mappedHeaders, range: 1 });
+        const devicesToProcess = data.filter(row => row.code);
+
+        if (devicesToProcess.length === 0) {
             return res.status(400).json({ status: 'error', message: 'Không tìm thấy dữ liệu phương tiện hợp lệ trong file.' });
         }
-        const processedDevices = [];
-        for (const row of devicesImport) {
-            const newDevice = { ...row };
-            if (!newDevice.code) {
-                return res.status(400).json({ status: 'error', message: 'Biển số (code) là bắt buộc' });
-            } else {
-                const existingDevice = await Device.findOne({ code: newDevice.code })
-                if (existingDevice) {
-                    return res.status(400).json({ status: 'error', message: 'Biển số (code) không được phép trùng.' });
+
+        const uniqueDepartments = [...new Set(devicesToProcess.map(d => d.department).filter(Boolean))];
+        const uniqueCategories = [...new Set(devicesToProcess.map(d => d.category).filter(Boolean))];
+
+        const [existingDepartments, existingCategories] = await Promise.all([
+            Department.find({ code: { $in: uniqueDepartments } }).lean(),
+            DeviceType.find({ name: { $in: uniqueCategories } }).lean(),
+        ]);
+
+        const departmentMap = new Map(existingDepartments.map(d => [d.code, d._id]));
+        const categoryMap = new Map(existingCategories.map(c => [c.name, c._id]));
+
+        const operations = [];
+        const invalidRows = [];
+
+        for (const row of devicesToProcess) {
+            const { department, category, ...updateData } = row;
+
+            // Kiểm tra các trường bắt buộc
+            if (!updateData.code) {
+                invalidRows.push({ row: row, error: 'Biển số (code) là bắt buộc.' });
+                continue;
+            }
+
+            // Gán ID cho department
+            let departmentId = null;
+            if (department) {
+                departmentId = departmentMap.get(department);
+                if (!departmentId) {
+                    invalidRows.push({ row: row, error: `Mã phòng ban không hợp lệ: ${department}` });
+                    continue;
                 }
             }
-            if (newDevice.department) {
-                const department = await Department.findOne({ code: newDevice.department })
-                if (department) {
-                    newDevice.department = department?._id
+            if (departmentId) {
+                updateData.department = departmentId;
+            }
+
+            // Gán ID cho category
+            let categoryId = null;
+            if (category) {
+                categoryId = categoryMap.get(category);
+                if (!categoryId) {
+                    invalidRows.push({ row: row, error: `Loại phương tiện không hợp lệ: ${category}` });
+                    continue;
                 }
             }
-            if (newDevice.category) {
-                const category = await DeviceType.findOne({ name: newDevice.category })
-                if (category) {
-                    newDevice.category = category?._id
-                }
+            if (categoryId) {
+                updateData.category = categoryId;
             }
-            processedDevices.push(newDevice);
+
+            // Thêm thao tác updateOne với upsert
+            operations.push({
+                updateOne: {
+                    filter: { code: updateData.code },
+                    update: updateData,
+                    upsert: true,
+                },
+            });
         }
 
-        await Device.insertMany(processedDevices);
+        let bulkResult = null;
+        if (operations.length > 0) {
+            bulkResult = await Device.bulkWrite(operations);
+        }
+
         res.status(200).json({
             status: 'success',
-            message: 'Tải thành cồng',
+            message: 'Import dữ liệu hoàn tất.',
+            summary: {
+                totalProcessed: devicesToProcess.length,
+                insertedCount: bulkResult ? bulkResult.upsertedCount : 0,
+                updatedCount: bulkResult ? bulkResult.modifiedCount : 0,
+                invalidCount: invalidRows.length,
+            },
+            invalidRows: invalidRows,
         });
+
     } catch (error) {
+        console.error('Lỗi khi import file:', error);
         res.status(500).json({
             status: 'error',
             message: 'Tải thất bại',
@@ -342,19 +404,20 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
 
         // Định nghĩa tiêu đề và thuộc tính cột
         worksheet.columns = [
-            { header: 'code', key: 'code', width: 25 },
-            { header: 'name', key: 'name', width: 15 },
-            { header: 'vehicleNumber', key: 'vehicleNumber', width: 15 },
-            { header: 'category', key: 'category', width: 10 },
-            { header: 'material', key: 'material', width: 15 },
-            { header: 'fuelType', key: 'fuelType', width: 30 },
-            { header: 'capacity', key: 'capacity', width: 20 },
-            { header: 'power', key: 'power', width: 20 },
-            { header: 'department', key: 'department', width: 15 },
+            { header: 'Biển số', key: 'code', width: 25 },
+            { header: 'Tên xe/máy', key: 'name', width: 15 },
+            { header: 'Số xe/máy', key: 'vehicleNumber', width: 15 },
+            { header: 'Loại xe', key: 'category', width: 10 },
+            { header: 'Chủng loại', key: 'material', width: 15 },
+            { header: 'Nhiên liệu', key: 'fuelType', width: 30 },
+            { header: 'Trọng tải', key: 'capacity', width: 20 },
+            { header: 'Công suất máy', key: 'power', width: 20 },
+            { header: 'Đơn vị', key: 'department', width: 15 },
         ];
 
         // Điền dữ liệu
         const formattedDevices = (data || []).map(device => ({
+            _id: device._id,
             code: device?.code || '',
             name: device?.name || '',
             vehicleNumber: device?.vehicleNumber || '',

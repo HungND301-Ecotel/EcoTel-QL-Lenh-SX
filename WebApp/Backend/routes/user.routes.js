@@ -238,7 +238,17 @@ router.delete('/', verifyToken, async (req, res) => {
 
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
-// Delete user
+const columnMapping = {
+    'Họ tên': 'fullName',
+    'Tài khoản': 'username',
+    'Thẻ lương': 'salaryCode',
+    'GIới tính': 'gender',
+    'Số điện thoại': 'phone',
+    'email': 'email',
+    'Chức danh': 'position',
+    'Đơn vị': 'department',
+    'Quyền': 'role',
+};
 router.post('/importFile', upload.single('file'), verifyToken, async (req, res) => {
     try {
         if (!req.file) {
@@ -246,61 +256,120 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         }
 
         const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
-        const sheet = workbook.SheetNames[0];
-        const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheet]);
-        const usersToImport = data.filter(row => row.fullName);
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+
+        const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1, range: 0, raw: true })[0];
+        const mappedHeaders = headers.map(header => columnMapping[header] || header);
+
+        const data = xlsx.utils.sheet_to_json(worksheet, { header: mappedHeaders, range: 1 });
+        const usersToImport = data.filter(row => row.username);
 
         if (usersToImport.length === 0) {
             return res.status(400).json({ status: 'error', message: 'Không tìm thấy dữ liệu người dùng hợp lệ trong file.' });
         }
-        const processedUsers = [];
+
+        // --- Bắt đầu tối ưu hóa truy vấn ---
+        const uniqueDepartments = [...new Set(usersToImport.map(d => d.department).filter(Boolean))];
+        const uniquePositions = [...new Set(usersToImport.map(d => d.position).filter(Boolean))];
+        const uniqueUsernames = [...new Set(usersToImport.map(d => d.username).filter(Boolean))];
+
+        const [existingDepartments, existingPositions, existingUsers] = await Promise.all([
+            Department.find({ code: { $in: uniqueDepartments } }).lean(),
+            Position.find({ name: { $in: uniquePositions } }).lean(),
+            User.find({ username: { $in: uniqueUsernames } }).lean(),
+        ]);
+
+        const departmentMap = new Map(existingDepartments.map(d => [d.code, d._id]));
+        const positionMap = new Map(existingPositions.map(p => [p.name, p._id]));
+        const userMap = new Map(existingUsers.map(u => [u.username, u]));
+        // --- Kết thúc tối ưu hóa truy vấn ---
+
+        const operations = [];
+        const invalidRows = [];
+
         for (const row of usersToImport) {
-            const newUser = { ...row };
-            const salt = await bcrypt.genSalt(10);
-            newUser.password = await bcrypt.hash('123456', salt);
-            if (!newUser.username) {
-                return res.status(400).json({ status: 'error', message: 'Username là bắt buộc' });
+            const { username, department, position, ...updateData } = row;
+
+            // Kiểm tra các trường bắt buộc
+            if (!username || !row.fullName) {
+                invalidRows.push({ row, error: 'Username và Fullname là bắt buộc.' });
+                continue;
+            }
+
+            // Gán ID cho department và position
+            let departmentId = null;
+            if (department) {
+                departmentId = departmentMap.get(department);
+                if (!departmentId) {
+                    invalidRows.push({ row, error: `Mã phòng ban không hợp lệ: ${department}` });
+                    continue;
+                }
+            }
+            if (departmentId) {
+                updateData.department = departmentId;
+            }
+
+            let positionId = null;
+            if (position) {
+                positionId = positionMap.get(position);
+                if (!positionId) {
+                    invalidRows.push({ row, error: `Tên chức vụ không hợp lệ: ${position}` });
+                    continue;
+                }
+            }
+            if (positionId) {
+                updateData.position = positionId;
+            }
+
+            // Tìm kiếm người dùng hiện có bằng username
+            const existingUser = userMap.get(username);
+
+            if (existingUser) {
+                // Nếu người dùng đã tồn tại, thêm thao tác cập nhật
+                operations.push({
+                    updateOne: {
+                        filter: { _id: existingUser._id },
+                        update: { ...updateData, username: username }, // Đảm bảo username được cập nhật
+                        upsert: false,
+                    },
+                });
             } else {
-                const existingUser = await User.findOne({ username: newUser.username })
-                if (existingUser) {
-                    return res.status(400).json({ status: 'error', message: 'Username không được trùng.' });
-                }
+                // Nếu người dùng chưa tồn tại, thêm thao tác chèn mới
+                const salt = await bcrypt.genSalt(10);
+                updateData.password = await bcrypt.hash('123456', salt);
+
+                operations.push({
+                    insertOne: {
+                        document: { ...updateData, username: username },
+                    },
+                });
             }
-            if (!newUser.fullName) {
-                return res.status(400).json({ status: 'error', message: 'Fullname là bắt buộc' });
-            }
-            if (newUser.salaryCode) {
-                const existingUser = await User.findOne({ salaryCode: newUser.salaryCode })
-                if (existingUser) {
-                    return res.status(400).json({ status: 'error', message: 'Thẻ lương (salaryCode) không được trùng.' });
-                }
-            }
-            if (newUser.department) {
-                const department = await Department.findOne({ code: newUser.department })
-                if (department) {
-                    newUser.department = department?._id
-                }
-            }
-            if (newUser.position) {
-                const position = await Position.findOne({ name: newUser.position })
-                if (position) {
-                    newUser.position = position?._id
-                }
-            }
-            processedUsers.push(newUser);
-            console.log(newUser)
         }
 
-        await User.insertMany(processedUsers);
+        let bulkResult = null;
+        if (operations.length > 0) {
+            bulkResult = await User.bulkWrite(operations);
+        }
+
         res.status(200).json({
             status: 'success',
-            message: 'Tải thành cồng',
+            message: 'Import dữ liệu hoàn tất.',
+            summary: {
+                totalProcessed: usersToImport.length,
+                insertedCount: bulkResult ? bulkResult.upsertedCount : 0,
+                updatedCount: bulkResult ? bulkResult.modifiedCount : 0,
+                invalidCount: invalidRows.length,
+            },
+            invalidRows: invalidRows,
         });
+
     } catch (error) {
+        console.error('Lỗi khi import file:', error);
         res.status(500).json({
             status: 'error',
             message: 'Tải thất bại',
-            error: error.message
+            error: error.message,
         });
     }
 });
@@ -327,15 +396,15 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
 
         // Định nghĩa tiêu đề và thuộc tính cột
         worksheet.columns = [
-            { header: 'fullName', key: 'fullName', width: 25 },
-            { header: 'username', key: 'username', width: 15 },
-            { header: 'salaryCode', key: 'salaryCode', width: 15 },
-            { header: 'gender', key: 'gender', width: 10 },
-            { header: 'phone', key: 'phone', width: 15 },
+            { header: 'Họ tên', key: 'fullName', width: 25 },
+            { header: 'Tài khoản', key: 'username', width: 15 },
+            { header: 'Thẻ lương', key: 'salaryCode', width: 15 },
+            { header: 'GIới tính', key: 'gender', width: 10 },
+            { header: 'Số điện thoại', key: 'phone', width: 15 },
             { header: 'email', key: 'email', width: 30 },
-            { header: 'position', key: 'position', width: 20 },
-            { header: 'department', key: 'department', width: 20 },
-            { header: 'role', key: 'role', width: 20 },
+            { header: 'Chức danh', key: 'position', width: 20 },
+            { header: 'Đơn vị', key: 'department', width: 20 },
+            { header: 'Quyền', key: 'role', width: 20 },
         ];
 
         // Điền dữ liệu

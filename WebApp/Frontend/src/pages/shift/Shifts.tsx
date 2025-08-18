@@ -123,6 +123,7 @@ const Shifts: React.FC = () => {
             queryClient.invalidateQueries({ queryKey: ['shifts'] });
             setSelectedShifts([]);
             showSuccessAlert(message || 'Xóa thành công');
+            handleClose()
         },
         onError: (error: any) => {
             showErrorAlert(error.response.data.message || error.message || 'Lỗi')
