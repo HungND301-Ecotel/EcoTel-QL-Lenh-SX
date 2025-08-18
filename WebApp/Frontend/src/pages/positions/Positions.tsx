@@ -114,6 +114,7 @@ const Positions: React.FC = () => {
             queryClient.invalidateQueries({ queryKey: ['positions'] });
             setSelectedPositions([]);
             showSuccessAlert(message || 'Xóa thành công');
+            handleClose()
         },
         onError: (error: any) => {
             showErrorAlert(error.response.data.message || error.message || 'Lỗi')

@@ -107,6 +107,7 @@ const Departments = () => {
             queryClient.invalidateQueries({ queryKey: ['departments'] });
             setSelectedDepartments([]);
             showSuccessAlert(message || 'Xóa thành công');
+            handleClose()
         },
         onError: (error: any) => {
             showErrorAlert(error.response.data.message || error.message || 'Lỗi')

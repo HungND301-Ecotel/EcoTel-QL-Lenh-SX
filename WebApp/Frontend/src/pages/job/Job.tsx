@@ -119,6 +119,7 @@ const Jobs: React.FC = () => {
             queryClient.invalidateQueries({ queryKey: ['jobs'] });
             setSelectedJobs([]);
             showSuccessAlert(message || 'Xóa thành công');
+            handleClose()
         },
         onError: (error: any) => {
             showErrorAlert(error.response.data.message || error.message || 'Lỗi')

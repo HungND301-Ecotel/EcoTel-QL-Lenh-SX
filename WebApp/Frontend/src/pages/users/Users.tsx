@@ -181,6 +181,7 @@ const Users: React.FC = () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
             setSelectedUsers([]);
             showSuccessAlert(message || 'Xóa thành công');
+            handleClose()
         },
         onError: (error: any) => {
             showErrorAlert(error.response.data.message || error.message || 'Lỗi')

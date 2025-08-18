@@ -238,7 +238,18 @@ router.delete('/', verifyToken, async (req, res) => {
 
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
-// Delete user
+const columnMapping = {
+    'Id(Không sửa)': '_id',
+    'Họ tên': 'fullName',
+    'Tài khoản': 'username',
+    'Thẻ lương': 'salaryCode',
+    'GIới tính': 'gender',
+    'Số điện thoại': 'phone',
+    'email': 'email',
+    'Chức danh': 'position',
+    'Đơn vị': 'department',
+    'Quyền': 'role',
+};
 router.post('/importFile', upload.single('file'), verifyToken, async (req, res) => {
     try {
         if (!req.file) {
@@ -246,61 +257,111 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         }
 
         const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
-        const sheet = workbook.SheetNames[0];
-        const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheet]);
-        const usersToImport = data.filter(row => row.fullName);
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+
+        const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1, range: 0, raw: true })[0];
+        const mappedHeaders = headers.map(header => columnMapping[header] || header);
+
+        const data = xlsx.utils.sheet_to_json(worksheet, { header: mappedHeaders, range: 1 });
+        const usersToImport = data.filter(row => row.username);
 
         if (usersToImport.length === 0) {
             return res.status(400).json({ status: 'error', message: 'Không tìm thấy dữ liệu người dùng hợp lệ trong file.' });
         }
-        const processedUsers = [];
+
+        // --- Bắt đầu tối ưu hóa truy vấn ---
+        const uniqueDepartments = [...new Set(usersToImport.map(d => d.department).filter(Boolean))];
+        const uniquePositions = [...new Set(usersToImport.map(d => d.position).filter(Boolean))];
+        const uniqueUsernames = [...new Set(usersToImport.map(d => d.username).filter(Boolean))];
+        const uniqueSalaryCodes = [...new Set(usersToImport.map(d => d.salaryCode).filter(Boolean))];
+
+        const [existingDepartments, existingPositions, existingUsersByUsername, existingUsersBySalaryCode] = await Promise.all([
+            Department.find({ code: { $in: uniqueDepartments } }),
+            Position.find({ name: { $in: uniquePositions } }),
+            User.find({ username: { $in: uniqueUsernames } }),
+            User.find({ salaryCode: { $in: uniqueSalaryCodes } }),
+        ]);
+
+        const departmentMap = new Map(existingDepartments.map(d => [d.code, d._id]));
+        const positionMap = new Map(existingPositions.map(p => [p.name, p._id]));
+        const userMap = new Map(existingUsersByUsername.map(u => [u.username, u]));
+        const salaryCodeMap = new Map(existingUsersBySalaryCode.map(u => [u.salaryCode, u]));
+        // --- Kết thúc tối ưu hóa truy vấn ---
+
+        const operations = [];
+
         for (const row of usersToImport) {
-            const newUser = { ...row };
-            const salt = await bcrypt.genSalt(10);
-            newUser.password = await bcrypt.hash('123456', salt);
-            if (!newUser.username) {
-                return res.status(400).json({ status: 'error', message: 'Username là bắt buộc' });
+            const { _id, ...updateData } = row;
+            const cleanedId = _id ? String(_id).trim().replace(/"/g, '') : null;
+
+            if (!updateData.username || !updateData.fullName) {
+                return res.status(400).json({ status: 'error', message: `Username và Fullname là bắt buộc cho dòng ${JSON.stringify(row)}` });
+            }
+
+            // Gán ID cho department và position
+            if (updateData.department) {
+                const departmentId = departmentMap.get(updateData.department);
+                if (departmentId) {
+                    updateData.department = departmentId;
+                } else {
+                    return res.status(400).json({ status: 'error', message: `Mã phòng ban không hợp lệ: ${updateData.department}` });
+                }
+            }
+
+            if (updateData.position) {
+                const positionId = positionMap.get(updateData.position);
+                if (positionId) {
+                    updateData.position = positionId;
+                } else {
+                    return res.status(400).json({ status: 'error', message: `Tên chức vụ không hợp lệ: ${updateData.position}` });
+                }
+            }
+
+            // Xử lý logic update/insert
+            if (cleanedId) {
+                operations.push({
+                    updateOne: {
+                        filter: { _id: cleanedId },
+                        update: updateData,
+                        upsert: true,
+                    },
+                });
             } else {
-                const existingUser = await User.findOne({ username: newUser.username })
-                if (existingUser) {
-                    return res.status(400).json({ status: 'error', message: 'Username không được trùng.' });
+                // Kiểm tra username và salaryCode nếu là bản ghi mới
+                if (userMap.has(updateData.username)) {
+                    return res.status(400).json({ status: 'error', message: `Username đã tồn tại: ${updateData.username}` });
                 }
-            }
-            if (!newUser.fullName) {
-                return res.status(400).json({ status: 'error', message: 'Fullname là bắt buộc' });
-            }
-            if (newUser.salaryCode) {
-                const existingUser = await User.findOne({ salaryCode: newUser.salaryCode })
-                if (existingUser) {
-                    return res.status(400).json({ status: 'error', message: 'Thẻ lương (salaryCode) không được trùng.' });
+                if (updateData.salaryCode && salaryCodeMap.has(updateData.salaryCode)) {
+                    return res.status(400).json({ status: 'error', message: `Mã thẻ lương đã tồn tại: ${updateData.salaryCode}` });
                 }
+
+                // Mã hóa mật khẩu mặc định trước khi thêm mới
+                const salt = await bcrypt.genSalt(10);
+                updateData.password = await bcrypt.hash('123456', salt);
+
+                operations.push({
+                    insertOne: {
+                        document: updateData,
+                    },
+                });
             }
-            if (newUser.department) {
-                const department = await Department.findOne({ code: newUser.department })
-                if (department) {
-                    newUser.department = department?._id
-                }
-            }
-            if (newUser.position) {
-                const position = await Position.findOne({ name: newUser.position })
-                if (position) {
-                    newUser.position = position?._id
-                }
-            }
-            processedUsers.push(newUser);
-            console.log(newUser)
         }
 
-        await User.insertMany(processedUsers);
+        if (operations.length > 0) {
+            await User.bulkWrite(operations);
+        }
+
         res.status(200).json({
             status: 'success',
-            message: 'Tải thành cồng',
+            message: 'Tải và cập nhật dữ liệu thành công!',
         });
     } catch (error) {
+        console.error('Lỗi khi import file:', error);
         res.status(500).json({
             status: 'error',
             message: 'Tải thất bại',
-            error: error.message
+            error: error.message,
         });
     }
 });
@@ -327,19 +388,21 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
 
         // Định nghĩa tiêu đề và thuộc tính cột
         worksheet.columns = [
-            { header: 'fullName', key: 'fullName', width: 25 },
-            { header: 'username', key: 'username', width: 15 },
-            { header: 'salaryCode', key: 'salaryCode', width: 15 },
-            { header: 'gender', key: 'gender', width: 10 },
-            { header: 'phone', key: 'phone', width: 15 },
+            { header: 'Id(Không sửa)', key: '_id', width: 20 },
+            { header: 'Họ tên', key: 'fullName', width: 25 },
+            { header: 'Tài khoản', key: 'username', width: 15 },
+            { header: 'Thẻ lương', key: 'salaryCode', width: 15 },
+            { header: 'GIới tính', key: 'gender', width: 10 },
+            { header: 'Số điện thoại', key: 'phone', width: 15 },
             { header: 'email', key: 'email', width: 30 },
-            { header: 'position', key: 'position', width: 20 },
-            { header: 'department', key: 'department', width: 20 },
-            { header: 'role', key: 'role', width: 20 },
+            { header: 'Chức danh', key: 'position', width: 20 },
+            { header: 'Đơn vị', key: 'department', width: 20 },
+            { header: 'Quyền', key: 'role', width: 20 },
         ];
 
         // Điền dữ liệu
         const formattedUsers = users.map(user => ({
+            _id: user._id,
             fullName: user?.fullName || '',
             username: user?.username || '',
             salaryCode: user?.salaryCode || '',
@@ -371,7 +434,7 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
 
         // Áp dụng Data Validation
         const MAX = Math.max(worksheet.rowCount + 100, 1000); // dư dòng để người dùng thêm
-        worksheet.dataValidations.add(`D2:D${MAX}`, {
+        worksheet.dataValidations.add(`E2:E${MAX}`, {
             type: 'list',
             allowBlank: true,
             formulae: ['"Nam,Nữ"'], // phải có dấu " ... "
@@ -379,21 +442,21 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
             errorTitle: 'Giá trị không hợp lệ',
             error: 'Chỉ được chọn Nam hoặc Nữ.',
         });
-        worksheet.dataValidations.add(`I2:I${MAX}`, {
+        worksheet.dataValidations.add(`J2:J${MAX}`, {
             type: 'list',
             allowBlank: true,
             formulae: ['"manager,employee"'], // phải có dấu " ... "
             showErrorMessage: true,
             errorTitle: 'Giá trị không hợp lệ',
         });
-        worksheet.dataValidations.add(`G2:G${MAX}`, {
+        worksheet.dataValidations.add(`H2:H${MAX}`, {
             type: 'list',
             allowBlank: true,
             formulae: [`=$X$2:$X$${posList.length + 1}`],   // nguồn position
             showErrorMessage: true,
             errorTitle: 'Giá trị không hợp lệ',
         });
-        worksheet.dataValidations.add(`H2:H${MAX}`, {
+        worksheet.dataValidations.add(`I2:I${MAX}`, {
             type: 'list',
             allowBlank: true,
             formulae: [`=$Y$2:$Y$${deptList.length + 1}`], // nguồn department

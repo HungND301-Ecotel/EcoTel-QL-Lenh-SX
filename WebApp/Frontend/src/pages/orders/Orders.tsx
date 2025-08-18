@@ -218,6 +218,7 @@ const Orders: React.FC = () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
             setSelectedOrders([]);
             showSuccessAlert(message || 'Xóa thành công');
+            handleClose()
         },
         onError: (error: any) => {
             showErrorAlert(error.response.data.message || error.message || 'Lỗi')

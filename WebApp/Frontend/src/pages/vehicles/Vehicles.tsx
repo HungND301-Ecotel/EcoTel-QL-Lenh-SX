@@ -155,7 +155,7 @@ const Vehicles: React.FC = () => {
                 headers: { 'Content-Type': 'multipart/form-data' },
             }).then(res => res.data),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['machines'] });
+            queryClient.invalidateQueries({ queryKey: ['vehicles'] });
             showSuccessAlert("Import thành công!");
         },
         onError: (error: any) => {
@@ -222,6 +222,7 @@ const Vehicles: React.FC = () => {
             queryClient.invalidateQueries({ queryKey: ['vehicles'] });
             setSelectedDevices([]);
             showSuccessAlert(message || 'Xóa thành công');
+            handleClose()
         },
         onError: (error: any) => {
             showErrorAlert(error.response.data.message || error.message || 'Lỗi')

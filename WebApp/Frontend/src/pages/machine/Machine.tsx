@@ -221,6 +221,7 @@ const Machines: React.FC = () => {
             queryClient.invalidateQueries({ queryKey: ['machines'] });
             setSelectedDevices([]);
             showSuccessAlert(message || 'Xóa thành công');
+            handleClose()
         },
         onError: (error: any) => {
             showErrorAlert(error.response.data.message || error.message || 'Lỗi')

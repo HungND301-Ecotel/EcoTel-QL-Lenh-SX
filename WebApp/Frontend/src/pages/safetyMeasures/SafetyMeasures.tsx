@@ -35,6 +35,8 @@ import {
     Delete as DeleteIcon,
     Settings,
     ExpandMore,
+    UploadFile,
+    Download,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -97,6 +99,46 @@ const SafetyMeasures: React.FC = () => {
             showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
+    const importFile = useMutation({
+        mutationFn: (formData: FormData) =>
+            api.post('/safetyMeasures/importFile', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            }).then(res => res.data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['safetyMeasures'] });
+            showSuccessAlert("Import thành công!");
+            handleClose();
+        },
+        onError: (error: any) => {
+            showErrorAlert(error.response?.data?.message || 'Lỗi khi import');
+        }
+    });
+
+    const exportExcel = useMutation({
+        mutationFn: () => {
+            return api.post('/safetyMeasures/exportFile', {}, {
+                responseType: 'blob',
+            }).then(res => {
+                const blob = new Blob([res.data], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                });
+
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `*.xlsx`);
+
+                document.body.appendChild(link);
+                link.click();
+                link.parentNode?.removeChild(link);
+                window.URL.revokeObjectURL(url);
+            });
+        },
+        onSuccess: () => { },
+        onError: (error: any) => {
+            showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
+        }
+    });
 
     const updateMutation = useMutation({
         mutationFn: (updatedsafetyMeasure: Partial<SafetyMeasure>) =>
@@ -117,6 +159,7 @@ const SafetyMeasures: React.FC = () => {
             queryClient.invalidateQueries({ queryKey: ['safetyMeasures'] });
             setSelectedSafetyMeasures([]);
             showSuccessAlert(message || 'Xóa thành công');
+            handleClose()
         },
         onError: (error: any) => {
             showErrorAlert(error.response.data.message || error.message || 'Lỗi')
@@ -127,7 +170,7 @@ const SafetyMeasures: React.FC = () => {
         initialValues: {
             content: '',
             master_content: '',
-            jobType: ''
+            jobType: undefined as SafetyMeasure['jobType'] | undefined
         },
         validationSchema: validationSchema,
         onSubmit: (values) => {
@@ -142,7 +185,11 @@ const SafetyMeasures: React.FC = () => {
     const handleOpen = (safetyMeasure?: SafetyMeasure) => {
         if (safetyMeasure) {
             setSelectedSafetyMeasure(safetyMeasure);
-            formik.setValues(safetyMeasure);
+            formik.setValues({
+                content: safetyMeasure.content,
+                master_content: safetyMeasure.master_content,
+                jobType: safetyMeasure.jobType ?? undefined, // ép fallback
+            });
         } else {
             setSelectedSafetyMeasure(null);
             formik.resetForm();
@@ -212,6 +259,41 @@ const SafetyMeasures: React.FC = () => {
                         <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
                             Xóa
                         </Button>
+                        <Box display="flex" gap={2}>
+                            <input
+                                id="upload-excel"
+                                type="file"
+                                accept=".xlsx, .xls"
+                                style={{ display: 'none' }}
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        const formData = new FormData();
+                                        formData.append('file', file);
+                                        importFile.mutate(formData);
+                                    }
+                                    e.target.value = "";
+                                }}
+                            />
+
+                            <label htmlFor="upload-excel">
+                                <Button
+                                    component="span"
+                                    variant="contained"
+                                    startIcon={<UploadFile />}
+                                >
+                                    Tải lên excel
+                                </Button>
+                            </label>
+                            <Button
+                                component="span"
+                                variant="contained"
+                                startIcon={<Download />}
+                                onClick={() => exportExcel.mutate()}
+                            >
+                                Tải xuống
+                            </Button>
+                        </Box>
 
                     </Box>
                 </AccordionSummary>
@@ -250,8 +332,12 @@ const SafetyMeasures: React.FC = () => {
                                     id="jobType"
                                     name="jobType"
                                     label="Loại công việc"
-                                    value={formik.values.jobType}
-                                    onChange={formik.handleChange}
+                                    value={formik.values.jobType ?? ''}
+                                    onChange={(e) => {
+                                        // nếu user chọn rỗng thì set undefined, còn lại giữ nguyên
+                                        const val = e.target.value || undefined;
+                                        formik.setFieldValue('jobType', val);
+                                    }}
                                     error={formik.touched.jobType && Boolean(formik.errors.jobType)}
                                     helperText={formik.touched.jobType && formik.errors.jobType}
                                 >

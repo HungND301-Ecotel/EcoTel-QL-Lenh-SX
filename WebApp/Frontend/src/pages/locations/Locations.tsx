@@ -110,6 +110,7 @@ const Locations: React.FC = () => {
             queryClient.invalidateQueries({ queryKey: ['locations'] });
             setSelectedLocations([]);
             showSuccessAlert(message || 'Xóa thành công');
+            handleClose()
         },
         onError: (error: any) => {
             showErrorAlert(error.response.data.message || error.message || 'Lỗi')
