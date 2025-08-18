@@ -6,16 +6,16 @@ const { connectDB } = require('../config/db.config');
 
 const adminUser = {
     username: 'admin',
-    password: 'admin123',
+    password: 'admin',
     role: 'admin',
     fullName: 'admin',
 };
 
 const deviceTypes = [
-    { name: 'Vận tải' },
-    { name: 'Máy xúc' },
-    { name: 'Máy khoan' },
-    { name: 'Máy gạt' },
+    { name: 'Vận tải', group: 'Xe' },
+    { name: 'Máy xúc', group: 'Máy' },
+    { name: 'Máy khoan', group: 'Máy' },
+    { name: 'Máy gạt', group: 'Máy' },
 ];
 
 const seedAdmin = async () => {
