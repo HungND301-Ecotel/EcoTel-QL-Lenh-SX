@@ -71,6 +71,8 @@ def restore_backup():
         f"--authenticationDatabase={MONGODB_AUTH_DB}",
         "--gzip",
         f"--archive={local_path}"
+        "--noIndexRestore",
+        "--noOptionsRestore"
     ]
 
     logger.info("🔄 Restoring MongoDB...")
