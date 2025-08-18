@@ -131,11 +131,11 @@ const Vehicles: React.FC = () => {
 
     const { data: vehicles = [], isLoading } = useQuery({
         queryKey: ['vehicles', q, department, status],
-        queryFn: () => api.get(`/devices?q=${q}&department=${department}&status=${status}`).then(res => res.data.data?.filter((item: any) => item?.category?.name.toLowerCase() === "vận tải".toLowerCase())),
+        queryFn: () => api.get(`/devices?q=${q}&department=${department}&status=${status}`).then(res => res.data.data?.filter((item: any) => item?.category?.group.toLowerCase() === "xe".toLowerCase())),
     });
     const { data: allVehicles = [] } = useQuery({
         queryKey: ['allVehicles', q, department],
-        queryFn: () => api.get(`/devices?q=${q}&department=${department}`).then(res => res.data.data?.filter((item: any) => item?.category?.name.toLowerCase() === "vận tải".toLowerCase())),
+        queryFn: () => api.get(`/devices?q=${q}&department=${department}`).then(res => res.data.data?.filter((item: any) => item?.category?.group.toLowerCase() === "xe".toLowerCase())),
     });
     const { data: DeviceTypes = [] } = useQuery({
         queryKey: ['DeviceTypes'],
@@ -154,9 +154,29 @@ const Vehicles: React.FC = () => {
             api.post('/devices/importFile', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             }).then(res => res.data),
-        onSuccess: () => {
+        onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['vehicles'] });
-            showSuccessAlert("Import thành công!");
+            let combinedMessage = `Import dữ liệu hoàn tất. Đã xử lý ${data.summary.totalProcessed} bản ghi.`;
+            combinedMessage += `\nĐã thêm mới: ${data.summary.insertedCount}`;
+            combinedMessage += `\nĐã cập nhật: ${data.summary.updatedCount}`;
+
+            // Thêm chi tiết lỗi nếu có
+            if (data.invalidRows && data.invalidRows.length > 0) {
+                combinedMessage += `\n\n--- CÓ LỖI XẢY RA TRONG QUÁ TRÌNH IMPORT ---`;
+                combinedMessage += `\n${data.invalidRows.length} bản ghi không hợp lệ:`;
+
+                // Liệt kê chi tiết một vài lỗi đầu tiên
+                data.invalidRows.slice(0, 5).forEach((item: any, index: number) => {
+                    combinedMessage += `\n- Dòng ${index + 1}: Lỗi "${item.error}"`;
+                });
+
+                // Thông báo nếu còn nhiều lỗi hơn
+                if (data.invalidRows.length > 5) {
+                    combinedMessage += `\n... và ${data.invalidRows.length - 5} lỗi khác.`;
+                }
+            }
+
+            showSuccessAlert(combinedMessage);
         },
         onError: (error: any) => {
             showErrorAlert(error.response?.data?.message || 'Lỗi khi import');

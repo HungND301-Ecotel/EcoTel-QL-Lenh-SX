@@ -270,7 +270,6 @@ router.get('/count/status', verifyToken, restrictTo('admin', 'manager', 'dispatc
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 const columnMapping = {
-    'Id(Không sửa)': '_id',
     'Biển số': 'code',
     'Tên xe/máy': 'name',
     'Số xe/máy': 'vehicleNumber',
@@ -291,85 +290,94 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
 
-        // lấy header
         const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1, range: 0, raw: true })[0];
-        // tạo ánh xạ vn-en
         const mappedHeaders = headers.map(header => columnMapping[header] || header);
 
-
         const data = xlsx.utils.sheet_to_json(worksheet, { header: mappedHeaders, range: 1 });
-        const devicesImport = data.filter(row => row.code);
+        const devicesToProcess = data.filter(row => row.code);
 
-        if (devicesImport.length === 0) {
+        if (devicesToProcess.length === 0) {
             return res.status(400).json({ status: 'error', message: 'Không tìm thấy dữ liệu phương tiện hợp lệ trong file.' });
         }
-        const uniqueDepartments = [...new Set(devicesImport.map(d => d.department).filter(Boolean))];
-        const uniqueCategories = [...new Set(devicesImport.map(d => d.category).filter(Boolean))];
 
-        const existingDepartments = await Department.find({ code: { $in: uniqueDepartments } });
-        const existingCategories = await DeviceType.find({ name: { $in: uniqueCategories } });
+        const uniqueDepartments = [...new Set(devicesToProcess.map(d => d.department).filter(Boolean))];
+        const uniqueCategories = [...new Set(devicesToProcess.map(d => d.category).filter(Boolean))];
+
+        const [existingDepartments, existingCategories] = await Promise.all([
+            Department.find({ code: { $in: uniqueDepartments } }).lean(),
+            DeviceType.find({ name: { $in: uniqueCategories } }).lean(),
+        ]);
 
         const departmentMap = new Map(existingDepartments.map(d => [d.code, d._id]));
         const categoryMap = new Map(existingCategories.map(c => [c.name, c._id]));
 
-        // --- Kết thúc tối ưu hóa truy vấn ---
-
         const operations = [];
+        const invalidRows = [];
 
-        for (const row of devicesImport) {
-            const { _id, ...updateData } = row;
-            const cleanedId = _id ? String(_id).trim().replace(/"/g, '') : null;
+        for (const row of devicesToProcess) {
+            const { department, category, ...updateData } = row;
 
+            // Kiểm tra các trường bắt buộc
             if (!updateData.code) {
-                return res.status(400).json({ status: 'error', message: 'Biển số (code) là bắt buộc' });
+                invalidRows.push({ row: row, error: 'Biển số (code) là bắt buộc.' });
+                continue;
             }
 
-            if (updateData.department) {
-                const departmentId = departmentMap.get(updateData.department);
-                if (departmentId) {
-                    updateData.department = departmentId;
-                } else {
-                    return res.status(400).json({ status: 'error', message: `Mã phòng ban không hợp lệ: ${updateData.department}` });
+            // Gán ID cho department
+            let departmentId = null;
+            if (department) {
+                departmentId = departmentMap.get(department);
+                if (!departmentId) {
+                    invalidRows.push({ row: row, error: `Mã phòng ban không hợp lệ: ${department}` });
+                    continue;
                 }
             }
-            if (updateData.category) {
-                const categoryId = categoryMap.get(updateData.category);
-                if (categoryId) {
-                    updateData.category = categoryId;
-                } else {
-                    return res.status(400).json({ status: 'error', message: `Loại phương tiện không hợp lệ: ${updateData.category}` });
-                }
+            if (departmentId) {
+                updateData.department = departmentId;
             }
 
-            if (cleanedId) {
-                operations.push({
-                    updateOne: {
-                        filter: { _id: cleanedId },
-                        update: updateData,
-                        upsert: true,
-                    },
-                });
-            } else {
-                const existingDevice = await Device.findOne({ code: updateData.code });
-                if (existingDevice) {
-                    return res.status(400).json({ status: 'error', message: `Biển số (code) đã tồn tại: ${updateData.code}` });
+            // Gán ID cho category
+            let categoryId = null;
+            if (category) {
+                categoryId = categoryMap.get(category);
+                if (!categoryId) {
+                    invalidRows.push({ row: row, error: `Loại phương tiện không hợp lệ: ${category}` });
+                    continue;
                 }
-                operations.push({
-                    insertOne: {
-                        document: updateData,
-                    },
-                });
             }
+            if (categoryId) {
+                updateData.category = categoryId;
+            }
+
+            // Thêm thao tác updateOne với upsert
+            operations.push({
+                updateOne: {
+                    filter: { code: updateData.code },
+                    update: updateData,
+                    upsert: true,
+                },
+            });
         }
 
+        let bulkResult = null;
         if (operations.length > 0) {
-            await Device.bulkWrite(operations);
+            bulkResult = await Device.bulkWrite(operations);
         }
+
         res.status(200).json({
             status: 'success',
-            message: 'Tải thành cồng',
+            message: 'Import dữ liệu hoàn tất.',
+            summary: {
+                totalProcessed: devicesToProcess.length,
+                insertedCount: bulkResult ? bulkResult.upsertedCount : 0,
+                updatedCount: bulkResult ? bulkResult.modifiedCount : 0,
+                invalidCount: invalidRows.length,
+            },
+            invalidRows: invalidRows,
         });
+
     } catch (error) {
+        console.error('Lỗi khi import file:', error);
         res.status(500).json({
             status: 'error',
             message: 'Tải thất bại',
@@ -396,7 +404,6 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
 
         // Định nghĩa tiêu đề và thuộc tính cột
         worksheet.columns = [
-            { header: 'Id(Không sửa)', key: '_id', width: 20 },
             { header: 'Biển số', key: 'code', width: 25 },
             { header: 'Tên xe/máy', key: 'name', width: 15 },
             { header: 'Số xe/máy', key: 'vehicleNumber', width: 15 },
@@ -442,14 +449,14 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
 
         // Áp dụng Data Validation
         const MAX = Math.max(worksheet.rowCount + 100, 1000); // dư dòng để người dùng thêm
-        worksheet.dataValidations.add(`E2:E${MAX}`, {
+        worksheet.dataValidations.add(`D2:D${MAX}`, {
             type: 'list',
             allowBlank: true,
             formulae: [`=$X$2:$X$${typeList.length + 1}`],
             showErrorMessage: true,
             errorTitle: 'Giá trị không hợp lệ',
         });
-        worksheet.dataValidations.add(`J2:J${MAX}`, {
+        worksheet.dataValidations.add(`I2:I${MAX}`, {
             type: 'list',
             allowBlank: true,
             formulae: [`=$Y$2:$Y$${deptList.length + 1}`], // nguồn department

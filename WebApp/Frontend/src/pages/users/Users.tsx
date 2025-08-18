@@ -126,9 +126,29 @@ const Users: React.FC = () => {
             api.post('/users/importFile', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             }).then(res => res.data),
-        onSuccess: () => {
+        onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
-            showSuccessAlert("Import thành công!");
+            let combinedMessage = `Import dữ liệu hoàn tất. Đã xử lý ${data.summary.totalProcessed} bản ghi.`;
+            combinedMessage += `\nĐã thêm mới: ${data.summary.insertedCount}`;
+            combinedMessage += `\nĐã cập nhật: ${data.summary.updatedCount}`;
+
+            // Thêm chi tiết lỗi nếu có
+            if (data.invalidRows && data.invalidRows.length > 0) {
+                combinedMessage += `\n\n--- CÓ LỖI XẢY RA TRONG QUÁ TRÌNH IMPORT ---`;
+                combinedMessage += `\n${data.invalidRows.length} bản ghi không hợp lệ:`;
+
+                // Liệt kê chi tiết một vài lỗi đầu tiên
+                data.invalidRows.slice(0, 5).forEach((item:any, index:number) => {
+                    combinedMessage += `\n- Dòng ${index + 1}: Lỗi "${item.error}"`;
+                });
+
+                // Thông báo nếu còn nhiều lỗi hơn
+                if (data.invalidRows.length > 5) {
+                    combinedMessage += `\n... và ${data.invalidRows.length - 5} lỗi khác.`;
+                }
+            }
+
+            showSuccessAlert(combinedMessage);
         },
         onError: (error: any) => {
             showErrorAlert(error.response?.data?.message || 'Lỗi khi import');

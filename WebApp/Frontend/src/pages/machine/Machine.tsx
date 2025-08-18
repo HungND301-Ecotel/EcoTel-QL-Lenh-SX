@@ -130,11 +130,11 @@ const Machines: React.FC = () => {
 
     const { data: machines = [], isLoading } = useQuery({
         queryKey: ['machines', q, department, status],
-        queryFn: () => api.get(`/devices?q=${q}&department=${department}&status=${status}`).then(res => res.data.data?.filter((item: any) => item?.category?.name.toLowerCase() !== "vận tải".toLowerCase())),
+        queryFn: () => api.get(`/devices?q=${q}&department=${department}&status=${status}`).then(res => res.data.data?.filter((item: any) => item?.category?.group.toLowerCase() === "máy".toLowerCase())),
     });
     const { data: allMachines = [] } = useQuery({
         queryKey: ['allMachines', q, department],
-        queryFn: () => api.get(`/devices?q=${q}&department=${department}`).then(res => res.data.data?.filter((item: any) => item?.category?.name.toLowerCase() !== "vận tải".toLowerCase())),
+        queryFn: () => api.get(`/devices?q=${q}&department=${department}`).then(res => res.data.data?.filter((item: any) => item?.category?.group.toLowerCase() === "máy".toLowerCase())),
     });
     const { data: DeviceTypes = [] } = useQuery({
         queryKey: ['DeviceTypes'],

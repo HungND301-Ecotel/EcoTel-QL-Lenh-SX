@@ -339,20 +339,23 @@ router.post('/order/bulk', verifyToken, restrictTo('admin', 'dispatcher', 'manag
             worksheet.getCell(`B${totalRow + 7 + deviceRow}`).value = 'NGƯỜI NHẬN LỆNH';
             worksheet.getCell(`B${totalRow + 7 + deviceRow}`).font = { bold: true };
             worksheet.getCell(`B${totalRow + 7 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.mergeCells(`B${totalRow + 10 + deviceRow}:D${totalRow + 10 + deviceRow}`)
-            worksheet.getCell(`B${totalRow + 10 + deviceRow}`).font = { bold: true };
-            worksheet.getCell(`B${totalRow + 10 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`B${totalRow + 10 + deviceRow}`).value = order.assignedTo?.fullName || "";
+            worksheet.getCell(`C${totalRow + 9 + deviceRow}`).value = '✔';
+            worksheet.getCell(`C${totalRow + 9 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+            worksheet.getCell(`C${totalRow + 9 + deviceRow}`).font = { bold: true, size: 12 };
+            worksheet.mergeCells(`B${totalRow + 11 + deviceRow}:D${totalRow + 11 + deviceRow}`)
+            worksheet.getCell(`B${totalRow + 11 + deviceRow}`).font = { bold: true };
+            worksheet.getCell(`B${totalRow + 11 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+            worksheet.getCell(`B${totalRow + 11 + deviceRow}`).value = order.assignedTo?.fullName || "";
 
 
             worksheet.mergeCells(`I${totalRow + 7 + deviceRow}:M${totalRow + 7 + deviceRow}`)
             worksheet.getCell(`I${totalRow + 7 + deviceRow}`).value = 'NGƯỜI RA LỆNH';
             worksheet.getCell(`I${totalRow + 7 + deviceRow}`).font = { bold: true };
             worksheet.getCell(`I${totalRow + 7 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.mergeCells(`I${totalRow + 10 + deviceRow}:M${totalRow + 10 + deviceRow}`)
-            worksheet.getCell(`I${totalRow + 10 + deviceRow}`).font = { bold: true };
-            worksheet.getCell(`I${totalRow + 10 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`I${totalRow + 10 + deviceRow}`).value = order.createdBy?.fullName || "";
+            worksheet.mergeCells(`I${totalRow + 11 + deviceRow}:M${totalRow + 11 + deviceRow}`)
+            worksheet.getCell(`I${totalRow + 11 + deviceRow}`).font = { bold: true };
+            worksheet.getCell(`I${totalRow + 11 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+            worksheet.getCell(`I${totalRow + 11 + deviceRow}`).value = order.createdBy?.fullName || "";
 
 
             worksheet.columns.forEach((column) => {
@@ -591,15 +594,18 @@ router.post('/carReport/view', verifyToken, restrictTo('admin', 'dispatcher', 'm
                 ]
             })
             .populate('assignedTo', 'fullName salaryCode')
-            .populate('job', 'name')
+            .populate('job', 'name type')
             .populate('location', 'name')
             .populate('material', 'name')
             .populate('excavator', 'code')
             .populate('device', 'code')
             .populate('shift')
+        const filteredOrders = orders.filter(order =>
+            order.job?.type === "Vận hành xe"
+        );
         let index = 1
         const results = [];
-        for (const order of orders) {
+        for (const order of filteredOrders) {
             const reports = await Report.find({ orderId: order._id })
                 .populate('device', 'code')
                 .populate('excavator', 'code')
@@ -657,7 +663,7 @@ router.post('/carReport', verifyToken, restrictTo('admin', 'dispatcher', 'manage
                         ]
                     })
                     .populate('assignedTo', 'fullName salaryCode')
-                    .populate('job', 'name')
+                    .populate('job', 'name type')
                     .populate('location', 'name')
                     .populate('material', 'name')
                     .populate('excavator', 'code')
@@ -737,9 +743,11 @@ router.post('/carReport', verifyToken, restrictTo('admin', 'dispatcher', 'manage
                 headerRow.eachCell(cell => {
                     cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
                 });
-
+                const filteredOrders = orders.filter(order =>
+                    order.job?.type === "Vận hành xe"
+                );
                 let index = 1;
-                for (const order of orders) {
+                for (const order of filteredOrders) {
                     const shiftReport = order.shiftReport;
                     const reports = await Report.find({ orderId: order._id })
                         .populate("device", "code")
@@ -869,7 +877,7 @@ router.post('/excavatorTripReport/view', verifyToken, restrictTo('admin', 'dispa
                 ]
             })
             .populate('assignedTo', 'fullName salaryCode department')
-            .populate('job', 'name')
+            .populate('job', 'name type')
             .populate({
                 path: 'device',
                 select: 'code category',
@@ -880,28 +888,25 @@ router.post('/excavatorTripReport/view', verifyToken, restrictTo('admin', 'dispa
             })
             .populate('shift')
         const filteredOrders = orders.filter(order =>
-            order.device?.category?.name === "Máy xúc"
+            order.job?.type === "Vận hành xúc"
         );
 
         let result = []
         for (const order of filteredOrders) {
             const reports = await Report.find({ orderId: order._id })
                 .populate('device', 'code')
-                .populate('excavator', 'code')
-                .populate('toLocation', 'name')
-                .populate('material', 'name')
 
             result.push({
                 _id: order?._id,
                 fullName: order?.assignedTo?.fullName,
                 salaryCode: order?.assignedTo?.salaryCode,
                 department: order?.assignedTo?.department?.name,
-                code: summary?.device?.code || '',
-                quantity: summary?.quantity || '',
+                code: order.device.map(item => item.code) || '',
+                quantity: reports.map(item => item.quantity) || '',
             });
         }
 
-        res.status(200).send({ status: 'success', data: formattedData })
+        res.status(200).send({ status: 'success', data: result })
     } catch (err) {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
@@ -936,7 +941,7 @@ router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher
                         ]
                     })
                     .populate('assignedTo', 'fullName salaryCode department')
-                    .populate('job', 'name')
+                    .populate('job', 'name type')
                     .populate({
                         path: 'device',
                         select: 'code category',
@@ -947,7 +952,7 @@ router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher
                     })
                     .populate('shift')
                 const filteredOrders = orders.filter(order =>
-                    order.device?.category?.name === "Máy xúc"
+                    order.job?.type === "Vận hành xúc"
                 );
 
 
@@ -974,6 +979,7 @@ router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher
                 let index = 1;
                 for (const order of filteredOrders) {
                     const reports = await Report.find({ orderId: order._id })
+                        .populate('device', 'code')
                     worksheet.addRow([
                         index++,
                         order.assignedTo?.fullName || '',
@@ -1073,7 +1079,7 @@ router.post('/carTripReport/view', verifyToken, restrictTo('admin', 'dispatcher'
                 select: 'fullName salaryCode department',
                 populate: ('department')
             })
-            .populate('job', 'name')
+            .populate('job', 'name type')
             .populate('location', 'name')
             .populate('material', 'name')
             .populate('excavator', 'code')
@@ -1086,29 +1092,29 @@ router.post('/carTripReport/view', verifyToken, restrictTo('admin', 'dispatcher'
                 }
             })
             .populate('shift')
-        const formattedData = orders.flatMap((order, orderIndex) => {
-            if (!order.shiftReport || !order.shiftReport.vehicleReports) return [];
-            const transportDevices = (order.device || []).filter(
-                dev => dev?.category?.name?.toLowerCase() === 'vận tải'
-            );
-            return order.shiftReport.vehicleReports
-                .filter(summary =>
-                    transportDevices.some(dev => dev._id.toString() === summary?.vehicle?._id?.toString())
-                ).map(summary => {
-                    return {
-                        _id: summary?.vehicle?._id,
-                        fullName: order?.assignedTo?.fullName,
-                        salaryCode: order?.assignedTo?.salaryCode,
-                        department: order?.assignedTo?.department?.name,
-                        shift: `${order?.shiftReport._id}`,
-                        code: summary?.vehicle?.code || '',
-                        material: summary?.materialType?.name || '',
-                        tripCount: summary?.tripCount || '',
-                    };
-                });
-        });
+        const filteredOrders = orders.filter(order =>
+            order.job?.type === "Vận hành xe"
+        );
 
-        res.status(200).send({ status: 'success', data: formattedData })
+        let result = []
+        for (const order of filteredOrders) {
+            const reports = await Report.find({ orderId: order._id })
+                .populate('device', 'code')
+                .populate('material', 'name')
+
+            result.push({
+                _id: order._id,
+                fullName: order?.assignedTo?.fullName,
+                salaryCode: order?.assignedTo?.salaryCode,
+                department: order?.assignedTo?.department?.name,
+                shift: `${order?.shiftReport._id}`,
+                code: order.device.map(item => item.code) || '',
+                material: reports.map(item => item.material?.name) || '',
+                tripCount: reports.map(item => item.quantity) || '',
+            });
+        }
+
+        res.status(200).send({ status: 'success', data: result })
     } catch (err) {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
@@ -1146,7 +1152,7 @@ router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
                         select: 'fullName salaryCode department',
                         populate: ('department')
                     })
-                    .populate('job', 'name')
+                    .populate('job', 'name type')
                     .populate('location', 'name')
                     .populate('material', 'name')
                     .populate('excavator', 'code')
@@ -1160,29 +1166,27 @@ router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
                     })
                     .populate('shift')
 
-                const formattedData = orders.flatMap((order, orderIndex) => {
-                    if (!order.shiftReport || !order.shiftReport.vehicleReports) return [];
+                const filteredOrders = orders.filter(order =>
+                    order.job?.type === "Vận hành xe"
+                );
 
-                    const transportDevices = (order.device || []).filter(
-                        dev => dev?.category?.name?.toLowerCase() === 'vận tải'
-                    );
-                    return order.shiftReport.vehicleReports
-                        .filter(summary =>
-                            transportDevices.some(dev => dev._id.toString() === summary?.vehicle?._id?.toString())
-                        ).map(summary => {
+                let result = []
+                for (const order of filteredOrders) {
+                    const reports = await Report.find({ orderId: order._id })
+                        .populate('device', 'code')
+                        .populate('material', 'name')
 
-                            return {
-                                _id: summary?.vehicle?._id,
-                                fullName: order?.assignedTo?.fullName,
-                                salaryCode: order?.assignedTo?.salaryCode,
-                                department: order?.assignedTo?.department?.name,
-                                shift: `${order?.shiftReport._id}`,
-                                code: summary?.vehicle?.code || '',
-                                material: summary?.materialType?.name || '',
-                                tripCount: summary?.tripCount || '',
-                            };
-                        });
-                });
+                    result.push({
+                        _id: order._id,
+                        fullName: order?.assignedTo?.fullName,
+                        salaryCode: order?.assignedTo?.salaryCode,
+                        department: order?.assignedTo?.department?.name,
+                        shift: `${order?.shiftReport._id}`,
+                        code: order.device.map(item => item.code) || [],
+                        material: reports.map(item => item.material?.name) || [],
+                        tripCount: reports.map(item => item.quantity) || [],
+                    });
+                }
 
                 const sheetName = `${formatDate(d)}_${ca.name}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
 
@@ -1205,15 +1209,16 @@ router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
                 headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
 
                 let index = 1;
-                for (const item of formattedData) {
+                console.log(result)
+                for (const item of result) {
                     worksheet.addRow([
                         index++,
                         item.fullName || '',
                         item.salaryCode || '',
                         item.department || '',
-                        item.code || '',
-                        item.material || '',
-                        item.tripCount || '',
+                        item.code?.map(item => (item || '')).join('\n') || '',
+                        item.material?.map(item => (item || '')).join('\n') || '',
+                        item.tripCount?.map(item => (item || '')).join('\n') || '',
                     ]);
                 }
 
