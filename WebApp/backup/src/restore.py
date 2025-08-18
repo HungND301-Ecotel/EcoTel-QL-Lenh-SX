@@ -70,7 +70,7 @@ def restore_backup():
         f"--password={MONGODB_PASSWORD}",
         f"--authenticationDatabase={MONGODB_AUTH_DB}",
         "--gzip",
-        f"--archive={local_path}"
+        f"--archive={local_path}",
         "--noIndexRestore",
         "--noOptionsRestore"
     ]
