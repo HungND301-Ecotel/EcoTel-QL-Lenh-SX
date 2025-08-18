@@ -140,6 +140,8 @@ function Reports() {
     const reportView = useMutation({
         mutationFn: () => {
             if (!config) throw new Error('Chưa chọn loại báo cáo');
+            if (!startDate || !endDate) throw new Error('Chọn thời gian bắt đầu và kết thúc');
+            if (shift.length === 0) throw new Error('Chọn ca làm việc');
             return api.post(config.viewUrl, {
                 startDate: startDate?.format('YYYY-MM-DD') || '',
                 endDate: endDate?.format('YYYY-MM-DD') || '',
@@ -158,6 +160,8 @@ function Reports() {
     const reportExcel = useMutation({
         mutationFn: () => {
             if (!config) throw new Error('Chưa chọn loại báo cáo');
+            if (!startDate || !endDate) throw new Error('Chọn thời gian bắt đầu và kết thúc');
+            if (shift.length === 0) throw new Error('Chọn ca làm việc');
             return api.post(config.exportUrl, {
                 startDate: startDate?.format('YYYY-MM-DD') || '',
                 endDate: endDate?.format('YYYY-MM-DD') || '',

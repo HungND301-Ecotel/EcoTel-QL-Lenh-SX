@@ -112,7 +112,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                         {/* Logo và tiêu đề */}
                         <Box display="flex" alignItems="center" gap={2}>
                             <img src="/image/logo.png" style={{ width: 60, height: 60 }} />
-                            <Typography variant="h6">PHẦN MỀM GIAO CA, NHẬN LỆNH SẢN XUẤT</Typography>
+                            <Typography variant="h6">HỆ THỐNG QUẢN LÝ ĐIỀU PHỐI VÀ SỬ DỤNG MÁY MÓC THIẾT BỊ</Typography>
                         </Box>
 
                         {/* Menu chính ngang */}

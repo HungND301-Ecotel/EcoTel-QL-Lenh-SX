@@ -597,9 +597,34 @@ router.post('/carReport/view', verifyToken, restrictTo('admin', 'dispatcher', 'm
             .populate('excavator', 'code')
             .populate('device', 'code')
             .populate('shift')
+        let index = 1
+        const results = [];
+        for (const order of orders) {
+            const reports = await Report.find({ orderId: order._id })
+                .populate('device', 'code')
+                .populate('excavator', 'code')
+                .populate('toLocation', 'name')
+                .populate('material', 'name')
+
+            results.push({
+                _id: order._id,
+                STT: index++,
+                fullName: order.assignedTo?.fullName || '',
+                salaryCode: order.assignedTo?.salaryCode || '',
+                code: order.device.map(item => item?.code) || [],
+                department: order.assignedTo?.department?.name || '',
+                excavator: reports.map(item => item?.excavator?.code) || [],
+                toLocation: reports.map(item => item?.toLocation?.name) || [],
+                material: reports.map(item => item?.material?.name) || [],
+                fuelRemain: order?.shiftReport?.vehicleSummaries.map(item => item?.fuelRemain) || [],
+                fuelReceived: order?.shiftReport?.vehicleSummaries.map(item => item?.fuelReceived) || [],
+                fuelRemainEnd: order?.shiftReport?.vehicleSummaries.map(item => item?.fuelRemainEnd) || [],
+                consume: order?.shiftReport?.vehicleSummaries?.map((item) => (item?.fuelRemain || 0) + (item?.fuelReceived || 0) - (item?.fuelRemainEnd || 0)) || []
+            });
+        }
 
 
-        res.status(200).send({ status: 'success', data: orders })
+        res.status(200).send({ status: 'success', data: results })
     } catch (err) {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
@@ -845,9 +870,6 @@ router.post('/excavatorTripReport/view', verifyToken, restrictTo('admin', 'dispa
             })
             .populate('assignedTo', 'fullName salaryCode department')
             .populate('job', 'name')
-            .populate('location', 'name')
-            .populate('material', 'name')
-            .populate('excavator', 'code')
             .populate({
                 path: 'device',
                 select: 'code category',
@@ -860,23 +882,24 @@ router.post('/excavatorTripReport/view', verifyToken, restrictTo('admin', 'dispa
         const filteredOrders = orders.filter(order =>
             order.device?.category?.name === "Máy xúc"
         );
-        const formattedData = filteredOrders.flatMap((order, orderIndex) => {
-            if (!order.shiftReport || !order.shiftReport.vehicleReports) return [];
 
-            return order.shiftReport.vehicleReports
-                .map(summary => {
+        let result = []
+        for (const order of filteredOrders) {
+            const reports = await Report.find({ orderId: order._id })
+                .populate('device', 'code')
+                .populate('excavator', 'code')
+                .populate('toLocation', 'name')
+                .populate('material', 'name')
 
-                    return {
-                        _id: summary?.vehicle?._id,
-                        fullName: order?.assignedTo?.fullName,
-                        salaryCode: order?.assignedTo?.salaryCode,
-                        department: order?.assignedTo?.department?.name,
-                        shift: `${order?.shiftReport._id}`,
-                        code: summary?.vehicle?.code || '',
-                        tripCount: summary?.tripCount || '',
-                    };
-                });
-        });
+            result.push({
+                _id: order?._id,
+                fullName: order?.assignedTo?.fullName,
+                salaryCode: order?.assignedTo?.salaryCode,
+                department: order?.assignedTo?.department?.name,
+                code: summary?.device?.code || '',
+                quantity: summary?.quantity || '',
+            });
+        }
 
         res.status(200).send({ status: 'success', data: formattedData })
     } catch (err) {
@@ -914,9 +937,6 @@ router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher
                     })
                     .populate('assignedTo', 'fullName salaryCode department')
                     .populate('job', 'name')
-                    .populate('location', 'name')
-                    .populate('material', 'name')
-                    .populate('excavator', 'code')
                     .populate({
                         path: 'device',
                         select: 'code category',
@@ -929,23 +949,7 @@ router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher
                 const filteredOrders = orders.filter(order =>
                     order.device?.category?.name === "Máy xúc"
                 );
-                const formattedData = filteredOrders.flatMap((order, orderIndex) => {
-                    if (!order.shiftReport || !order.shiftReport.vehicleReports) return [];
 
-                    return order.shiftReport.vehicleReports
-                        .map(summary => {
-
-                            return {
-                                _id: summary?.vehicle?._id,
-                                fullName: order?.assignedTo?.fullName,
-                                salaryCode: order?.assignedTo?.salaryCode,
-                                department: order?.assignedTo?.department?.name,
-                                shift: `${order?.shiftReport._id}`,
-                                code: summary?.vehicle?.code || '',
-                                tripCount: summary?.tripCount || '',
-                            };
-                        });
-                });
 
                 const sheetName = `${formatDate(d)}_${ca.name}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
 
@@ -968,17 +972,18 @@ router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher
                 headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
 
                 let index = 1;
-                for (const item of formattedData) {
+                for (const order of filteredOrders) {
+                    const reports = await Report.find({ orderId: order._id })
                     worksheet.addRow([
                         index++,
-                        item.fullName || '',
-                        item.salaryCode || '',
-                        item.department?.name || '',
-                        item.code || '',
-                        item.tripCount || '',
+                        order.assignedTo?.fullName || '',
+                        order.assignedTo?.salaryCode || '',
+                        order.assignedTo?.department?.name || '',
+                        reports.map(item => (item?.device?.code || '')).join('\n') || '',
+                        reports.map(item => (item?.quantity || '')).join('\n') || '',
                     ]);
                 }
-
+                addTableBorders(worksheet, 3, 3 + index, 1, 6)
                 worksheet.getColumn(1).width = 6;
                 worksheet.getColumn(1).alignment = { horizontal: 'center' }
                 worksheet.getColumn(2).width = 20;
@@ -1520,9 +1525,6 @@ router.post('/worklog/view', verifyToken, restrictTo('admin', 'dispatcher', 'man
         const orders = await Order.find(query)
             .populate('assignedTo', 'fullName salaryCode department')
             .populate('job', 'name')
-            .populate('location', 'name')
-            .populate('material', 'name')
-            .populate('excavator', 'code')
             .populate('device', 'code')
             .populate('shift')
             .populate('shiftReport')
@@ -1563,11 +1565,7 @@ router.post('/worklog', verifyToken, restrictTo('admin', 'dispatcher', 'manager'
                 })
                     .populate('assignedTo', 'fullName salaryCode department')
                     .populate('job', 'name')
-                    .populate('location', 'name')
-                    .populate('material', 'name')
-                    .populate('excavator', 'code')
                     .populate('device', 'code')
-                    .populate('shift')
                     .populate('shiftReport')
 
                 const formattedData = orders
@@ -1586,7 +1584,7 @@ router.post('/worklog', verifyToken, restrictTo('admin', 'dispatcher', 'manager'
 
                 worksheet.mergeCells('A1:I1');
                 const infoRow = worksheet.getCell('A1');
-                infoRow.value = `Ca: ${ca.name}, ngày: ${formatDate(d)}         Tên cán bộ:`;
+                infoRow.value = `Ca: ${ca.name}, ngày: ${formatDate(d)}         Tên cán bộ: ${req.user?.fullName}`;
                 infoRow.font = { italic: true, size: 12 };
                 infoRow.alignment = { horizontal: 'left', vertical: 'middle' };
                 // Tiêu đề bảng

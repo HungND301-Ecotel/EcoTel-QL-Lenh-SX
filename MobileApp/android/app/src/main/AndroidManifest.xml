@@ -8,7 +8,7 @@
 
 
     <application
-        android:label="Soft"
+        android:label="E-MES"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

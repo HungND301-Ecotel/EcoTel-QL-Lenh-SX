@@ -11,102 +11,68 @@ export default function CarReport({ data, signatureUrl }: { data: any[], signatu
         },
         {
             field: 'fullName', headerName: 'Họ tên', width: 150,
-            valueGetter: (params) => params.row.assignedTo?.fullName
         },
         {
             field: 'salaryCode',
             headerName: 'Số thẻ',
             width: 120,
-            valueGetter: (params) => params.row.assignedTo?.salaryCode
         },
         {
             field: 'code', headerName: 'Biển số', width: 150,
             renderCell: (params) => {
-                const codes = params.row.device?.map((item: Device) => item.code).join('<br/>');
+                const codes = params.row.code?.map((item: string) => item).join('<br/>');
                 return <span dangerouslySetInnerHTML={{ __html: codes }} />;
             }
         },
         {
-            field: 'job', headerName: 'Nghề nghiệp/ công việc', width: 150,
-            valueGetter: (params) => params.row.job?.name
-        },
-        {
-            field: 'excavator', headerName: 'Thiết bị nhận đổ tải', width: 150,
+            field: 'excavator', headerName: 'Vị trí nhận tải', width: 150,
             renderCell: (params) => {
-                const codes = params.row.excavator?.map((item: Device) => item.code).join('<br/>');
+                const codes = params.row.excavator?.map((item: string) => item).join('<br/>');
                 return <span dangerouslySetInnerHTML={{ __html: codes }} />;
             }
         },
         {
             field: 'location', headerName: 'Vị trí đổ tải', width: 150,
-            valueGetter: (params) => params.row.location?.name
+            renderCell: (params) => {
+                const codes = params.row.toLocation?.map((item: string) => item).join('<br/>');
+                return <span dangerouslySetInnerHTML={{ __html: codes }} />;
+            }
         },
         {
-            field: 'material', headerName: 'Loại hàng', width: 150,
-            valueGetter: (params) => params.row.material?.name
+            field: 'material', headerName: 'Chủng loại', width: 150,
+            renderCell: (params) => {
+                const codes = params.row.material?.map((item: string) => item).join('<br/>');
+                return <span dangerouslySetInnerHTML={{ __html: codes }} />;
+            }
 
         },
         {
-            field: 'liftHeight', headerName: 'Chiều cao nâng tải', width: 150,
-            valueGetter: (params) => params.row.liftHeight
-        },
-        {
-            field: 'distance', headerName: 'Cung độ thực hiện', width: 150,
-            valueGetter: (params) => params.row.distance
+            field: 'distance', headerName: 'Cung độ tạm tính', width: 150,
+            valueGetter: (params) => ''
         },
         {
             field: 'fuelRemain', headerName: 'Tồn dầu', width: 150,
             renderCell: (params) => {
-                const codes = params.row.shiftReport?.vehicleSummaries?.map((item: any) => item?.fuelRemain).join('<br/>');
+                const codes = params.row.fuelRemain?.map((item: any) => item).join('<br/>');
                 return <span dangerouslySetInnerHTML={{ __html: codes }} />;
             }
         },
         {
-            field: 'fuelReceived', headerName: 'Lĩnh', width: 150,
+            field: 'fuelReceived', headerName: 'Lĩnh dầu', width: 150,
             renderCell: (params) => {
-                const codes = params.row.shiftReport?.vehicleSummaries?.map((item: any) => item?.fuelReceived).join('<br/>');
-                return <span dangerouslySetInnerHTML={{ __html: codes }} />;
-            }
-        },
-        {
-            field: 'fuelRemainEnd', headerName: 'Tồn cuối', width: 150,
-            renderCell: (params) => {
-                const codes = params.row.shiftReport?.vehicleSummaries?.map((item: any) => item?.fuelRemainEnd).join('<br/>');
+                const codes = params.row.fuelReceived?.map((item: any) => item).join('<br/>');
                 return <span dangerouslySetInnerHTML={{ __html: codes }} />;
             }
         },
         {
             field: 'consume', headerName: 'Tiêu thụ', width: 150,
             renderCell: (params) => {
-                const codes = params.row.shiftReport?.vehicleSummaries?.map((item: any) => (item?.fuelRemain || 0) + (item?.fuelReceived || 0) - (item?.fuelRemainEnd || 0)).join('<br/>');
+                const codes = params.row.consume.map((item: any) => item).join('<br/>');
                 return <span dangerouslySetInnerHTML={{ __html: codes }} />;
             }
         },
-        {
-            field: 'rated', headerName: 'Định mức', width: 150,
-        },
-        {
-            field: 'cheeseparings', headerName: 'Tiết kiệm', width: 150,
-        },
-        {
-            field: 'exceed', headerName: 'Vượt', width: 150,
-        },
-        {
-            field: 'sealStatus', headerName: 'Kẹp chì/ niêm phong', width: 150,
-            renderCell: (params) => {
-                const codes = params.row.shiftReport?.vehicleSummaries?.map((item: any) => item?.sealStatus).join('<br/>');
-                return <span dangerouslySetInnerHTML={{ __html: codes }} />;
-            }
-        },
-        {
-            field: 'gpsStatus', headerName: 'GPS', width: 150,
-            renderCell: (params) => {
-                const codes = params.row.shiftReport?.vehicleSummaries?.map((item: any) => item?.gpsStatus).join('<br/>');
-                return <span dangerouslySetInnerHTML={{ __html: codes }} />;
-            }
-        },
-        { field: 'foster', headerName: 'Bồi dưỡng', width: 150 },
-        { field: 'salary', headerName: 'Tính lương', width: 150 },
+        { field: 'foster', headerName: 'Phụ cấp/ bồi dưỡng', width: 150 },
+        { field: 'salary', headerName: 'Lương tạm tính', width: 150 },
     ];
 
     return (
