@@ -1,0 +1,191 @@
+# Run: docker compose up --build
+
+##### NOTE ###########################################
+#### THIS DOCKER COMPOSE IS FOR LOCAL DEVELOPMENT ####
+######################################################
+services:
+
+  ktv_reverse_proxy_service:
+    image: ktv_reverse_proxy_img
+    build:
+      context: ./reverse_proxy
+    ports:
+      # HOST_PORT:CONTAINER_PORT
+      - "6868:8888"
+    stdin_open: true
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+    # restart: always
+    networks:
+      - frontnet
+      - backnet
+    depends_on:
+      - ktv_Frontend_service
+      - ktv_Backend_service
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  ktv_Frontend_service:
+    env_file:
+      - ./Frontend/.env
+    image: ktv_ecotel_frontend_img
+    build:
+      context: ./Frontend
+    # target: development
+    stdin_open: true
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+    volumes:
+      # For development only, to synced src code to container
+      # - ./ecotel_frontend:/usr/src/app
+      - /usr/src/app/node_modules
+    # restart: always
+    networks:
+      - frontnet
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+  # ports:
+  #   - "3000:80"
+  # depends_on:
+  #   - ecotel_backend_service
+
+  
+  
+  ktv_Backend_service:
+    env_file:
+      - ./Backend/.env
+    image: ktv_ecotel_backend_img
+    build:
+      context: ./Backend
+    # target: development
+    stdin_open: true
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+    volumes:
+      # For development only, to synced src code to container
+      # - ./Backend:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - ktv_db
+    # ports:
+    #   - "8080:8080"
+    # restart: always
+    networks:
+      - backnet
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  ktv_db:
+    image: mongo
+    container_name: ktv_mongo_db
+    #restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+      TZ: Asia/Ho_Chi_Minh
+    volumes:
+      - .ktv-mongodb-data:/data/db
+    networks:
+      - backnet
+    ports:
+      - "27017:27017"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  ktv_grafana:
+    image: grafana/grafana
+    container_name: ktv_grafana
+    ports:
+      - "4000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - TZ=Asia/Ho_Chi_Minh
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    networks:
+      - monitoring
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  ktv_loki:
+    image: grafana/loki:2.9.0
+    container_name: ktv_loki
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - monitoring
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  ktv_promtail:
+    image: grafana/promtail:2.9.0
+    container_name: ktv_promtail
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+    volumes:
+      - /var/log:/var/log
+      - /etc/machine-id:/etc/machine-id
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./promtail-config.yaml:/etc/promtail/promtail.yaml
+    command: -config.file=/etc/promtail/promtail.yaml
+    networks:
+      - monitoring
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+  
+  ktv_backup:
+    env_file:
+      - ./Backend/.env
+    image: ktv_ecotel_backup_img
+    build: ./backup
+    container_name: mongo_backup
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+    depends_on:
+      - ktv_db
+    restart: unless-stopped
+    networks:
+      - backnet
+    volumes:
+      - .mongodb_backup:/app/backup
+      - .mongodb_restore:/app/restore
+    # This keeps the cron container running
+    command: ["cron", "-f"]
+
+
+networks:
+  frontnet:
+  backnet:
+  monitoring:
+
+volumes:
+  .ktv-mongodb-data:
+  .mongodb_backup:
+  .mongodb_restore:
+  grafana-storage:
