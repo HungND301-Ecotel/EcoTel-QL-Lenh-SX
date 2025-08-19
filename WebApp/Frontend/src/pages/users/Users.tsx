@@ -139,6 +139,7 @@ const Users: React.FC = () => {
 
                 // Liệt kê chi tiết một vài lỗi đầu tiên
                 data.invalidRows.slice(0, 5).forEach((item: any, index: number) => {
+
                     combinedMessage += `\n- Dòng ${index + 1}: Lỗi "${item.error}"`;
                 });
 
