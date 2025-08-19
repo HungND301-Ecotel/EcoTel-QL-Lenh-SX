@@ -138,7 +138,8 @@ const Users: React.FC = () => {
                 combinedMessage += `\n${data.invalidRows.length} bản ghi không hợp lệ:`;
 
                 // Liệt kê chi tiết một vài lỗi đầu tiên
-                data.invalidRows.slice(0, 5).forEach((item:any, index:number) => {
+                data.invalidRows.slice(0, 5).forEach((item: any, index: number) => {
+
                     combinedMessage += `\n- Dòng ${index + 1}: Lỗi "${item.error}"`;
                 });
 
@@ -683,6 +684,7 @@ const Users: React.FC = () => {
                 </AccordionDetails>
             </Accordion>
             <Paper sx={{ width: '100%', overflowX: 'auto', mt: 3 }}>
+                <Typography variant="h4">Bảng người dùng</Typography>
                 <DataGrid
                     rows={users}
                     columns={userColumns}

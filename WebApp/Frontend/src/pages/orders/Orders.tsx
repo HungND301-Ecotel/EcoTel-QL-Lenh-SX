@@ -313,9 +313,7 @@ const Orders: React.FC = () => {
             <Accordion expanded={expanded}>
                 <AccordionSummary
                     expandIcon={
-                        <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                            <Settings sx={{ fontSize: 30 }} />
-                        </IconButton>}
+                        <></>}
                     aria-controls="panel1-content"
                     id="panel1-header"
                     sx={{
@@ -481,7 +479,11 @@ const Orders: React.FC = () => {
                     <ListItemText primary={`Đã hủy (${allOrders.filter((o: Order) => o.status === "cancel").length})`} sx={{ color: 'purple' }} />
                 </Box>
             </Box>
-            <Box display="flex" justifyContent='space-between' alignItems='center' sx={{ mb: 2, mt: 2 }}>
+            <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
+                <Typography variant="h4">Bảng lệnh sản xuất</Typography>
+                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                    <Settings sx={{ fontSize: 30 }} />
+                </IconButton>
                 <Menu
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}

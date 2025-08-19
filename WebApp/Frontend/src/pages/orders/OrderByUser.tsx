@@ -168,9 +168,6 @@ const OrderByUsers: React.FC = () => {
                 >
                     Tìm
                 </Button>
-                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                    <Settings sx={{ fontSize: 30 }} />
-                </IconButton>
             </Box>
             <Box display="flex" gap={2} alignItems={'center'} justifyContent='flex-end'>
                 <Box display="flex" alignItems={'center'}>
@@ -199,7 +196,11 @@ const OrderByUsers: React.FC = () => {
                     <ListItemText primary={`Đã kết thúc (${allOrders.filter((o: Order) => o.status === "completed").length})`} sx={{ color: 'red' }} />
                 </Box>
             </Box>
-            <Box display="flex" justifyContent='space-between' alignItems='center' sx={{ mb: 2, mt: 2 }}>
+            <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
+                <Typography variant="h4">Bảng lệnh sản xuất</Typography>
+                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                    <Settings sx={{ fontSize: 30 }} />
+                </IconButton>
                 <Menu
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}
