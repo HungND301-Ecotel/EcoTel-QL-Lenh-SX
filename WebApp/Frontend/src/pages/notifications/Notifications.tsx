@@ -131,6 +131,7 @@ const Notifications: React.FC = () => {
                     <Button variant='contained' onClick={() => setType(false)}>Chưa đọc</Button>
                 </Badge>
             </Box>
+            <Typography variant="h4">Bảng thông báo</Typography>
             <TableContainer component={Paper} sx={{ boxShadow: 4 }}>
                 <Table sx={{
                     "& td, & th": { padding: "4px 8px" },

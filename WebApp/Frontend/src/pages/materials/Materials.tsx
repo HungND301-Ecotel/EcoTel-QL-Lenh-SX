@@ -202,9 +202,7 @@ const Materials: React.FC = () => {
             </Box>
             <Accordion expanded={expanded}>
                 <AccordionSummary
-                    expandIcon={<IconButton onClick={(e) => setMenuAnchorEl(e.currentTarget)}>
-                        <Settings sx={{ fontSize: 30 }} />
-                    </IconButton>}
+                    expandIcon={<></>}
                     aria-controls="panel1-content"
                     id="panel1-header"
                     sx={{
@@ -286,7 +284,11 @@ const Materials: React.FC = () => {
                     </DialogActions>
                 </AccordionDetails>
             </Accordion>
-            <Box display="flex" justifyContent='space-between' alignItems='center' sx={{ mb: 2, mt: 2 }}>
+            <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
+                <Typography variant="h4">Bảng vật liệu</Typography>
+                <IconButton onClick={(e) => setMenuAnchorEl(e.currentTarget)}>
+                    <Settings sx={{ fontSize: 30 }} />
+                </IconButton>
                 <Menu
                     anchorEl={menuAnchorEl}
                     open={Boolean(menuAnchorEl)}

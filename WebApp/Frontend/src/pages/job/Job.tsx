@@ -199,9 +199,7 @@ const Jobs: React.FC = () => {
             </Box>
             <Accordion expanded={expanded}>
                 <AccordionSummary
-                    expandIcon={<IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                        <Settings sx={{ fontSize: 30 }} />
-                    </IconButton>}
+                    expandIcon={<></>}
                     aria-controls="panel1-content"
                     id="panel1-header"
                     sx={{
@@ -278,7 +276,11 @@ const Jobs: React.FC = () => {
                     </DialogActions>
                 </AccordionDetails>
             </Accordion>
-            <Box display="flex" justifyContent='space-between' alignItems='center' sx={{ mb: 2, mt: 2 }}>
+            <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
+                <Typography variant="h4">Bảng công việc</Typography>
+                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                    <Settings sx={{ fontSize: 30 }} />
+                </IconButton>
                 <Menu
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}
