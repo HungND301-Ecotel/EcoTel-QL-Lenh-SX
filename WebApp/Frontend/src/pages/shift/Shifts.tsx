@@ -348,10 +348,10 @@ const Shifts: React.FC = () => {
                                         <TableCell align='center' sx={{}}>{shift.name}</TableCell>
                                     )}
                                     {visibleColumns.includes('startTime') && (
-                                        <TableCell sx={{}}>{shift.startTime}</TableCell>
+                                        <TableCell align='center' sx={{}}>{shift.startTime}</TableCell>
                                     )}
                                     {visibleColumns.includes('endTime') && (
-                                        <TableCell sx={{}}>{shift.endTime}</TableCell>
+                                        <TableCell align='center' sx={{}}>{shift.endTime}</TableCell>
                                     )}
                                     {visibleColumns.includes('edit') && (
                                         <TableCell align='center' sx={{}}>

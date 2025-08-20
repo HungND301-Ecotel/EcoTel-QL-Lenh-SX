@@ -36,6 +36,8 @@ import {
     Settings,
     ExpandMore,
     Search,
+    UploadFile,
+    Download,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -122,6 +124,48 @@ const Materials: React.FC = () => {
         }
 
     });
+
+    const importFile = useMutation({
+        mutationFn: (formData: FormData) =>
+            api.post('/materials/importFile', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            }).then(res => res.data.message),
+        onSuccess: (message) => {
+            queryClient.invalidateQueries({ queryKey: ['materials'] });
+
+            showSuccessAlert(message || 'Import thành công');
+        },
+        onError: (error: any) => {
+            showErrorAlert(error.response?.data?.message || 'Lỗi khi import');
+        }
+    });
+
+    const exportExcel = useMutation({
+        mutationFn: () => {
+            return api.post('/materials/exportFile', {}, {
+                responseType: 'blob',
+            }).then(res => {
+                const blob = new Blob([res.data], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                });
+
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `*.xlsx`);
+
+                document.body.appendChild(link);
+                link.click();
+                link.parentNode?.removeChild(link);
+                window.URL.revokeObjectURL(url);
+            });
+        },
+        onSuccess: () => { },
+        onError: (error: any) => {
+            showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
+        }
+    });
+
 
     const formik = useFormik({
         initialValues: {
@@ -211,8 +255,22 @@ const Materials: React.FC = () => {
                         },
                     }}
                 >
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', width: '100%' }}>
-                        <Box display={'flex'} gap={2}>
+                    <Box sx={{
+                        display: 'flex', gap: 2, alignItems: 'center', width: '100%', flexDirection: {
+                            xs: 'column',
+                            md: 'row',
+                        },
+                    }}>
+                        <Box display={'flex'} gap={2} sx={{
+                            flexDirection: {
+                                xs: 'column',
+                                md: 'row',
+                            },
+                            width: {
+                                xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                md: 'auto',
+                            },
+                        }}>
                             <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
                                 Thêm
                             </Button>
@@ -220,7 +278,16 @@ const Materials: React.FC = () => {
                                 Xóa
                             </Button>
                         </Box>
-                        <Box flex={2}>
+                        <Box flex={2} sx={{
+                            flexDirection: {
+                                xs: 'column',
+                                md: 'row',
+                            },
+                            width: {
+                                xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                md: 'auto',
+                            },
+                        }}>
                             <TextField fullWidth size="small" value={value}
                                 placeholder='Tìm kiếm theo tên loại vật liệu'
                                 onChange={(e) => setValue(e.target.value)}
@@ -232,6 +299,51 @@ const Materials: React.FC = () => {
                                     )
                                 }}>
                             </TextField>
+                        </Box>
+                        <Box display="flex" gap={2} sx={{
+                            flexDirection: {
+                                xs: 'column',
+                                md: 'row',
+                            },
+                            width: {
+                                xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                md: 'auto',
+                            },
+                        }}>
+                            <input
+                                id="upload-excel"
+                                type="file"
+                                accept=".xlsx, .xls"
+                                style={{ display: 'none' }}
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        const formData = new FormData();
+                                        formData.append('file', file);
+                                        importFile.mutate(formData);
+                                    }
+                                    e.target.value = "";
+                                }}
+                            />
+
+                            <label htmlFor="upload-excel">
+                                <Button
+                                    fullWidth
+                                    component="span"
+                                    variant="contained"
+                                    startIcon={<UploadFile />}
+                                >
+                                    Tải lên excel
+                                </Button>
+                            </label>
+                            <Button
+                                component="span"
+                                variant="contained"
+                                startIcon={<Download />}
+                                onClick={() => exportExcel.mutate()}
+                            >
+                                Tải xuống
+                            </Button>
                         </Box>
                     </Box>
                 </AccordionSummary>
@@ -337,8 +449,8 @@ const Materials: React.FC = () => {
                             }}>
                                 <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(material._id)} checked={selectedMaterials.includes(material._id)} /></TableCell>
                                 {visibleColumns.includes('name') && <TableCell sx={{}}>{material.name}</TableCell>}
-                                {visibleColumns.includes('density') && <TableCell sx={{}}>{material.density}</TableCell>}
-                                {visibleColumns.includes("mass") && <TableCell sx={{}}>{material.mass}</TableCell>}
+                                {visibleColumns.includes('density') && <TableCell align='center' sx={{}}>{material.density}</TableCell>}
+                                {visibleColumns.includes("mass") && <TableCell align='center' sx={{}}>{material.mass}</TableCell>}
                                 {visibleColumns.includes("edit") && <TableCell align='center' sx={{}}>
                                     <IconButton color="primary" onClick={async () => {
                                         if (open) {

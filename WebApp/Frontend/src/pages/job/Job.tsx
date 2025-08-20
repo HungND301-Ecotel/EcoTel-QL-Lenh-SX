@@ -335,7 +335,7 @@ const Jobs: React.FC = () => {
                             }}>
                                 <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(job._id)} checked={selectedJobs.includes(job._id)} /></TableCell>
                                 {visibleColumns.includes('name') && <TableCell sx={{}}>{job.name}</TableCell>}
-                                {visibleColumns.includes('category') && <TableCell sx={{}}>{job.type}</TableCell>}
+                                {visibleColumns.includes('category') && <TableCell align='center' sx={{}}>{job.type}</TableCell>}
                                 {visibleColumns.includes('edit') && <TableCell sx={{}}>
                                     <IconButton color="primary" onClick={async () => {
                                         if (open) {

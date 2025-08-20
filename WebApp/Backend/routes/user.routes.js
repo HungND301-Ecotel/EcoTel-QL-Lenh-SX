@@ -39,7 +39,8 @@ router.get('/', verifyToken, async (req, res) => {
         const users = await User.find(query)
             .populate('department', 'name code')
             .populate('position', 'name')
-            .sort('-createdAt');
+            .collation({ locale: "vi", strength: 1 })
+            .sort({ fullName: 1 });
         req.logger.info(`✅ Lấy thành công ${users.length} người dùng.`);
         res.json({
             status: 'success',

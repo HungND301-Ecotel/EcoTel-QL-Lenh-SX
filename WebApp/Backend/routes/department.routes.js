@@ -24,6 +24,8 @@ router.get('/', verifyToken, async (req, res, next) => {
             query.code = regex;
         }
         const departments = await Department.find(query)
+            .collation({ locale: "vi", strength: 1 })
+            .sort({ code: 1 });
 
         req.logger.info(`🔥 Load dữ liệu đơn vị thành công`);
         res.status(200).json({

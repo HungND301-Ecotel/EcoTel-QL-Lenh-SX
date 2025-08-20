@@ -47,6 +47,8 @@ router.get('/', verifyToken, async (req, res, next) => {
         const devices = await Device.find(query)
             .populate('department', 'name code')
             .populate('category')
+            .collation({ locale: "vi", strength: 1 })
+            .sort({ code: 1 });
         req.logger.info(`🔥  Load phương tiện thành công`);
         res.status(200).json({
             status: 'success',

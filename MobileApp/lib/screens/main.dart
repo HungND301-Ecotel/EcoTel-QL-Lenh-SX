@@ -128,10 +128,10 @@ class MyHomePageState extends State<MyPage> {
     final role = user?.role;
 
     final items = <BottomNavigationBarItem>[
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.zoom_out_map),
-        label: "Bản đồ",
-      ),
+      // const BottomNavigationBarItem(
+      //   icon: Icon(Icons.zoom_out_map),
+      //   label: "Bản đồ",
+      // ),
       const BottomNavigationBarItem(
         icon: Icon(Icons.check_circle_outline),
         label: "Công việc",
@@ -165,7 +165,7 @@ class MyHomePageState extends State<MyPage> {
 
   Widget getBody(String? role) {
     final bodyList = <Widget>[
-      HomeWrapper(),
+      // HomeWrapper(),
       WorkLogRoute(),
       if (['admin', 'dispatcher', 'manager'].contains(role))
         TaskAssignmentRoute(),

@@ -429,8 +429,22 @@ const Users: React.FC = () => {
                         },
                     }}
                 >
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', width: '100%' }}>
-                        <Box display="flex" gap={2}>
+                    <Box sx={{
+                        display: 'flex', gap: 2, alignItems: 'center', width: '100%', flexDirection: {
+                            xs: 'column',
+                            md: 'row',
+                        },
+                    }}>
+                        <Box display="flex" gap={2} sx={{
+                            flexDirection: {
+                                xs: 'column',
+                                md: 'row',
+                            },
+                            width: {
+                                xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                md: 'auto',
+                            },
+                        }}>
                             <Button
                                 variant="contained"
                                 startIcon={<AddIcon />}
@@ -442,7 +456,16 @@ const Users: React.FC = () => {
                                 Xóa
                             </Button>
                         </Box>
-                        <Box flex={1}>
+                        <Box flex={1} sx={{
+                            flexDirection: {
+                                xs: 'column',
+                                md: 'row',
+                            },
+                            width: {
+                                xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                md: 'auto',
+                            },
+                        }}>
                             <Box sx={{ display: 'flex', gap: 4 }}>
                                 <TextField fullWidth size="small" value={value}
                                     placeholder='Tìm kiếm theo tên, mã thẻ lương cán bộ, nhân viên'
@@ -475,7 +498,16 @@ const Users: React.FC = () => {
                                 />}
                             </Box>
                         </Box>
-                        <Box display="flex" gap={2}>
+                        <Box display="flex" gap={2} sx={{
+                            flexDirection: {
+                                xs: 'column',
+                                md: 'row',
+                            },
+                            width: {
+                                xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                md: 'auto',
+                            },
+                        }}>
                             <input
                                 id="upload-excel"
                                 type="file"
@@ -494,6 +526,7 @@ const Users: React.FC = () => {
 
                             <label htmlFor="upload-excel">
                                 <Button
+                                    fullWidth
                                     component="span"
                                     variant="contained"
                                     startIcon={<UploadFile />}
@@ -692,6 +725,7 @@ const Users: React.FC = () => {
                     autoHeight
                     disableSelectionOnClick
                     checkboxSelection
+                    isRowSelectable={(params) => params.row.role !== 'admin'}
                     onSelectionModelChange={(newSelection) => {
                         setSelectedUsers(newSelection as string[]);
                     }}

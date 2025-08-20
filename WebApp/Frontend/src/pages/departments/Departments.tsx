@@ -342,7 +342,7 @@ const Departments = () => {
                                 backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
                             }}>
                                 <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(department._id)} checked={selectedDepartments.includes(department._id)} /></TableCell>
-                                {visibleColumns.includes('code') && <TableCell sx={{}}>{department.code}</TableCell>}
+                                {visibleColumns.includes('code') && <TableCell align='center' sx={{}}>{department.code}</TableCell>}
                                 {visibleColumns.includes('name') && <TableCell sx={{}}>{department.name}</TableCell>}
                                 {visibleColumns.includes('description') && <TableCell sx={{}}>{department.description}</TableCell>}
                                 {visibleColumns.includes('edit') && <TableCell sx={{}}>

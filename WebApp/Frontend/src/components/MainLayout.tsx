@@ -14,6 +14,13 @@ import {
     Button,
     Popover,
     Divider,
+    useTheme,
+    useMediaQuery,
+    Drawer,
+    List,
+    ListItemText,
+    ListItem,
+    MenuList,
 } from '@mui/material';
 import {
     Notifications as NotificationsIcon,
@@ -21,6 +28,7 @@ import {
     Logout as LogoutIcon,
     Person as PersonIcon,
     ExpandMore,
+    MenuOpen,
 } from '@mui/icons-material';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAtom } from 'jotai';
@@ -54,6 +62,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     const [avatarAnchorEl, setAvatarAnchorEl] = useState<null | HTMLElement>(null);
     const [openProfile, setOpenProfile] = useState(false);
     const [openChangePassword, setOpenChangePassword] = useState(false);
+
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down("lg"));
+    const [drawerOpen, setDrawerOpen] = useState(false);
 
     const location = useLocation()
 
@@ -108,21 +120,63 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
             <AppBar position="fixed">
                 <Toolbar sx={{ justifyContent: 'space-between' }}>
-                    <Box display="flex" alignItems="center" gap={5}>
-                        {/* Logo và tiêu đề */}
-                        <Box display="flex" alignItems="center" gap={2}>
-                            <img src="/image/logo.png" style={{ width: 60, height: 60 }} />
-                            <Typography variant="h6">HỆ THỐNG QUẢN LÝ ĐIỀU PHỐI VÀ SỬ DỤNG MÁY MÓC THIẾT BỊ</Typography>
-                        </Box>
+                    {/* Menu chính ngang / Drawer cho mobile */}
+                    {isMobile ? (
+                        <>
+                            <IconButton color="inherit" onClick={() => setDrawerOpen(true)}>
+                                <MenuOpen sx={{ fontSize: 40 }} />
+                            </IconButton>
+                            <Drawer
+                                anchor="left"
+                                open={drawerOpen}
+                                onClose={() => setDrawerOpen(false)}
+                            >
+                                <List sx={{ width: 250 }}>
+                                    <Box display="flex" flexDirection={'column'} alignItems={'center'} gap={2}>
+                                        <img src="/image/logo.png" style={{ width: 60, height: 60 }} />
+                                        <Typography variant="h6" sx={{ fontSize: 12 }} textAlign={'center'}>HỆ THỐNG QUẢN LÝ ĐIỀU PHỐI VÀ SỬ DỤNG MÁY MÓC THIẾT BỊ</Typography>
+                                    </Box>
+                                    <ListItem button onClick={() => { navigate('/'); setDrawerOpen(false); }}>
+                                        <ListItemText primary="Tổng quan" />
+                                    </ListItem>
+                                    <ListItem button onClick={() => { navigate('/orders'); setDrawerOpen(false); }}>
+                                        <ListItemText primary="Lệnh sản xuất" />
+                                    </ListItem>
+                                    {["manager"].includes(user?.role) && (
+                                        <ListItem button onClick={() => { navigate('/orderByUsers'); setDrawerOpen(false); }}>
+                                            <ListItemText primary="Công việc của tôi" />
+                                        </ListItem>
+                                    )}
+                                    {menuItems.map((item) => {
+                                        if (!item) return null;
+                                        return (
+                                            <ListItem key={item!.text} button onClick={() => { navigate(item!.path!); setDrawerOpen(false); }}>
+                                                <ListItemText primary={item!.text} />
+                                            </ListItem>
 
-                        {/* Menu chính ngang */}
-                        <Box display="flex" gap={2}>
+                                        )
+                                    }
+
+                                    )}
+                                    {["admin", "manager", "dispatcher"].includes(user?.role) && (
+                                        <ListItem button onClick={() => { navigate('/reports'); setDrawerOpen(false); }}>
+                                            <ListItemText primary="Báo cáo" />
+                                        </ListItem>
+                                    )}
+                                </List>
+                            </Drawer>
+                        </>
+                    ) : (
+                        <Box display="flex" gap={2} alignItems={'center'}>
+                            <Box display="flex" alignItems="center" gap={2}>
+                                <img src="/image/logo.png" style={{ width: 60, height: 60 }} />
+                                <Typography variant="h6">HỆ THỐNG QUẢN LÝ ĐIỀU PHỐI VÀ SỬ DỤNG MÁY MÓC THIẾT BỊ</Typography>
+                            </Box>
                             <Button color="inherit" sx={{ fontSize: 20, borderBottom: location.pathname === '/' ? '5px solid red' : '' }} onClick={() => navigate('/')}>Tổng quan</Button>
                             <Button color="inherit" sx={{ fontSize: 20, borderBottom: location.pathname === '/orders' ? '5px solid red' : '' }} onClick={() => navigate('/orders')}>Lệnh sản xuất</Button>
                             {["manager"].includes(user?.role) && (
                                 <Button color="inherit" sx={{ fontSize: 20, borderBottom: location.pathname === '/orderByUsers' ? '5px solid red' : '' }} onClick={() => navigate('/orderByUsers')}>Công việc của tôi</Button>
                             )}
-                            {/* Danh mục dropdown */}
                             {menuItems.length > 0 && (
                                 <>
                                     <Button
@@ -139,8 +193,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                                         onClose={() => setMenuAnchorEl(null)}
                                     >
                                         {menuItems.map((item) => {
-                                            if (!item) return null; // nếu là false thì bỏ qua
-
+                                            if (!item) return null;
                                             return (
                                                 <MenuItem key={item!.text} sx={{ borderBottom: location.pathname === item.path ? '5px solid red' : '' }} onClick={() => {
                                                     navigate(item!.path!);
@@ -150,6 +203,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                                                 </MenuItem>
                                             )
                                         })}
+
                                     </Menu>
                                 </>
                             )}
@@ -157,8 +211,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                                 <Button color="inherit" sx={{ fontSize: 20, borderBottom: location.pathname === '/reports' ? '5px solid red' : '' }} onClick={() => navigate('/reports')}>Báo cáo</Button>
                             )}
                         </Box>
+                    )}
 
-                    </Box>
 
                     {/* Avatar, thông báo */}
                     <Box display="flex" alignItems="center" gap={2}>
