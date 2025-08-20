@@ -13,11 +13,17 @@ services:
     image: ecoteldev/ktv_reverse_proxy_img:release
     ports:
       # HOST_PORT:CONTAINER_PORT
-      - "6868:8888"
+      - "6868:8888"      # HTTP plain, only used for debug
+      - "80:80"          # HTTP redirect
+      - "443:443"        # HTTPS for production
+
     stdin_open: true
     environment:
       - TZ=Asia/Ho_Chi_Minh
     # restart: always
+    volumes:
+      # Only used for production-server with a domain and SSL    
+      - /etc/ssl/mydomain:/etc/ssl/mydomain:ro
     networks:
       - frontnet
       - backnet
