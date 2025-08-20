@@ -20,6 +20,7 @@ router.post('/', verifyToken, async (req, res, next) => {
 
         });
     } catch (err) {
+        req.logger.error("❌ Lỗi", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -89,6 +90,7 @@ router.get('/', verifyToken, async (req, res, next) => {
 
         });
     } catch (err) {
+        req.logger.error("❌ Lỗi", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -113,6 +115,7 @@ router.get('/unread/count', verifyToken, async (req, res, next) => {
 
         });
     } catch (err) {
+        req.logger.error("❌ Lỗi", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -127,6 +130,7 @@ router.get('/read/count', verifyToken, async (req, res, next) => {
 
         });
     } catch (err) {
+        req.logger.error("❌ Lỗi", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -167,6 +171,7 @@ router.patch('/:id/read', verifyToken, async (req, res, next) => {
 
         });
     } catch (err) {
+        req.logger.error("❌ Lỗi", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -199,6 +204,7 @@ router.patch('/read/all', verifyToken, async (req, res, next) => {
             message: 'All notifications marked as read'
         });
     } catch (err) {
+        req.logger.error("❌ Lỗi", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -231,6 +237,7 @@ router.delete('/:id', verifyToken, async (req, res, next) => {
             data: null
         });
     } catch (err) {
+        req.logger.error("❌ Lỗi", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });

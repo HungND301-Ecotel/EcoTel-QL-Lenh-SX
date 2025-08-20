@@ -4,7 +4,6 @@ import 'package:soft/models/device_model.dart';
 import 'package:soft/models/location_model.dart';
 import 'package:soft/models/material_model.dart';
 import 'package:soft/models/order_model.dart';
-import 'package:soft/models/safety_measure_model.dart';
 import 'package:soft/models/shift_model.dart';
 import 'package:soft/models/task_model.dart';
 import 'package:soft/models/user_model.dart';
@@ -328,6 +327,20 @@ class _TaskAssignmentVehicleTransfer
                                 });
                               },
                             ),
+                            if (i > 0)
+                              IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    userAndDevice.removeAt(
+                                      i,
+                                    );
+                                  });
+                                },
+                                icon: Icon(
+                                  Icons.cancel,
+                                  color: Colors.red,
+                                ),
+                              ),
                           ],
                         ),
                       ),

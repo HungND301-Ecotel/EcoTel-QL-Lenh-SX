@@ -25,7 +25,7 @@ router.get('/', verifyToken, async (req, res, next) => {
         }
         const departments = await Department.find(query)
 
-
+        req.logger.info(`🔥 Load dữ liệu đơn vị thành công`);
         res.status(200).json({
             status: 'success',
             results: departments.length,
@@ -34,6 +34,7 @@ router.get('/', verifyToken, async (req, res, next) => {
 
         });
     } catch (err) {
+        req.logger.error("❌ Lỗi khi load đơn vị", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -72,25 +73,28 @@ router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, n
         // Check if department with same code exists
         const existingCodeDepartment = await Department.findOne({ code });
         if (existingCodeDepartment) {
+            req.logger.error("❌ Mã đơn vị đã tồn tại");
             return res.status(400).send({ status: 'error', message: 'Mã đơn vị đã tồn tại' });
         }
         const existingNameDepartment = await Department.findOne({ name });
         if (existingNameDepartment) {
+            req.logger.error("❌ Tên đơn vị đã tồn tại");
             return res.status(400).send({ status: 'error', message: 'Tên đơn vị đã tồn tại' });
         }
-
         const department = await Department.create({
             name,
             code,
             description,
         });
 
+        req.logger.info(`🔥  Tạo mới đơn vị thành công`);
         res.status(201).json({
             status: 'success',
             data:
                 department
         });
     } catch (err) {
+        req.logger.error("❌ Lỗi khi tạo đơn vị", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -115,9 +119,10 @@ router.get('/:id', verifyToken, async (req, res, next) => {
         const department = await Department.findById(req.params.id)
 
         if (!department) {
+            req.logger.error("❌ không tìm thấy đơn vị");
             return res.status(404).send({ status: 'error', message: 'No department found with that ID' });
         }
-
+        req.logger.info(`🔥 Load đơn vị thành công`);
         res.status(200).json({
             status: 'success',
             data:
@@ -125,6 +130,7 @@ router.get('/:id', verifyToken, async (req, res, next) => {
 
         });
     } catch (err) {
+        req.logger.error("❌ Lỗi khi load đơn vị", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -171,9 +177,10 @@ router.put('/:id', verifyToken, restrictTo('admin', 'manager',), async (req, res
             }
         )
         if (!department) {
+            req.logger.error("❌ không tìm thấy đơn vị");
             return res.status(404).send({ status: 'error', message: 'No department found with that ID' });
         }
-
+        req.logger.info(`🔥  Sửa đơn vị thành công`);
         res.status(200).json({
             status: 'success',
             data:
@@ -181,6 +188,7 @@ router.put('/:id', verifyToken, restrictTo('admin', 'manager',), async (req, res
 
         });
     } catch (err) {
+        req.logger.error("❌ Lỗi khi sửa đơn vị", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -204,19 +212,22 @@ router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res,
     try {
         const { ids } = req.body;
         if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            req.logger.error("❌ Chọn bản ghi cần xóa");
             return res.status(400).send({ status: 'error', message: 'Vui lòng chọn bản ghi cần xóa' });
         }
 
         const result = await Department.deleteMany({ _id: { $in: ids } });
         if (result.deletedCount === 0) {
+            req.logger.error("❌ không tìm thấy bản ghi cần xóa");
             return res.status(200).send({ status: 'error', message: 'Không tìm thấy bản ghi để xóa' });
         }
-
+        req.logger.info(`🔥  Đã xóa ${result.deletedCount} bản ghi`);
         res.status(200).json({
             status: 'success',
             message: `Đã xóa ${result.deletedCount} bản ghi`
         });
     } catch (err) {
+        req.logger.error("❌ Lỗi khi xóa bản ghi", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });

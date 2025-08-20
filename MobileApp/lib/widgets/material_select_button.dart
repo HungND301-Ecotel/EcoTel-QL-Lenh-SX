@@ -82,7 +82,7 @@ class _MaterialSelectButton
           ),
           alignment: Alignment.centerLeft,
         ),
-        label: Text(_material?.name ?? 'Điểm đổ tải'),
+        label: Text(_material?.name ?? 'Vật liệu'),
       ),
     );
   }

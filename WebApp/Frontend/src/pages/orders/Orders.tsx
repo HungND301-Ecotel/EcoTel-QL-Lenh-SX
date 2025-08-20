@@ -266,23 +266,35 @@ const Orders: React.FC = () => {
     };
     const handleDelete = () => {
         if (selectedOrders.length === 0) {
-            showErrorAlert('Không tìm thấy bản ghi cần xóa');
-            return;
+            return showErrorAlert('Không tìm thấy bản ghi cần xóa');
         }
-        for (const order of selectedOrders) {
-            if (order.status === "in_progress") {
-                return showErrorAlert(`Công việc ${order?.assignedTo?.fullName}-${order?.assignedTo?.salaryCode} đang thực hiện không thể xóa`);
-            }
-            if (order.status === "completed") {
-                return showErrorAlert(`Công việc ${order?.assignedTo?.fullName}-${order?.assignedTo?.salaryCode} đã hoàn thành không thể xóa`);
-            }
+
+        // lọc ra những order có thể xoá
+        const deletableOrders = selectedOrders.filter(o =>
+            o.status !== "in_progress" && o.status !== "completed"
+        );
+
+        if (deletableOrders.length === 0) {
+            return showErrorAlert("Không có bản ghi nào hợp lệ để xoá");
         }
-        showConfirmAlert(`Bạn có muốn xóa ${selectedOrders.length} bản ghi?`).then((result) => {
+
+        // cảnh báo cho các bản ghi bị bỏ qua
+        const skipped = selectedOrders.length - deletableOrders.length;
+
+        let message = "";
+        if (skipped > 0) {
+            message = `${skipped} bản ghi đang thực hiện hoặc đã hoàn thành. `;
+        }
+
+        message += `Bạn có thể xóa ${deletableOrders.length} bản ghi. Bạn có muốn xóa?`;
+
+        showConfirmAlert(message).then((result) => {
             if (result.isConfirmed) {
-                deleteMutation.mutate(selectedOrders.map(o => o._id));
+                deleteMutation.mutate(deletableOrders.map(o => o._id));
             }
         });
     };
+
 
 
 
@@ -728,7 +740,6 @@ const Orders: React.FC = () => {
                                             {visibleColumns.includes('transfer') && <TableCell align='center' sx={{}}>
                                                 <IconButton
                                                     color="info"
-                                                    disabled={!['completed'].includes(order.status)}
                                                     onClick={async () => {
                                                         if (open) {
                                                             const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:soft/models/order_model.dart';
-import 'package:soft/models/safety_measure_model.dart';
 import 'package:soft/models/shift_model.dart';
 import 'package:soft/models/task_model.dart';
 import 'package:soft/models/user_model.dart';
@@ -295,6 +294,18 @@ class _TaskAssignmentCommonAddTransfer
                           ],
                         ),
                       ),
+                      if (i > 0)
+                        IconButton(
+                          onPressed: () {
+                            setState(() {
+                              userAndDevice.removeAt(i);
+                            });
+                          },
+                          icon: Icon(
+                            Icons.cancel,
+                            color: Colors.red,
+                          ),
+                        ),
                     ],
                   ),
                 Text(

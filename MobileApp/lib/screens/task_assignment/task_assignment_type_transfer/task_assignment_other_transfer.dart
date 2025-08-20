@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:soft/models/order_model.dart';
-import 'package:soft/models/safety_measure_model.dart';
 import 'package:soft/models/shift_model.dart';
 import 'package:soft/models/task_model.dart';
 import 'package:soft/models/user_model.dart';
@@ -209,14 +208,33 @@ class _TaskAssignmentOtherTransfer
                   ),
                 ),
                 for (int i = 0; i < user.length; i++)
-                  PayRollInput(
-                    title: 'Số thẻ lương',
-                    onSelectUser: (selectedUser) {
-                      setState(() {
-                        user[i] = selectedUser;
-                      });
-                    },
-                    initialPayroll: user[i]?.salaryCode,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: PayRollInput(
+                          title: 'Số thẻ lương',
+                          onSelectUser: (selectedUser) {
+                            setState(() {
+                              user[i] = selectedUser;
+                            });
+                          },
+                          initialPayroll:
+                              user[i]?.salaryCode,
+                        ),
+                      ),
+                      if (i > 0)
+                        IconButton(
+                          onPressed: () {
+                            setState(() {
+                              user.removeAt(i);
+                            });
+                          },
+                          icon: Icon(
+                            Icons.cancel,
+                            color: Colors.red,
+                          ),
+                        ),
+                    ],
                   ),
                 Text(
                   'Ngày',

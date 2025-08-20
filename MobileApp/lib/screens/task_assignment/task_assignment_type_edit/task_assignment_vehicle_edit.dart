@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:soft/models/device_model.dart';
-import 'package:soft/models/location_model.dart';
-import 'package:soft/models/material_model.dart';
 import 'package:soft/models/order_model.dart';
-import 'package:soft/models/safety_measure_model.dart';
 import 'package:soft/models/shift_model.dart';
 import 'package:soft/models/task_model.dart';
 import 'package:soft/models/user_model.dart';
@@ -310,20 +306,6 @@ class _TaskAssignmentVehicleEdit
                     IconButton(
                       onPressed: () {
                         setState(() {
-                          // if (excavator.length > 1) {
-                          //   ScaffoldMessenger.of(
-                          //     context,
-                          //   ).showSnackBar(
-                          //     SnackBar(
-                          //       content: Text(
-                          //         'Chỉ nên thêm phương tiện khi có một máy xúc.',
-                          //       ),
-                          //       backgroundColor:
-                          //           Colors.orange,
-                          //     ),
-                          //   );
-                          //   return;
-                          // }
                           vehicle.add("");
                         });
                       },
@@ -359,11 +341,34 @@ class _TaskAssignmentVehicleEdit
                         padding: const EdgeInsets.only(
                           bottom: 8.0,
                         ),
-                        child: VehicleButton(
-                          vehicle: vehicle[index],
-                          onSelectVehicle: (selected) {
-                            _updateVehicle(index, selected);
-                          },
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: VehicleButton(
+                                vehicle: vehicle[index],
+                                onSelectVehicle: (
+                                  selected,
+                                ) {
+                                  _updateVehicle(
+                                    index,
+                                    selected,
+                                  );
+                                },
+                              ),
+                            ),
+                            if (index > 0)
+                              IconButton(
+                                icon: Icon(
+                                  Icons.remove_circle,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    vehicle.removeAt(index);
+                                  });
+                                },
+                              ),
+                          ],
                         ),
                       );
                     })),
@@ -378,20 +383,6 @@ class _TaskAssignmentVehicleEdit
                     IconButton(
                       onPressed: () {
                         setState(() {
-                          // if (vehicle.length > 1) {
-                          //   ScaffoldMessenger.of(
-                          //     context,
-                          //   ).showSnackBar(
-                          //     SnackBar(
-                          //       content: Text(
-                          //         'Chỉ nên thêm máy xúc khi có một phương tiện.',
-                          //       ),
-                          //       backgroundColor:
-                          //           Colors.orange,
-                          //     ),
-                          //   );
-                          //   return;
-                          // }
                           excavator.add("");
                         });
                       },
@@ -427,14 +418,36 @@ class _TaskAssignmentVehicleEdit
                         padding: const EdgeInsets.only(
                           bottom: 8.0,
                         ),
-                        child: VehicleButton(
-                          vehicle: excavator[index],
-                          onSelectVehicle: (selected) {
-                            _updateExcavator(
-                              index,
-                              selected,
-                            );
-                          },
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: ExcavatorButton(
+                                vehicle: excavator[index],
+                                onSelectVehicle: (
+                                  selected,
+                                ) {
+                                  _updateExcavator(
+                                    index,
+                                    selected,
+                                  );
+                                },
+                              ),
+                            ),
+                            if (index > 0)
+                              IconButton(
+                                icon: Icon(
+                                  Icons.remove_circle,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    excavator.removeAt(
+                                      index,
+                                    );
+                                  });
+                                },
+                              ),
+                          ],
                         ),
                       );
                     })),
@@ -502,14 +515,34 @@ class _TaskAssignmentVehicleEdit
                         padding: const EdgeInsets.only(
                           bottom: 8.0,
                         ),
-                        child: LocationButton(
-                          location: dump[index],
-                          onSelectLocation: (selected) {
-                            _updateLocation(
-                              index,
-                              selected,
-                            );
-                          },
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: LocationButton(
+                                location: dump[index],
+                                onSelectLocation: (
+                                  selected,
+                                ) {
+                                  _updateLocation(
+                                    index,
+                                    selected,
+                                  );
+                                },
+                              ),
+                            ),
+                            if (index > 0)
+                              IconButton(
+                                icon: Icon(
+                                  Icons.remove_circle,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    dump.removeAt(index);
+                                  });
+                                },
+                              ),
+                          ],
                         ),
                       );
                     })),
@@ -559,14 +592,36 @@ class _TaskAssignmentVehicleEdit
                         padding: const EdgeInsets.only(
                           bottom: 8.0,
                         ),
-                        child: MaterialSelectButton(
-                          material: material[index],
-                          onSelectMaterial: (selected) {
-                            _updateMaterial(
-                              index,
-                              selected,
-                            );
-                          },
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: MaterialSelectButton(
+                                material: material[index],
+                                onSelectMaterial: (
+                                  selected,
+                                ) {
+                                  _updateMaterial(
+                                    index,
+                                    selected,
+                                  );
+                                },
+                              ),
+                            ),
+                            if (index > 0)
+                              IconButton(
+                                icon: Icon(
+                                  Icons.remove_circle,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    material.removeAt(
+                                      index,
+                                    );
+                                  });
+                                },
+                              ),
+                          ],
                         ),
                       );
                     })),

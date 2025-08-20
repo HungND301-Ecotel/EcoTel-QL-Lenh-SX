@@ -18,8 +18,10 @@ router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, n
             },
         });
         await newLocation.save();
+        req.logger.info(`🔥  Tạo thành công`);
         res.status(200).send({ status: 'success', message: "Tạo thành công" });
     } catch (err) {
+        req.logger.error("❌ Lỗi khi tạo", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -28,14 +30,16 @@ router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res,
     try {
         const { ids } = req.body;
         if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            req.logger.error("❌Vui lòng chọn bản ghi cần xóa");
             return res.status(400).send({ status: 'error', message: 'Vui lòng chọn bản ghi cần xóa' });
         }
 
         const result = await Location.deleteMany({ _id: { $in: ids } });
         if (result.deletedCount === 0) {
+            req.logger.error("❌ không tìm thấy bản ghi cần xóa");
             return res.status(200).send({ status: 'error', message: 'Không tìm thấy bản ghi để xóa' });
         }
-
+        req.logger.info(`🔥  Đã xóa ${result.deletedCount} bản ghi`);
         res.status(200).json({
             status: 'success',
             message: `Đã xóa ${result.deletedCount} bản ghi`
@@ -54,14 +58,16 @@ router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res,
         }, { new: true });
 
         if (!location) {
+            req.logger.error("❌ Sửa thất bại");
             return res.status(200).send({ status: 'error', message: 'Sửa thất bại ' });
         }
-
+        req.logger.info(`🔥  Sửa thành công`);
         res.status(200).json({
             status: 'success',
             message: 'Sửa thành công'
         });
     } catch (err) {
+        req.logger.error("❌ Lỗi khi sửa", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -74,8 +80,10 @@ router.get('/', verifyToken, async (req, res) => {
             query.name = regex;
         }
         const locations = await Location.find(query);
+        req.logger.info(`🔥 Load thành công`);
         res.status(200).send({ status: 'success', data: locations });
     } catch (err) {
+        req.logger.error("❌ Lỗi khi load", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -84,14 +92,18 @@ router.get('/:id', verifyToken, async (req, res, next) => {
     try {
         const location = await Location.findById(req.params.id)
         if (!location) {
+            req.logger.error("❌ Không tìm thấy vị trí");
             return res.status(200).send({ status: 'error', message: 'No location found with that ID' });
         }
+        req.logger.info(`🔥 Load thành công`);
 
         res.status(200).json({
             status: 'success',
-
+            data: location
         });
     } catch (err) {
+        req.logger.error("❌ Lỗi khi load", err);
+
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });

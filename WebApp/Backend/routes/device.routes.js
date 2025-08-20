@@ -47,7 +47,7 @@ router.get('/', verifyToken, async (req, res, next) => {
         const devices = await Device.find(query)
             .populate('department', 'name code')
             .populate('category')
-
+        req.logger.info(`🔥  Load phương tiện thành công`);
         res.status(200).json({
             status: 'success',
             results: devices.length,
@@ -55,6 +55,7 @@ router.get('/', verifyToken, async (req, res, next) => {
                 devices
         });
     } catch (err) {
+        req.logger.error("❌ Lỗi", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -76,7 +77,7 @@ router.get('/excavators/all', verifyToken, async (req, res, next) => {
 
         const devices = await Device.find(query).populate('category').populate('department', 'name code')
 
-
+        req.logger.info(`🔥  Load phương tiện thành công`);
         res.status(200).json({
             status: 'success',
             results: devices.length,
@@ -84,6 +85,7 @@ router.get('/excavators/all', verifyToken, async (req, res, next) => {
                 devices
         });
     } catch (err) {
+        req.logger.error("❌ Lỗi", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -112,7 +114,7 @@ router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, n
             },
             createdBy: req.user._id
         });
-
+        req.logger.info(`🔥  Tạo phương tiện thành công`);
         res.status(201).json({
             status: 'success',
             data:
@@ -120,6 +122,7 @@ router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, n
 
         });
     } catch (err) {
+        req.logger.error("❌ Lỗi", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -133,9 +136,10 @@ router.get('/:id', verifyToken, async (req, res, next) => {
             .populate('updatedBy', 'username fullName');
 
         if (!device) {
+            req.logger.error("❌ Không tìm thấy phương tiện");
             return res.status(200).send({ status: 'error', message: 'No device found with that ID' });
         }
-
+        req.logger.info(`🔥 Load phương tiện thành công`);
         res.status(200).json({
             status: 'success',
             data:
@@ -143,6 +147,7 @@ router.get('/:id', verifyToken, async (req, res, next) => {
 
         });
     } catch (err) {
+        req.logger.error("❌ Lỗi", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -166,9 +171,10 @@ router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res,
         )
 
         if (!device) {
+            req.logger.error("❌ không tìm thấy phương tiện");
             return res.status(404).json({ status: 'error', message: 'No device found with that ID' });
         }
-
+        req.logger.info(`🔥  Load phương tiện thành công`);
         res.status(200).json({
             status: 'success',
             data:
@@ -176,6 +182,7 @@ router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res,
 
         });
     } catch (err) {
+        req.logger.error("❌ Lỗi", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -184,19 +191,22 @@ router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res,
     try {
         const { ids } = req.body;
         if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            req.logger.error("❌ Chọn bản ghi cần xóa");
             return res.status(400).send({ status: 'error', message: 'Vui lòng chọn bản ghi cần xóa' });
         }
 
         const result = await Device.deleteMany({ _id: { $in: ids } });
         if (result.deletedCount === 0) {
+            req.logger.error("❌ không tìm thấy bản ghi cần xóa");
             return res.status(200).send({ status: 'error', message: 'Không tìm thấy bản ghi để xóa' });
         }
-
+        req.logger.info(`🔥  Đã xóa ${result.deletedCount} bản ghi`);
         res.status(200).json({
             status: 'success',
             message: `Đã xóa ${result.deletedCount} bản ghi`
         });
     } catch (err) {
+        req.logger.error("❌ Lỗi", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -256,11 +266,12 @@ router.get('/count/status', verifyToken, restrictTo('admin', 'manager', 'dispatc
                 organizations
             });
         }
-
+        req.logger.info(`🔥  Load thành công`);
         res.status(200).json({ status: 'success', data: data })
 
 
     } catch (err) {
+        req.logger.error("❌ Lỗi", err);
         res.status(500).json({ status: 'error', message: err.message })
     }
 })
@@ -283,6 +294,7 @@ const columnMapping = {
 router.post('/importFile', upload.single('file'), verifyToken, async (req, res) => {
     try {
         if (!req.file) {
+            req.logger.error("❌ Vui lòng chọn file");
             return res.status(400).json({ status: 'error', message: 'Vui lòng chọn file' });
         }
 
@@ -297,6 +309,7 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         const devicesToProcess = data.filter(row => row.code);
 
         if (devicesToProcess.length === 0) {
+            req.logger.error("❌ không tìm thấy dữ liệu hợp lệ");
             return res.status(400).json({ status: 'error', message: 'Không tìm thấy dữ liệu phương tiện hợp lệ trong file.' });
         }
 
@@ -363,7 +376,7 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         if (operations.length > 0) {
             bulkResult = await Device.bulkWrite(operations);
         }
-
+        req.logger.info(`🔥  Import thành công`);
         res.status(200).json({
             status: 'success',
             message: 'Import dữ liệu hoàn tất.',
@@ -377,7 +390,7 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         });
 
     } catch (error) {
-        console.error('Lỗi khi import file:', error);
+        req.logger.error("❌ Lỗi khi import file", error);
         res.status(500).json({
             status: 'error',
             message: 'Tải thất bại',
@@ -469,8 +482,9 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', 'attachment; filename=' + 'danh_sach_nguoi_dung.xlsx');
         res.send(buffer);
-
+        req.logger.info(`🔥  export file thành công`);
     } catch (err) {
+        req.logger.error("❌ Lỗi import file", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
     }
 });

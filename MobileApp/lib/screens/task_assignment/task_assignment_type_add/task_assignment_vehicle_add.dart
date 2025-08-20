@@ -311,6 +311,18 @@ class _TaskAssignmentVehicleAdd
                           ],
                         ),
                       ),
+                      if (i > 0)
+                        IconButton(
+                          onPressed: () {
+                            setState(() {
+                              userAndDevice.removeAt(i);
+                            });
+                          },
+                          icon: Icon(
+                            Icons.cancel,
+                            color: Colors.red,
+                          ),
+                        ),
                     ],
                   ),
                 Text(

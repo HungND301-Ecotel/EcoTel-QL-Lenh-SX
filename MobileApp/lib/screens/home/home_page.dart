@@ -2,11 +2,11 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart' as latlng;
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:soft/models/device_model.dart';
 import 'package:soft/models/location_model.dart';
-import 'package:soft/models/material_model.dart';
 import 'package:soft/providers/user_provider.dart';
 import 'package:soft/routes/app_routes.dart';
 import 'package:soft/routes/home__route.dart';
@@ -22,67 +22,57 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  GoogleMapController?
-  _mapController; //Biến lưu trữ điều khiển của bản đồ, dùng để thay đổi vị trí của camera khi di chuyển.
-  LatLng?
-  _currentPosition; //Biến lưu trữ vị trí hiện tại của người dùng (tọa độ latitude, longitude).
+  // Biến lưu trữ điều khiển của bản đồ
+  MapController _mapController = MapController();
+  // Vị trí hiện tại của người dùng
+  latlng.LatLng? _currentPosition;
   String? _currentAddress;
 
   @override
   void initState() {
     super.initState();
+    _mapController = MapController();
     _determinePosition();
-    _loadCustomIcon().then((_) {
-      // đảm bảo customIcon đã được load
-      if (_mapController != null) {
-        getAllDevice(); // nếu map đã sẵn sàng thì gọi
-        getAllLocation();
-      }
-    });
+    getAllDevice();
+    getAllLocation();
   }
 
-  // kiểm tr quyền
+  // Phương thức lấy vị trí và quyền
   Future<void> _determinePosition() async {
     LocationPermission permission;
 
-    // Kiểm tra quyền
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
     }
 
     if (permission == LocationPermission.deniedForever) {
-      return; // Không có quyền
+      return;
     }
 
-    // Lấy vị trí hiện tại
     final Position position =
         await Geolocator.getCurrentPosition();
-    final LatLng latLng = LatLng(
+    final latlng.LatLng latLng = latlng.LatLng(
       position.latitude,
       position.longitude,
     );
     final String address = await _getAddressFromLatLng(
       latLng,
     );
+
     if (!mounted) return;
     setState(() {
-      _currentPosition = LatLng(
+      _currentPosition = latlng.LatLng(
         position.latitude,
         position.longitude,
       );
       _currentAddress = address;
     });
-
-    // Di chuyển camera đến vị trí
-    _mapController?.animateCamera(
-      CameraUpdate.newLatLng(_currentPosition!),
-    );
   }
 
-  // lấy địa chỉ
+  // Lấy địa chỉ
   Future<String> _getAddressFromLatLng(
-    LatLng position,
+    latlng.LatLng position,
   ) async {
     try {
       List<Placemark> placemarks =
@@ -103,30 +93,13 @@ class _HomePageState extends State<HomePage> {
 
   final List<DeviceModel> devices = [];
   final List<LocationModel> locations = [];
-
-  Set<Marker> _deviceMarkers = {};
-  Set<Marker> _locationMarkers = {};
-
-  late BitmapDescriptor customIcon;
-
-  Future<void> _loadCustomIcon() async {
-    customIcon = await BitmapDescriptor.fromAssetImage(
-      const ImageConfiguration(size: Size(48, 48)),
-      'assets/device.png',
-    );
-  }
-
-
-  final DeviceService _deviceService = DeviceService();
-  final LocationService _locationService =
-      LocationService();
-
-  // phạm vi
+  List<Marker> _deviceMarkers = [];
+  List<Marker> _locationMarkers = [];
+  latlng.LatLng? _selectedPosition;
   double _radius = 0; // đơn vị: mét
-  Set<Circle> _circles = {};
-  // Thêm vị trí
-  LatLng? _selectedPosition;
-  void _addCurrentLocation() async {
+  List<CircleMarker> _circles = [];
+
+  void _addCurrentLocation() {
     if (_selectedPosition != null) {
       setState(() {
         _radius = 50;
@@ -139,23 +112,26 @@ class _HomePageState extends State<HomePage> {
   void _updateCircle() {
     if (_selectedPosition != null) {
       setState(() {
-        _circles = {
-          Circle(
-            circleId: CircleId("selected_area"),
-            center: _selectedPosition!,
+        _circles = [
+          CircleMarker(
+            point: _selectedPosition!,
+            color: Colors.blueAccent.withOpacity(0.2),
+            borderStrokeWidth: 2,
+            borderColor: Colors.blueAccent,
             radius: _radius, // mét
-            strokeWidth: 2,
-            strokeColor: Colors.blueAccent,
-            fillColor: Colors.blueAccent.withOpacity(0.2),
           ),
-        };
+        ];
       });
     }
   }
 
-  void getAllDevice() async {
-    var result = await _deviceService.getAlldevice();
+  final DeviceService _deviceService = DeviceService();
+  final LocationService _locationService =
+      LocationService();
 
+  void getAllDevice() async {
+    // ... logic lấy dữ liệu thiết bị
+    var result = await _deviceService.getAlldevice();
     if (!mounted) return;
     if (result['status'] == 'error') {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -170,21 +146,44 @@ class _HomePageState extends State<HomePage> {
           (data as List)
               .map((e) => DeviceModel.fromJson(e))
               .toList();
-      Set<Marker> markers =
+      List<Marker> markers =
           fetchedDevices.map((device) {
+            // Cần đảm bảo tọa độ được chuyển đổi đúng
             return Marker(
-              markerId: MarkerId(device.code),
-              position: LatLng(
+              point: latlng.LatLng(
                 device.coordinates!.coordinates[1],
                 device.coordinates!.coordinates[0],
               ),
-              infoWindow: InfoWindow(title: device.code),
-              icon: customIcon,
+              width:
+                  100, // Kích thước đủ lớn để chứa Icon và Text
+              height: 100,
+              child: Column(
+                mainAxisSize:
+                    MainAxisSize
+                        .min, // Đặt kích thước nhỏ nhất
+                children: [
+                  // Icon
+                  Icon(
+                    Icons.navigation,
+                    color: Colors.blue,
+                  ),
+                  // Text hiển thị tên
+                  Text(
+                    device
+                        .code, // Sử dụng thuộc tính 'code' của device để lấy tên
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
             );
-          }).toSet();
+          }).toList();
 
       setState(() {
-        devices.clear(); // Nếu cần làm sạch danh sách trước
+        devices.clear();
         devices.addAll(fetchedDevices);
         _deviceMarkers = markers;
       });
@@ -192,8 +191,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   void getAllLocation() async {
+    // ... logic lấy dữ liệu vị trí
     var result = await _locationService.getAllLocation();
-
     if (!mounted) return;
     if (result['status'] == 'error') {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -209,22 +208,39 @@ class _HomePageState extends State<HomePage> {
               .map((e) => LocationModel.fromJson(e))
               .toList();
 
-      Set<Marker> locationMarkers =
+      List<Marker> locationMarkers =
           fetchedLocations.map((location) {
             return Marker(
-              markerId: MarkerId(location.name),
-              position: LatLng(
+              point: latlng.LatLng(
                 location.coordinates!.coordinates[1],
                 location.coordinates!.coordinates[0],
               ),
-              infoWindow: InfoWindow(title: location.name),
-              icon: BitmapDescriptor.defaultMarker,
+              width:
+                  100, // Kích thước đủ lớn để chứa Icon và Text
+              height: 100,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.location_on,
+                    color: Colors.red,
+                  ),
+                  Text(
+                    location
+                        .name, // Sử dụng thuộc tính 'code' của device để lấy tên
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
             );
-          }).toSet();
+          }).toList();
 
       setState(() {
-        locations
-            .clear(); // Nếu cần làm sạch danh sách trước
+        locations.clear();
         locations.addAll(fetchedLocations);
         _locationMarkers = locationMarkers;
       });
@@ -282,7 +298,7 @@ class _HomePageState extends State<HomePage> {
               ).pushNamed(AppRoute.homeVehicleSelect);
               if (selectedVehicle != null &&
                   selectedVehicle is DeviceModel) {
-                final latLng = LatLng(
+                final latLng = latlng.LatLng(
                   selectedVehicle
                       .coordinates!
                       .coordinates[1],
@@ -295,9 +311,7 @@ class _HomePageState extends State<HomePage> {
                   _currentPosition = latLng;
                 });
 
-                _mapController?.animateCamera(
-                  CameraUpdate.newLatLngZoom(latLng, 17),
-                );
+                _mapController.move(latLng, 17.0);
 
                 // Optional: cập nhật địa chỉ hiển thị
                 final address = await _getAddressFromLatLng(
@@ -324,7 +338,7 @@ class _HomePageState extends State<HomePage> {
               ).pushNamed(AppRoute.locationSelect);
               if (selectedLocation != null &&
                   selectedLocation is LocationModel) {
-                final latLng = LatLng(
+                final latLng = latlng.LatLng(
                   selectedLocation
                       .coordinates!
                       .coordinates[1],
@@ -337,9 +351,7 @@ class _HomePageState extends State<HomePage> {
                   _currentPosition = latLng;
                 });
 
-                _mapController?.animateCamera(
-                  CameraUpdate.newLatLngZoom(latLng, 17),
-                );
+                _mapController.move(latLng, 17.0);
 
                 // Optional: cập nhật địa chỉ hiển thị
                 final address = await _getAddressFromLatLng(
@@ -451,30 +463,50 @@ class _HomePageState extends State<HomePage> {
               ? Center(child: CircularProgressIndicator())
               : Stack(
                 children: [
-                  GoogleMap(
-                    initialCameraPosition: CameraPosition(
-                      target: _currentPosition!,
-                      zoom: 16,
+                  FlutterMap(
+                    mapController: _mapController,
+                    options: MapOptions(
+                      initialCenter: _currentPosition!,
+                      initialZoom: 16.0,
+                      onMapReady: () async {
+                        if (_currentPosition != null) {
+                          _mapController.move(
+                            _currentPosition!,
+                            16,
+                          );
+                        } else {
+                          await _determinePosition(); // lấy vị trí rồi mới move
+                        }
+                      },
+                      onPositionChanged: (
+                        position,
+                        hasGesture,
+                      ) {
+                        _selectedPosition = position.center;
+                        _updateCircle();
+                      },
                     ),
-                    myLocationEnabled: true,
-                    myLocationButtonEnabled: true,
-                    onMapCreated:
-                        (controller) => {
-                          _mapController = controller,
-                          getAllDevice(),
-                          getAllLocation(),
-                        },
-                    onCameraMove: (
-                      CameraPosition position,
-                    ) {
-                      _selectedPosition = position.target;
-                      _updateCircle();
-                    },
-                    markers: {
-                      ..._deviceMarkers,
-                      ..._locationMarkers,
-                    },
-                    circles: _circles,
+                    children: [
+                      TileLayer(
+                        urlTemplate:
+                            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                        userAgentPackageName:
+                            'com.ecotel.ktv',
+                        tileProvider: NetworkTileProvider(
+                          headers: {
+                            'Cache-Control':
+                                'max-age=3600', // Cache trong 1 giờ
+                          },
+                        ),
+                      ),
+                      CircleLayer(circles: _circles),
+                      MarkerLayer(
+                        markers: [
+                          ..._deviceMarkers,
+                          ..._locationMarkers,
+                        ],
+                      ),
+                    ],
                   ),
                   Positioned(
                     top: 10,
@@ -487,7 +519,7 @@ class _HomePageState extends State<HomePage> {
                         borderRadius: BorderRadius.circular(
                           12,
                         ),
-                        boxShadow: [
+                        boxShadow: const [
                           BoxShadow(
                             color: Colors.black12,
                             blurRadius: 6,
@@ -498,20 +530,21 @@ class _HomePageState extends State<HomePage> {
                       child: Text(
                         _currentAddress ??
                             'Đang lấy địa chỉ...',
-                        style: TextStyle(fontSize: 14),
+                        style: const TextStyle(
+                          fontSize: 14,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),
-                  Align(
+                  const Align(
                     alignment: Alignment.center,
                     child: IgnorePointer(
-                      // để icon không chặn tương tác bản đồ
-                      child: Image.asset(
-                        'assets/plus_add.png',
-                        width: 40,
-                        height: 40,
+                      child: Icon(
+                        Icons.add_location_alt,
+                        color: Colors.blue,
+                        size: 40,
                       ),
                     ),
                   ),
@@ -519,11 +552,11 @@ class _HomePageState extends State<HomePage> {
                     top: 100,
                     right: 20,
                     child: FloatingActionButton(
-                      onPressed: () {
-                        _addCurrentLocation();
-                      },
+                      onPressed: _addCurrentLocation,
                       backgroundColor: Colors.white,
-                      child: Icon(Icons.add_location_alt),
+                      child: const Icon(
+                        Icons.add_location_alt,
+                      ),
                     ),
                   ),
                 ],

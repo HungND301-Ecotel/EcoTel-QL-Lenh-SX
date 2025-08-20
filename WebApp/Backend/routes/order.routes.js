@@ -5,15 +5,13 @@ const Order = require('../models/Order');
 const ShiftReport = require('../models/ShiftReport');
 const Notification = require('../models/Notification');
 
-
 const History = require('../models/History');
+const User = require('../models/User')
 
 
 
 const Device = require('../models/Device');
 const DeviceType = require('../models/DeviceType');
-
-
 
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 const { sendShiftNotification } = require('../utils/email');
@@ -22,27 +20,19 @@ const CheckIn = require('../models/CheckIn');
 
 router.get('/', verifyToken, async (req, res, next) => {
     try {
-        const user = req.user
+        const user = req.user;
         const query = {};
 
-        if (user?.role !== 'admin') {
-            query.createdBy = user._id
-        }
-
-        // Filter by employee
+        // Các bộ lọc chung
         if (req.query.employee) {
             query.assignedTo = req.query.employee;
         }
-
         if (req.query.status) {
             query.status = req.query.status;
         }
-
-        // Filter by device
         if (req.query.device) {
             query.device = { $in: Array.isArray(req.query.device) ? req.query.device : [req.query.device] };
         }
-
         if (req.query.startTime && req.query.endTime) {
             const endTime = new Date(req.query.endTime);
             endTime.setHours(23, 59, 59, 999);
@@ -51,54 +41,110 @@ router.get('/', verifyToken, async (req, res, next) => {
                 $lte: new Date(endTime)
             };
         } else if (req.query.startTime) {
-            query.workingDate = {
-                $gte: new Date(req.query.startTime)
-            };
+            query.workingDate = { $gte: new Date(req.query.startTime) };
         } else if (req.query.endTime) {
             const endTime = new Date(req.query.endTime);
             endTime.setHours(23, 59, 59, 999);
-            query.workingDate = {
-                $lte: new Date(endTime)
-            };
+            query.workingDate = { $lte: new Date(endTime) };
         }
 
-        const orders = await Order.find(query)
-            .populate('assignedTo', 'username fullName salaryCode')
-            .populate('job', 'name type content')
-            .populate('devicesToProduce.deviceType')
-            .populate('device', 'code')
-            .populate('excavator', 'code')
-            .populate('location', 'name')
-            .populate('material', 'name')
-            .populate('shift')
-            .populate({
-                path: "assistants",
-                select: "username fullName salaryCode",
-            })
-            .populate({
-                path: "shiftReport",
-                populate: [
-                    {
-                        path: "vehicleSummaries.vehicle",
-                        select: "code"
-                    },
-                ]
-            })
-            .populate('createdBy', 'username fullName salaryCode')
-            .populate('updatedBy', 'username fullName')
-            .sort('-createdAt')
+        let orders;
 
+        if (user?.role === 'manager' && user?.department) {
+            // Trường hợp người quản lý: sử dụng Aggregation Framework
+            orders = await Order.aggregate([
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'createdBy',
+                        foreignField: '_id',
+                        as: 'creatorDetails'
+                    }
+                },
+                {
+                    $unwind: '$creatorDetails'
+                },
+                {
+                    $match: {
+                        ...query, // Thêm các bộ lọc khác vào đây
+                        'creatorDetails.department': user.department._id
+                    }
+                },
+                {
+                    $sort: { createdAt: -1 }
+                }
+            ]);
 
+            // Bạn cần populate các trường sau khi aggregation
+            // Vì aggregation trả về dữ liệu dạng JSON, không phải Mongoose document
+            const orderIds = orders.map(order => order._id);
+            orders = await Order.find({ _id: { $in: orderIds } })
+                .populate('assignedTo', 'username fullName salaryCode department')
+                .populate('job', 'name type content')
+                .populate('devicesToProduce.deviceType')
+                .populate('device', 'code')
+                .populate('excavator', 'code')
+                .populate('location', 'name')
+                .populate('material', 'name')
+                .populate('shift')
+                .populate({
+                    path: "assistants",
+                    select: "username fullName salaryCode",
+                })
+                .populate({
+                    path: "shiftReport",
+                    populate: [
+                        {
+                            path: "vehicleSummaries.vehicle",
+                            select: "code"
+                        },
+                    ]
+                })
+                .populate('createdBy', 'username fullName salaryCode')
+                .populate('updatedBy', 'username fullName')
+                .sort('-createdAt')
+
+        } else {
+            // Trường hợp người dùng khác: sử dụng Mongoose find() thông thường
+            if (user?.role === 'dispatcher') {
+                query.createdBy = user._id;
+            }
+            orders = await Order.find(query)
+                .populate('assignedTo', 'username fullName salaryCode department')
+                .populate('job', 'name type content')
+                .populate('devicesToProduce.deviceType')
+                .populate('device', 'code')
+                .populate('excavator', 'code')
+                .populate('location', 'name')
+                .populate('material', 'name')
+                .populate('shift')
+                .populate({
+                    path: "assistants",
+                    select: "username fullName salaryCode",
+                })
+                .populate({
+                    path: "shiftReport",
+                    populate: [
+                        {
+                            path: "vehicleSummaries.vehicle",
+                            select: "code"
+                        },
+                    ]
+                })
+                .populate('createdBy', 'username fullName salaryCode')
+                .populate('updatedBy', 'username fullName')
+                .sort('-createdAt')
+        }
+
+        req.logger.info(`✅ Load lệnh sản xuất thành công`);
         res.status(200).json({
             status: 'success',
             results: orders.length,
-            data:
-                orders
-
+            data: orders
         });
     } catch (err) {
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
-
+        req.logger.error("❌ Lỗi", err);
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
     }
 });
 router.post('/checkExist', verifyToken, async (req, res, next) => {
@@ -111,6 +157,7 @@ router.post('/checkExist', verifyToken, async (req, res, next) => {
         const exitOrder = await Order.findOne({ assignedTo: assignedTo, shift: shift, workingDate: workingDate })
             .populate('assignedTo', 'fullName salaryCode')
 
+        req.logger.info(`✅ Kiểm tra lệnh thành công`);
 
         res.status(200).json({
             status: 'success',
@@ -119,6 +166,7 @@ router.post('/checkExist', verifyToken, async (req, res, next) => {
 
         });
     } catch (err) {
+        req.logger.error("❌ Lỗi", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
 
     }
@@ -143,34 +191,40 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
 
 
         if (devicesToProduce?.length > 0) {
+            const user = await User.findById(assignedTo)
+            if (!user) {
+                req.logger.warn(`✅ Không tìm thấy người dùng công với ID: ${assignedTo}`);
+                return res.status(404).json({ status: 'error', message: 'Không tìm thấy người dùng' })
+            }
             for (const item of devicesToProduce) {
                 const { deviceType, quantity } = item;
 
                 try {
-                    // Lấy tất cả thiết bị theo loại và phòng ban
                     const type = await DeviceType.findById(deviceType);
-                    const devices = await Device.find({ department: department, category: deviceType });
 
-                    // Nếu không tìm thấy bất kỳ thiết bị nào theo loại đó
+                    const devices = await Device.find({ department: user.department, category: deviceType });
+
                     if (!devices || devices.length === 0) {
+                        req.logger.warn(`    - Cảnh báo: Loại phương tiện ${type?.name} không tồn tại trong đơn vị ${department}.`);
                         return res.status(400).send({
                             status: 'error',
                             message: `Loại phương tiện ${type?.name} không tồn tại trong đơn vị`
                         });
                     }
 
-                    // Lọc ra những thiết bị đang sẵn sàng
                     const deviceActive = devices.filter(d => d.status === "available");
 
-                    if (quantity > deviceActive.length) {
+                    if (quantity > devices.length) {
+                        req.logger.warn(`    - Cảnh báo: Số lượng yêu cầu (${quantity}) vượt quá khả dụng (${deviceActive.length}) cho ${type?.name}.`);
                         return res.status(400).send({
                             status: 'error',
                             message: `Số lượng yêu cầu (${quantity}) vượt quá số lượng phương tiện khả dụng (${deviceActive.length}) cho loại ${type?.name}`
                         });
                     }
 
-                    console.log(`✅ Đủ số lượng cho loại phương tiện ${type?.name}`);
+                    req.logger.info(`    - Kiểm tra thành công: Đủ số lượng cho ${type?.name}.`);
                 } catch (err) {
+                    req.logger.error("❌ Lỗi khi kiểm tra loại phương tiện.", err);
                     return res.status(500).send({
                         status: 'error',
                         message: `Lỗi khi kiểm tra loại phương tiện: ${err.message}`
@@ -178,9 +232,6 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
                 }
             }
         }
-
-
-
 
         // Generate order number
         const date = new Date();
@@ -205,7 +256,9 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
             excavator, location, material, workContent, note,
             createdBy: req.user._id
         });
+        req.logger.info(`✅ Tạo lệnh thành công với ID: ${order._id}`);
 
+        req.logger.info("🔔 Gửi thông báo đến người dùng.");
         await Notification.createNotification({
             title: "Lệnh mới",
             message: "Tạo lệnh mới",
@@ -213,6 +266,7 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
             recipient: assignedTo,
             sender: req.userId
         });
+        req.logger.info(`✅ Gửi thông báo thành công cho người dùng ${assignedTo}`);
 
         res.status(201).json({
             status: 'success',
@@ -221,43 +275,73 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
                 order
 
         });
+        req.logger.info("✨ Kết thúc xử lý request thành công.");
     } catch (err) {
+        req.logger.error("❌ Lỗi", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        req.logger.error("🚨 Kết thúc xử lý request với lỗi.");
 
     }
 });
 
 router.put('/:id', verifyToken, async (req, res, next) => {
     try {
-        const body = req.body
-        const order = await Order.findById(req.params.id).populate('shiftReport');
+        const { status, ...body } = req.body;
+        const { id } = req.params;
+
+        // 1. Lấy đơn hàng hiện tại để kiểm tra
+        const order = await Order.findById(id).lean();
 
         if (!order) {
-            return res.status(404).send({ status: 'error', message: 'No order found with that ID' });
+            req.logger.warn("⚠️ Lỗi 404 - Không tìm thấy lệnh với ID này.");
+            return res.status(404).send({ status: 'error', message: 'Không tìm thấy lệnh với ID này.' });
         }
 
-        if (req.body.status === "in_progress") {
-            body.startTime = new Date()
+        // 2. Chuẩn bị đối tượng cập nhật
+        let updateObject = { ...body, updatedBy: req.user._id };
+
+        // 3. Xử lý logic trạng thái
+        switch (status) {
+            case "in_progress":
+                if (order.status !== "in_progress") {
+                    updateObject.startTime = new Date();
+                    updateObject.resumeTime = new Date();
+                } else {
+                    updateObject.resumeTime = new Date();
+                }
+                updateObject.status = status;
+                break;
+
+            case "completed":
+                updateObject.endTime = new Date();
+                updateObject.status = status;
+                if (order.device && order.device.length > 0) {
+                    const deviceIds = order.device;
+                    await Device.updateMany({ _id: { $in: deviceIds } }, { status: "available" });
+                }
+                break;
+
+            case "cancel":
+            case "warning":
+                updateObject.status = status;
+                if (order.device && order.device.length > 0) {
+                    const deviceIds = order.device;
+                    req.logger.info(`    - Giải phóng ${deviceIds.length} phương tiện: ${deviceIds.join(', ')}`);
+                    await Device.updateMany({ _id: { $in: deviceIds } }, { status: "available" });
+                }
+                break;
+            default:
+                updateObject.status = status;
+                break;
         }
-        if (req.body.status === "completed") {
-            body.endTime = new Date()
-        }
-        // Update order
+
+        // 4. Thực hiện cập nhật
         const updatedOrder = await Order.findByIdAndUpdate(
-            req.params.id,
-            {
-                ...body,
-                resumeTime: req.body.status === "in_progress" ? new Date() : order.resumeTime,
-                updatedBy: req.user._id
-            },
-            {
-                new: true,
-            }
+            id,
+            updateObject,
+            { new: true }
         )
-            .populate({
-                path: "assignedTo",
-                select: "_id fullName phone salaryCode",
-            })
+            .populate({ path: "assignedTo", select: "_id fullName phone salaryCode" })
             .populate('job', 'name type content')
             .populate('device', 'code')
             .populate('excavator', 'code')
@@ -265,127 +349,124 @@ router.put('/:id', verifyToken, async (req, res, next) => {
             .populate('location', 'name')
             .populate('material', 'name')
             .populate('shift')
-            .populate({
-                path: "assistants",
-                select: "username fullName salaryCode",
-            })
+            .populate({ path: "assistants", select: "username fullName salaryCode" })
             .populate({
                 path: "shiftReport",
-                populate: [
-                    {
-                        path: "vehicleSummaries.vehicle",
-                        select: "code"
-                    },
-                ]
+                populate: [{ path: "vehicleSummaries.vehicle", select: "code" }]
             })
-            .populate({
-                path: "createdBy",
-                select: "_id fullName phone salaryCode",
-
-            })
+            .populate({ path: "createdBy", select: "_id fullName phone salaryCode" })
             .sort('-createdAt');
 
-
-
-        const notification = await Notification.createNotification({
-            title: "Trạng thái lệnh",
-            message: updatedOrder.status === "warning" ? "Báo lệnh lỗi" : "Chỉnh sửa lệnh",
-            type: "order",
-            recipient: req.userId.toString() === updatedOrder.assignedTo?._id.toString() ? updatedOrder.createdBy._id : updatedOrder.assignedTo._id,
-            sender: req.userId
-        });
-
-
-
-        if (updatedOrder.status === "warning" || updatedOrder.status === "cancel" || updatedOrder.status === "completed") {
-
-            if (order && order.device && order.device.length > 0) {
-                const lastVehicle = order.device[order.device.length - 1];
-                await Device.findByIdAndUpdate(lastVehicle, { status: "available" }, { new: true });
-            }
+        // 5. Tạo lịch sử và thông báo (chỉ khi có thay đổi trạng thái cần ghi nhận)
+        if (order.status !== updatedOrder.status) {
+            await Notification.createNotification({
+                title: "Trạng thái lệnh",
+                message: updatedOrder.status === "warning" ? "Báo lệnh lỗi" : "Chỉnh sửa lệnh",
+                type: "order",
+                recipient: req.userId.toString() === updatedOrder.assignedTo?._id.toString() ? updatedOrder.createdBy._id : updatedOrder.assignedTo._id,
+                sender: req.userId
+            });
 
             const snapshot = updatedOrder.toObject();
-
-            // Gán endTime bằng resumeTime
-            snapshot.endTime = updatedOrder.updatedAt;
-            snapshot.startTime = updatedOrder.resumeTime;
             const newHistory = new History({
                 entity: updatedOrder._id,
                 changedBy: req.userId,
                 snapshot: snapshot
-            })
+            });
             await newHistory.save();
-
+            req.logger.info(`    - Lịch sử đã được ghi lại.`);
+        } else {
+            req.logger.info("ℹ️ Trạng thái lệnh không thay đổi. Bỏ qua việc tạo thông báo và lịch sử.");
         }
 
-
+        // 6. Gửi phản hồi
         res.status(200).json({
             status: 'success',
             message: 'Sửa thành công',
-            data:
-                updatedOrder
-
+            data: updatedOrder
         });
+        req.logger.info("✨ Kết thúc xử lý request thành công.");
+
     } catch (err) {
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        req.logger.error("❌ Lỗi khi cập nhật lệnh", err);
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
     }
 });
 router.delete('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
         const { ids } = req.body;
+        req.logger.info(`🔍 Dữ liệu yêu cầu: ids = ${JSON.stringify(ids)}`);
+
         if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            req.logger.warn("⚠️ Lỗi 400 - Vui lòng chọn bản ghi cần xóa.");
             return res.status(400).send({ status: 'error', message: 'Vui lòng chọn bản ghi cần xóa' });
         }
 
-        // Lấy danh sách order có trong ids
-        const orders = await Order.find({ _id: { $in: ids } }).populate('shiftReport');
+        // Cải thiện logic: Lấy ID của shiftReport và xóa cùng lúc
+        req.logger.info("🔄 Tìm kiếm các ShiftReport liên quan...");
+        const shiftReportsToDelete = await Order.find({ _id: { $in: ids }, shiftReport: { $exists: true } }).select('shiftReport').lean();
+        const shiftReportIds = shiftReportsToDelete.map(o => o.shiftReport);
+        req.logger.info(`✅ Tìm thấy ${shiftReportIds.length} ShiftReport liên quan.`);
 
-        // Lấy tất cả ID của shiftReport
-        const shiftReportIds = orders
-            .filter(o => o.shiftReport)
-            .map(o => o.shiftReport._id);
-
-        // Xóa tất cả ShiftReport liên quan
         if (shiftReportIds.length > 0) {
+            req.logger.info("🔄 Bắt đầu xóa các ShiftReport liên quan.");
             await ShiftReport.deleteMany({ _id: { $in: shiftReportIds } });
+            req.logger.info("✅ Đã xóa ShiftReport thành công.");
         }
-        // Xóa các order
+
+        // Xóa các order và lấy lại để gửi thông báo
+        const ordersToDelete = await Order.find({ _id: { $in: ids } }).select('assignedTo').lean();
         const result = await Order.deleteMany({ _id: { $in: ids } });
+
         if (result.deletedCount === 0) {
+            req.logger.warn("⚠️ Không tìm thấy bản ghi để xóa.");
             return res.status(200).send({ status: 'error', message: 'Không tìm thấy bản ghi để xóa' });
         }
 
+        req.logger.info(`✅ Đã xóa thành công ${result.deletedCount} bản ghi.`);
 
         // Gửi thông báo cho từng người phụ trách
-        for (const order of orders) {
-            await Notification.createNotification({
+        // Sử dụng Promise.all để gửi thông báo song song
+        req.logger.info("🔔 Bắt đầu gửi thông báo.");
+        const notificationPromises = ordersToDelete.map(order => {
+            return Notification.createNotification({
                 title: "Xóa lệnh",
                 message: "Xóa lệnh",
                 type: "order",
                 recipient: order.assignedTo,
                 sender: req.userId
             });
-        }
+        });
+        await Promise.all(notificationPromises);
+        req.logger.info("✅ Đã gửi tất cả thông báo thành công.");
 
         res.status(200).json({
             status: 'success',
             message: `Đã xóa ${result.deletedCount} bản ghi`
         });
+        req.logger.info("✨ Kết thúc xử lý request thành công.");
 
     } catch (err) {
+        req.logger.error("❌ Lỗi khi xóa nhiều bản ghi", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
 
 router.delete('/:id', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
-        const order = await Order.findByIdAndDelete(req.params.id).populate('shiftReport')
+
+        const order = await Order.findByIdAndDelete(req.params.id).populate('shiftReport');
+
         if (!order) {
-            return res.status(500).send({ status: 'success', message: 'Xóa thất bại' });
+            req.logger.warn("⚠️ Lỗi 404 - Không tìm thấy lệnh để xóa.");
+            return res.status(404).send({ status: 'error', message: 'Không tìm thấy bản ghi để xóa' });
         }
+
         if (order.shiftReport) {
-            await ShiftReport.findByIdAndDelete(order.shiftReport._id)
+            await ShiftReport.findByIdAndDelete(order.shiftReport._id);
+            req.logger.info("✅ Đã xóa ShiftReport thành công.");
         }
+
         await Notification.createNotification({
             title: "Xóa lệnh",
             message: "Xóa lệnh",
@@ -393,93 +474,87 @@ router.delete('/:id', verifyToken, restrictTo('admin', 'dispatcher', 'manager'),
             recipient: order.assignedTo,
             sender: req.userId
         });
+        req.logger.info("✅ Thông báo đã được gửi.");
+
         res.status(200).send({ status: 'success', message: 'Xóa thành công' });
 
     } catch (err) {
+        req.logger.error("❌ Lỗi khi xóa một bản ghi", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
+
+const orderPopulateOptions = [
+    {
+        path: "assignedTo",
+        select: "username fullName phone salaryCode",
+    },
+    { path: 'job', select: 'name type content' },
+    { path: 'devicesToProduce.deviceType' },
+    { path: 'device', select: 'code' },
+    { path: 'excavator', select: 'code' },
+    { path: 'location', select: 'name' },
+    { path: 'material', select: 'name' },
+    { path: 'shift' },
+    {
+        path: "assistants",
+        select: "username fullName salaryCode",
+    },
+    {
+        path: "shiftReport",
+        populate: [
+            { path: "vehicleSummaries.vehicle", select: "code" }
+        ]
+    },
+    {
+        path: "createdBy",
+        select: "username fullName phone salaryCode",
+    }
+];
 router.get('/user', verifyToken, async (req, res, next) => {
     try {
-        const query = {
-            assignedTo: req.user._id
-        }
+        const query = { assignedTo: req.user._id };
+
         if (req.query.status) {
-            query.status = req.query.status
+            query.status = req.query.status;
         } else {
-            query.status = { $ne: "cancel" }
+            query.status = { $ne: "cancel" };
         }
+
+        const now = new Date()
+        now.setUTCHours(0, 0, 0, 0); // Sets the time to the very last millisecond of the day
+
+        query.workingDate = { $lte: now };
         const orders = await Order.find(query)
             .sort('-createdAt')
-            .populate({
-                path: "assignedTo",
-                select: "username fullName phone salaryCode",
-            })
-            .populate('job', 'name type content')
-            .populate('devicesToProduce.deviceType')
-            .populate('device', 'code')
-            .populate('excavator', 'code')
-            .populate('location', 'name')
-            .populate('material', 'name')
-            .populate('shift')
-            .populate({
-                path: "assistants",
-                select: "username fullName salaryCode",
-            })
-            .populate({
-                path: "shiftReport",
-                populate: [
-                    {
-                        path: "vehicleSummaries.vehicle",
-                        select: "code"
-                    }
-                ]
-            })
-            .populate({
-                path: "createdBy",
-                select: "username fullName phone salaryCode",
-            })
+            .populate(orderPopulateOptions); // Sử dụng biến chung
+
+        req.logger.info(`✅ Đã tìm thấy ${orders.length} lệnh.`);
         res.status(200).send({ status: 'success', data: orders });
+
     } catch (err) {
+        req.logger.error("❌ Lỗi khi lấy danh sách lệnh", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
+
+
 
 router.get('/:id', verifyToken, async (req, res, next) => {
     try {
-        const orders = await Order.findById(req.params.id)
-            .populate({
-                path: "assignedTo",
-                select: "username fullName phone salaryCode",
-            })
-            .populate('job', 'name type content')
-            .populate('devicesToProduce.deviceType')
-            .populate('device', 'code')
-            .populate('excavator', 'code')
-            .populate('location', 'name')
-            .populate('material', 'name')
-            .populate('shift')
-            .populate({
-                path: "assistants",
-                select: "username fullName salaryCode",
-            })
-            .populate({
-                path: "shiftReport",
-                populate: [
-                    {
-                        path: "vehicleSummaries.vehicle",
-                        select: "code"
-                    },
-                ]
-            })
-            .populate({
-                path: "createdBy",
-                select: "fullName phone salaryCode",
-            })
+        const order = await Order.findById(req.params.id)
+            .populate(orderPopulateOptions); // Sử dụng biến chung
 
-        console.log(orders)
-        res.status(200).send({ status: 'success', data: orders });
+        if (!order) {
+            req.logger.warn("⚠️ Lỗi 404 - Không tìm thấy lệnh.");
+            return res.status(404).send({ status: 'error', message: 'Không tìm thấy lệnh với ID này.' });
+        }
+
+        req.logger.info("✅ Đã tìm thấy chi tiết lệnh.");
+        res.status(200).send({ status: 'success', data: order });
+
     } catch (err) {
+        req.logger.error("❌ Lỗi khi lấy chi tiết lệnh", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -567,6 +642,7 @@ router.post('/scanWork', verifyToken, async (req, res, next) => {
         });
 
     } catch (err) {
+        req.logger.error("❌ Lỗi", err);
         res.status(500).send({ status: 'error', message: err.message });
     }
 });
@@ -639,6 +715,7 @@ router.post('/checkin', verifyToken, async (req, res, next) => {
         });
 
     } catch (err) {
+        req.logger.error("❌ Lỗi", err);
         res.status(500).send({ status: 'error', message: err.message });
     }
 });

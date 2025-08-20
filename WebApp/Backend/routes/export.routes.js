@@ -16,6 +16,7 @@ router.post('/order/bulk', verifyToken, restrictTo('admin', 'dispatcher', 'manag
         const { ids } = req.body; // mảng entity id
 
         if (!Array.isArray(ids) || ids.length === 0) {
+            req.logger.error("❌ Chọn bản ghi tải xuống");
             return res.status(400).send({ status: 'error', message: 'Chọn bản ghi cần tải xuống' });
         }
 
@@ -334,7 +335,7 @@ router.post('/order/bulk', verifyToken, restrictTo('admin', 'dispatcher', 'manag
             worksheet.mergeCells(`I${fuelEndRow + 2}:L${fuelEndRow + 2}`);
             worksheet.getCell(`I${fuelEndRow + 2}`).value = '';
 
-            const deviceRow = order.device.length
+            const deviceRow = order.device?.length || []
             worksheet.mergeCells(`B${totalRow + 7 + deviceRow}:D${totalRow + 7 + deviceRow}`)
             worksheet.getCell(`B${totalRow + 7 + deviceRow}`).value = 'NGƯỜI NHẬN LỆNH';
             worksheet.getCell(`B${totalRow + 7 + deviceRow}`).font = { bold: true };
@@ -381,9 +382,11 @@ router.post('/order/bulk', verifyToken, restrictTo('admin', 'dispatcher', 'manag
             "attachment; filename*=UTF-8''*.xlsx"
         );     // Gửi buffer về client
         res.send(buffer);
+        req.logger.info(`✅ Export excel thành công`);
 
 
     } catch (err) {
+        req.logger.error("❌ Lỗi khi export", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -440,6 +443,7 @@ router.post('/vehicleShiftReport/view', verifyToken, restrictTo('admin', 'dispat
         });
         res.status(200).send({ status: 'success', data: formattedData })
     } catch (err) {
+        req.logger.error("❌ Lỗi khi load", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 })
@@ -559,9 +563,10 @@ router.post('/vehicleShiftReport', verifyToken, restrictTo('admin', 'dispatcher'
             "attachment; filename*=UTF-8''*.xlsx"
         );   // Gửi buffer về client
         res.send(buffer);
-
+        req.logger.info(`✅ Export excel thành công`);
 
     } catch (err) {
+        req.logger.error("❌ Lỗi khi export", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -617,7 +622,7 @@ router.post('/carReport/view', verifyToken, restrictTo('admin', 'dispatcher', 'm
                 STT: index++,
                 fullName: order.assignedTo?.fullName || '',
                 salaryCode: order.assignedTo?.salaryCode || '',
-                code: order.device.map(item => item?.code) || [],
+                code: order.device?.map(item => item?.code) || [],
                 department: order.assignedTo?.department?.name || '',
                 excavator: reports.map(item => item?.excavator?.code) || [],
                 toLocation: reports.map(item => item?.toLocation?.name) || [],
@@ -632,6 +637,7 @@ router.post('/carReport/view', verifyToken, restrictTo('admin', 'dispatcher', 'm
 
         res.status(200).send({ status: 'success', data: results })
     } catch (err) {
+        req.logger.error("❌ Lỗi khi load", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 })
@@ -841,9 +847,10 @@ router.post('/carReport', verifyToken, restrictTo('admin', 'dispatcher', 'manage
             "attachment; filename*=UTF-8''*.xlsx"
         );    // Gửi buffer về client
         res.send(buffer);
-
+        req.logger.info(`✅ Export excel thành công`);
 
     } catch (err) {
+        req.logger.error("❌ Lỗi khi export", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -901,7 +908,7 @@ router.post('/excavatorTripReport/view', verifyToken, restrictTo('admin', 'dispa
                 fullName: order?.assignedTo?.fullName,
                 salaryCode: order?.assignedTo?.salaryCode,
                 department: order?.assignedTo?.department?.name,
-                code: order.device.map(item => item.code) || '',
+                code: order.device?.map(item => item.code) || '',
                 quantity: reports.map(item => item.quantity) || '',
             });
         }
@@ -1040,6 +1047,7 @@ router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher
             "attachment; filename*=UTF-8''*.xlsx"
         );   // Gửi buffer về client
         res.send(buffer);
+        req.logger.info(`✅ Export excel thành công`);
 
     } catch (err) {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
@@ -1108,7 +1116,7 @@ router.post('/carTripReport/view', verifyToken, restrictTo('admin', 'dispatcher'
                 salaryCode: order?.assignedTo?.salaryCode,
                 department: order?.assignedTo?.department?.name,
                 shift: `${order?.shiftReport._id}`,
-                code: order.device.map(item => item.code) || '',
+                code: order.device?.map(item => item.code) || '',
                 material: reports.map(item => item.material?.name) || '',
                 tripCount: reports.map(item => item.quantity) || '',
             });
@@ -1116,6 +1124,7 @@ router.post('/carTripReport/view', verifyToken, restrictTo('admin', 'dispatcher'
 
         res.status(200).send({ status: 'success', data: result })
     } catch (err) {
+        req.logger.error("❌ Lỗi khi load", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 })
@@ -1182,7 +1191,7 @@ router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
                         salaryCode: order?.assignedTo?.salaryCode,
                         department: order?.assignedTo?.department?.name,
                         shift: `${order?.shiftReport._id}`,
-                        code: order.device.map(item => item.code) || [],
+                        code: order.device?.map(item => item.code) || [],
                         material: reports.map(item => item.material?.name) || [],
                         tripCount: reports.map(item => item.quantity) || [],
                     });
@@ -1273,8 +1282,10 @@ router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
             "attachment; filename*=UTF-8''*.xlsx"
         );   // Gửi buffer về client
         res.send(buffer);
+        req.logger.info(`✅ Export excel thành công`);
 
     } catch (err) {
+        req.logger.error("❌ Lỗi khi export", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 })
@@ -1345,6 +1356,7 @@ router.post('/productReport/view', verifyToken, restrictTo('admin', 'dispatcher'
 
         res.status(200).send({ status: 'success', data: formattedData })
     } catch (err) {
+        req.logger.error("❌ Lỗi khi load", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 })
@@ -1505,6 +1517,7 @@ router.post('/productReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
         res.send(buffer);
 
     } catch (err) {
+        req.logger.error("❌ Lỗi khi export", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 })
@@ -1546,6 +1559,7 @@ router.post('/worklog/view', verifyToken, restrictTo('admin', 'dispatcher', 'man
 
         res.status(200).send({ status: 'success', data: formattedData })
     } catch (err) {
+        req.logger.error("❌ Lỗi khi load", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 })
@@ -1695,8 +1709,10 @@ router.post('/worklog', verifyToken, restrictTo('admin', 'dispatcher', 'manager'
             "attachment; filename*=UTF-8''*.xlsx"
         );   // Gửi buffer về client
         res.send(buffer);
+        req.logger.info(`✅ Export excel thành công`);
 
     } catch (err) {
+        req.logger.error("❌ Lỗi khi export", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 })
@@ -1740,6 +1756,7 @@ router.post('/meal_request/view', verifyToken, restrictTo('admin', 'dispatcher',
 
         res.status(200).send({ status: 'success', data: formattedData })
     } catch (err) {
+        req.logger.error("❌ Lỗi khi load", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 })
@@ -1887,8 +1904,10 @@ router.post('/meal_request', verifyToken, restrictTo('admin', 'dispatcher', 'man
             "attachment; filename*=UTF-8''*.xlsx"
         );   // Gửi buffer về client
         res.send(buffer);
+        req.logger.info(`✅ Export excel thành công`);
 
     } catch (err) {
+        req.logger.error("❌ Lỗi khi export", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 })
@@ -2106,9 +2125,11 @@ router.post('/assignmentTo', verifyToken, restrictTo('admin', 'dispatcher', 'man
             "attachment; filename*=UTF-8''*.xlsx"
         );   // Gửi buffer về client
         res.send(buffer);
+        req.logger.info(`✅ Export excel thành công`);
     }
     catch (err) {
-
+        req.logger.error("❌ Lỗi khi export", err);
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 })
 router.post('/assignmentManager', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
@@ -2286,8 +2307,12 @@ router.post('/assignmentManager', verifyToken, restrictTo('admin', 'dispatcher',
             "attachment; filename*=UTF-8''*.xlsx"
         );   // Gửi buffer về client
         res.send(buffer);
+        req.logger.info(`✅ Export excel thành công`);
+
     }
     catch (err) {
+        req.logger.error("❌ Lỗi khi export", err);
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
 
     }
 })

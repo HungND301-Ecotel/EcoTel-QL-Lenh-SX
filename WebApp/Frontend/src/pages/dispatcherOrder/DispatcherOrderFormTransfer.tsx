@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FieldArray, FormikProvider, getIn, useFormik } from 'formik';
 import * as yup from 'yup';
 import {
@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/api.config';
-import { Order, Device, Job, Location, Material, DeviceType, Shift } from '../../types';
+import { Order, Device, Job, Location, Material, DeviceType, Shift, Department } from '../../types';
 import { DatePicker, DesktopTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
@@ -57,10 +57,23 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
     onCancel,
 }) => {
     const queryClient = useQueryClient();
+    const [department, setDepartment] = useState("")
+
+    useEffect(() => {
+        if (initialValues?.assignedTo?.department) {
+            setDepartment(initialValues.assignedTo.department);
+        }
+    }, [initialValues])
+
+    const { data: departments = [] } = useQuery({
+        queryKey: ['departments'],
+        queryFn: () => api.get('/departments').then(res => res.data.data),
+    });
 
     const { data: users = [] } = useQuery({
-        queryKey: ['users'],
-        queryFn: () => api.get('/users').then(res => res.data.data),
+        queryKey: ['users', department],
+        queryFn: () => api.get(`/users?department=${department}`).then(res => res.data.data),
+        enabled: !!department,
     });
     const { data: shifts = [] } = useQuery({
         queryKey: ['shifts'],
@@ -112,7 +125,7 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
             shiftHour: initialValues.shiftHour || '',
             workContent: initialValues.workContent || '',
             status: initialValues.status,
-            note: initialValues?.shiftReport?.handoverNotes || ''
+            note: initialValues?.shiftReport?.handoverNotes || '',
         },
         enableReinitialize: true, // Để cập nhật lại giá trị khi initialValues thay đổi
         validationSchema,
@@ -127,7 +140,8 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
                 shiftHour: values.shiftHour,
                 workContent: values.workContent,
                 status: "pending",
-                note: values.note
+                note: values.note,
+                department: department,
             };
             const duplicates = await
                 api.post(`/orders/checkExist`, {

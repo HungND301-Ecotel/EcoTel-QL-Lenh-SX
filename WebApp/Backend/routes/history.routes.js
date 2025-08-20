@@ -14,6 +14,7 @@ router.post('/', verifyToken, async (req, res, next) => {
         await newHistory.save();
         res.status(200).send({ status: 'success', message: "Tạo thành công" });
     } catch (err) {
+        req.logger.error("❌ Lỗi khi tạo", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
@@ -27,6 +28,7 @@ router.post('/bulk', verifyToken, async (req, res) => {
 
         res.status(200).send({ status: 'success', data: historys });
     } catch (err) {
+        req.logger.error("❌ Lỗi khi load", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
     }
 });

@@ -15,55 +15,52 @@ const logger = winston.createLogger({
     format: logFormat,
     defaultMeta: { service: 'production-order-system' },
     transports: [
-        // Write all logs with level 'error' and below to 'error.log'
+        // Write error logs to file
         new winston.transports.File({
             filename: path.join('logs', 'error.log'),
             level: 'error',
             maxsize: 5242880, // 5MB
             maxFiles: 5,
         }),
-        // Write all logs with level 'info' and below to 'combined.log'
+        // Write all logs to file
         new winston.transports.File({
             filename: path.join('logs', 'combined.log'),
             maxsize: 5242880, // 5MB
             maxFiles: 5,
         }),
+        // ✅ Always log to stdout (console)
+        new winston.transports.Console({
+            format: winston.format.combine(
+                winston.format.colorize({ all: true }),
+                winston.format.printf(({ level, message, timestamp, stack, ...meta }) => {
+                    return `${timestamp} [${level}] ${message} ${stack ? `\n${stack}` : ''} ${Object.keys(meta).length ? JSON.stringify(meta) : ''}`;
+                })
+            ),
+        }),
     ],
 });
 
-// If we're not in production, log to the console with custom format
-if (process.env.NODE_ENV !== 'production') {
-    logger.add(new winston.transports.Console({
-        format: winston.format.combine(
-            winston.format.colorize(),
-            winston.format.simple()
-        ),
-    }));
-}
-
 // Create a stream object for Morgan
 const stream = {
-    write: function(message) {
+    write: function (message) {
         logger.info(message.trim());
     }
 };
 
 // Log unhandled rejections
 process.on('unhandledRejection', (err) => {
-    logger.log('error', 'Unhandled Rejection:', err);
-    // Close server & exit process
+    logger.error('Unhandled Rejection', err);
     process.exit(1);
 });
 
 // Log uncaught exceptions
 process.on('uncaughtException', (err) => {
-    logger.log('error', 'Uncaught Exception:', err);
-    // Close server & exit process
+    logger.error('Uncaught Exception', err);
     process.exit(1);
 });
 
 // Add error method to logger
-logger.error = function(message, error) {
+logger.error = function (message, error) {
     if (error instanceof Error) {
         this.log('error', message, { error: error.message, stack: error.stack });
     } else {
@@ -74,4 +71,4 @@ logger.error = function(message, error) {
 module.exports = {
     logger,
     stream
-}; 
+};
