@@ -383,8 +383,22 @@ const Vehicles: React.FC = () => {
                         },
                     }}
                 >
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', width: '100%' }}>
-                        {user?.role !== "dispatcher" && <Box display="flex" gap={2}>
+                    <Box sx={{
+                        display: 'flex', gap: 2, alignItems: 'center', width: '100%', flexDirection: {
+                            xs: 'column',
+                            md: 'row',
+                        },
+                    }}>
+                        {user?.role !== "dispatcher" && <Box display="flex" gap={2} sx={{
+                            flexDirection: {
+                                xs: 'column',
+                                md: 'row',
+                            },
+                            width: {
+                                xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                md: 'auto',
+                            },
+                        }}>
                             <Button
                                 variant="contained"
                                 startIcon={<AddIcon />}
@@ -396,8 +410,19 @@ const Vehicles: React.FC = () => {
                                 Xóa
                             </Button>
                         </Box>}
-                        <Box flex={1}>
-                            <Box sx={{ display: 'flex', gap: 4 }}>
+                        <Box flex={1} sx={{
+                            flexDirection: {
+                                xs: 'column',
+                                md: 'row',
+                            },
+                            width: {
+                                xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                md: 'auto',
+                            },
+                        }}>
+                            <Box sx={{
+                                display: 'flex', gap: 4,
+                            }}>
                                 <TextField fullWidth size="small" value={q}
                                     placeholder='Tìm kiếm theo tên, biển số, số xe, chủng loại'
                                     onChange={(e) => setQ(e.target.value)}
@@ -429,7 +454,16 @@ const Vehicles: React.FC = () => {
                                 />}
                             </Box>
                         </Box>
-                        <Box display="flex" gap={2}>
+                        <Box display="flex" gap={2} sx={{
+                            flexDirection: {
+                                xs: 'column',
+                                md: 'row',
+                            },
+                            width: {
+                                xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                md: 'auto',
+                            },
+                        }}>
                             <input
                                 id="upload-excel"
                                 type="file"
@@ -448,6 +482,7 @@ const Vehicles: React.FC = () => {
 
                             <label htmlFor="upload-excel">
                                 <Button
+                                    fullWidth
                                     component="span"
                                     variant="contained"
                                     startIcon={<UploadFile />}
@@ -756,7 +791,7 @@ const Vehicles: React.FC = () => {
                                             zIndex: 1,
                                             minWidth: 100,
                                         }}>{device.code}</TableCell>}
-                                        {visibleColumns.includes('name') && <TableCell sx={{ minWidth: 100, }}>{device.name}</TableCell>}
+                                        {visibleColumns.includes('name') && <TableCell  sx={{ minWidth: 100, }}>{device.name}</TableCell>}
                                         {visibleColumns.includes('vehicleNumber') && <TableCell align='center' sx={{ minWidth: 50, }}>{device.vehicleNumber}</TableCell>}
                                         {visibleColumns.includes('category') && <TableCell align='center' sx={{ minWidth: 70, }}>{device.category?.name}</TableCell>}
                                         {visibleColumns.includes('material') && <TableCell align='center' sx={{ minWidth: 100, }}>{device.material}</TableCell>}

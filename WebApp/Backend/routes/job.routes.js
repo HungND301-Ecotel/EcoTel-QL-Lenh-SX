@@ -77,7 +77,8 @@ router.get('/', verifyToken, async (req, res) => {
             const regex = new RegExp(req.query.name, 'i'); // không phân biệt hoa thường
             query.name = regex;
         }
-        const jobs = await Job.find(query);
+        const jobs = await Job.find(query).collation({ locale: "vi", strength: 1 })
+            .sort({ name: 1 });
         res.status(200).send({ status: 'success', data: jobs });
     } catch (err) {
         req.logger.error("❌ Lỗi khi load công việc", err);

@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
+// import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -29,7 +29,7 @@ class _Camera extends State<Camera> {
   @override
   void initState() {
     super.initState();
-    _determinePosition(); // Gọi hàm lấy vị trí tại đây
+    // _determinePosition(); // Gọi hàm lấy vị trí tại đây
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _openCamera();
     });
@@ -54,17 +54,17 @@ class _Camera extends State<Camera> {
     }
   }
 
-  Future<void> _determinePosition() async {
-    LocationPermission permission;
+  // Future<void> _determinePosition() async {
+  //   LocationPermission permission;
 
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-    if (permission == LocationPermission.deniedForever) {
-      return;
-    }
-  }
+  //   permission = await Geolocator.checkPermission();
+  //   if (permission == LocationPermission.denied) {
+  //     permission = await Geolocator.requestPermission();
+  //   }
+  //   if (permission == LocationPermission.deniedForever) {
+  //     return;
+  //   }
+  // }
 
   // lưu ảnh vào bộ nhớ tạm thời
   // và lưu thời gian chụp vào file text
@@ -217,12 +217,12 @@ class _Camera extends State<Camera> {
           body: await checkoutFile.readAsBytes(),
         );
 
-        // Gửi dữ liệu API
-        final position =
-            await Geolocator.getCurrentPosition();
+        // // Gửi dữ liệu API
+        // final position =
+        //     await Geolocator.getCurrentPosition();
         final result = await _orderService.checkin({
-          'lat': position.latitude.toString(),
-          'lng': position.longitude.toString(),
+          'lat': 0,
+          'lng': 0,
           'orderId': widget.data.id,
           if (publicCheckinUrl != null)
             'checkinFile': publicCheckinUrl,

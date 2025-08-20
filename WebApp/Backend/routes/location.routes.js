@@ -79,7 +79,9 @@ router.get('/', verifyToken, async (req, res) => {
             const regex = new RegExp(req.query.name, 'i');
             query.name = regex;
         }
-        const locations = await Location.find(query);
+        const locations = await Location.find(query)
+            .collation({ locale: "vi", strength: 1 })
+            .sort({ name: 1 });
         req.logger.info(`🔥 Load thành công`);
         res.status(200).send({ status: 'success', data: locations });
     } catch (err) {

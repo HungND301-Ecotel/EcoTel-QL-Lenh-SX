@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:soft/screens/home/home_page.dart';
+// import 'package:soft/screens/home/home_page.dart';
 import 'package:soft/screens/home/notification_page.dart';
-
 
 class HomeWrapper extends StatelessWidget {
   const HomeWrapper({super.key});
@@ -12,10 +11,10 @@ class HomeWrapper extends StatelessWidget {
       initialRoute: HomeRoutes.home,
       onGenerateRoute: (RouteSettings settings) {
         switch (settings.name) {
-          case HomeRoutes.home:
-            return MaterialPageRoute(
-              builder: (_) => HomePage(),
-            );
+          // case HomeRoutes.home:
+          //   return MaterialPageRoute(
+          //     builder: (_) => HomePage(),
+          //   );
           case HomeRoutes.notification:
             return MaterialPageRoute(
               builder: (_) => NotificationPage(),
@@ -38,5 +37,4 @@ class HomeWrapper extends StatelessWidget {
 class HomeRoutes {
   static const String home = '/home_page';
   static const String notification = '/notification';
-
 }

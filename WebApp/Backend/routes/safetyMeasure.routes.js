@@ -79,7 +79,8 @@ router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res,
 
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const SafetyMeasures = await SafetyMeasure.find();
+        const SafetyMeasures = await SafetyMeasure.find().collation({ locale: "vi", strength: 1 })
+            .sort({ content: 1 });
         res.status(200).send({ status: 'success', data: SafetyMeasures });
     } catch (err) {
         req.logger.error("❌ Lỗi khi lấy danh sách biện pháp an toàn", err);

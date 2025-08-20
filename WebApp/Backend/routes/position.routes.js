@@ -81,7 +81,8 @@ router.get('/', verifyToken, async (req, res) => {
             query.name = regex;
         }
 
-        const positions = await Position.find(query);
+        const positions = await Position.find(query).collation({ locale: "vi", strength: 1 })
+            .sort({ name: 1 });
         req.logger.info(`✅ Load thành công`);
         res.status(200).send({ status: 'success', data: positions });
     } catch (err) {

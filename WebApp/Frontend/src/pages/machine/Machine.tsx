@@ -355,8 +355,22 @@ const Machines: React.FC = () => {
                         },
                     }}
                 >
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', width: '100%' }}>
-                        {user?.role !== "dispatcher" && <Box display="flex" gap={2}>
+                    <Box sx={{
+                        display: 'flex', gap: 2, alignItems: 'center', width: '100%', flexDirection: {
+                            xs: 'column',
+                            md: 'row',
+                        },
+                    }}>
+                        {user?.role !== "dispatcher" && <Box display="flex" gap={2} sx={{
+                            flexDirection: {
+                                xs: 'column',
+                                md: 'row',
+                            },
+                            width: {
+                                xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                md: 'auto',
+                            },
+                        }}>
                             <Button
                                 variant="contained"
                                 startIcon={<AddIcon />}
@@ -368,7 +382,16 @@ const Machines: React.FC = () => {
                                 Xóa
                             </Button>
                         </Box>}
-                        <Box flex={1}>
+                        <Box flex={1} sx={{
+                            flexDirection: {
+                                xs: 'column',
+                                md: 'row',
+                            },
+                            width: {
+                                xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                md: 'auto',
+                            },
+                        }}>
                             <Box sx={{ display: 'flex', gap: 4 }}>
                                 <TextField fullWidth size="small" value={q}
                                     placeholder='Tìm kiếm theo tên, biển số, số máy, chủng loại'
@@ -401,7 +424,16 @@ const Machines: React.FC = () => {
                                 />}
                             </Box>
                         </Box>
-                        <Box display="flex" gap={2}>
+                        <Box display="flex" gap={2} sx={{
+                            flexDirection: {
+                                xs: 'column',
+                                md: 'row',
+                            },
+                            width: {
+                                xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                md: 'auto',
+                            },
+                        }}>
                             <input
                                 id="upload-excel"
                                 type="file"
@@ -420,6 +452,7 @@ const Machines: React.FC = () => {
 
                             <label htmlFor="upload-excel">
                                 <Button
+                                    fullWidth
                                     component="span"
                                     variant="contained"
                                     startIcon={<UploadFile />}

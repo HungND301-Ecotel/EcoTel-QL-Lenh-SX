@@ -334,8 +334,39 @@ const Orders: React.FC = () => {
                         },
                     }}
                 >
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', width: "100%" }}>
-                        <Box display={'flex'} gap={2}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            gap: 2,
+                            alignItems: 'center',
+                            width: '100%',
+                            flexWrap: 'wrap', // Tự động xuống dòng khi không đủ không gian
+                            flexDirection: {
+                                xs: 'column', // Màn hình nhỏ: các items xếp dọc
+                                md: 'row',    // Màn hình lớn: các items xếp ngang
+                            },
+                            // Thêm các thuộc tính căn chỉnh để bố cục đẹp hơn
+                            justifyContent: {
+                                xs: 'flex-start', // Màn hình nhỏ: căn trái
+                                md: 'space-between', // Màn hình lớn: giãn đều các items
+                            },
+                        }}
+                    >
+                        {/* Nhóm các nút lại với nhau */}
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                gap: 1, // Khoảng cách nhỏ hơn giữa các nút
+                                flexDirection: {
+                                    xs: 'column',
+                                    md: 'row',
+                                },
+                                width: {
+                                    xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                    md: 'auto',
+                                },
+                            }}
+                        >
                             <Button
                                 variant="contained"
                                 startIcon={<AddIcon />}
@@ -343,13 +374,13 @@ const Orders: React.FC = () => {
                             >
                                 Thêm
                             </Button>
-                            <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
+                            <Button variant="contained" startIcon={<DeleteIcon />} color="error" onClick={handleDelete}>
                                 Xóa
                             </Button>
-                            <Button variant="contained" startIcon={<InfoOutlined />} color='inherit' onClick={() => setHistory(true)}>
+                            <Button variant="contained" startIcon={<InfoOutlined />} color="inherit" onClick={() => setHistory(true)}>
                                 Lịch sử
                             </Button>
-                            <Button variant="contained" startIcon={<FileDownload />} color='success' onClick={() => {
+                            <Button variant="contained" startIcon={<FileDownload />} color="success" onClick={() => {
                                 if (selectedOrders.length > 0) {
                                     reportExcel.mutate();
                                 } else {
@@ -359,7 +390,24 @@ const Orders: React.FC = () => {
                                 Tải xuống
                             </Button>
                         </Box>
-                        <Box sx={{ display: 'flex', flex: 1, gap: 2, alignItems: 'center' }}>
+
+                        {/* Nhóm các Autocomplete và DatePicker lại với nhau */}
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                flexGrow: 1, // Chiếm hết phần còn lại của không gian
+                                gap: 2,
+                                alignItems: 'center',
+                                flexDirection: {
+                                    xs: 'column',
+                                    md: 'row',
+                                },
+                                width: {
+                                    xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                    md: 'auto',
+                                },
+                            }}
+                        >
                             <Autocomplete
                                 fullWidth
                                 options={users}
@@ -393,6 +441,7 @@ const Orders: React.FC = () => {
                                 renderInput={(params) => (
                                     <TextField
                                         {...params}
+                                        fullWidth
                                         size='small'
                                         label="Phương tiện"
                                     />
@@ -401,7 +450,7 @@ const Orders: React.FC = () => {
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <DatePicker
                                     label="Từ ngày"
-                                    inputFormat="DD/MM/YYYY" // v5 vẫn hỗ trợ
+                                    inputFormat="DD/MM/YYYY"
                                     value={startTime ? dayjs(startTime) : null}
                                     onChange={(value) => setStartTime(value)}
                                     renderInput={(params) => (
@@ -413,11 +462,10 @@ const Orders: React.FC = () => {
                                     )}
                                 />
                             </LocalizationProvider>
-
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <DatePicker
                                     label="Đến ngày"
-                                    inputFormat="DD/MM/YYYY" // v5 vẫn hỗ trợ
+                                    inputFormat="DD/MM/YYYY"
                                     value={endTime ? dayjs(endTime) : null}
                                     onChange={(value) => setEndTime(value)}
                                     renderInput={(params) => (
@@ -429,18 +477,15 @@ const Orders: React.FC = () => {
                                     )}
                                 />
                             </LocalizationProvider>
-
-                            <Box>
-                                <Button
-                                    variant="contained"
-                                    startIcon={<Search />}
-                                    onClick={() => refetch()}
-                                >
-                                    Tìm
-                                </Button>
-                            </Box>
+                            <Button
+                                fullWidth
+                                variant="contained"
+                                startIcon={<Search />}
+                                onClick={() => refetch()}
+                            >
+                                Tìm
+                            </Button>
                         </Box>
-
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>

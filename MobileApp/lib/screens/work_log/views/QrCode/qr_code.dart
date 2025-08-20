@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
+// import 'package:geolocator/geolocator.dart';
 import 'package:soft/models/order_model.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
 import 'package:soft/services/order_service.dart';
@@ -21,32 +21,32 @@ class _QrCodeState extends State<QrCode> {
   @override
   void initState() {
     super.initState();
-    _determinePosition(); // Gọi hàm lấy vị trí tại đây
+    // _determinePosition(); // Gọi hàm lấy vị trí tại đây
   }
 
-  Future<void> _determinePosition() async {
-    LocationPermission permission;
+  // Future<void> _determinePosition() async {
+  //   LocationPermission permission;
 
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-    if (permission == LocationPermission.deniedForever) {
-      return;
-    }
-  }
+  //   permission = await Geolocator.checkPermission();
+  //   if (permission == LocationPermission.denied) {
+  //     permission = await Geolocator.requestPermission();
+  //   }
+  //   if (permission == LocationPermission.deniedForever) {
+  //     return;
+  //   }
+  // }
 
   final OrderService _orderService = OrderService();
   void scanWork(String deviceId) async {
-    final position = await Geolocator.getCurrentPosition();
+    // final position = await Geolocator.getCurrentPosition();
     var result = await _orderService.scanWork({
       "deviceId": deviceId,
       "deviceCode":
           (widget.data.device?.isNotEmpty ?? false)
               ? widget.data.device!.last.code
               : null,
-      "lat": position.latitude,
-      "lng": position.longitude,
+      "lat": 0,
+      "lng": 0,
       "orderId": widget.data.id,
     });
     if (!mounted) return;
