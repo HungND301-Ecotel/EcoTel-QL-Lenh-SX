@@ -820,7 +820,7 @@ const Vehicles: React.FC = () => {
                                             zIndex: 1,
                                             minWidth: 100,
                                         }}>{device.code}</TableCell>}
-                                        {visibleColumns.includes('name') && <TableCell sx={{ minWidth: 100, }}>{device.name}</TableCell>}
+                                        {visibleColumns.includes('name') && <TableCell  sx={{ minWidth: 100, }}>{device.name}</TableCell>}
                                         {visibleColumns.includes('vehicleNumber') && <TableCell align='center' sx={{ minWidth: 50, }}>{device.vehicleNumber}</TableCell>}
                                         {visibleColumns.includes('category') && <TableCell align='center' sx={{ minWidth: 70, }}>{device.category?.name}</TableCell>}
                                         {visibleColumns.includes('material') && <TableCell align='center' sx={{ minWidth: 100, }}>{device.material}</TableCell>}
