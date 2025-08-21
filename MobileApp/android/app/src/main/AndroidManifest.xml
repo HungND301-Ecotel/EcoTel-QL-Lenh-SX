@@ -9,7 +9,7 @@
 
 
     <application
-        android:label="E-MES"
+        android:label="Quản lý máy móc thiết bị TCS"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
