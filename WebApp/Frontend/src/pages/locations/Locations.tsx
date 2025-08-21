@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Box, Button, Dialog, DialogActions, DialogContent, DialogTitle,
@@ -53,6 +53,7 @@ const Locations: React.FC = () => {
 
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
+    const formRef = useRef<HTMLDivElement>(null);
 
     const handleSelected = (locationId: string) => {
         setSelectedLocations(prev =>
@@ -220,6 +221,14 @@ const Locations: React.FC = () => {
         }
         setExpanded(true);
         setOpen(true);
+        setTimeout(() => {
+            if (formRef.current) {
+                formRef.current.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        }, 500);
     };
 
 
@@ -279,7 +288,7 @@ const Locations: React.FC = () => {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, mt: 3 }}>
                 <Typography variant="h3" color={'blue'}>Điểm đổ tải</Typography>
             </Box>
-            <Accordion expanded={expanded}>
+            <Accordion expanded={expanded} ref={formRef}>
                 <AccordionSummary
                     expandIcon={<></>}
                     aria-controls="panel1-content"

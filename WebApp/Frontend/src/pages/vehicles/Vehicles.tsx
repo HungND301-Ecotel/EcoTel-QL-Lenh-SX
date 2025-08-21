@@ -94,8 +94,7 @@ const Vehicles: React.FC = () => {
     const [mapCoords, setMapCoords] = useState<{ lat: number, lng: number; } | null>(null);
     const [user, setUser] = useAtom(userAtom)
     const [expanded, setExpanded] = useState(false);
-    const formScrollRef = useRef<HTMLDivElement>(null);
-    const [formKey, setFormKey] = useState(0);
+    const formRef = useRef<HTMLDivElement>(null);
 
     const handleSelected = (deviceId: string) => {
         setSelectedDevices(prev =>
@@ -328,6 +327,14 @@ const Vehicles: React.FC = () => {
         }
         setExpanded(true);
         setOpen(true);
+        setTimeout(() => {
+            if (formRef.current) {
+                formRef.current.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        }, 500);
     };
 
     const handleClose = () => {
@@ -385,7 +392,7 @@ const Vehicles: React.FC = () => {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, mt: 3 }}>
                 <Typography variant="h3" color={'blue'}>Thông tin xe</Typography>
             </Box>
-            <Accordion expanded={expanded}>
+            <Accordion expanded={expanded} ref={formRef}>
                 <AccordionSummary
                     expandIcon={
                         <></>}
@@ -515,8 +522,8 @@ const Vehicles: React.FC = () => {
                         </Box>
                     </Box>
                 </AccordionSummary>
-                <AccordionDetails key={formKey}>
-                    <Box ref={formScrollRef}>
+                <AccordionDetails>
+                    <Box >
                         <DialogTitle>
                             {selectedDevice ? 'Sửa Thông tin xe' : 'Thêm Thông tin xe'}
                         </DialogTitle>

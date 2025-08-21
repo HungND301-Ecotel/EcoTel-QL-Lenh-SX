@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Box,
@@ -56,6 +56,7 @@ const SafetyMeasures: React.FC = () => {
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
     const [selectedSafetyMeasures, setSelectedSafetyMeasures] = useState<string[]>([]);
+    const formRef = useRef<HTMLDivElement>(null);
 
 
     const handleSelected = (safetyMeasureId: string) => {
@@ -211,8 +212,15 @@ const SafetyMeasures: React.FC = () => {
             formik.resetForm();
         }
         setExpanded(true);
-
         setOpen(true);
+        setTimeout(() => {
+            if (formRef.current) {
+                formRef.current.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        }, 500);
     };
 
     const handleClose = () => {
@@ -259,7 +267,7 @@ const SafetyMeasures: React.FC = () => {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, mt: 3 }}>
                 <Typography variant="h3" color={'blue'}>Biện pháp an toàn</Typography>
             </Box>
-            <Accordion expanded={expanded}>
+            <Accordion expanded={expanded} ref={formRef}>
                 <AccordionSummary
                     expandIcon={
                         <></>}

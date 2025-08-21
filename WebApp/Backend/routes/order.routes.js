@@ -335,6 +335,11 @@ router.put('/:id', verifyToken, async (req, res, next) => {
                 } else {
                     updateObject.resumeTime = new Date();
                 }
+                if (order.device && order.device.length > 0) {
+                    const lastDeviceId = order.device[order.device.length - 1];
+                    req.logger.info(`    - Tìm thấy phương tiện: ${lastDeviceId}`);
+                    await Device.updateOne({ _id: lastDeviceId }, { status: "in_use" });
+                }
                 updateObject.status = status;
                 break;
 

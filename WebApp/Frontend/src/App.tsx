@@ -73,6 +73,8 @@ const App = () => {
             queryClient.invalidateQueries({ queryKey: ['orderByUser'] });
             queryClient.invalidateQueries({ queryKey: ['notificationCount'] });
             queryClient.invalidateQueries({ queryKey: ['notifications'] });
+            queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+            queryClient.invalidateQueries({ queryKey: ['machines'] });
         });
 
         // Cleanup khi component unmount
