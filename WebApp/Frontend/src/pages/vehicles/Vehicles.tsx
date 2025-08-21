@@ -32,6 +32,7 @@ import {
     TablePagination,
     Breadcrumbs,
     InputAdornment,
+    LinearProgress,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -148,14 +149,26 @@ const Vehicles: React.FC = () => {
         queryFn: () => api.get('/departments').then(res => res.data.data),
     });
 
-
+    const [progress, setProgress] = useState(0)
+    const [isUploading, setIsUploading] = useState(false);
     const importFile = useMutation({
         mutationFn: (formData: FormData) =>
             api.post('/devices/importFile', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
+                onDownloadProgress: (progressEvent) => {
+                    const percent = Math.round(
+                        (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
+                    );
+                    setProgress(percent);
+                }
             }).then(res => res.data),
+        onMutate: () => {
+            setIsUploading(true);
+            setProgress(0); // Reset tiến trình khi bắt đầu
+        },
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+            setIsUploading(false);
             let combinedMessage = `Import dữ liệu hoàn tất. Đã xử lý ${data.summary.totalProcessed} bản ghi.`;
             combinedMessage += `\nĐã thêm mới: ${data.summary.insertedCount}`;
             combinedMessage += `\nĐã cập nhật: ${data.summary.updatedCount}`;
@@ -179,6 +192,7 @@ const Vehicles: React.FC = () => {
             showSuccessAlert(combinedMessage);
         },
         onError: (error: any) => {
+            setIsUploading(false);
             showErrorAlert(error.response?.data?.message || 'Lỗi khi import');
         }
     });
@@ -678,6 +692,14 @@ const Vehicles: React.FC = () => {
                     </DialogActions>
                 </AccordionDetails>
             </Accordion>
+            {isUploading && (
+                <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" color="text.secondary" align="center">
+                        Đang tải lên... {progress}%
+                    </Typography>
+                    <LinearProgress variant="determinate" value={progress} />
+                </Box>
+            )}
             <Box display="flex" gap={2} alignItems={'center'} justifyContent='flex-end'>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='info' name="status" checked={status === ''}
@@ -791,7 +813,7 @@ const Vehicles: React.FC = () => {
                                             zIndex: 1,
                                             minWidth: 100,
                                         }}>{device.code}</TableCell>}
-                                        {visibleColumns.includes('name') && <TableCell  sx={{ minWidth: 100, }}>{device.name}</TableCell>}
+                                        {visibleColumns.includes('name') && <TableCell sx={{ minWidth: 100, }}>{device.name}</TableCell>}
                                         {visibleColumns.includes('vehicleNumber') && <TableCell align='center' sx={{ minWidth: 50, }}>{device.vehicleNumber}</TableCell>}
                                         {visibleColumns.includes('category') && <TableCell align='center' sx={{ minWidth: 70, }}>{device.category?.name}</TableCell>}
                                         {visibleColumns.includes('material') && <TableCell align='center' sx={{ minWidth: 100, }}>{device.material}</TableCell>}

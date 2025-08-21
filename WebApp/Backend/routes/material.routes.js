@@ -169,7 +169,7 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         req.logger.info(`✅ Import file thành công. Đã xử lý ${dataImport.length} bản ghi.`);
         res.status(200).json({
             status: 'success',
-            message: 'Tải thành công',
+            message: `Import file thành công. Đã xử lý ${dataImport.length} bản ghi.`,
         });
     } catch (error) {
         req.logger.error("❌ Lỗi khi import file biện pháp an toàn", error);

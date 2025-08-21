@@ -6,18 +6,18 @@ const Location = new mongoose.Schema({
         required: [true, 'Location name is required'],
         trim: true
     },
-    distance:{
-        type:Number
+    distance: {
+        type: Number
     },
     coordinates: {
         type: {
             type: String,
             enum: ['Point'],
-            required: true
+            default: 'Point'
         },
         coordinates: {
             type: [Number],
-            required: true
+            default: [0, 0]
         }
     }
 },

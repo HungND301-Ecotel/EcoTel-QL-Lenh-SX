@@ -30,6 +30,7 @@ import {
     AccordionSummary,
     Accordion,
     Breadcrumbs,
+    LinearProgress,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -120,14 +121,26 @@ const Users: React.FC = () => {
             showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
-
+    const [progress, setProgress] = useState(0)
+    const [isUploading, setIsUploading] = useState(false);
     const importFile = useMutation({
         mutationFn: (formData: FormData) =>
             api.post('/users/importFile', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
+                onDownloadProgress: (progressEvent) => {
+                    const percent = Math.round(
+                        (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
+                    );
+                    setProgress(percent);
+                }
             }).then(res => res.data),
+        onMutate: () => {
+            setIsUploading(true);
+            setProgress(0); // Reset tiến trình khi bắt đầu
+        },
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
+            setIsUploading(false);
             let combinedMessage = `Import dữ liệu hoàn tất. Đã xử lý ${data.summary.totalProcessed} bản ghi.`;
             combinedMessage += `\nĐã thêm mới: ${data.summary.insertedCount}`;
             combinedMessage += `\nĐã cập nhật: ${data.summary.updatedCount}`;
@@ -151,6 +164,7 @@ const Users: React.FC = () => {
             showSuccessAlert(combinedMessage);
         },
         onError: (error: any) => {
+            setIsUploading(false);
             showErrorAlert(error.response?.data?.message || 'Lỗi khi import');
         }
     });
@@ -715,6 +729,14 @@ const Users: React.FC = () => {
                     </DialogActions>
                 </AccordionDetails>
             </Accordion>
+            {isUploading && (
+                <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" color="text.secondary" align="center">
+                        Đang tải lên... {progress}%
+                    </Typography>
+                    <LinearProgress variant="determinate" value={progress} />
+                </Box>
+            )}
             <Paper sx={{ width: '100%', overflowX: 'auto', mt: 3 }}>
                 <Typography variant="h4">Bảng người dùng</Typography>
                 <DataGrid

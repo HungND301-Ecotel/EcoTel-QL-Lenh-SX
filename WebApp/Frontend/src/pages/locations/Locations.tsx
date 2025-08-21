@@ -13,9 +13,10 @@ import {
     Checkbox,
     TablePagination,
     Breadcrumbs,
-    InputAdornment
+    InputAdornment,
+    LinearProgress
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Settings, ExpandMore, Search } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Settings, ExpandMore, Search, UploadFile, Download } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import api from '../../config/api.config';
@@ -116,7 +117,60 @@ const Locations: React.FC = () => {
             showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
+    const [progress, setProgress] = useState(0)
+    const [isUploading, setIsUploading] = useState(false);
+    const importFile = useMutation({
+        mutationFn: (formData: FormData) =>
+            api.post('/locations/importFile', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+                onDownloadProgress: (progressEvent) => {
+                    const percent = Math.round(
+                        (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
+                    );
+                    setProgress(percent);
+                }
+            }).then(res => res.data.message),
+        onMutate: () => {
+            setIsUploading(true);
+            setProgress(0); // Reset tiến trình khi bắt đầu
+        },
+        onSuccess: (message) => {
+            queryClient.invalidateQueries({ queryKey: ['locations'] });
+            setIsUploading(false);
+            showSuccessAlert(message || "Import thành công!");
+            handleClose();
+        },
+        onError: (error: any) => {
+            setIsUploading(false);
+            showErrorAlert(error.response?.data?.message || 'Lỗi khi import');
+        }
+    });
 
+    const exportExcel = useMutation({
+        mutationFn: () => {
+            return api.post('/locations/exportFile', {}, {
+                responseType: 'blob',
+            }).then(res => {
+                const blob = new Blob([res.data], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                });
+
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `*.xlsx`);
+
+                document.body.appendChild(link);
+                link.click();
+                link.parentNode?.removeChild(link);
+                window.URL.revokeObjectURL(url);
+            });
+        },
+        onSuccess: () => { },
+        onError: (error: any) => {
+            showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
+        }
+    });
     const formik = useFormik({
         initialValues: {
             name: '',
@@ -236,8 +290,22 @@ const Locations: React.FC = () => {
                         },
                     }}
                 >
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', width: '100%' }}>
-                        <Box display={'flex'} gap={2}>
+                    <Box sx={{
+                        display: 'flex', gap: 2, alignItems: 'center', width: '100%', flexDirection: {
+                            xs: 'column',
+                            md: 'row',
+                        }
+                    }}>
+                        <Box display={'flex'} gap={2} sx={{
+                            flexDirection: {
+                                xs: 'column',
+                                md: 'row',
+                            },
+                            width: {
+                                xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                md: 'auto',
+                            },
+                        }}>
                             <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
                                 Thêm
                             </Button>
@@ -245,7 +313,16 @@ const Locations: React.FC = () => {
                                 Xóa
                             </Button>
                         </Box>
-                        <Box flex={2}>
+                        <Box flex={2} sx={{
+                            flexDirection: {
+                                xs: 'column',
+                                md: 'row',
+                            },
+                            width: {
+                                xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                md: 'auto',
+                            },
+                        }}>
                             <TextField fullWidth size="small" value={value}
                                 placeholder='Tìm kiếm theo tên điểm đổ tải'
                                 onChange={(e) => setValue(e.target.value)}
@@ -257,6 +334,51 @@ const Locations: React.FC = () => {
                                     )
                                 }}>
                             </TextField>
+                        </Box>
+                        <Box display="flex" gap={2} sx={{
+                            flexDirection: {
+                                xs: 'column',
+                                md: 'row',
+                            },
+                            width: {
+                                xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                md: 'auto',
+                            },
+                        }}>
+                            <input
+                                id="upload-excel"
+                                type="file"
+                                accept=".xlsx, .xls"
+                                style={{ display: 'none' }}
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        const formData = new FormData();
+                                        formData.append('file', file);
+                                        importFile.mutate(formData);
+                                    }
+                                    e.target.value = "";
+                                }}
+                            />
+
+                            <label htmlFor="upload-excel">
+                                <Button
+                                    fullWidth
+                                    component="span"
+                                    variant="contained"
+                                    startIcon={<UploadFile />}
+                                >
+                                    Tải lên excel
+                                </Button>
+                            </label>
+                            <Button
+                                component="span"
+                                variant="contained"
+                                startIcon={<Download />}
+                                onClick={() => exportExcel.mutate()}
+                            >
+                                Tải xuống
+                            </Button>
                         </Box>
                     </Box>
                 </AccordionSummary>
@@ -351,6 +473,14 @@ const Locations: React.FC = () => {
                     </DialogActions>
                 </AccordionDetails>
             </Accordion>
+            {isUploading && (
+                <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" color="text.secondary" align="center">
+                        Đang tải lên... {progress}%
+                    </Typography>
+                    <LinearProgress variant="determinate" value={progress} />
+                </Box>
+            )}
             <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
                 <Typography variant="h4">Bảng điểm đổ tải</Typography>
                 <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>

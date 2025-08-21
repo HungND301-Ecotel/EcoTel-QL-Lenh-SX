@@ -28,6 +28,7 @@ import {
     TablePagination,
     Breadcrumbs,
     InputAdornment,
+    LinearProgress,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -125,17 +126,30 @@ const Materials: React.FC = () => {
 
     });
 
+    const [progress, setProgress] = useState(0)
+    const [isUploading, setIsUploading] = useState(false);
     const importFile = useMutation({
         mutationFn: (formData: FormData) =>
             api.post('/materials/importFile', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
+                onDownloadProgress: (progressEvent) => {
+                    const percent = Math.round(
+                        (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
+                    );
+                    setProgress(percent);
+                }
             }).then(res => res.data.message),
+        onMutate: () => {
+            setIsUploading(true);
+            setProgress(0); // Reset tiến trình khi bắt đầu
+        },
         onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['materials'] });
-
+            setIsUploading(false);
             showSuccessAlert(message || 'Import thành công');
         },
         onError: (error: any) => {
+            setIsUploading(false);
             showErrorAlert(error.response?.data?.message || 'Lỗi khi import');
         }
     });
@@ -396,6 +410,14 @@ const Materials: React.FC = () => {
                     </DialogActions>
                 </AccordionDetails>
             </Accordion>
+            {isUploading && (
+                <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" color="text.secondary" align="center">
+                        Đang tải lên... {progress}%
+                    </Typography>
+                    <LinearProgress variant="determinate" value={progress} />
+                </Box>
+            )}
             <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
                 <Typography variant="h4">Bảng vật liệu</Typography>
                 <IconButton onClick={(e) => setMenuAnchorEl(e.currentTarget)}>
