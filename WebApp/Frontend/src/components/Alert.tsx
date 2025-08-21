@@ -6,9 +6,9 @@ export const showSuccessAlert = (message = 'Bạn đã lưu thành công.') => {
         text: message,
         icon: 'success',
         confirmButtonText: 'Đồng ý',
-        timer: 2000,
-        timerProgressBar: true, 
-        showConfirmButton: false,
+        timer: 5000,
+        timerProgressBar: true,
+        showConfirmButton: true,
     });
 };
 
@@ -18,9 +18,9 @@ export const showErrorAlert = (message = 'Đã xảy ra lỗi.') => {
         text: message,
         icon: 'error',
         confirmButtonText: 'Đóng',
-        timer: 2000,
-        timerProgressBar: true, 
-        showConfirmButton: false,
+        timer: 5000,
+        timerProgressBar: true,
+        showConfirmButton: true,
     });
 };
 

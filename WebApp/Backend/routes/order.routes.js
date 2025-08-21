@@ -65,13 +65,28 @@ router.get('/', verifyToken, async (req, res, next) => {
                     $unwind: '$creatorDetails'
                 },
                 {
+                    $lookup: {
+                        from: 'shifts',
+                        localField: 'shift',
+                        foreignField: '_id',
+                        as: 'shiftDetails'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$shiftDetails',
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
                     $match: {
                         ...query, // Thêm các bộ lọc khác vào đây
                         'creatorDetails.department': user.department._id
                     }
                 },
                 {
-                    $sort: { createdAt: -1 }
+                    $sort: { workingDate: -1, },
+
                 }
             ]);
 
@@ -102,7 +117,7 @@ router.get('/', verifyToken, async (req, res, next) => {
                 })
                 .populate('createdBy', 'username fullName salaryCode')
                 .populate('updatedBy', 'username fullName')
-                .sort('-createdAt')
+                .sort({ workingDate: -1 });
 
         } else {
             // Trường hợp người dùng khác: sử dụng Mongoose find() thông thường
@@ -133,9 +148,20 @@ router.get('/', verifyToken, async (req, res, next) => {
                 })
                 .populate('createdBy', 'username fullName salaryCode')
                 .populate('updatedBy', 'username fullName')
-                .sort('-createdAt')
+                .sort({ workingDate: -1 });
         }
+        orders.sort((a, b) => {
+            // 1. So sánh workingDate (DESC)
+            const dateA = new Date(a.workingDate);
+            const dateB = new Date(b.workingDate);
+            if (dateA > dateB) return -1;
+            if (dateA < dateB) return 1;
 
+            // 2. So sánh shift.name (DESC)
+            const nameA = a.shift?.name ? String(a.shift.name) : "";
+            const nameB = b.shift?.name ? String(b.shift.name) : "";
+            return nameB.localeCompare(nameA);  // DESC
+        });
         req.logger.info(`✅ Load lệnh sản xuất thành công`);
         res.status(200).json({
             status: 'success',
@@ -316,8 +342,9 @@ router.put('/:id', verifyToken, async (req, res, next) => {
                 updateObject.endTime = new Date();
                 updateObject.status = status;
                 if (order.device && order.device.length > 0) {
-                    const deviceIds = order.device;
-                    await Device.updateMany({ _id: { $in: deviceIds } }, { status: "available" });
+                    const lastDeviceId = order.device[order.device.length - 1];
+                    req.logger.info(`    - Giải phóng phương tiện cuối cùng: ${lastDeviceId}`);
+                    await Device.updateOne({ _id: lastDeviceId }, { status: "available" });
                 }
                 break;
 
@@ -325,9 +352,9 @@ router.put('/:id', verifyToken, async (req, res, next) => {
             case "warning":
                 updateObject.status = status;
                 if (order.device && order.device.length > 0) {
-                    const deviceIds = order.device;
-                    req.logger.info(`    - Giải phóng ${deviceIds.length} phương tiện: ${deviceIds.join(', ')}`);
-                    await Device.updateMany({ _id: { $in: deviceIds } }, { status: "available" });
+                    const lastDeviceId = order.device[order.device.length - 1];
+                    req.logger.info(`    - Giải phóng phương tiện cuối cùng: ${lastDeviceId}`);
+                    await Device.updateOne({ _id: lastDeviceId }, { status: "available" });
                 }
                 break;
             default:
@@ -526,9 +553,19 @@ router.get('/user', verifyToken, async (req, res, next) => {
 
         query.workingDate = { $lte: now };
         const orders = await Order.find(query)
-            .sort('-createdAt')
             .populate(orderPopulateOptions); // Sử dụng biến chung
+        orders.sort((a, b) => {
+            // 1. So sánh workingDate (DESC)
+            const dateA = new Date(a.workingDate);
+            const dateB = new Date(b.workingDate);
+            if (dateA > dateB) return -1;
+            if (dateA < dateB) return 1;
 
+            // 2. So sánh shift.name (DESC)
+            const nameA = a.shift?.name ? String(a.shift.name) : "";
+            const nameB = b.shift?.name ? String(b.shift.name) : "";
+            return nameB.localeCompare(nameA);  // DESC
+        });
         req.logger.info(`✅ Đã tìm thấy ${orders.length} lệnh.`);
         res.status(200).send({ status: 'success', data: orders });
 

@@ -32,6 +32,7 @@ import {
     TablePagination,
     Breadcrumbs,
     InputAdornment,
+    LinearProgress,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -147,17 +148,50 @@ const Machines: React.FC = () => {
         queryFn: () => api.get('/departments').then(res => res.data.data),
     });
 
-
+    const [progress, setProgress] = useState(0)
+    const [isUploading, setIsUploading] = useState(false);
     const importFile = useMutation({
         mutationFn: (formData: FormData) =>
             api.post('/devices/importFile', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
+                onDownloadProgress: (progressEvent) => {
+                    const percent = Math.round(
+                        (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
+                    );
+                    setProgress(percent);
+                }
             }).then(res => res.data),
-        onSuccess: () => {
+        onMutate: () => {
+            setIsUploading(true);
+            setProgress(0); // Reset tiến trình khi bắt đầu
+        },
+        onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['machines'] });
-            showSuccessAlert("Import thành công!");
+            setIsUploading(false);
+            let combinedMessage = `Import dữ liệu hoàn tất. Đã xử lý ${data.summary.totalProcessed} bản ghi.`;
+            combinedMessage += `\nĐã thêm mới: ${data.summary.insertedCount}`;
+            combinedMessage += `\nĐã cập nhật: ${data.summary.updatedCount}`;
+
+            // Thêm chi tiết lỗi nếu có
+            if (data.invalidRows && data.invalidRows.length > 0) {
+                combinedMessage += `\n\n--- CÓ LỖI XẢY RA TRONG QUÁ TRÌNH IMPORT ---`;
+                combinedMessage += `\n${data.invalidRows.length} bản ghi không hợp lệ:`;
+
+                // Liệt kê chi tiết một vài lỗi đầu tiên
+                data.invalidRows.slice(0, 5).forEach((item: any, index: number) => {
+                    combinedMessage += `\n- Dòng ${index + 1}: Lỗi "${item.error}"`;
+                });
+
+                // Thông báo nếu còn nhiều lỗi hơn
+                if (data.invalidRows.length > 5) {
+                    combinedMessage += `\n... và ${data.invalidRows.length - 5} lỗi khác.`;
+                }
+            }
+
+            showSuccessAlert(combinedMessage);
         },
         onError: (error: any) => {
+            setIsUploading(false);
             showErrorAlert(error.response?.data?.message || 'Lỗi khi import');
         }
     });
@@ -647,6 +681,14 @@ const Machines: React.FC = () => {
                     </DialogActions>
                 </AccordionDetails>
             </Accordion>
+            {isUploading && (
+                <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" color="text.secondary" align="center">
+                        Đang tải lên... {progress}%
+                    </Typography>
+                    <LinearProgress variant="determinate" value={progress} />
+                </Box>
+            )}
             <Box display="flex" gap={2} alignItems={'center'} justifyContent='flex-end'>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='info' name="status" checked={status === ''}

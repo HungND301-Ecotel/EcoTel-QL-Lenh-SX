@@ -28,6 +28,7 @@ import {
     Checkbox,
     TablePagination,
     Breadcrumbs,
+    LinearProgress,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -99,17 +100,32 @@ const SafetyMeasures: React.FC = () => {
             showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
+    const [progress, setProgress] = useState(0)
+    const [isUploading, setIsUploading] = useState(false);
     const importFile = useMutation({
         mutationFn: (formData: FormData) =>
             api.post('/safetyMeasures/importFile', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
+                onDownloadProgress: (progressEvent) => {
+                    const percent = Math.round(
+                        (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
+                    );
+                    setProgress(percent);
+                }
             }).then(res => res.data),
+        onMutate: () => {
+            setIsUploading(true);
+            setProgress(0); // Reset tiến trình khi bắt đầu
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['safetyMeasures'] });
+            setIsUploading(false);
+
             showSuccessAlert("Import thành công!");
             handleClose();
         },
         onError: (error: any) => {
+            setIsUploading(false);
             showErrorAlert(error.response?.data?.message || 'Lỗi khi import');
         }
     });
@@ -357,6 +373,14 @@ const SafetyMeasures: React.FC = () => {
                     </DialogActions>
                 </AccordionDetails>
             </Accordion>
+            {isUploading && (
+                <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" color="text.secondary" align="center">
+                        Đang tải lên... {progress}%
+                    </Typography>
+                    <LinearProgress variant="determinate" value={progress} />
+                </Box>
+            )}
             <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
                 <Typography variant="h4">Bảng biện pháp chung</Typography>
                 <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>

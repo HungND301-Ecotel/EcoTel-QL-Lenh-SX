@@ -46,12 +46,12 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<!-- map -->
-	<key>NSLocationWhenInUseUsageDescription</key>
+	<!-- <key>NSLocationWhenInUseUsageDescription</key>
 	<string>App cần truy cập vị trí để hiển thị bản đồ và định vị người dùng.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>App cần truy cập vị trí trong khi chạy nền.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>App cần truy cập vị trí khi dùng và cả trong nền.</string>
+	<string>App cần truy cập vị trí khi dùng và cả trong nền.</string> -->
 	<!-- camera -->
 	<key>NSCameraUsageDescription</key>
 	<string>This app needs camera access to scan QR codes</string>

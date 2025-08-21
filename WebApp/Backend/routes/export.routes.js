@@ -12,6 +12,17 @@ const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 
 // lệnh sx
 router.post('/order/bulk', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+    const user = req.user
+    const department = user?.department?.code
+    if (department === "PXVT6") {
+        buildSheetPXVT6(req, res, next);
+    } else {
+        buildSheetDefault(req, res, next);
+    }
+
+})
+
+async function buildSheetPXVT6(req, res, next) {
     try {
         const { ids } = req.body; // mảng entity id
 
@@ -389,7 +400,347 @@ router.post('/order/bulk', verifyToken, restrictTo('admin', 'dispatcher', 'manag
         req.logger.error("❌ Lỗi khi export", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
-});
+};
+
+async function buildSheetDefault(req, res, next) {
+    try {
+        const { ids } = req.body; // mảng entity id
+
+        if (!Array.isArray(ids) || ids.length === 0) {
+            req.logger.error("❌ Chọn bản ghi tải xuống");
+            return res.status(400).send({ status: 'error', message: 'Chọn bản ghi cần tải xuống' });
+        }
+
+        const orders = await Order.find({ _id: { $in: ids } })
+            .populate({
+                path: "assignedTo",
+                select: "username fullName department phone salaryCode",
+                populate: [
+                    { path: "department" }
+                ]
+            })
+            .populate('job', 'name type content')
+            .populate('devicesToProduce.deviceType')
+            .populate('device', 'code')
+            .populate('excavator', 'code')
+            .populate('location', 'name')
+            .populate('material', 'name')
+            .populate('shift')
+            .populate({
+                path: "shiftReport",
+                populate: [
+                    {
+                        path: "vehicleSummaries.vehicle",
+                        select: "code"
+                    }
+                ]
+            })
+            .populate('safetyMeasure')
+            .populate({
+                path: "assistants",
+                select: "username fullName",
+            })
+            .populate({
+                path: "createdBy",
+                select: "fullName phone salaryCode position",
+                populate: {
+                    path: "position",
+                    select: "name",
+                }
+            })
+
+
+        const workbook = new ExcelJS.Workbook();
+        for (const order of orders) {
+            const reports = await Report.find({ orderId: order._id })
+                .populate("device", "code")
+                .populate("material", "name")
+                .populate("excavator", "code")
+                .populate("fromLocation", "name")
+                .populate("toLocation", "name")
+            const sheetName = `${order.assignedTo?.username}_${formatDate(order.workingDate)}_${order.shift?.name}_${order._id}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
+
+            const worksheet = workbook.addWorksheet(sheetName);
+
+            // Tiêu đề bảng
+            worksheet.mergeCells('A1:M2');
+            const header = worksheet.getCell('A1');
+            header.value = `LỆNH SẢN XUẤT`;
+            header.font = { bold: true, size: 14 };
+            header.alignment = { horizontal: 'center', vertical: 'middle' };
+
+
+
+
+            worksheet.getCell('B3').value = 'Đơn vị';
+            worksheet.getCell('B3').font = { bold: true };
+            worksheet.getCell('C3').value = order.assignedTo?.department?.code || '';
+
+            worksheet.getCell('F3').value = 'Ngày';
+            worksheet.getCell('F3').font = { bold: true };
+            // Lấy ngày từ order.workingDate và định dạng
+            const workingDate = order.workingDate ? new Date(order.workingDate) : null;
+            const ngay = workingDate ? workingDate.toLocaleDateString('vi-VN') : '';
+            worksheet.getCell('G3').value = ngay;
+
+            worksheet.getCell('H3').value = order.shiftHour || '';
+
+
+            worksheet.getCell('I3').value = 'Ca';
+            worksheet.getCell('I3').font = { bold: true };
+
+            worksheet.getCell('J3').value = order.shift?.name || '';
+            worksheet.getCell('J3').alignment = { horizontal: 'left' }
+
+            // 3. Người ra lệnh
+            // Dòng 4
+            worksheet.getCell('B4').value = 'Người ra lệnh';
+            worksheet.getCell('B4').font = { bold: true };
+            worksheet.getCell('C4').value = order.createdBy?.fullName || '';
+
+            worksheet.getCell('F4').value = 'Số thẻ';
+            worksheet.getCell('F4').font = { bold: true };
+            worksheet.getCell('G4').value = order.createdBy?.salaryCode || '';
+
+
+            worksheet.getCell('I4').value = 'Chức vụ';
+            worksheet.getCell('I4').font = { bold: true };
+            worksheet.getCell('J4').value = order.createdBy?.position?.name || '';
+
+            // 4. Người nhận lệnh
+            // Dòng 5
+            worksheet.getCell('B5').value = 'Người nhận lệnh';
+            worksheet.getCell('B5').font = { bold: true };
+            worksheet.getCell('C5').value = order.assignedTo?.fullName || '';
+
+            worksheet.getCell('F5').value = 'Số thẻ';
+            worksheet.getCell('F5').font = { bold: true };
+            worksheet.getCell('G5').value = order.assignedTo?.salaryCode || '';
+
+            worksheet.getCell('I5').value = 'Số xe';
+            worksheet.getCell('I5').font = { bold: true };
+            worksheet.getCell('J5').value = order.device?.map(e => e.code).join(', ') || '';
+
+            // 5. Nội dung
+            // Dòng 6
+            worksheet.getCell('B6').value = 'Nội dung';
+            worksheet.getCell('B6').font = { bold: true };
+            // Gộp ô cho nội dung để hiển thị đầy đủ
+            worksheet.getCell('C6').value = order.workContent || '';
+
+            worksheet.getCell('I6').value = 'Máy xúc';
+            worksheet.getCell('I6').font = { bold: true };
+            worksheet.getCell('J6').value = order.excavator?.map(e => e.code).join(', ') || '';
+            // 6. Bàn giao ca và Đổ tải
+            // Dòng 7
+            worksheet.getCell('B7').value = 'Bàn giao ca';
+            worksheet.getCell('B7').font = { bold: true };
+            // Gộp ô cho nội dung bàn giao ca
+            worksheet.getCell('C7').value = order.shiftReport?.handoverNotes || '';
+
+            worksheet.getCell('I7').value = 'Đổ tải';
+            worksheet.getCell('I7').font = { bold: true };
+            worksheet.getCell('J7').value = order.location?.name || '';
+
+            // Dòng 8
+            worksheet.getCell('B8').value = 'Giờ nhận lệnh';
+            worksheet.getCell('B8').font = { bold: true };
+            worksheet.getCell('C8').value = order.startTime ? new Date(order.startTime).toLocaleTimeString() : "";
+
+            worksheet.getCell('D8').value = 'Giờ kết thúc';
+            worksheet.getCell('D8').font = { bold: true };
+            worksheet.getCell('E8').value = order.endTime ? new Date(order.endTime).toLocaleTimeString() : "";
+
+            worksheet.getCell('F8').value = 'Km HĐ';
+            worksheet.getCell('F8').font = { bold: true };
+            worksheet.getCell('G8').value = order?.shiftReport?.vehicleSummaries.reduce((sum, report) => { return sum + report?.distanceKm }, 0) || '';
+
+            worksheet.getCell('H8').value = 'Giờ HĐ';
+            worksheet.getCell('H8').font = { bold: true };
+            worksheet.getCell('I8').value = order?.shiftReport?.vehicleSummaries.reduce((sum, report) => { return sum + report?.travelHours }, 0) || '';
+
+
+            worksheet.mergeCells('A10:M10');
+            const product = worksheet.getCell('A10');
+            product.value = `I. SẢN PHẨM`;
+            product.font = { bold: true, size: 14 };
+            product.alignment = { horizontal: 'center', vertical: 'middle' };
+
+            worksheet.getCell('A11').value = 'STT';
+            worksheet.getCell('B11').value = 'Nhận tải';
+            worksheet.getCell('C11').value = 'Đổ tải(dừng/đỗ)';
+            worksheet.getCell('D11').value = 'Loại hàng';
+            worksheet.getCell('E11').value = 'Cung độ \ntạm tính \n(km)';
+            worksheet.getCell('F11').value = 'Chiều cao \nnâng tải \ntạm tính';
+            worksheet.getCell('G11').value = 'Số chuyển \nthực hiện';
+            worksheet.getCell('H11').value = 'Khối lượng \n tạm tính \nm3';
+            worksheet.getCell('I11').value = 'Trọng lượng \n tạm tính \n tấn';
+            worksheet.getCell('J11').value = 'Sản lượng \n tạm tính \n(tkm)';
+            worksheet.getCell('K11').value = 'Nhiên liệu \n định mức';
+            worksheet.getCell('L11').value = 'Điểm lương \n tạm tính';
+            worksheet.getCell('M11').value = 'Ghi chú';
+
+            const headerRow = worksheet.getRow(11);
+            for (let col = 1; col <= 13; col++) {
+                const cell = headerRow.getCell(col);
+                cell.font = { bold: true };
+                cell.alignment = {
+                    ...cell.alignment,
+                    wrapText: true,
+                    vertical: 'middle',
+                    horizontal: 'center',
+                };
+            }
+
+            for (let index = 0; index < (reports?.length || 0); index++) {
+                const report = reports[index];
+
+                const rowIndex = index + 12;
+                worksheet.getCell(`A${rowIndex}`).value = index + 1;
+                worksheet.getCell(`B${rowIndex}`).value = report.excavator?.code || '';
+                worksheet.getCell(`C${rowIndex}`).value = report.toLocation?.name || '';
+                worksheet.getCell(`D${rowIndex}`).value = report.material?.name || '';
+                worksheet.getCell(`E${rowIndex}`).value = '';
+                worksheet.getCell(`F${rowIndex}`).value = '';
+                worksheet.getCell(`G${rowIndex}`).value = report?.quantity || "";
+                worksheet.getCell(`H${rowIndex}`).value = '';
+                worksheet.getCell(`I${rowIndex}`).value = "";
+                worksheet.getCell(`J${rowIndex}`).value = "";
+                worksheet.getCell(`K${rowIndex}`).value = "";
+                worksheet.getCell(`L${rowIndex}`).value = "";
+                worksheet.getCell(`M${rowIndex}`).value = "";
+
+            };
+            const totalRow = (reports?.length || 0) + 13;
+            addTableBorders(worksheet, 10, totalRow + 1, 1, 13);
+            worksheet.mergeCells(`A${totalRow}:B${totalRow}`);
+            worksheet.getCell(`A${totalRow}`).value = 'Tổng cộng';
+            worksheet.getCell(`A${totalRow}`).font = { bold: true };
+            worksheet.getCell(`A${totalRow}`).alignment = { horizontal: 'right' }
+
+            worksheet.mergeCells(`C${totalRow}:G${totalRow}`);
+            worksheet.getCell(`C${totalRow}`).value = reports.reduce((sum, report) => { return sum + report.quantity }, 0) || '';
+            worksheet.getCell(`C${totalRow}`).font = { bold: true };
+
+            worksheet.getCell(`H${totalRow}`).value = '';
+            worksheet.getCell(`I${totalRow}`).value = '';
+            worksheet.getCell(`J${totalRow}`).value = '';
+
+            worksheet.mergeCells(`K${totalRow}:L${totalRow}`);
+            worksheet.getCell(`K${totalRow}`).value = '';
+
+            worksheet.mergeCells(`A${totalRow + 1}:M${totalRow + 1}`);
+            worksheet.getCell(`A${totalRow + 1}`).value = 'Mức bồi dưỡng (x1000đ):';
+
+            worksheet.mergeCells(`A${totalRow + 2}:L${totalRow + 2}`);
+            const header3 = worksheet.getCell(`A${totalRow + 2}`);
+            header3.value = `II.NHIÊN LIỆU`;
+            header3.font = { bold: true, size: 14 };
+            header3.alignment = { horizontal: 'center', vertical: 'middle' };
+
+            worksheet.getCell(`A${totalRow + 3}`).value = 'Phương tiện';
+            worksheet.getCell(`A${totalRow + 3}`).font = { bold: true };
+            worksheet.getCell(`B${totalRow + 3}`).value = 'Tồn dầu';
+            worksheet.getCell(`B${totalRow + 3}`).font = { bold: true };
+            worksheet.getCell(`C${totalRow + 3}`).value = 'Lĩnh trong ca';
+            worksheet.getCell(`C${totalRow + 3}`).font = { bold: true };
+            worksheet.getCell(`D${totalRow + 3}`).value = 'Tồn cuối ca';
+            worksheet.getCell(`D${totalRow + 3}`).font = { bold: true };
+            worksheet.getCell(`E${totalRow + 3}`).value = 'Tiêu thụ';
+            worksheet.getCell(`E${totalRow + 3}`).font = { bold: true };
+            worksheet.getCell(`F${totalRow + 3}`).value = 'Định mức';
+            worksheet.getCell(`F${totalRow + 3}`).font = { bold: true };
+            worksheet.getCell(`G${totalRow + 3}`).value = 'Tiết kiệm';
+            worksheet.getCell(`G${totalRow + 3}`).font = { bold: true };
+            worksheet.mergeCells(`H${totalRow + 3}:I${totalRow + 3}`)
+            worksheet.getCell(`H${totalRow + 3}`).value = 'Sử dụng vượt';
+            worksheet.getCell(`H${totalRow + 3}`).font = { bold: true };
+            worksheet.getCell(`H${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle' };
+            worksheet.mergeCells(`J${totalRow + 3}:M${totalRow + 3}`)
+            worksheet.getCell(`J${totalRow + 3}`).value = 'Ghi chú';
+            worksheet.getCell(`J${totalRow + 3}`).font = { bold: true };
+            worksheet.getCell(`J${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle' };
+
+
+            const fuelHeaderRow = totalRow + 2;
+            const fuelRows = order.shiftReport?.vehicleSummaries?.length || 0;
+            const fuelEndRow = fuelHeaderRow + fuelRows + 2;
+
+            addTableBorders(worksheet, fuelHeaderRow, fuelEndRow, 1, 13);
+            for (let index = 0; index < (order.shiftReport?.vehicleSummaries?.length || 0); index++) {
+                const rep = order.shiftReport?.vehicleSummaries[index];
+
+                worksheet.getCell(`A${totalRow + 4 + index}`).value = rep?.vehicle?.code || '';
+                worksheet.getCell(`B${totalRow + 4 + index}`).value = rep?.fuelRemain || '';
+                worksheet.getCell(`C${totalRow + 4 + index}`).value = rep?.fuelReceived || '';
+                worksheet.getCell(`D${totalRow + 4 + index}`).value = rep?.fuelRemainEnd || '';
+                worksheet.getCell(`E${totalRow + 4 + index}`).value =
+                    (rep?.fuelRemain ?? 0) + (rep?.fuelReceived ?? 0) - (rep?.fuelRemainEnd ?? 0);
+
+                worksheet.getCell(`F${totalRow + 4 + index}`).value = '';
+
+                worksheet.mergeCells(`H${totalRow + 4 + index}:I${totalRow + 4 + index}`);
+                worksheet.getCell(`H${totalRow + 4 + index}`).value = '';
+
+                worksheet.mergeCells(`J${totalRow + 4 + index}:M${totalRow + 4 + index}`);
+                worksheet.getCell(`J${totalRow + 4 + index}`).value = '';
+            }
+
+            const deviceRow = order.device?.length || []
+            worksheet.mergeCells(`B${totalRow + 5 + deviceRow}:D${totalRow + 5 + deviceRow}`)
+            worksheet.getCell(`B${totalRow + 5 + deviceRow}`).value = 'NGƯỜI NHẬN LỆNH';
+            worksheet.getCell(`B${totalRow + 5 + deviceRow}`).font = { bold: true };
+            worksheet.getCell(`B${totalRow + 5 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+            worksheet.getCell(`C${totalRow + 7 + deviceRow}`).value = '✔';
+            worksheet.getCell(`C${totalRow + 7 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+            worksheet.getCell(`C${totalRow + 7 + deviceRow}`).font = { bold: true, size: 12 };
+            worksheet.mergeCells(`B${totalRow + 9 + deviceRow}:D${totalRow + 9 + deviceRow}`)
+            worksheet.getCell(`B${totalRow + 9 + deviceRow}`).font = { bold: true };
+            worksheet.getCell(`B${totalRow + 9 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+            worksheet.getCell(`B${totalRow + 9 + deviceRow}`).value = order.assignedTo?.fullName || "";
+
+
+            worksheet.mergeCells(`I${totalRow + 5 + deviceRow}:M${totalRow + 5 + deviceRow}`)
+            worksheet.getCell(`I${totalRow + 5 + deviceRow}`).value = 'NGƯỜI RA LỆNH';
+            worksheet.getCell(`I${totalRow + 5 + deviceRow}`).font = { bold: true };
+            worksheet.getCell(`I${totalRow + 5 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+            worksheet.mergeCells(`I${totalRow + 9 + deviceRow}:M${totalRow + 9 + deviceRow}`)
+            worksheet.getCell(`I${totalRow + 9 + deviceRow}`).font = { bold: true };
+            worksheet.getCell(`I${totalRow + 9 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+            worksheet.getCell(`I${totalRow + 9 + deviceRow}`).value = order.createdBy?.fullName || "";
+
+
+            worksheet.columns.forEach((column) => {
+                column.width = 10;
+            });
+
+            worksheet.eachRow((row) => {
+                row.eachCell((cell) => {
+                    // Nếu chưa có font, tạo font mới
+                    if (!cell.font) cell.font = {};
+                    cell.font.size = 9; // hoặc 8, tuỳ theo bạn muốn nhỏ đến đâu
+                });
+            });
+        }
+
+        // Xuất file
+        const buffer = await workbook.xlsx.writeBuffer();
+
+        // Thiết lập header để tải file về
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader(
+            'Content-Disposition',
+            "attachment; filename*=UTF-8''*.xlsx"
+        );     // Gửi buffer về client
+        res.send(buffer);
+        req.logger.info(`✅ Export excel thành công`);
+
+
+    } catch (err) {
+        req.logger.error("❌ Lỗi khi export", err);
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+};
 //
 //báo ca tình trạng ô tô
 router.post('/vehicleShiftReport/view', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
