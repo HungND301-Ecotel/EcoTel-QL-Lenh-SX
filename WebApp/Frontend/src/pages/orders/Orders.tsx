@@ -90,6 +90,7 @@ const Orders: React.FC = () => {
     const [selectedOrders, setSelectedOrders] = useState<any[]>([]);
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
+    const formRef = useRef<HTMLDivElement>(null);
 
     const handleSelected = (order: any) => {
         setSelectedOrders(prev =>
@@ -248,6 +249,14 @@ const Orders: React.FC = () => {
         setTransfer(false)
         setExpanded(true)
         setOpen(true);
+        setTimeout(() => {
+            if (formRef.current) {
+                formRef.current.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        }, 500);
     };
 
     const handleClose = () => {
@@ -295,7 +304,18 @@ const Orders: React.FC = () => {
         });
     };
 
-
+    useEffect(() => {
+        if (transfer && formRef.current) {
+            setTimeout(() => {
+                if (formRef.current) {
+                    formRef.current.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            }, 500);
+        }
+    }, [transfer]);
 
 
     //
@@ -322,7 +342,7 @@ const Orders: React.FC = () => {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
                 <Typography variant="h3" color={'blue'}>Lệnh sản xuất</Typography>
             </Box>
-            <Accordion expanded={expanded}>
+            <Accordion expanded={expanded} ref={formRef}>
                 <AccordionSummary
                     expandIcon={
                         <></>}
@@ -793,12 +813,21 @@ const Orders: React.FC = () => {
                                                                 setOpen(false)
                                                                 setExpanded(true)
                                                                 setTransfer(true)
+
                                                             }
                                                         } else {
                                                             setSelectedOrder(order)
                                                             setOpen(false)
                                                             setExpanded(true)
                                                             setTransfer(true)
+                                                            setTimeout(() => {
+                                                                if (formRef.current) {
+                                                                    formRef.current.scrollIntoView({
+                                                                        behavior: 'smooth',
+                                                                        block: 'start'
+                                                                    });
+                                                                }
+                                                            }, 500);
                                                         }
                                                     }}
                                                 >

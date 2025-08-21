@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
     Box,
     Button,
@@ -50,6 +50,7 @@ const Departments = () => {
     const [value, setValue] = useState("")
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
+    const formRef = useRef<HTMLDivElement>(null);
 
     const handleSelected = (departmentId: string) => {
         setSelectedDepartments(prev =>
@@ -199,6 +200,14 @@ const Departments = () => {
         }
         setExpanded(true);
         setOpen(true);
+        setTimeout(() => {
+            if (formRef.current) {
+                formRef.current.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        }, 500);
     };
 
     const handleClose = () => {
@@ -246,7 +255,7 @@ const Departments = () => {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, mt: 3 }}>
                 <Typography variant="h3" color={'blue'}>Đơn vị</Typography>
             </Box>
-            <Accordion expanded={expanded}>
+            <Accordion expanded={expanded} ref={formRef}>
                 <AccordionSummary
                     expandIcon={<></>}
                     aria-controls="panel1-content"

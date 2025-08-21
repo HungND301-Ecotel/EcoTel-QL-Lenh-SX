@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Box,
@@ -58,6 +58,7 @@ const Positions: React.FC = () => {
     const [value, setValue] = useState("")
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
+    const formRef = useRef<HTMLDivElement>(null);
 
     const handleSelected = (positionId: string) => {
         setSelectedPositions(prev =>
@@ -205,6 +206,14 @@ const Positions: React.FC = () => {
         }
         setExpanded(true)
         setOpen(true);
+        setTimeout(() => {
+            if (formRef.current) {
+                formRef.current.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        }, 500);
     };
 
     const handleClose = () => {
@@ -252,7 +261,7 @@ const Positions: React.FC = () => {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, mt: 3 }}>
                 <Typography variant="h3" color={'blue'}>Chức danh, nghề nghiệp</Typography>
             </Box>
-            <Accordion expanded={expanded}>
+            <Accordion expanded={expanded} ref={formRef}>
                 <AccordionSummary
                     expandIcon={<></>}
                     aria-controls="panel1-content"

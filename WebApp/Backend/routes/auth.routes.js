@@ -210,7 +210,7 @@ router.post('/login', async (req, res) => {
             }
         });
     } catch (error) {
-        req.logger.error("❌ Đăng nhập thất bại", err);
+        req.logger.error("❌ Đăng nhập thất bại", error);
         res.status(500).send({ status: 'error', message: error.message, stack: error.stack })
 
     }

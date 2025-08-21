@@ -82,6 +82,7 @@ const DispatcherOrders: React.FC = () => {
     const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
     const [selectedOrders, setSelectedOrders] = useState<any[]>([]);
     const [selectedRow, setSelectedRow] = useState<any | null>(null);
+    const formRef = useRef<HTMLDivElement>(null);
 
     const [status, setStatus] = useState('')
     const queryClient = useQueryClient();
@@ -232,6 +233,14 @@ const DispatcherOrders: React.FC = () => {
         setTransfer(false)
         setExpanded(true)
         setOpen(true);
+        setTimeout(() => {
+            if (formRef.current) {
+                formRef.current.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        }, 500);
     };
 
 
@@ -280,6 +289,19 @@ const DispatcherOrders: React.FC = () => {
         });
     };
 
+    useEffect(() => {
+        if (transfer && formRef.current) {
+            setTimeout(() => {
+                if (formRef.current) {
+                    formRef.current.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            }, 500);
+        }
+    }, [transfer]);
+
 
     const [page, setPage] = React.useState(0);
     const [pageSize, setPageSize] = React.useState(10);
@@ -303,7 +325,7 @@ const DispatcherOrders: React.FC = () => {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
                 <Typography variant="h4" color={'blue'}>Lệnh sản xuất</Typography>
             </Box>
-            <Accordion expanded={expanded}>
+            <Accordion expanded={expanded} ref={formRef}>
                 <AccordionSummary
                     expandIcon={
                         <></>}
@@ -704,6 +726,14 @@ const DispatcherOrders: React.FC = () => {
                                                             setOpen(false)
                                                             setExpanded(true)
                                                             setTransfer(true)
+                                                            setTimeout(() => {
+                                                                if (formRef.current) {
+                                                                    formRef.current.scrollIntoView({
+                                                                        behavior: 'smooth',
+                                                                        block: 'start'
+                                                                    });
+                                                                }
+                                                            }, 500);
                                                         }
                                                     }}
                                                 >
