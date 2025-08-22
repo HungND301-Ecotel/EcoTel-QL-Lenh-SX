@@ -158,7 +158,6 @@ const Jobs: React.FC = () => {
             showErrorAlert(error.response?.data?.message || 'Lỗi khi import');
         }
     });
-    console.log(progress)
     const exportExcel = useMutation({
         mutationFn: () => {
             return api.post('/jobs/exportFile', {}, {

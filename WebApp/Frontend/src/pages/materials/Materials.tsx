@@ -133,6 +133,7 @@ const Materials: React.FC = () => {
             api.post('/materials/importFile', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
                 onUploadProgress: (progressEvent) => {
+
                     const percent = Math.round(
                         (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
                     );
