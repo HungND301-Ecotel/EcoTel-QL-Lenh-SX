@@ -169,7 +169,8 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
             note: initialValues?.shiftReport?.vehicleSummaries
                 ?.filter((item: any) => item.note?.trim()) // bỏ null, undefined, chuỗi rỗng
                 .map((item: any) => `${item.vehicle?.code} : ${item.note}`)
-                .join('\n') || ''
+                .join('\n') || '',
+            previous_order_id: initialValues?._id
         },
         enableReinitialize: true, // Để cập nhật lại giá trị khi initialValues thay đổi
         validationSchema,
@@ -189,7 +190,8 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                 workContent: values.workContent,
                 safetyMeasure: values.safetyMeasure,
                 status: "pending",
-                note: values.note
+                note: values.note,
+                previous_order_id: values.previous_order_id
             };
             const duplicates = await
                 api.post(`/orders/checkExist`, {

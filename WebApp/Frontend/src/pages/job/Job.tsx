@@ -136,7 +136,7 @@ const Jobs: React.FC = () => {
         mutationFn: (formData: FormData) =>
             api.post('/jobs/importFile', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
-                onDownloadProgress: (progressEvent) => {
+                onUploadProgress: (progressEvent) => {
                     const percent = Math.round(
                         (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
                     );
@@ -158,7 +158,6 @@ const Jobs: React.FC = () => {
             showErrorAlert(error.response?.data?.message || 'Lỗi khi import');
         }
     });
-
     const exportExcel = useMutation({
         mutationFn: () => {
             return api.post('/jobs/exportFile', {}, {
@@ -413,10 +412,21 @@ const Jobs: React.FC = () => {
             </Accordion>
             {isUploading && (
                 <Box sx={{ mt: 2 }}>
-                    <Typography variant="body2" color="text.secondary" align="center">
-                        Đang tải lên... {progress}%
-                    </Typography>
-                    <LinearProgress variant="determinate" value={progress} />
+                    {progress < 100 ? (
+                        <>
+                            <Typography variant="body2" align="center">
+                                Đang tải lên... {progress}%
+                            </Typography>
+                            <LinearProgress variant="determinate" value={progress} />
+                        </>
+                    ) : (
+                        <>
+                            <Typography variant="body2" align="center">
+                                Đang xử lý dữ liệu trên server...
+                            </Typography>
+                            <LinearProgress />
+                        </>
+                    )}
                 </Box>
             )}
             <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>

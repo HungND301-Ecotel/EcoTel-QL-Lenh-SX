@@ -212,7 +212,8 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
             excavator, location, material, workContent,
             note,
             safetyMeasure,
-            department
+            department,
+            previous_order_id
         } = req.body;
 
 
@@ -279,6 +280,7 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
             distance,
             liftHeight,
             safetyMeasure,
+            previous_order_id,
             excavator, location, material, workContent, note,
             createdBy: req.user._id
         });
@@ -410,6 +412,18 @@ router.put('/:id', verifyToken, async (req, res, next) => {
         } else {
             req.logger.info("ℹ️ Trạng thái lệnh không thay đổi. Bỏ qua việc tạo thông báo và lịch sử.");
         }
+
+        if (updatedOrder.shiftReport?.handoverNotes) {
+            const nextOrder = await Order.findOne({ previous_order_id: order._id });
+            if (nextOrder) {
+                nextOrder.note = updatedOrder.shiftReport.handoverNotes;
+                await nextOrder.save();
+            } else {
+                // ghi log hoặc xử lý nếu không có nextOrder
+                req.logger?.warn?.(`Không tìm thấy nextOrder cho order ${order._id}`);
+            }
+        }
+
 
         // 6. Gửi phản hồi
         res.status(200).json({

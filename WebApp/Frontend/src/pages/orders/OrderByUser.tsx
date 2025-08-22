@@ -310,7 +310,7 @@ const OrderByUsers: React.FC = () => {
                                                 {order.shiftHour}
                                             </TableCell>}
                                             {visibleColumns.includes('job') && <TableCell sx={{}}>
-                                                {order.job.name || ''}
+                                                {order.job?.name || ''}
                                             </TableCell>}
                                             {visibleColumns.includes('content') && <TableCell sx={{
                                                 whiteSpace: 'pre-wrap',
@@ -379,7 +379,7 @@ const OrderByUsers: React.FC = () => {
                                 <Typography><strong>Nhân viên:</strong> {selectedRow.assignedTo?.fullName}-{selectedRow.assignedTo?.salaryCode}</Typography>
                                 <Typography><strong>Ngày:</strong> {selectedRow.workingDate ? format(new Date(selectedRow.workingDate), 'yyyy-MM-dd') : ''}</Typography>
                                 <Typography><strong>Ca:</strong> {selectedRow.shift?.name}</Typography>
-                                <Typography><strong>Công việc:</strong> {selectedRow.job.name}</Typography>
+                                <Typography><strong>Công việc:</strong> {selectedRow.job?.name}</Typography>
                                 <Typography><strong>Nội dung:</strong> {selectedRow.workContent}</Typography>
                                 <Typography><strong>Phương tiện:</strong> {selectedRow.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')}</Typography>
                                 <Typography><strong>Trạng thái:</strong> {
