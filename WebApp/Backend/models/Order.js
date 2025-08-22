@@ -72,6 +72,10 @@ const orderSchema = new mongoose.Schema({
         enum: ['pending', 'in_progress', 'completed', 'warning', 'cancel'],
         default: 'pending'
     },
+    previous_order_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Order',
+    },
     note: {
         type: String,
     },

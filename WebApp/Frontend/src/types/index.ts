@@ -94,6 +94,7 @@ export interface Order {
     workContent: string;
     assistants?: string[];
     status: 'pending' | 'in_progress' | 'completed' | 'warning' | 'cancel';
+    previous_order_id?: string,
     note?: string;
     safetyMeasure?: string;
     temporaryError?: string
