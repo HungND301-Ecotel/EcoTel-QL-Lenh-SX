@@ -50,7 +50,9 @@ jobs:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.STAGING_SSH_KEY }}
-          source: "deployment/staging/*"
+          source: |
+            "deployment/staging/*"
+            "./Webapp/.env"
           target: "/home/${{ secrets.STAGING_USER }}/ecotel_ktv/deployment/staging"
           strip_components: 2   # Removes "deployment/staging/" folder path!
       

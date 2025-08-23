@@ -10,7 +10,7 @@
 services:
 
   ktv_reverse_proxy_service:
-    image: ecoteldev/ktv_reverse_proxy_img:staging
+    image: ${REGISTRY}/ktv_reverse_proxy_img:${VERSION}
     ports:
       # HOST_PORT:CONTAINER_PORT
       - "6868:8888"
@@ -31,7 +31,7 @@ services:
         max-file: "3"
 
   ktv_Frontend_service:
-    image: ecoteldev/ktv_ecotel_frontend_img:staging
+    image: ${REGISTRY}/ktv_ecotel_frontend_img:${VERSION}
     # target: development
     stdin_open: true
     environment:
@@ -57,7 +57,7 @@ services:
   ktv_Backend_service:
     env_file:
       - .env_backend
-    image: ecoteldev/ktv_ecotel_backend_img:staging
+    image: ${REGISTRY}/ktv_ecotel_backend_img:${VERSION}
     # target: development
     stdin_open: true
     environment:
@@ -157,7 +157,7 @@ services:
   ktv_backup:
     env_file:
       - .env_backend
-    image: ecoteldev/ktv_ecotel_backup_img:staging
+    image: ${REGISTRY}/ktv_ecotel_backup_img:${VERSION}
     container_name: mongo_backup
     environment:
       - TZ=Asia/Ho_Chi_Minh
