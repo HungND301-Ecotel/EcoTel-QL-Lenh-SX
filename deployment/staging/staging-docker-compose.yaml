@@ -83,9 +83,9 @@ services:
     image: mongo
     container_name: ktv_mongo_db
     #restart: always
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
+    env_file:
+      - .env_backend
+    environment:      
       TZ: Asia/Ho_Chi_Minh
     volumes:
       - .mongodb-data:/data/db

@@ -25,8 +25,8 @@ def restore_backup():
     # MongoDB credentials
     MONGODB_HOST = os.getenv("MONGODB_HOST", "mongodb")
     MONGODB_PORT = os.getenv("MONGODB_PORT", "27017")
-    MONGODB_USER = os.getenv("MONGODB_USER", "user")
-    MONGODB_PASSWORD = os.getenv("MONGODB_PASSWORD", "password")
+    MONGODB_USER = os.getenv("MONGO_INITDB_ROOT_USERNAME", "user")
+    MONGODB_PASSWORD = os.getenv("MONGO_INITDB_ROOT_PASSWORD", "password")
     MONGODB_DATABASE = os.getenv("MONGODB_DATABASE", "database")
     MONGODB_AUTH_DB = os.getenv("MONGODB_AUTH_DB", "admin")
     

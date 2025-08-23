@@ -39,7 +39,7 @@ staging:
 
 # Docker compose build & publishing to Dockerhub for release
 release:
-	@echo "REGISTRY=${REGISTRY}\nVERSION=${RELEASE_VERSION}" > .env
+	@echo "REGISTRY=${REGISTRY}\nVERSION=${RELEASE_VERSION}-${TAG_VERSION}-${commit_id}" > .env
 	@echo "Docker compose build from a file..."
 	docker compose -f docker-compose-build.yaml build --parallel
 	@echo "Docker login with github secrets"

@@ -5,7 +5,7 @@ name: Deploy for release versions
 on:
   push:
     branches:
-      - main  # Deploy when code is pushed to 'develop'
+      - main  # Deploy when code is pushed to 'main'
 
 env:
   WEBAPP_NAME: ECOTEL_QL_LENH_SX    # set this to your application's name
@@ -43,6 +43,9 @@ jobs:
           cd WebApp
           make release
           cd ../
+          ls -al WebApp/.env
+          cat WebApp/.env
+          cp WebApp/.env deployment/release/
       
       - name: Transfer docker-compose file to VPS for deployment
         uses: appleboy/scp-action@v0.1.4
