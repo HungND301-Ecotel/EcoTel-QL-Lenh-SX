@@ -46,6 +46,15 @@ jobs:
           ls -al WebApp/.env
           cat WebApp/.env
           cp WebApp/.env deployment/staging/
+
+      - name: Ensure target directory exists
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            mkdir -p /home/${{ secrets.STAGING_USER }}/ecotel_ktv/deployment/staging
       
       - name: Transfer docker-compose file to VPS for deployment
         uses: appleboy/scp-action@v0.1.4

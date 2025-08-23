@@ -46,6 +46,15 @@ jobs:
           ls -al WebApp/.env
           cat WebApp/.env
           cp WebApp/.env deployment/release/
+
+      - name: Ensure target directory exists
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.RELEASE_HOST }}
+          username: ${{ secrets.RELEASE_USER }}
+          key: ${{ secrets.RELEASE_SSH_KEY }}
+          script: |
+            mkdir -p /home/${{ secrets.RELEASE_USER }}/ecotel_ktv/deployment/release
       
       - name: Transfer docker-compose file to VPS for deployment
         uses: appleboy/scp-action@v0.1.4
