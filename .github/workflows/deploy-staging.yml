@@ -72,8 +72,6 @@ jobs:
             docker compose -f staging-docker-compose.yaml down # always down first
             docker ps
             
-          
-
       - name: Deploy to Staging via SSH
         uses: appleboy/ssh-action@v0.1.7
         with:
