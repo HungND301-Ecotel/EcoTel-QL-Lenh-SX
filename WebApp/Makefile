@@ -30,7 +30,6 @@ build:
 # Staging
 staging:
 	@echo "REGISTRY=${REGISTRY}\nVERSION=${STAGING_VERSION}-${TAG_VERSION}-${commit_id}" > .env
-	ls -al ./
 	@echo "Docker compose build from a file..."
 	docker compose -f docker-compose-build.yaml build --parallel
 	@echo "Docker login with github secrets"
