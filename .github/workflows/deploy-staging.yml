@@ -44,8 +44,8 @@ jobs:
           make staging
           cd ../
           ls -al WebApp/.env
-          cat WebApp
-          cp WebApp/.env deployment/staging
+          cat WebApp/.env
+          cp WebApp/.env deployment/staging/
       
       - name: Transfer docker-compose file to VPS for deployment
         uses: appleboy/scp-action@v0.1.4
