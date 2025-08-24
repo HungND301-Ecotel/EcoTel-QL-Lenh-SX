@@ -32,7 +32,7 @@ router.get('/', verifyToken, async (req, res, next) => {
             query.status = req.query.status;
         }
         if (req.query.device) {
-            query.device = { $in: Array.isArray(req.query.device) ? req.query.device : [req.query.device] };
+            query.device = new mongoose.Types.ObjectId(req.query.device);
         }
         if (req.query.startTime && req.query.endTime) {
             const endTime = new Date(req.query.endTime);
