@@ -1,0 +1,13 @@
+services:
+  ktv_mobile_service:
+    image: ghcr.io/cirruslabs/flutter:latest
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: >
+      bash -c "
+        flutter clean &&
+        flutter pub get &&
+        flutter build apk --release &&
+        flutter build appbundle --release
+      "
