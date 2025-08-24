@@ -7,6 +7,7 @@ const Notification = require('../models/Notification');
 
 const History = require('../models/History');
 const User = require('../models/User')
+const mongoose=require('mongoose')
 
 
 
@@ -21,11 +22,11 @@ const CheckIn = require('../models/CheckIn');
 router.get('/', verifyToken, async (req, res, next) => {
     try {
         const user = req.user;
-        const query = {};
+        const query = {};   
 
         // Các bộ lọc chung
         if (req.query.employee) {
-            query.assignedTo = req.query.employee;
+            query.assignedTo = new mongoose.Types.ObjectId(req.query.employee);
         }
         if (req.query.status) {
             query.status = req.query.status;
