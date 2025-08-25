@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { AppError } = require('../utils/errorHandler');
 const SafetyMeasure = require('../models/SafetyMeasures');
+const Job = require('../models/Job');
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
@@ -9,19 +10,18 @@ const ExcelJS = require('exceljs');
 const xlsx = require('xlsx');
 
 const columnMapping = {
-    'Id(Không sửa)': '_id',
-    'Nội dung': 'content',
-    'Nội dung chung': 'master_content',
-    'Loại công việc': 'jobType',
+    'Nội dung chung': 'content',
+    'Nội dung riêng': 'master_content',
+    'Loại công việc': 'job',
 };
 
 router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
-        const { content, master_content, jobType } = req.body;
+        const { content, master_content, job } = req.body;
         const newSafetyMeasure = new SafetyMeasure({
             content,
             master_content,
-            jobType
+            job
         });
         await newSafetyMeasure.save();
         req.logger.info(`✅ Tạo biện pháp an toàn thành công: ${content}`);
@@ -79,7 +79,7 @@ router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res,
 
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const SafetyMeasures = await SafetyMeasure.find().collation({ locale: "vi", strength: 1 })
+        const SafetyMeasures = await SafetyMeasure.find().populate('job', 'name').collation({ locale: "vi", strength: 1 })
             .sort({ content: 1 });
         res.status(200).send({ status: 'success', data: SafetyMeasures });
     } catch (err) {
@@ -108,33 +108,52 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
             req.logger.warn("⚠️ Import file thất bại - Không tìm thấy dữ liệu hợp lệ.");
             return res.status(400).json({ status: 'error', message: 'Không tìm thấy dữ liệu hợp lệ trong file.' });
         }
+        const uniqueJobs = [...new Set(dataImport.map(d => d.job).filter(Boolean))];
 
-        const operations = dataImport.map(item => {
-            const cleanedId = item._id ? String(item._id).trim().replace(/"/g, '') : null;
-            const { _id, ...updateData } = item;
+        const existingJobs = await Job.find({ name: { $in: uniqueJobs } }).lean()
 
-            if (cleanedId) {
-                return {
-                    updateOne: {
-                        filter: { _id: cleanedId },
-                        update: updateData,
-                        upsert: true
-                    }
-                };
-            } else {
-                return {
-                    insertOne: {
-                        document: updateData
-                    }
-                };
+        const jobMap = new Map(existingJobs.map(c => [c.name, c._id]));
+        const operations = [];
+        const invalidRows = [];
+
+        for (const item of dataImport) {
+            const { job, ...updateData } = item;
+
+            let jobId = null;
+            if (job) {
+                jobId = jobMap.get(job);
+                if (!jobId) {
+                    invalidRows.push({ row: item, error: `Loại công việc không hợp lệ: ${job}` });
+                    continue;
+                }
             }
-        });
+            if (jobId) {
+                updateData.job = jobId;
+            }
+            operations.push({
+                updateOne: {
+                    filter: { content: updateData.content },
+                    update: { $set: updateData },
+                    upsert: true,
+                },
+            });
+        };
 
-        await SafetyMeasure.bulkWrite(operations);
+        let bulkResult = null;
+        if (operations.length > 0) {
+            bulkResult = await SafetyMeasure.bulkWrite(operations);
+        }
         req.logger.info(`✅ Import file thành công. Đã xử lý ${dataImport.length} bản ghi.`);
         res.status(200).json({
             status: 'success',
-            message: `Import file thành công. Đã xử lý ${dataImport.length} bản ghi.`,
+            message: 'Import dữ liệu hoàn tất.',
+            summary: {
+                totalProcessed: dataImport.length,
+                insertedCount: bulkResult ? bulkResult.upsertedCount : 0,
+                updatedCount: bulkResult ? bulkResult.modifiedCount : 0,
+                invalidCount: invalidRows.length,
+            },
+            invalidRows: invalidRows,
         });
     } catch (error) {
         req.logger.error("❌ Lỗi khi import file biện pháp an toàn", error);
@@ -147,23 +166,23 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
 });
 router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
-        const data = await SafetyMeasure.find();
+        const data = await SafetyMeasure.find().populate('job', 'name');
 
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('DS.bien_phap');
 
+        const jobs = await Job.find();
+
         worksheet.columns = [
-            { header: 'Id(Không sửa)', key: '_id', width: 20 },
-            { header: 'Nội dung', key: 'content', width: 50 },
-            { header: 'Nội dung chung', key: 'master_content', width: 50 },
-            { header: 'Loại công việc', key: 'jobType', width: 20 },
+            { header: 'Nội dung chung', key: 'content', width: 50 },
+            { header: 'Nội dung riêng', key: 'master_content', width: 50 },
+            { header: 'Loại công việc', key: 'job', width: 20 },
         ];
 
         const formattedDevices = (data || []).map(item => ({
-            _id: item._id,
             content: item?.content || '',
             master_content: item?.master_content || '',
-            jobType: item?.jobType || '',
+            job: item?.job?.name || '',
         }));
         worksheet.addRows(formattedDevices);
 
@@ -173,12 +192,16 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
                 cell.alignment = { vertical: 'middle', wrapText: true, };
             });
         });
+        const jobList = [...new Set(jobs.map(p => p.name).filter(Boolean))];
+
+        worksheet.getColumn('X').values = ['jobs', ...jobList];
+        worksheet.getColumn('X').hidden = true;
 
         const MAX = Math.max(worksheet.rowCount + 100, 1000);
-        worksheet.dataValidations.add(`D2:D${MAX}`, {
+        worksheet.dataValidations.add(`C2:C${MAX}`, {
             type: 'list',
             allowBlank: true,
-            formulae: ['"Vận hành xe,Vận hành gạt,Vận hành khoan,Vận hành xúc,Vận hành xe phục vụ, Khác"'],
+            formulae: [`=$X$2:$X$${jobList.length + 1}`],
             showErrorMessage: true,
             errorTitle: 'Giá trị không hợp lệ',
         });
