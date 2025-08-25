@@ -29,6 +29,9 @@ import {
     TablePagination,
     Breadcrumbs,
     LinearProgress,
+    Autocomplete,
+    styled,
+    Popper,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -42,8 +45,16 @@ import {
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import api from '../../config/api.config';
-import { SafetyMeasure } from '../../types';
+import { Job, SafetyMeasure } from '../../types';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
+
+
+const StyledPopper = styled(Popper)({
+    '& .MuiAutocomplete-listbox': {
+        maxHeight: '200px', // Đặt chiều cao tối đa mong muốn
+        overflowY: 'auto', // Thêm thanh cuộn khi nội dung vượt quá chiều cao
+    },
+});
 
 const validationSchema = yup.object({
     content: yup.string().required('Nhập nội dung'),
@@ -88,7 +99,10 @@ const SafetyMeasures: React.FC = () => {
         queryFn: () => api.get(`/safetyMeasures`).then(res => res.data.data),
     });
 
-
+    const { data: jobs = [] } = useQuery({
+        queryKey: ['jobs'],
+        queryFn: () => api.get(`/jobs`).then(res => res.data.data),
+    });
     const createMutation = useMutation({
         mutationFn: (newsafetyMeasure: Partial<SafetyMeasure>) =>
             api.post('/safetyMeasures', newsafetyMeasure).then(res => res.data),
@@ -118,12 +132,31 @@ const SafetyMeasures: React.FC = () => {
             setIsUploading(true);
             setProgress(0); // Reset tiến trình khi bắt đầu
         },
-        onSuccess: () => {
+        onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['safetyMeasures'] });
             setIsUploading(false);
+            let combinedMessage = `Import dữ liệu hoàn tất. Đã xử lý ${data.summary.totalProcessed} bản ghi.`;
+            combinedMessage += `\nĐã thêm mới: ${data.summary.insertedCount}`;
+            combinedMessage += `\nĐã cập nhật: ${data.summary.updatedCount}`;
 
-            showSuccessAlert("Import thành công!");
-            handleClose();
+            // Thêm chi tiết lỗi nếu có
+            if (data.invalidRows && data.invalidRows.length > 0) {
+                combinedMessage += `\n\n--- CÓ LỖI XẢY RA TRONG QUÁ TRÌNH IMPORT ---`;
+                combinedMessage += `\n${data.invalidRows.length} bản ghi không hợp lệ:`;
+
+                // Liệt kê chi tiết một vài lỗi đầu tiên
+                data.invalidRows.slice(0, 5).forEach((item: any, index: number) => {
+                    combinedMessage += `\n- Dòng ${index + 1}: Lỗi "${item.error}"`;
+                });
+
+                // Thông báo nếu còn nhiều lỗi hơn
+                if (data.invalidRows.length > 5) {
+                    combinedMessage += `\n... và ${data.invalidRows.length - 5} lỗi khác.`;
+                }
+            }
+
+            showSuccessAlert(combinedMessage);
+            handleClose()
         },
         onError: (error: any) => {
             setIsUploading(false);
@@ -187,25 +220,27 @@ const SafetyMeasures: React.FC = () => {
         initialValues: {
             content: '',
             master_content: '',
-            jobType: undefined as SafetyMeasure['jobType'] | undefined
+            job: undefined
         },
         validationSchema: validationSchema,
         onSubmit: (values) => {
             if (selectedSafetyMeasure) {
-                updateMutation.mutate({ ...values, _id: selectedSafetyMeasure._id, jobType: values.jobType as SafetyMeasure['jobType'] });
+                updateMutation.mutate({ ...values, _id: selectedSafetyMeasure._id });
             } else {
-                createMutation.mutate({ ...values, jobType: values.jobType as SafetyMeasure['jobType'] });
+                createMutation.mutate({ ...values });
             }
         },
     });
 
-    const handleOpen = (safetyMeasure?: SafetyMeasure) => {
+    const handleOpen = (safetyMeasure?: any) => {
         if (safetyMeasure) {
             setSelectedSafetyMeasure(safetyMeasure);
             formik.setValues({
                 content: safetyMeasure.content,
                 master_content: safetyMeasure.master_content,
-                jobType: safetyMeasure.jobType ?? undefined, // ép fallback
+                job: safetyMeasure.job !== null && typeof safetyMeasure.job === 'object'
+                    ? safetyMeasure.job?._id
+                    : safetyMeasure.job || undefined,
             });
         } else {
             setSelectedSafetyMeasure(null);
@@ -348,28 +383,27 @@ const SafetyMeasures: React.FC = () => {
                                     error={formik.touched.master_content && Boolean(formik.errors.master_content)}
                                     helperText={formik.touched.master_content && formik.errors.master_content}
                                 />
-                                <TextField
+                                <Autocomplete
                                     fullWidth
-                                    select
-                                    id="jobType"
-                                    name="jobType"
-                                    label="Loại công việc"
-                                    value={formik.values.jobType ?? ''}
-                                    onChange={(e) => {
-                                        // nếu user chọn rỗng thì set undefined, còn lại giữ nguyên
-                                        const val = e.target.value || undefined;
-                                        formik.setFieldValue('jobType', val);
+                                    options={jobs}
+                                    getOptionLabel={(option: Job) =>
+                                        option.name || ''
+                                    }
+                                    value={jobs.find((p: any) => p._id === formik.values.job) || null}
+                                    // disabled
+                                    onChange={(event, newValue) => {
+                                        formik.setFieldValue('job', newValue?._id || '');
                                     }}
-                                    error={formik.touched.jobType && Boolean(formik.errors.jobType)}
-                                    helperText={formik.touched.jobType && formik.errors.jobType}
-                                >
-                                    <MenuItem value="Vận hành xe">Vận hành xe</MenuItem>
-                                    <MenuItem value="Vận hành khoan">Vận hành khoan</MenuItem>
-                                    <MenuItem value="Vận hành xe phục vụ">Vận hành xe phục vụ</MenuItem>
-                                    <MenuItem value="Vận hành gạt">Vận hành gạt</MenuItem>
-                                    <MenuItem value="Vận hành xúc">Vận hành xúc</MenuItem>
-                                    <MenuItem value="Khác">Khác</MenuItem>
-                                </TextField>
+                                    PopperComponent={StyledPopper}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Loại công việc"
+                                            error={formik.touched.job && Boolean(formik.errors.job)}
+                                            helperText={formik.touched.job && typeof formik.errors.job === 'string' ? formik.errors.job : ''}
+                                        />
+                                    )}
+                                />
                             </Box>
                         </Box>
                     </DialogContent>
