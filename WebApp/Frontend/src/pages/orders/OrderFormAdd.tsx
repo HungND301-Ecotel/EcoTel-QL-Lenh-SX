@@ -191,7 +191,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                     }
                     value={jobs.find((p: any) => p._id === formik.values.job) || null}
                     onChange={(event, newValue) => {
-                        formik.setFieldValue('safetyMeasure', safetyMeasures.find((i: SafetyMeasure) => i?.jobType === newValue?.type)?.master_content)
+                        formik.setFieldValue('safetyMeasure', safetyMeasures.find((i: any) => i?.job?._id === newValue?._id)?.master_content)
                         formik.setFieldValue('job', newValue?._id || '');
                         setSelectedJob(newValue)
                     }}
@@ -232,7 +232,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                         {({ push, remove }) => (
                             <>
                                 {formik.values.usersAndDevices.map((item, index) => (
-                                    <Grid container spacing={2} key={index} alignItems="center" sx={{ mb: 2 }}>
+                                    <Grid container spacing={2} key={index} alignItems="center" sx={{ mb: 2, mt: 2 }}>
                                         <Grid item xs={5}>
                                             <Autocomplete
                                                 fullWidth
@@ -498,7 +498,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                                     id="safetyMeasure"
                                     name="safetyMeasure"
                                     label="Biện pháp an toàn"
-                                    value={formik.values.safetyMeasure}
+                                    value={formik.values.safetyMeasure || ''}
                                     onChange={formik.handleChange}
                                     error={formik.touched.safetyMeasure && Boolean(formik.errors.safetyMeasure)}
                                     helperText={formik.touched.safetyMeasure && typeof formik.errors.safetyMeasure === 'string' ? formik.errors.safetyMeasure : ''}

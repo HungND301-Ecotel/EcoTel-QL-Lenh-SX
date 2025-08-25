@@ -66,6 +66,8 @@ import dayjs, { Dayjs } from 'dayjs';
 import { useSocket } from '../../hooks/useSocket';
 import ShiftReport from '../../components/ShiftReport/ShiftReport';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
+import { useAtom } from 'jotai';
+import { userAtom } from '../../atoms/userAtoms';
 
 const StyledPopper = styled(Popper)({
     '& .MuiAutocomplete-listbox': {
@@ -88,6 +90,7 @@ const Orders: React.FC = () => {
     const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
     const [selectedRow, setSelectedRow] = useState<any | null>(null);
     const [selectedOrders, setSelectedOrders] = useState<any[]>([]);
+    const [user] = useAtom(userAtom)
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
     const formRef = useRef<HTMLDivElement>(null);
@@ -278,30 +281,39 @@ const Orders: React.FC = () => {
             return showErrorAlert('Không tìm thấy bản ghi cần xóa');
         }
 
-        // lọc ra những order có thể xoá
-        const deletableOrders = selectedOrders.filter(o =>
-            o.status !== "in_progress" && o.status !== "completed"
-        );
+        if (user?.role === "admin") {
+            showConfirmAlert('Bạn có muốn xóa?. Bạn sẽ không thể hoàn tác.').then((result) => {
+                if (result.isConfirmed) {
+                    deleteMutation.mutate(selectedOrders.map(o => o._id));
+                }
+            });
+        } else {
+            // lọc ra những order có thể xoá
+            const deletableOrders = selectedOrders.filter(o =>
+                o.status !== "in_progress" && o.status !== "completed"
+            );
 
-        if (deletableOrders.length === 0) {
-            return showErrorAlert("Không có bản ghi nào hợp lệ để xoá");
-        }
-
-        // cảnh báo cho các bản ghi bị bỏ qua
-        const skipped = selectedOrders.length - deletableOrders.length;
-
-        let message = "";
-        if (skipped > 0) {
-            message = `${skipped} bản ghi đang thực hiện hoặc đã hoàn thành. `;
-        }
-
-        message += `Bạn có thể xóa ${deletableOrders.length} bản ghi. Bạn có muốn xóa?`;
-
-        showConfirmAlert(message).then((result) => {
-            if (result.isConfirmed) {
-                deleteMutation.mutate(deletableOrders.map(o => o._id));
+            if (deletableOrders.length === 0) {
+                return showErrorAlert("Không có bản ghi nào hợp lệ để xoá");
             }
-        });
+
+            // cảnh báo cho các bản ghi bị bỏ qua
+            const skipped = selectedOrders.length - deletableOrders.length;
+
+            let message = "";
+            if (skipped > 0) {
+                message = `${skipped} bản ghi đang thực hiện hoặc đã hoàn thành. `;
+            }
+
+            message += `Bạn có thể xóa ${deletableOrders.length} bản ghi. Bạn có muốn xóa?`;
+
+            showConfirmAlert(message).then((result) => {
+                if (result.isConfirmed) {
+                    deleteMutation.mutate(deletableOrders.map(o => o._id));
+                }
+            });
+        }
+
     };
 
     useEffect(() => {
