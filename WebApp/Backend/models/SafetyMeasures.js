@@ -7,10 +7,10 @@ const SafetyMeasure = new mongoose.Schema({
     master_content: {
         type: String,
     },
-    jobType: {
-        type: String,
-        enum: ['Vận hành xe', 'Vận hành khoan', 'Vận hành xe phục vụ', 'Vận hành gạt', 'Vận hành xúc', 'Khác', ''],
-    }
+    job: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Job',
+    },
 },
     {
         timestamps: true

@@ -15,10 +15,13 @@ import 'package:soft/widgets/time_picker_button.dart';
 class TaskAssignmentOtherAdd extends StatefulWidget {
   final TaskModel data;
   final OrderModel? order;
+  final String content;
+
   const TaskAssignmentOtherAdd({
     super.key,
     required this.data,
     this.order,
+    required this.content,
   });
 
   @override
@@ -52,6 +55,7 @@ class _TaskAssignmentOtherAdd
       user.add(order.assignedTo);
     } else {
       user.add(null);
+      _safetyController.text = widget.content;
     }
   }
 
