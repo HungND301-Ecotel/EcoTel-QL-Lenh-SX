@@ -40,11 +40,6 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
     if (!token) {
         return <Navigate to="/login" />;
     }
-    if (user?.role === 'employee') {
-        return <div style={{ padding: '2rem', color: 'red' }}>
-            Bạn không có quyền truy cập hệ thống.
-        </div>;
-    }
     return <MainLayout>{children}</MainLayout>;
 };
 
