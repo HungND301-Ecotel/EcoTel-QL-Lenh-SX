@@ -61,6 +61,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
 
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedJob, setSelectedJob] = useState<Job | null>(null)
+    const [jobSafetyText, setJobSafetyText] = useState("");
 
     const safetyTextFieldRef = useRef<HTMLInputElement>(null);
 
