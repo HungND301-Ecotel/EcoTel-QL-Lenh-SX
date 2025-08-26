@@ -33,13 +33,13 @@ router.get('/', verifyToken, async (req, res, next) => {
         if (req.query.status) {
             query.status = req.query.status;
         }
-        if (user.role === "employee") {
-            const order = await Order.findOne({ assignedTo: user._id, status: { $nin: ["completed", "cancel"] } })
-            const lastDevice = order?.device[order.device.length - 1];
-            const excavators = order?.excavator[order.excavator.length - 1];
+        // if (user.role === "employee") {
+        //     const order = await Order.findOne({ assignedTo: user._id, status: { $nin: ["completed", "cancel"] } })
+        //     const lastDevice = order?.device[order.device.length - 1];
+        //     const excavators = order?.excavator[order.excavator.length - 1];
 
-            query._id = { $in: [lastDevice, excavators] };
-        }
+        //     query._id = { $in: [lastDevice, excavators] };
+        // }
 
         if (user.role === "manager") {
             query.department = user.department._id;

@@ -313,10 +313,10 @@ const OrderByUsers: React.FC = () => {
                                                 {order.job?.name || ''}
                                             </TableCell>}
                                             {visibleColumns.includes('content') && <TableCell sx={{
-                                                whiteSpace: 'pre-wrap',
+                                                whiteSpace: 'nowrap',
                                                 overflow: 'hidden',
-                                                // textOverflow: 'ellipsis',
-                                                maxWidth: 400,
+                                                textOverflow: 'ellipsis',
+                                                maxWidth: 300,
                                             }}>
                                                 {order.workContent || ''}
                                             </TableCell>}

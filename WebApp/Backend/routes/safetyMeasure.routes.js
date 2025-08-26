@@ -17,11 +17,12 @@ const columnMapping = {
 
 router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
-        const { content, master_content, job } = req.body;
+        const { content, master_content, job, position } = req.body;
         const newSafetyMeasure = new SafetyMeasure({
             content,
             master_content,
-            job
+            job,
+            position
         });
         await newSafetyMeasure.save();
         req.logger.info(`✅ Tạo biện pháp an toàn thành công: ${content}`);
@@ -79,7 +80,7 @@ router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res,
 
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const SafetyMeasures = await SafetyMeasure.find().populate('job', 'name').collation({ locale: "vi", strength: 1 })
+        const SafetyMeasures = await SafetyMeasure.find().populate('job', 'name').populate('position', 'name').collation({ locale: "vi", strength: 1 })
             .sort({ content: 1 });
         res.status(200).send({ status: 'success', data: SafetyMeasures });
     } catch (err) {

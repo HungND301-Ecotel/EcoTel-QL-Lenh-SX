@@ -45,6 +45,7 @@ export interface SafetyMeasure {
     content: string;
     master_content: string;
     job?: string,
+    position?: string[],
     createdAt?: string;
     updatedAt?: string;
 }

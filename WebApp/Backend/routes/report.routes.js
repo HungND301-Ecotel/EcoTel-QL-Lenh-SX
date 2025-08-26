@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Report = require('../models/Report');
+const ReportHistory = require('../models/ReportHistory');
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 
 router.post('/', verifyToken, async (req, res, next) => {
@@ -61,16 +62,52 @@ router.delete('/:id', verifyToken, async (req, res, next) => {
     }
 });
 
+const trackedFieldsTrip = [
+    'quantity',
+    'drillDepth',
+    'hardnessF',
+    'workingMinutes',
+    'distanceKm'
+];
 router.put('/:id', verifyToken, async (req, res) => {
     try {
-        const update = await Report.findByIdAndUpdate(req.params.id, req.body, { new: true });
-
-        if (!update) {
-            req.logger.warn(`⚠️ Cập nhật thất bại - Không tìm thấy báo cáo với ID: ${req.params.id}`);
-            return res.status(500).send({ status: 'error', message: "Not found", stack: err.stack });
+        const report = await Report.findById(req.params.id);
+        if (!report) {
+            req.logger.warn(`⚠️ Không tìm thấy báo cáo với ID: ${req.params.id}`);
+            return res.status(404).send({ status: 'error', message: "Not found" });
         }
+
+        const updates = req.body;
+        const changes = [];
+
+        // So sánh các field cần track
+        for (let field of trackedFieldsTrip) {
+            if (updates[field] !== undefined && updates[field] !== report[field]) {
+                changes.push({
+                    field,
+                    oldValue: report[field],
+                    newValue: updates[field]
+                });
+            }
+        }
+
+        // Nếu có thay đổi → tạo bản ghi lịch sử
+        if (changes.length > 0) {
+            await ReportHistory.create({
+                reportId: report._id,
+                sourceType: 'Report',  // báo chuyến
+                changes,
+                changedBy: req.user._id
+            });
+        }
+
+        // Ghi đè giá trị mới vào report
+        Object.assign(report, updates);
+        await report.save();
+
         req.logger.info(`✅ Cập nhật báo cáo thành công cho ID: ${req.params.id}`);
-        res.status(200).send({ status: 'success', message: "Sửa thành công" });
+        res.status(200).send({ status: 'success', message: "Sửa thành công", data: report });
+
     } catch (err) {
         req.logger.error("❌ Lỗi khi cập nhật báo cáo", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
