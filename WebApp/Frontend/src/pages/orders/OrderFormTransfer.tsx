@@ -61,7 +61,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
     const queryClient = useQueryClient();
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedJob, setSelectedJob] = useState<Job | null>(null)
-
+    console.log(initialValues)
     useEffect(() => {
         setSelectedJob(initialValues?.job || null)
     }, [initialValues])
@@ -397,9 +397,9 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                         getOptionLabel={(option: Location) =>
                             option.name || ''
                         }
-                        value={locations.find((p: any) => p._id === formik.values.location) || null}
+                        value={locations.find((p: any) => p._id === formik.values.location[0]) || null}
                         onChange={(event, newValue) => {
-                            formik.setFieldValue('location', newValue?._id || '');
+                            formik.setFieldValue('location', newValue ? [newValue._id] : []);
                         }}
                         PopperComponent={StyledPopper}
                         renderInput={(params) => (
@@ -420,9 +420,9 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                         getOptionLabel={(option: Material) =>
                             option.name || ''
                         }
-                        value={materials.find((p: any) => p._id === formik.values.material) || null}
+                        value={materials.find((p: any) => p._id === formik.values.material[0]) || null}
                         onChange={(event, newValue) => {
-                            formik.setFieldValue('material', newValue?._id || '');
+                            formik.setFieldValue('material', newValue ? [newValue._id] : []);
                         }}
                         PopperComponent={StyledPopper}
                         renderInput={(params) => (

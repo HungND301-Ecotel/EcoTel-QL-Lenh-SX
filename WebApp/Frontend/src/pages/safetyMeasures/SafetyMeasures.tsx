@@ -98,7 +98,6 @@ const SafetyMeasures: React.FC = () => {
         queryKey: ['safetyMeasures', value],
         queryFn: () => api.get(`/safetyMeasures`).then(res => res.data.data),
     });
-
     const { data: positions = [] } = useQuery({
         queryKey: ['positions', value],
         queryFn: () => api.get(`/positions`).then(res => res.data.data),

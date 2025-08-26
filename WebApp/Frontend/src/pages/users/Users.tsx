@@ -50,7 +50,7 @@ import {
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import api from '../../config/api.config';
-import { Department, User } from '../../types';
+import { Department, Position, User } from '../../types';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
@@ -692,29 +692,26 @@ const Users: React.FC = () => {
                                     error={formik.touched.phone && Boolean(formik.errors.phone)}
                                     helperText={formik.touched.phone && formik.errors.phone}
                                 />
-                                <TextField
+                                <Autocomplete
                                     fullWidth
-                                    select
-                                    id="position"
-                                    name="position"
-                                    label="Chức danh, nghề nghiệp"
-                                    SelectProps={{
-                                        displayEmpty: true,
-                                        MenuProps: {
-                                            style: {
-                                                maxHeight: 300
-                                            }
-                                        }
+                                    options={positions}
+                                    getOptionLabel={(option: Position) =>
+                                        option.name || ''
+                                    }
+                                    value={positions.find((d: Position) => d._id === formik.values.position) || null}
+                                    onChange={(event, newValue) => {
+                                        formik.setFieldValue('position', newValue?._id || '');
                                     }}
-                                    value={formik.values.position || ''}
-                                    onChange={formik.handleChange}
-                                    error={formik.touched.position && Boolean(formik.errors.position)}
-                                    helperText={formik.touched.position && formik.errors.position}
-                                >
-                                    {positions.map((position: any) => (
-                                        <MenuItem key={position._id} value={position._id}>{position.name}</MenuItem>
-                                    ))}
-                                </TextField>
+                                    PopperComponent={StyledPopper}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Chức danh, nghề nghiệp"
+                                            error={formik.touched.position && Boolean(formik.errors.position)}
+                                            helperText={formik.touched.position && typeof formik.errors.position === 'string' ? formik.errors.position : ''}
+                                        />
+                                    )}
+                                />
                                 <Autocomplete
                                     fullWidth
                                     options={departments}
