@@ -94,6 +94,10 @@ const orderSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
+    department: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Department',
+    },
     updatedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
