@@ -9,7 +9,6 @@ import 'package:soft/routes/task_assignment_route.dart';
 import 'package:soft/screens/work_log/widgets/shift_select.dart';
 import 'package:soft/services/order_service.dart';
 import 'package:soft/widgets/date_picker_button.dart';
-import 'package:soft/widgets/date_time_picker_button.dart';
 import 'package:soft/widgets/excavator_button.dart';
 import 'package:soft/widgets/location_button.dart';
 import 'package:soft/widgets/pay_roll_input.dart';
@@ -70,6 +69,8 @@ class _TaskAssignmentVehicleEdit
         dump = order.location!.map((d) => d.id).toList();
       }
       _safetyController.text = order.safetyMeasure ?? '';
+      _safetySpecificController.text =
+          order.safetyMeasureSpecific ?? '';
 
       // Gán lại ngày làm việc nếu có
       _selectedDateTime = order.workingDate;
@@ -180,12 +181,16 @@ class _TaskAssignmentVehicleEdit
       TextEditingController();
   final TextEditingController _safetyController =
       TextEditingController();
+  final TextEditingController _safetySpecificController =
+      TextEditingController();
   final OrderService _orderService = OrderService();
 
   void createOrder() async {
     String description = _descriptionController.text.trim();
     String note = _noteController.text.trim();
     String safetyMeasure = _safetyController.text.trim();
+    String safetyMeasureSpecific =
+        _safetySpecificController.text.trim();
 
     final distace = num.tryParse(_distanceController.text);
     final liftheight = num.tryParse(
@@ -226,6 +231,7 @@ class _TaskAssignmentVehicleEdit
           "temporaryError": null,
           "note": note,
           "safetyMeasure": safetyMeasure,
+          "safetyMeasureSpecific": safetyMeasureSpecific,
         });
     if (!mounted) return;
     if (result['status'] == 'error') {
@@ -681,6 +687,17 @@ class _TaskAssignmentVehicleEdit
                       },
                     ),
                   ),
+                ),
+                Text(
+                  'Biện pháp an toàn cụ thể ',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TextField(
+                  controller: _safetySpecificController,
+                  maxLines: null,
+                  minLines: 5,
                 ),
               ],
             ),

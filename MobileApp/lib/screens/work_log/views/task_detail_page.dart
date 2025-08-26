@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:soft/models/device_model.dart';
 import 'package:soft/models/order_model.dart';
 import 'package:soft/providers/report_provider.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
@@ -420,6 +419,14 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                         ),
                       ),
                       Text(data?.workContent ?? ''),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Biện pháp an toàn cụ thể',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(data?.safetyMeasureSpecific ?? ''),
                       const SizedBox(height: 10),
                       const Text(
                         'Biện pháp an toàn chung',

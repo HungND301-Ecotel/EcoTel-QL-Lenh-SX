@@ -25,59 +25,9 @@ class TaskAssignmentAdd extends StatefulWidget {
 }
 
 class _TaskAssignmentAdd extends State<TaskAssignmentAdd> {
-  String content = "";
-  bool _isLoading = true;
-
-  final SafetyMeasureService _safetyMeasureService =
-      SafetyMeasureService();
-  void getAllSafetyMeasure() async {
-    var result =
-        await _safetyMeasureService.getAllSafetyMeasure();
-
-    if (!mounted) return;
-    if (result['status'] == 'error') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message']),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } else {
-      final data =
-          (result['data'] as List)
-              .map((e) => SafetyMeasureModel.fromJson(e))
-              .toList();
-
-      // tìm measure nào có job == widget.data.id
-      final matched = data.firstWhere(
-        (m) =>
-            m.job?.id ==
-            widget.data.id, // chú ý nếu job là object
-        orElse:
-            () => SafetyMeasureModel(
-              id: '',
-              content: '',
-              master_content: '',
-              job: null,
-            ),
-      );
-
-      if (matched.master_content != null &&
-          matched.master_content!.trim().isNotEmpty) {
-        setState(() {
-          content = matched.master_content!;
-        });
-      }
-    }
-    setState(() {
-      _isLoading = false;
-    });
-  }
-
   @override
   void initState() {
     super.initState();
-    getAllSafetyMeasure();
   }
 
   Widget _getBody() {

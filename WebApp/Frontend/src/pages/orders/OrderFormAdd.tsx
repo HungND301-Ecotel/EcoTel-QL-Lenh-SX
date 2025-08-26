@@ -128,7 +128,8 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
             liftHeight: undefined,
             workContent: '',
             note: '',
-            safetyMeasure: ''
+            safetyMeasure: '',
+            safetyMeasureSpecific:''
         },
         validationSchema,
         onSubmit: async (values) => {
@@ -146,6 +147,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                 liftHeight: values.liftHeight,
                 workContent: values.workContent,
                 safetyMeasure: values.safetyMeasure,
+                safetyMeasureSpecific:values.safetyMeasureSpecific,
                 note: values.note,
             }));
             const duplicates = await Promise.all(
@@ -192,9 +194,8 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                     }
                     value={jobs.find((p: any) => p._id === formik.values.job) || null}
                     onChange={(event, newValue) => {
-                        const content = safetyMeasures.find((i: any) => i?.job?._id === newValue?._id)?.master_content
+                        const content = safetyMeasures.find((i: any) => i?.job?._id === newValue?._id)?.content
                         formik.setFieldValue('safetyMeasure', content)
-                        setJobSafetyText(content)
                         formik.setFieldValue('job', newValue?._id || '');
                         setSelectedJob(newValue)
                     }}
@@ -258,12 +259,9 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                                                             return posIds.includes(userPositionId);
                                                         });
 
-                                                        const userText = matchedMeasures.map((m: SafetyMeasure) => m.master_content).join("\n");
+                                                        const userText = matchedMeasures.map((m: SafetyMeasure) => m.content).join("\n");
 
-                                                        // ✅ luôn build từ gốc, không append chồng
-                                                        const finalText = [jobSafetyText, userText].filter(Boolean).join("\n\n");
-
-                                                        formik.setFieldValue("safetyMeasure", finalText);
+                                                        formik.setFieldValue("safetyMeasure", userText);
                                                     }
 
                                                 }}
@@ -566,6 +564,22 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                                     ))}
                                 </Menu>
                             </Box>
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                multiline
+                                rows={5}
+                                id="safetyMeasureSpecific"
+                                name="safetyMeasureSpecific"
+                                label="Biện pháp an toàn cụ thể"
+                                value={formik.values.safetyMeasureSpecific}
+                                onChange={formik.handleChange}
+                                error={formik.touched.safetyMeasureSpecific && Boolean(formik.errors.safetyMeasureSpecific)}
+                                helperText={formik.touched.safetyMeasureSpecific && typeof formik.errors.safetyMeasureSpecific === 'string'
+                                    ? formik.errors.safetyMeasureSpecific
+                                    : ''}
+                            />
                         </Grid>
                     </Grid>
                 </Box>}

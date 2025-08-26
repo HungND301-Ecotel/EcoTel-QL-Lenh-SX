@@ -89,6 +89,9 @@ const orderSchema = new mongoose.Schema({
     safetyMeasure: {
         type: String
     },
+    safetyMeasureSpecific: {
+        type: String
+    },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',

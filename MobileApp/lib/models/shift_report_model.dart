@@ -1,6 +1,4 @@
 // device model
-import 'package:soft/models/location_model.dart';
-import 'package:soft/models/material_model.dart';
 
 class Device {
   final String id;

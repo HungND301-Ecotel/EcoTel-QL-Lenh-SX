@@ -1,3 +1,5 @@
+import 'package:soft/models/position_model.dart';
+
 class UserModel {
   final String id;
   final String? username;
@@ -6,6 +8,7 @@ class UserModel {
   final String? phone;
   final String? salaryCode;
   final String? role;
+  final PositionModel? position;
 
   UserModel({
     required this.id,
@@ -15,6 +18,7 @@ class UserModel {
     this.phone,
     this.salaryCode,
     this.role,
+    this.position,
   });
 
   factory UserModel.fromJson(Map<String, dynamic>? json) {
@@ -26,6 +30,10 @@ class UserModel {
       phone: json?['phone'] ?? '',
       salaryCode: json?['salaryCode'] ?? '',
       role: json?['role'] ?? '',
+      position:
+          json?['position'] != null
+              ? PositionModel.fromJson(json?['position'])
+              : null,
     );
   }
 
@@ -37,5 +45,6 @@ class UserModel {
     'phone': phone,
     'salaryCode': salaryCode,
     'role': role,
+    'position': position?.toJson(),
   };
 }
