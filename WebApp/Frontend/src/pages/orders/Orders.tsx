@@ -87,6 +87,7 @@ const Orders: React.FC = () => {
     const [startTime, setStartTime] = useState<Dayjs | null>(null);
     const [endTime, setEndTime] = useState<Dayjs | null>(null);
     const [device, setDevice] = useState("");
+    const [department, setDepartment] = useState("");
     const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
     const [selectedRow, setSelectedRow] = useState<any | null>(null);
     const [selectedOrders, setSelectedOrders] = useState<any[]>([]);
@@ -146,10 +147,14 @@ const Orders: React.FC = () => {
         queryKey: ['users'],
         queryFn: () => api.get('/users').then(res => res.data.data),
     });
+    const { data: departments = [] } = useQuery({
+        queryKey: ['departments'],
+        queryFn: () => api.get('/departments').then(res => res.data.data),
+    });
 
     const { data: orders = [], isLoading, refetch } = useQuery({
         queryKey: ['orders', status],
-        queryFn: () => api.get(`/orders?status=${status}&employee=${employee}&device=${device}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
+        queryFn: () => api.get(`/orders?status=${status}&employee=${employee}&department=${department}&device=${device}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
     });
 
     const { data: allOrders = [] } = useQuery({
@@ -479,6 +484,26 @@ const Orders: React.FC = () => {
                                     />
                                 )}
                             />
+                            {user?.role === "amdin" && <Autocomplete
+                                fullWidth
+                                options={departments}
+                                getOptionLabel={(option: any) =>
+                                    option.code || ''
+                                }
+                                value={departments.find((p: any) => p._id === department) || null}
+                                onChange={(event, newValue) => {
+                                    setDepartment(newValue?._id || '');
+                                }}
+                                PopperComponent={StyledPopper}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        fullWidth
+                                        size='small'
+                                        label="Đơn vị"
+                                    />
+                                )}
+                            />}
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <DatePicker
                                     label="Từ ngày"

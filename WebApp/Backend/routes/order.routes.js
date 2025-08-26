@@ -7,7 +7,7 @@ const Notification = require('../models/Notification');
 
 const History = require('../models/History');
 const User = require('../models/User')
-const mongoose=require('mongoose')
+const mongoose = require('mongoose')
 
 
 
@@ -22,7 +22,7 @@ const CheckIn = require('../models/CheckIn');
 router.get('/', verifyToken, async (req, res, next) => {
     try {
         const user = req.user;
-        const query = {};   
+        const query = {};
 
         // Các bộ lọc chung
         if (req.query.employee) {
@@ -52,49 +52,8 @@ router.get('/', verifyToken, async (req, res, next) => {
         let orders;
 
         if (user?.role === 'manager' && user?.department) {
-            // Trường hợp người quản lý: sử dụng Aggregation Framework
-            orders = await Order.aggregate([
-                {
-                    $lookup: {
-                        from: 'users',
-                        localField: 'createdBy',
-                        foreignField: '_id',
-                        as: 'creatorDetails'
-                    }
-                },
-                {
-                    $unwind: '$creatorDetails'
-                },
-                {
-                    $lookup: {
-                        from: 'shifts',
-                        localField: 'shift',
-                        foreignField: '_id',
-                        as: 'shiftDetails'
-                    }
-                },
-                {
-                    $unwind: {
-                        path: '$shiftDetails',
-                        preserveNullAndEmptyArrays: true
-                    }
-                },
-                {
-                    $match: {
-                        ...query, // Thêm các bộ lọc khác vào đây
-                        'creatorDetails.department': user.department._id
-                    }
-                },
-                {
-                    $sort: { workingDate: -1, },
 
-                }
-            ]);
-
-            // Bạn cần populate các trường sau khi aggregation
-            // Vì aggregation trả về dữ liệu dạng JSON, không phải Mongoose document
-            const orderIds = orders.map(order => order._id);
-            orders = await Order.find({ _id: { $in: orderIds } })
+            orders = await Order.find({ department: user?.department?._id })
                 .populate('assignedTo', 'username fullName salaryCode department')
                 .populate('job', 'name type content')
                 .populate('devicesToProduce.deviceType')
@@ -124,6 +83,9 @@ router.get('/', verifyToken, async (req, res, next) => {
             // Trường hợp người dùng khác: sử dụng Mongoose find() thông thường
             if (user?.role === 'dispatcher') {
                 query.createdBy = user._id;
+            }
+            if (req.query.department && user?.role === 'admin') {
+                query.department = new mongoose.Types.ObjectId(req.query.department);
             }
             orders = await Order.find(query)
                 .populate('assignedTo', 'username fullName salaryCode department')
@@ -218,8 +180,8 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
         } = req.body;
 
 
+        const user = await User.findById(assignedTo)
         if (devicesToProduce?.length > 0) {
-            const user = await User.findById(assignedTo)
             if (!user) {
                 req.logger.warn(`✅ Không tìm thấy người dùng công với ID: ${assignedTo}`);
                 return res.status(404).json({ status: 'error', message: 'Không tìm thấy người dùng' })
@@ -233,7 +195,7 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
                     const devices = await Device.find({ department: user.department, category: deviceType });
 
                     if (!devices || devices.length === 0) {
-                        req.logger.warn(`    - Cảnh báo: Loại phương tiện ${type?.name} không tồn tại trong đơn vị ${department}.`);
+                        req.logger.warn(`    - Cảnh báo: Loại phương tiện ${type?.name} không tồn tại trong đơn vị.`);
                         return res.status(400).send({
                             status: 'error',
                             message: `Loại phương tiện ${type?.name} không tồn tại trong đơn vị`
@@ -283,6 +245,7 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
             safetyMeasure,
             previous_order_id,
             excavator, location, material, workContent, note,
+            department: user?.department,
             createdBy: req.user._id
         });
         req.logger.info(`✅ Tạo lệnh thành công với ID: ${order._id}`);
