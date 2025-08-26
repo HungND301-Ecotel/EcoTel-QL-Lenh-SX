@@ -31,6 +31,8 @@ const SafetyMeasureRoutes = require('./routes/safetyMeasure.routes');
 const UploadRoutes = require('./routes/upload.routes');
 const ExportRoutes = require('./routes/export.routes');
 const ShiftRoutes = require('./routes/shift.routes');
+const ReportHistoryRoutes = require('./routes/reportHistory.routes');
+
 
 
 
@@ -148,6 +150,8 @@ app.use('/api/safetyMeasures', SafetyMeasureRoutes);
 app.use('/api/uploads', UploadRoutes);
 app.use('/api/exports', ExportRoutes);
 app.use('/api/shifts', ShiftRoutes);
+app.use('/api/reporthistories', ReportHistoryRoutes);
+
 
 
 

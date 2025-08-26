@@ -3,6 +3,8 @@ const router = express.Router();
 const { AppError } = require('../utils/errorHandler');
 const ShiftReport = require('../models/ShiftReport');
 const Device = require('../models/Device');
+const ReportHistory = require('../models/ReportHistory');
+
 
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 
@@ -44,30 +46,87 @@ router.get('/:id', verifyToken, async (req, res) => {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
     }
 });
+const trackedFieldsWork = [
+    'handoverHours',
+    'otherHours',
+    'handoverNotes',
+    'risks'
+];
 
 router.put('/:id', verifyToken, async (req, res) => {
     try {
-        const update = await ShiftReport.findByIdAndUpdate(req.params.id, req.body, { new: true });
-
-        if (!update) {
-            req.logger.warn(`⚠️ Cập nhật thất bại - Không tìm thấy báo cáo ca với ID: ${req.params.id}`);
-            return res.status(500).send({ status: 'error', message: "Not found", stack: err.stack });
+        const shiftReport = await ShiftReport.findById(req.params.id);
+        if (!shiftReport) {
+            req.logger.warn(`⚠️ Không tìm thấy báo cáo ca với ID: ${req.params.id}`);
+            return res.status(404).send({ status: 'error', message: "Not found" });
         }
-        if (req.body.vehicleSummaries) {
-            req.logger.info("ℹ️ Cập nhật trạng thái các thiết bị trong báo cáo ca đã chỉnh sửa.");
-            for (var item of req.body.vehicleSummaries) {
-                const device = await Device.findById(item.vehicle);
-                device.status = item.status === "good" ? "available" : "maintenance";
-                await device.save();
+
+        const updates = req.body;
+        const changes = [];
+
+        // 🔹 So sánh các field ngoài mảng
+        for (let field of trackedFieldsWork) {
+            if (updates[field] !== undefined && updates[field] !== shiftReport[field]) {
+                changes.push({ field, oldValue: shiftReport[field], newValue: updates[field] });
             }
         }
 
+        // 🔹 So sánh trong mảng vehicleSummaries
+        if (Array.isArray(updates.vehicleSummaries)) {
+            updates.vehicleSummaries.forEach((updatedItem, index) => {
+                const originalItem = shiftReport.vehicleSummaries[index];
+                if (!originalItem) return;
+
+                for (let field of [
+                    'repairHours', 'travelHours', 'fuelRemain',
+                    'fuelReceived', 'fuelRemainEnd', 'status', 'note',
+                    'gpsStatus', 'sealStatus'
+                ]) {
+                    if (updatedItem[field] !== undefined && updatedItem[field] !== originalItem[field]) {
+                        changes.push({
+                            field,
+                            index,
+                            oldValue: originalItem[field],
+                            newValue: updatedItem[field]
+                        });
+                    }
+                }
+            });
+        }
+
+        // 🔹 Nếu có thay đổi → lưu lịch sử
+        if (changes.length > 0) {
+            await ReportHistory.create({
+                reportId: shiftReport._id,
+                sourceType: 'ShiftReport',
+                changes,
+                changedBy: req.user._id
+            });
+        }
+
+        // 🔹 Cập nhật status thiết bị theo dữ liệu mới
+        if (updates.vehicleSummaries) {
+            for (const item of updates.vehicleSummaries) {
+                const device = await Device.findById(item.vehicle);
+                if (device) {
+                    device.status = item.status === "good" ? "available" : "maintenance";
+                    await device.save();
+                }
+            }
+        }
+
+        // 🔹 Update dữ liệu mới
+        Object.assign(shiftReport, updates);
+        await shiftReport.save();
+
         req.logger.info(`✅ Cập nhật báo cáo ca thành công cho ID: ${req.params.id}`);
-        res.status(200).send({ status: 'success', message: "Sửa thành công" });
+        res.status(200).send({ status: 'success', message: "Sửa thành công", data: shiftReport });
+
     } catch (err) {
         req.logger.error("❌ Lỗi khi cập nhật báo cáo ca", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
     }
 });
+
 
 module.exports = router;
