@@ -58,6 +58,7 @@ class OrderModel {
   String? note;
   String? temporaryError;
   String? safetyMeasure;
+  String? safetyMeasureSpecific;
   List<UserModel>? assistants;
 
   OrderModel({
@@ -84,6 +85,7 @@ class OrderModel {
     this.assistants,
     this.note,
     this.safetyMeasure,
+    this.safetyMeasureSpecific,
     this.temporaryError,
   });
 
@@ -156,6 +158,8 @@ class OrderModel {
       note: json?['note'] ?? '',
       safetyMeasure: json?['safetyMeasure'] ?? '',
       temporaryError: json?['temporaryError'] ?? '',
+      safetyMeasureSpecific:
+          json?['safetyMeasureSpecific'] ?? '',
     );
   }
   void updateFromJson(Map<String, dynamic> json) {
@@ -209,6 +213,7 @@ class OrderModel {
       'note': note,
       'temporaryError': temporaryError,
       'safetyMeasure': safetyMeasure,
+      'safetyMeasureSpecific': safetyMeasureSpecific,
       'assistants':
           assistants?.map((e) => e.toJson()).toList(),
     };

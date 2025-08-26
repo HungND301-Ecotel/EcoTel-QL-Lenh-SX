@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:soft/models/order_model.dart';
+import 'package:soft/models/safety_measure_model.dart';
 import 'package:soft/models/shift_model.dart';
 import 'package:soft/models/task_model.dart';
 import 'package:soft/models/user_model.dart';
@@ -8,6 +9,7 @@ import 'package:soft/routes/app_routes.dart';
 import 'package:soft/routes/task_assignment_route.dart';
 import 'package:soft/screens/work_log/widgets/shift_select.dart';
 import 'package:soft/services/order_service.dart';
+import 'package:soft/services/safety_measure_service.dart';
 import 'package:soft/widgets/date_picker_button.dart';
 import 'package:soft/widgets/pay_roll_input.dart';
 import 'package:soft/widgets/time_picker_button.dart';
@@ -16,13 +18,11 @@ import 'package:soft/widgets/vehicle_button.dart';
 class TaskAssignmentCommonAdd extends StatefulWidget {
   final TaskModel data;
   final OrderModel? order;
-  final String content;
 
   const TaskAssignmentCommonAdd({
     super.key,
     required this.data,
     this.order,
-    required this.content,
   });
 
   @override
@@ -38,9 +38,81 @@ class _TaskAssignmentCommonAdd
   ShiftModel? _shift;
   String? _shiftHour;
 
+  List<SafetyMeasureModel> _allSafetyMeasures = [];
+  final SafetyMeasureService _safetyMeasureService =
+      SafetyMeasureService();
+  void getAllSafetyMeasure() async {
+    var result =
+        await _safetyMeasureService.getAllSafetyMeasure();
+
+    if (!mounted) return;
+    if (result['status'] == 'error') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      final data =
+          (result['data'] as List)
+              .map((e) => SafetyMeasureModel.fromJson(e))
+              .toList();
+      setState(() {
+        _allSafetyMeasures = data;
+      });
+
+      // lúc đầu check theo job như cũ
+      final matched = _allSafetyMeasures.firstWhere(
+        (m) => m.job?.id == widget.data.id,
+        orElse:
+            () => SafetyMeasureModel(
+              id: '',
+              content: '',
+              job: null,
+            ),
+      );
+
+      if (matched.content.trim().isNotEmpty) {
+        _safetyController.text = matched.content;
+      }
+    }
+  }
+
+  void _updateSafetyByFirstUser() {
+    if (_allSafetyMeasures.isEmpty) return;
+
+    print(_allSafetyMeasures);
+
+    final firstItem = userAndDevice.first;
+    if (firstItem == null) return;
+
+    final UserModel? firstUser = firstItem["user"];
+    if (firstUser == null) return;
+
+    final userPositionId = firstUser.position?.id;
+    if (userPositionId == null) return;
+
+    // Tìm kiếm biện pháp an toàn theo vị trí của người dùng
+    final matched =
+        _allSafetyMeasures.where((m) {
+          return m.position?.any(
+                (p) => p.id == userPositionId,
+              ) ??
+              false;
+        }).toList();
+
+    setState(() {
+      if (matched.isNotEmpty) {
+        _safetyController.text = matched.first.content;
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
+    getAllSafetyMeasure();
     _selectedDateTime = DateTime.now();
     if (widget.order != null) {
       final order = widget.order!;
@@ -54,6 +126,8 @@ class _TaskAssignmentCommonAdd
       }
 
       _safetyController.text = order.safetyMeasure ?? '';
+      _safetySpecificController.text =
+          order.safetyMeasureSpecific ?? '';
 
       // Gán lại ngày làm việc nếu có
       _selectedDateTime = order.workingDate;
@@ -63,7 +137,6 @@ class _TaskAssignmentCommonAdd
       _noteController.text = order.note ?? '';
     } else {
       userAndDevice.add({"user": null, "device": null});
-      _safetyController.text = widget.content;
     }
   }
 
@@ -128,12 +201,16 @@ class _TaskAssignmentCommonAdd
       TextEditingController();
   final TextEditingController _safetyController =
       TextEditingController();
+  final TextEditingController _safetySpecificController =
+      TextEditingController();
   final OrderService _orderService = OrderService();
 
   void createOrders() async {
     String description = _descriptionController.text.trim();
     String note = _noteController.text.trim();
     String safetyMeasure = _safetyController.text.trim();
+    String safetyMeasureSpecific =
+        _safetySpecificController.text.trim();
 
     for (var item in userAndDevice) {
       if (item?['user'] == null ||
@@ -176,6 +253,7 @@ class _TaskAssignmentCommonAdd
         "workContent": description,
         "note": note,
         "safetyMeasure": safetyMeasure,
+        "safetyMeasureSpecific": safetyMeasureSpecific,
       });
 
       if (!mounted) return;
@@ -257,6 +335,9 @@ class _TaskAssignmentCommonAdd
                               userAndDevice[i]?["user"] =
                                   selectedUser;
                             });
+                            if (i == 0) {
+                              _updateSafetyByFirstUser();
+                            }
                           },
                           initialPayroll:
                               userAndDevice[i]?["user"]
@@ -385,6 +466,17 @@ class _TaskAssignmentCommonAdd
                       },
                     ),
                   ),
+                ),
+                Text(
+                  'Biện pháp an toàn cụ thể ',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TextField(
+                  controller: _safetySpecificController,
+                  maxLines: null,
+                  minLines: 5,
                 ),
               ],
             ),

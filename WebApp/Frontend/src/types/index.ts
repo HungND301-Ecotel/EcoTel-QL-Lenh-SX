@@ -43,7 +43,6 @@ export interface DeviceType {
 export interface SafetyMeasure {
     _id: string;
     content: string;
-    master_content: string;
     job?: string,
     position?: string[],
     createdAt?: string;
@@ -98,6 +97,7 @@ export interface Order {
     previous_order_id?: string,
     note?: string;
     safetyMeasure?: string;
+    safetyMeasureSpecific?: string;
     temporaryError?: string
     department?: string;
     createdBy: string;

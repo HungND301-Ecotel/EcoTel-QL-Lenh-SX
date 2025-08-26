@@ -175,6 +175,7 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
             excavator, location, material, workContent,
             note,
             safetyMeasure,
+            safetyMeasureSpecific,
             department,
             previous_order_id
         } = req.body;
@@ -243,6 +244,7 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
             distance,
             liftHeight,
             safetyMeasure,
+            safetyMeasureSpecific,
             previous_order_id,
             excavator, location, material, workContent, note,
             department: user?.department,

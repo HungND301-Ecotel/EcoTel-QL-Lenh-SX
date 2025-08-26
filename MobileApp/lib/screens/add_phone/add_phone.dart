@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:soft/models/user_model.dart';
 import 'package:soft/providers/user_provider.dart';
 import 'package:soft/routes/app_routes.dart';
-import 'package:soft/routes/home__route.dart';
 import 'package:soft/services/user_service.dart';
 import 'package:provider/provider.dart';
 

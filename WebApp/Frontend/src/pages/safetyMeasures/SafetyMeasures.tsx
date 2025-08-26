@@ -222,7 +222,6 @@ const SafetyMeasures: React.FC = () => {
     const formik = useFormik({
         initialValues: {
             content: '',
-            master_content: '',
             job: undefined,
             position:[] as string[]
         },
@@ -241,7 +240,6 @@ const SafetyMeasures: React.FC = () => {
             setSelectedSafetyMeasure(safetyMeasure);
             formik.setValues({
                 content: safetyMeasure.content,
-                master_content: safetyMeasure.master_content,
                 job: safetyMeasure.job !== null && typeof safetyMeasure.job === 'object'
                     ? safetyMeasure.job?._id
                     : safetyMeasure.job || undefined,
@@ -374,23 +372,11 @@ const SafetyMeasures: React.FC = () => {
                                     rows={5}
                                     id="content"
                                     name="content"
-                                    label="Biện pháp chung"
+                                    label="Biện pháp an toàn"
                                     value={formik.values.content}
                                     onChange={formik.handleChange}
                                     error={formik.touched.content && Boolean(formik.errors.content)}
                                     helperText={formik.touched.content && formik.errors.content}
-                                />
-                                <TextField
-                                    fullWidth
-                                    multiline
-                                    rows={5}
-                                    id="master_content"
-                                    name="master_content"
-                                    label="Biện pháp riêng"
-                                    value={formik.values.master_content}
-                                    onChange={formik.handleChange}
-                                    error={formik.touched.master_content && Boolean(formik.errors.master_content)}
-                                    helperText={formik.touched.master_content && formik.errors.master_content}
                                 />
                                 <Autocomplete
                                     fullWidth

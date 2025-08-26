@@ -4,9 +4,6 @@ const SafetyMeasure = new mongoose.Schema({
     content: {
         type: String,
     },
-    master_content: {
-        type: String,
-    },
     job: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Job',

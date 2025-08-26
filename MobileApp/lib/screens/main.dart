@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:soft/providers/user_provider.dart';
 import 'package:soft/routes/app_routes.dart';
-import 'package:soft/routes/home__route.dart';
 import 'package:soft/routes/report_routes.dart';
 import 'package:soft/routes/task_assignment_route.dart';
 import 'package:soft/screens/setting/setting_page.dart';

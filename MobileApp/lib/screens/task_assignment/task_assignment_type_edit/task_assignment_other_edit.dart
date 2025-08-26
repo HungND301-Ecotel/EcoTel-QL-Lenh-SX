@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:soft/models/order_model.dart';
-import 'package:soft/models/safety_measure_model.dart';
 import 'package:soft/models/shift_model.dart';
 import 'package:soft/models/task_model.dart';
 import 'package:soft/models/user_model.dart';
@@ -42,6 +41,8 @@ class _TaskAssignmentOtherEdit
       final order = widget.order!;
       // Gán lại ngày làm việc nếu có
       _safetyController.text = order.safetyMeasure ?? '';
+      _safetySpecificController.text =
+          order.safetyMeasureSpecific ?? '';
 
       _selectedDateTime = order.workingDate;
       _shift = order.shift;
@@ -118,12 +119,17 @@ class _TaskAssignmentOtherEdit
       TextEditingController();
   final TextEditingController _safetyController =
       TextEditingController();
+  final TextEditingController _safetySpecificController =
+      TextEditingController();
   final OrderService _orderService = OrderService();
 
   void createOrder() async {
     String description = _descriptionController.text.trim();
     String note = _noteController.text.trim();
     String safetyMeasure = _safetyController.text.trim();
+    String safetyMeasureSpecific =
+        _safetySpecificController.text.trim();
+
     var result = await _orderService
         .update(widget.order!.id, {
           "job": widget.data.id,
@@ -141,6 +147,7 @@ class _TaskAssignmentOtherEdit
           "temporaryError": null,
           "note": note,
           "safetyMeasure": safetyMeasure,
+          "safetyMeasureSpecific": safetyMeasureSpecific,
         });
     if (!mounted) return;
     if (result['status'] == 'error') {
@@ -266,6 +273,17 @@ class _TaskAssignmentOtherEdit
                       },
                     ),
                   ),
+                ),
+                Text(
+                  'Biện pháp an toàn cụ thể ',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TextField(
+                  controller: _safetySpecificController,
+                  maxLines: null,
+                  minLines: 5,
                 ),
               ],
             ),
