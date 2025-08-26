@@ -51,12 +51,12 @@ const Login = () => {
         mutationFn: (credentials: { username: string; password: string }) =>
             api.post('/auth/login', credentials).then(res => res.data),
         onSuccess: (data) => {
-            localStorage.setItem('token', data.data.token);
-            setUser(data.data.user)
-            if (data.data.user?.role === 'employee') {
+            if (data.data.user?.role.toLowerCase() === 'employee') {
                 showErrorAlert('Bạn không có quyền truy cập hệ thống.');
                 return;
             }
+            localStorage.setItem('token', data.data.token);
+            setUser(data.data.user)
             navigate('/');
         },
         onError: (error: any) => {
