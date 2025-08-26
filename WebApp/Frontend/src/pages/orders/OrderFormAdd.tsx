@@ -61,6 +61,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
 
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedJob, setSelectedJob] = useState<Job | null>(null)
+    const [jobSafetyText, setJobSafetyText] = useState("");
 
     const safetyTextFieldRef = useRef<HTMLInputElement>(null);
 
@@ -191,7 +192,9 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                     }
                     value={jobs.find((p: any) => p._id === formik.values.job) || null}
                     onChange={(event, newValue) => {
-                        formik.setFieldValue('safetyMeasure', safetyMeasures.find((i: any) => i?.job?._id === newValue?._id)?.master_content)
+                        const content = safetyMeasures.find((i: any) => i?.job?._id === newValue?._id)?.master_content
+                        formik.setFieldValue('safetyMeasure', content)
+                        setJobSafetyText(content)
                         formik.setFieldValue('job', newValue?._id || '');
                         setSelectedJob(newValue)
                     }}
@@ -243,6 +246,26 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                                                 value={users.find((p: any) => p._id === item.assignedTo) || null}
                                                 onChange={(event, newValue) => {
                                                     formik.setFieldValue(`usersAndDevices[${index}].assignedTo`, newValue?._id || '');
+                                                    if (index === 0 && newValue?.position) {
+                                                        const userPositionId = typeof newValue.position === "object"
+                                                            ? newValue.position._id
+                                                            : newValue.position;
+
+                                                        const matchedMeasures = safetyMeasures.filter((sm: SafetyMeasure) => {
+                                                            const posIds = (sm.position || []).map((p: any) =>
+                                                                typeof p === "string" ? p : p._id
+                                                            );
+                                                            return posIds.includes(userPositionId);
+                                                        });
+
+                                                        const userText = matchedMeasures.map((m: SafetyMeasure) => m.master_content).join("\n");
+
+                                                        // ✅ luôn build từ gốc, không append chồng
+                                                        const finalText = [jobSafetyText, userText].filter(Boolean).join("\n\n");
+
+                                                        formik.setFieldValue("safetyMeasure", finalText);
+                                                    }
+
                                                 }}
                                                 PopperComponent={StyledPopper}
                                                 renderInput={(params) => (

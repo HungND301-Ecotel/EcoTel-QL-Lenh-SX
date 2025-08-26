@@ -45,7 +45,7 @@ import {
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import api from '../../config/api.config';
-import { Job, SafetyMeasure } from '../../types';
+import { Job, Position, SafetyMeasure } from '../../types';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 
 
@@ -99,6 +99,10 @@ const SafetyMeasures: React.FC = () => {
         queryFn: () => api.get(`/safetyMeasures`).then(res => res.data.data),
     });
 
+    const { data: positions = [] } = useQuery({
+        queryKey: ['positions', value],
+        queryFn: () => api.get(`/positions`).then(res => res.data.data),
+    });
     const { data: jobs = [] } = useQuery({
         queryKey: ['jobs'],
         queryFn: () => api.get(`/jobs`).then(res => res.data.data),
@@ -220,7 +224,8 @@ const SafetyMeasures: React.FC = () => {
         initialValues: {
             content: '',
             master_content: '',
-            job: undefined
+            job: undefined,
+            position:[] as string[]
         },
         validationSchema: validationSchema,
         onSubmit: (values) => {
@@ -241,6 +246,11 @@ const SafetyMeasures: React.FC = () => {
                 job: safetyMeasure.job !== null && typeof safetyMeasure.job === 'object'
                     ? safetyMeasure.job?._id
                     : safetyMeasure.job || undefined,
+                position: Array.isArray(safetyMeasure.position)
+                    ? safetyMeasure.position.map((d: any) => typeof d === 'object' ? d._id : d)
+                    : safetyMeasure.position
+                        ? [typeof safetyMeasure.position === 'object' ? safetyMeasure.position._id : safetyMeasure.position]
+                        : [],
             });
         } else {
             setSelectedSafetyMeasure(null);
@@ -365,7 +375,7 @@ const SafetyMeasures: React.FC = () => {
                                     rows={5}
                                     id="content"
                                     name="content"
-                                    label="Biện pháp riêng"
+                                    label="Biện pháp chung"
                                     value={formik.values.content}
                                     onChange={formik.handleChange}
                                     error={formik.touched.content && Boolean(formik.errors.content)}
@@ -377,7 +387,7 @@ const SafetyMeasures: React.FC = () => {
                                     rows={5}
                                     id="master_content"
                                     name="master_content"
-                                    label="Biện pháp chung"
+                                    label="Biện pháp riêng"
                                     value={formik.values.master_content}
                                     onChange={formik.handleChange}
                                     error={formik.touched.master_content && Boolean(formik.errors.master_content)}
@@ -401,6 +411,31 @@ const SafetyMeasures: React.FC = () => {
                                             label="Loại công việc"
                                             error={formik.touched.job && Boolean(formik.errors.job)}
                                             helperText={formik.touched.job && typeof formik.errors.job === 'string' ? formik.errors.job : ''}
+                                        />
+                                    )}
+                                />
+                                <Autocomplete
+                                    fullWidth
+                                    multiple
+                                    options={positions}
+                                    getOptionLabel={(option: Position) =>
+                                        option.name || ''
+                                    }
+                                    value={positions.filter((d: Position) =>
+                                        formik.values.position.includes(d._id)
+                                    )}
+                                    onChange={(event, newValue) => {
+                                        const selectedIds = newValue.map((item: any) => item._id);
+
+                                        formik.setFieldValue('position', selectedIds);
+                                    }}
+                                    PopperComponent={StyledPopper}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Chức danh, nghề nghiệp"
+                                            error={formik.touched.position && Boolean(formik.errors.position)}
+                                            helperText={formik.touched.position && typeof formik.errors.position === 'string' ? formik.errors.position : ''}
                                         />
                                     )}
                                 />

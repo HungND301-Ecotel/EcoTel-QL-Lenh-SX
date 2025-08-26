@@ -19,27 +19,78 @@ class _ServiceVehicleSelectVehicle
   bool _isLoading = true;
   final List<DeviceModel> devices = [];
   final DeviceService _deviceService = DeviceService();
-  
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+  void getAllDevice() async {
+    var result = await _deviceService.getAlldevice();
+
+    if (!mounted) return;
+    if (result['status'] == 'error') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      var data = result['data'];
+      setState(() {
+        devices.clear(); // Nếu cần làm sạch danh sách trước
+        devices.addAll(
+          (data as List)
+              .map((e) => DeviceModel.fromJson(e))
+              .toList(),
+        );
+      });
       final order =
           Provider.of<ReportDraftProvider>(
             context,
             listen: false,
           ).order;
-      setState(() {
-        devices.clear(); // Nếu cần làm sạch danh sách trước
-        if (order?.device != null) {
-          devices.addAll(
-            order?.device as List<DeviceModel>,
-          );
-        }
-        _isLoading = false;
-      });
+      if (order?.device != null &&
+          order!.device!.isNotEmpty) {
+        final selectedIds =
+            order.device!.map((m) => m.id).toList();
+        _selectedDevice = selectedIds.last;
+        setState(() {
+          _onSelectDevice(order.device!.last.id);
+          devices.sort((a, b) {
+            if (selectedIds.contains(a.id) &&
+                !selectedIds.contains(b.id)) {
+              return -1;
+            } else if (!selectedIds.contains(a.id) &&
+                selectedIds.contains(b.id)) {
+              return 1;
+            }
+            return 0;
+          });
+        });
+      }
+    }
+    setState(() {
+      _isLoading = false;
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getAllDevice();
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   final order =
+    //       Provider.of<ReportDraftProvider>(
+    //         context,
+    //         listen: false,
+    //       ).order;
+    //   setState(() {
+    //     devices.clear(); // Nếu cần làm sạch danh sách trước
+    //     if (order?.device != null) {
+    //       devices.addAll(
+    //         order?.device as List<DeviceModel>,
+    //       );
+    //     }
+    //     _isLoading = false;
+    //   });
+    // });
   }
 
   String? _selectedDevice;

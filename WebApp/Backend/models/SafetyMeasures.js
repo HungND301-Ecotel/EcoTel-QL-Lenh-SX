@@ -11,6 +11,11 @@ const SafetyMeasure = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Job',
     },
+    position: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Position',
+    }],
+
 },
     {
         timestamps: true

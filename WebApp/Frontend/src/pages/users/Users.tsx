@@ -45,6 +45,7 @@ import {
     ExpandMore,
     Download,
     Search,
+    ResetTv,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -208,7 +209,18 @@ const Users: React.FC = () => {
             showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
-
+    const resetMutation = useMutation({
+        mutationFn: (id: string) =>
+            api.get(`/users/resetpass/${id}`).then(res => res.data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+            showSuccessAlert('Reset mật khẩu thành công. Mật khẩu là:"123456"');
+            handleClose();
+        },
+        onError: (error: any) => {
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
+        }
+    });
     const deleteMutation = useMutation({
         mutationFn: (ids: string[]) => api.delete(`/users`, { data: { ids } }).then(res => res.data.message),
         onSuccess: (message) => {
@@ -429,7 +441,30 @@ const Users: React.FC = () => {
             sortable: false,
             filterable: false,
         },
+        {
+            field: 'resetpass',
+            headerName: 'Reset MK',
+            width: 100,
+            headerAlign: 'center',
+            renderCell: (params) => (
+                <>
+                    <IconButton color="primary" onClick={async () => {
+                        const result = await showConfirmAlert(`Bạn có muốn reset mật khẩu cho người dùng ${params.row?.username}?`);
+                        if (result.isConfirmed) {
+                            resetMutation.mutate(params.row._id)
+                        }
+                    }}>
+                        <ResetTv />
+                    </IconButton>
+                </>
+            ),
+            sortable: false,
+            filterable: false,
+        },
     ];
+    const visibleColumns = user.role === 'admin'
+        ? userColumns
+        : userColumns.filter((col: GridColDef) => col.field !== 'resetpass');
 
     return (
         <Box>
@@ -760,7 +795,7 @@ const Users: React.FC = () => {
                 <Typography variant="h4">Bảng người dùng</Typography>
                 <DataGrid
                     rows={users}
-                    columns={userColumns}
+                    columns={visibleColumns}
                     getRowId={(row) => row._id}
                     rowsPerPageOptions={[10, 20, 50]}
                     autoHeight

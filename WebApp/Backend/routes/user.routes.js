@@ -202,7 +202,23 @@ router.put('/changepass', verifyToken, async (req, res) => {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
     }
 });
-
+// reset pass
+router.get('/resetpass/:id', verifyToken, async (req, res) => {
+    try {
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash("123456", salt);
+        const user = await User.findByIdAndUpdate(req.params.id, { password: hashedPassword })
+        
+        req.logger.info(`✅ Đổi mật khẩu thành công cho người dùng: ${user.username}`);
+        res.status(200).send({
+            status: 'success',
+            message: "Reset mật khẩu thành công",
+        });
+    } catch (err) {
+        req.logger.error("❌ Lỗi khi đổi mật khẩu", err);
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
+    }
+});
 // add phone
 router.put('/addphone', verifyToken, async (req, res) => {
     try {

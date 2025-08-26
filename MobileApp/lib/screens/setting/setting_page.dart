@@ -71,74 +71,74 @@ class SettingPage extends StatelessWidget {
               ],
             ),
           ),
-          TextButton(
-            onPressed: () {},
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.symmetric(vertical: 16),
-            ),
-            child: Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween,
-              children: [
-                SizedBox(
-                  width: 60,
-                  child: Icon(
-                    Icons.credit_card_outlined,
-                    size: 25,
-                    color: Colors.blue,
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    "Đăng ký tài khoản ngân hàng",
-                    style: TextStyle(color: Colors.black),
-                  ),
-                ),
-                SizedBox(
-                  width: 30,
-                  child: Icon(
-                    Icons.arrow_forward_ios,
-                    size: 15,
-                    color: Colors.black,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: () {},
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.symmetric(vertical: 16),
-            ),
-            child: Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween,
-              children: [
-                SizedBox(
-                  width: 60,
-                  child: Icon(
-                    Icons.document_scanner_outlined,
-                    size: 25,
-                    color: Colors.green,
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    "Quản lý giấy tờ lái xe",
-                    style: TextStyle(color: Colors.black),
-                  ),
-                ),
-                SizedBox(
-                  width: 30,
-                  child: Icon(
-                    Icons.arrow_forward_ios,
-                    size: 15,
-                    color: Colors.black,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // TextButton(
+          //   onPressed: () {},
+          //   style: TextButton.styleFrom(
+          //     padding: EdgeInsets.symmetric(vertical: 16),
+          //   ),
+          //   child: Row(
+          //     mainAxisAlignment:
+          //         MainAxisAlignment.spaceBetween,
+          //     children: [
+          //       SizedBox(
+          //         width: 60,
+          //         child: Icon(
+          //           Icons.credit_card_outlined,
+          //           size: 25,
+          //           color: Colors.blue,
+          //         ),
+          //       ),
+          //       Expanded(
+          //         child: Text(
+          //           "Đăng ký tài khoản ngân hàng",
+          //           style: TextStyle(color: Colors.black),
+          //         ),
+          //       ),
+          //       SizedBox(
+          //         width: 30,
+          //         child: Icon(
+          //           Icons.arrow_forward_ios,
+          //           size: 15,
+          //           color: Colors.black,
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
+          // TextButton(
+          //   onPressed: () {},
+          //   style: TextButton.styleFrom(
+          //     padding: EdgeInsets.symmetric(vertical: 16),
+          //   ),
+          //   child: Row(
+          //     mainAxisAlignment:
+          //         MainAxisAlignment.spaceBetween,
+          //     children: [
+          //       SizedBox(
+          //         width: 60,
+          //         child: Icon(
+          //           Icons.document_scanner_outlined,
+          //           size: 25,
+          //           color: Colors.green,
+          //         ),
+          //       ),
+          //       Expanded(
+          //         child: Text(
+          //           "Quản lý giấy tờ lái xe",
+          //           style: TextStyle(color: Colors.black),
+          //         ),
+          //       ),
+          //       SizedBox(
+          //         width: 30,
+          //         child: Icon(
+          //           Icons.arrow_forward_ios,
+          //           size: 15,
+          //           color: Colors.black,
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
           TextButton(
             onPressed: () async {
               await Provider.of<UserProvider>(
