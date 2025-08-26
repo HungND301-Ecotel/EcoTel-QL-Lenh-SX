@@ -462,7 +462,7 @@ const Users: React.FC = () => {
             filterable: false,
         },
     ];
-    const visibleColumns = user.role === 'admin'
+    const visibleColumns = user?.role === 'admin'
         ? userColumns
         : userColumns.filter((col: GridColDef) => col.field !== 'resetpass');
 
