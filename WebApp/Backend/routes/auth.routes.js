@@ -41,10 +41,10 @@ const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
  *               department:
  *                 type: string
  */
-router.post('/register', verifyToken, restrictTo('admin', 'manager'), async (req, res) => {
+router.post('/register', async (req, res) => {
     try {
         const { username, password, email, gender, fullName, phone, avatar, signature,
-            salaryCode, department, position, role } = req.body;
+            salaryCode, department, position, role, active } = req.body;
 
         // Check if user already exists
         let user = await User.findOne({ username });
@@ -100,7 +100,8 @@ router.post('/register', verifyToken, restrictTo('admin', 'manager'), async (req
             salaryCode,
             position,
             gender,
-            role
+            role,
+            active
         });
 
         // Hash password
@@ -181,9 +182,9 @@ router.post('/login', async (req, res) => {
         }
 
         if (user.active === false) {
-            req.logger.error("❌ Tài khoàn đã bị khóa");
+            req.logger.error("❌ Tài khoàn không hoạt động vui lòng chờ hoặc liên hệ admin để giải quyết.");
             return res.status(403).send({
-                status: 'error', message: 'Tài khoản của bạn đã bị khóa'
+                status: 'error', message: 'Tài khoàn không hoạt động vui lòng chờ hoặc liên hệ admin để giải quyết.'
             });
         }
 

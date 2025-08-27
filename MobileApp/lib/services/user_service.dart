@@ -14,6 +14,19 @@ class AuthService {
     });
   }
 
+  Future<Map<String, dynamic>> register(
+    String username,
+    String password,
+    String fullName,
+  ) async {
+    return await _apiService.post('/auth/register', {
+      'username': username,
+      'password': password,
+      'fullName': fullName,
+      'active': false,
+    });
+  }
+
   Future<Map<String, dynamic>> changepass(
     String oldpass,
     String newpass,
@@ -36,5 +49,9 @@ class AuthService {
     return await _apiService.get(
       '/users/getOne/salaryCodeOrName?q=$q',
     );
+  }
+
+  Future<Map<String, dynamic>> deleteUser() async {
+    return await _apiService.delete('/users/me');
   }
 }

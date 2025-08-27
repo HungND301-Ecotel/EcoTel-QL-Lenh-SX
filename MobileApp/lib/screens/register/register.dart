@@ -1,32 +1,47 @@
 import 'package:flutter/material.dart';
-import 'package:soft/models/user_model.dart';
-import 'package:soft/providers/user_provider.dart';
 import 'package:soft/routes/app_routes.dart';
 import 'package:soft/services/user_service.dart';
-import 'package:provider/provider.dart';
 
-class SignIn extends StatefulWidget {
-  const SignIn({super.key});
+class Register extends StatefulWidget {
+  const Register({super.key});
 
   @override
-  State<StatefulWidget> createState() => _SignInState();
+  State<StatefulWidget> createState() => _RegisterState();
 }
 
-class _SignInState extends State<SignIn> {
+class _RegisterState extends State<Register> {
   bool _obscurePassword = false;
   final TextEditingController _usernameController =
       TextEditingController();
   final TextEditingController _passwordController =
       TextEditingController();
+  final TextEditingController _fullNameController =
+      TextEditingController();
 
   final AuthService _authService = AuthService();
 
-  void signin() async {
+  void register() async {
     String username = _usernameController.text.trim();
     String password = _passwordController.text.trim();
-    var result = await _authService.signin(
+    String fullName = _fullNameController.text.trim();
+
+    if (username.isEmpty ||
+        password.isEmpty ||
+        fullName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Dữ liệu không được để trống"),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    var result = await _authService.register(
       username,
       password,
+      fullName,
     );
     if (!mounted) return;
     if (result['status'] == 'error') {
@@ -37,17 +52,25 @@ class _SignInState extends State<SignIn> {
         ),
       );
     } else {
-      final user = result['data']['user'];
-      final token = result['data']['token'];
-      final userModel = UserModel.fromJson(user);
-      Provider.of<UserProvider>(
-        context,
-        listen: false,
-      ).setUser(userModel, token);
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        AppRoute.main,
-        (route) => false,
+      showDialog(
+        context: context,
+        builder:
+            (_) => AlertDialog(
+              title: Text('Đăng ký thành công.'),
+              content: Text(
+                'Yêu cầu của bạn đang chờ duyệt',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(
+                      context,
+                    ).pop(); // Đóng dialog
+                  },
+                  child: const Text('Đóng'),
+                ),
+              ],
+            ),
       );
     }
   }
@@ -72,9 +95,13 @@ class _SignInState extends State<SignIn> {
           child: SingleChildScrollView(
             child: Column(
               children: <Widget>[
-                Image.asset('assets/logo.png'),
+                Image.asset(
+                  'assets/logo.png',
+                  width: 200,
+                  height: 200,
+                ),
                 SizedBox(height: 30),
-                const Text('Đăng nhập'),
+                const Text('Đăng ký'),
                 SizedBox(height: 20),
                 Container(
                   padding: const EdgeInsets.all(20),
@@ -84,6 +111,13 @@ class _SignInState extends State<SignIn> {
                   child: Form(
                     child: Column(
                       children: [
+                        TextFormField(
+                          controller: _fullNameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Họ và tên',
+                          ),
+                        ),
+                        SizedBox(height: 20),
                         TextFormField(
                           controller: _usernameController,
                           decoration: const InputDecoration(
@@ -120,14 +154,14 @@ class _SignInState extends State<SignIn> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: signin,
+                    onPressed: register,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.all(10),
                     ),
                     child: const Text(
-                      'Đăng nhập',
+                      'Đăng ký',
                       style: TextStyle(fontSize: 20),
                     ),
                   ),
@@ -139,7 +173,7 @@ class _SignInState extends State<SignIn> {
                     onPressed: () {
                       Navigator.pushNamed(
                         context,
-                        AppRoute.register,
+                        AppRoute.signin,
                       );
                     },
                     style: ElevatedButton.styleFrom(
@@ -148,7 +182,7 @@ class _SignInState extends State<SignIn> {
                       padding: const EdgeInsets.all(10),
                     ),
                     child: const Text(
-                      'Đăng ký',
+                      'Đăng nhập',
                       style: TextStyle(fontSize: 20),
                     ),
                   ),
