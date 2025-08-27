@@ -39,7 +39,6 @@ class _TaskAssignmentAdd extends State<TaskAssignmentAdd> {
         return TaskAssignmentVehicleAdd(
           data: widget.data,
           order: widget.order,
-          content: content,
         );
       case 'Vận hành xúc':
       case 'Vận hành khoan':
@@ -48,13 +47,11 @@ class _TaskAssignmentAdd extends State<TaskAssignmentAdd> {
         return TaskAssignmentCommonAdd(
           data: widget.data,
           order: widget.order,
-          content: content,
         );
       default:
         return TaskAssignmentOtherAdd(
           data: widget.data,
           order: widget.order,
-          content: content,
         );
     }
   }
@@ -89,8 +86,6 @@ class _TaskAssignmentAdd extends State<TaskAssignmentAdd> {
                 data: widget.data,
                 order: widget.order,
               )
-              : _isLoading
-              ? Center(child: CircularProgressIndicator())
               : _getBody(),
     );
   }
