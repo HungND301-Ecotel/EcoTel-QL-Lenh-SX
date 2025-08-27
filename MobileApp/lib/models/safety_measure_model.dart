@@ -3,12 +3,14 @@ import 'package:soft/models/task_model.dart';
 
 class SafetyMeasureModel {
   final String id;
+  final String name;
   final String content;
-  final TaskModel? job;
+  final List<TaskModel>? job;
   final List<PositionModel>? position;
 
   SafetyMeasureModel({
     required this.id,
+    required this.name,
     required this.content,
     this.job,
     this.position,
@@ -19,11 +21,13 @@ class SafetyMeasureModel {
   ) {
     return SafetyMeasureModel(
       id: json?['_id'] ?? '',
+      name: json?['name'] ?? '',
       content: json?['content'] ?? '',
       job:
-          json?['job'] != null
-              ? TaskModel.fromJson(json?['job'])
-              : null,
+          (json?['job'] as List?)
+              ?.map((e) => TaskModel.fromJson(e))
+              .toList() ??
+          [],
       position:
           (json?['position'] as List?)
               ?.map((e) => PositionModel.fromJson(e))
@@ -34,10 +38,10 @@ class SafetyMeasureModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'name': name,
       'content': content,
-      'job': job?.toJson(),
-      'position':
-          position?.map((e) => e.toJson()).toList(),
+      'job': job?.map((e) => e.toJson()).toList(),
+      'position': position?.map((e) => e.toJson()).toList(),
     };
   }
 }

@@ -114,17 +114,17 @@ class _DispatcherAssignmentEdit
             .cast<Map<String, dynamic>>()
             .toList();
 
-    if (validDevices.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "Vui lòng nhập ít nhất một phương tiện và số lượng.",
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+    // if (validDevices.isEmpty) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(
+    //       content: Text(
+    //         "Vui lòng nhập ít nhất một phương tiện và số lượng.",
+    //       ),
+    //       backgroundColor: Colors.red,
+    //     ),
+    //   );
+    //   return;
+    // }
 
     var result = await _orderService
         .update(widget.order!.id, {

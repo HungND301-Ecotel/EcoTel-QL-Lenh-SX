@@ -59,7 +59,7 @@ const StyledPopper = styled(Popper)({
 });
 
 const validationSchema = yup.object({
-    name: yup.string().required('Tên biện pháp'),
+    name: yup.string().required('Tên biện pháp an toàn chung'),
     content: yup.string().required('Nhập nội dung'),
 });
 
@@ -82,8 +82,8 @@ const SafetyMeasures: React.FC = () => {
     };
     const defaultColumns = [
         { id: 'number', label: 'STT', width: 50 },
-        { id: 'name', label: 'Tên biện pháp', width: 200 },
-        { id: 'content', label: 'Nội dung' },
+        { id: 'name', label: 'Tên biện pháp an toàn chung', width: 300 },
+        { id: 'content', label: 'Biện pháp an toàn chung' },
         { id: 'edit', label: 'Sửa', width: 50 },
     ];
 
@@ -227,7 +227,7 @@ const SafetyMeasures: React.FC = () => {
         initialValues: {
             name: '',
             content: '',
-            job: undefined,
+            job: [] as string[],
             position: [] as string[]
         },
         validationSchema: validationSchema,
@@ -246,9 +246,11 @@ const SafetyMeasures: React.FC = () => {
             formik.setValues({
                 name: safetyMeasure.name,
                 content: safetyMeasure.content,
-                job: safetyMeasure.job !== null && typeof safetyMeasure.job === 'object'
-                    ? safetyMeasure.job?._id
-                    : safetyMeasure.job || undefined,
+                job: Array.isArray(safetyMeasure.job)
+                    ? safetyMeasure.job.map((d: any) => typeof d === 'object' ? d._id : d)
+                    : safetyMeasure.job
+                        ? [typeof safetyMeasure.job === 'object' ? safetyMeasure.job._id : safetyMeasure.job]
+                        : [],
                 position: Array.isArray(safetyMeasure.position)
                     ? safetyMeasure.position.map((d: any) => typeof d === 'object' ? d._id : d)
                     : safetyMeasure.position
@@ -410,7 +412,7 @@ const SafetyMeasures: React.FC = () => {
                         </Box>
                         <Box sx={{ display: 'flex', flex: 1, width: '100%' }}>
                             <TextField fullWidth size="small" value={value}
-                                placeholder='Tìm kiếm theo tên biện pháp an toàn'
+                                placeholder='Tìm kiếm theo tên biện pháp an toàn chung'
                                 onChange={(e) => setValue(e.target.value)}
                                 InputProps={{
                                     endAdornment: (
@@ -433,7 +435,7 @@ const SafetyMeasures: React.FC = () => {
                                     fullWidth
                                     id="name"
                                     name="name"
-                                    label="Tên biện pháp"
+                                    label="Tên biện pháp an toàn chung"
                                     value={formik.values.name}
                                     onChange={formik.handleChange}
                                     error={formik.touched.name && Boolean(formik.errors.name)}
@@ -445,7 +447,7 @@ const SafetyMeasures: React.FC = () => {
                                     rows={5}
                                     id="content"
                                     name="content"
-                                    label="Nội dung"
+                                    label="Biện pháp an toàn chung"
                                     value={formik.values.content}
                                     onChange={formik.handleChange}
                                     error={formik.touched.content && Boolean(formik.errors.content)}
@@ -453,14 +455,18 @@ const SafetyMeasures: React.FC = () => {
                                 />
                                 <Autocomplete
                                     fullWidth
+                                    multiple
                                     options={jobs}
                                     getOptionLabel={(option: Job) =>
                                         option.name || ''
                                     }
-                                    value={jobs.find((p: any) => p._id === formik.values.job) || null}
-                                    // disabled
+                                    value={jobs.filter((d: Job) =>
+                                        formik.values.job.includes(d._id)
+                                    )}
                                     onChange={(event, newValue) => {
-                                        formik.setFieldValue('job', newValue?._id || '');
+                                        const selectedIds = newValue.map((item: any) => item._id);
+
+                                        formik.setFieldValue('job', selectedIds);
                                     }}
                                     PopperComponent={StyledPopper}
                                     renderInput={(params) => (

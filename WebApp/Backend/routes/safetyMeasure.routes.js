@@ -10,8 +10,8 @@ const ExcelJS = require('exceljs');
 const xlsx = require('xlsx');
 
 const columnMapping = {
-    'Tên biện pháp': 'name',
-    'Nội dung': 'content',
+    'Tên biện pháp an toàn chung': 'name',
+    'Biện pháp an toàn chung': 'content',
     'Loại công việc': 'job',
 };
 
@@ -116,30 +116,15 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         }
         const uniqueJobs = [...new Set(dataImport.map(d => d.job).filter(Boolean))];
 
-        const existingJobs = await Job.find({ name: { $in: uniqueJobs } }).lean()
-
-        const jobMap = new Map(existingJobs.map(c => [c.name, c._id]));
         const operations = [];
         const invalidRows = [];
 
         for (const item of dataImport) {
-            const { job, ...updateData } = item;
 
-            let jobId = null;
-            if (job) {
-                jobId = jobMap.get(job);
-                if (!jobId) {
-                    invalidRows.push({ row: item, error: `Loại công việc không hợp lệ: ${job}` });
-                    continue;
-                }
-            }
-            if (jobId) {
-                updateData.job = jobId;
-            }
             operations.push({
                 updateOne: {
-                    filter: { name: updateData.name },
-                    update: { $set: updateData },
+                    filter: { name: item.name },
+                    update: { $set: item },
                     upsert: true,
                 },
             });
@@ -180,15 +165,15 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
         const jobs = await Job.find();
 
         worksheet.columns = [
-            { header: 'Tên biện pháp', key: 'name', width: 50 },
-            { header: 'Nội dung', key: 'content', width: 50 },
-            { header: 'Loại công việc', key: 'job', width: 20 },
+            { header: 'Tên biện pháp an toàn chung', key: 'name', width: 50 },
+            { header: 'Biện pháp an toàn chung', key: 'content', width: 50 },
+            // { header: 'Loại công việc', key: 'job', width: 20 },
         ];
 
         const formattedDevices = (data || []).map(item => ({
             name: item?.name || '',
             content: item?.content || '',
-            job: item?.job?.name || '',
+            // job: item?.job?.name || '',
         }));
         worksheet.addRows(formattedDevices);
 
@@ -198,19 +183,19 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
                 cell.alignment = { vertical: 'middle', wrapText: true, };
             });
         });
-        const jobList = [...new Set(jobs.map(p => p.name).filter(Boolean))];
+        // const jobList = [...new Set(jobs.map(p => p.name).filter(Boolean))];
 
-        worksheet.getColumn('X').values = ['jobs', ...jobList];
-        worksheet.getColumn('X').hidden = true;
+        // worksheet.getColumn('X').values = ['jobs', ...jobList];
+        // worksheet.getColumn('X').hidden = true;
 
-        const MAX = Math.max(worksheet.rowCount + 100, 1000);
-        worksheet.dataValidations.add(`C2:C${MAX}`, {
-            type: 'list',
-            allowBlank: true,
-            formulae: [`=$X$2:$X$${jobList.length + 1}`],
-            showErrorMessage: true,
-            errorTitle: 'Giá trị không hợp lệ',
-        });
+        // const MAX = Math.max(worksheet.rowCount + 100, 1000);
+        // worksheet.dataValidations.add(`C2:C${MAX}`, {
+        //     type: 'list',
+        //     allowBlank: true,
+        //     formulae: [`=$X$2:$X$${jobList.length + 1}`],
+        //     showErrorMessage: true,
+        //     errorTitle: 'Giá trị không hợp lệ',
+        // });
         const buffer = await workbook.xlsx.writeBuffer();
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', 'attachment; filename=' + 'danh_sach_nguoi_dung.xlsx');

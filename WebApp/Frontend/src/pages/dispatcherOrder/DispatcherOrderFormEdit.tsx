@@ -31,17 +31,17 @@ const StyledPopper = styled(Popper)({
 
 const validationSchema = yup.object({
     assignedTo: yup.string().required('Vui lòng chọn thẻ lương'),
-    devicesToProduce: yup.array().of(
-        yup.object().shape({
-            deviceType: yup.string().required('Vui lòng chọn loại thiết bị')
-                .typeError('Số lượng phải là số')
-                .min(1, 'Số lượng phải lớn hơn 0'),
-            quantity: yup.number().required('Vui lòng nhập số lượng'),
-        })
-    ),
+    // devicesToProduce: yup.array().of(
+    //     yup.object().shape({
+    //         deviceType: yup.string().required('Vui lòng chọn loại thiết bị')
+    //             .typeError('Số lượng phải là số')
+    //             .min(1, 'Số lượng phải lớn hơn 0'),
+    //         quantity: yup.number().required('Vui lòng nhập số lượng'),
+    //     })
+    // ),
     job: yup.string().required('Vui lòng chọn loại công việc'),
     workingDate: yup.string().required('Vui lòng chọn ngày làm việc'),
-    shift: yup.string().required('Vui lòng chọn ca làm việc'),
+    // shift: yup.string().required('Vui lòng chọn ca làm việc'),
     workContent: yup.string().required('Vui lòng nhập nội dung'),
 });
 
@@ -105,7 +105,7 @@ const DispatcherOrderFormEdit: React.FC<OrderFormProps> = ({
 
             const order: Partial<Order> = {
                 assignedTo: values.assignedTo,
-                devicesToProduce: values.devicesToProduce,
+                devicesToProduce: values.devicesToProduce.filter((i: any) => i.deviceType),
                 job: values.job,
                 workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
                 shift: values.shift,
@@ -209,7 +209,7 @@ const DispatcherOrderFormEdit: React.FC<OrderFormProps> = ({
                                             fullWidth
                                             label="Số lượng"
                                             type="number"
-                                            inputProps={{ min: 1 }}
+                                            inputProps={{ min: 0 }}
                                             value={formik.values.devicesToProduce[index].quantity}
                                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                                 const value = e.target.value;

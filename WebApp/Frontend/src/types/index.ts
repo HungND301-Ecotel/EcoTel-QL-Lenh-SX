@@ -44,7 +44,7 @@ export interface SafetyMeasure {
     _id: string;
     name: string;
     content: string;
-    job?: string,
+    job?: string[],
     position?: string[],
     createdAt?: string;
     updatedAt?: string;
@@ -78,8 +78,8 @@ export interface Order {
     assignedTo: string;
     job: string;
     workingDate: Date;
-    shift: string;
-    shiftHour: string;
+    shift?: string;
+    shiftHour?: string;
     devicesToProduce?: {
         deviceType: string,
         quantity: number,
@@ -92,7 +92,7 @@ export interface Order {
     material?: string[];
     distance?: number;
     liftHeight?: number;
-    workContent: string;
+    workContent?: string;
     assistants?: string[];
     status: 'pending' | 'in_progress' | 'completed' | 'warning' | 'cancel';
     previous_order_id?: string,

@@ -295,7 +295,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        "Ca: ${data?.shift.name} (${data?.shiftHour != '' ? data?.shiftHour : data?.shift.startTime})",
+                        "Ca: ${data?.shift?.name ?? ''} (${(data?.shiftHour != '' ? data?.shiftHour : data?.shift?.startTime) ?? ''})",
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                         ),
@@ -426,7 +426,9 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      Text(data?.safetyMeasureSpecific ?? ''),
+                      Text(
+                        data?.safetyMeasureSpecific ?? '',
+                      ),
                       const SizedBox(height: 10),
                       const Text(
                         'Biện pháp an toàn chung',

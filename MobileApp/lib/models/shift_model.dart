@@ -14,12 +14,12 @@ class ShiftModel {
   factory ShiftModel.fromJson(Map<String, dynamic>? json) {
     return ShiftModel(
       id: json?['_id'] ?? '',
-      name: json?['name'] ?? '',
+      name: json?['name'],
       startTime: json?['startTime'] ?? '',
       endTime: json?['endTime'] ?? '',
     );
   }
-   Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'name': name,

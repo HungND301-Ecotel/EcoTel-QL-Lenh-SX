@@ -74,7 +74,7 @@ class TaskAssignItem extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    "${DateFormat('dd/MM/yyyy').format(data.workingDate)} (${data.shiftHour != '' ? data.shiftHour : data.shift.startTime})",
+                    "${DateFormat('dd/MM/yyyy').format(data.workingDate)} (${(data.shiftHour != '' ? data.shiftHour : data.shift?.startTime) ?? ''})",
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey,

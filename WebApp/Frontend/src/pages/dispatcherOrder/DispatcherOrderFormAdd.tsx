@@ -31,18 +31,18 @@ const StyledPopper = styled(Popper)({
 
 const validationSchema = yup.object({
     assignedTo: yup.string().required('Vui lòng chọn thẻ lương'),
-    devicesToProduce: yup.array().of(
-        yup.object().shape({
-            deviceType: yup.string().required('Vui lòng chọn loại thiết bị')
-                .typeError('Số lượng phải là số')
-                .min(1, 'Số lượng phải lớn hơn 0'),
-            quantity: yup.number().required('Vui lòng nhập số lượng'),
-        })
-    ),
+    // devicesToProduce: yup.array().of(
+    //     yup.object().shape({
+    //         deviceType: yup.string().required('Vui lòng chọn loại thiết bị')
+    //             .typeError('Số lượng phải là số')
+    //             .min(1, 'Số lượng phải lớn hơn 0'),
+    //         quantity: yup.number().required('Vui lòng nhập số lượng'),
+    //     })
+    // ),
     job: yup.string().required('Vui lòng chọn loại công việc'),
     workingDate: yup.string().required('Vui lòng chọn ngày làm việc'),
-    shift: yup.string().required('Vui lòng chọn ca làm việc'),
-    shiftHour: yup.string().required('Vui lòng chọn giờ ca'),
+    // shift: yup.string().required('Vui lòng chọn ca làm việc'),
+    // shiftHour: yup.string().required('Vui lòng chọn giờ ca'),
     workContent: yup.string().required('Vui lòng nhập nội dung'),
 });
 
@@ -93,7 +93,7 @@ const DispatcherOrderFormAdd: React.FC<OrderFormProps> = ({
             ],
             job: '',
             workingDate: new Date(),
-            shift: '',
+            shift: undefined,
             shiftHour: '',
             workContent: '',
             note: '',
@@ -102,7 +102,7 @@ const DispatcherOrderFormAdd: React.FC<OrderFormProps> = ({
         onSubmit: async (values) => {
             const order: any = {
                 assignedTo: values.assignedTo,
-                devicesToProduce: values.devicesToProduce,
+                devicesToProduce: values.devicesToProduce.filter(i => i.deviceType),
                 job: values.job,
                 workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
                 shift: values.shift,
@@ -241,7 +241,7 @@ const DispatcherOrderFormAdd: React.FC<OrderFormProps> = ({
                                             fullWidth
                                             label="Số lượng"
                                             type="number"
-                                            inputProps={{ min: 1 }}
+                                            inputProps={{ min: 0 }}
                                             value={formik.values.devicesToProduce[index].quantity}
                                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                                 const value = e.target.value;

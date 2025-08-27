@@ -134,7 +134,7 @@ class _TaskAssignmentDetail
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        "Ca: ${widget.data.shift.name} (${widget.data.shiftHour != '' ? widget.data.shiftHour : widget.data.shift.startTime})",
+                        "Ca: ${widget.data.shift?.name ?? ''} (${(widget.data.shiftHour != '' ? widget.data.shiftHour : widget.data.shift?.startTime) ?? ''})",
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                         ),
@@ -363,13 +363,20 @@ class _TaskAssignmentDetail
                         ),
                       ),
                       Text(widget.data.workContent ?? ''),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Biện pháp an toàn cụ thể',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      if (widget
+                          .data
+                          .safetyMeasureSpecific!
+                          .isNotEmpty)
+                        if (widget
+                            .data
+                            .safetyMeasureSpecific!
+                            .isNotEmpty)
+                          const Text(
+                            'Biện pháp an toàn cụ thể',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                       Text(
                         widget.data.safetyMeasureSpecific ??
                             '',
