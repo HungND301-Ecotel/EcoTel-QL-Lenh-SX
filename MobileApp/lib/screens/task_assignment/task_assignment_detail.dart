@@ -237,9 +237,17 @@ class _TaskAssignmentDetail
                             ), // Điền sau nếu có
                           ],
                         ),
-                      if (widget.data.excavator != null)
+                      if (widget
+                              .data
+                              .excavator
+                              ?.isNotEmpty ==
+                          true)
                         const SizedBox(height: 10),
-                      if (widget.data.excavator != null)
+                      if (widget
+                              .data
+                              .excavator
+                              ?.isNotEmpty ==
+                          true)
                         Row(
                           children: [
                             Text(

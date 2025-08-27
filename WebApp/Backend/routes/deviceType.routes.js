@@ -68,7 +68,12 @@ router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res,
 });
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const DeviceTypes = await DeviceType.find()
+        const query = {};
+        if (req.query.q) {
+            const regex = new RegExp(req.query.q, 'i');
+            query.name = regex
+        }
+        const DeviceTypes = await DeviceType.find(query)
             .collation({ locale: "vi", strength: 1 })
             .sort({ name: 1 });
         req.logger.info(`🔥  Load thành công`);

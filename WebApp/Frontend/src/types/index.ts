@@ -42,6 +42,7 @@ export interface DeviceType {
 
 export interface SafetyMeasure {
     _id: string;
+    name: string;
     content: string;
     job?: string,
     position?: string[],

@@ -1,6 +1,9 @@
 const mongoose = require('mongoose')
 
 const SafetyMeasure = new mongoose.Schema({
+    name:{
+        type:String
+    },
     content: {
         type: String,
     },

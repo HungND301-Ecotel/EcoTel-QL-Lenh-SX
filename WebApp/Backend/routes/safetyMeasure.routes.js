@@ -10,14 +10,16 @@ const ExcelJS = require('exceljs');
 const xlsx = require('xlsx');
 
 const columnMapping = {
+    'Tên biện pháp': 'name',
     'Nội dung': 'content',
     'Loại công việc': 'job',
 };
 
 router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
-        const { content, job, position } = req.body;
+        const { name, content, job, position } = req.body;
         const newSafetyMeasure = new SafetyMeasure({
+            name,
             content,
             job,
             position
@@ -78,7 +80,12 @@ router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res,
 
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const SafetyMeasures = await SafetyMeasure.find().populate('job', 'name').populate('position', 'name').collation({ locale: "vi", strength: 1 })
+        const query = {};
+        if (req.query.q) {
+            const regex = new RegExp(req.query.q, 'i');
+            query.name = regex
+        }
+        const SafetyMeasures = await SafetyMeasure.find(query).populate('job', 'name').populate('position', 'name').collation({ locale: "vi", strength: 1 })
             .sort({ content: 1 });
         res.status(200).send({ status: 'success', data: SafetyMeasures });
     } catch (err) {
@@ -131,7 +138,7 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
             }
             operations.push({
                 updateOne: {
-                    filter: { content: updateData.content },
+                    filter: { name: updateData.name },
                     update: { $set: updateData },
                     upsert: true,
                 },
@@ -173,11 +180,13 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
         const jobs = await Job.find();
 
         worksheet.columns = [
+            { header: 'Tên biện pháp', key: 'name', width: 50 },
             { header: 'Nội dung', key: 'content', width: 50 },
             { header: 'Loại công việc', key: 'job', width: 20 },
         ];
 
         const formattedDevices = (data || []).map(item => ({
+            name: item?.name || '',
             content: item?.content || '',
             job: item?.job?.name || '',
         }));
@@ -195,7 +204,7 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
         worksheet.getColumn('X').hidden = true;
 
         const MAX = Math.max(worksheet.rowCount + 100, 1000);
-        worksheet.dataValidations.add(`B2:B${MAX}`, {
+        worksheet.dataValidations.add(`C2:C${MAX}`, {
             type: 'list',
             allowBlank: true,
             formulae: [`=$X$2:$X$${jobList.length + 1}`],

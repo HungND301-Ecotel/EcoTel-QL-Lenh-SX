@@ -112,6 +112,69 @@ class _SettingPageState extends State<SettingPage> {
                   ),
                 ),
                 TextButton(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder:
+                          (_) => AlertDialog(
+                            title: Text('Xóa người dùng.'),
+                            content: Text(
+                              'Dữ liệu người dùng của bạn sẽ bị xóa vĩnh viễn. Bạn có chắc chắn muốn xóa?',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                                child: const Text('Hủy'),
+                              ),
+                              TextButton(
+                                onPressed: deleteUser,
+                                child: const Text(
+                                  'Xác nhận',
+                                ),
+                              ),
+                            ],
+                          ),
+                    );
+                  },
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.symmetric(
+                      vertical: 16,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment:
+                        MainAxisAlignment.spaceBetween,
+                    children: [
+                      SizedBox(
+                        width: 60,
+                        child: Icon(
+                          Icons.delete,
+                          size: 25,
+                          color: Colors.red,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          "Xóa tài khoản",
+                          style: TextStyle(
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        width: 30,
+                        child: Icon(
+                          Icons.arrow_forward_ios,
+                          size: 15,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton(
                   onPressed: () async {
                     await Provider.of<UserProvider>(
                       context,
@@ -162,46 +225,6 @@ class _SettingPageState extends State<SettingPage> {
                   ),
                 ),
               ],
-            ),
-          ),
-          SizedBox(
-            width: double.infinity,
-            child: TextButton(
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder:
-                      (_) => AlertDialog(
-                        title: Text('Xóa người dùng.'),
-                        content: Text(
-                          'Dữ liệu người dùng của bạn sẽ bị xóa vĩnh viễn. Bạn có chắc chắn muốn xóa?',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: (){
-                              Navigator.pop(context);
-                            },
-                            child: const Text('Hủy'),
-                          ),
-                          TextButton(
-                            onPressed: deleteUser,
-                            child: const Text('Xác nhận'),
-                          ),
-                        ],
-                      ),
-                );
-              },
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-              ),
-              child: Text(
-                'Xóa tài khoản',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
             ),
           ),
         ],

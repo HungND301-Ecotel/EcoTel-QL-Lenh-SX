@@ -28,6 +28,7 @@ import {
     Checkbox,
     TablePagination,
     Breadcrumbs,
+    InputAdornment,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -35,6 +36,7 @@ import {
     Delete as DeleteIcon,
     Settings,
     ExpandMore,
+    Search,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -57,6 +59,7 @@ const DeviceTypes: React.FC = () => {
     const [user, setUser] = useAtom(userAtom)
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
     const [expanded, setExpanded] = useState(false);
+    const [value, setValue] = useState("")
 
     const handleSelected = (deviceTypeId: string) => {
         setSelectedDeviceTypes(prev =>
@@ -77,8 +80,8 @@ const DeviceTypes: React.FC = () => {
     }
 
     const { data: DeviceTypes = [], isLoading } = useQuery({
-        queryKey: ['DeviceTypes'],
-        queryFn: () => api.get(`/DeviceTypes`).then(res => res.data.data),
+        queryKey: ['DeviceTypes', value],
+        queryFn: () => api.get(`/DeviceTypes?q=${value}`).then(res => res.data.data),
     });
 
 
@@ -199,14 +202,57 @@ const DeviceTypes: React.FC = () => {
                     expandIcon={<></>}
                     aria-controls="panel1-content"
                     id="panel1-header"
+                    sx={{
+                        backgroundColor: 'white', '&.Mui-focusVisible': {
+                            backgroundColor: 'white',
+                        },
+                    }}
                 >
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', width: '100%' }}>
-                        <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
-                            Thêm
-                        </Button>
-                        <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
-                            Xóa
-                        </Button>
+                    <Box sx={{
+                        display: 'flex', gap: 2, alignItems: 'center', width: '100%',
+                        flexDirection: {
+                            xs: 'column',
+                            md: 'row',
+                        },
+                        justifyContent: {
+                            xs: 'flex-start',
+                            md: 'space-between',
+                        },
+                    }}>
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                gap: 1, // Khoảng cách nhỏ hơn giữa các nút
+                                flexDirection: {
+                                    xs: 'column',
+                                    md: 'row',
+                                },
+                                width: {
+                                    xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                    md: 'auto',
+                                },
+                            }}
+                        >
+                            <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
+                                Thêm
+                            </Button>
+                            <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
+                                Xóa
+                            </Button>
+                        </Box>
+                        <Box sx={{ display: 'flex', flex: 1, width: '100%' }}>
+                            <TextField fullWidth size="small" value={value}
+                                placeholder='Tìm kiếm theo tên loại phương tiện'
+                                onChange={(e) => setValue(e.target.value)}
+                                InputProps={{
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <Search sx={{ fontSize: 24 }} />
+                                        </InputAdornment>
+                                    )
+                                }}>
+                            </TextField>
+                        </Box>
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>

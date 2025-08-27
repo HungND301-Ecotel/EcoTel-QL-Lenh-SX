@@ -167,25 +167,24 @@ class _RegisterState extends State<Register> {
                   ),
                 ),
                 SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushNamed(
-                        context,
-                        AppRoute.signin,
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.all(10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          AppRoute.signin,
+                        );
+                      },
+                      child: Text(
+                        'Quay lại đăng nhập',
+                        style: TextStyle(
+                          color: Colors.blue,
+                        ),
+                      ),
                     ),
-                    child: const Text(
-                      'Đăng nhập',
-                      style: TextStyle(fontSize: 20),
-                    ),
-                  ),
+                  ],
                 ),
               ],
             ),
