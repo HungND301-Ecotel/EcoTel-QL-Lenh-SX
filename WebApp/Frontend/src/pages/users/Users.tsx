@@ -535,7 +535,7 @@ const Users: React.FC = () => {
                                         )
                                     }}>
                                 </TextField>
-                                {user?.role !== 'manager' && <Autocomplete
+                                {user?.role === 'admin' && <Autocomplete
                                     fullWidth
                                     size='small'
                                     options={departments}

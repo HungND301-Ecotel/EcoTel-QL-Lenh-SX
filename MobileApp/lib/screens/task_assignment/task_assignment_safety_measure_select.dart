@@ -61,7 +61,7 @@ class _TaskAssignmentSafetyMeasureSelect
     List<SafetyMeasureModel> filteredItems =
         safetyMeasures
             .where(
-              (item) => item.content.toLowerCase().contains(
+              (item) => item.name.toLowerCase().contains(
                 _searchText.toLowerCase(),
               ),
             )

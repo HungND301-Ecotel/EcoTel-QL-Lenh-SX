@@ -62,10 +62,13 @@ class _TaskAssignmentOtherAdd
 
       // lúc đầu check theo job như cũ
       final matched = _allSafetyMeasures.firstWhere(
-        (m) => m.job?.id == widget.data.id,
+        (m) =>
+            m.job?.any((j) => j.id == widget.data.id) ??
+            false,
         orElse:
             () => SafetyMeasureModel(
               id: '',
+              name: '',
               content: '',
               job: null,
             ),

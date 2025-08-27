@@ -111,7 +111,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         ["admin", "manager"].includes(user?.role) && {
             text: 'Đơn vị', icon: <Business color='primary' />, path: '/departments'
         },
-        ["admin", "manager"].includes(user?.role) && {
+        ["admin", "manager", "dispatcher"].includes(user?.role) && {
             text: 'Cán bộ nhân viên', icon: <People color='primary' />, path: '/users'
         }
     ].filter(Boolean);

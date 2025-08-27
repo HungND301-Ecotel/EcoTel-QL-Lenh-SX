@@ -112,6 +112,26 @@ class _SignInState extends State<SignIn> {
                             ),
                           ),
                         ),
+                        Row(
+                          mainAxisAlignment:
+                              MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  AppRoute.register,
+                                );
+                              },
+                              child: Text(
+                                'Đăng ký',
+                                style: TextStyle(
+                                  color: Colors.blue,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -133,26 +153,6 @@ class _SignInState extends State<SignIn> {
                   ),
                 ),
                 SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushNamed(
-                        context,
-                        AppRoute.register,
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.all(10),
-                    ),
-                    child: const Text(
-                      'Đăng ký',
-                      style: TextStyle(fontSize: 20),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),

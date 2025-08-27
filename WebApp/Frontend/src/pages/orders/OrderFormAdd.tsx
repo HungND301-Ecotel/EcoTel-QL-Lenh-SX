@@ -129,7 +129,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
             workContent: '',
             note: '',
             safetyMeasure: '',
-            safetyMeasureSpecific:''
+            safetyMeasureSpecific: ''
         },
         validationSchema,
         onSubmit: async (values) => {
@@ -147,7 +147,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                 liftHeight: values.liftHeight,
                 workContent: values.workContent,
                 safetyMeasure: values.safetyMeasure,
-                safetyMeasureSpecific:values.safetyMeasureSpecific,
+                safetyMeasureSpecific: values.safetyMeasureSpecific,
                 note: values.note,
             }));
             const duplicates = await Promise.all(
@@ -194,7 +194,9 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                     }
                     value={jobs.find((p: any) => p._id === formik.values.job) || null}
                     onChange={(event, newValue) => {
-                        const content = safetyMeasures.find((i: any) => i?.job?._id === newValue?._id)?.content
+                        const content = safetyMeasures.find((i: any) =>
+                            i.job?.some((jobItem: any) => jobItem._id === newValue?._id)
+                        )?.content;
                         formik.setFieldValue('safetyMeasure', content)
                         formik.setFieldValue('job', newValue?._id || '');
                         setSelectedJob(newValue)
@@ -559,7 +561,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                                                 minHeight: 48,
                                             }}
                                         >
-                                            {item.content}
+                                            {item.name}
                                         </MenuItem>
                                     ))}
                                 </Menu>

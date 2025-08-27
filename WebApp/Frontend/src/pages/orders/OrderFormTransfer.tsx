@@ -545,7 +545,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                                         minHeight: 48,
                                     }}
                                 >
-                                    {item.content}
+                                    {item.name}
                                 </MenuItem>
                             ))}
                         </Menu>

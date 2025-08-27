@@ -9,7 +9,7 @@ const xlsx = require('xlsx');
 const ExcelJS = require('exceljs');
 const Position = require('../models/Position');
 const Department = require('../models/Department');
-
+const mongoose = require('mongoose')
 // Get all users
 router.get('/', verifyToken, async (req, res) => {
     try {
@@ -21,12 +21,28 @@ router.get('/', verifyToken, async (req, res) => {
         }
 
         if (req.query.department) {
-            query.department = req.query.department;
+            const departmentId = req.query.department.toString();
+            const userDeptId = user?.department?._id?.toString();
+
+            if (user?.role === "dispatcher") {
+                if (departmentId === userDeptId) {
+                    // Nếu chọn department của dispatcher -> lấy tất cả user của department đó
+                    query.department = departmentId;
+                } else {
+                    // Nếu chọn department khác -> chỉ lấy manager của department đó
+                    query.department = departmentId;
+                    query.role = "manager";
+                }
+            } else {
+                // Các role khác -> lọc thẳng theo department được chọn
+                query.department = departmentId;
+            }
+        }
+        else if (user?.role === "dispatcher") {
+            // Không chọn department -> dispatcher chỉ thấy user trong department của mình
+            query.department = user?.department?._id;
         }
 
-        if (user?.role === "dispatcher") {
-            query.role = 'manager';
-        }
 
         if (req.query.q) {
             const regex = new RegExp(req.query.q, 'i');

@@ -17,7 +17,6 @@ const orderSchema = new mongoose.Schema({
     shift: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Shift',
-        required: [true, 'Shift is required']
     },
     shiftHour: {
         type: String,
@@ -62,7 +61,6 @@ const orderSchema = new mongoose.Schema({
     },
     workContent: {
         type: String,
-        required: [true, 'WorkContent is required']
     },
     assistants: [
         { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: [] }

@@ -32,6 +32,7 @@ import {
     Autocomplete,
     styled,
     Popper,
+    InputAdornment,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -41,6 +42,7 @@ import {
     ExpandMore,
     UploadFile,
     Download,
+    Search,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -57,6 +59,7 @@ const StyledPopper = styled(Popper)({
 });
 
 const validationSchema = yup.object({
+    name: yup.string().required('Tên biện pháp an toàn chung'),
     content: yup.string().required('Nhập nội dung'),
 });
 
@@ -79,7 +82,8 @@ const SafetyMeasures: React.FC = () => {
     };
     const defaultColumns = [
         { id: 'number', label: 'STT', width: 50 },
-        { id: 'content', label: 'Nội dung' },
+        { id: 'name', label: 'Tên biện pháp an toàn chung', width: 300 },
+        { id: 'content', label: 'Biện pháp an toàn chung' },
         { id: 'edit', label: 'Sửa', width: 50 },
     ];
 
@@ -96,10 +100,10 @@ const SafetyMeasures: React.FC = () => {
 
     const { data: safetyMeasures = [], isLoading } = useQuery({
         queryKey: ['safetyMeasures', value],
-        queryFn: () => api.get(`/safetyMeasures`).then(res => res.data.data),
+        queryFn: () => api.get(`/safetyMeasures?q=${value}`).then(res => res.data.data),
     });
     const { data: positions = [] } = useQuery({
-        queryKey: ['positions', value],
+        queryKey: ['positions'],
         queryFn: () => api.get(`/positions`).then(res => res.data.data),
     });
     const { data: jobs = [] } = useQuery({
@@ -221,9 +225,10 @@ const SafetyMeasures: React.FC = () => {
 
     const formik = useFormik({
         initialValues: {
+            name: '',
             content: '',
-            job: undefined,
-            position:[] as string[]
+            job: [] as string[],
+            position: [] as string[]
         },
         validationSchema: validationSchema,
         onSubmit: (values) => {
@@ -239,10 +244,13 @@ const SafetyMeasures: React.FC = () => {
         if (safetyMeasure) {
             setSelectedSafetyMeasure(safetyMeasure);
             formik.setValues({
+                name: safetyMeasure.name,
                 content: safetyMeasure.content,
-                job: safetyMeasure.job !== null && typeof safetyMeasure.job === 'object'
-                    ? safetyMeasure.job?._id
-                    : safetyMeasure.job || undefined,
+                job: Array.isArray(safetyMeasure.job)
+                    ? safetyMeasure.job.map((d: any) => typeof d === 'object' ? d._id : d)
+                    : safetyMeasure.job
+                        ? [typeof safetyMeasure.job === 'object' ? safetyMeasure.job._id : safetyMeasure.job]
+                        : [],
                 position: Array.isArray(safetyMeasure.position)
                     ? safetyMeasure.position.map((d: any) => typeof d === 'object' ? d._id : d)
                     : safetyMeasure.position
@@ -315,48 +323,105 @@ const SafetyMeasures: React.FC = () => {
                         <></>}
                     aria-controls="panel1-content"
                     id="panel1-header"
+                    sx={{
+                        backgroundColor: 'white', '&.Mui-focusVisible': {
+                            backgroundColor: 'white',
+                        },
+                    }}
                 >
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                        <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
-                            Thêm
-                        </Button>
-                        <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
-                            Xóa
-                        </Button>
-                        <Box display="flex" gap={2}>
-                            <input
-                                id="upload-excel"
-                                type="file"
-                                accept=".xlsx, .xls"
-                                style={{ display: 'none' }}
-                                onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                        const formData = new FormData();
-                                        formData.append('file', file);
-                                        importFile.mutate(formData);
-                                    }
-                                    e.target.value = "";
-                                }}
-                            />
+                    <Box sx={{
+                        display: 'flex', gap: 2, alignItems: 'center',
+                        width: '100%',
+                        flexDirection: {
+                            xs: 'column',
+                            md: 'row',
+                        },
+                        justifyContent: {
+                            xs: 'flex-start',
+                            md: 'space-between',
+                        },
+                    }}>
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                gap: 1, // Khoảng cách nhỏ hơn giữa các nút
+                                flexDirection: {
+                                    xs: 'column',
+                                    md: 'row',
+                                },
+                                width: {
+                                    xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                    md: 'auto',
+                                },
+                            }}
+                        >
 
-                            <label htmlFor="upload-excel">
+                            <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
+                                Thêm
+                            </Button>
+                            <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
+                                Xóa
+                            </Button>
+                            <Box display="flex" gap={2} sx={{
+                                display: 'flex',
+                                gap: 1, // Khoảng cách nhỏ hơn giữa các nút
+                                flexDirection: {
+                                    xs: 'column',
+                                    md: 'row',
+                                },
+                                width: {
+                                    xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                    md: 'auto',
+                                },
+                            }}>
+                                <input
+                                    id="upload-excel"
+                                    type="file"
+                                    accept=".xlsx, .xls"
+                                    style={{ display: 'none' }}
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                            const formData = new FormData();
+                                            formData.append('file', file);
+                                            importFile.mutate(formData);
+                                        }
+                                        e.target.value = "";
+                                    }}
+                                />
+
+                                <label htmlFor="upload-excel">
+                                    <Button
+                                        fullWidth
+                                        component="span"
+                                        variant="contained"
+                                        startIcon={<UploadFile />}
+                                    >
+                                        Tải lên excel
+                                    </Button>
+                                </label>
                                 <Button
                                     component="span"
                                     variant="contained"
-                                    startIcon={<UploadFile />}
+                                    startIcon={<Download />}
+                                    onClick={() => exportExcel.mutate()}
                                 >
-                                    Tải lên excel
+                                    Tải xuống
                                 </Button>
-                            </label>
-                            <Button
-                                component="span"
-                                variant="contained"
-                                startIcon={<Download />}
-                                onClick={() => exportExcel.mutate()}
-                            >
-                                Tải xuống
-                            </Button>
+                            </Box>
+                        </Box>
+                        <Box sx={{ display: 'flex', flex: 1, width: '100%' }}>
+                            <TextField fullWidth size="small" value={value}
+                                placeholder='Tìm kiếm theo tên biện pháp an toàn chung'
+                                onChange={(e) => setValue(e.target.value)}
+                                InputProps={{
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <Search sx={{ fontSize: 24 }} />
+                                        </InputAdornment>
+                                    )
+                                }}>
+                            </TextField>
                         </Box>
 
                     </Box>
@@ -368,11 +433,21 @@ const SafetyMeasures: React.FC = () => {
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                                 <TextField
                                     fullWidth
+                                    id="name"
+                                    name="name"
+                                    label="Tên biện pháp an toàn chung"
+                                    value={formik.values.name}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.name && Boolean(formik.errors.name)}
+                                    helperText={formik.touched.name && formik.errors.name}
+                                />
+                                <TextField
+                                    fullWidth
                                     multiline
                                     rows={5}
                                     id="content"
                                     name="content"
-                                    label="Biện pháp an toàn"
+                                    label="Biện pháp an toàn chung"
                                     value={formik.values.content}
                                     onChange={formik.handleChange}
                                     error={formik.touched.content && Boolean(formik.errors.content)}
@@ -384,10 +459,13 @@ const SafetyMeasures: React.FC = () => {
                                     getOptionLabel={(option: Job) =>
                                         option.name || ''
                                     }
-                                    value={jobs.find((p: any) => p._id === formik.values.job) || null}
-                                    // disabled
+                                    value={jobs.filter((d: Job) =>
+                                        formik.values.job.includes(d._id)
+                                    )}
                                     onChange={(event, newValue) => {
-                                        formik.setFieldValue('job', newValue?._id || '');
+                                        const selectedIds = newValue.map((item: any) => item._id);
+
+                                        formik.setFieldValue('job', selectedIds);
                                     }}
                                     PopperComponent={StyledPopper}
                                     renderInput={(params) => (
@@ -435,25 +513,27 @@ const SafetyMeasures: React.FC = () => {
                     </DialogActions>
                 </AccordionDetails>
             </Accordion>
-            {isUploading && (
-                <Box sx={{ mt: 2 }}>
-                    {progress < 100 ? (
-                        <>
-                            <Typography variant="body2" align="center">
-                                Đang tải lên... {progress}%
-                            </Typography>
-                            <LinearProgress variant="determinate" value={progress} />
-                        </>
-                    ) : (
-                        <>
-                            <Typography variant="body2" align="center">
-                                Đang xử lý dữ liệu trên server...
-                            </Typography>
-                            <LinearProgress />
-                        </>
-                    )}
-                </Box>
-            )}
+            {
+                isUploading && (
+                    <Box sx={{ mt: 2 }}>
+                        {progress < 100 ? (
+                            <>
+                                <Typography variant="body2" align="center">
+                                    Đang tải lên... {progress}%
+                                </Typography>
+                                <LinearProgress variant="determinate" value={progress} />
+                            </>
+                        ) : (
+                            <>
+                                <Typography variant="body2" align="center">
+                                    Đang xử lý dữ liệu trên server...
+                                </Typography>
+                                <LinearProgress />
+                            </>
+                        )}
+                    </Box>
+                )
+            }
             <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
                 <Typography variant="h4">Bảng biện pháp chung</Typography>
                 <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
@@ -508,6 +588,12 @@ const SafetyMeasures: React.FC = () => {
                                 {visibleColumns.includes('number') &&
                                     <TableCell align='center' sx={{}}>{index + 1}</TableCell>
                                 }
+                                {visibleColumns.includes('name') &&
+                                    <TableCell sx={{
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                    }}>{safetyMeasure.name}</TableCell>}
                                 {visibleColumns.includes('content') &&
                                     <TableCell sx={{
                                         whiteSpace: 'nowrap',

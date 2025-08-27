@@ -39,7 +39,7 @@ class OrderModel {
   final UserModel assignedTo;
   final TaskModel job;
   final DateTime workingDate;
-  final ShiftModel shift;
+  final ShiftModel? shift;
   String? shiftHour;
   List<DevicesToProduceModel>? devicesToProduce;
   DateTime? startTime;
@@ -66,7 +66,7 @@ class OrderModel {
     required this.assignedTo,
     required this.job,
     required this.workingDate,
-    required this.shift,
+    this.shift,
     this.shiftHour,
     this.devicesToProduce,
     this.startTime,
@@ -96,7 +96,10 @@ class OrderModel {
       job: TaskModel.fromJson(json?['job']),
       workingDate:
           DateTime.parse(json?['workingDate']).toLocal(),
-      shift: ShiftModel.fromJson(json?['shift']),
+      shift:
+          json?['shift'] != null
+              ? ShiftModel.fromJson(json?['shift'])
+              : null,
       shiftHour: json?['shiftHour'] ?? '',
       devicesToProduce:
           (json?['devicesToProduce'] as List?)
@@ -192,7 +195,7 @@ class OrderModel {
       'assignedTo': assignedTo.toJson(),
       'job': job.toJson(),
       'workingDate': workingDate.toIso8601String(),
-      'shift': shift.toJson(),
+      'shift': shift?.toJson(),
       'shiftHour': shiftHour,
       'devicesToProduce':
           devicesToProduce?.map((e) => e.toJson()).toList(),

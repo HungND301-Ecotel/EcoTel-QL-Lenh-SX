@@ -134,7 +134,7 @@ class _TaskAssignmentDetail
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        "Ca: ${widget.data.shift.name} (${widget.data.shiftHour != '' ? widget.data.shiftHour : widget.data.shift.startTime})",
+                        "Ca: ${widget.data.shift?.name ?? ''} (${(widget.data.shiftHour != '' ? widget.data.shiftHour : widget.data.shift?.startTime) ?? ''})",
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                         ),
@@ -237,9 +237,17 @@ class _TaskAssignmentDetail
                             ), // Điền sau nếu có
                           ],
                         ),
-                      if (widget.data.excavator != null)
+                      if (widget
+                              .data
+                              .excavator
+                              ?.isNotEmpty ==
+                          true)
                         const SizedBox(height: 10),
-                      if (widget.data.excavator != null)
+                      if (widget
+                              .data
+                              .excavator
+                              ?.isNotEmpty ==
+                          true)
                         Row(
                           children: [
                             Text(
@@ -355,6 +363,24 @@ class _TaskAssignmentDetail
                         ),
                       ),
                       Text(widget.data.workContent ?? ''),
+                      if (widget
+                          .data
+                          .safetyMeasureSpecific!
+                          .isNotEmpty)
+                        if (widget
+                            .data
+                            .safetyMeasureSpecific!
+                            .isNotEmpty)
+                          const Text(
+                            'Biện pháp an toàn cụ thể',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                      Text(
+                        widget.data.safetyMeasureSpecific ??
+                            '',
+                      ),
                       const SizedBox(height: 10),
                       const Text(
                         'Biện pháp an toàn cụ thể',
