@@ -4,6 +4,7 @@ import 'package:soft/models/device_model.dart';
 import 'package:soft/models/location_model.dart';
 import 'package:soft/models/material_model.dart';
 import 'package:soft/models/order_model.dart';
+import 'package:soft/models/safety_measure_model.dart';
 import 'package:soft/models/shift_model.dart';
 import 'package:soft/models/task_model.dart';
 import 'package:soft/models/user_model.dart';
@@ -20,13 +21,11 @@ import 'package:soft/widgets/vehicle_button.dart';
 class TaskAssignmentVehicleAdd extends StatefulWidget {
   final TaskModel data;
   final OrderModel? order;
-  final String content;
 
   const TaskAssignmentVehicleAdd({
     super.key,
     required this.data,
     this.order,
-    required this.content,
   });
 
   @override
@@ -158,7 +157,6 @@ class _TaskAssignmentVehicleAdd
           order.safetyMeasureSpecific ?? '';
     } else {
       userAndDevice.add({"user": null, "device": null});
-      _safetyController.text = widget.content;
     }
   }
 

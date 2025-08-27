@@ -274,7 +274,28 @@ router.delete('/', verifyToken, async (req, res) => {
         });
     }
 });
+router.delete('/me', verifyToken, async (req, res) => {
+    try {
+        const result = await User.findByIdAndDelete(req.userId);
+        if (!result) {
+            req.logger.info("ℹ️ Không tìm thấy người dùng để xóa.");
+            return res.status(200).send({ status: 'error', message: 'Không tìm thấy người dùng để xóa' });
+        }
 
+        req.logger.info(`✅ Đã xóa thành công người dùng ${req.userId}`);
+        res.status(200).json({
+            status: 'success',
+            message: `Xóa người dùng thành công`
+        });
+    } catch (error) {
+        req.logger.error("❌ Lỗi khi xóa người dùng", error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Xóa người dùng thất bại',
+            error: error.message
+        });
+    }
+});
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 const columnMapping = {
