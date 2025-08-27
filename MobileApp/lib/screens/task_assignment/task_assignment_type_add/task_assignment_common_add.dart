@@ -18,13 +18,11 @@ import 'package:soft/widgets/vehicle_button.dart';
 class TaskAssignmentCommonAdd extends StatefulWidget {
   final TaskModel data;
   final OrderModel? order;
-  final String content;
 
   const TaskAssignmentCommonAdd({
     super.key,
     required this.data,
     this.order,
-    required this.content,
   });
 
   @override
@@ -139,7 +137,6 @@ class _TaskAssignmentCommonAdd
       _noteController.text = order.note ?? '';
     } else {
       userAndDevice.add({"user": null, "device": null});
-      _safetyController.text = widget.content;
     }
   }
 
