@@ -455,6 +455,7 @@ const SafetyMeasures: React.FC = () => {
                                 />
                                 <Autocomplete
                                     fullWidth
+                                    multiple
                                     options={jobs}
                                     getOptionLabel={(option: Job) =>
                                         option.name || ''
