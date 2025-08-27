@@ -11,6 +11,7 @@ import 'package:soft/routes/app_routes.dart';
 import 'package:soft/routes/task_assignment_route.dart';
 import 'package:soft/screens/work_log/widgets/shift_select.dart';
 import 'package:soft/services/order_service.dart';
+import 'package:soft/services/safety_measure_service.dart';
 import 'package:soft/widgets/date_picker_button.dart';
 import 'package:soft/widgets/pay_roll_input.dart';
 import 'package:soft/widgets/time_picker_button.dart';
@@ -44,9 +45,82 @@ class _TaskAssignmentVehicleAdd
   ShiftModel? _shift;
   String? _shiftHour;
 
+  final SafetyMeasureService _safetyMeasureService =
+      SafetyMeasureService();
+  List<SafetyMeasureModel> _allSafetyMeasures = [];
+
+  void getAllSafetyMeasure() async {
+    var result =
+        await _safetyMeasureService.getAllSafetyMeasure();
+
+    if (!mounted) return;
+    if (result['status'] == 'error') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      final data =
+          (result['data'] as List)
+              .map((e) => SafetyMeasureModel.fromJson(e))
+              .toList();
+      setState(() {
+        _allSafetyMeasures = data;
+      });
+
+      // lúc đầu check theo job như cũ
+      final matched = _allSafetyMeasures.firstWhere(
+        (m) => m.job?.id == widget.data.id,
+        orElse:
+            () => SafetyMeasureModel(
+              id: '',
+              content: '',
+              job: null,
+            ),
+      );
+
+      if (matched.content.trim().isNotEmpty) {
+        _safetyController.text = matched.content;
+      }
+    }
+  }
+
+  void _updateSafetyByFirstUser() {
+    if (_allSafetyMeasures.isEmpty) return;
+
+    print(_allSafetyMeasures);
+
+    final firstItem = userAndDevice.first;
+    if (firstItem == null) return;
+
+    final UserModel? firstUser = firstItem["user"];
+    if (firstUser == null) return;
+
+    final userPositionId = firstUser.position?.id;
+    if (userPositionId == null) return;
+
+    // Tìm kiếm biện pháp an toàn theo vị trí của người dùng
+    final matched =
+        _allSafetyMeasures.where((m) {
+          return m.position?.any(
+                (p) => p.id == userPositionId,
+              ) ??
+              false;
+        }).toList();
+
+    setState(() {
+      if (matched.isNotEmpty) {
+        _safetyController.text = matched.first.content;
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
+    getAllSafetyMeasure();
     _selectedDateTime = DateTime.now();
     if (widget.order != null) {
       final order = widget.order!;
@@ -80,6 +154,8 @@ class _TaskAssignmentVehicleAdd
       _liftHeightController.text =
           order.liftHeight.toString();
       _safetyController.text = order.safetyMeasure ?? '';
+      _safetySpecificController.text =
+          order.safetyMeasureSpecific ?? '';
     } else {
       userAndDevice.add({"user": null, "device": null});
       _safetyController.text = widget.content;
@@ -151,12 +227,16 @@ class _TaskAssignmentVehicleAdd
       TextEditingController();
   final TextEditingController _safetyController =
       TextEditingController();
+  final TextEditingController _safetySpecificController =
+      TextEditingController();
   final OrderService _orderService = OrderService();
 
   void createOrder() async {
     String description = _descriptionController.text.trim();
     String note = _noteController.text.trim();
     String safetyMeasure = _safetyController.text.trim();
+    String safetyMeasureSpecific =
+        _safetySpecificController.text.trim();
 
     final distace = num.tryParse(_distanceController.text);
     final liftheight = num.tryParse(
@@ -208,6 +288,7 @@ class _TaskAssignmentVehicleAdd
         "workContent": description,
         "note": note,
         "safetyMeasure": safetyMeasure,
+        "safetyMeasureSpecific": safetyMeasureSpecific,
       });
       if (!mounted) return;
       if (result['status'] == 'error') {
@@ -285,6 +366,10 @@ class _TaskAssignmentVehicleAdd
                               userAndDevice[i]?["user"] =
                                   selectedUser;
                             });
+                            print(_allSafetyMeasures);
+                            if (i == 0) {
+                              _updateSafetyByFirstUser();
+                            }
                           },
                           initialPayroll:
                               userAndDevice[i]?["user"]
@@ -552,6 +637,17 @@ class _TaskAssignmentVehicleAdd
                       },
                     ),
                   ),
+                ),
+                Text(
+                  'Biện pháp an toàn cụ thể ',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TextField(
+                  controller: _safetySpecificController,
+                  maxLines: null,
+                  minLines: 5,
                 ),
               ],
             ),

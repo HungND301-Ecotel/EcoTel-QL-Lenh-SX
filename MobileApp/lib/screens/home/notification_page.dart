@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:soft/services/socket_service.dart';
 
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});

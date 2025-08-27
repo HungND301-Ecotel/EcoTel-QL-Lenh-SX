@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:soft/models/location_model.dart';
-import 'package:soft/models/material_model.dart';
 
 
 class VehicleSummariesControllers {

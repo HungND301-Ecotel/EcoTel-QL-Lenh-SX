@@ -144,9 +144,8 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                 ? initialValues.shift._id
                 : initialValues.shift || '',
             shiftHour: initialValues.shiftHour || '',
-            safetyMeasure: initialValues.safetyMeasure !== null && typeof initialValues.safetyMeasure === 'object'
-                ? initialValues.safetyMeasure._id
-                : initialValues.safetyMeasure || undefined,
+            safetyMeasure: initialValues.safetyMeasure || '',
+            safetyMeasureSpecific: initialValues.safetyMeasureSpecific || '',
             excavator: Array.isArray(initialValues?.excavator) && initialValues.excavator.length > 0
                 ? [typeof initialValues.excavator.at(-1) === 'object'
                     ? initialValues.excavator.at(-1)?._id
@@ -551,6 +550,22 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                             ))}
                         </Menu>
                     </Box>
+                </Grid>
+                <Grid item xs={12}>
+                    <TextField
+                        fullWidth
+                        multiline
+                        rows={5}
+                        id="safetyMeasureSpecific"
+                        name="safetyMeasureSpecific"
+                        label="Biện pháp an toàn cụ thể"
+                        value={formik.values.safetyMeasureSpecific}
+                        onChange={formik.handleChange}
+                        error={formik.touched.safetyMeasureSpecific && Boolean(formik.errors.safetyMeasureSpecific)}
+                        helperText={formik.touched.safetyMeasureSpecific && typeof formik.errors.safetyMeasureSpecific === 'string'
+                            ? formik.errors.safetyMeasureSpecific
+                            : ''}
+                    />
                 </Grid>
             </Grid>
 

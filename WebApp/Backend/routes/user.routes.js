@@ -99,7 +99,7 @@ router.get('/getOne/salaryCodeOrName', verifyToken, async (req, res) => {
                 message: 'Thiếu tham số tìm kiếm',
             });
         }
-        const user = await User.findOne(query);
+        const user = await User.findOne(query).populate('position', 'name');
         if (!user) {
             req.logger.warn("⚠️ Không tìm thấy người dùng với từ khóa đã cho.");
             return res.status(404).json({
@@ -208,7 +208,7 @@ router.get('/resetpass/:id', verifyToken, async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash("123456", salt);
         const user = await User.findByIdAndUpdate(req.params.id, { password: hashedPassword })
-        
+
         req.logger.info(`✅ Đổi mật khẩu thành công cho người dùng: ${user.username}`);
         res.status(200).send({
             status: 'success',

@@ -484,7 +484,7 @@ const Orders: React.FC = () => {
                                     />
                                 )}
                             />
-                            {user?.role === "amdin" && <Autocomplete
+                            {user?.role === "admin" && <Autocomplete
                                 fullWidth
                                 options={departments}
                                 getOptionLabel={(option: any) =>

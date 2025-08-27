@@ -357,6 +357,17 @@ class _TaskAssignmentDetail
                       Text(widget.data.workContent ?? ''),
                       const SizedBox(height: 10),
                       const Text(
+                        'Biện pháp an toàn cụ thể',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        widget.data.safetyMeasureSpecific ??
+                            '',
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
                         'Biện pháp an toàn chung',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,

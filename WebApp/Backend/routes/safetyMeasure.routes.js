@@ -10,17 +10,15 @@ const ExcelJS = require('exceljs');
 const xlsx = require('xlsx');
 
 const columnMapping = {
-    'Nội dung chung': 'content',
-    'Nội dung riêng': 'master_content',
+    'Nội dung': 'content',
     'Loại công việc': 'job',
 };
 
 router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
-        const { content, master_content, job, position } = req.body;
+        const { content, job, position } = req.body;
         const newSafetyMeasure = new SafetyMeasure({
             content,
-            master_content,
             job,
             position
         });
@@ -175,14 +173,12 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
         const jobs = await Job.find();
 
         worksheet.columns = [
-            { header: 'Nội dung chung', key: 'content', width: 50 },
-            { header: 'Nội dung riêng', key: 'master_content', width: 50 },
+            { header: 'Nội dung', key: 'content', width: 50 },
             { header: 'Loại công việc', key: 'job', width: 20 },
         ];
 
         const formattedDevices = (data || []).map(item => ({
             content: item?.content || '',
-            master_content: item?.master_content || '',
             job: item?.job?.name || '',
         }));
         worksheet.addRows(formattedDevices);
@@ -199,7 +195,7 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
         worksheet.getColumn('X').hidden = true;
 
         const MAX = Math.max(worksheet.rowCount + 100, 1000);
-        worksheet.dataValidations.add(`C2:C${MAX}`, {
+        worksheet.dataValidations.add(`B2:B${MAX}`, {
             type: 'list',
             allowBlank: true,
             formulae: [`=$X$2:$X$${jobList.length + 1}`],
