@@ -33,7 +33,6 @@ class _TaskAssignmentAdd extends State<TaskAssignmentAdd> {
   Widget _getBody() {
     final type = widget.data.type;
 
-    print('content: $content');
 
     switch (type) {
       case 'Vận hành xe':
