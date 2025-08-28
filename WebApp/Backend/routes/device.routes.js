@@ -91,7 +91,34 @@ router.get('/excavators/all', verifyToken, async (req, res, next) => {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
+router.get('/car/all', verifyToken, async (req, res, next) => {
+    try {
+        const allTypes = await DeviceType.find();
+        const targetTypes = allTypes
+            .filter(type => type.name.toLowerCase().includes("vận tải"))
+            .map(type => type._id);
 
+        const query = {}
+
+
+        if (targetTypes) {
+            query.category = { $in: targetTypes };
+        }
+
+        const devices = await Device.find(query).populate('category').populate('department', 'name code')
+
+        req.logger.info(`🔥  Load phương tiện vận tải thành công`);
+        res.status(200).json({
+            status: 'success',
+            results: devices.length,
+            data:
+                devices
+        });
+    } catch (err) {
+        req.logger.error("❌ Lỗi", err);
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+});
 
 router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {

@@ -57,9 +57,6 @@ class _RegisterState extends State<Register> {
         builder:
             (_) => AlertDialog(
               title: Text('Đăng ký thành công.'),
-              content: Text(
-                'Yêu cầu của bạn đang chờ duyệt',
-              ),
               actions: [
                 TextButton(
                   onPressed: () {

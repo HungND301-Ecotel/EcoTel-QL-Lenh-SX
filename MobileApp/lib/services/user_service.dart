@@ -23,7 +23,6 @@ class AuthService {
       'username': username,
       'password': password,
       'fullName': fullName,
-      'active': false,
     });
   }
 

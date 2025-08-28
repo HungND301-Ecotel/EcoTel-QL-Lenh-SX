@@ -127,6 +127,11 @@ const DispatcherOrders: React.FC = () => {
     const handleChange = (value: string) => {
         setStatus(prev => (prev === value ? '' : value)); // bỏ chọn nếu click lại
     };
+
+    const { data: departments = [] } = useQuery({
+        queryKey: ['departments'],
+        queryFn: () => api.get('/departments').then(res => res.data.data),
+    });
     const { data: users = [] } = useQuery({
         queryKey: ['users'],
         queryFn: () => api.get('/users').then(res => res.data.data),
@@ -134,7 +139,7 @@ const DispatcherOrders: React.FC = () => {
 
     const { data: orders = [], isLoading, refetch } = useQuery({
         queryKey: ['orders', status],
-        queryFn: () => api.get(`/orders?status=${status}&employee=${employee}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
+        queryFn: () => api.get(`/orders?status=${status}&employee=${employee}&&department=${department}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
     });
     const { data: allOrders = [] } = useQuery({
         queryKey: ['allOrders'],
@@ -379,6 +384,26 @@ const DispatcherOrders: React.FC = () => {
                                         {...params}
                                         size='small'
                                         label="Nhân viên"
+                                    />
+                                )}
+                            />
+                            <Autocomplete
+                                fullWidth
+                                options={departments}
+                                getOptionLabel={(option: any) =>
+                                    option.code || ''
+                                }
+                                value={departments.find((p: any) => p._id === department) || null}
+                                onChange={(event, newValue) => {
+                                    setDepartment(newValue?._id || '');
+                                }}
+                                PopperComponent={StyledPopper}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        fullWidth
+                                        size='small'
+                                        label="Đơn vị"
                                     />
                                 )}
                             />

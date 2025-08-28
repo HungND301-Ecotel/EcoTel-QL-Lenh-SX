@@ -22,7 +22,7 @@ class _ExcavatorSelectVehicle
   final DeviceService _deviceService = DeviceService();
 
   void getAllDevice() async {
-    var result = await _deviceService.getAlldevice();
+    var result = await _deviceService.getAllCar();
 
     if (!mounted) return;
     if (result['status'] == 'error') {
@@ -42,30 +42,6 @@ class _ExcavatorSelectVehicle
               .toList(),
         );
       });
-      final order =
-          Provider.of<ReportDraftProvider>(
-            context,
-            listen: false,
-          ).order;
-      if (order?.device != null &&
-          order!.device!.isNotEmpty) {
-        final selectedIds =
-            order.device!.map((m) => m.id).toList();
-        _selectedDevice = selectedIds.last;
-        setState(() {
-          _onSelectDevice(order.device!.last.id);
-          devices.sort((a, b) {
-            if (selectedIds.contains(a.id) &&
-                !selectedIds.contains(b.id)) {
-              return -1;
-            } else if (!selectedIds.contains(a.id) &&
-                selectedIds.contains(b.id)) {
-              return 1;
-            }
-            return 0;
-          });
-        });
-      }
     }
     setState(() {
       _isLoading = false;
@@ -103,7 +79,7 @@ class _ExcavatorSelectVehicle
     Provider.of<ReportDraftProvider>(
       context,
       listen: false,
-    ).setExcavator(selectedDevice);
+    ).setDevice(selectedDevice);
   }
 
   String _searchText = '';

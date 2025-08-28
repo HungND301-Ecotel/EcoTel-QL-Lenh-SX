@@ -76,7 +76,7 @@ class _ExcavatorTripItemState
                     CrossAxisAlignment.start,
                 children: [
                   Text(
-                    widget.data.excavator?.code ?? '',
+                    widget.data.device?.code ?? '',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.black,
