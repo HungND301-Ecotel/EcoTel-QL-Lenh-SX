@@ -64,6 +64,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
     const [jobSafetyText, setJobSafetyText] = useState("");
     const [userSafetyText, setUserSafetyText] = useState("");
 
+
     const safetyTextFieldRef = useRef<HTMLInputElement>(null);
 
     const handleCloseMenu = () => {
