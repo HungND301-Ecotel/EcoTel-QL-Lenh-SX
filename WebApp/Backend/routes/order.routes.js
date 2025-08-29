@@ -96,9 +96,6 @@ router.get('/', verifyToken, async (req, res, next) => {
             if (req.query.department) {
                 query.department = new mongoose.Types.ObjectId(req.query.department);
             }
-            if (req.query.department && user?.role === 'admin') {
-                query.department = new mongoose.Types.ObjectId(req.query.department);
-            }
             orders = await Order.find(query)
                 .populate('assignedTo', 'username fullName salaryCode department')
                 .populate('job', 'name type content')

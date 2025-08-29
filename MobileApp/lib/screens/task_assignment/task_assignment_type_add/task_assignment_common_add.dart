@@ -101,7 +101,6 @@ class _TaskAssignmentCommonAdd
         _jobSafetyContent = matchedJobs
             .map((m) => m.content)
             .join('\n');
-
       }
     }
   }

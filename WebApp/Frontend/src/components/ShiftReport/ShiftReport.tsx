@@ -990,7 +990,6 @@ export default function ShiftReport({
                                         <Typography key={i} variant="caption" color="secondary" display="block">
                                             Nội dung: Kiến nghị, rủi ro: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
                                             {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
-
                                         </Typography>
                                     );
                                 })}

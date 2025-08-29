@@ -232,26 +232,6 @@ class _SignInState extends State<SignIn> {
                             ),
                           ],
                         ),
-                        Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.end,
-                          children: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  AppRoute.register,
-                                );
-                              },
-                              child: Text(
-                                'Đăng ký',
-                                style: TextStyle(
-                                  color: Colors.blue,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
                       ],
                     ),
                   ),

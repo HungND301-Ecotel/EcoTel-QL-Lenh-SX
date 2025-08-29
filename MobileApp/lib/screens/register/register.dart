@@ -12,6 +12,7 @@ class Register extends StatefulWidget {
 class _RegisterState extends State<Register> {
   final _formKey = GlobalKey<FormState>();
   bool _obscurePassword = true;
+
   final TextEditingController _usernameController =
       TextEditingController();
   final TextEditingController _passwordController =
