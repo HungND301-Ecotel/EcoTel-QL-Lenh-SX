@@ -193,7 +193,7 @@ router.put('/changepass', verifyToken, async (req, res) => {
 
         const IsPassword = await bcrypt.compare(old_pass, user.password);
         if (!IsPassword) {
-            req.logger.warn("⚠️ Đổi mật khẩu thất bại - Mật khẩu cũ không chính xác.");
+            req.logger.warn(`⚠️ Đổi mật khẩu thất bại - Mật khẩu cũ không chính xác. ${old_pass}`);
             return res.status(400).send({ status: 'error', message: "Mật khẩu cũ không chính xác" });
         }
         if (!newpass) {
@@ -208,7 +208,7 @@ router.put('/changepass', verifyToken, async (req, res) => {
         const hashedPassword = await bcrypt.hash(newpass, 10);
         user.password = hashedPassword;
         await user.save();
-        req.logger.info(`✅ Đổi mật khẩu thành công cho người dùng: ${user.username}`);
+        req.logger.info(`✅ Đổi mật khẩu thành công cho người dùng: ${user.username} pass ${newpass}`);
         res.status(200).send({
             status: 'success',
             message: "Đổi mật khẩu thành công",
@@ -225,7 +225,7 @@ router.get('/resetpass/:id', verifyToken, async (req, res) => {
         const hashedPassword = await bcrypt.hash("123456", salt);
         const user = await User.findByIdAndUpdate(req.params.id, { password: hashedPassword })
 
-        req.logger.info(`✅ Đổi mật khẩu thành công cho người dùng: ${user.username}`);
+        req.logger.info(`✅ Reset mật khẩu thành công cho người dùng: ${user.username}`);
         res.status(200).send({
             status: 'success',
             message: "Reset mật khẩu thành công",
