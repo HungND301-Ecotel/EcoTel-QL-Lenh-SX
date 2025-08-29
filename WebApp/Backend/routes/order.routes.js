@@ -82,7 +82,19 @@ router.get('/', verifyToken, async (req, res, next) => {
         } else {
             // Trường hợp người dùng khác: sử dụng Mongoose find() thông thường
             if (user?.role === 'dispatcher') {
-                query.createdBy = user._id;
+                const dispatcherIds = await User.find(
+                    { role: 'dispatcher' },
+                    '_id'
+                ).lean();
+
+                const ids = dispatcherIds.map(d => d._id);
+                query.$or = [
+                    { department: user.department._id },
+                    { createdBy: { $in: ids } }
+                ];
+            }
+            if (req.query.department) {
+                query.department = new mongoose.Types.ObjectId(req.query.department);
             }
             if (req.query.department && user?.role === 'admin') {
                 query.department = new mongoose.Types.ObjectId(req.query.department);

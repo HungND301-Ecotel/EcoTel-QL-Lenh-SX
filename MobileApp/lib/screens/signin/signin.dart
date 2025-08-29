@@ -13,7 +13,10 @@ class SignIn extends StatefulWidget {
 }
 
 class _SignInState extends State<SignIn> {
-  bool _obscurePassword = false;
+  final _formKey = GlobalKey<FormState>();
+  bool _obscurePassword = true;
+  bool _submitting = false;
+
   final TextEditingController _usernameController =
       TextEditingController();
   final TextEditingController _passwordController =
@@ -21,34 +24,78 @@ class _SignInState extends State<SignIn> {
 
   final AuthService _authService = AuthService();
 
-  void signin() async {
-    String username = _usernameController.text.trim();
-    String password = _passwordController.text.trim();
-    var result = await _authService.signin(
-      username,
-      password,
-    );
-    if (!mounted) return;
-    if (result['status'] == 'error') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message']),
-          backgroundColor: Colors.red,
+  InputDecoration _inputDecoration({
+    required String label,
+    IconData? icon,
+    Widget? suffix,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: icon != null ? Icon(icon) : null,
+      suffixIcon: suffix,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(
+          color: Colors.blue,
+          width: 2,
         ),
+      ),
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 14,
+        vertical: 14,
+      ),
+    );
+  }
+
+  Future<void> signin() async {
+    FocusScope.of(context).unfocus();
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _submitting = true);
+    try {
+      final username = _usernameController.text.trim();
+      final password = _passwordController.text.trim();
+
+      final result = await _authService.signin(
+        username,
+        password,
       );
-    } else {
-      final user = result['data']['user'];
-      final token = result['data']['token'];
-      final userModel = UserModel.fromJson(user);
-      Provider.of<UserProvider>(
-        context,
-        listen: false,
-      ).setUser(userModel, token);
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        AppRoute.main,
-        (route) => false,
-      );
+      if (!mounted) return;
+
+      if (result['status'] == 'error') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message']),
+            backgroundColor: Colors.red,
+          ),
+        );
+      } else {
+        final user = result['data']['user'];
+        final token = result['data']['token'];
+        final userModel = UserModel.fromJson(user);
+
+        Provider.of<UserProvider>(
+          context,
+          listen: false,
+        ).setUser(userModel, token);
+
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoute.main,
+          (route) => false,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _submitting = false);
     }
   }
 
@@ -62,6 +109,7 @@ class _SignInState extends State<SignIn> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF6F7FB),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.only(
@@ -72,45 +120,117 @@ class _SignInState extends State<SignIn> {
           child: SingleChildScrollView(
             child: Column(
               children: <Widget>[
-                Image.asset('assets/logo.png'),
-                SizedBox(height: 30),
-                const Text('Đăng nhập'),
-                SizedBox(height: 20),
+                Image.asset(
+                  'assets/logo.png',
+                  width: 200,
+                  height: 200,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Đăng nhập',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // CARD FORM
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: Colors.grey.shade300,
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(
+                          0.05,
+                        ),
+                        blurRadius: 10,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
                   child: Form(
+                    key: _formKey,
+                    autovalidateMode:
+                        AutovalidateMode.onUserInteraction,
                     child: Column(
                       children: [
                         TextFormField(
                           controller: _usernameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Tên truy cập',
+                          textInputAction:
+                              TextInputAction.next,
+                          decoration: _inputDecoration(
+                            label: 'Tên truy cập',
+                            icon:
+                                Icons
+                                    .account_circle_outlined,
                           ),
+                          validator: (v) {
+                            if (v == null ||
+                                v.trim().isEmpty) {
+                              return 'Vui lòng nhập tên truy cập';
+                            }
+                            return null;
+                          },
                         ),
-                        SizedBox(height: 20),
+                        const SizedBox(height: 16),
                         TextFormField(
                           controller: _passwordController,
-                          obscuringCharacter: '*',
                           obscureText: _obscurePassword,
-                          decoration: InputDecoration(
-                            labelText: 'Mật khẩu',
-                            suffixIcon: IconButton(
+                          obscuringCharacter: '•',
+                          textInputAction:
+                              TextInputAction.done,
+                          onFieldSubmitted: (_) => signin(),
+                          decoration: _inputDecoration(
+                            label: 'Mật khẩu',
+                            icon: Icons.lock_outline,
+                            suffix: IconButton(
                               icon: Icon(
                                 _obscurePassword
                                     ? Icons.visibility_off
                                     : Icons.visibility,
                               ),
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword =
-                                      !_obscurePassword;
-                                });
-                              },
+                              onPressed:
+                                  () => setState(() {
+                                    _obscurePassword =
+                                        !_obscurePassword;
+                                  }),
                             ),
                           ),
+                          validator: (v) {
+                            if (v == null || v.isEmpty) {
+                              return 'Vui lòng nhập mật khẩu';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment:
+                              MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed:
+                                  () => Navigator.pushNamed(
+                                    context,
+                                    AppRoute.register,
+                                  ),
+                              child: const Text(
+                                'Đăng ký',
+                                style: TextStyle(
+                                  color: Colors.blue,
+                                  fontWeight:
+                                      FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         Row(
                           mainAxisAlignment:
@@ -136,23 +256,51 @@ class _SignInState extends State<SignIn> {
                     ),
                   ),
                 ),
-                SizedBox(height: 30),
+
+                const SizedBox(height: 24),
+
+                // BUTTON
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: signin,
+                  child: ElevatedButton.icon(
+                    onPressed: _submitting ? null : signin,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          12,
+                        ),
+                      ),
+                      elevation: 2,
                     ),
-                    child: const Text(
-                      'Đăng nhập',
-                      style: TextStyle(fontSize: 20),
+                    icon:
+                        _submitting
+                            ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child:
+                                  CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                            )
+                            : const Icon(Icons.login),
+                    label: Text(
+                      _submitting
+                          ? 'Đang đăng nhập...'
+                          : 'Đăng nhập',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
               ],
             ),
           ),

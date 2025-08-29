@@ -41,7 +41,7 @@ class _ExcavatorTripCount
     var result = await _reportService.createReport({
       "orderId": provider.orderId,
       "material": provider.material,
-      "excavator": provider.excavator,
+      "device": provider.device,
       "quantity": provider.quantity,
     });
     if (!mounted) return;

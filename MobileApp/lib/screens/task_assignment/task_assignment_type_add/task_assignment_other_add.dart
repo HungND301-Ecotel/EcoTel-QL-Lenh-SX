@@ -39,6 +39,34 @@ class _TaskAssignmentOtherAdd
   final SafetyMeasureService _safetyMeasureService =
       SafetyMeasureService();
 
+  String _jobSafetyContent = "";
+  String _userSafetyContent = "";
+
+  void _updateCombinedSafetyMeasures() {
+    // Tách các dòng thành danh sách và loại bỏ khoảng trắng, dòng trống
+    final jobMeasures =
+        _jobSafetyContent
+            .split('\n')
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .toList();
+    final userMeasures =
+        _userSafetyContent
+            .split('\n')
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .toList();
+
+    // Sử dụng Set để có các biện pháp an toàn duy nhất
+    final allMeasures = <String>{
+      ...jobMeasures,
+      ...userMeasures,
+    };
+
+    // Nối các biện pháp an toàn thành một chuỗi và cập nhật controller
+    _safetyController.text = allMeasures.join('\n');
+  }
+
   void getAllSafetyMeasure() async {
     var result =
         await _safetyMeasureService.getAllSafetyMeasure();
@@ -61,55 +89,72 @@ class _TaskAssignmentOtherAdd
       });
 
       // lúc đầu check theo job như cũ
-      final matched = _allSafetyMeasures.firstWhere(
+      final matchedJobs = _allSafetyMeasures.where(
         (m) =>
             m.job?.any((j) => j.id == widget.data.id) ??
             false,
-        orElse:
-            () => SafetyMeasureModel(
-              id: '',
-              name: '',
-              content: '',
-              job: null,
-            ),
       );
 
-      if (matched.content.trim().isNotEmpty) {
-        _safetyController.text = matched.content;
+      if (matchedJobs.isNotEmpty) {
+        _jobSafetyContent = matchedJobs
+            .map((m) => m.content)
+            .join('\n');
       }
+      _updateCombinedSafetyMeasures();
     }
   }
 
   void _updateSafetyByFirstUser() {
     if (_allSafetyMeasures.isEmpty) return;
 
-    print(_allSafetyMeasures);
-
     final UserModel? firstUser = user.first;
-    if (firstUser == null) return;
+    if (firstUser == null) {
+      // Nếu người dùng không có, xóa nội dung cũ và cập nhật
+      setState(() {
+        _userSafetyContent = "";
+        _updateCombinedSafetyMeasures();
+      });
+      return;
+    }
 
     final userPositionId = firstUser.position?.id;
-    if (userPositionId == null) return;
+    if (userPositionId == null) {
+      // Nếu không có vị trí, xóa nội dung người dùng cũ
+      setState(() {
+        _userSafetyContent = "";
+        _updateCombinedSafetyMeasures();
+      });
+      return;
+    }
 
-    // Tìm kiếm biện pháp an toàn theo vị trí của người dùng
-    final matched =
-        _allSafetyMeasures.where((m) {
-          return m.position?.any(
-                (p) => p.id == userPositionId,
-              ) ??
-              false;
-        }).toList();
+    // Tìm kiếm TẤT CẢ biện pháp an toàn theo vị trí của người dùng
+    final matchedUserMeasures = _allSafetyMeasures.where((
+      m,
+    ) {
+      return m.position?.any(
+            (p) => p.id == userPositionId,
+          ) ??
+          false;
+    });
 
     setState(() {
-      if (matched.isNotEmpty) {
-        _safetyController.text = matched.first.content;
+      if (matchedUserMeasures.isNotEmpty) {
+        // Gộp nội dung của tất cả các biện pháp an toàn của người dùng
+        _userSafetyContent = matchedUserMeasures
+            .map((m) => m.content)
+            .join('\n');
+      } else {
+        _userSafetyContent = "";
       }
+      // Cuối cùng, cập nhật TextField
+      _updateCombinedSafetyMeasures();
     });
   }
 
   @override
   void initState() {
     super.initState();
+    getAllSafetyMeasure();
     _selectedDateTime = DateTime.now();
     if (widget.order != null) {
       final order = widget.order!;

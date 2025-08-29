@@ -120,6 +120,7 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         const invalidRows = [];
 
         for (const item of dataImport) {
+
             operations.push({
                 updateOne: {
                     filter: { name: item.name },

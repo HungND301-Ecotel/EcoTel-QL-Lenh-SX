@@ -10,6 +10,45 @@ const Report = require('../models/Report');
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 
 
+// Ưu tiên fromLocation, nếu không có thì dùng excavator làm "điểm nhận tải"
+const pickFrom = (r) => r?.fromLocation || r?.excavator || null;
+
+// Lấy _id, nếu thiếu thì tạo fallback riêng theo từng bản ghi để không gộp nhầm
+const getId = (obj, fallback) => (obj && obj._id) ? obj._id : fallback;
+
+const getProductGroupKey = (r) => {
+    const deviceId = getId(r?.device, `device-unknown:${r._id}`);
+    const from = pickFrom(r);
+    const fromId = getId(from, `from-unknown:${r._id}`);
+    const toId = getId(r?.toLocation, `to-unknown:${r._id}`);
+    const matId = getId(r?.material, `mat-unknown:${r._id}`);
+    return `device:${deviceId}__from:${fromId}__to:${toId}__mat:${matId}`;
+};
+
+function groupReportsForProduct(reports = []) {
+    const map = new Map(); // key -> { from, to, material, quantity, workingMinutes }
+
+    for (const r of reports) {
+        const key = getProductGroupKey(r);
+        if (!map.has(key)) {
+            map.set(key, {
+                device:r.device||null,
+                from: pickFrom(r),
+                to: r.toLocation || null,
+                material: r.material || null,
+                quantity: 0,
+                workingMinutes: 0,
+            });
+        }
+        const g = map.get(key);
+        g.quantity += Number(r?.quantity || 0);
+        g.workingMinutes += Number((r?.workingMinutes ?? r?.workingMinute) || 0);
+    }
+
+    return Array.from(map.values());
+}
+
+
 // lệnh sx
 router.post('/order/bulk', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     const user = req.user
@@ -212,25 +251,26 @@ async function buildSheetPXVT6(req, res, next) {
             }
             headerRow.height = 40;
 
-            for (let index = 0; index < (reports?.length || 0); index++) {
-                const report = reports[index];
+            const grouped = groupReportsForProduct(reports)
 
-                const rowIndex = index + 12;
-                worksheet.getCell(`A${rowIndex}`).value = index + 1;
-                worksheet.getCell(`B${rowIndex}`).value = report.fromLocation?.name || report.excavator?.code || '';
-                worksheet.getCell(`C${rowIndex}`).value = report.toLocation?.name || '';
-                worksheet.getCell(`D${rowIndex}`).value = report.material?.name || '';
+            for (let i = 0; i < grouped.length; i++) {
+                const g = grouped[i];
+                const rowIndex = 12 + i;
+                worksheet.getCell(`A${rowIndex}`).value = i + 1;
+                worksheet.getCell(`B${rowIndex}`).value = g.from?.name || g.from?.code || '';
+                worksheet.getCell(`C${rowIndex}`).value = g.to?.name || '';
+                worksheet.getCell(`D${rowIndex}`).value = g.to?.name || '';
                 worksheet.getCell(`E${rowIndex}`).value = '';
                 worksheet.getCell(`F${rowIndex}`).value = '';
-                worksheet.getCell(`G${rowIndex}`).value = report?.quantity || "";
-                worksheet.getCell(`H${rowIndex}`).value = report?.workingMinute || '';
+                worksheet.getCell(`G${rowIndex}`).value = g.quantity || 0;
+                worksheet.getCell(`H${rowIndex}`).value = g.quantity || 0;
                 worksheet.getCell(`I${rowIndex}`).value = "";
                 worksheet.getCell(`J${rowIndex}`).value = "";
                 worksheet.getCell(`K${rowIndex}`).value = "";
                 worksheet.getCell(`L${rowIndex}`).value = "";
 
             };
-            const totalRow = (reports?.length || 0) + 13;
+            const totalRow = (grouped?.length || 0) + 13;
             addTableBorders(worksheet, 10, totalRow + 1, 1, 12);
             worksheet.mergeCells(`A${totalRow}:B${totalRow}`);
             worksheet.getCell(`A${totalRow}`).value = 'Tổng cộng';
@@ -238,7 +278,7 @@ async function buildSheetPXVT6(req, res, next) {
             worksheet.getCell(`A${totalRow}`).alignment = { horizontal: 'right' }
 
             worksheet.mergeCells(`C${totalRow}:G${totalRow}`);
-            worksheet.getCell(`C${totalRow}`).value = reports.reduce((sum, report) => { return sum + report.quantity }, 0) || '';
+            worksheet.getCell(`C${totalRow}`).value = grouped.reduce((s, g) => s + (g.quantity || 0), 0);
             worksheet.getCell(`C${totalRow}`).font = { bold: true };
 
             worksheet.getCell(`H${totalRow}`).value = '';
@@ -592,17 +632,18 @@ async function buildSheetDefault(req, res, next) {
                 };
             }
 
-            for (let index = 0; index < (reports?.length || 0); index++) {
-                const report = reports[index];
+            const grouped = groupReportsForProduct(reports)
 
-                const rowIndex = index + 12;
-                worksheet.getCell(`A${rowIndex}`).value = index + 1;
-                worksheet.getCell(`B${rowIndex}`).value = report.excavator?.code || '';
-                worksheet.getCell(`C${rowIndex}`).value = report.toLocation?.name || '';
-                worksheet.getCell(`D${rowIndex}`).value = report.material?.name || '';
+            for (let i = 0; i < grouped.length; i++) {
+                const g = grouped[i];
+                const rowIndex = 12 + i;
+                worksheet.getCell(`A${rowIndex}`).value = i + 1;
+                worksheet.getCell(`B${rowIndex}`).value = g.from?.name || g.from?.code || '';
+                worksheet.getCell(`C${rowIndex}`).value = g.to?.name || '';
+                worksheet.getCell(`D${rowIndex}`).value = g.material?.name || '';
                 worksheet.getCell(`E${rowIndex}`).value = '';
                 worksheet.getCell(`F${rowIndex}`).value = '';
-                worksheet.getCell(`G${rowIndex}`).value = report?.quantity || "";
+                worksheet.getCell(`G${rowIndex}`).value = g?.quantity || "";
                 worksheet.getCell(`H${rowIndex}`).value = '';
                 worksheet.getCell(`I${rowIndex}`).value = "";
                 worksheet.getCell(`J${rowIndex}`).value = "";
@@ -611,7 +652,7 @@ async function buildSheetDefault(req, res, next) {
                 worksheet.getCell(`M${rowIndex}`).value = "";
 
             };
-            const totalRow = (reports?.length || 0) + 13;
+            const totalRow = (grouped?.length || 0) + 13;
             addTableBorders(worksheet, 10, totalRow + 1, 1, 13);
             worksheet.mergeCells(`A${totalRow}:B${totalRow}`);
             worksheet.getCell(`A${totalRow}`).value = 'Tổng cộng';

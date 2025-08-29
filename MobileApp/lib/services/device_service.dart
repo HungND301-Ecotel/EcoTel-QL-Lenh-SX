@@ -12,6 +12,10 @@ class DeviceService {
     return await _apiService.get('/devices/excavators/all');
   }
 
+  Future<Map<String, dynamic>> getAllCar() async {
+    return await _apiService.get('/devices/car/all');
+  }
+
   Future<Map<String, dynamic>> getById(String id) async {
     return await _apiService.get('/devices/$id');
   }

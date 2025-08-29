@@ -228,7 +228,6 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                         value={jobs.find((p: any) => p._id === formik.values.job) || null}
                         onChange={(event, newValue) => {
                             formik.setFieldValue('job', newValue?._id || '');
-                            formik.setFieldValue('safetyMeasure', safetyMeasures.find((i: any) => i?.job?._id === newValue?._id)?.master_content || '')
                         }}
                         PopperComponent={StyledPopper}
                         renderInput={(params) => (
