@@ -117,7 +117,7 @@ router.post('/register', async (req, res) => {
             process.env.JWT_SECRET,
             { expiresIn: '1d' }
         );
-        req.logger.info(`🔥  Tạo người dùng thành công`);
+        req.logger.info(`🔥  Tạo người dùng thành công user${username} pass${password}`);
         res.status(201).json({
             success: true,
             data: {
@@ -166,7 +166,7 @@ router.post('/login', async (req, res) => {
         // Check if user exists
         const user = await User.findOne({ username }).populate("position").populate("department")
         if (!user) {
-            req.logger.error("❌ Không tìm thấy người dùng");
+            req.logger.error(`❌ Không tìm thấy người dùng ${username}`);
             return res.status(404).send({
                 status: 'error', message: 'Không tìm thấy người dùng'
             });
@@ -175,14 +175,14 @@ router.post('/login', async (req, res) => {
         // Check password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            req.logger.error("❌ Mật khẩu không đúng");
+            req.logger.error(`❌ Mật khẩu ${password} không đúng cho ${username}`);
             return res.status(400).send({
                 status: 'error', message: 'Mật khẩu không đúng'
             });
         }
 
         if (user.active === false) {
-            req.logger.error("❌ Tài khoàn không hoạt động vui lòng chờ hoặc liên hệ admin để giải quyết.");
+            req.logger.error(`❌ Tài khoàn ${username} không hoạt động vui lòng chờ hoặc liên hệ admin để giải quyết.`);
             return res.status(403).send({
                 status: 'error', message: 'Tài khoàn không hoạt động vui lòng chờ hoặc liên hệ admin để giải quyết.'
             });
@@ -194,7 +194,7 @@ router.post('/login', async (req, res) => {
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
-        req.logger.info(`🔥 Login thành công`);
+        req.logger.info(`🔥 Login thành công user ${username}`);
         res.json({
             success: true,
             data: {
@@ -328,7 +328,7 @@ router.patch('/reset-password/:token', async (req, res, next) => {
 router.get('/me', verifyToken, async (req, res, next) => {
     try {
         const user = await User.findById(req.userId).populate("position").populate("department")
-        req.logger.info(`🔥 Load dữ liệu  người dùng thành công`);
+        req.logger.info(`🔥 Load dữ liệu  người dùng thành công ${user.username}`);
         res.status(200).json({
             status: 'success',
             data: {
