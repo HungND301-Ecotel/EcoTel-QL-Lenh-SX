@@ -368,7 +368,7 @@ export default function ShiftReport({
                                                             + Phương tiện: <b>{deviceCode}</b>
                                                         </Typography>
                                                         {jobType === 'Vận hành xe' && excCode && (
-                                                            <Typography variant="body2">Từ máy xúc: {excCode}</Typography>
+                                                            <Typography variant="body2">Từ máy xúc: {excCode} • Đến điểm: {toName}</Typography>
                                                         )}
                                                         {jobType === 'Vận hành xe phục vụ' && (fromName || toName) && (
                                                             <Typography variant="body2">

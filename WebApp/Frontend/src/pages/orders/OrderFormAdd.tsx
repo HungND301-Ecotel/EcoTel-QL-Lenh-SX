@@ -62,6 +62,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedJob, setSelectedJob] = useState<Job | null>(null)
     const [jobSafetyText, setJobSafetyText] = useState("");
+    const [userSafetyText, setUserSafetyText] = useState("");
 
     const safetyTextFieldRef = useRef<HTMLInputElement>(null);
 
@@ -107,7 +108,19 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
         queryFn: () => api.get('/jobs').then(res => res.data.data),
     });
 
+    const updateSafetyMeasure = (jobText: string, userText: string) => {
+        // Tách các biện pháp an toàn từ job và user thành mảng
+        const jobMeasures = jobText.split('\n').map(s => s.trim()).filter(Boolean);
+        const userMeasures = userText.split('\n').map(s => s.trim()).filter(Boolean);
 
+        // Gộp hai mảng và tạo một Set để có các giá trị duy nhất
+        const allMeasures = new Set([...jobMeasures, ...userMeasures]);
+
+        // Chuyển Set trở lại thành mảng và nối chuỗi
+        const combinedText = Array.from(allMeasures).join('\n');
+
+        formik.setFieldValue('safetyMeasure', combinedText);
+    };
 
     const formik = useFormik({
         initialValues: {
@@ -194,12 +207,16 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                     }
                     value={jobs.find((p: any) => p._id === formik.values.job) || null}
                     onChange={(event, newValue) => {
-                        const content = safetyMeasures.find((i: any) =>
-                            i.job?.some((jobItem: any) => jobItem._id === newValue?._id)
-                        )?.content;
-                        formik.setFieldValue('safetyMeasure', content)
+                        // Tìm tất cả safetyMeasures liên quan đến job này
+                        const matchedMeasures = safetyMeasures.filter((sm: SafetyMeasure) =>
+                            (sm.job || []).some((jobItem: any) => jobItem._id === newValue?._id)
+                        );
+                        const jobSafetyTexts = matchedMeasures.map((m: SafetyMeasure) => m.content).join("\n");
+                        setJobSafetyText(jobSafetyTexts); // Lưu nội dung vào state riêng
                         formik.setFieldValue('job', newValue?._id || '');
-                        setSelectedJob(newValue)
+                        setSelectedJob(newValue);
+
+                        updateSafetyMeasure(jobSafetyTexts, formik.values.usersAndDevices[0].assignedTo);
                     }}
                     PopperComponent={StyledPopper}
                     renderInput={(params) => (
@@ -261,11 +278,11 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                                                             return posIds.includes(userPositionId);
                                                         });
 
-                                                        const userText = matchedMeasures.map((m: SafetyMeasure) => m.content).join("\n");
+                                                        const userSafetyTexts = matchedMeasures.map((m: SafetyMeasure) => m.content).join("\n");
 
-                                                        formik.setFieldValue("safetyMeasure", userText);
+                                                        // Gọi hàm cập nhật chung
+                                                        updateSafetyMeasure(jobSafetyText, userSafetyTexts);
                                                     }
-
                                                 }}
                                                 PopperComponent={StyledPopper}
                                                 renderInput={(params) => (
