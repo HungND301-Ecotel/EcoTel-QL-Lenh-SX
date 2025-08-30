@@ -26,7 +26,7 @@ services:
       driver: json-file
       options:
         max-size: "100m"
-        max-file: "30"
+        max-file: "3"
 
   ktv_Frontend_service:
     env_file:
@@ -49,7 +49,7 @@ services:
       driver: json-file
       options:
         max-size: "100m"
-        max-file: "30"
+        max-file: "3"
   # ports:
   #   - "3000:80"
   # depends_on:
@@ -82,7 +82,7 @@ services:
       driver: json-file
       options:
         max-size: "100m"
-        max-file: "30"
+        max-file: "3"
 
   ktv_db:
     image: mongo
@@ -102,7 +102,7 @@ services:
       driver: json-file
       options:
         max-size: "100m"
-        max-file: "30"
+        max-file: "3"
 
   ktv_grafana:
     image: grafana/grafana
@@ -121,7 +121,7 @@ services:
       driver: json-file
       options:
         max-size: "100m"
-        max-file: "30"
+        max-file: "3"
 
   ktv_loki:
     image: grafana/loki:2.9.0
@@ -131,16 +131,13 @@ services:
     ports:
       - "3100:3100"
     command: -config.file=/etc/loki/local-config.yaml
-    volumes:
-      - ./loki-config.yaml:/etc/loki/loki-config.yaml:ro
-      - loki-data:/loki
     networks:
       - monitoring
     logging:
       driver: json-file
       options:
         max-size: "100m"
-        max-file: "30"
+        max-file: "3"
 
   ktv_promtail:
     image: grafana/promtail:2.9.0
@@ -153,7 +150,6 @@ services:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock
       - ./promtail-config.yaml:/etc/promtail/promtail.yaml
-      - ./promtail-positions.yaml:/tmp/positions.yaml
     command: -config.file=/etc/promtail/promtail.yaml
     networks:
       - monitoring
@@ -161,7 +157,7 @@ services:
       driver: json-file
       options:
         max-size: "100m"
-        max-file: "30"
+        max-file: "3"
   
   ktv_backup:
     env_file:
@@ -189,7 +185,6 @@ networks:
   monitoring:
 
 volumes:
-  loki-data:
   .ktv-mongodb-data:
   .mongodb_backup:
   .mongodb_restore:
