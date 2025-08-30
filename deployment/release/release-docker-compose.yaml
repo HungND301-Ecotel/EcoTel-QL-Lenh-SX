@@ -34,7 +34,7 @@ services:
       driver: json-file
       options:
         max-size: "100m"
-        max-file: "3"
+        max-file: "30"
 
   ktv_Frontend_service:
     image: ${REGISTRY}/ktv_ecotel_frontend_img:${VERSION}
@@ -57,7 +57,7 @@ services:
       driver: json-file
       options:
         max-size: "100m"
-        max-file: "3"
+        max-file: "30"
   
   
   ktv_Backend_service:
@@ -83,7 +83,7 @@ services:
       driver: json-file
       options:
         max-size: "100m"
-        max-file: "3"
+        max-file: "30"
 
   ktv_db:
     image: mongo
@@ -101,7 +101,7 @@ services:
       driver: json-file
       options:
         max-size: "100m"
-        max-file: "3"
+        max-file: "30"
   
   ktv_grafana:
     image: grafana/grafana
@@ -120,7 +120,7 @@ services:
       driver: json-file
       options:
         max-size: "100m"
-        max-file: "3"
+        max-file: "30"
 
   ktv_loki:
     image: grafana/loki:2.9.0
@@ -130,13 +130,16 @@ services:
     ports:
       - "3100:3100"
     command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./release-loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - loki-data:/loki
     networks:
       - monitoring
     logging:
       driver: json-file
       options:
         max-size: "100m"
-        max-file: "3"
+        max-file: "30"
 
   ktv_promtail:
     image: grafana/promtail:2.9.0
@@ -144,11 +147,13 @@ services:
     environment:
       - TZ=Asia/Ho_Chi_Minh
     volumes:
+      - promtail-state:/tmp
       - /var/log:/var/log
       - /etc/machine-id:/etc/machine-id
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock
       - ./release-promtail-config.yaml:/etc/promtail/release-promtail-config.yaml
+      - ./promtail-positions.yaml:/tmp/positions.yaml
     command: -config.file=/etc/promtail/release-promtail-config.yaml
     networks:
       - monitoring
@@ -156,7 +161,7 @@ services:
       driver: json-file
       options:
         max-size: "100m"
-        max-file: "3"
+        max-file: "30"
 
   ktv_backup:
     env_file:
@@ -181,6 +186,8 @@ networks:
   monitoring:
 
 volumes:
+  promtail-state:
+  loki-data:
   grafana-storage:
   .mongodb_backup:
   .mongodb_restore:

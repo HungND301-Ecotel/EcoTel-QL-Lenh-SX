@@ -26,7 +26,7 @@ services:
       driver: json-file
       options:
         max-size: "100m"
-        max-file: "3"
+        max-file: "30"
 
   ktv_Frontend_service:
     env_file:
@@ -49,7 +49,7 @@ services:
       driver: json-file
       options:
         max-size: "100m"
-        max-file: "3"
+        max-file: "30"
   # ports:
   #   - "3000:80"
   # depends_on:
@@ -82,7 +82,7 @@ services:
       driver: json-file
       options:
         max-size: "100m"
-        max-file: "3"
+        max-file: "30"
 
   ktv_db:
     image: mongo
@@ -102,7 +102,7 @@ services:
       driver: json-file
       options:
         max-size: "100m"
-        max-file: "3"
+        max-file: "30"
 
   ktv_grafana:
     image: grafana/grafana
@@ -121,7 +121,7 @@ services:
       driver: json-file
       options:
         max-size: "100m"
-        max-file: "3"
+        max-file: "30"
 
   ktv_loki:
     image: grafana/loki:2.9.0
@@ -130,14 +130,17 @@ services:
       - TZ=Asia/Ho_Chi_Minh
     ports:
       - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/loki-config.yaml
+    volumes:
+      - ./loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - loki-data:/loki
     networks:
       - monitoring
     logging:
       driver: json-file
       options:
         max-size: "100m"
-        max-file: "3"
+        max-file: "30"
 
   ktv_promtail:
     image: grafana/promtail:2.9.0
@@ -145,6 +148,7 @@ services:
     environment:
       - TZ=Asia/Ho_Chi_Minh
     volumes:
+      - promtail-state:/tmp
       - /var/log:/var/log
       - /etc/machine-id:/etc/machine-id
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
@@ -157,7 +161,7 @@ services:
       driver: json-file
       options:
         max-size: "100m"
-        max-file: "3"
+        max-file: "30"
   
   ktv_backup:
     env_file:
@@ -185,6 +189,8 @@ networks:
   monitoring:
 
 volumes:
+  promtail-state:
+  loki-data:
   .ktv-mongodb-data:
   .mongodb_backup:
   .mongodb_restore:
