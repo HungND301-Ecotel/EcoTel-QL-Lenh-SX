@@ -147,6 +147,7 @@ services:
     environment:
       - TZ=Asia/Ho_Chi_Minh
     volumes:
+      - promtail-state:/tmp
       - /var/log:/var/log
       - /etc/machine-id:/etc/machine-id
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
@@ -185,6 +186,7 @@ networks:
   monitoring:
 
 volumes:
+  promtail-state:
   loki-data:
   grafana-storage:
   .mongodb_backup:

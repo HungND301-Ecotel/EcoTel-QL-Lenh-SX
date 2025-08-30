@@ -130,7 +130,7 @@ services:
       - TZ=Asia/Ho_Chi_Minh
     ports:
       - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/loki-config.yaml
     volumes:
       - ./loki-config.yaml:/etc/loki/loki-config.yaml:ro
       - loki-data:/loki
@@ -148,12 +148,12 @@ services:
     environment:
       - TZ=Asia/Ho_Chi_Minh
     volumes:
+      - promtail-state:/tmp
       - /var/log:/var/log
       - /etc/machine-id:/etc/machine-id
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock
       - ./promtail-config.yaml:/etc/promtail/promtail.yaml
-      - ./promtail-positions.yaml:/tmp/positions.yaml
     command: -config.file=/etc/promtail/promtail.yaml
     networks:
       - monitoring
@@ -189,6 +189,7 @@ networks:
   monitoring:
 
 volumes:
+  promtail-state:
   loki-data:
   .ktv-mongodb-data:
   .mongodb_backup:

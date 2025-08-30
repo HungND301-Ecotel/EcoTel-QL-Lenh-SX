@@ -1,9 +1,12 @@
 auth_enabled: false
+
 server:
   http_listen_port: 3100
+  grpc_listen_port: 9096
 
 common:
-  path: /loki
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
   storage:
     filesystem:
       chunks_directory: /loki/chunks
@@ -13,18 +16,22 @@ common:
     kvstore:
       store: inmemory
 
+limits_config:
+  retention_period: 168h    # 7 ngày. Tăng/giảm để khớp ~3GB thực tế
+
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 100
+
 schema_config:
   configs:
-    - from: 2020-01-01
-      store: boltdb-shipper
+    - from: 2020-10-24
+      store: tsdb
       object_store: filesystem
-      schema: v11
+      schema: v13
       index:
         prefix: index_
         period: 24h
-
-limits_config:
-  max_query_length: 168h      # cho phép query 7 ngày
-  max_query_lookback: 720h    # nhìn lùi 30 ngày
-  reject_old_samples: true
-  reject_old_samples_max_age: 744h

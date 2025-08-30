@@ -185,6 +185,7 @@ router.put('/update/:id', verifyToken, async (req, res) => {
 router.put('/changepass', verifyToken, async (req, res) => {
     try {
         let { old_pass, newpass, repass } = req.body;
+        req.logger.info(`Bắt đầu đổi mật khẩu: old_pass ${old_pass} newpass ${newpass} repass ${repass}`);
         old_pass = (old_pass ?? '');
         newpass = (newpass ?? '');
         repass = (repass ?? '');

@@ -143,13 +143,13 @@ services:
     environment:
       - TZ=Asia/Ho_Chi_Minh
     volumes:
+      - promtail-state:/tmp
       - /var/log:/var/log
       - /etc/machine-id:/etc/machine-id
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./staging-promtail-config.yaml:/etc/promtail/staging-promtail-config.yaml
-      - ./promtail-positions.yaml:/tmp/positions.yaml
-    command: -config.file=/etc/promtail/staging-promtail-config.yaml
+      - ./promtail-config.yaml:/etc/promtail/promtail.yaml
+    command: -config.file=/etc/promtail/promtail.yaml
     networks:
       - monitoring
     logging:
@@ -181,6 +181,7 @@ networks:
   monitoring:
 
 volumes:
+  promtail-state:
   loki-data:
   grafana-storage:
   .mongodb_backup:
