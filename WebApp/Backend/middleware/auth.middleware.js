@@ -23,10 +23,10 @@ const verifyToken = async (req, res, next) => {
             return res.status(401).send({ status: 'error', message: 'The user belonging to this token no longer exists.' });
         }
 
-        // 4) Check if user changed password after the token was issued
-        if (currentUser.changedPasswordAfter(decoded.iat)) {
-            return res.status(401).send({ status: 'error', message: 'User recently changed password! Please log in again.' });
-        }
+        // // 4) Check if user changed password after the token was issued
+        // if (currentUser.changedPasswordAfter(decoded.iat)) {
+        //     return res.status(401).send({ status: 'error', message: 'User recently changed password! Please log in again.' });
+        // }
 
         // Grant access to protected route
         req.user = currentUser;

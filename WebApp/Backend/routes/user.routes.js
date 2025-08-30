@@ -184,10 +184,20 @@ router.put('/update/:id', verifyToken, async (req, res) => {
 // Change password
 router.put('/changepass', verifyToken, async (req, res) => {
     try {
-        const { old_pass, newpass, repass } = req.body;
+        let { old_pass, newpass, repass } = req.body;
+        old_pass = (old_pass ?? '');
+        newpass = (newpass ?? '');
+        repass = (repass ?? '');
+
+        // Cấm khoảng trắng đầu/cuối để đồng nhất trải nghiệm
+        const hasAnySpace = (s) => /\s/.test(s);
+        if ([old_pass, newpass, repass].some(hasAnySpace)) {
+            req.logger.warn(`⚠️ Mật khẩu không được có khoảng trắng. ${newpass}`);
+            return res.status(400).send({ status: 'error', message: 'Mật khẩu không được có khoảng trắng' });
+        }
         const user = await User.findById(req.user._id);
         if (!user) {
-            req.logger.warn("⚠️ Đổi mật khẩu thất bại - Không tìm thấy người dùng.");
+            req.logger.warn(`⚠️ Đổi mật khẩu thất bại - Không tìm thấy người dùng.`);
             return res.status(404).send({ status: 'error', message: "Không tìm thấy người dùng" });
         }
 
@@ -201,7 +211,7 @@ router.put('/changepass', verifyToken, async (req, res) => {
             return res.status(400).send({ status: 'error', message: "Nhập mật khẩu mới" });
         }
         if (newpass !== repass) {
-            req.logger.warn("⚠️ Đổi mật khẩu thất bại - Mật khẩu nhập lại không khớp.");
+            req.logger.warn(`⚠️ Đổi mật khẩu thất bại - Mật khẩu nhập lại không khớp.${newpass} !=${repass}`);
             return res.status(404).send({ status: 'error', message: "Mật khẩu nhập lại không khớp" });
         }
 
