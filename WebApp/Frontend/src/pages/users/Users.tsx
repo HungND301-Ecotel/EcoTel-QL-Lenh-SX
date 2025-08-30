@@ -75,6 +75,7 @@ const validationSchema = yup.object({
     fullName: yup.string().required('Vui lòng nhập họ tên'),
     salaryCode: yup.string().required('Vui lòng nhập mã thẻ lương'),
     position: yup.string().required('Vui lòng chọn chức vụ'),
+    department: yup.string().required('Vui lòng chọn đơn vị'),
     role: yup.string().required('Vui lòng chọn quyền hạn'),
 });
 
@@ -727,6 +728,8 @@ const Users: React.FC = () => {
                                         <TextField
                                             {...params}
                                             label="Đơn vị"
+                                            error={formik.touched.department && Boolean(formik.errors.department)}
+                                            helperText={formik.touched.department && typeof formik.errors.department === 'string' ? formik.errors.department : ''}
                                         />
                                     )}
                                 />

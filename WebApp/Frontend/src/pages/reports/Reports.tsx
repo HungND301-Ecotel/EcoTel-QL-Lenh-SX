@@ -19,7 +19,7 @@ import {
 } from '@mui/material';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import api from '../../config/api.config';
-import { DeviceType, Shift } from '../../types';
+import { Department, DeviceType, Shift } from '../../types';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
@@ -32,6 +32,8 @@ import WorkLogReport from './WorkLogReport';
 import mealRequestReport from './MealRepuestReport';
 import { Close, Edit } from '@mui/icons-material';
 import { showErrorAlert } from '../../components/Alert';
+import { useAtom } from 'jotai';
+import { userAtom } from '../../atoms/userAtoms';
 
 
 function Reports() {
@@ -41,14 +43,20 @@ function Reports() {
     const [title, setTitle] = useState("");
     const [account, setAccount] = useState('');
     const [shift, setShift] = useState<string[]>([]);
+    const [department, setDepartment] = useState<string>('');
     const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
     const [data, setData] = useState<any[]>([]);
     const [preview, setPreview] = useState(false);
+    const [user] = useAtom(userAtom)
 
 
     const { data: shifts = [] } = useQuery({
         queryKey: ['shifts'],
         queryFn: () => api.get('/shifts').then(res => res.data.data),
+    });
+    const { data: departments = [] } = useQuery({
+        queryKey: ['departments'],
+        queryFn: () => api.get('/departments').then(res => res.data.data),
     });
     const getSignatureUrl = useMutation({
         mutationFn: async () => {
@@ -148,6 +156,7 @@ function Reports() {
                 shift,
                 title,
                 signature: signatureUrl || null,
+                department
             }).then(res => {
                 setData(res.data.data);
             });
@@ -168,6 +177,7 @@ function Reports() {
                 shift,
                 title,
                 signature: signatureUrl || null,
+                department
             }, {
                 responseType: 'blob',
             }).then(res => {
@@ -198,136 +208,152 @@ function Reports() {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
                 <Typography variant="h4">Kết xuất báo cáo</Typography>
             </Box>
-            <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-                <Paper elevation={3} sx={{ p: 3 }}>
-                    <Grid container spacing={3}>
-                        {/* Tên báo cáo & Số ngày xem */}
-                        <Grid item xs={12}>
-                            <TextField
-                                size="small"
-                                fullWidth
-                                select
-                                value={title}
-                                label="Tên báo cáo"
-                                SelectProps={{
-                                    displayEmpty: true,
-                                }}
-                                onChange={(e) => setTitle(e.target.value)}>
-                                {reportNames.map((report) => (
-                                    <MenuItem key={report.name} value={report.name}>
-                                        {report.name}
-                                    </MenuItem>
-                                ))}
-                            </TextField>
-                        </Grid>
-                        {/* Từ ngày - Thời gian bắt đầu */}
-                        <Grid item xs={6}>
-                            <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                <DatePicker
-                                    label="Từ ngày"
-                                    inputFormat="DD/MM/YYYY" // v5 vẫn hỗ trợ
-                                    value={startDate ? dayjs(startDate) : null}
-                                    onChange={(value) => setStartDate(value)}
-                                    renderInput={(params) => (
-                                        <TextField
-                                            {...params}
-                                            fullWidth
-                                            size="small"
-                                        />
-                                    )}
+            <Paper elevation={3} sx={{ p: 3 }}>
+                <Grid container spacing={3}>
+                    {/* Tên báo cáo & Số ngày xem */}
+                    {user?.role === "admin" && <Grid item xs={12}>
+                        <Autocomplete
+                            fullWidth
+                            size="small"
+                            options={departments}
+                            getOptionLabel={(option: Department) => option?.code || ''}
+                            value={departments.find((d: Department) => d._id === department)}
+                            onChange={(event, newValue) => {
+                                setDepartment(newValue?._id || '')
+                            }}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="Đơn vị"
                                 />
-                            </LocalizationProvider>
-                        </Grid>
-                        {/* Từ ngày - Thời gian bắt đầu */}
-                        <Grid item xs={6}>
-                            <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                <DatePicker
-                                    label="Đến ngày"
-                                    inputFormat="DD/MM/YYYY" // v5 vẫn hỗ trợ
-                                    value={endDate ? dayjs(endDate) : null}
-                                    onChange={(value) => setEndDate(value)}
-                                    renderInput={(params) => (
-                                        <TextField
-                                            {...params}
-                                            fullWidth
-                                            size="small"
-                                        />
-                                    )}
-                                />
-                            </LocalizationProvider>
-                        </Grid>
-                        <Grid item xs={12}>
-                            <Autocomplete
-                                multiple
-                                fullWidth
-                                filterSelectedOptions
-                                size="small"
-                                options={shifts}
-                                getOptionLabel={(option: Shift) => `Ca ${option.name} (${option.startTime})`}
-                                value={shifts.filter((s: Shift) => shift.includes(s._id))}
-                                onChange={(event, newValue) => {
-                                    setShift(newValue.map((item: Shift) => item._id))
-                                }}
+                            )}
+                        />
+                    </Grid>}
+                    <Grid item xs={12}>
+                        <TextField
+                            size="small"
+                            fullWidth
+                            select
+                            value={title}
+                            label="Tên báo cáo"
+                            SelectProps={{
+                                displayEmpty: true,
+                            }}
+                            onChange={(e) => setTitle(e.target.value)}>
+                            {reportNames.map((report) => (
+                                <MenuItem key={report.name} value={report.name}>
+                                    {report.name}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                    </Grid>
+                    {/* Từ ngày - Thời gian bắt đầu */}
+                    <Grid item xs={6}>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DatePicker
+                                label="Từ ngày"
+                                inputFormat="DD/MM/YYYY" // v5 vẫn hỗ trợ
+                                value={startDate ? dayjs(startDate) : null}
+                                onChange={(value) => setStartDate(value)}
                                 renderInput={(params) => (
                                     <TextField
                                         {...params}
-                                        label="Ca"
+                                        fullWidth
+                                        size="small"
                                     />
                                 )}
                             />
-                        </Grid>
-                        {/* Buttons */}
-                        <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
-                            <Button variant="contained" onClick={() => {
-                                if (!title) {
-                                    showErrorAlert("Vui lòng chọn loại báo cáo");
-                                    return;
-                                }
-                                reportView.mutate();
-                                setPreview(true)
-                            }}>
-                                Xem trước
-                            </Button>
-                            {!signatureUrl ? <Button
+                        </LocalizationProvider>
+                    </Grid>
+                    {/* Từ ngày - Thời gian bắt đầu */}
+                    <Grid item xs={6}>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DatePicker
+                                label="Đến ngày"
+                                inputFormat="DD/MM/YYYY" // v5 vẫn hỗ trợ
+                                value={endDate ? dayjs(endDate) : null}
+                                onChange={(value) => setEndDate(value)}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        fullWidth
+                                        size="small"
+                                    />
+                                )}
+                            />
+                        </LocalizationProvider>
+                    </Grid>
+                    <Grid item xs={12}>
+                        <Autocomplete
+                            multiple
+                            fullWidth
+                            filterSelectedOptions
+                            size="small"
+                            options={shifts}
+                            getOptionLabel={(option: Shift) => `Ca ${option.name} (${option.startTime})`}
+                            value={shifts.filter((s: Shift) => shift.includes(s._id))}
+                            onChange={(event, newValue) => {
+                                setShift(newValue.map((item: Shift) => item._id))
+                            }}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="Ca"
+                                />
+                            )}
+                        />
+                    </Grid>
+                    {/* Buttons */}
+                    <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
+                        <Button variant="contained" onClick={() => {
+                            if (!title) {
+                                showErrorAlert("Vui lòng chọn loại báo cáo");
+                                return;
+                            }
+                            reportView.mutate();
+                            setPreview(true)
+                        }}>
+                            Xem trước
+                        </Button>
+                        {!signatureUrl ? <Button
+                            variant="contained"
+                            component="label"
+                            startIcon={<Edit />}
+                            onClick={() => {
+                                getSignatureUrl.mutate()
+                            }}
+                        >
+                            Thêm chữ kí
+                        </Button>
+                            : <Button
                                 variant="contained"
                                 component="label"
-                                startIcon={<Edit />}
-                                onClick={() => {
-                                    getSignatureUrl.mutate()
-                                }}
+                                startIcon={<Close />}
+                                onClick={() => setSignatureUrl(null)}
                             >
-                                Thêm chữ kí
-                            </Button>
-                                : <Button
-                                    variant="contained"
-                                    component="label"
-                                    startIcon={<Close />}
-                                    onClick={() => setSignatureUrl(null)}
-                                >
-                                    bỏ chữ kí
-                                </Button>}
-                            <Button variant="contained" onClick={() => {
-                                if (!title) {
-                                    showErrorAlert("Vui lòng chọn loại báo cáo");
-                                    return;
-                                }
-                                reportExcel.mutate();
-                            }}>
-                                Tải xuống
-                            </Button>
-                        </Grid>
-                        <Grid item xs={12}>
-                            {preview && PreviewComponent ? <PreviewComponent data={data} signatureUrl={signatureUrl} /> : null}
-                            {signatureUrl && !preview && (
-                                <Box mt={2} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                    <img src={signatureUrl} alt="Chữ ký" style={{ maxWidth: 200, maxHeight: 100 }} />
-                                </Box>
-                            )}
-                        </Grid>
-
+                                bỏ chữ kí
+                            </Button>}
+                        <Button variant="contained" onClick={() => {
+                            if (!title) {
+                                showErrorAlert("Vui lòng chọn loại báo cáo");
+                                return;
+                            }
+                            reportExcel.mutate();
+                        }}>
+                            Tải xuống
+                        </Button>
                     </Grid>
-                </Paper>
-            </Container >
+                    <Grid item xs={12}>
+                        {preview && PreviewComponent ? <PreviewComponent data={data} signatureUrl={signatureUrl} /> : null}
+                        {signatureUrl && !preview && (
+                            <Box mt={2} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                <img src={signatureUrl} alt="Chữ ký" style={{ maxWidth: 200, maxHeight: 100 }} />
+                            </Box>
+                        )}
+                    </Grid>
+
+                </Grid>
+            </Paper>
         </Box >
     );
 }
