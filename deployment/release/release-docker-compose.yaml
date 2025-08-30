@@ -129,7 +129,7 @@ services:
       - TZ=Asia/Ho_Chi_Minh
     ports:
       - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/loki-config.yaml
     volumes:
       - ./release-loki-config.yaml:/etc/loki/loki-config.yaml:ro
       - loki-data:/loki
