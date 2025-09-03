@@ -401,19 +401,27 @@ async function buildSheetPXVT6(req, res, next) {
             worksheet.getCell(`B${totalRow + 11 + deviceRow}`).value = order.assignedTo?.fullName || "";
 
 
-            worksheet.mergeCells(`I${totalRow + 7 + deviceRow}:M${totalRow + 7 + deviceRow}`)
+            worksheet.mergeCells(`I${totalRow + 7 + deviceRow}:L${totalRow + 7 + deviceRow}`)
             worksheet.getCell(`I${totalRow + 7 + deviceRow}`).value = 'NGƯỜI RA LỆNH';
             worksheet.getCell(`I${totalRow + 7 + deviceRow}`).font = { bold: true };
             worksheet.getCell(`I${totalRow + 7 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.mergeCells(`I${totalRow + 11 + deviceRow}:M${totalRow + 11 + deviceRow}`)
+            worksheet.mergeCells(`I${totalRow + 11 + deviceRow}:L${totalRow + 11 + deviceRow}`)
             worksheet.getCell(`I${totalRow + 11 + deviceRow}`).font = { bold: true };
             worksheet.getCell(`I${totalRow + 11 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
             worksheet.getCell(`I${totalRow + 11 + deviceRow}`).value = order.createdBy?.fullName || "";
 
 
-            worksheet.columns.forEach((column) => {
-                column.width = 10;
-            });
+            worksheet.pageSetup = {
+                paperSize: 9,                // A4
+                orientation: 'landscape',    // ngang
+                fitToPage: true,
+                fitToWidth: 1,               // vừa 1 trang theo chiều ngang
+                fitToHeight: 0,              // không ép theo chiều dọc
+                margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } // inch
+            };
+
+            // 2) Set width cơ sở (Excel sẽ scale để vừa 1 trang)
+            worksheet.columns.forEach(col => { col.width = 12; });
 
             worksheet.eachRow((row) => {
                 row.eachCell((cell) => {
@@ -443,7 +451,7 @@ async function buildSheetPXVT6(req, res, next) {
     }
 };
 
-async function buildSheetDefault(req, res, next) {
+async function buildSheetDefault(req, res, next) {  
     try {
         const { ids } = req.body; // mảng entity id
 
@@ -752,9 +760,17 @@ async function buildSheetDefault(req, res, next) {
             worksheet.getCell(`I${totalRow + 9 + deviceRow}`).value = order.createdBy?.fullName || "";
 
 
-            worksheet.columns.forEach((column) => {
-                column.width = 10;
-            });
+            worksheet.pageSetup = {
+                paperSize: 9,                // A4
+                orientation: 'landscape',    // ngang
+                fitToPage: true,
+                fitToWidth: 1,               // vừa 1 trang theo chiều ngang
+                fitToHeight: 0,              // không ép theo chiều dọc
+                margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } // inch
+            };
+
+            // 2) Set width cơ sở (Excel sẽ scale để vừa 1 trang)
+            worksheet.columns.forEach(col => { col.width = 12; });
 
             worksheet.eachRow((row) => {
                 row.eachCell((cell) => {
