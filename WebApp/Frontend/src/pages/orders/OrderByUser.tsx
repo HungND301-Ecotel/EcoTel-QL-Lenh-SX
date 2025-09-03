@@ -98,8 +98,8 @@ const OrderByUsers: React.FC = () => {
     const handleChange = (value: string) => {
         setStatus(prev => (prev === value ? '' : value)); // bỏ chọn nếu click lại
     };
-    const { data: orderByUser = [], isLoading, refetch } = useQuery({
-        queryKey: ['orderByUser', status],
+    const { data: orderByUser = [], isLoading } = useQuery({
+        queryKey: ['orderByUser', status, startTime, endTime],
         queryFn: () => api.get(`/orders/user?status=${status}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
     });
 
@@ -161,13 +161,6 @@ const OrderByUsers: React.FC = () => {
                         />
                     </LocalizationProvider>
                 </Box>
-                <Button
-                    variant="contained"
-                    startIcon={<Search />}
-                    onClick={() => refetch()}
-                >
-                    Tìm
-                </Button>
             </Box>
             <Box display="flex" gap={2} alignItems={'center'} justifyContent='flex-end'>
                 <Box display="flex" alignItems={'center'}>

@@ -137,8 +137,8 @@ const DispatcherOrders: React.FC = () => {
         queryFn: () => api.get('/users').then(res => res.data.data),
     });
 
-    const { data: orders = [], isLoading, refetch } = useQuery({
-        queryKey: ['orders', status],
+    const { data: orders = [], isLoading } = useQuery({
+        queryKey: ['orders', status, employee, department, startTime, endTime],
         queryFn: () => api.get(`/orders?status=${status}&employee=${employee}&&department=${department}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
     });
     const { data: allOrders = [] } = useQuery({
@@ -438,16 +438,6 @@ const DispatcherOrders: React.FC = () => {
                                     )}
                                 />
                             </LocalizationProvider>
-
-                            <Box>
-                                <Button
-                                    variant="contained"
-                                    startIcon={<Search />}
-                                    onClick={() => refetch()}
-                                >
-                                    Tìm
-                                </Button>
-                            </Box>
                         </Box>
 
                     </Box>
