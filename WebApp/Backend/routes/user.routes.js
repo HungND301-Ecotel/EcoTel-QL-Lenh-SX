@@ -379,6 +379,11 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
                 continue;
             }
 
+            if (!row.salaryCode) {
+                invalidRows.push({ row, error: `Thẻ lương là bắt buộc: ${username}` });
+                continue;
+            }
+
             let departmentId = null;
             if (department) {
                 departmentId = departmentMap.get(department);

@@ -451,7 +451,7 @@ async function buildSheetPXVT6(req, res, next) {
     }
 };
 
-async function buildSheetDefault(req, res, next) {  
+async function buildSheetDefault(req, res, next) {
     try {
         const { ids } = req.body; // mảng entity id
 
@@ -1268,10 +1268,14 @@ router.post('/carReport', verifyToken, restrictTo('admin', 'dispatcher', 'manage
 
 router.post('/excavatorTripReport/view', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
-        const { shift, startDate, endDate, } = req.body
-        let query = {
-            createdBy: req.userId
-        };
+        const { shift, startDate, endDate, department } = req.body
+        const user = req.user
+        let query = {}
+        if (user?.role === "admin") {
+            query.department = new mongoose.Types.ObjectId(department)
+        } else {
+            query.department = new mongoose.Types.ObjectId(user.department?._id)
+        }
         if (Array.isArray(shift) && shift.length > 0) {
             query.shift = { $in: shift };
         }
@@ -1288,12 +1292,23 @@ router.post('/excavatorTripReport/view', verifyToken, restrictTo('admin', 'dispa
                 populate: [
                     {
                         path: "vehicleSummaries.vehicle",
-                        select: "code vehicleNumber"
+                        select: "_id code vehicleNumber"
                     },
                 ]
             })
-            .populate('assignedTo', 'fullName salaryCode department')
+            .populate({
+                path: 'assignedTo',
+                select: 'salaryCode department',
+                populate: ('department')
+            })
+            .populate({
+                path: 'createdBy',
+                select: 'fullName',
+            })
             .populate('job', 'name type')
+            .populate('location', 'name')
+            .populate('material', 'name')
+            .populate('excavator', 'code')
             .populate({
                 path: 'device',
                 select: 'code category',
@@ -1311,16 +1326,22 @@ router.post('/excavatorTripReport/view', verifyToken, restrictTo('admin', 'dispa
         for (const order of filteredOrders) {
             const reports = await Report.find({ orderId: order._id })
                 .populate('device', 'code')
+                .populate('material', 'name')
+            const grouped = groupReportsForProduct(reports)
 
             result.push({
-                _id: order?._id,
-                fullName: order?.assignedTo?.fullName,
+                _id: order._id,
+                fullName: order?.createdBy?.fullName,
                 salaryCode: order?.assignedTo?.salaryCode,
                 department: order?.assignedTo?.department?.name,
-                code: order.device?.map(item => item.code) || '',
-                quantity: reports.map(item => item.quantity) || '',
+                reports: grouped.map(g => ({
+                    code: g.device?.code || '',
+                    material: g.material?.name || '',
+                    tripCount: g?.quantity || '',
+                }))
             });
         }
+
 
         res.status(200).send({ status: 'success', data: result })
     } catch (err) {
@@ -1330,10 +1351,12 @@ router.post('/excavatorTripReport/view', verifyToken, restrictTo('admin', 'dispa
 
 router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
-        const { shift, startDate, endDate, title, signature } = req.body
+        const { shift, startDate, endDate, title, signature, department } = req.body
         const shiftList = await Shift.find({ _id: { $in: shift } });
         const start = new Date(startDate);
         const end = new Date(endDate);
+        const user = req.user
+
 
         // Đảm bảo end không nhỏ hơn start
         if (end < start) return res.status(400).json({ message: "Ngày kết thúc phải sau ngày bắt đầu" });
@@ -1344,20 +1367,30 @@ router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher
                 const orders = await Order.find({
                     workingDate: d,
                     shift: ca._id,
-                    createdBy: req.userId
+                    department: user?.role === "admin" ? new mongoose.Types.ObjectId(department) : new mongoose.Types.ObjectId(user.department?._id)
                 })
                     .populate({
                         path: "shiftReport",
                         populate: [
                             {
                                 path: "vehicleSummaries.vehicle",
-                                select: "code vehicleNumber"
+                                select: "_id code vehicleNumber"
                             },
-
                         ]
                     })
-                    .populate('assignedTo', 'fullName salaryCode department')
+                    .populate({
+                        path: 'assignedTo',
+                        select: 'fullName salaryCode department',
+                        populate: ('department')
+                    })
+                    .populate({
+                        path: 'createdBy',
+                        select: 'fullName salaryCode department',
+                    })
                     .populate('job', 'name type')
+                    .populate('location', 'name')
+                    .populate('material', 'name')
+                    .populate('excavator', 'code')
                     .populate({
                         path: 'device',
                         select: 'code category',
@@ -1367,54 +1400,109 @@ router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher
                         }
                     })
                     .populate('shift')
+
                 const filteredOrders = orders.filter(order =>
                     order.job?.type === "Vận hành xúc"
                 );
 
+                let result = []
+                for (const order of filteredOrders) {
+                    const reports = await Report.find({ orderId: order._id })
+                        .populate('device', 'code')
+                        .populate('material', 'name')
+
+                    const grouped = groupReportsForProduct(reports)
+
+                    result.push({
+                        _id: order._id,
+                        fullName: order?.createdBy?.fullName,
+                        salaryCode: order?.assignedTo?.salaryCode,
+                        department: order?.assignedTo?.department?.name,
+                        reports: grouped.map(g => ({
+                            code: g.device?.code || '',
+                            material: g.material?.name || '',
+                            tripCount: g?.quantity || '',
+                        }))
+                    });
+                }
 
                 const sheetName = `${formatDate(d)}_${ca.name}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
 
                 const worksheet = workbook.addWorksheet(sheetName);
 
-                worksheet.mergeCells('A1:E1');
+                worksheet.mergeCells('A1:G1');
                 const infoRow = worksheet.getCell('A1');
                 infoRow.value = `Ca: ${ca.name}, ngày: ${formatDate(d)}         Tên cán bộ:`;
                 infoRow.font = { italic: true, size: 12 };
                 infoRow.alignment = { horizontal: 'left', vertical: 'middle' };
                 // Tiêu đề bảng
-                worksheet.mergeCells('A2:E2');
+                worksheet.mergeCells('A2:G2');
                 const header = worksheet.getCell('A2');
-                header.value = title;
-                header.font = { bold: true, size: 14 };
+                header.value = 'DANH SÁCH CHUYẾN MÁY XÚC';
+                header.font = { bold: true, size: 20 };
                 header.alignment = { horizontal: 'center', vertical: 'middle' };
 
-                const headerRow = worksheet.addRow(['STT', 'Họ và tên', 'Số thẻ', 'Đơn vị', 'Máy vận hành', 'Số chuyến']);
+                const headerRow = worksheet.addRow(['STT', 'Người ra lệnh', 'Thẻ lương \ncông nhân', 'Đơn vị', 'Biển số \nô tô', 'Vật liệu', 'Số chuyến']);
                 headerRow.font = { bold: true };
                 headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
 
                 let index = 1;
-                for (const order of filteredOrders) {
-                    const reports = await Report.find({ orderId: order._id })
-                        .populate('device', 'code')
-                    worksheet.addRow([
-                        index++,
-                        order.assignedTo?.fullName || '',
-                        order.assignedTo?.salaryCode || '',
-                        order.assignedTo?.department?.name || '',
-                        reports.map(item => (item?.device?.code || '')).join('\n') || '',
-                        reports.map(item => (item?.quantity || '')).join('\n') || '',
-                    ]);
+                let totalDataRows = 0;
+                for (const item of result) {
+                    const reps = item.reports && item.reports.length ? item.reports : [{ code: '', material: '', tripCount: '' }];
+                    const startRow = worksheet.lastRow ? worksheet.lastRow.number + 1 : 4; // 3 dòng đầu là info/title/header
+                    const span = reps.length;
+                    totalDataRows += reps.length;
+
+                    reps.forEach((r, i) => {
+                        worksheet.addRow([
+                            i === 0 ? index : '',            // STT chỉ ở dòng đầu
+                            i === 0 ? (item.fullName || '') : '',
+                            i === 0 ? (item.salaryCode || '') : '',
+                            i === 0 ? (item.department || '') : '',
+                            r.code || '',
+                            r.material || '',
+                            r.tripCount ?? '',
+                        ]);
+                    });
+                    if (span > 1) {
+                        const endRow = startRow + span - 1;
+                        ['A', 'B', 'C', 'D'].forEach((col) => worksheet.mergeCells(`${col}${startRow}:${col}${endRow}`));
+                    }
+
+                    // Căn giữa 4 cột đầu, trái 3 cột sau, bật wrapText cho 3 cột sau
+                    for (let r = startRow; r < startRow + span; r++) {
+                        ['A', 'B', 'C', 'D', 'E', 'F', 'G'].forEach((col) => {
+                            const cell = worksheet.getCell(`${col}${r}`);
+                            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                        });
+                    }
+
+                    index++;
                 }
-                addTableBorders(worksheet, 3, 3 + index, 1, 6)
+
+                addTableBorders(worksheet, 3, totalDataRows + 3, 1, 7);
+
+                worksheet.pageSetup = {
+                    paperSize: 9,                // A4
+                    orientation: 'landscape',    // ngang
+                    fitToPage: true,
+                    fitToWidth: 1,               // vừa 1 trang theo chiều ngang
+                    fitToHeight: 0,              // không ép theo chiều dọc
+                    margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } // inch
+                };
+
+
                 worksheet.getColumn(1).width = 6;
                 worksheet.getColumn(1).alignment = { horizontal: 'center' }
                 worksheet.getColumn(2).width = 20;
                 worksheet.getColumn(2).alignment = { horizontal: 'center' }
-                worksheet.getColumn(3).width = 10;
+                worksheet.getColumn(3).width = 20;
                 worksheet.getColumn(3).alignment = { horizontal: 'center' }
                 worksheet.getColumn(4).width = 40;
-                worksheet.getColumn(5).width = 20;
+                worksheet.getColumn(5).width = 15;
                 worksheet.getColumn(6).width = 15;
+                worksheet.getColumn(7).width = 15;
 
                 if (signature) {
                     const response = await axios.get(signature, { responseType: 'arraybuffer' });
@@ -1475,7 +1563,6 @@ router.post('/carTripReport/view', verifyToken, restrictTo('admin', 'dispatcher'
         } else {
             query.department = new mongoose.Types.ObjectId(user.department?._id)
         }
-        department: user.department?._id
         if (Array.isArray(shift) && shift.length > 0) {
             query.shift = { $in: shift };
         }
@@ -1672,13 +1759,9 @@ router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
 
                     // Căn giữa 4 cột đầu, trái 3 cột sau, bật wrapText cho 3 cột sau
                     for (let r = startRow; r < startRow + span; r++) {
-                        ['A', 'B', 'C', 'D'].forEach((col) => {
+                        ['A', 'B', 'C', 'D', 'E', 'F', 'G'].forEach((col) => {
                             const cell = worksheet.getCell(`${col}${r}`);
-                            cell.alignment = { horizontal: 'center', vertical: 'middle' };
-                        });
-                        ['E', 'F', 'G'].forEach((col) => {
-                            const cell = worksheet.getCell(`${col}${r}`);
-                            cell.alignment = { horizontal: 'center', vertical: 'top', wrapText: true };
+                            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
                         });
                     }
 
@@ -1686,6 +1769,16 @@ router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
                 }
 
                 addTableBorders(worksheet, 3, totalDataRows + 3, 1, 7);
+
+                worksheet.pageSetup = {
+                    paperSize: 9,                // A4
+                    orientation: 'landscape',    // ngang
+                    fitToPage: true,
+                    fitToWidth: 1,               // vừa 1 trang theo chiều ngang
+                    fitToHeight: 0,              // không ép theo chiều dọc
+                    margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } // inch
+                };
+
 
                 worksheet.getColumn(1).width = 6;
                 worksheet.getColumn(1).alignment = { horizontal: 'center' }
@@ -2111,18 +2204,6 @@ router.post('/worklog', verifyToken, restrictTo('admin', 'dispatcher', 'manager'
                 const length = formattedData.length
                 setCell(worksheet, `C${length + 7}:D${length + 7}`, 'TỔ TRƯỞNG')
                 setCell(worksheet, `H${length + 7}:I${length + 7}`, 'QUẢN ĐỐC')
-
-                // for (let row = length + 6; row <= length + 10; row++) {
-                //     for (let col = 1; col <= 9; col++) { // A = 1, M = 13
-                //         const cell = worksheet.getRow(row).getCell(col);
-                //         cell.border = {};
-                //         cell.fill = {
-                //             type: 'pattern',
-                //             pattern: 'solid',
-                //             fgColor: { argb: 'FFFFFFFF' }
-                //         }; // Xóa tất cả border
-                //     }
-                // }
 
 
                 if (signature) {

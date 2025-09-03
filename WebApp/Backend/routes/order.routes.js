@@ -544,10 +544,34 @@ router.get('/user', verifyToken, async (req, res, next) => {
             query.status = { $ne: "cancel" };
         }
 
-        const now = new Date()
-        now.setUTCHours(0, 0, 0, 0); // Sets the time to the very last millisecond of the day
+        const endOfToday = new Date();
+        endOfToday.setHours(23, 59, 59, 999);
 
-        query.workingDate = { $lte: now };
+        // Tính gte/lte theo input
+        let gte = null;
+        let lte = endOfToday; // mặc định không vượt quá hôm nay
+
+        if (req.query.startTime) {
+            const s = new Date(req.query.startTime);
+            if (!isNaN(s)) {
+                s.setHours(0, 0, 0, 0);
+                gte = s;
+            }
+        }
+
+        if (req.query.endTime) {
+            const e = new Date(req.query.endTime);
+            if (!isNaN(e)) {
+                e.setHours(23, 59, 59, 999);
+                // clamp: không cho vượt quá hôm nay
+                lte = e > endOfToday ? endOfToday : e;
+            }
+        }
+
+        // Gán workingDate một lần, không bị ghi đè
+        query.workingDate = {};
+        if (gte) query.workingDate.$gte = gte;
+        if (lte) query.workingDate.$lte = lte;
         const orders = await Order.find(query)
             .populate(orderPopulateOptions); // Sử dụng biến chung
         orders.sort((a, b) => {

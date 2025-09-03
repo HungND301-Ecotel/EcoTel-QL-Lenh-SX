@@ -118,7 +118,7 @@ export interface Material {
 export interface Job {
     _id: string;
     name: string;
-    type: 'Vận hành xe' | 'Vận hành khoan' | 'Vận hành xe phục vụ' | 'Vận hành gạt' | 'Vận hành xúc' | 'Khác',
+    type: 'Vận hành xe' | 'Vận hành khoan' | 'Vận hành xe phục vụ' | 'Vận hành gạt' | 'Vận hành xúc' | 'Vận hành sàng' | 'Khác',
     createdAt?: string;
     updatedAt?: string;
 }

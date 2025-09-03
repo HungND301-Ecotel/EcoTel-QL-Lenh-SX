@@ -51,7 +51,7 @@ const validationSchema = yup.object({
     name: yup.string().required('Vui lòng nhập tên công việc'),
     type: yup
         .string()
-        .oneOf(['Vận hành xe', 'Vận hành khoan', 'Vận hành xe phục vụ', 'Vận hành gạt', 'Vận hành xúc', 'Khác'])
+        .oneOf(['Vận hành xe', 'Vận hành khoan', 'Vận hành xe phục vụ', 'Vận hành gạt', 'Vận hành xúc', 'Vận hành sàng', 'Khác'])
         .required('Vui lòng chọn loại công việc'),
 });
 
@@ -397,6 +397,7 @@ const Jobs: React.FC = () => {
                                     <MenuItem value="Vận hành xe phục vụ">Vận hành xe phục vụ</MenuItem>
                                     <MenuItem value="Vận hành gạt">Vận hành gạt</MenuItem>
                                     <MenuItem value="Vận hành xúc">Vận hành xúc</MenuItem>
+                                    <MenuItem value="Vận hành sàng">Vận hành sàng</MenuItem>
                                     <MenuItem value="Khác">Khác</MenuItem>
                                 </TextField>
                             </Box>
