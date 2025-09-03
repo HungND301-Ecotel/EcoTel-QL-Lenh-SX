@@ -303,7 +303,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                                             />
                                         </Grid>
 
-                                        {["Vận hành xe", "Vận hành xúc", "Vận hành gạt", "Vận hành khoan", "Vận hành xe", "Vận hành xe phục vụ"].includes(selectedJob?.type ?? "") && <Grid item xs={5}>
+                                        {["Vận hành xe", "Vận hành xúc", "Vận hành gạt", "Vận hành khoan", "Vận hành sàng", "Vận hành xe phục vụ"].includes(selectedJob?.type ?? "") && <Grid item xs={5}>
                                             < Autocomplete
                                                 fullWidth
                                                 options={devices}
@@ -422,7 +422,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                                 />
                             </LocalizationProvider>
                         </Grid>
-                        {selectedJob?.type === "Vận hành xe" && <Grid item xs={12} sm={6}>
+                        {['Vận hành sàng', "Vận hành xe"].includes(selectedJob?.type ?? '') && <Grid item xs={12} sm={6}>
                             <Autocomplete
                                 fullWidth
                                 options={locations}

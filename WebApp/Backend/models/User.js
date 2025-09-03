@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema({
     phone: { type: String },
     avatar: { type: String },
     signature: { type: String },
-    salaryCode: { type: String },
+    salaryCode: { type: String, required: true, unique: true },
     department: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
     position: { type: mongoose.Schema.Types.ObjectId, ref: 'Position' },
     role: { type: String, default: "employee" },
