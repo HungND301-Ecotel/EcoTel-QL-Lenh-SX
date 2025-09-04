@@ -21,6 +21,8 @@ import { DatePicker, DesktopTimePicker, LocalizationProvider } from '@mui/x-date
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
+import { useAtom } from 'jotai';
+import { userAtom } from '../../atoms/userAtoms';
 
 
 const StyledPopper = styled(Popper)({
@@ -29,26 +31,18 @@ const StyledPopper = styled(Popper)({
         overflowY: 'auto', // Thêm thanh cuộn khi nội dung vượt quá chiều cao
     },
 });
-
 const validationSchema = yup.object({
-    assignedTo: yup.string().required('Vui lòng chọn thẻ lương'),
-    // devicesToProduce: yup.array().of(
-    //     yup.object().shape({
-    //         deviceType: yup.string().required('Vui lòng chọn loại thiết bị')
-    //             .typeError('Số lượng phải là số')
-    //             .min(1, 'Số lượng phải lớn hơn 0'),
-    //         quantity: yup.number().required('Vui lòng nhập số lượng'),
-    //     })
-    // ),
-    job: yup.string().required('Vui lòng chọn loại công việc'),
+    usersAndDepartments: yup.array().of(
+        yup.object().shape({
+            assignedTo: yup.string().required('Vui lòng chọn thẻ lương'),
+            department: yup.string(),
+        })
+    ),
     workingDate: yup.string().required('Vui lòng chọn ngày làm việc'),
-    // shift: yup.string().required('Vui lòng chọn ca làm việc'),
-    // shiftHour: yup.string().required('Vui lòng nhập giờ làm việc'),
     workContent: yup.string().required('Vui lòng nhập nội dung'),
 });
-
 interface OrderFormProps {
-    initialValues: any;
+    initialValues: any[];
     onCancel: () => void;
 }
 
@@ -56,37 +50,11 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
     initialValues,
     onCancel,
 }) => {
+    const [user] = useAtom(userAtom)
     const queryClient = useQueryClient();
-    const [department, setDepartment] = useState("")
-
-    useEffect(() => {
-        if (initialValues?.assignedTo?.department) {
-            setDepartment(initialValues.assignedTo.department);
-        }
-    }, [initialValues])
-
-    const { data: departments = [] } = useQuery({
-        queryKey: ['departments'],
-        queryFn: () => api.get('/departments').then(res => res.data.data),
-    });
-
     const { data: users = [] } = useQuery({
-        queryKey: ['users', department],
-        queryFn: () => api.get(`/users?department=${department}`).then(res => res.data.data),
-        enabled: !!department,
-    });
-    const { data: shifts = [] } = useQuery({
-        queryKey: ['shifts'],
-        queryFn: () => api.get('/shifts').then(res => res.data.data),
-    });
-    const { data: deviceTypes = [] } = useQuery({
-        queryKey: ['deviceTypes'],
-        queryFn: () => api.get('/deviceTypes').then(res => res.data.data),
-    });
-
-    const { data: jobs = [] } = useQuery({
-        queryKey: ['jobs'],
-        queryFn: () => api.get('/jobs').then(res => res.data.data),
+        queryKey: ['users'],
+        queryFn: () => api.get('/users?type=order').then(res => res.data.data),
     });
 
     const createMutation = useMutation({
@@ -94,7 +62,7 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
             api.post('/orders', newOrder).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
-            showSuccessAlert('Cập nhật lệnh sản xuất thành công');
+            // showSuccessAlert('Cập nhật lệnh sản xuất thành công');
             onCancel();
         },
         onError: (error: any) => {
@@ -104,62 +72,61 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
 
     const formik = useFormik({
         initialValues: {
-            assignedTo: typeof initialValues.assignedTo === 'object'
-                ? initialValues.assignedTo._id
-                : initialValues.assignedTo || '',
-            devicesToProduce: Array.isArray(initialValues.devicesToProduce)
-                ? initialValues.devicesToProduce.map((d: any) => ({
-                    deviceType: d?.deviceType?._id || '',
-                    quantity: d?.quantity || 0
-                }))
-                : [],
-            job: initialValues.job !== null && typeof initialValues.job === 'object'
-                ? initialValues.job._id
-                : initialValues.job || '',
-            workingDate: initialValues.workingDate
-                ? dayjs(initialValues.workingDate).startOf('day').toDate()
+            usersAndDepartments: (initialValues || []).map((item) => (
+                {
+                    _id: item?._id,
+                    assignedTo: item?.assignedTo?._id,
+                    department: item?.assignedTo?.department?.code,
+                }
+            )),
+            workingDate: initialValues[0].workingDate
+                ? dayjs(initialValues[0].workingDate).startOf('day').toDate()
                 : '',
-            shift: initialValues.shift !== null && typeof initialValues.shift === 'object'
-                ? initialValues.shift._id
-                : initialValues.shift || '',
-            shiftHour: initialValues.shiftHour || '',
-            workContent: initialValues.workContent || '',
-            status: initialValues.status,
-            note: initialValues?.shiftReport?.handoverNotes || '',
+            workContent: initialValues[0].workContent || '',
+            status: initialValues[0].status,
         },
         enableReinitialize: true, // Để cập nhật lại giá trị khi initialValues thay đổi
         validationSchema,
         onSubmit: async (values) => {
 
-            const order: Partial<Order> = {
-                assignedTo: values.assignedTo,
-                devicesToProduce: values.devicesToProduce.filter((i: any) => i.deviceType),
-                job: values.job,
-                workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
-                shift: values.shift,
-                shiftHour: values.shiftHour,
-                workContent: values.workContent,
-                status: "pending",
-                note: values.note,
-                department: department,
-            };
-            const duplicates = await
-                api.post(`/orders/checkExist`, {
-                    workingDate: order.workingDate,
-                    shift: order.shift,
-                    assignedTo: order.assignedTo
+            const orders: Partial<Order>[] = values.usersAndDepartments.map((item) => (
+                {
+                    assignedTo: item.assignedTo,
+                    workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
+                    workContent: values.workContent,
+                    status: "pending",
+                    temporaryError: '',
+                    batchId: `${dayjs(new Date()).format('YYYY-MM-DD HH:mm')}_${user?.fullName}`
                 }
-                ).then(res =>
-                    res.data.data,
+            ))
+            const duplicates = await Promise.all(
+                orders.map(order =>
+                    api.post(`/orders/checkExist`, {
+                        workingDate: order.workingDate,
+                        shift: order.shift,
+                        assignedTo: order.assignedTo
+                    }
+                    ).then(res =>
+                        res.data.data,
+                    )
                 )
+            );
+            const existingOrders = duplicates.filter(order => order !== null);
+            if (existingOrders.length > 0) {
+                const names = existingOrders.map(o => {
+                    return o.assignedTo?.fullName || 'Không rõ';
+                }).join(', ');
 
-            if (duplicates) {
-                const name = duplicates.assignedTo?.fullName
-
-                const result = await showConfirmAlert(`${name} đã có lệnh sản xuất trong ca này. Bạn có muốn tiếp tục?`);
+                const result = await showConfirmAlert(`${names} đã có lệnh sản xuất trong ca này. Bạn có muốn tiếp tục?`);
                 if (!result.isConfirmed) return;
             }
-            createMutation.mutate(order);
+            try {
+                await Promise.all(orders.map(order => createMutation.mutate(order)));
+                queryClient.invalidateQueries({ queryKey: ['orders'] });
+                showSuccessAlert('Thêm lệnh sản xuất thành công');
+            } catch (error) {
+                console.error('Error submitting orders:', error);
+            }
         },
     });
 
@@ -167,127 +134,59 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
     return (
         <FormikProvider value={formik}>
             <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
-                <Grid container spacing={2} sx={{ mb: 2 }}>
-                    <Grid item xs={6}>
-                        <Autocomplete
-                            fullWidth
-                            options={users}
-                            getOptionLabel={(option: any) =>
-                                `${option.fullName || ''} - ${option.salaryCode || ''}`
-                            }
-                            value={users.find((p: any) => p._id === formik.values.assignedTo) || null}
-                            onChange={(event, newValue) => {
-                                formik.setFieldValue(`assignedTo`, newValue?._id || '');
-                            }}
-                            PopperComponent={StyledPopper}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    label="Thẻ lương"
-                                    error={formik.touched.assignedTo && Boolean(formik.errors.assignedTo)}
-                                    helperText={formik.touched.assignedTo && typeof formik.errors.assignedTo === 'string' ? formik.errors.assignedTo : ''}
-                                />
-                            )}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <Autocomplete
-                            fullWidth
-                            options={jobs}
-                            getOptionLabel={(option: Job) =>
-                                option.name || ''
-                            }
-                            value={jobs.find((p: any) => p._id === formik.values.job) || null}
-                            onChange={(event, newValue) => {
-                                formik.setFieldValue('job', newValue?._id || '');
-                            }}
-                            PopperComponent={StyledPopper}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    label="Công việc"
-                                    error={formik.touched.job && Boolean(formik.errors.job)}
-                                    helperText={formik.touched.job && typeof formik.errors.job === 'string' ? formik.errors.job : ''}
-                                />
-                            )}
-                        />
-                    </Grid>
-                </Grid>
-                <FieldArray name="devicesToProduce">
+                <FieldArray name="usersAndDepartments">
                     {({ push, remove }) => (
                         <>
-                            {formik.values.devicesToProduce.map((item: any, index: number) => (
-                                <Grid container spacing={2} key={index} alignItems="center" sx={{ mb: 2 }}>
+                            {formik.values.usersAndDepartments.map((item, index) => (
+                                <Grid container spacing={2} key={index} alignItems="center" sx={{ mb: 2, mt: 2 }}>
                                     <Grid item xs={5}>
                                         <Autocomplete
                                             fullWidth
-                                            options={deviceTypes}
-                                            getOptionLabel={(option: DeviceType) =>
-                                                option.name || ''
+                                            options={users}
+                                            getOptionLabel={(option: any) =>
+                                                `${option.fullName || ''} - ${option.salaryCode || ''}`
                                             }
-                                            value={deviceTypes.find((p: DeviceType) => p._id === item.deviceType) || null}
+                                            value={users.find((p: any) => p._id === item.assignedTo) || null}
                                             onChange={(event, newValue) => {
-                                                formik.setFieldValue(`devicesToProduce[${index}].deviceType`, newValue?._id || '');
+                                                formik.setFieldValue(`usersAndDepartments[${index}].assignedTo`, newValue?._id || '');
+                                                formik.setFieldValue(`usersAndDepartments[${index}].department`, newValue?.department?.code || '');
                                             }}
                                             PopperComponent={StyledPopper}
                                             renderInput={(params) => (
                                                 <TextField
                                                     {...params}
-                                                    label="Loại phương tiện"
+                                                    label="Thẻ lương"
                                                     error={Boolean(
-                                                        getIn(formik.errors, `devicesToProduce[${index}].deviceType`) &&
-                                                        getIn(formik.touched, `devicesToProduce[${index}].deviceType`)
+                                                        typeof formik.errors.usersAndDepartments?.[index] === 'object' &&
+                                                        (formik.errors.usersAndDepartments?.[index] as any)?.assignedTo
                                                     )}
                                                     helperText={
-                                                        getIn(formik.touched, `devicesToProduce[${index}].deviceType`)
-                                                            && getIn(formik.errors, `devicesToProduce[${index}].deviceType`) === "string"
-                                                            ? getIn(formik.errors, `devicesToProduce[${index}].deviceType`)
+                                                        typeof formik.errors.usersAndDepartments?.[index] === 'object'
+                                                            ? (formik.errors.usersAndDepartments?.[index] as any)?.assignedTo
                                                             : ''
                                                     }
                                                 />
                                             )}
                                         />
                                     </Grid>
-
                                     <Grid item xs={5}>
-                                        <TextField
-                                            fullWidth
-                                            label="Số lượng"
-                                            type="number"
-                                            inputProps={{ min: 0 }}
-                                            value={formik.values.devicesToProduce[index].quantity}
-                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                                const value = e.target.value;
-                                                const parsed = value === '' ? '' : parseInt(value, 10);
-
-                                                formik.setFieldValue(`devicesToProduce[${index}].quantity`, parsed);
-                                            }}
-                                            error={Boolean(
-                                                getIn(formik.errors, `devicesToProduce[${index}].quantity`) &&
-                                                getIn(formik.touched, `devicesToProduce[${index}].quantity`)
-                                            )}
-                                            helperText={
-                                                getIn(formik.touched, `devicesToProduce[${index}].quantity`)
-                                                    && getIn(formik.errors, `devicesToProduce[${index}].quantity`) === "string"
-                                                    ? getIn(formik.errors, `devicesToProduce[${index}].quantity`)
-                                                    : ''
-                                            }
-                                        />
+                                        <TextField fullWidth label="Đơn vị" value={item.department ?? ''} disabled />
                                     </Grid>
+
 
                                     {index > 0 && <Grid item xs={2}>
                                         <Button color="error" onClick={() => remove(index)}>Xóa</Button>
                                     </Grid>}
                                 </Grid>
                             ))}
-                            <Button variant="outlined" sx={{ mb: 2 }} onClick={() => push({ deviceType: '', quantity: 0 })}>
+                            <Button variant="outlined" sx={{ mb: 2 }} onClick={() => push({ assignedTo: '', department: "" })}>
                                 + Thêm
                             </Button>
                         </>
                     )}
                 </FieldArray>
                 <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12}>
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
                             <DatePicker
                                 label="Ngày làm việc"
@@ -311,61 +210,7 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
                             />
                         </LocalizationProvider>
                     </Grid>
-                    <Grid item xs={6} sm={3}>
-                        <TextField
-                            fullWidth
-                            select
-                            id="shift"
-                            name="shift"
-                            label="Ca làm việc"
-                            value={formik.values.shift}
-                            onChange={(e) => {
-                                formik.handleChange(e);
-                                // Tìm ca vừa chọn
-                                const selectedShift = shifts.find((shift: Shift) => shift._id === e.target.value);
-                                // Nếu có ca, set giờ ca theo startTime
-                                if (selectedShift && selectedShift.startTime) {
-                                    // startTime có thể là chuỗi "HH:mm"
-                                    formik.setFieldValue('shiftHour', dayjs(selectedShift.startTime, 'HH:mm').format('HH:mm'));
-                                } else {
-                                    formik.setFieldValue('shiftHour', '');
-                                }
-                            }}
-                            error={formik.touched.shift && Boolean(formik.errors.shift)}
-                            helperText={formik.touched.shift && typeof formik.errors.shift === 'string'
-                                ? formik.errors.shift
-                                : ''}
-                        >
-                            {shifts.map((shift: Shift) => (
-                                <MenuItem key={shift._id} value={shift._id}>Ca {shift.name} ({shift.startTime})</MenuItem>
-                            ))}
-                        </TextField>
-                    </Grid>
-                    <Grid item xs={6} sm={3}>
-                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                            <DesktopTimePicker
-                                label="Giờ ca"
-                                ampm={false}
-                                inputFormat="HH:mm" // v5 vẫn hỗ trợ
-                                value={formik.values.shiftHour ? dayjs(formik.values.shiftHour, 'HH:mm') : null}
-                                onChange={(value) => {
-                                    formik.setFieldValue('shiftHour', value ? value?.format('HH:mm') : '');
-                                }}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        fullWidth
-                                        error={formik.touched.shiftHour && Boolean(formik.errors.shiftHour)}
-                                        helperText={
-                                            formik.touched.shiftHour && typeof formik.errors.shiftHour === 'string'
-                                                ? formik.errors.shiftHour
-                                                : ''
-                                        }
-                                    />
-                                )}
-                            />
-                        </LocalizationProvider>
-                    </Grid>
+
                     <Grid item xs={12}>
                         <TextField
                             fullWidth
@@ -383,7 +228,6 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
                         />
                     </Grid>
                 </Grid>
-
                 <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
                     <Button variant="outlined" onClick={onCancel}>
                         Hủy
@@ -392,8 +236,8 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
                         Cập nhật
                     </Button>
                 </Box>
-            </Box >
-        </FormikProvider>
+            </Box>
+        </FormikProvider >
     );
 };
 
