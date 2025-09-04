@@ -413,10 +413,10 @@ const AdminDashboard: React.FC = () => {
                                                 const bgColor = index % 2 === 0 ? 'white' : '#e3f2fd';
                                                 return (
                                                     <React.Fragment key={typeIndex}>
-                                                        <TableCell align='center' sx={{ backgroundColor: bgColor }}>{s.available || 0}</TableCell>
-                                                        <TableCell align='center' sx={{ backgroundColor: bgColor }}>{s.in_use || 0}</TableCell>
-                                                        <TableCell align='center' sx={{ backgroundColor: bgColor }}>{s.maintenance || 0}</TableCell>
-                                                        <TableCell align='center' sx={{ backgroundColor: bgColor }}>{s.retired || 0}</TableCell>
+                                                        <TableCell align='center' sx={{ backgroundColor: (s.available || 0) > 0 ? 'green' : bgColor, color: (s.available || 0) > 0 ? 'white' : '' }}>{s.available || 0}</TableCell>
+                                                        <TableCell align='center' sx={{ backgroundColor: (s.in_use || 0) > 0 ? 'red' : bgColor, color: (s.in_use || 0) > 0 ? 'white' : '' }}>{s.in_use || 0}</TableCell>
+                                                        <TableCell align='center' sx={{ backgroundColor: (s.maintenance || 0) > 0 ? 'yellow' : bgColor }}>{s.maintenance || 0}</TableCell>
+                                                        <TableCell align='center' sx={{ backgroundColor: (s.retired || 0) > 0 ? 'black' : bgColor, color: (s.retired || 0) > 0 ? 'white' : '' }}>{s.retired || 0}</TableCell>
                                                     </React.Fragment>
                                                 );
                                             })}

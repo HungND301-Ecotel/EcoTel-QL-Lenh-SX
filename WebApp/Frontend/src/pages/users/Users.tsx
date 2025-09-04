@@ -31,6 +31,7 @@ import {
     Accordion,
     Breadcrumbs,
     LinearProgress,
+    ListItemText,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -86,6 +87,7 @@ const Users: React.FC = () => {
     const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
     const [value, setValue] = useState("")
     const [department, setDepartment] = useState("")
+    const [active, setActive] = useState("")
     const [avatar, setAvatar] = useState("")
     const queryClient = useQueryClient();
     const [user, setUser] = useAtom(userAtom)
@@ -97,9 +99,17 @@ const Users: React.FC = () => {
         setShowPassword((prev) => !prev);
     };
 
+    const handleChange = (value: string) => {
+        setActive(prev => (prev === value ? '' : value)); // bỏ chọn nếu click lại
+    };
+
     const { data: users = [], isLoading } = useQuery({
-        queryKey: ['users', value, department],
-        queryFn: () => api.get(`/users?q=${value}&&department=${department}`).then(res => res.data.data),
+        queryKey: ['users', value, department,active],
+        queryFn: () => api.get(`/users?q=${value}&&department=${department}&&active=${active}`).then(res => res.data.data),
+    });
+    const { data: allUsers = [] } = useQuery({
+        queryKey: ['allUsers'],
+        queryFn: () => api.get(`/users`).then(res => res.data.data),
     });
 
     const { data: positions = [] } = useQuery({
@@ -792,7 +802,26 @@ const Users: React.FC = () => {
                 </Box>
             )}
             <Paper sx={{ width: '100%', overflowX: 'auto', mt: 3 }}>
-                <Typography variant="h4">Bảng người dùng</Typography>
+                <Box display="flex" justifyContent={'space-between'}>
+                    <Typography variant="h4">Bảng người dùng</Typography>
+                    <Box display="flex" gap={2} alignItems={'center'} justifyContent='flex-end'>
+                        <Box display="flex" alignItems={'center'}>
+                            <Checkbox color='info' name="status" checked={active === ''}
+                                onChange={() => setActive('')} />
+                            <ListItemText primary={`Tất cả (${allUsers.length})`} sx={{ color: 'blue' }} />
+                        </Box>
+                        <Box display="flex" alignItems={'center'}>
+                            <Checkbox color='default' name="status" checked={active === 'true'}
+                                onChange={() => setActive('true')} />
+                            <ListItemText primary={`Hoạt động (${allUsers.filter((o: User) => o.active).length})`} sx={{ color: 'grey' }} />
+                        </Box>
+                        <Box display="flex" alignItems={'center'}>
+                            <Checkbox color='default' name="status" checked={active === 'false'}
+                                onChange={() => setActive('false')} />
+                            <ListItemText primary={`Không hoạt động (${allUsers.filter((o: User) => !o.active).length})`} sx={{ color: 'grey' }} />
+                        </Box>
+                    </Box>
+                </Box>
                 <DataGrid
                     rows={users}
                     columns={visibleColumns}

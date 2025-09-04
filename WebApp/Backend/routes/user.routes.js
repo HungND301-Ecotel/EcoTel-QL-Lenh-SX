@@ -11,10 +11,24 @@ const Position = require('../models/Position');
 const Department = require('../models/Department');
 const mongoose = require('mongoose')
 // Get all users
+function parseBool(v) {
+    if (v === undefined || v === null) return undefined;       // không lọc
+    if (typeof v === 'boolean') return v;
+    const s = String(v).trim().toLowerCase();
+    if (['true', '1', 'yes', 'y', 'on'].includes(s)) return true;
+    if (['false', '0', 'no', 'n', 'off'].includes(s)) return false;
+    return undefined; // hoặc throw lỗi nếu bạn muốn chặt chẽ
+}
 router.get('/', verifyToken, async (req, res) => {
     try {
         const user = req.user;
         const query = {};
+
+        const active = parseBool(req.query.active);
+        if (active !== undefined) {
+            query.active = active;
+        }
+
 
         if (user?.role === "manager") {
             query.department = user?.department?._id;
@@ -42,6 +56,7 @@ router.get('/', verifyToken, async (req, res) => {
             query.$or = [
                 { salaryCode: regex },
                 { fullName: regex },
+                { username: regex },
             ];
         }
 
@@ -179,16 +194,12 @@ router.put('/changepass', verifyToken, async (req, res) => {
     try {
         let { old_pass, newpass, repass } = req.body;
         req.logger.info(`Bắt đầu đổi mật khẩu: old_pass ${old_pass} newpass ${newpass} repass ${repass}`);
-        old_pass = (old_pass ?? '');
-        newpass = (newpass ?? '');
-        repass = (repass ?? '');
+        const norm = (s) => (s ?? '').normalize('NFC');
 
-        // Cấm khoảng trắng đầu/cuối để đồng nhất trải nghiệm
-        const hasAnySpace = (s) => /\s/.test(s);
-        if ([old_pass, newpass, repass].some(hasAnySpace)) {
-            req.logger.warn(`⚠️ Mật khẩu không được có khoảng trắng. ${newpass}`);
-            return res.status(400).send({ status: 'error', message: 'Mật khẩu không được có khoảng trắng' });
-        }
+        old_pass = norm(old_pass);
+        newpass = norm(newpass);
+        repass = norm(repass);
+
         const user = await User.findById(req.user._id);
         if (!user) {
             req.logger.warn(`⚠️ Đổi mật khẩu thất bại - Không tìm thấy người dùng.`);
@@ -204,12 +215,22 @@ router.put('/changepass', verifyToken, async (req, res) => {
             req.logger.warn("⚠️ Đổi mật khẩu thất bại - Thiếu mật khẩu mới.");
             return res.status(400).send({ status: 'error', message: "Nhập mật khẩu mới" });
         }
+
+        const hasEdgeSpace = (s) => s !== s.trim();
+        if (hasEdgeSpace(newpass) || hasEdgeSpace(repass)) {
+            req.logger.warn(`⚠️ Mật khẩu mới không được có khoảng trắng ở đầu/cuối.`);
+            return res.status(400).send({ status: 'error', message: 'Mật khẩu mới không được có khoảng trắng ở đầu/cuối' });
+        }
+
+        newpass = newpass.trim();
+        repass = repass.trim();
+
         if (newpass !== repass) {
             req.logger.warn(`⚠️ Đổi mật khẩu thất bại - Mật khẩu nhập lại không khớp.${newpass} !=${repass}`);
             return res.status(404).send({ status: 'error', message: "Mật khẩu nhập lại không khớp" });
         }
-
-        const hashedPassword = await bcrypt.hash(newpass, 10);
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newpass, salt);
         user.password = hashedPassword;
         await user.save();
         req.logger.info(`✅ Đổi mật khẩu thành công cho người dùng: ${user.username} pass ${newpass}`);
