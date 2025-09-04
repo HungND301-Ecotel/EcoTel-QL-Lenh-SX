@@ -96,7 +96,9 @@ services:
     volumes:
       - .mongodb-data:/data/db
     networks:
-      - backnet    
+      - backnet 
+    ports:
+      - "27018:27017"   
     logging:
       driver: json-file
       options:
