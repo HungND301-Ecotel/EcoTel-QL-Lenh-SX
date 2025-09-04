@@ -146,6 +146,27 @@ const DispatcherOrders: React.FC = () => {
         queryFn: () => api.get(`/orders`).then(res => res.data.data),
     });
 
+    const groupOrdersByBatch = (orders: any[]) => {
+        return orders.reduce((acc, order) => {
+            const batchId = order.batchId || 'no-batch';
+            if (!acc[batchId]) {
+                acc[batchId] = [];
+            }
+            acc[batchId].push(order);
+            return acc;
+        }, {});
+    };
+
+    const groupedOrders = groupOrdersByBatch(orders)
+    const [expandedBatches, setExpandedBatches] = useState<Record<string, boolean>>({});
+
+    const handleToggleBatch = (batchId: string) => {
+        setExpandedBatches(prev => ({
+            ...prev,
+            [batchId]: !prev[batchId]
+        }));
+    };
+
     const createMutation = useMutation({
         mutationFn: (newOrder: Partial<Order>) =>
             api.post('/orders', newOrder).then(res => res.data),
@@ -325,6 +346,11 @@ const DispatcherOrders: React.FC = () => {
         return data
     }
     const paginatedOrders = pageData(orders, page, pageSize);
+    // Nhóm theo batchId ngay trên dữ liệu đã phân trang
+    const groupedPage = React.useMemo(() => groupOrdersByBatch(paginatedOrders), [paginatedOrders]);
+    // Tổng số cột đang hiển thị: Select + STT + (các cột bạn bật) + cột "Sao chép"
+    const colCount = 2 + visibleColumns.length + 1;
+
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -573,193 +599,238 @@ const DispatcherOrders: React.FC = () => {
                                         <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Sao chép</TableCell>
                                     </TableRow>
                                 </TableHead>
-                                {!isLoading ? <TableBody>
-                                    {paginatedOrders.map((order: any, index: number) => (
-                                        <TableRow key={order._id} sx={{
-                                            cursor: 'pointer', backgroundColor: order.status === 'pending'
-                                                ? 'white' // xám nhạt
-                                                : order.status === 'completed'
-                                                    ? '#ffe5e5' // đỏ nhạt
-                                                    : order.status === 'in_progress'
-                                                        ? '#e5f7e5' // xanh lá nhạt
-                                                        : order.status === 'warning'
-                                                            ? '#fff8e1' // vàng nhạt
-                                                            : '#ede7f6', // tím nhạt
-                                        }} onClick={() => setSelectedRow(order)}>
-                                            <TableCell align='center' sx={{
-                                                position: 'sticky',
-                                                left: 0,
-                                                zIndex: 1,
-                                                width: 50,
-                                                backgroundColor: order.status === 'pending'
-                                                    ? 'white' // xám nhạt
-                                                    : order.status === 'completed'
-                                                        ? '#ffe5e5' // đỏ nhạt
-                                                        : order.status === 'in_progress'
-                                                            ? '#e5f7e5' // xanh lá nhạt
-                                                            : order.status === 'warning'
-                                                                ? '#fff8e1' // vàng nhạt
-                                                                : '#ede7f6', // tím nhạt
-                                                border: '1px solid black'
-                                            }}><Checkbox onChange={() => handleSelected(order)} checked={selectedOrders.some(o => o._id === order._id)} /></TableCell>
-                                            <TableCell align='center' sx={{
-                                                position: 'sticky',
-                                                left: 50,
-                                                zIndex: 1,
-                                                width: 50,
-                                                backgroundColor: order.status === 'pending'
-                                                    ? 'white' // xám nhạt
-                                                    : order.status === 'completed'
-                                                        ? '#ffe5e5' // đỏ nhạt
-                                                        : order.status === 'in_progress'
-                                                            ? '#e5f7e5' // xanh lá nhạt
-                                                            : order.status === 'warning'
-                                                                ? '#fff8e1' // vàng nhạt
-                                                                : '#ede7f6', // tím nhạt
-                                                border: '1px solid black'
-                                            }}>{index + 1}</TableCell>
-                                            {visibleColumns.includes('assignedTo') && <TableCell sx={{
-                                                position: 'sticky',
-                                                left: 100,
-                                                zIndex: 1,
-                                                minWidth: 150,
-                                                backgroundColor: order.status === 'pending'
-                                                    ? 'white' // xám nhạt
-                                                    : order.status === 'completed'
-                                                        ? '#ffe5e5' // đỏ nhạt
-                                                        : order.status === 'in_progress'
-                                                            ? '#e5f7e5' // xanh lá nhạt
-                                                            : order.status === 'warning'
-                                                                ? '#fff8e1' // vàng nhạt
-                                                                : '#ede7f6', // tím nhạt
-                                                border: '1px solid black'
-                                            }}>{order.assignedTo?.fullName}</TableCell>}
-                                            {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{ border: '1px solid black' }}>
-                                                {order.assignedTo?.salaryCode}
-                                            </TableCell>}
-                                            {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{ border: '1px solid black' }}>
-                                                {order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('shift') && <TableCell align='center' sx={{ border: '1px solid black' }}>
-                                                {order.shift?.name}
-                                            </TableCell>}
-                                            {visibleColumns.includes('shiftHour') && <TableCell align='center' sx={{ border: '1px solid black' }}>
-                                                {order.shiftHour || ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('job') && <TableCell sx={{ border: '1px solid black' }}>
-                                                {order.job?.name || ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('content') && <TableCell sx={{
-                                                whiteSpace: 'nowrap',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                maxWidth: 300,
-                                                border: '1px solid black'
-                                            }}>
-                                                {order.workContent || ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('device') && <TableCell sx={{ border: '1px solid black' }}>
-                                                <Typography whiteSpace="pre-line" fontSize={14}>
-                                                    {order.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')}
-                                                </Typography>
-                                            </TableCell>}
-                                            {visibleColumns.includes('createdBy') && <TableCell sx={{ border: '1px solid black' }}>
-                                                {order.createdBy?.username || ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{ border: '1px solid black' }}>
-                                                {order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm') : ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('startTime') && <TableCell align='center' sx={{ border: '1px solid black' }}>
-                                                {order.startTime ? format(new Date(order.startTime), 'HH:mm:ss') : ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('endTime') && <TableCell align='center' sx={{ border: '1px solid black' }}>
-                                                {order.endTime ? format(new Date(order.endTime), 'HH:mm:ss') : ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('status') && <TableCell align='center' sx={{ border: '1px solid black' }}>
-                                                <Chip
-                                                    sx={{ width: '120px' }}
-                                                    label={order.status === 'pending' ? 'Chưa nhận lệnh' :
-                                                        order.status === 'in_progress' ? 'Đã nhận lệnh' :
-                                                            order.status === 'completed' ? 'Đã hoàn thành' :
-                                                                order.status === 'warning' ? 'Lỗi' : "Đã hủy"
-                                                    }
-                                                    color={
-                                                        order.status === 'pending' ? 'default' :
-                                                            order.status === 'completed' ? 'error' :
-                                                                order.status === 'in_progress' ? 'success' :
-                                                                    order.status === 'warning' ? 'warning' : 'secondary'}
-                                                />
-                                            </TableCell>}
-                                            {visibleColumns.includes('note') && <TableCell sx={{ border: '1px solid black' }}>
-                                                {order?.temporaryError || ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('edit') && <TableCell align='center' sx={{ border: '1px solid black' }}>
-                                                <IconButton
-                                                    color="primary"
-                                                    disabled={!['pending', 'warning'].includes(order.status)}
-                                                    onClick={async () => {
-                                                        if (open) {
-                                                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                                                            if (result.isConfirmed) {
-                                                                handleOpen(order);
-                                                            }
-                                                        } else {
-                                                            handleOpen(order);
-                                                        }
-                                                    }}
-                                                >
-                                                    <Tooltip title="Sửa" placement='top'>
-                                                        <EditIcon />
-                                                    </Tooltip>
-                                                </IconButton>
-                                            </TableCell>}
-                                            {visibleColumns.includes('cancel') && <TableCell align='center' sx={{ border: '1px solid black' }}>
-                                                <IconButton
-                                                    color="warning"
-                                                    disabled={!['pending', 'warning'].includes(order.status)}
-                                                    onClick={() => handleCancel(order)}
-                                                >
-                                                    <Tooltip title="Hủy" placement='top'>
-                                                        <CancelOutlined />
-                                                    </Tooltip>
-                                                </IconButton>
-                                            </TableCell>}
-                                            <TableCell align='center' sx={{ border: '1px solid black' }}>
-                                                <IconButton
-                                                    color="success"
-                                                    onClick={async () => {
-                                                        if (open) {
-                                                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                                                            if (result.isConfirmed) {
-                                                                setSelectedOrder(order)
-                                                                setOpen(false)
-                                                                setExpanded(true)
-                                                                setTransfer(true)
-                                                            }
-                                                        } else {
-                                                            setSelectedOrder(order)
-                                                            setOpen(false)
-                                                            setExpanded(true)
-                                                            setTransfer(true)
-                                                            setTimeout(() => {
-                                                                if (formRef.current) {
-                                                                    formRef.current.scrollIntoView({
-                                                                        behavior: 'smooth',
-                                                                        block: 'start'
-                                                                    });
-                                                                }
-                                                            }, 500);
-                                                        }
-                                                    }}
-                                                >
-                                                    <Tooltip title="Copy" placement='top'>
-                                                        <CopyAll />
-                                                    </Tooltip>
-                                                </IconButton>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody> : <Typography>Loading...</Typography>}
+                                {!isLoading ? (
+                                    <TableBody>
+                                        {Object.entries(groupedPage).map(([batchId, list]) => {
+                                            const expanded = expandedBatches[batchId] ?? true;
+                                            return (
+                                                <React.Fragment key={batchId}>
+                                                    {/* HÀNG TIÊU ĐỀ NHÓM */}
+                                                    <TableRow>
+                                                        <TableCell
+                                                            colSpan={colCount}
+                                                            sx={{ backgroundColor: '#f1f5f9', fontWeight: 700, border: '1px solid #cbd5e1' }}
+                                                        >
+                                                            Lô: {batchId === 'no-batch' ? 'Không có lô' : batchId} • {(list as any[]).length} lệnh
+                                                        </TableCell>
+                                                    </TableRow>
+
+                                                    {/* CÁC DÒNG TRONG NHÓM (giữ nguyên code cũ) */}
+                                                    {(list as any[]).map((order: any, index: number) => (
+                                                        <TableRow key={order._id} sx={{
+                                                            cursor: 'pointer', backgroundColor: order.status === 'pending'
+                                                                ? 'white'
+                                                                : order.status === 'completed'
+                                                                    ? '#ffe5e5'
+                                                                    : order.status === 'in_progress'
+                                                                        ? '#e5f7e5'
+                                                                        : order.status === 'warning'
+                                                                            ? '#fff8e1'
+                                                                            : '#ede7f6',
+                                                        }} onClick={() => setSelectedRow(order)}>
+                                                            <TableCell align='center' sx={{
+                                                                position: 'sticky',
+                                                                left: 0,
+                                                                zIndex: 1,
+                                                                width: 50,
+                                                                backgroundColor: order.status === 'pending'
+                                                                    ? 'white'
+                                                                    : order.status === 'completed'
+                                                                        ? '#ffe5e5'
+                                                                        : order.status === 'in_progress'
+                                                                            ? '#e5f7e5'
+                                                                            : order.status === 'warning'
+                                                                                ? '#fff8e1'
+                                                                                : '#ede7f6',
+                                                                border: '1px solid black'
+                                                            }}>
+                                                                <Checkbox onChange={() => handleSelected(order)} checked={selectedOrders.some(o => o._id === order._id)} />
+                                                            </TableCell>
+
+                                                            <TableCell align='center' sx={{
+                                                                position: 'sticky',
+                                                                left: 50,
+                                                                zIndex: 1,
+                                                                width: 50,
+                                                                backgroundColor: order.status === 'pending'
+                                                                    ? 'white'
+                                                                    : order.status === 'completed'
+                                                                        ? '#ffe5e5'
+                                                                        : order.status === 'in_progress'
+                                                                            ? '#e5f7e5'
+                                                                            : order.status === 'warning'
+                                                                                ? '#fff8e1'
+                                                                                : '#ede7f6',
+                                                                border: '1px solid black'
+                                                            }}>
+                                                                {index + 1}
+                                                            </TableCell>
+
+                                                            {visibleColumns.includes('assignedTo') && <TableCell sx={{
+                                                                position: 'sticky',
+                                                                left: 100,
+                                                                zIndex: 1,
+                                                                minWidth: 150,
+                                                                backgroundColor: order.status === 'pending'
+                                                                    ? 'white'
+                                                                    : order.status === 'completed'
+                                                                        ? '#ffe5e5'
+                                                                        : order.status === 'in_progress'
+                                                                            ? '#e5f7e5'
+                                                                            : order.status === 'warning'
+                                                                                ? '#fff8e1'
+                                                                                : '#ede7f6',
+                                                                border: '1px solid black'
+                                                            }}>{order.assignedTo?.fullName}</TableCell>}
+
+                                                            {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                                                {order.assignedTo?.salaryCode}
+                                                            </TableCell>}
+
+                                                            {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                                                {order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''}
+                                                            </TableCell>}
+
+                                                            {visibleColumns.includes('shift') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                                                {order.shift?.name}
+                                                            </TableCell>}
+
+                                                            {visibleColumns.includes('shiftHour') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                                                {order.shiftHour || ''}
+                                                            </TableCell>}
+
+                                                            {visibleColumns.includes('job') && <TableCell sx={{ border: '1px solid black' }}>
+                                                                {order.job?.name || ''}
+                                                            </TableCell>}
+
+                                                            {visibleColumns.includes('content') && <TableCell sx={{
+                                                                whiteSpace: 'nowrap',
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis',
+                                                                maxWidth: 300,
+                                                                border: '1px solid black'
+                                                            }}>
+                                                                {order.workContent || ''}
+                                                            </TableCell>}
+
+                                                            {visibleColumns.includes('device') && <TableCell sx={{ border: '1px solid black' }}>
+                                                                <Typography whiteSpace="pre-line" fontSize={14}>
+                                                                    {order.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')}
+                                                                </Typography>
+                                                            </TableCell>}
+
+                                                            {visibleColumns.includes('createdBy') && <TableCell sx={{ border: '1px solid black' }}>
+                                                                {order.createdBy?.username || ''}
+                                                            </TableCell>}
+
+                                                            {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                                                {order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm') : ''}
+                                                            </TableCell>}
+
+                                                            {visibleColumns.includes('startTime') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                                                {order.startTime ? format(new Date(order.startTime), 'HH:mm:ss') : ''}
+                                                            </TableCell>}
+
+                                                            {visibleColumns.includes('endTime') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                                                {order.endTime ? format(new Date(order.endTime), 'HH:mm:ss') : ''}
+                                                            </TableCell>}
+
+                                                            {visibleColumns.includes('status') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                                                <Chip
+                                                                    sx={{ width: '120px' }}
+                                                                    label={order.status === 'pending' ? 'Chưa nhận lệnh' :
+                                                                        order.status === 'in_progress' ? 'Đã nhận lệnh' :
+                                                                            order.status === 'completed' ? 'Đã hoàn thành' :
+                                                                                order.status === 'warning' ? 'Lỗi' : "Đã hủy"
+                                                                    }
+                                                                    color={
+                                                                        order.status === 'pending' ? 'default' :
+                                                                            order.status === 'completed' ? 'error' :
+                                                                                order.status === 'in_progress' ? 'success' :
+                                                                                    order.status === 'warning' ? 'warning' : 'secondary'}
+                                                                />
+                                                            </TableCell>}
+
+                                                            {visibleColumns.includes('note') && <TableCell sx={{ border: '1px solid black' }}>
+                                                                {order?.temporaryError || ''}
+                                                            </TableCell>}
+
+                                                            {visibleColumns.includes('edit') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                                                <IconButton
+                                                                    color="primary"
+                                                                    disabled={!['pending', 'warning'].includes(order.status)}
+                                                                    onClick={async () => {
+                                                                        if (open) {
+                                                                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                                                                            if (result.isConfirmed) {
+                                                                                handleOpen(order);
+                                                                            }
+                                                                        } else {
+                                                                            handleOpen(order);
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <Tooltip title="Sửa" placement='top'>
+                                                                        <EditIcon />
+                                                                    </Tooltip>
+                                                                </IconButton>
+                                                            </TableCell>}
+
+                                                            {visibleColumns.includes('cancel') && <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                                                <IconButton
+                                                                    color="warning"
+                                                                    disabled={!['pending', 'warning'].includes(order.status)}
+                                                                    onClick={() => handleCancel(order)}
+                                                                >
+                                                                    <Tooltip title="Hủy" placement='top'>
+                                                                        <CancelOutlined />
+                                                                    </Tooltip>
+                                                                </IconButton>
+                                                            </TableCell>}
+
+                                                            <TableCell align='center' sx={{ border: '1px solid black' }}>
+                                                                <IconButton
+                                                                    color="success"
+                                                                    onClick={async () => {
+                                                                        if (open) {
+                                                                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                                                                            if (result.isConfirmed) {
+                                                                                setSelectedOrder(order)
+                                                                                setOpen(false)
+                                                                                setExpanded(true)
+                                                                                setTransfer(true)
+                                                                            }
+                                                                        } else {
+                                                                            setSelectedOrder(order)
+                                                                            setOpen(false)
+                                                                            setExpanded(true)
+                                                                            setTransfer(true)
+                                                                            setTimeout(() => {
+                                                                                if (formRef.current) {
+                                                                                    formRef.current.scrollIntoView({
+                                                                                        behavior: 'smooth',
+                                                                                        block: 'start'
+                                                                                    });
+                                                                                }
+                                                                            }, 500);
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <Tooltip title="Copy" placement='top'>
+                                                                        <CopyAll />
+                                                                    </Tooltip>
+                                                                </IconButton>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </React.Fragment>
+                                            )
+                                        })}
+                                    </TableBody>
+                                ) : (
+                                    <Typography>Loading...</Typography>
+                                )}
+
                             </Table>
                         </TableContainer>
                         <TablePagination
