@@ -14,13 +14,13 @@ import {
     styled,
     TextField,
 } from '@mui/material';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/api.config';
 import { Order, Device, Job, Location, Material, DeviceType, Shift } from '../../types';
 import { DatePicker, DesktopTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
-import { showSuccessAlert } from '../../components/Alert';
+import { showErrorAlert, showSuccessAlert } from '../../components/Alert';
 
 
 const StyledPopper = styled(Popper)({
@@ -56,6 +56,36 @@ const DispatcherOrderFormEdit: React.FC<OrderFormProps> = ({
         queryKey: ['users'],
         queryFn: () => api.get('/users?type=order').then(res => res.data.data),
     });
+    const [initialOrderIds, setInitialOrderIds] = useState<string[]>([]);
+    useEffect(() => {
+        setInitialOrderIds(initialValues.map(item => item._id).filter(Boolean));
+    }, [initialValues]);
+
+    const createMutation = useMutation({
+        mutationFn: (newOrder: Partial<Order>) =>
+            api.post('/orders', newOrder).then(res => res.data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
+            // showSuccessAlert('Cập nhật lệnh sản xuất thành công');
+            onCancel();
+        },
+        onError: (error: any) => {
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
+        }
+    });
+    const updateMutation = useMutation({
+        mutationFn: (updatedOrder: Partial<Order>) =>
+            api.put(`/orders/${updatedOrder._id}`, updatedOrder).then(res => res.data),
+    });
+    const deleteMutation = useMutation({
+        mutationFn: (ids: string[]) => api.delete(`/orders`, { data: { ids } }).then(res => res.data.message),
+        onSuccess: (message) => {
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
+        },
+        onError: (error: any) => {
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
+        }
+    });
 
     const formik = useFormik({
         initialValues: {
@@ -75,24 +105,47 @@ const DispatcherOrderFormEdit: React.FC<OrderFormProps> = ({
         validationSchema,
         enableReinitialize: true, // Để cập nhật lại giá trị khi initialValues thay đổi
         onSubmit: async (values) => {
+            console.log(values.usersAndDepartments)
+            const currentIds = values.usersAndDepartments
+                .map(item => item._id)
+                .filter(Boolean);
+            const idsToDelete = initialOrderIds.filter(id => !currentIds.includes(id));
 
-            const orders: Partial<Order>[] = values.usersAndDepartments.map((item) => (
-                {
-                    _id: item._id,
+            const promises: Promise<any>[] = [];
+
+            // 1. Logic tạo mới và cập nhật
+            values.usersAndDepartments.forEach((item) => {
+                const orderData: Partial<Order> = {
                     assignedTo: item.assignedTo,
                     workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
                     workContent: values.workContent,
                     status: "pending",
-                    temporaryError: '',
+                };
+
+                if (item._id) {
+                    promises.push(updateMutation.mutateAsync({ ...orderData, _id: item._id }));
+                } else {
+                    promises.push(createMutation.mutateAsync({ ...orderData, batchId: initialValues[0]?.batchId }));
                 }
-            ))
-            await Promise.all(orders.map(order => onSubmit(order)));
-            queryClient.invalidateQueries({ queryKey: ['orders'] });
-            showSuccessAlert('Cập nhật lệnh sản xuất thành công');
+            });
+
+            // 2. Logic xóa
+            if (idsToDelete.length > 0) {
+                promises.push(deleteMutation.mutateAsync(idsToDelete));
+            }
+
+            try {
+                await Promise.all(promises);
+                queryClient.invalidateQueries({ queryKey: ['orders'] });
+                showSuccessAlert('Cập nhật lệnh sản xuất thành công');
+                onCancel();
+            } catch (error: any) {
+                showErrorAlert(error.response?.data?.message || error.message || 'Lỗi khi cập nhật lệnh');
+            }
         },
     });
 
-
+    console.log(formik.values)
     return (
         <FormikProvider value={formik}>
             <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
@@ -141,9 +194,9 @@ const DispatcherOrderFormEdit: React.FC<OrderFormProps> = ({
                                     </Grid>}
                                 </Grid>
                             ))}
-                            {/* <Button variant="outlined" sx={{ mb: 2 }} onClick={() => push({ assignedTo: '', department: "" })}>
+                            <Button variant="outlined" sx={{ mb: 2 }} onClick={() => push({ assignedTo: '', department: "" })}>
                                 + Thêm
-                            </Button> */}
+                            </Button>
                         </>
                     )}
                 </FieldArray>

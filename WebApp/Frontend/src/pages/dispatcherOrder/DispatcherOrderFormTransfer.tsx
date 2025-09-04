@@ -50,7 +50,7 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
     initialValues,
     onCancel,
 }) => {
-    const [user]=useAtom(userAtom)
+    const [user] = useAtom(userAtom)
     const queryClient = useQueryClient();
     const { data: users = [] } = useQuery({
         queryKey: ['users'],
@@ -62,7 +62,7 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
             api.post('/orders', newOrder).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
-            showSuccessAlert('Cập nhật lệnh sản xuất thành công');
+            // showSuccessAlert('Cập nhật lệnh sản xuất thành công');
             onCancel();
         },
         onError: (error: any) => {
@@ -179,9 +179,9 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
                                     </Grid>}
                                 </Grid>
                             ))}
-                            {/* <Button variant="outlined" sx={{ mb: 2 }} onClick={() => push({ assignedTo: '', department: "" })}>
-                                   + Thêm
-                               </Button> */}
+                            <Button variant="outlined" sx={{ mb: 2 }} onClick={() => push({ assignedTo: '', department: "" })}>
+                                + Thêm
+                            </Button>
                         </>
                     )}
                 </FieldArray>
