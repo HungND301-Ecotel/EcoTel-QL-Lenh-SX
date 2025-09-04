@@ -96,6 +96,7 @@ export interface Order {
     assistants?: string[];
     status: 'pending' | 'in_progress' | 'completed' | 'warning' | 'cancel';
     previous_order_id?: string,
+    batchId?: string | null;
     note?: string;
     safetyMeasure?: string;
     safetyMeasureSpecific?: string;

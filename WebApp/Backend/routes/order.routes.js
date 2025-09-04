@@ -56,7 +56,14 @@ router.get('/', verifyToken, async (req, res, next) => {
             query.department = new mongoose.Types.ObjectId(user?.department?._id)
 
             orders = await Order.find(query)
-                .populate('assignedTo', 'username fullName salaryCode department')
+                .populate({
+                    path: 'assignedTo',
+                    select: 'username fullName salaryCode department',
+                    populate: {
+                        path: 'department',
+                        select: 'code'
+                    }
+                })
                 .populate('job', 'name type content')
                 .populate('devicesToProduce.deviceType')
                 .populate('device', 'code')
@@ -99,7 +106,14 @@ router.get('/', verifyToken, async (req, res, next) => {
                 query.department = new mongoose.Types.ObjectId(req.query.department);
             }
             orders = await Order.find(query)
-                .populate('assignedTo', 'username fullName salaryCode department')
+                .populate({
+                    path: 'assignedTo',
+                    select: 'username fullName salaryCode department',
+                    populate: {
+                        path: 'department',
+                        select: 'code'
+                    }
+                })
                 .populate('job', 'name type content')
                 .populate('devicesToProduce.deviceType')
                 .populate('device', 'code')
@@ -188,52 +202,53 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
             safetyMeasure,
             safetyMeasureSpecific,
             department,
+            batchId,
             previous_order_id
         } = req.body;
 
 
         const user = await User.findById(assignedTo)
-        if (devicesToProduce?.length > 0) {
-            if (!user) {
-                req.logger.warn(`✅ Không tìm thấy người dùng công với ID: ${assignedTo}`);
-                return res.status(404).json({ status: 'error', message: 'Không tìm thấy người dùng' })
-            }
-            for (const item of devicesToProduce) {
-                const { deviceType, quantity } = item;
+        // if (devicesToProduce?.length > 0) {
+        //     if (!user) {
+        //         req.logger.warn(`✅ Không tìm thấy người dùng công với ID: ${assignedTo}`);
+        //         return res.status(404).json({ status: 'error', message: 'Không tìm thấy người dùng' })
+        //     }
+        //     for (const item of devicesToProduce) {
+        //         const { deviceType, quantity } = item;
 
-                try {
-                    const type = await DeviceType.findById(deviceType);
+        //         try {
+        //             const type = await DeviceType.findById(deviceType);
 
-                    const devices = await Device.find({ department: user.department, category: deviceType });
+        //             const devices = await Device.find({ department: user.department, category: deviceType });
 
-                    if (!devices || devices.length === 0) {
-                        req.logger.warn(`    - Cảnh báo: Loại phương tiện ${type?.name} không tồn tại trong đơn vị.`);
-                        return res.status(400).send({
-                            status: 'error',
-                            message: `Loại phương tiện ${type?.name} không tồn tại trong đơn vị`
-                        });
-                    }
+        //             if (!devices || devices.length === 0) {
+        //                 req.logger.warn(`    - Cảnh báo: Loại phương tiện ${type?.name} không tồn tại trong đơn vị.`);
+        //                 return res.status(400).send({
+        //                     status: 'error',
+        //                     message: `Loại phương tiện ${type?.name} không tồn tại trong đơn vị`
+        //                 });
+        //             }
 
-                    const deviceActive = devices.filter(d => d.status === "available");
+        //             const deviceActive = devices.filter(d => d.status === "available");
 
-                    if (quantity > devices.length) {
-                        req.logger.warn(`    - Cảnh báo: Số lượng yêu cầu (${quantity}) vượt quá khả dụng (${deviceActive.length}) cho ${type?.name}.`);
-                        return res.status(400).send({
-                            status: 'error',
-                            message: `Số lượng yêu cầu (${quantity}) vượt quá số lượng phương tiện khả dụng (${deviceActive.length}) cho loại ${type?.name}`
-                        });
-                    }
+        //             if (quantity > devices.length) {
+        //                 req.logger.warn(`    - Cảnh báo: Số lượng yêu cầu (${quantity}) vượt quá khả dụng (${deviceActive.length}) cho ${type?.name}.`);
+        //                 return res.status(400).send({
+        //                     status: 'error',
+        //                     message: `Số lượng yêu cầu (${quantity}) vượt quá số lượng phương tiện khả dụng (${deviceActive.length}) cho loại ${type?.name}`
+        //                 });
+        //             }
 
-                    req.logger.info(`    - Kiểm tra thành công: Đủ số lượng cho ${type?.name}.`);
-                } catch (err) {
-                    req.logger.error("❌ Lỗi khi kiểm tra loại phương tiện.", err);
-                    return res.status(500).send({
-                        status: 'error',
-                        message: `Lỗi khi kiểm tra loại phương tiện: ${err.message}`
-                    });
-                }
-            }
-        }
+        //             req.logger.info(`    - Kiểm tra thành công: Đủ số lượng cho ${type?.name}.`);
+        //         } catch (err) {
+        //             req.logger.error("❌ Lỗi khi kiểm tra loại phương tiện.", err);
+        //             return res.status(500).send({
+        //                 status: 'error',
+        //                 message: `Lỗi khi kiểm tra loại phương tiện: ${err.message}`
+        //             });
+        //         }
+        //     }
+        // }
 
         // Generate order number
         const date = new Date();
@@ -259,6 +274,7 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
             previous_order_id,
             excavator, location, material, workContent, note,
             department: user?.department,
+            batchId,
             createdBy: req.user._id
         });
         req.logger.info(`✅ Tạo lệnh thành công với ID: ${order._id}`);

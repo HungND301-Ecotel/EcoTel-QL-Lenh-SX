@@ -22,25 +22,18 @@ router.get('/', verifyToken, async (req, res) => {
 
         if (req.query.department) {
             const departmentId = req.query.department.toString();
-            const userDeptId = user?.department?._id?.toString();
-
-            if (user?.role === "dispatcher") {
-                if (departmentId === userDeptId) {
-                    // Nếu chọn department của dispatcher -> lấy tất cả user của department đó
-                    query.department = departmentId;
-                } else {
-                    // Nếu chọn department khác -> chỉ lấy manager của department đó
-                    query.department = departmentId;
-                    query.role = "manager";
-                }
-            } else {
-                // Các role khác -> lọc thẳng theo department được chọn
-                query.department = departmentId;
-            }
+            query.department = departmentId;
         }
         else if (user?.role === "dispatcher") {
-            // Không chọn department -> dispatcher chỉ thấy user trong department của mình
-            query.department = user?.department?._id;
+            if (req.query.type === "order") {
+                const userDeptId = user?.department?._id;
+                query.$or = [
+                    { department: userDeptId }, // All users in their own department
+                    { role: "manager" } // All managers from other departments
+                ];
+            } else {
+                query.department = user?.department?._id;
+            }
         }
 
 

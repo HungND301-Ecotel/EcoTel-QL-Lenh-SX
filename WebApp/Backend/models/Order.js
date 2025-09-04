@@ -9,7 +9,6 @@ const orderSchema = new mongoose.Schema({
     job: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Job',
-        required: [true, 'Job is required']
     },
     workingDate: {
         type: Date,
@@ -99,6 +98,7 @@ const orderSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Department',
     },
+    batchId: { type: String, index: true, default: null },
     updatedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
