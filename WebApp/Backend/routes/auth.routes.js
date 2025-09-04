@@ -49,7 +49,7 @@ router.post('/register', async (req, res) => {
         // Check if user already exists
         let user = await User.findOne({ username });
         if (user) {
-            req.logger.error("❌ Tên đăng nhập đã tồn tại", username);
+            req.logger.error(`❌ Tên đăng nhập đã tồn tại ${username}`);
             return res.status(400).json({
                 status: 'error',
                 message: 'Tên đăng nhập đã tồn tại'
@@ -59,7 +59,7 @@ router.post('/register', async (req, res) => {
         if (phone) {
             let exitsPhone = await User.findOne({ phone });
             if (exitsPhone) {
-                req.logger.error("❌ Số điện thoại đã tồn tại", phone);
+                req.logger.error(`❌ Số điện thoại đã tồn tại ${phone}`);
                 return res.status(400).json({
                     status: 'error',
                     message: 'Số điện thoại đã tồn tại'
@@ -69,7 +69,7 @@ router.post('/register', async (req, res) => {
         if (email) {
             let exitsEmail = await User.findOne({ email });
             if (exitsEmail) {
-                req.logger.error("❌ Email đã tồn tại", email);
+                req.logger.error(`❌ Email đã tồn tại ${email}`);
                 return res.status(400).json({
                     status: 'error',
                     message: 'Email đã tồn tại'
@@ -79,7 +79,7 @@ router.post('/register', async (req, res) => {
         if (salaryCode) {
             let exitsSalaryCode = await User.findOne({ salaryCode });
             if (exitsSalaryCode) {
-                req.logger.error("❌ Mã thẻ lương đã tồn tại", salaryCode);
+                req.logger.error(`❌ Mã thẻ lương đã tồn tại ${salaryCode}`);
                 return res.status(400).json({
                     status: 'error',
                     message: 'Mã thẻ lương đã tồn tại'

@@ -17,17 +17,16 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    passwordChangedAt: Date,
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
 });
 
-// userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
-//     if (this.passwordChangedAt) {
-//         const changedTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000, 10);
-//         return JWTTimestamp < changedTimestamp;
-//     }
-//     return false;
-// };
+userSchema.pre('save', function (next) {
+    if (!this.isModified('password') || this.isNew) return next();
+    this.passwordChangedAt = Date.now();
+    next();
+});
 
 userSchema.set('toObject', { virtuals: true });
 userSchema.set('toJSON', { virtuals: true });

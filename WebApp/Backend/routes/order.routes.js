@@ -433,8 +433,9 @@ router.put('/:id', verifyToken, async (req, res, next) => {
 });
 router.delete('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
+        const user=req.user
         const { ids } = req.body;
-        req.logger.info(`🔍 Dữ liệu yêu cầu: ids = ${JSON.stringify(ids)}`);
+        req.logger.info(`🔍 ${user?.username} bắt đầu xóa lệnh`);
 
         if (!ids || !Array.isArray(ids) || ids.length === 0) {
             req.logger.warn("⚠️ Lỗi 400 - Vui lòng chọn bản ghi cần xóa.");
@@ -483,7 +484,7 @@ router.delete('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), as
             status: 'success',
             message: `Đã xóa ${result.deletedCount} bản ghi`
         });
-        req.logger.info("✨ Kết thúc xử lý request thành công.");
+        req.logger.info(`✨ ${user?.username} Kết thúc xử lý xóa  lệnh thành công. ${result.deletedCount}`);
 
     } catch (err) {
         req.logger.error("❌ Lỗi khi xóa nhiều bản ghi", err);
@@ -493,6 +494,8 @@ router.delete('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), as
 
 router.delete('/:id', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
+        const user=req.user
+        req.logger.info(`✅ ${user?.username} bắt đầu xóa lệnh`);
 
         const order = await Order.findByIdAndDelete(req.params.id).populate('shiftReport');
 
@@ -513,7 +516,7 @@ router.delete('/:id', verifyToken, restrictTo('admin', 'dispatcher', 'manager'),
             recipient: order.assignedTo,
             sender: req.userId
         });
-        req.logger.info("✅ Thông báo đã được gửi.");
+        req.logger.info(`✅ ${user?.username} đã xóa 1 lệnh.`);
 
         res.status(200).send({ status: 'success', message: 'Xóa thành công' });
 

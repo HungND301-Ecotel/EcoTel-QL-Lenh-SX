@@ -20,14 +20,17 @@ const verifyToken = async (req, res, next) => {
         // 3) Check if user still exists
         const currentUser = await User.findById(decoded.userId).populate('department').populate('position')
         if (!currentUser) {
+            req.logger.warn(`⚠️ Không tìm thấy user`);
             return res.status(401).send({ status: 'error', message: 'The user belonging to this token no longer exists.' });
         }
 
-        // // 4) Check if user changed password after the token was issued
-        // if (currentUser.changedPasswordAfter(decoded.iat)) {
-        //     return res.status(401).send({ status: 'error', message: 'User recently changed password! Please log in again.' });
-        // }
-
+        if (currentUser.passwordChangedAt) {
+            const changedTimestamp = Math.floor(currentUser.passwordChangedAt.getTime() / 1000);
+            if (decoded.iat < changedTimestamp) {
+                req.logger.warn(`⚠️ Vui lòng login lại ${currentUser?.username}`);
+                return res.status(401).send({ status: 'error', message: 'Mật khẩu đã thay đổi. Vui lòng đăng nhập lại.' });
+            }
+        }
         // Grant access to protected route
         req.user = currentUser;
         req.userId = currentUser._id;

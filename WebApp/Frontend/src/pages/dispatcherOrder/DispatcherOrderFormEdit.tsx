@@ -56,6 +56,10 @@ const DispatcherOrderFormEdit: React.FC<OrderFormProps> = ({
         queryKey: ['users'],
         queryFn: () => api.get('/users?type=order').then(res => res.data.data),
     });
+    const { data: jobs = [] } = useQuery({
+        queryKey: ['jobs'],
+        queryFn: () => api.get('/jobs').then(res => res.data.data),
+    });
     const [initialOrderIds, setInitialOrderIds] = useState<string[]>([]);
     useEffect(() => {
         setInitialOrderIds(initialValues.map(item => item._id).filter(Boolean));
@@ -117,6 +121,7 @@ const DispatcherOrderFormEdit: React.FC<OrderFormProps> = ({
             values.usersAndDepartments.forEach((item) => {
                 const orderData: Partial<Order> = {
                     assignedTo: item.assignedTo,
+                    job:jobs.find((i:Job)=>i.name==="Điều hành sản xuất")?._id,
                     workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
                     workContent: values.workContent,
                     status: "pending",

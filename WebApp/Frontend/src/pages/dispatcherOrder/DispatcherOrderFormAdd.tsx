@@ -65,7 +65,10 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
         queryKey: ['users'],
         queryFn: () => api.get('/users?type=order').then(res => res.data.data),
     });
-
+    const { data: jobs = [] } = useQuery({
+        queryKey: ['jobs'],
+        queryFn: () => api.get('/jobs').then(res => res.data.data),
+    });
 
     const formik = useFormik({
         initialValues: {
@@ -83,6 +86,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
         onSubmit: async (values) => {
             const orders: Partial<Order>[] = values.usersAndDepartments.map(item => ({
                 assignedTo: item.assignedTo,
+                job:jobs.find((i:Job)=>i.name==="Điều hành sản xuất")?._id,
                 workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
                 workContent: values.workContent,
                 note: values.note,
