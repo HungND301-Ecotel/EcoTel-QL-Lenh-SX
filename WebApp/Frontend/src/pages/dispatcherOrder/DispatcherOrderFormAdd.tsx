@@ -26,6 +26,8 @@ import utc from 'dayjs/plugin/utc';
 import { showConfirmAlert, showSuccessAlert } from '../../components/Alert';
 import { ContentCopy } from '@mui/icons-material';
 import { v4 as uuidv4 } from 'uuid'
+import { useAtom } from 'jotai';
+import { userAtom } from '../../atoms/userAtoms';
 dayjs.extend(utc);
 
 const StyledPopper = styled(Popper)({
@@ -36,7 +38,7 @@ const StyledPopper = styled(Popper)({
 });
 
 const validationSchema = yup.object({
-    usersAndDepartment: yup.array().of(
+    usersAndDepartments: yup.array().of(
         yup.object().shape({
             assignedTo: yup.string().required('Vui lòng chọn thẻ lương'),
             department: yup.string(),
@@ -55,6 +57,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
     onSubmit,
     onCancel,
 }) => {
+    const [user] = useAtom(userAtom)
     const queryClient = useQueryClient();
 
 
@@ -78,13 +81,12 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
         },
         validationSchema,
         onSubmit: async (values) => {
-            const batchId = (window.crypto?.randomUUID?.() || uuidv4?.() || Math.random().toString(36).slice(2));
             const orders: Partial<Order>[] = values.usersAndDepartments.map(item => ({
                 assignedTo: item.assignedTo,
                 workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
                 workContent: values.workContent,
                 note: values.note,
-                batchId
+                batchId: `${dayjs(new Date()).format('YYYY-MM-DD HH:mm')}_${user?.fullName}`
             }));
             const duplicates = await Promise.all(
                 orders.map(order =>

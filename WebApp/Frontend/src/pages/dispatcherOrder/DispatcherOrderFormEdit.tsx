@@ -14,12 +14,13 @@ import {
     styled,
     TextField,
 } from '@mui/material';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/api.config';
 import { Order, Device, Job, Location, Material, DeviceType, Shift } from '../../types';
 import { DatePicker, DesktopTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
+import { showSuccessAlert } from '../../components/Alert';
 
 
 const StyledPopper = styled(Popper)({
@@ -30,7 +31,7 @@ const StyledPopper = styled(Popper)({
 });
 
 const validationSchema = yup.object({
-    usersAndDepartment: yup.array().of(
+    usersAndDepartments: yup.array().of(
         yup.object().shape({
             assignedTo: yup.string().required('Vui lòng chọn thẻ lương'),
             department: yup.string(),
@@ -40,7 +41,7 @@ const validationSchema = yup.object({
     workContent: yup.string().required('Vui lòng nhập nội dung'),
 });
 interface OrderFormProps {
-    initialValues: any;
+    initialValues: any[];
     onSubmit: (values: Partial<Order>) => void;
     onCancel: () => void;
 }
@@ -50,49 +51,44 @@ const DispatcherOrderFormEdit: React.FC<OrderFormProps> = ({
     onSubmit,
     onCancel,
 }) => {
-
+    const queryClient = useQueryClient();
     const { data: users = [] } = useQuery({
         queryKey: ['users'],
         queryFn: () => api.get('/users?type=order').then(res => res.data.data),
     });
 
-
     const formik = useFormik({
         initialValues: {
-            assignedTo: typeof initialValues.assignedTo === 'object'
-                ? initialValues.assignedTo._id
-                : initialValues.assignedTo || '',
-            devicesToProduce: Array.isArray(initialValues.devicesToProduce)
-                ? initialValues.devicesToProduce.map((d: any) => ({
-                    deviceType: d?.deviceType?._id || '',
-                    quantity: d?.quantity || 0
-                }))
-                : [],
-            usersAndDepartments: [
+            usersAndDepartments: (initialValues || []).map((item) => (
                 {
-                    assignedTo: "",
-                    department: "",
-                },
-            ],
-            workingDate: initialValues.workingDate
-                ? dayjs(initialValues.workingDate).startOf('day').toDate()
+                    _id: item?._id,
+                    assignedTo: item?.assignedTo?._id,
+                    department: item?.assignedTo?.department?.code,
+                }
+            )),
+            workingDate: initialValues[0].workingDate
+                ? dayjs(initialValues[0].workingDate).startOf('day').toDate()
                 : '',
-            workContent: initialValues.workContent || '',
-            status: initialValues.status,
+            workContent: initialValues[0].workContent || '',
+            status: initialValues[0].status,
         },
         validationSchema,
         enableReinitialize: true, // Để cập nhật lại giá trị khi initialValues thay đổi
-        onSubmit: (values) => {
+        onSubmit: async (values) => {
 
-            const order: Partial<Order> = {
-                assignedTo: values.assignedTo,
-                devicesToProduce: values.devicesToProduce.filter((i: any) => i.deviceType),
-                workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
-                workContent: values.workContent,
-                status: "pending",
-                temporaryError: '',
-            };
-            onSubmit(order);
+            const orders: Partial<Order>[] = values.usersAndDepartments.map((item) => (
+                {
+                    _id: item._id,
+                    assignedTo: item.assignedTo,
+                    workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
+                    workContent: values.workContent,
+                    status: "pending",
+                    temporaryError: '',
+                }
+            ))
+            await Promise.all(orders.map(order => onSubmit(order)));
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
+            showSuccessAlert('Cập nhật lệnh sản xuất thành công');
         },
     });
 
@@ -145,9 +141,9 @@ const DispatcherOrderFormEdit: React.FC<OrderFormProps> = ({
                                     </Grid>}
                                 </Grid>
                             ))}
-                            <Button variant="outlined" sx={{ mb: 2 }} onClick={() => push({ assignedTo: '', department: "" })}>
+                            {/* <Button variant="outlined" sx={{ mb: 2 }} onClick={() => push({ assignedTo: '', department: "" })}>
                                 + Thêm
-                            </Button>
+                            </Button> */}
                         </>
                     )}
                 </FieldArray>
@@ -199,7 +195,7 @@ const DispatcherOrderFormEdit: React.FC<OrderFormProps> = ({
                         Hủy
                     </Button>
                     <Button type="submit" variant="contained">
-                        Thêm mới
+                        Cập nhật
                     </Button>
                 </Box>
             </Box>

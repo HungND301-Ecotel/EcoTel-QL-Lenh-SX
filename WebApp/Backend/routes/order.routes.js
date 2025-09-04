@@ -56,7 +56,14 @@ router.get('/', verifyToken, async (req, res, next) => {
             query.department = new mongoose.Types.ObjectId(user?.department?._id)
 
             orders = await Order.find(query)
-                .populate('assignedTo', 'username fullName salaryCode department')
+                .populate({
+                    path: 'assignedTo',
+                    select: 'username fullName salaryCode department',
+                    populate: {
+                        path: 'department',
+                        select: 'code'
+                    }
+                })
                 .populate('job', 'name type content')
                 .populate('devicesToProduce.deviceType')
                 .populate('device', 'code')
@@ -99,7 +106,14 @@ router.get('/', verifyToken, async (req, res, next) => {
                 query.department = new mongoose.Types.ObjectId(req.query.department);
             }
             orders = await Order.find(query)
-                .populate('assignedTo', 'username fullName salaryCode department')
+                .populate({
+                    path: 'assignedTo',
+                    select: 'username fullName salaryCode department',
+                    populate: {
+                        path: 'department',
+                        select: 'code'
+                    }
+                })
                 .populate('job', 'name type content')
                 .populate('devicesToProduce.deviceType')
                 .populate('device', 'code')
