@@ -346,10 +346,10 @@ const ManagerDashboard: React.FC = () => {
 
                                                 return (
                                                     <React.Fragment key={typeIndex}>
-                                                        <TableCell align='center' sx={{}}>{s.available || 0}</TableCell>
-                                                        <TableCell align='center'>{s.in_use || 0}</TableCell>
-                                                        <TableCell align='center'>{s.maintenance || 0}</TableCell>
-                                                        <TableCell align='center'>{s.retired || 0}</TableCell>
+                                                        <TableCell align='center' sx={{ backgroundColor: (s.available || 0) > 0 ? 'green' : '', color: (s.available || 0) > 0 ? 'white' : '' }}>{s.available || 0}</TableCell>
+                                                        <TableCell align='center' sx={{ backgroundColor: (s.in_use || 0) > 0 ? 'red' : '', color: (s.in_use || 0) > 0 ? 'white' : '' }}>{s.in_use || 0}</TableCell>
+                                                        <TableCell align='center' sx={{ backgroundColor: (s.maintenance || 0) > 0 ? 'yellow' : '' }}>{s.maintenance || 0}</TableCell>
+                                                        <TableCell align='center' sx={{ backgroundColor: (s.retired || 0) > 0 ? 'black' : '', color: (s.retired || 0) > 0 ? 'white' : '' }}>{s.retired || 0}</TableCell>
                                                     </React.Fragment>
                                                 );
                                             })}
