@@ -411,6 +411,56 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                             ), // Điền sau nếu có
                           ],
                         ),
+                      if (data?.material?.isNotEmpty ==
+                          true)
+                        const SizedBox(height: 10),
+                      if (data?.material?.isNotEmpty ==
+                          true)
+                        Row(
+                          children: [
+                            Text(
+                              'Vật liệu: ',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                (data!.material ?? [])
+                                    .map((e) => e.name)
+                                    .join(', '),
+                                softWrap: true,
+                                overflow:
+                                    TextOverflow.visible,
+                              ),
+                            ), // Điền sau nếu có
+                          ],
+                        ),
+                      if (data?.location?.isNotEmpty ==
+                          true)
+                        const SizedBox(height: 10),
+                      if (data?.location?.isNotEmpty ==
+                          true)
+                        Row(
+                          children: [
+                            Text(
+                              'Điểm đổ: ',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                (data!.location ?? [])
+                                    .map((e) => e.name)
+                                    .join(', '),
+                                softWrap: true,
+                                overflow:
+                                    TextOverflow.visible,
+                              ),
+                            ), // Điền sau nếu có
+                          ],
+                        ),
                       const SizedBox(height: 10),
                       const Text(
                         'Nội dung công việc',

@@ -50,6 +50,24 @@ class AuthService {
     );
   }
 
+  Future<Map<String, dynamic>> saveToken(
+    String token,
+  ) async {
+    return await _apiService.post(
+      '/users/save-token',
+      { "token": token },
+    );
+  }
+
+  Future<Map<String, dynamic>> removeToken(
+    String token,
+  ) async {
+    return await _apiService.post(
+      '/users/remove-token',
+      { "token": token },
+    );
+  }
+
   Future<Map<String, dynamic>> deleteUser() async {
     return await _apiService.delete('/users/me');
   }

@@ -36,7 +36,6 @@ export default function ShiftReport({
         queryKey: ['reports', initialValues],
         queryFn: () => api.get(`/reports/getByOrder/${initialValues._id}`).then((res) => res.data.data),
     });
-    console.log(reports)
     const { data: shiftReportHistories = [] } = useQuery({
         queryKey: ['shiftReportHistories', initialValues?.shiftReport?._id],
         queryFn: () => api.get(`/reporthistories/${initialValues.shiftReport._id}`).then((res) => res.data.data),

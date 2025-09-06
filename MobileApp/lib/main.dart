@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -11,10 +13,21 @@ import 'package:soft/screens/main.dart';
 import 'package:soft/screens/signin/signin.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:soft/services/notification_service.dart';
 import 'package:soft/services/socket_service.dart';
+import 'package:soft/services/user_service.dart';
 
 final GlobalKey<NavigatorState> navigatorKey =
     GlobalKey<NavigatorState>();
+
+Future<void> _firebaseMessagingBackgroundHandler(
+  RemoteMessage message,
+) async {
+  await Firebase.initializeApp();
+  print(
+    "Handling a background message: ${message.messageId}",
+  );
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +37,18 @@ Future<void> main() async {
     await dotenv.load(fileName: "assets/.env");
   }
   print('api: ${dotenv.env['BASE_API']}');
+
+  await Firebase.initializeApp();
+
+  // Đăng ký background handler
+  FirebaseMessaging.onBackgroundMessage(
+    _firebaseMessagingBackgroundHandler,
+  );
+  // Init Notification Service
+  await NotificationService.init();
+  // Lắng nghe FCM
+  NotificationService.listenFCM();
+
   runApp(
     MultiProvider(
       providers: [
@@ -65,6 +90,24 @@ class _MyAppState extends State<MyApp> {
         user,
         token,
       ); // phục hồi lại trạng thái
+
+      String? fcmToken =
+          await NotificationService.getToken();
+      if (fcmToken != null) {
+        await AuthService().saveToken(fcmToken);
+        userProvider.saveTokenLocal(fcmToken);
+      }
+
+      // lắng nghe refresh
+      NotificationService.listenTokenRefresh((
+        newToken,
+      ) async {
+        if (userProvider.user != null) {
+          await AuthService().saveToken(newToken);
+          userProvider.saveTokenLocal(newToken);
+        }
+      });
+
       final socketService = SocketService();
       socketService.connect(user.id);
       socketService.notificationNotifier.addListener(() {

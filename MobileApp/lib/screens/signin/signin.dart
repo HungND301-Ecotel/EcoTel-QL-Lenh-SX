@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:soft/models/user_model.dart';
 import 'package:soft/providers/user_provider.dart';
 import 'package:soft/routes/app_routes.dart';
+import 'package:soft/services/notification_service.dart';
 import 'package:soft/services/user_service.dart';
 import 'package:provider/provider.dart';
 
@@ -82,11 +83,16 @@ class _SignInState extends State<SignIn> {
         final user = result['data']['user'];
         final token = result['data']['token'];
         final userModel = UserModel.fromJson(user);
+        String? fcmToken =
+            await NotificationService.getToken();
 
         Provider.of<UserProvider>(
           context,
           listen: false,
         ).setUser(userModel, token);
+        if (fcmToken != null) {
+          await AuthService().saveToken(fcmToken);
+        }
 
         Navigator.pushNamedAndRemoveUntil(
           context,

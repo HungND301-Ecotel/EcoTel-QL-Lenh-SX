@@ -266,6 +266,56 @@ class _TaskAssignmentDetail
                             ), // Điền sau nếu có
                           ],
                         ),
+                      if (widget.data.material?.isNotEmpty ==
+                          true)
+                        const SizedBox(height: 10),
+                      if (widget.data.material?.isNotEmpty ==
+                          true)
+                        Row(
+                          children: [
+                            Text(
+                              'Vật liệu: ',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                (widget.data.material ?? [])
+                                    .map((e) => e.name)
+                                    .join(', '),
+                                softWrap: true,
+                                overflow:
+                                    TextOverflow.visible,
+                              ),
+                            ), // Điền sau nếu có
+                          ],
+                        ),
+                      if (widget.data.location?.isNotEmpty ==
+                          true)
+                        const SizedBox(height: 10),
+                      if (widget.data.location?.isNotEmpty ==
+                          true)
+                        Row(
+                          children: [
+                            Text(
+                              'Điểm đổ: ',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                (widget.data.location ?? [])
+                                    .map((e) => e.name)
+                                    .join(', '),
+                                softWrap: true,
+                                overflow:
+                                    TextOverflow.visible,
+                              ),
+                            ), // Điền sau nếu có
+                          ],
+                        ),
                       const SizedBox(height: 10),
                       Row(
                         children: [
