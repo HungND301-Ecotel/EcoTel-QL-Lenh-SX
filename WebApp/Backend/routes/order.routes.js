@@ -17,7 +17,7 @@ const DeviceType = require('../models/DeviceType');
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 const { sendShiftNotification } = require('../utils/email');
 const CheckIn = require('../models/CheckIn');
-
+const sendPushNotification = require('../utils/sendNotification')
 
 router.get('/', verifyToken, async (req, res, next) => {
     try {
@@ -280,6 +280,9 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
         req.logger.info(`✅ Tạo lệnh thành công với ID: ${order._id}`);
 
         req.logger.info("🔔 Gửi thông báo đến người dùng.");
+        const tokens = user?.deviceTokens;
+        console.log(tokens)
+        await Promise.all(tokens.map(t => sendPushNotification(t, "Bạn có thông báo mới", "Có 1 lệnh được cập nhật")));
         await Notification.createNotification({
             title: "Lệnh mới",
             message: "Tạo lệnh mới",
@@ -433,7 +436,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
 });
 router.delete('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
-        const user=req.user
+        const user = req.user
         const { ids } = req.body;
         req.logger.info(`🔍 ${user?.username} bắt đầu xóa lệnh`);
 
@@ -494,7 +497,7 @@ router.delete('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), as
 
 router.delete('/:id', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
-        const user=req.user
+        const user = req.user
         req.logger.info(`✅ ${user?.username} bắt đầu xóa lệnh`);
 
         const order = await Order.findByIdAndDelete(req.params.id).populate('shiftReport');

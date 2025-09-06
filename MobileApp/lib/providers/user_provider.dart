@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:soft/models/user_model.dart';
 import 'package:soft/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:soft/services/user_service.dart';
 
 class UserProvider extends ChangeNotifier {
   UserModel? _user;
@@ -13,6 +14,7 @@ class UserProvider extends ChangeNotifier {
   String? get token => _token;
 
   final apiService = ApiService();
+  final authService = AuthService();
 
   // Set thông tin user và token
   Future<void> setUser(UserModel user, String token) async {
@@ -58,11 +60,23 @@ class UserProvider extends ChangeNotifier {
     _token = null;
     SharedPreferences prefs =
         await SharedPreferences.getInstance();
+    final token = prefs.getString('fcm_token');
+    if (token != null) {
+      await authService.removeToken(
+        token,
+      ); // gọi API remove ở backend
+      await prefs.remove('fcm_token');
+    }
     await prefs.remove(
       'user',
     ); // Xóa token khỏi SharedPreferences
     await prefs.remove('token');
     notifyListeners();
+  }
+
+  Future<void> saveTokenLocal(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('fcm_token', token);
   }
 
   // Kiểm tra xem token có hết hạn không

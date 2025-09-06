@@ -116,7 +116,7 @@ class ApiService {
         return {
           'status': 'error',
           'message':
-              'Kết nối thất bại, vui lòng kiểm tra kết nối mạng của bạn.',
+              'Kết nối tới server thất bại, vui lòng kiểm tra kết nối mạng của bạn.',
         };
       }
       if (e.response != null && e.response?.data != null) {
@@ -155,7 +155,7 @@ class ApiService {
         return {
           'status': 'error',
           'message':
-              'Kết nối thất bại, vui lòng kiểm tra kết nối mạng của bạn.',
+              'Kết nối tới server thất bại, vui lòng kiểm tra kết nối mạng của bạn.',
         };
       }
       if (e.response != null && e.response?.data != null) {
@@ -188,7 +188,7 @@ class ApiService {
         return {
           'status': 'error',
           'message':
-              'Kết nối thất bại, vui lòng kiểm tra kết nối mạng của bạn.',
+              'Kết nối tới server thất bại, vui lòng kiểm tra kết nối mạng của bạn.',
         };
       }
       if (e.response != null && e.response?.data != null) {
@@ -222,7 +222,7 @@ class ApiService {
         return {
           'status': 'error',
           'message':
-              'Kết nối thất bại, vui lòng kiểm tra kết nối mạng của bạn.',
+              'Kết nối tới server thất bại, vui lòng kiểm tra kết nối mạng của bạn.',
         };
       }
       if (e.response != null && e.response?.data != null) {

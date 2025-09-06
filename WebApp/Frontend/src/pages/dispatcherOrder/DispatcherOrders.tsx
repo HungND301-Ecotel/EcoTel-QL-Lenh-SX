@@ -514,16 +514,16 @@ const DispatcherOrders: React.FC = () => {
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
-                    {selectedOrder.length && open && <OrderFormEdit
+                    {selectedOrder.length > 0 && open && <OrderFormEdit
                         initialValues={selectedOrder}
                         onSubmit={handleSubmit}
                         onCancel={handleClose}
                     />}
-                    {!selectedOrder.length && open && <OrderFormAdd
+                    {selectedOrder.length === 0 && open && <OrderFormAdd
                         onSubmit={handleSubmit}
                         onCancel={handleClose}
                     />}
-                    {selectedOrder.length && transfer && < DispatcherOrderFormTransfer
+                    {selectedOrder.length > 0 && transfer && < DispatcherOrderFormTransfer
                         initialValues={selectedOrder}
                         onCancel={handleClose}
                     />}

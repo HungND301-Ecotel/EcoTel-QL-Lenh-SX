@@ -17,6 +17,9 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    deviceTokens: [{
+        type: String
+    }],
     passwordChangedAt: Date,
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }

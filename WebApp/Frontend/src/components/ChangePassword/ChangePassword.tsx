@@ -53,8 +53,10 @@ const ChangePassword: React.FC<{ open: boolean, setOpen: Dispatch<SetStateAction
         mutationFn: (changepass: Partial<any>) =>
             api.put(`/users/changepass`, changepass).then(res => res.data),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['changepass'] });
-            showSuccessAlert('Đổi mật khẩu thành công');
+            showSuccessAlert('Đổi mật khẩu thành công. Vui lòng đăng nhập lại!');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
             handleClose();
         },
         onError: (error: any) => {
