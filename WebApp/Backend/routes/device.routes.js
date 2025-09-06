@@ -120,6 +120,34 @@ router.get('/car/all', verifyToken, async (req, res, next) => {
     }
 });
 
+router.get('/vehicle/all', verifyToken, async (req, res, next) => {
+    try {
+        const allTypes = await DeviceType.find();
+        const targetTypes = allTypes
+            .filter(type => type.group.toLowerCase().includes("xe"))
+            .map(type => type._id);
+
+        const query = {}
+
+
+        if (targetTypes) {
+            query.category = { $in: targetTypes };
+        }
+
+        const devices = await Device.find(query).populate('category').populate('department', 'name code')
+
+        req.logger.info(`🔥  Load phương tiện xe thành công`);
+        res.status(200).json({
+            status: 'success',
+            results: devices.length,
+            data:
+                devices
+        });
+    } catch (err) {
+        req.logger.error("❌ Lỗi", err);
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+});
 router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
         const { name, code, vehicleNumber, category, material, fuelType, capacity, power, coordinates, department, status } = req.body;

@@ -21,7 +21,7 @@ class _VehicleSelectVehicle
   final DeviceService _deviceService = DeviceService();
 
   void getAllDevice() async {
-    var result = await _deviceService.getAlldevice();
+    var result = await _deviceService.getAllVehicle();
 
     if (!mounted) return;
     if (result['status'] == 'error') {

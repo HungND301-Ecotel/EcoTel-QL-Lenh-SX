@@ -286,6 +286,52 @@ router.put('/addphone', verifyToken, async (req, res) => {
     }
 });
 
+router.post("/save-token", verifyToken, async (req, res) => {
+    try {
+        const { token } = req.body;
+        console.log('token', token)
+        const userId = req.user._id;
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized: User ID not found." });
+        }
+
+        // Xoá token khỏi user khác (nếu có)
+        await User.updateMany(
+            { deviceTokens: token },
+            { $pull: { deviceTokens: token } }
+        );
+
+        // Push token vào user hiện tại (chỉ khi chưa tồn tại)
+        await User.findByIdAndUpdate(
+            userId,
+            { $addToSet: { deviceTokens: token } }, // $addToSet = không cho trùng
+            { new: true }
+        );
+
+        res.json({ message: "Token saved successfully" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+router.post("/remove-token", verifyToken, async (req, res) => {
+    try {
+        const { token } = req.body;
+        const userId = req.user._id;
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized: User ID not found." });
+        }
+
+        await User.findByIdAndUpdate(userId, {
+            $pull: { deviceTokens: token }
+        });
+
+        res.json({ message: "Token removed successfully" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
 // Delete user
 router.delete('/', verifyToken, async (req, res) => {
     try {
