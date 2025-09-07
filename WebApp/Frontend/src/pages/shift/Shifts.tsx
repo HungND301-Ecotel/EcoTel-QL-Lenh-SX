@@ -44,6 +44,8 @@ import { DatePicker, LocalizationProvider, TimePicker } from '@mui/x-date-picker
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
+import { useAtom } from 'jotai';
+import { userAtom } from '../../atoms/userAtoms';
 
 const validationSchema = yup.object({
     name: yup.number().required('Vui lòng nhập ca làm việc'),
@@ -59,6 +61,7 @@ const Shifts: React.FC = () => {
     const [value, setValue] = useState("")
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
+    const [user] = useAtom(userAtom)
 
     const handleSelected = (shiftId: string) => {
         setSelectedShifts(prev =>
@@ -71,7 +74,6 @@ const Shifts: React.FC = () => {
         { id: 'name', label: 'Ca', width: 50 },
         { id: 'startTime', label: 'Thời gian bắt đầu' },
         { id: 'endTime', label: 'Thời gian kết thúc' },
-        { id: 'edit', label: 'Sửa', width: 50 },
     ];
 
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -211,14 +213,14 @@ const Shifts: React.FC = () => {
                     aria-controls="panel1-content"
                     id="panel1-header"
                 >
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    {user?.role === "admin" && <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                         <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
                             Thêm
                         </Button>
                         <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
                             Xóa
                         </Button>
-                    </Box>
+                    </Box>}
                 </AccordionSummary>
                 <AccordionDetails>
                     <DialogTitle>{selectedShift ? 'Sửa ca làm việc' : 'Thêm ca làm việc'}</DialogTitle>
@@ -335,6 +337,11 @@ const Shifts: React.FC = () => {
                                         </TableCell>
                                     )
                                 )}
+                                {user?.role==="admin"&&<TableCell align="center" sx={{
+                                    backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 50
+                                }}>
+                                    Sửa
+                                </TableCell>}
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -353,7 +360,7 @@ const Shifts: React.FC = () => {
                                     {visibleColumns.includes('endTime') && (
                                         <TableCell align='center' sx={{}}>{shift.endTime}</TableCell>
                                     )}
-                                    {visibleColumns.includes('edit') && (
+                                    {user?.role==="admin" && (
                                         <TableCell align='center' sx={{}}>
                                             <IconButton color="primary" onClick={async () => {
                                                 if (open) {

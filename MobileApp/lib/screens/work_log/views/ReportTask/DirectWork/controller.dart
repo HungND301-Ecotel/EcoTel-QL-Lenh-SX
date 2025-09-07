@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 class VehicleSummariesControllers {
   final TextEditingController fuelRemain =
       TextEditingController();
@@ -11,6 +10,8 @@ class VehicleSummariesControllers {
   final TextEditingController repairHours =
       TextEditingController();
   final TextEditingController travelHours =
+      TextEditingController();
+  final TextEditingController distanceKm =
       TextEditingController();
   final TextEditingController fuelUsedController =
       TextEditingController();

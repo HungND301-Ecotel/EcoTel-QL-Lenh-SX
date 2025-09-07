@@ -9,17 +9,12 @@ import 'package:soft/screens/work_log/views/ReportTask/DirectWork/controller.dar
 
 class DirectWorkeport extends StatefulWidget {
   final OrderModel order;
-  const DirectWorkeport({
-    super.key,
-    required this.order,
-  });
+  const DirectWorkeport({super.key, required this.order});
   @override
-  State<StatefulWidget> createState() =>
-      _DirectWorkeport();
+  State<StatefulWidget> createState() => _DirectWorkeport();
 }
 
-class _DirectWorkeport
-    extends State<DirectWorkeport> {
+class _DirectWorkeport extends State<DirectWorkeport> {
   UserModel? user;
 
   final Map<String, VehicleSummariesControllers>
@@ -78,6 +73,8 @@ class _DirectWorkeport
         final controller =
             _deviceSummaryControllers[item.vehicle.id];
         if (controller != null) {
+          controller.distanceKm.text =
+              item.distanceKm?.toString() ?? '';
           controller.travelHours.text =
               item.travelHours?.toString() ?? '';
           controller.repairHours.text =
@@ -112,6 +109,9 @@ class _DirectWorkeport
 
       vehicleSummaries.add({
         "vehicle": id,
+        "distanceKm": int.tryParse(
+          controller.distanceKm.text,
+        ),
         "travelHours": int.tryParse(
           controller.travelHours.text,
         ),
@@ -310,7 +310,26 @@ class _DirectWorkeport
                                 ),
                                 SizedBox(height: 16),
                                 Text(
-                                  'Giờ di chuyển(phút)',
+                                  'Km hoạt động trên đồng hồ',
+                                  style: TextStyle(
+                                    fontWeight:
+                                        FontWeight.w600,
+                                  ),
+                                ),
+                                TextField(
+                                  controller:
+                                      summaryController
+                                          .distanceKm,
+                                  keyboardType:
+                                      TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter
+                                        .digitsOnly,
+                                  ],
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  'Giờ dhoạt động trên đồng hồ',
                                   style: TextStyle(
                                     fontWeight:
                                         FontWeight.w600,

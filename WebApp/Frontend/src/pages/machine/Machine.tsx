@@ -116,7 +116,6 @@ const Machines: React.FC = () => {
         { id: 'coordinates', label: 'Vị trí' },
         { id: 'department', label: 'Đơn vị' },
         { id: 'status', label: 'Trạng thái' },
-        { id: 'edit', label: 'Sửa', width: 100 },
     ]
     const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
 
@@ -403,7 +402,7 @@ const Machines: React.FC = () => {
                             md: 'row',
                         },
                     }}>
-                        {user?.role !== "dispatcher" && <Box display="flex" gap={2} sx={{
+                        {user?.role === "admin" && <Box display="flex" gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -466,7 +465,7 @@ const Machines: React.FC = () => {
                                 />}
                             </Box>
                         </Box>
-                        <Box display="flex" gap={2} sx={{
+                        {user?.role==="admin" &&<Box display="flex" gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -510,7 +509,7 @@ const Machines: React.FC = () => {
                             >
                                 Tải xuống
                             </Button>
-                        </Box>
+                        </Box>}
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -614,7 +613,7 @@ const Machines: React.FC = () => {
                                 >
                                     <MenuItem value="available">Chờ điều động</MenuItem>
                                     <MenuItem value="in_use">Đang hoạt động</MenuItem>
-                                    <MenuItem value="maintenance">Hỏng</MenuItem>
+                                    <MenuItem value="maintenance">S/C; BD</MenuItem>
                                     <MenuItem value="retired">Niêm cất</MenuItem>
                                 </TextField>
                                 <Autocomplete
@@ -727,7 +726,7 @@ const Machines: React.FC = () => {
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='warning' name="status" checked={status === 'maintenance'}
                         onChange={() => handleChange('maintenance')} />
-                    <ListItemText primary={`Hỏng (${allMachines.filter((o: Device) => o.status === "maintenance").length})`} sx={{ color: 'orange' }} />
+                    <ListItemText primary={`S/C; BD (${allMachines.filter((o: Device) => o.status === "maintenance").length})`} sx={{ color: 'orange' }} />
                 </Box>
             </Box>
             <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
@@ -787,7 +786,7 @@ const Machines: React.FC = () => {
                                 {visibleColumns.includes('coordinates') && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Vị trí</TableCell>}
                                 {visibleColumns.includes('department') && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Đơn vị</TableCell>}
                                 {visibleColumns.includes('status') && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>}
-                                {visibleColumns.includes('edit') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Sửa</TableCell>)}
+                                {user?.role !== 'dispatcher' && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Sửa</TableCell>}
                             </TableRow>
                         </TableHead>
                         {!isLoading ? <TableBody>
@@ -832,7 +831,7 @@ const Machines: React.FC = () => {
                                             <Chip
                                                 sx={{ width: '120px' }}
                                                 label={device.status === 'in_use' ? 'Đang hoạt động' :
-                                                    device.status === 'maintenance' ? 'Hỏng' :
+                                                    device.status === 'maintenance' ? 'S/C; BD' :
                                                         device.status === 'retired' ? 'Niêm cất' :
                                                             device.status === 'available' ? 'Chờ điều động' : device.status}
                                                 color={device.status === 'in_use' ? 'error' :
@@ -841,7 +840,7 @@ const Machines: React.FC = () => {
                                                             device.status === 'available' ? 'success' : 'default'}
                                             />
                                         </TableCell>}
-                                        {visibleColumns.includes('edit') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ minWidth: 50, }}>
+                                        {user?.role !== 'dispatcher' && <TableCell align='center' sx={{ minWidth: 50, }}>
                                             <IconButton
                                                 color="primary"
                                                 onClick={async () => {
@@ -857,7 +856,7 @@ const Machines: React.FC = () => {
                                             >
                                                 <EditIcon />
                                             </IconButton>
-                                        </TableCell>)}
+                                        </TableCell>}
                                     </TableRow>)
                             })}
                         </TableBody> : <Typography>Loading...</Typography>}

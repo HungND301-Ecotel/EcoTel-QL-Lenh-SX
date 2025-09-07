@@ -99,14 +99,10 @@ const OrderByUsers: React.FC = () => {
         setStatus(prev => (prev === value ? '' : value)); // bỏ chọn nếu click lại
     };
     const { data: orderByUser = [], isLoading } = useQuery({
-        queryKey: ['orderByUser', status, startTime, endTime],
-        queryFn: () => api.get(`/orders/user?status=${status}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
+        queryKey: ['orderByUser', startTime, endTime],
+        queryFn: () => api.get(`/orders/user?startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
     });
 
-    const { data: allOrders = [] } = useQuery({
-        queryKey: ['allOrders'],
-        queryFn: () => api.get(`/orders/user`).then(res => res.data.data),
-    });
     const [page, setPage] = React.useState(0);
     const [pageSize, setPageSize] = React.useState(10);
 
@@ -123,7 +119,12 @@ const OrderByUsers: React.FC = () => {
         }
         return data
     }
-    const paginatedOrders = pageData(orderByUser, page, pageSize);
+
+    const filteredOrders = React.useMemo(() => {
+        if (!status) return orderByUser;
+        return orderByUser.filter((o: Order) => o.status === status);
+    }, [orderByUser, status]);
+    const paginatedOrders = pageData(filteredOrders, page, pageSize);
     return (
         <Box>
             <Typography variant="h3" color='blue'>Công việc của tôi</Typography>
@@ -166,27 +167,27 @@ const OrderByUsers: React.FC = () => {
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='info' name="status" checked={status === ''}
                         onChange={() => handleChange('')} />
-                    <ListItemText primary={`Tất cả (${allOrders.length})`} sx={{ color: 'blue' }} />
+                    <ListItemText primary={`Tất cả (${orderByUser.length})`} sx={{ color: 'blue' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='default' name="status" checked={status === 'pending'}
                         onChange={() => handleChange('pending')} />
-                    <ListItemText primary={`Chưa nhận lệnh (${allOrders.filter((o: Order) => o.status === "pending").length})`} sx={{ color: 'grey' }} />
+                    <ListItemText primary={`Chưa nhận lệnh (${orderByUser.filter((o: Order) => o.status === "pending").length})`} sx={{ color: 'grey' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='success' name="status" checked={status === 'in_progress'}
                         onChange={() => handleChange('in_progress')} />
-                    <ListItemText primary={`Đã nhận lệnh (${allOrders.filter((o: Order) => o.status === "in_progress").length})`} sx={{ color: 'green' }} />
+                    <ListItemText primary={`Đã nhận lệnh (${orderByUser.filter((o: Order) => o.status === "in_progress").length})`} sx={{ color: 'green' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='warning' name="status" checked={status === 'warning'}
                         onChange={() => handleChange('warning')} />
-                    <ListItemText primary={`Lỗi (${allOrders.filter((o: Order) => o.status === "warning").length})`} sx={{ color: 'orange' }} />
+                    <ListItemText primary={`Lỗi (${orderByUser.filter((o: Order) => o.status === "warning").length})`} sx={{ color: 'orange' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='error' name="status" checked={status === 'completed'}
                         onChange={() => handleChange('completed')} />
-                    <ListItemText primary={`Đã kết thúc (${allOrders.filter((o: Order) => o.status === "completed").length})`} sx={{ color: 'red' }} />
+                    <ListItemText primary={`Đã kết thúc (${orderByUser.filter((o: Order) => o.status === "completed").length})`} sx={{ color: 'red' }} />
                 </Box>
             </Box>
             <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>

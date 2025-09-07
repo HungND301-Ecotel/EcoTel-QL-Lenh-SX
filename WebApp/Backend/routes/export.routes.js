@@ -126,7 +126,7 @@ async function buildSheetPXVT6(req, res, next) {
             worksheet.mergeCells('A1:L2');
             const header = worksheet.getCell('A1');
             header.value = `LỆNH SẢN XUẤT`;
-            header.font = { bold: true, size: 14 };
+            header.font = { bold: true, size: 18 };
             header.alignment = { horizontal: 'center', vertical: 'middle' };
 
 
@@ -211,13 +211,16 @@ async function buildSheetPXVT6(req, res, next) {
             worksheet.getCell('D8').font = { bold: true };
             worksheet.getCell('E8').value = order.endTime ? new Date(order.endTime).toLocaleTimeString() : "";
 
-            worksheet.getCell('F8').value = 'Km HĐ';
+            worksheet.mergeCells('F8:G8');
+            worksheet.getCell('F8').value = 'Giờ hoạt động trên đồng hồ';
             worksheet.getCell('F8').font = { bold: true };
-            worksheet.getCell('G8').value = order?.shiftReport?.vehicleSummaries.reduce((sum, report) => { return sum + report?.distanceKm }, 0) || '';
+            worksheet.getCell('H8').value = order?.shiftReport?.vehicleSummaries.reduce((sum, report) => { return sum + report?.travelHours }, 0) || '';
 
-            worksheet.getCell('H8').value = 'Giờ HĐ';
-            worksheet.getCell('H8').font = { bold: true };
-            worksheet.getCell('I8').value = order?.shiftReport?.vehicleSummaries.reduce((sum, report) => { return sum + report?.travelHours }, 0) || '';
+            worksheet.mergeCells('I8:J8');
+            worksheet.getCell('I8').value = 'Km hoạt động trên đồng hồ';
+            worksheet.getCell('I8').font = { bold: true };
+            worksheet.getCell('K8').value = order?.shiftReport?.vehicleSummaries.reduce((sum, report) => { return sum + report?.distanceKm }, 0) || '';
+
 
 
             worksheet.mergeCells('A10:L10');
@@ -324,26 +327,26 @@ async function buildSheetPXVT6(req, res, next) {
 
             const fuelHeaderRow = totalRow + 2;
             const fuelRows = order.shiftReport?.vehicleSummaries?.length || 0;
-            const fuelEndRow = fuelHeaderRow + fuelRows + 2;
+            const fuelEndRow = fuelHeaderRow + fuelRows + 3;
 
             addTableBorders(worksheet, fuelHeaderRow, fuelEndRow, 1, 12);
             for (let index = 0; index < (order.shiftReport?.vehicleSummaries?.length || 0); index++) {
                 const rep = order.shiftReport?.vehicleSummaries[index];
 
-                worksheet.getCell(`A${totalRow + 4 + index}`).value = rep?.vehicle?.code || '';
-                worksheet.getCell(`B${totalRow + 4 + index}`).value = rep?.fuelRemain || '';
-                worksheet.getCell(`C${totalRow + 4 + index}`).value = rep?.fuelReceived || '';
-                worksheet.getCell(`D${totalRow + 4 + index}`).value = rep?.fuelRemainEnd || '';
-                worksheet.getCell(`E${totalRow + 4 + index}`).value =
+                worksheet.getCell(`A${totalRow + 5 + index}`).value = rep?.vehicle?.code || '';
+                worksheet.getCell(`B${totalRow + 5 + index}`).value = rep?.fuelRemain || '';
+                worksheet.getCell(`C${totalRow + 5 + index}`).value = rep?.fuelReceived || '';
+                worksheet.getCell(`D${totalRow + 5 + index}`).value = rep?.fuelRemainEnd || '';
+                worksheet.getCell(`E${totalRow + 5 + index}`).value =
                     (rep?.fuelRemain ?? 0) + (rep?.fuelReceived ?? 0) - (rep?.fuelRemainEnd ?? 0);
 
-                worksheet.getCell(`F${totalRow + 4 + index}`).value = '';
+                worksheet.getCell(`F${totalRow + 5 + index}`).value = '';
 
-                worksheet.mergeCells(`H${totalRow + 4 + index}:I${totalRow + 4 + index}`);
-                worksheet.getCell(`H${totalRow + 4 + index}`).value = '';
+                worksheet.mergeCells(`H${totalRow + 5 + index}:I${totalRow + 5 + index}`);
+                worksheet.getCell(`H${totalRow + 5 + index}`).value = '';
 
-                worksheet.mergeCells(`J${totalRow + 4 + index}:L${totalRow + 4 + index}`);
-                worksheet.getCell(`J${totalRow + 4 + index}`).value = '';
+                worksheet.mergeCells(`J${totalRow + 5 + index}:L${totalRow + 5 + index}`);
+                worksheet.getCell(`J${totalRow + 5 + index}`).value = '';
             }
 
             worksheet.mergeCells(`A${fuelEndRow}:L${fuelEndRow}`);
@@ -388,27 +391,27 @@ async function buildSheetPXVT6(req, res, next) {
             worksheet.getCell(`I${fuelEndRow + 2}`).value = '';
 
             const deviceRow = order.device?.length || []
-            worksheet.mergeCells(`B${totalRow + 7 + deviceRow}:D${totalRow + 7 + deviceRow}`)
-            worksheet.getCell(`B${totalRow + 7 + deviceRow}`).value = 'NGƯỜI NHẬN LỆNH';
-            worksheet.getCell(`B${totalRow + 7 + deviceRow}`).font = { bold: true };
-            worksheet.getCell(`B${totalRow + 7 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`C${totalRow + 9 + deviceRow}`).value = '✔';
-            worksheet.getCell(`C${totalRow + 9 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`C${totalRow + 9 + deviceRow}`).font = { bold: true, size: 12 };
-            worksheet.mergeCells(`B${totalRow + 11 + deviceRow}:D${totalRow + 11 + deviceRow}`)
-            worksheet.getCell(`B${totalRow + 11 + deviceRow}`).font = { bold: true };
-            worksheet.getCell(`B${totalRow + 11 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`B${totalRow + 11 + deviceRow}`).value = order.assignedTo?.fullName || "";
+            worksheet.mergeCells(`B${totalRow + 8 + deviceRow}:D${totalRow + 8 + deviceRow}`)
+            worksheet.getCell(`B${totalRow + 8 + deviceRow}`).value = 'NGƯỜI NHẬN LỆNH';
+            worksheet.getCell(`B${totalRow + 8 + deviceRow}`).font = { bold: true };
+            worksheet.getCell(`B${totalRow + 8 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+            worksheet.getCell(`C${totalRow + 10 + deviceRow}`).value = '✔';
+            worksheet.getCell(`C${totalRow + 10 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+            worksheet.getCell(`C${totalRow + 10 + deviceRow}`).font = { bold: true, size: 12 };
+            worksheet.mergeCells(`B${totalRow + 12 + deviceRow}:D${totalRow + 12 + deviceRow}`)
+            worksheet.getCell(`B${totalRow + 12 + deviceRow}`).font = { bold: true };
+            worksheet.getCell(`B${totalRow + 12 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+            worksheet.getCell(`B${totalRow + 12 + deviceRow}`).value = order.assignedTo?.fullName || "";
 
 
-            worksheet.mergeCells(`I${totalRow + 7 + deviceRow}:L${totalRow + 7 + deviceRow}`)
-            worksheet.getCell(`I${totalRow + 7 + deviceRow}`).value = 'NGƯỜI RA LỆNH';
-            worksheet.getCell(`I${totalRow + 7 + deviceRow}`).font = { bold: true };
-            worksheet.getCell(`I${totalRow + 7 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.mergeCells(`I${totalRow + 11 + deviceRow}:L${totalRow + 11 + deviceRow}`)
-            worksheet.getCell(`I${totalRow + 11 + deviceRow}`).font = { bold: true };
-            worksheet.getCell(`I${totalRow + 11 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`I${totalRow + 11 + deviceRow}`).value = order.createdBy?.fullName || "";
+            worksheet.mergeCells(`I${totalRow + 8 + deviceRow}:L${totalRow + 8 + deviceRow}`)
+            worksheet.getCell(`I${totalRow + 8 + deviceRow}`).value = 'NGƯỜI RA LỆNH';
+            worksheet.getCell(`I${totalRow + 8 + deviceRow}`).font = { bold: true };
+            worksheet.getCell(`I${totalRow + 8 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+            worksheet.mergeCells(`I${totalRow + 12 + deviceRow}:L${totalRow + 12 + deviceRow}`)
+            worksheet.getCell(`I${totalRow + 12 + deviceRow}`).font = { bold: true };
+            worksheet.getCell(`I${totalRow + 12 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+            worksheet.getCell(`I${totalRow + 12 + deviceRow}`).value = order.createdBy?.fullName || "";
 
 
             worksheet.pageSetup = {
@@ -451,7 +454,7 @@ async function buildSheetPXVT6(req, res, next) {
     }
 };
 
-async function buildSheetDefault(req, res, next) {  
+async function buildSheetDefault(req, res, next) {
     try {
         const { ids } = req.body; // mảng entity id
 
@@ -600,13 +603,15 @@ async function buildSheetDefault(req, res, next) {
             worksheet.getCell('D8').font = { bold: true };
             worksheet.getCell('E8').value = order.endTime ? new Date(order.endTime).toLocaleTimeString() : "";
 
-            worksheet.getCell('F8').value = 'Km HĐ';
+            worksheet.mergeCells('F8:G8');
+            worksheet.getCell('F8').value = 'Giờ hoạt động trên đồng hồ';
             worksheet.getCell('F8').font = { bold: true };
-            worksheet.getCell('G8').value = order?.shiftReport?.vehicleSummaries.reduce((sum, report) => { return sum + report?.distanceKm }, 0) || '';
+            worksheet.getCell('H8').value = order?.shiftReport?.vehicleSummaries.reduce((sum, report) => { return sum + report?.travelHours }, 0) || '';
 
-            worksheet.getCell('H8').value = 'Giờ HĐ';
-            worksheet.getCell('H8').font = { bold: true };
-            worksheet.getCell('I8').value = order?.shiftReport?.vehicleSummaries.reduce((sum, report) => { return sum + report?.travelHours }, 0) || '';
+            worksheet.mergeCells('I8:J8');
+            worksheet.getCell('I8').value = 'Km hoạt động trên đồng hồ';
+            worksheet.getCell('I8').font = { bold: true };
+            worksheet.getCell('K8').value = order?.shiftReport?.vehicleSummaries.reduce((sum, report) => { return sum + report?.distanceKm }, 0) || '';
 
 
             worksheet.mergeCells('A10:M10');
@@ -688,24 +693,31 @@ async function buildSheetDefault(req, res, next) {
             header3.font = { bold: true, size: 14 };
             header3.alignment = { horizontal: 'center', vertical: 'middle' };
 
+            worksheet.mergeCells(`A${totalRow + 3}:B${totalRow + 3}`);
             worksheet.getCell(`A${totalRow + 3}`).value = 'Phương tiện';
             worksheet.getCell(`A${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`B${totalRow + 3}`).value = 'Tồn dầu';
-            worksheet.getCell(`B${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`C${totalRow + 3}`).value = 'Lĩnh trong ca';
+            worksheet.getCell(`A${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            worksheet.getCell(`C${totalRow + 3}`).value = 'Tồn dầu';
             worksheet.getCell(`C${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`D${totalRow + 3}`).value = 'Tồn cuối ca';
+            worksheet.getCell(`C${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            worksheet.getCell(`D${totalRow + 3}`).value = 'Lĩnh trong ca';
             worksheet.getCell(`D${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`E${totalRow + 3}`).value = 'Tiêu thụ';
+            worksheet.getCell(`D${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            worksheet.getCell(`E${totalRow + 3}`).value = 'Tồn cuối ca';
             worksheet.getCell(`E${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`F${totalRow + 3}`).value = 'Định mức';
+            worksheet.getCell(`E${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            worksheet.getCell(`F${totalRow + 3}`).value = 'Tiêu thụ';
             worksheet.getCell(`F${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`G${totalRow + 3}`).value = 'Tiết kiệm';
+            worksheet.getCell(`F${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            worksheet.getCell(`G${totalRow + 3}`).value = 'Định mức';
             worksheet.getCell(`G${totalRow + 3}`).font = { bold: true };
-            worksheet.mergeCells(`H${totalRow + 3}:I${totalRow + 3}`)
-            worksheet.getCell(`H${totalRow + 3}`).value = 'Sử dụng vượt';
+            worksheet.getCell(`G${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            worksheet.getCell(`H${totalRow + 3}`).value = 'Tiết kiệm';
             worksheet.getCell(`H${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`H${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle' };
+            worksheet.getCell(`H${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            worksheet.getCell(`I${totalRow + 3}`).value = 'Sử dụng vượt';
+            worksheet.getCell(`I${totalRow + 3}`).font = { bold: true };
+            worksheet.getCell(`I${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle' };
             worksheet.mergeCells(`J${totalRow + 3}:M${totalRow + 3}`)
             worksheet.getCell(`J${totalRow + 3}`).value = 'Ghi chú';
             worksheet.getCell(`J${totalRow + 3}`).font = { bold: true };
@@ -714,50 +726,50 @@ async function buildSheetDefault(req, res, next) {
 
             const fuelHeaderRow = totalRow + 2;
             const fuelRows = order.shiftReport?.vehicleSummaries?.length || 0;
-            const fuelEndRow = fuelHeaderRow + fuelRows + 2;
+            const fuelEndRow = fuelHeaderRow + fuelRows + 1;
 
             addTableBorders(worksheet, fuelHeaderRow, fuelEndRow, 1, 13);
             for (let index = 0; index < (order.shiftReport?.vehicleSummaries?.length || 0); index++) {
                 const rep = order.shiftReport?.vehicleSummaries[index];
-
+                worksheet.mergeCells(`A${totalRow + 4 + index}:B${totalRow + 4 + index}`);
                 worksheet.getCell(`A${totalRow + 4 + index}`).value = rep?.vehicle?.code || '';
-                worksheet.getCell(`B${totalRow + 4 + index}`).value = rep?.fuelRemain || '';
-                worksheet.getCell(`C${totalRow + 4 + index}`).value = rep?.fuelReceived || '';
-                worksheet.getCell(`D${totalRow + 4 + index}`).value = rep?.fuelRemainEnd || '';
-                worksheet.getCell(`E${totalRow + 4 + index}`).value =
+                worksheet.getCell(`C${totalRow + 4 + index}`).value = rep?.fuelRemain || '';
+                worksheet.getCell(`D${totalRow + 4 + index}`).value = rep?.fuelReceived || '';
+                worksheet.getCell(`E${totalRow + 4 + index}`).value = rep?.fuelRemainEnd || '';
+                worksheet.getCell(`F${totalRow + 4 + index}`).value =
                     (rep?.fuelRemain ?? 0) + (rep?.fuelReceived ?? 0) - (rep?.fuelRemainEnd ?? 0);
 
-                worksheet.getCell(`F${totalRow + 4 + index}`).value = '';
+                worksheet.getCell(`G${totalRow + 4 + index}`).value = '';
 
-                worksheet.mergeCells(`H${totalRow + 4 + index}:I${totalRow + 4 + index}`);
                 worksheet.getCell(`H${totalRow + 4 + index}`).value = '';
+                worksheet.getCell(`I${totalRow + 4 + index}`).value = '';
 
                 worksheet.mergeCells(`J${totalRow + 4 + index}:M${totalRow + 4 + index}`);
                 worksheet.getCell(`J${totalRow + 4 + index}`).value = '';
             }
 
             const deviceRow = order.device?.length || []
-            worksheet.mergeCells(`B${totalRow + 5 + deviceRow}:D${totalRow + 5 + deviceRow}`)
-            worksheet.getCell(`B${totalRow + 5 + deviceRow}`).value = 'NGƯỜI NHẬN LỆNH';
-            worksheet.getCell(`B${totalRow + 5 + deviceRow}`).font = { bold: true };
-            worksheet.getCell(`B${totalRow + 5 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`C${totalRow + 7 + deviceRow}`).value = '✔';
-            worksheet.getCell(`C${totalRow + 7 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`C${totalRow + 7 + deviceRow}`).font = { bold: true, size: 12 };
-            worksheet.mergeCells(`B${totalRow + 9 + deviceRow}:D${totalRow + 9 + deviceRow}`)
-            worksheet.getCell(`B${totalRow + 9 + deviceRow}`).font = { bold: true };
-            worksheet.getCell(`B${totalRow + 9 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`B${totalRow + 9 + deviceRow}`).value = order.assignedTo?.fullName || "";
+            worksheet.mergeCells(`B${totalRow + 6 + deviceRow}:D${totalRow + 6 + deviceRow}`)
+            worksheet.getCell(`B${totalRow + 6 + deviceRow}`).value = 'NGƯỜI NHẬN LỆNH';
+            worksheet.getCell(`B${totalRow + 6 + deviceRow}`).font = { bold: true };
+            worksheet.getCell(`B${totalRow + 6 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+            worksheet.getCell(`C${totalRow + 8 + deviceRow}`).value = '✔';
+            worksheet.getCell(`C${totalRow + 8 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+            worksheet.getCell(`C${totalRow + 8 + deviceRow}`).font = { bold: true, size: 12 };
+            worksheet.mergeCells(`B${totalRow + 10 + deviceRow}:D${totalRow + 10 + deviceRow}`)
+            worksheet.getCell(`B${totalRow + 10 + deviceRow}`).font = { bold: true };
+            worksheet.getCell(`B${totalRow + 10 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+            worksheet.getCell(`B${totalRow + 10 + deviceRow}`).value = order.assignedTo?.fullName || "";
 
 
-            worksheet.mergeCells(`I${totalRow + 5 + deviceRow}:M${totalRow + 5 + deviceRow}`)
-            worksheet.getCell(`I${totalRow + 5 + deviceRow}`).value = 'NGƯỜI RA LỆNH';
-            worksheet.getCell(`I${totalRow + 5 + deviceRow}`).font = { bold: true };
-            worksheet.getCell(`I${totalRow + 5 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.mergeCells(`I${totalRow + 9 + deviceRow}:M${totalRow + 9 + deviceRow}`)
-            worksheet.getCell(`I${totalRow + 9 + deviceRow}`).font = { bold: true };
-            worksheet.getCell(`I${totalRow + 9 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`I${totalRow + 9 + deviceRow}`).value = order.createdBy?.fullName || "";
+            worksheet.mergeCells(`I${totalRow + 6 + deviceRow}:M${totalRow + 6 + deviceRow}`)
+            worksheet.getCell(`I${totalRow + 6 + deviceRow}`).value = 'NGƯỜI RA LỆNH';
+            worksheet.getCell(`I${totalRow + 6 + deviceRow}`).font = { bold: true };
+            worksheet.getCell(`I${totalRow + 6 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+            worksheet.mergeCells(`I${totalRow + 10 + deviceRow}:M${totalRow + 10 + deviceRow}`)
+            worksheet.getCell(`I${totalRow + 10 + deviceRow}`).font = { bold: true };
+            worksheet.getCell(`I${totalRow + 10 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+            worksheet.getCell(`I${totalRow + 10 + deviceRow}`).value = order.createdBy?.fullName || "";
 
 
             worksheet.pageSetup = {
@@ -770,7 +782,21 @@ async function buildSheetDefault(req, res, next) {
             };
 
             // 2) Set width cơ sở (Excel sẽ scale để vừa 1 trang)
-            worksheet.columns.forEach(col => { col.width = 12; });
+            worksheet.columns = [
+                { key: 'A', width: 5 },   // STT
+                { key: 'B', width: 15 },  // Nhận tải
+                { key: 'C', width: 18 },  // Đổ tải
+                { key: 'D', width: 15 },  // Loại hàng
+                { key: 'E', width: 10 },  // Cung độ tạm tính
+                { key: 'F', width: 12 },  // Chiều cao nâng tải
+                { key: 'G', width: 12 },  // Số chuyến
+                { key: 'H', width: 12 },  // Khối lượng
+                { key: 'I', width: 12 },  // Trọng lượng
+                { key: 'J', width: 15 },  // Sản lượng
+                { key: 'K', width: 15 },  // Nhiên liệu
+                { key: 'L', width: 15 },  // Điểm lương
+                { key: 'M', width: 12 },  // Ghi chú
+            ];
 
             worksheet.eachRow((row) => {
                 row.eachCell((cell) => {

@@ -21,6 +21,7 @@ class Device {
 class VehicleSummariesModel {
   final Device? vehicle;
   final num? travelHours;
+  final num? distanceKm;
   final num? repairHours;
   final num? fuelRemain;
   final num? fuelReceived;
@@ -32,6 +33,7 @@ class VehicleSummariesModel {
 
   VehicleSummariesModel({
     this.vehicle,
+    this.distanceKm,
     this.travelHours,
     this.repairHours,
     this.fuelRemain,
@@ -51,6 +53,7 @@ class VehicleSummariesModel {
           json?['vehicle'] != null
               ? Device.fromJson(json?['vehicle'])
               : null,
+      distanceKm: json?['distanceKm'],
       travelHours: json?['travelHours'],
       repairHours: json?['repairHours'],
       fuelRemain: json?['fuelRemain'],
@@ -65,6 +68,7 @@ class VehicleSummariesModel {
   Map<String, dynamic> toJson() {
     return {
       'vehicle': vehicle?.toJson(),
+      'distanceKm': distanceKm,
       'travelHours': travelHours,
       'repairHours': repairHours,
       'fuelRemain': fuelRemain,

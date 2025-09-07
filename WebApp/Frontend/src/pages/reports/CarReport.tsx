@@ -39,7 +39,7 @@ export default function CarReport({ data, signatureUrl }: { data: any[], signatu
             }
         },
         {
-            field: 'material', headerName: 'Chủng loại', width: 150,
+            field: 'material', headerName: 'Vật liệu', width: 150,
             renderCell: (params) => {
                 const codes = params.row.material?.map((item: string) => item).join('<br/>');
                 return <span dangerouslySetInnerHTML={{ __html: codes }} />;

@@ -138,12 +138,8 @@ const DispatcherOrders: React.FC = () => {
     });
 
     const { data: orders = [], isLoading } = useQuery({
-        queryKey: ['orders', status, employee, department, startTime, endTime],
-        queryFn: () => api.get(`/orders?status=${status}&employee=${employee}&&department=${department}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
-    });
-    const { data: allOrders = [] } = useQuery({
-        queryKey: ['allOrders'],
-        queryFn: () => api.get(`/orders`).then(res => res.data.data),
+        queryKey: ['orders', employee, department, startTime, endTime],
+        queryFn: () => api.get(`/orders?employee=${employee}&&department=${department}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
     });
 
 
@@ -357,20 +353,6 @@ const DispatcherOrders: React.FC = () => {
         setPage(page);
     };
 
-    // const pageData = (orders: any[], page: number, pageSize: number) => {
-    //     let data;
-    //     if (!page && !pageSize) {
-    //         data = orders
-    //     } else {
-    //         data = orders.slice(page * pageSize, (page + 1) * pageSize)
-    //     }
-    //     return data
-    // }
-    // const paginatedOrders = pageData(orders, page, pageSize);
-    // // Nhóm theo batchId ngay trên dữ liệu đã phân trang
-    // const groupedPage = React.useMemo(() => groupOrdersByBatch(paginatedOrders), [paginatedOrders]);
-    // 1. Nhóm toàn bộ orders theo batchId
-
     const groupOrdersByBatch = (orders: any[]) => {
         return orders.reduce((acc, order) => {
             const batchId = order.batchId || 'no-batch';
@@ -381,7 +363,11 @@ const DispatcherOrders: React.FC = () => {
             return acc;
         }, {} as Record<string, any[]>);
     };
-    const groupedOrders = React.useMemo(() => groupOrdersByBatch(orders), [orders]);
+    const filteredOrders = React.useMemo(() => {
+        if (!status) return orders;
+        return orders.filter((o: Order) => o.status === status);
+    }, [orders, status]);
+    const groupedOrders = React.useMemo(() => groupOrdersByBatch(filteredOrders), [filteredOrders]);
 
     // 3. Phân trang theo batch
     const pageData = (entries: [string, any[]][], page: number, pageSize: number) => {
@@ -533,32 +519,32 @@ const DispatcherOrders: React.FC = () => {
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='info' name="status" checked={status === ''}
                         onChange={() => handleChange('')} />
-                    <ListItemText primary={`Tất cả (${allOrders.length})`} sx={{ color: 'blue' }} />
+                    <ListItemText primary={`Tất cả (${orders.length})`} sx={{ color: 'blue' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='default' name="status" checked={status === 'pending'}
                         onChange={() => handleChange('pending')} />
-                    <ListItemText primary={`Chưa nhận lệnh (${allOrders.filter((o: Order) => o.status === "pending").length})`} sx={{ color: 'grey' }} />
+                    <ListItemText primary={`Chưa nhận lệnh (${orders.filter((o: Order) => o.status === "pending").length})`} sx={{ color: 'grey' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='success' name="status" checked={status === 'in_progress'}
                         onChange={() => handleChange('in_progress')} />
-                    <ListItemText primary={`Đã nhận lệnh (${allOrders.filter((o: Order) => o.status === "in_progress").length})`} sx={{ color: 'green' }} />
+                    <ListItemText primary={`Đã nhận lệnh (${orders.filter((o: Order) => o.status === "in_progress").length})`} sx={{ color: 'green' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='warning' name="status" checked={status === 'warning'}
                         onChange={() => handleChange('warning')} />
-                    <ListItemText primary={`Lỗi (${allOrders.filter((o: Order) => o.status === "warning").length})`} sx={{ color: 'orange' }} />
+                    <ListItemText primary={`Lỗi (${orders.filter((o: Order) => o.status === "warning").length})`} sx={{ color: 'orange' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='error' name="status" checked={status === 'completed'}
                         onChange={() => handleChange('completed')} />
-                    <ListItemText primary={`Đã kết thúc (${allOrders.filter((o: Order) => o.status === "completed").length})`} sx={{ color: 'red' }} />
+                    <ListItemText primary={`Đã kết thúc (${orders.filter((o: Order) => o.status === "completed").length})`} sx={{ color: 'red' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='secondary' name="status" checked={status === 'cancel'}
                         onChange={() => handleChange('cancel')} />
-                    <ListItemText primary={`Đã hủy (${allOrders.filter((o: Order) => o.status === "cancel").length})`} sx={{ color: 'purple' }} />
+                    <ListItemText primary={`Đã hủy (${orders.filter((o: Order) => o.status === "cancel").length})`} sx={{ color: 'purple' }} />
                 </Box>
             </Box>
             <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>

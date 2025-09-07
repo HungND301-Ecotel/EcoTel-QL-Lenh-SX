@@ -116,7 +116,6 @@ const Vehicles: React.FC = () => {
         { id: 'coordinates', label: 'Vị trí' },
         { id: 'department', label: 'Đơn vị' },
         { id: 'status', label: 'Trạng thái' },
-        { id: 'edit', label: 'Sửa', width: 50 },
     ]
     const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
 
@@ -411,7 +410,7 @@ const Vehicles: React.FC = () => {
                             md: 'row',
                         },
                     }}>
-                        {user?.role !== "dispatcher" && <Box display="flex" gap={2} sx={{
+                        {user?.role === "admin" && <Box display="flex" gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -476,7 +475,7 @@ const Vehicles: React.FC = () => {
                                 />}
                             </Box>
                         </Box>
-                        <Box display="flex" gap={2} sx={{
+                        {user?.role==="admin" &&<Box display="flex" gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -520,7 +519,7 @@ const Vehicles: React.FC = () => {
                             >
                                 Tải xuống
                             </Button>
-                        </Box>
+                        </Box>}
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -625,7 +624,7 @@ const Vehicles: React.FC = () => {
                                     >
                                         <MenuItem value="available">Chờ điều động</MenuItem>
                                         <MenuItem value="in_use">Đang hoạt động</MenuItem>
-                                        <MenuItem value="maintenance">Hỏng</MenuItem>
+                                        <MenuItem value="maintenance">S/C; BD</MenuItem>
                                         <MenuItem value="retired">Niêm cất</MenuItem>
                                     </TextField>
                                     <Autocomplete
@@ -738,7 +737,7 @@ const Vehicles: React.FC = () => {
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='warning' name="status" checked={status === 'maintenance'}
                         onChange={() => handleChange('maintenance')} />
-                    <ListItemText primary={`Hỏng (${allVehicles.filter((o: Device) => o.status === "maintenance").length})`} sx={{ color: 'orange' }} />
+                    <ListItemText primary={`S/C; BD (${allVehicles.filter((o: Device) => o.status === "maintenance").length})`} sx={{ color: 'orange' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='default' name="status" checked={status === 'retired'}
@@ -803,7 +802,7 @@ const Vehicles: React.FC = () => {
                                 {visibleColumns.includes('coordinates') && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Vị trí</TableCell>}
                                 {visibleColumns.includes('department') && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Đơn vị</TableCell>}
                                 {visibleColumns.includes('status') && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>}
-                                {visibleColumns.includes('edit') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18, width: 50 }}>Sửa</TableCell>)}
+                                {user?.role !== "dispatcher" && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18, width: 50 }}>Sửa</TableCell>)}
                             </TableRow>
                         </TableHead>
                         {!isLoading ? <TableBody>
@@ -832,7 +831,7 @@ const Vehicles: React.FC = () => {
                                             zIndex: 1,
                                             minWidth: 100,
                                         }}>{device.code}</TableCell>}
-                                        {visibleColumns.includes('name') && <TableCell  sx={{ minWidth: 100, }}>{device.name}</TableCell>}
+                                        {visibleColumns.includes('name') && <TableCell sx={{ minWidth: 100, }}>{device.name}</TableCell>}
                                         {visibleColumns.includes('vehicleNumber') && <TableCell align='center' sx={{ minWidth: 50, }}>{device.vehicleNumber}</TableCell>}
                                         {visibleColumns.includes('category') && <TableCell align='center' sx={{ minWidth: 70, }}>{device.category?.name}</TableCell>}
                                         {visibleColumns.includes('material') && <TableCell align='center' sx={{ minWidth: 100, }}>{device.material}</TableCell>}
@@ -848,7 +847,7 @@ const Vehicles: React.FC = () => {
                                             <Chip
                                                 sx={{ width: '120px' }}
                                                 label={device.status === 'in_use' ? 'Đang hoạt động' :
-                                                    device.status === 'maintenance' ? 'Hỏng' :
+                                                    device.status === 'maintenance' ? 'S/C; BD' :
                                                         device.status === 'retired' ? 'Niêm cất' :
                                                             device.status === 'available' ? 'Chờ điều động' : device.status}
                                                 color={device.status === 'in_use' ? 'error' :
@@ -857,7 +856,7 @@ const Vehicles: React.FC = () => {
                                                             device.status === 'available' ? 'success' : 'default'}
                                             />
                                         </TableCell>}
-                                        {visibleColumns.includes('edit') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{}}>
+                                        {user?.role !== "dispatcher" && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{}}>
                                             <IconButton
                                                 color="primary"
                                                 onClick={async () => {

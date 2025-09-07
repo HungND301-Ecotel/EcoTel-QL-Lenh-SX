@@ -72,6 +72,7 @@ services:
       # For development only, to synced src code to container
       # - ./Backend:/usr/src/app
       - /usr/src/app/node_modules
+      - ./serviceAccountKey.json:/usr/src/app/serviceAccountKey.json:ro
     depends_on:
       - ktv_db
     # ports:

@@ -45,6 +45,8 @@ import * as yup from 'yup';
 import api from '../../config/api.config';
 import { Job, Position } from '../../types';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
+import { useAtom } from 'jotai';
+import { userAtom } from '../../atoms/userAtoms';
 
 const validationSchema = yup.object({
     name: yup.string().required('Vui lòng nhập tên chức danh'),
@@ -56,6 +58,7 @@ const Positions: React.FC = () => {
     const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
     const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
     const [value, setValue] = useState("")
+    const [user] = useAtom(userAtom)
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
     const formRef = useRef<HTMLDivElement>(null);
@@ -72,7 +75,6 @@ const Positions: React.FC = () => {
     const defaultColumns = [
         { id: 'name', label: 'Tên chức danh, nghề nghiệp' },
         { id: 'note', label: 'Mô tả' },
-        { id: 'edit', label: 'Sửa', width: 50 },
     ]
     const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
 
@@ -278,7 +280,7 @@ const Positions: React.FC = () => {
                             md: 'row',
                         },
                     }}>
-                        <Box display={'flex'} gap={2} sx={{
+                        {user?.role === "admin" && <Box display={'flex'} gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -294,7 +296,7 @@ const Positions: React.FC = () => {
                             <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
                                 Xóa
                             </Button>
-                        </Box>
+                        </Box>}
                         <Box flex={2} sx={{
                             flexDirection: {
                                 xs: 'column',
@@ -317,7 +319,7 @@ const Positions: React.FC = () => {
                                 }}>
                             </TextField>
                         </Box>
-                        <Box display="flex" gap={2} sx={{
+                        {user?.role==="admin" &&<Box display="flex" gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -361,7 +363,7 @@ const Positions: React.FC = () => {
                             >
                                 Tải xuống
                             </Button>
-                        </Box>
+                        </Box>}
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -462,12 +464,17 @@ const Positions: React.FC = () => {
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) && (
                                     <TableCell key={col.id} align="center" sx={{
-                                        backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: col.width, minWidth: col.width
+                                        backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18
                                     }}>
                                         {col.label}
                                     </TableCell>
                                 )
                             )}
+                            {user?.role === "admin" && <TableCell align="center" sx={{
+                                backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 50
+                            }}>
+                                Sửa
+                            </TableCell>}
                         </TableRow>
                     </TableHead>
                     {!isLoading ? <TableBody>
@@ -484,7 +491,7 @@ const Positions: React.FC = () => {
                                     textOverflow: 'ellipsis',
                                     maxWidth: 400,
                                 }}>{position.note}</TableCell>}
-                                {visibleColumns.includes('edit') && <TableCell sx={{}}>
+                                {user?.role === "admin" && <TableCell sx={{}}>
                                     <IconButton color="primary" onClick={async () => {
                                         if (open) {
                                             const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');

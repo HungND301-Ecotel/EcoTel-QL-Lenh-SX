@@ -45,6 +45,8 @@ import * as yup from 'yup';
 import api from '../../config/api.config';
 import { Material } from '../../types';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
+import { useAtom } from 'jotai';
+import { userAtom } from '../../atoms/userAtoms';
 
 const validationSchema = yup.object({
     name: yup.string().required('Vui lòng nhập tên vật liệu'),
@@ -57,6 +59,7 @@ const Materials: React.FC = () => {
     const [value, setValue] = useState("")
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
+    const [user]=useAtom(userAtom)
     const formRef = useRef<HTMLDivElement>(null);
     const handleSelected = (materialId: string) => {
         setSelectedMaterials(prev =>
@@ -69,7 +72,6 @@ const Materials: React.FC = () => {
         { id: 'name', label: 'Tên vật liệu' },
         { id: 'density', label: 'Tỉ trọng' },
         { id: 'mass', label: 'Khối lượng' },
-        { id: 'edit', label: 'Sửa', width: 50 },
     ]
 
     const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
@@ -284,7 +286,7 @@ const Materials: React.FC = () => {
                             md: 'row',
                         },
                     }}>
-                        <Box display={'flex'} gap={2} sx={{
+                        {user?.role === "admin" && <Box display={'flex'} gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -300,7 +302,7 @@ const Materials: React.FC = () => {
                             <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
                                 Xóa
                             </Button>
-                        </Box>
+                        </Box>}
                         <Box flex={2} sx={{
                             flexDirection: {
                                 xs: 'column',
@@ -323,7 +325,7 @@ const Materials: React.FC = () => {
                                 }}>
                             </TextField>
                         </Box>
-                        <Box display="flex" gap={2} sx={{
+                        {user?.role==="admin" &&<Box display="flex" gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -367,7 +369,7 @@ const Materials: React.FC = () => {
                             >
                                 Tải xuống
                             </Button>
-                        </Box>
+                        </Box>}
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -479,8 +481,13 @@ const Materials: React.FC = () => {
                             </TableCell>
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) &&
-                                <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: col?.width, minWidth: col?.width }}>{col.label}</TableCell>
+                                <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18}}>{col.label}</TableCell>
                             )}
+                            {user?.role==="admin"&&<TableCell align="center" sx={{
+                                    backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 50
+                                }}>
+                                    Sửa
+                                </TableCell>}
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -493,7 +500,7 @@ const Materials: React.FC = () => {
                                 {visibleColumns.includes('name') && <TableCell sx={{}}>{material.name}</TableCell>}
                                 {visibleColumns.includes('density') && <TableCell align='center' sx={{}}>{material.density}</TableCell>}
                                 {visibleColumns.includes("mass") && <TableCell align='center' sx={{}}>{material.mass}</TableCell>}
-                                {visibleColumns.includes("edit") && <TableCell align='center' sx={{}}>
+                                {user?.role==="admin" && <TableCell align='center' sx={{}}>
                                     <IconButton color="primary" onClick={async () => {
                                         if (open) {
                                             const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');

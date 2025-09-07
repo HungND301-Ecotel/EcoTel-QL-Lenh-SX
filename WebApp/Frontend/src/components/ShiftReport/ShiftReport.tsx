@@ -80,6 +80,7 @@ export default function ShiftReport({
             vehicleSummaries: [
                 {
                     vehicle: undefined,
+                    distanceKm: undefined,
                     repairHours: undefined,
                     travelHours: undefined,
                     fuelRemain: undefined,
@@ -130,6 +131,7 @@ export default function ShiftReport({
                 vehicleSummaries:
                     shiftReport?.vehicleSummaries?.map((v: any) => ({
                         vehicle: v?.vehicle?._id,
+                        distanceKm: v?.distanceKm,
                         repairHours: v?.repairHours,
                         travelHours: v?.travelHours,
                         fuelRemain: v?.fuelRemain,
@@ -229,13 +231,13 @@ export default function ShiftReport({
     function getGroupKey(jt: string, r: any) {
         switch (jt) {
             case 'Vận hành xúc':
-                // gộp theo Phương tiện + Chủng loại
+                // gộp theo Phương tiện + Vật liệu
                 return `device:${r.device?._id || ''}__mat:${r.material?._id || ''}`;
             case 'Vận hành xe':
-                // gộp theo xe + máy xúc + điểm đến + chủng loại (tùy nghiệp vụ)
+                // gộp theo xe + máy xúc + điểm đến + Vật liệu (tùy nghiệp vụ)
                 return `device:${r.device?._id || ''}__exc:${r.excavator?._id || ''}__to:${r.toLocation?._id || ''}__mat:${r.material?._id || ''}`;
             case 'Vận hành xe phục vụ':
-                // gộp theo xe + from + to + chủng loại
+                // gộp theo xe + from + to + Vật liệu
                 return `device:${r.device?._id || ''}__from:${r.fromLocation?._id || ''}__to:${r.toLocation?._id || ''}__mat:${r.material?._id || ''}`;
             case 'Vận hành gạt':
                 // gộp theo device + material
@@ -376,7 +378,7 @@ export default function ShiftReport({
                                                                 {toName ? `Đến điểm: ${toName}` : ''}
                                                             </Typography>
                                                         )}
-                                                        {materialName && <Typography variant="body2">Chủng loại: {materialName}</Typography>}
+                                                        {materialName && <Typography variant="body2">Vật liệu: {materialName}</Typography>}
                                                     </Grid>
                                                     <Grid item xs={12} sm={6}>
                                                         <Typography align="right" variant="subtitle2">
@@ -635,9 +637,35 @@ export default function ShiftReport({
                                                     );
                                                 })}
                                         </Grid>
-
                                         <Grid item xs={3}>
-                                            <Typography>Giờ di chuyển:</Typography>
+                                            <Typography>Km hoạt động trên đồng hồ:</Typography>
+                                        </Grid>
+                                        <Grid item xs={9}>
+                                            <TextField
+                                                fullWidth
+                                                type="number"
+                                                size="small"
+                                                name={`vehicleSummaries[${index}].distanceKm`}
+                                                value={shiftReportFormik.values.vehicleSummaries[index]?.distanceKm || ''}
+                                                onChange={shiftReportFormik.handleChange}
+                                            />
+                                            {shiftReportHistories
+                                                .filter((h: any) => h.changes.some((c: any) => c.field === 'distanceKm'))
+                                                .map((h: any, i: number) => {
+                                                    const changesText = h.changes
+                                                        .filter((c: any) => c.field === 'distanceKm' && c.index === index)
+                                                        .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
+                                                        .join(', ');
+                                                    return (
+                                                        <Typography key={i} variant="caption" color="secondary" display="block">
+                                                            Nội dung: Km hoạt động trên đồng hồ: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
+                                                            {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
+                                                        </Typography>
+                                                    );
+                                                })}
+                                        </Grid>
+                                        <Grid item xs={3}>
+                                            <Typography>Giờ hoạt động trên đồng hồ:</Typography>
                                         </Grid>
                                         <Grid item xs={9}>
                                             <TextField
@@ -657,7 +685,7 @@ export default function ShiftReport({
                                                         .join(', ');
                                                     return (
                                                         <Typography key={i} variant="caption" color="secondary" display="block">
-                                                            Nội dung: Giờ di chuyển: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
+                                                            Nội dung: Giờ hoạt động trên đồng hồ: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
                                                             {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
                                                         </Typography>
                                                     );

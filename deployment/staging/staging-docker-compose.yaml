@@ -158,23 +158,23 @@ services:
         max-size: "100m"
         max-file: "30"
 
-  ktv_backup:
-    env_file:
-      - .env_backend
-    image: ${REGISTRY}/ktv_ecotel_backup_img:${VERSION}
-    container_name: mongo_backup
-    environment:
-      - TZ=Asia/Ho_Chi_Minh
-    depends_on:
-      - ktv_db
-    restart: unless-stopped
-    networks:
-      - backnet
-    volumes:
-      - .mongodb_backup:/app/backup
-      - .mongodb_restore:/app/restore
-    # This keeps the cron container running
-    command: ["cron", "-f"]
+  # ktv_backup:
+  #   env_file:
+  #     - .env_backend
+  #   image: ${REGISTRY}/ktv_ecotel_backup_img:${VERSION}
+  #   container_name: mongo_backup
+  #   environment:
+  #     - TZ=Asia/Ho_Chi_Minh
+  #   depends_on:
+  #     - ktv_db
+  #   restart: unless-stopped
+  #   networks:
+  #     - backnet
+  #   volumes:
+  #     - .mongodb_backup:/app/backup
+  #     - .mongodb_restore:/app/restore
+  #   # This keeps the cron container running
+  #   command: ["cron", "-f"]
 networks:
   frontnet:
   backnet:
@@ -184,8 +184,8 @@ volumes:
   promtail-state:
   loki-data:
   grafana-storage:
-  .mongodb_backup:
-  .mongodb_restore:
+  # .mongodb_backup:
+  # .mongodb_restore:
   
 
 

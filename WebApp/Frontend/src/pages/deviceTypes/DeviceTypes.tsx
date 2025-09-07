@@ -71,7 +71,6 @@ const DeviceTypes: React.FC = () => {
     const defaultColumns = [
         { id: 'name', label: 'Tên loại phương tiện' },
         { id: 'group', label: 'Nhóm phương tiện' },
-        { id: 'edit', label: 'Sửa', width: 100 },
     ]
     const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
 
@@ -219,7 +218,7 @@ const DeviceTypes: React.FC = () => {
                             md: 'space-between',
                         },
                     }}>
-                        <Box
+                        {user?.role === "admin" && <Box
                             sx={{
                                 display: 'flex',
                                 gap: 1, // Khoảng cách nhỏ hơn giữa các nút
@@ -239,7 +238,7 @@ const DeviceTypes: React.FC = () => {
                             <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
                                 Xóa
                             </Button>
-                        </Box>
+                        </Box>}
                         <Box sx={{ display: 'flex', flex: 1, width: '100%' }}>
                             <TextField fullWidth size="small" value={value}
                                 placeholder='Tìm kiếm theo tên loại phương tiện'
@@ -348,7 +347,7 @@ const DeviceTypes: React.FC = () => {
                                 <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(DeviceType._id)} checked={selectedDeviceTypes.includes(DeviceType._id)} /></TableCell>
                                 {visibleColumns.includes('name') && <TableCell sx={{}}>{DeviceType.name}</TableCell>}
                                 {visibleColumns.includes('group') && <TableCell align='center' sx={{}}>{DeviceType.group}</TableCell>}
-                                {visibleColumns.includes('edit') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{}}>
+                                {user?.role==="admin" && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{}}>
                                     <IconButton color="primary" onClick={async () => {
                                         if (open) {
                                             const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');

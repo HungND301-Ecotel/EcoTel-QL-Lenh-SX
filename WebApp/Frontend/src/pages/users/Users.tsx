@@ -99,18 +99,14 @@ const Users: React.FC = () => {
         setShowPassword((prev) => !prev);
     };
 
-    const handleChange = (value: string) => {
-        setActive(prev => (prev === value ? '' : value)); // bỏ chọn nếu click lại
-    };
-
     const { data: users = [], isLoading } = useQuery({
-        queryKey: ['users', value, department,active],
-        queryFn: () => api.get(`/users?q=${value}&&department=${department}&&active=${active}`).then(res => res.data.data),
+        queryKey: ['users', value, department, active],
+        queryFn: () => api.get(`/users?q=${value}&&department=${department}`).then(res => res.data.data),
     });
-    const { data: allUsers = [] } = useQuery({
-        queryKey: ['allUsers'],
-        queryFn: () => api.get(`/users`).then(res => res.data.data),
-    });
+    const filteredOrders = React.useMemo(() => {
+        if (!active) return users;
+        return users.filter((o: User) => o.active === (active === "true" ? true : false));
+    }, [users, active]);
 
     const { data: positions = [] } = useQuery({
         queryKey: ['positions'],
@@ -363,16 +359,17 @@ const Users: React.FC = () => {
     );
 
     const userColumns: GridColDef[] = [
-        { field: 'fullName', headerName: 'Họ tên', minWidth: 250, flex: 1, headerAlign: 'center' },
+        { field: 'fullName', headerName: 'Họ tên', minWidth: 250, flex: 1, headerAlign: 'center', },
         {
             field: 'salaryCode',
             headerName: 'Thẻ lương',
+            align: 'center',
             width: 120,
             headerAlign: 'center'
         },
-        { field: 'gender', headerName: 'Giới tính', width: 120, headerAlign: 'center' },
-        { field: 'phone', headerName: 'Số điện thoại', width: 150, headerAlign: 'center' },
-        { field: 'email', headerName: 'Email', width: 150, headerAlign: 'center' },
+        { field: 'gender', headerName: 'Giới tính', width: 120, headerAlign: 'center',align: 'center' },
+        { field: 'phone', headerName: 'Số điện thoại', width: 150, headerAlign: 'center',align: 'center' },
+        { field: 'email', headerName: 'Email', width: 150, headerAlign: 'center',align: 'center' },
         {
             field: 'position',
             headerName: 'Chức danh, nghề nghiệp',
@@ -475,7 +472,7 @@ const Users: React.FC = () => {
     ];
     const visibleColumns = user?.role === 'admin'
         ? userColumns
-        : userColumns.filter((col: GridColDef) => col.field !== 'resetpass');
+        : userColumns.filter((col: GridColDef) => col.field !== 'resetpass' && col.field !== 'active' && col.field !== 'edit');
 
     return (
         <Box>
@@ -503,7 +500,7 @@ const Users: React.FC = () => {
                             md: 'row',
                         },
                     }}>
-                        <Box display="flex" gap={2} sx={{
+                        {user?.role === "admin" && <Box display="flex" gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -523,7 +520,7 @@ const Users: React.FC = () => {
                             <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
                                 Xóa
                             </Button>
-                        </Box>
+                        </Box>}
                         <Box flex={1} sx={{
                             flexDirection: {
                                 xs: 'column',
@@ -566,7 +563,7 @@ const Users: React.FC = () => {
                                 />}
                             </Box>
                         </Box>
-                        <Box display="flex" gap={2} sx={{
+                        {user?.role==="admin" &&<Box display="flex" gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -610,7 +607,7 @@ const Users: React.FC = () => {
                             >
                                 Tải xuống
                             </Button>
-                        </Box>
+                        </Box>}
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -808,22 +805,22 @@ const Users: React.FC = () => {
                         <Box display="flex" alignItems={'center'}>
                             <Checkbox color='info' name="status" checked={active === ''}
                                 onChange={() => setActive('')} />
-                            <ListItemText primary={`Tất cả (${allUsers.length})`} sx={{ color: 'blue' }} />
+                            <ListItemText primary={`Tất cả (${users.length})`} sx={{ color: 'blue' }} />
                         </Box>
                         <Box display="flex" alignItems={'center'}>
                             <Checkbox color='default' name="status" checked={active === 'true'}
                                 onChange={() => setActive('true')} />
-                            <ListItemText primary={`Hoạt động (${allUsers.filter((o: User) => o.active).length})`} sx={{ color: 'grey' }} />
+                            <ListItemText primary={`Hoạt động (${users.filter((o: User) => o.active).length})`} sx={{ color: 'grey' }} />
                         </Box>
                         <Box display="flex" alignItems={'center'}>
                             <Checkbox color='default' name="status" checked={active === 'false'}
                                 onChange={() => setActive('false')} />
-                            <ListItemText primary={`Không hoạt động (${allUsers.filter((o: User) => !o.active).length})`} sx={{ color: 'grey' }} />
+                            <ListItemText primary={`Không hoạt động (${users.filter((o: User) => !o.active).length})`} sx={{ color: 'grey' }} />
                         </Box>
                     </Box>
                 </Box>
                 <DataGrid
-                    rows={users}
+                    rows={filteredOrders}
                     columns={visibleColumns}
                     getRowId={(row) => row._id}
                     rowsPerPageOptions={[10, 20, 50]}

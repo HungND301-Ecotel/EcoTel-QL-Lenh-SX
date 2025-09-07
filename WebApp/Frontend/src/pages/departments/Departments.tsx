@@ -36,6 +36,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/api.config';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { Department } from '../../types';
+import { useAtom } from 'jotai';
+import { userAtom } from '../../atoms/userAtoms';
 
 const validationSchema = yup.object({
     name: yup.string().required('Vui lòng nhập tên đơn vị'),
@@ -48,6 +50,7 @@ const Departments = () => {
     const [selectedDepartment, setSelectedDepartment] = useState<any>(null);
     const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
     const [value, setValue] = useState("")
+    const [user] = useAtom(userAtom)
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
     const formRef = useRef<HTMLDivElement>(null);
@@ -65,7 +68,6 @@ const Departments = () => {
         { id: 'code', label: 'Mã đơn vị' },
         { id: 'name', label: 'Tên đơn vị' },
         { id: 'description', label: 'Chức năng' },
-        { id: 'edit', label: 'Sửa', width: 50 },
     ]
     const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
 
@@ -273,7 +275,7 @@ const Departments = () => {
                             md: 'row',
                         },
                     }}>
-                        <Box display={'flex'} gap={2} sx={{
+                        {user?.role === "admin" && <Box display={'flex'} gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -289,7 +291,7 @@ const Departments = () => {
                             <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
                                 Xóa
                             </Button>
-                        </Box>
+                        </Box>}
                         <Box flex={2} sx={{
                             flexDirection: {
                                 xs: 'column',
@@ -312,7 +314,7 @@ const Departments = () => {
                                 }}>
                             </TextField>
                         </Box>
-                        <Box display="flex" gap={2} sx={{
+                        {user?.role==="admin" &&<Box display="flex" gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -356,7 +358,7 @@ const Departments = () => {
                             >
                                 Tải xuống
                             </Button>
-                        </Box>
+                        </Box>}
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -479,12 +481,17 @@ const Departments = () => {
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) && (
                                     <TableCell key={col.id} align="center" sx={{
-                                        backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: col.width, minWidth: col.width
+                                        backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18
                                     }}>
                                         {col.label}
                                     </TableCell>
                                 )
                             )}
+                            {user?.role === "admin" && <TableCell align="center" sx={{
+                                backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 50
+                            }}>
+                                Sửa
+                            </TableCell>}
                         </TableRow>
                     </TableHead>
                     {!isLoading ? <TableBody>
@@ -497,7 +504,7 @@ const Departments = () => {
                                 {visibleColumns.includes('code') && <TableCell align='center' sx={{}}>{department.code}</TableCell>}
                                 {visibleColumns.includes('name') && <TableCell sx={{}}>{department.name}</TableCell>}
                                 {visibleColumns.includes('description') && <TableCell sx={{}}>{department.description}</TableCell>}
-                                {visibleColumns.includes('edit') && <TableCell sx={{}}>
+                                {user?.role === "admin" && <TableCell sx={{}}>
                                     <IconButton onClick={async () => {
                                         if (open) {
                                             const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
