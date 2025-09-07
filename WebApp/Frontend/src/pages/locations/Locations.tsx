@@ -24,6 +24,8 @@ import { Location } from '../../types';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import LocationSelector from '../../fixLeafletIcon';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
+import { useAtom } from 'jotai';
+import { userAtom } from '../../atoms/userAtoms';
 
 const containerStyle = {
     width: '100%',
@@ -50,7 +52,7 @@ const Locations: React.FC = () => {
     const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
     const [value, setValue] = useState("")
     const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(null);
-
+    const [user] = useAtom(userAtom)
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
     const formRef = useRef<HTMLDivElement>(null);
@@ -67,7 +69,6 @@ const Locations: React.FC = () => {
     const defaultColumns = [
         { id: 'name', label: 'Tên' },
         { id: 'coordinates', label: 'Tọa độ' },
-        { id: 'edit', label: 'Sửa', width: 50 },
     ]
     const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
 
@@ -305,7 +306,7 @@ const Locations: React.FC = () => {
                             md: 'row',
                         }
                     }}>
-                        <Box display={'flex'} gap={2} sx={{
+                        {user?.role === "admin" && <Box display={'flex'} gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -321,7 +322,7 @@ const Locations: React.FC = () => {
                             <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
                                 Xóa
                             </Button>
-                        </Box>
+                        </Box>}
                         <Box flex={2} sx={{
                             flexDirection: {
                                 xs: 'column',
@@ -344,7 +345,7 @@ const Locations: React.FC = () => {
                                 }}>
                             </TextField>
                         </Box>
-                        <Box display="flex" gap={2} sx={{
+                        {user?.role==="admin" &&<Box display="flex" gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -388,7 +389,7 @@ const Locations: React.FC = () => {
                             >
                                 Tải xuống
                             </Button>
-                        </Box>
+                        </Box>}
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -428,22 +429,6 @@ const Locations: React.FC = () => {
                                         (formik.touched.coordinates?.lng && formik.errors.coordinates?.lng)
                                     }
                                 />
-                                {/* {isLoaded && (
-                                <GoogleMap
-                                    mapContainerStyle={containerStyle}
-                                    center={mapCoords || defaultCenter}
-                                    zoom={15}
-                                    onClick={handleMapClick}
-                                >
-                                    {mapCoords && <Marker
-                                        position={mapCoords}
-                                        icon={{
-                                            url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-                                            scaledSize: new window.google.maps.Size(40, 40),
-                                        }}
-                                    />}
-                                </GoogleMap>
-                            )} */}
                                 <MapContainer
                                     center={[defaultCenter.lat, defaultCenter.lng]}
                                     zoom={18}
@@ -543,12 +528,17 @@ const Locations: React.FC = () => {
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) && (
                                     <TableCell key={col.id} align="center" sx={{
-                                        backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: col.width, minWidth: col.width
+                                        backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18
                                     }}>
                                         {col.label}
                                     </TableCell>
                                 )
                             )}
+                            {user?.role === "admin" && <TableCell align="center" sx={{
+                                backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 50
+                            }}>
+                                Sửa
+                            </TableCell>}
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -572,7 +562,7 @@ const Locations: React.FC = () => {
                                     <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(loc._id)} checked={selectedLocations.includes(loc._id)} /></TableCell>
                                     {visibleColumns.includes('name') && <TableCell sx={{}}>{loc.name}</TableCell>}
                                     {visibleColumns.includes('coordinates') && <TableCell sx={{}}>{coordsDisplay}</TableCell>}
-                                    {visibleColumns.includes('edit') && <TableCell sx={{}}>
+                                    {user?.role === "admin" && <TableCell sx={{}}>
                                         <IconButton color="primary" onClick={async () => {
                                             if (open) {
                                                 const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');

@@ -49,6 +49,8 @@ import * as yup from 'yup';
 import api from '../../config/api.config';
 import { Job, Position, SafetyMeasure } from '../../types';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
+import { useAtom } from 'jotai';
+import { userAtom } from '../../atoms/userAtoms';
 
 
 const StyledPopper = styled(Popper)({
@@ -70,6 +72,7 @@ const SafetyMeasures: React.FC = () => {
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
     const [selectedSafetyMeasures, setSelectedSafetyMeasures] = useState<string[]>([]);
+    const [user] = useAtom(userAtom);
     const formRef = useRef<HTMLDivElement>(null);
 
 
@@ -84,7 +87,6 @@ const SafetyMeasures: React.FC = () => {
         { id: 'number', label: 'STT', width: 50 },
         { id: 'name', label: 'Tên biện pháp an toàn chung', width: 300 },
         { id: 'content', label: 'Biện pháp an toàn chung' },
-        { id: 'edit', label: 'Sửa', width: 50 },
     ];
 
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -341,7 +343,7 @@ const SafetyMeasures: React.FC = () => {
                             md: 'space-between',
                         },
                     }}>
-                        <Box
+                        {user?.role === "admin" && <Box
                             sx={{
                                 display: 'flex',
                                 gap: 1, // Khoảng cách nhỏ hơn giữa các nút
@@ -362,54 +364,7 @@ const SafetyMeasures: React.FC = () => {
                             <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
                                 Xóa
                             </Button>
-                            <Box display="flex" gap={2} sx={{
-                                display: 'flex',
-                                gap: 1, // Khoảng cách nhỏ hơn giữa các nút
-                                flexDirection: {
-                                    xs: 'column',
-                                    md: 'row',
-                                },
-                                width: {
-                                    xs: '100%', // Group này chiếm 100% khi xếp dọc
-                                    md: 'auto',
-                                },
-                            }}>
-                                <input
-                                    id="upload-excel"
-                                    type="file"
-                                    accept=".xlsx, .xls"
-                                    style={{ display: 'none' }}
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                            const formData = new FormData();
-                                            formData.append('file', file);
-                                            importFile.mutate(formData);
-                                        }
-                                        e.target.value = "";
-                                    }}
-                                />
-
-                                <label htmlFor="upload-excel">
-                                    <Button
-                                        fullWidth
-                                        component="span"
-                                        variant="contained"
-                                        startIcon={<UploadFile />}
-                                    >
-                                        Tải lên excel
-                                    </Button>
-                                </label>
-                                <Button
-                                    component="span"
-                                    variant="contained"
-                                    startIcon={<Download />}
-                                    onClick={() => exportExcel.mutate()}
-                                >
-                                    Tải xuống
-                                </Button>
-                            </Box>
-                        </Box>
+                        </Box>}
                         <Box sx={{ display: 'flex', flex: 1, width: '100%' }}>
                             <TextField fullWidth size="small" value={value}
                                 placeholder='Tìm kiếm theo tên biện pháp an toàn chung'
@@ -423,6 +378,53 @@ const SafetyMeasures: React.FC = () => {
                                 }}>
                             </TextField>
                         </Box>
+                        {user?.role==="admin" &&<Box display="flex" gap={2} sx={{
+                            display: 'flex',
+                            gap: 1, // Khoảng cách nhỏ hơn giữa các nút
+                            flexDirection: {
+                                xs: 'column',
+                                md: 'row',
+                            },
+                            width: {
+                                xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                md: 'auto',
+                            },
+                        }}>
+                            <input
+                                id="upload-excel"
+                                type="file"
+                                accept=".xlsx, .xls"
+                                style={{ display: 'none' }}
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        const formData = new FormData();
+                                        formData.append('file', file);
+                                        importFile.mutate(formData);
+                                    }
+                                    e.target.value = "";
+                                }}
+                            />
+
+                            <label htmlFor="upload-excel">
+                                <Button
+                                    fullWidth
+                                    component="span"
+                                    variant="contained"
+                                    startIcon={<UploadFile />}
+                                >
+                                    Tải lên excel
+                                </Button>
+                            </label>
+                            <Button
+                                component="span"
+                                variant="contained"
+                                startIcon={<Download />}
+                                onClick={() => exportExcel.mutate()}
+                            >
+                                Tải xuống
+                            </Button>
+                        </Box>}
 
                     </Box>
                 </AccordionSummary>
@@ -577,6 +579,11 @@ const SafetyMeasures: React.FC = () => {
                                     <TableCell key={item.id} align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: item.width, minWidth: item.width }}>{item.label}</TableCell>
                                 )
                             )}
+                            {user?.role === "admin" && <TableCell align="center" sx={{
+                                backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 50
+                            }}>
+                                Sửa
+                            </TableCell>}
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -601,7 +608,7 @@ const SafetyMeasures: React.FC = () => {
                                         overflow: 'hidden',
                                         textOverflow: 'ellipsis',
                                     }}>{safetyMeasure.content}</TableCell>}
-                                {visibleColumns.includes('edit') &&
+                                {user?.role === "admin" &&
                                     <TableCell align='center' sx={{}}>
                                         <IconButton color="primary" onClick={async () => {
                                             if (open) {

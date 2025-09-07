@@ -46,6 +46,8 @@ import * as yup from 'yup';
 import api from '../../config/api.config';
 import { Job } from '../../types';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
+import { useAtom } from 'jotai';
+import { userAtom } from '../../atoms/userAtoms';
 
 const validationSchema = yup.object({
     name: yup.string().required('Vui lòng nhập tên công việc'),
@@ -62,6 +64,7 @@ const Jobs: React.FC = () => {
     const [value, setValue] = useState("")
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
+    const [user] = useAtom(userAtom)
     const formRef = useRef<HTMLDivElement>(null);
 
     const handleSelected = (jobId: string) => {
@@ -76,7 +79,6 @@ const Jobs: React.FC = () => {
     const defaultColumns = [
         { id: 'name', label: 'Tên công việc' },
         { id: 'category', label: 'Loại công việc' },
-        { id: 'edit', label: 'Sửa', width: 50 },
     ]
     const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
 
@@ -280,7 +282,7 @@ const Jobs: React.FC = () => {
                             md: 'row',
                         },
                     }}>
-                        <Box display={'flex'} gap={2} sx={{
+                        {user?.role === "admin" && <Box display={'flex'} gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -296,7 +298,7 @@ const Jobs: React.FC = () => {
                             <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
                                 Xóa
                             </Button>
-                        </Box>
+                        </Box>}
                         <Box flex={2} sx={{
                             flexDirection: {
                                 xs: 'column',
@@ -319,7 +321,7 @@ const Jobs: React.FC = () => {
                                 }}>
                             </TextField>
                         </Box>
-                        <Box display="flex" gap={2} sx={{
+                        {user?.role==="admin" &&<Box display="flex" gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -363,7 +365,7 @@ const Jobs: React.FC = () => {
                             >
                                 Tải xuống
                             </Button>
-                        </Box>
+                        </Box>}
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -473,12 +475,17 @@ const Jobs: React.FC = () => {
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) && (
                                     <TableCell key={col.id} align="center" sx={{
-                                        backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: col.width, minWidth: col.width
+                                        backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, 
                                     }}>
                                         {col.label}
                                     </TableCell>
                                 )
                             )}
+                            {user?.role === "admin" && <TableCell align="center" sx={{
+                                backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 50
+                            }}>
+                                Sửa
+                            </TableCell>}
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -490,7 +497,7 @@ const Jobs: React.FC = () => {
                                 <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(job._id)} checked={selectedJobs.includes(job._id)} /></TableCell>
                                 {visibleColumns.includes('name') && <TableCell sx={{}}>{job.name}</TableCell>}
                                 {visibleColumns.includes('category') && <TableCell align='center' sx={{}}>{job.type}</TableCell>}
-                                {visibleColumns.includes('edit') && <TableCell sx={{}}>
+                                {user?.role==="admin" && <TableCell sx={{}}>
                                     <IconButton color="primary" onClick={async () => {
                                         if (open) {
                                             const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');

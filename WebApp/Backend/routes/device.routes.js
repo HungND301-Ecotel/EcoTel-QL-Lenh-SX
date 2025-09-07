@@ -313,6 +313,7 @@ router.get('/count/status', verifyToken, restrictTo('admin', 'manager', 'dispatc
                 }
 
                 organizations.push({
+                    departmentId: dept._id,
                     departmentName: dept.code,
                     statusCounts
                 });

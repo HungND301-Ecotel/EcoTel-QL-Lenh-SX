@@ -16,6 +16,7 @@ import {
     TableHead,
     TableCell,
     TableBody,
+    Popover,
 } from '@mui/material';
 import {
     Assignment as OrderIcon,
@@ -84,6 +85,51 @@ const AdminDashboard: React.FC = () => {
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setTabIndex(newValue);
+    };
+
+    const [anchorElSummary, setAnchorElSummary] = useState<HTMLElement | null>(null);
+    const [selectedSummaryDevices, setSelectedSummaryDevices] = useState<any[]>([]);
+
+    // Popover chi tiết (bảng dưới)
+    const [anchorElDetail, setAnchorElDetail] = useState<HTMLElement | null>(null);
+    const [selectedDetailDevices, setSelectedDetailDevices] = useState<Device[]>([]);
+
+    const getDevicesByStatusGrouped = (status: string) => {
+        // Gom theo typeName
+        return count.map((type: any) => {
+            const total = type.organizations.reduce((sum: number, org: any) => {
+                return sum + (org.statusCounts[status] || 0);
+            }, 0);
+
+            return { typeName: type.typeName, total };
+        });
+    };
+
+    const handleSummaryClick = (event: React.MouseEvent<HTMLElement>, status: string) => {
+        setAnchorElSummary(event.currentTarget);
+        const grouped = getDevicesByStatusGrouped(status);
+        setSelectedSummaryDevices(grouped);
+    };
+    const handleSummaryClose = () => {
+        setAnchorElSummary(null);
+        setSelectedSummaryDevices([]);
+    };
+
+    // Mở/đóng popover chi tiết
+    const handleDetailClick = (
+        event: React.MouseEvent<HTMLElement>,
+        status: string,
+        departmentId: string,
+        typeName: string
+    ) => {
+        setAnchorElDetail(event.currentTarget);
+        setSelectedDetailDevices(devices.filter((d: any) =>
+            d.status === status && d.department?.code === departmentId && d.category?.name === typeName
+        ));
+    };
+    const handleDetailClose = () => {
+        setAnchorElDetail(null);
+        setSelectedDetailDevices([]);
     };
 
 
@@ -217,34 +263,64 @@ const AdminDashboard: React.FC = () => {
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <Box display="flex" gap={2} alignItems={'center'}>
                                         <DeviceIcon sx={{ color: 'green' }} fontSize='medium' />
-                                        <Typography variant='h6' sx={{ fontWeight: 'bold', }}>Chờ điều động</Typography>
+                                        <Typography variant='h6' onClick={(e) => handleSummaryClick(e, "available")} sx={{ fontWeight: 'bold', cursor: 'pointer' }}>Chờ điều động</Typography>
                                     </Box>
                                     <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{devices.filter((o: Device) => o.status === "available").length}</Typography>
                                 </Box>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <Box display="flex" gap={2} alignItems={'center'}>
                                         <DeviceIcon color='error' fontSize='medium' />
-                                        <Typography variant='h6' sx={{ fontWeight: 'bold', }}>Đang hoạt động</Typography>
+                                        <Typography variant='h6' onClick={(e) => handleSummaryClick(e, "in_use")} sx={{ fontWeight: 'bold', cursor: 'pointer' }}>Đang hoạt động</Typography>
                                     </Box>
                                     <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{devices.filter((o: Device) => o.status === "in_use").length}</Typography>
                                 </Box>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <Box display="flex" gap={2} alignItems={'center'}>
                                         <DeviceIcon color='warning' fontSize='medium' />
-                                        <Typography variant='h6' sx={{ fontWeight: 'bold', }}>Hỏng</Typography>
+                                        <Typography variant='h6' onClick={(e) => handleSummaryClick(e, "maintenance")} sx={{ fontWeight: 'bold', cursor: 'pointer' }}>S/C; BD</Typography>
                                     </Box>
                                     <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{devices.filter((o: Device) => o.status === "maintenance").length}</Typography>
                                 </Box>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <Box display="flex" gap={2} alignItems={'center'}>
                                         <DeviceIcon color='disabled' fontSize='medium' />
-                                        <Typography variant='h6' sx={{ fontWeight: 'bold', }}>Niêm cất</Typography>
+                                        <Typography variant='h6' onClick={(e) => handleSummaryClick(e, "retired")} sx={{ fontWeight: 'bold', cursor: 'pointer' }}>Niêm cất</Typography>
                                     </Box>
                                     <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{devices.filter((o: Device) => o.status === "retired").length}</Typography>
                                 </Box>
                             </Box>
                         </CardContent>
                     </Card>
+                    <Popover
+                        open={Boolean(anchorElSummary)}
+                        anchorEl={anchorElSummary}
+                        onClose={handleSummaryClose}
+                        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                    >
+                        <Box sx={{ p: 2, maxHeight: 300, overflowY: 'auto' }}>
+                            <Typography variant="h6" gutterBottom>Danh sách phương tiện</Typography>
+                            {selectedSummaryDevices.length > 0 ? (
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Loại xe</TableCell>
+                                            <TableCell>Số lượng</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {selectedSummaryDevices.map((d) => (
+                                            <TableRow>
+                                                <TableCell>{d.typeName}</TableCell>
+                                                <TableCell>{d.total}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            ) : (
+                                <Typography>Không có phương tiện nào</Typography>
+                            )}
+                        </Box>
+                    </Popover>
                 </Grid>
                 <Grid item xs={12} md={6}>
                     <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -378,13 +454,13 @@ const AdminDashboard: React.FC = () => {
                                                     color: 'red',
                                                 }}>Đang hoạt động</TableCell>
                                                 <TableCell align='center' sx={{
-                                                    minWidth: 50, position: 'sticky',
+                                                    minWidth: 70, position: 'sticky',
                                                     top: 100,
                                                     zIndex: 1,
                                                     fontWeight: 'bold',
                                                     fontSize: 18,
                                                     color: 'orange',
-                                                }}>Hỏng</TableCell>
+                                                }}>S/C; BD</TableCell>
                                                 <TableCell align='center' sx={{
                                                     minWidth: 100, position: 'sticky',
                                                     top: 100,
@@ -413,10 +489,21 @@ const AdminDashboard: React.FC = () => {
                                                 const bgColor = index % 2 === 0 ? 'white' : '#e3f2fd';
                                                 return (
                                                     <React.Fragment key={typeIndex}>
-                                                        <TableCell align='center' sx={{ backgroundColor: (s.available || 0) > 0 ? 'green' : bgColor, color: (s.available || 0) > 0 ? 'white' : '' }}>{s.available || 0}</TableCell>
-                                                        <TableCell align='center' sx={{ backgroundColor: (s.in_use || 0) > 0 ? 'red' : bgColor, color: (s.in_use || 0) > 0 ? 'white' : '' }}>{s.in_use || 0}</TableCell>
-                                                        <TableCell align='center' sx={{ backgroundColor: (s.maintenance || 0) > 0 ? 'yellow' : bgColor }}>{s.maintenance || 0}</TableCell>
-                                                        <TableCell align='center' sx={{ backgroundColor: (s.retired || 0) > 0 ? 'black' : bgColor, color: (s.retired || 0) > 0 ? 'white' : '' }}>{s.retired || 0}</TableCell>
+                                                        <TableCell
+                                                            align="center"
+                                                            sx={{
+                                                                backgroundColor: (s.available || 0) > 0 ? 'green' : '',
+                                                                color: (s.available || 0) > 0 ? 'white' : '',
+                                                                cursor: 'pointer'
+                                                            }}
+                                                            onClick={(e) => handleDetailClick(e, "available", item?.code, type.typeName)}
+                                                        >
+                                                            {s.available || 0}
+                                                        </TableCell>
+                                                        <TableCell align='center' onClick={(e) => handleDetailClick(e, "in_use", item?.code, type.typeName)} sx={{ backgroundColor: (s.in_use || 0) > 0 ? 'red' : '', color: (s.in_use || 0) > 0 ? 'white' : '', cursor: 'pointer' }}>{s.in_use || 0}</TableCell>
+                                                        <TableCell align='center' onClick={(e) => handleDetailClick(e, "maintenance", item?.code, type.typeName)} sx={{ backgroundColor: (s.maintenance || 0) > 0 ? 'yellow' : '', cursor: 'pointer' }}>{s.maintenance || 0}</TableCell>
+                                                        <TableCell align='center' onClick={(e) => handleDetailClick(e, "retired", item?.code, type.typeName)} sx={{ backgroundColor: (s.retired || 0) > 0 ? 'black' : '', color: (s.retired || 0) > 0 ? 'white' : '', cursor: 'pointer' }}>{s.retired || 0}</TableCell>
+
                                                     </React.Fragment>
                                                 );
                                             })}
@@ -426,6 +513,38 @@ const AdminDashboard: React.FC = () => {
                             </Table>
                         </TableContainer>
                     </Paper>
+                    <Popover
+                        open={Boolean(anchorElDetail)}
+                        anchorEl={anchorElDetail}
+                        onClose={handleDetailClose}
+                        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                    >
+                        <Box sx={{ p: 2, maxHeight: 300, overflowY: 'auto' }}>
+                            <Typography variant="h6" gutterBottom>Danh sách phương tiện chi tiết</Typography>
+                            {selectedDetailDevices.length > 0 ? (
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Phương tiện</TableCell>
+                                            <TableCell>Sản lượng</TableCell>
+                                            <TableCell>Ghi chú</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {selectedDetailDevices.map((d) => (
+                                            <TableRow key={d._id}>
+                                                <TableCell>{d.code}</TableCell>
+                                                <TableCell>0</TableCell>
+                                                <TableCell></TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            ) : (
+                                <Typography>Không có phương tiện nào</Typography>
+                            )}
+                        </Box>
+                    </Popover>
                 </Box>}
                 {tabIndex === 1 && <Box>
                     {/* {isLoaded && (

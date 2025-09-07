@@ -16,6 +16,7 @@ import {
     TableCell,
     TableRow,
     TableBody,
+    Popover,
 } from '@mui/material';
 import {
     Assignment as OrderIcon,
@@ -29,6 +30,7 @@ import {
     Grid3x3Sharp,
     ViewList,
     BorderRight,
+    Crop169Outlined,
 } from '@mui/icons-material';
 import api from '../../config/api.config';
 import { Order, Device, Department, Location } from '../../types';
@@ -49,14 +51,6 @@ const ManagerDashboard: React.FC = () => {
     const [mapCoords, setMapCoords] = useState<{ lat: number, lng: number; } | null>(null);
     const [tabIndex, setTabIndex] = useState(0);
     const apiKey = process.env.REACT_APP_MAP_API_KEY;
-
-
-    // if (!apiKey) {
-    //     throw new Error('REACT_APP_MAP_API_KEY is not defined');
-    // }
-    // const { isLoaded } = useJsApiLoader({
-    //     googleMapsApiKey: apiKey,
-    // });
 
 
     const { data: orders = [] } = useQuery({
@@ -88,6 +82,52 @@ const ManagerDashboard: React.FC = () => {
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setTabIndex(newValue);
+    };
+
+    const [anchorElSummary, setAnchorElSummary] = useState<HTMLElement | null>(null);
+    const [selectedSummaryDevices, setSelectedSummaryDevices] = useState<any[]>([]);
+
+    // Popover chi tiết (bảng dưới)
+    const [anchorElDetail, setAnchorElDetail] = useState<HTMLElement | null>(null);
+    const [selectedDetailDevices, setSelectedDetailDevices] = useState<Device[]>([]);
+
+    const getDevicesByStatusGrouped = (status: string) => {
+        // Gom theo typeName
+        return count.map((type: any) => {
+            const total = type.organizations.reduce((sum: number, org: any) => {
+                return sum + (org.statusCounts[status] || 0);
+            }, 0);
+
+            return { typeName: type.typeName, total };
+        });
+    };
+
+    const handleSummaryClick = (event: React.MouseEvent<HTMLElement>, status: string) => {
+        setAnchorElSummary(event.currentTarget);
+        const grouped = getDevicesByStatusGrouped(status);
+        setSelectedSummaryDevices(grouped);
+    };
+    const handleSummaryClose = () => {
+        setAnchorElSummary(null);
+        setSelectedSummaryDevices([]);
+    };
+
+    // Mở/đóng popover chi tiết
+    const handleDetailClick = (
+        event: React.MouseEvent<HTMLElement>,
+        status: string,
+        departmentId: string,
+        typeName: string
+    ) => {
+        console.log("Detail Clicked:", { status, departmentId, typeName });
+        setAnchorElDetail(event.currentTarget);
+        setSelectedDetailDevices(devices.filter((d: any) =>
+            d.status === status && d.department?.code === departmentId && d.category?.name === typeName
+        ));
+    };
+    const handleDetailClose = () => {
+        setAnchorElDetail(null);
+        setSelectedDetailDevices([]);
     };
 
     return (
@@ -220,28 +260,28 @@ const ManagerDashboard: React.FC = () => {
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <Box display="flex" gap={2} alignItems={'center'}>
                                         <DeviceIcon sx={{ color: 'green' }} fontSize='medium' />
-                                        <Typography variant='h6' sx={{ fontWeight: 'bold', }}>Chờ điều động</Typography>
+                                        <Typography variant='h6' onClick={(e) => handleSummaryClick(e, "available")} sx={{ fontWeight: 'bold', cursor: 'pointer' }}>Chờ điều động</Typography>
                                     </Box>
                                     <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{devices.filter((o: Device) => o.status === "available").length}</Typography>
                                 </Box>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <Box display="flex" gap={2} alignItems={'center'}>
                                         <DeviceIcon color='error' fontSize='medium' />
-                                        <Typography variant='h6' sx={{ fontWeight: 'bold', }}>Đang hoạt động</Typography>
+                                        <Typography variant='h6' onClick={(e) => handleSummaryClick(e, "in_use")} sx={{ fontWeight: 'bold', cursor: 'pointer' }}>Đang hoạt động</Typography>
                                     </Box>
                                     <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{devices.filter((o: Device) => o.status === "in_use").length}</Typography>
                                 </Box>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <Box display="flex" gap={2} alignItems={'center'}>
                                         <DeviceIcon color='warning' fontSize='medium' />
-                                        <Typography variant='h6' sx={{ fontWeight: 'bold', }}>Hỏng</Typography>
+                                        <Typography variant='h6' onClick={(e) => handleSummaryClick(e, "maintenance")} sx={{ fontWeight: 'bold', cursor: 'pointer' }}>S/C; BD</Typography>
                                     </Box>
                                     <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{devices.filter((o: Device) => o.status === "maintenance").length}</Typography>
                                 </Box>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <Box display="flex" gap={2} alignItems={'center'}>
                                         <DeviceIcon color='disabled' fontSize='medium' />
-                                        <Typography variant='h6' sx={{ fontWeight: 'bold', }}>Niêm cất</Typography>
+                                        <Typography variant='h6' onClick={(e) => handleSummaryClick(e, "retired")} sx={{ fontWeight: 'bold', cursor: 'pointer' }}>Niêm cất</Typography>
                                     </Box>
                                     <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{devices.filter((o: Device) => o.status === "retired").length}</Typography>
                                 </Box>
@@ -249,6 +289,36 @@ const ManagerDashboard: React.FC = () => {
                         </CardContent>
                     </Card>
                 </Grid>
+                <Popover
+                    open={Boolean(anchorElSummary)}
+                    anchorEl={anchorElSummary}
+                    onClose={handleSummaryClose}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                >
+                    <Box sx={{ p: 2, maxHeight: 300, overflowY: 'auto' }}>
+                        <Typography variant="h6" gutterBottom>Danh sách phương tiện</Typography>
+                        {selectedSummaryDevices.length > 0 ? (
+                            <Table size="small">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Loại xe</TableCell>
+                                        <TableCell>Số lượng</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {selectedSummaryDevices.map((d) => (
+                                        <TableRow>
+                                            <TableCell>{d.typeName}</TableCell>
+                                            <TableCell>{d.total}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        ) : (
+                            <Typography>Không có phương tiện nào</Typography>
+                        )}
+                    </Box>
+                </Popover>
             </Grid>
             <Box sx={{ mt: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -309,13 +379,13 @@ const ManagerDashboard: React.FC = () => {
                                                     color: 'red',
                                                 }}>Đang hoạt động</TableCell>
                                                 <TableCell align='center' sx={{
-                                                    minWidth: 50, position: 'sticky',
+                                                    minWidth: 70, position: 'sticky',
                                                     top: 56,
                                                     fontWeight: 'bold',
                                                     fontSize: 18,
                                                     zIndex: 1,
                                                     color: 'orange',
-                                                }}>Hỏng</TableCell>
+                                                }}>S/C; BD</TableCell>
                                                 <TableCell align='center' sx={{
                                                     minWidth: 100, position: 'sticky',
                                                     top: 56,
@@ -346,10 +416,21 @@ const ManagerDashboard: React.FC = () => {
 
                                                 return (
                                                     <React.Fragment key={typeIndex}>
-                                                        <TableCell align='center' sx={{ backgroundColor: (s.available || 0) > 0 ? 'green' : '', color: (s.available || 0) > 0 ? 'white' : '' }}>{s.available || 0}</TableCell>
-                                                        <TableCell align='center' sx={{ backgroundColor: (s.in_use || 0) > 0 ? 'red' : '', color: (s.in_use || 0) > 0 ? 'white' : '' }}>{s.in_use || 0}</TableCell>
-                                                        <TableCell align='center' sx={{ backgroundColor: (s.maintenance || 0) > 0 ? 'yellow' : '' }}>{s.maintenance || 0}</TableCell>
-                                                        <TableCell align='center' sx={{ backgroundColor: (s.retired || 0) > 0 ? 'black' : '', color: (s.retired || 0) > 0 ? 'white' : '' }}>{s.retired || 0}</TableCell>
+                                                        <TableCell
+                                                            align="center"
+                                                            sx={{
+                                                                backgroundColor: (s.available || 0) > 0 ? 'green' : '',
+                                                                color: (s.available || 0) > 0 ? 'white' : '',
+                                                                cursor: 'pointer'
+                                                            }}
+                                                            onClick={(e) => handleDetailClick(e, "available", item, type.typeName)}
+                                                        >
+                                                            {s.available || 0}
+                                                        </TableCell>
+                                                        <TableCell align='center' onClick={(e) => handleDetailClick(e, "in_use", item, type.typeName)} sx={{ backgroundColor: (s.in_use || 0) > 0 ? 'red' : '', color: (s.in_use || 0) > 0 ? 'white' : '',cursor: 'pointer' }}>{s.in_use || 0}</TableCell>
+                                                        <TableCell align='center' onClick={(e) => handleDetailClick(e, "maintenance", item, type.typeName)} sx={{ backgroundColor: (s.maintenance || 0) > 0 ? 'yellow' : '',cursor: 'pointer' }}>{s.maintenance || 0}</TableCell>
+                                                        <TableCell align='center' onClick={(e) => handleDetailClick(e, "retired", item, type.typeName)} sx={{ backgroundColor: (s.retired || 0) > 0 ? 'black' : '', color: (s.retired || 0) > 0 ? 'white' : '',cursor: 'pointer' }}>{s.retired || 0}</TableCell>
+
                                                     </React.Fragment>
                                                 );
                                             })}
@@ -359,56 +440,41 @@ const ManagerDashboard: React.FC = () => {
                             </Table>
                         </TableContainer>
                     </Paper>
+                    <Popover
+                        open={Boolean(anchorElDetail)}
+                        anchorEl={anchorElDetail}
+                        onClose={handleDetailClose}
+                        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                    >
+                        <Box sx={{ p: 2, maxHeight: 300, overflowY: 'auto' }}>
+                            <Typography variant="h6" gutterBottom>Danh sách phương tiện chi tiết</Typography>
+                            {selectedDetailDevices.length > 0 ? (
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Phương tiện</TableCell>
+                                            <TableCell>Sản lượng</TableCell>
+                                            <TableCell>Ghi chú</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {selectedDetailDevices.map((d) => (
+                                            <TableRow key={d._id}>
+                                                <TableCell>{d.code}</TableCell>
+                                                <TableCell>0</TableCell>
+                                                <TableCell></TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            ) : (
+                                <Typography>Không có phương tiện nào</Typography>
+                            )}
+                        </Box>
+                    </Popover>
+
                 </Box>}
                 {tabIndex === 1 && <Box>
-                    {/*{isLoaded && (
-                        <GoogleMap
-                            mapContainerStyle={containerStyle}
-                            center={mapCoords || defaultCenter}
-                            zoom={20}
-                        >
-                            {devices.map((device: any) => {
-                                if (!device.coordinates?.coordinates) return null;
-                                const [lng, lat] = device.coordinates.coordinates;
-                                return (
-                                    <Marker
-                                        key={device._id}
-                                        position={{ lat, lng }}
-                                        label={{
-                                            text: device.code,
-                                            fontSize: '12px',
-                                            color: 'white',
-                                            fontWeight: 'bold',
-                                        }}
-                                        icon={{
-                                            url: 'https://soft-oew7.onrender.com/image/device.png',
-                                            scaledSize: new window.google.maps.Size(40, 40),
-                                        }}
-                                    />
-                                );
-                            })}
-                            {locations.map((location: any) => {
-                                if (!locations.coordinate?.coordinates) return null;
-                                const [lng, lat] = location.coordinates.coordinates;
-                                return (
-                                    <Marker
-                                        key={location._id}
-                                        position={{ lat, lng }}
-                                        label={{
-                                            text: location.name,
-                                            fontSize: '12px',
-                                            color: 'white',
-                                            fontWeight: 'bold',
-                                        }}
-                                        icon={{
-                                            url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-                                            scaledSize: new window.google.maps.Size(40, 40),
-                                        }}
-                                    />
-                                );
-                            })}
-                        </GoogleMap>
-                    )} */}
                     <MapContainer
                         center={[defaultCenter.lat, defaultCenter.lng]}
                         zoom={18}
@@ -422,7 +488,6 @@ const ManagerDashboard: React.FC = () => {
                         {locations.map((location: any) => {
                             if (!location.coordinates?.coordinates) return null;
                             const [lng, lat] = location.coordinates.coordinates;
-                            console.log([lat, lng])
                             return (
                                 <Marker key={location._id} position={[lat, lng]}>
                                     <Popup>{location.name}</Popup>

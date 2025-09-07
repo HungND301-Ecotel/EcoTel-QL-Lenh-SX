@@ -312,6 +312,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
     try {
         const { status, ...body } = req.body;
         const { id } = req.params;
+        req.logger.info(`🔍 Bắt đầu cập nhật lệnh với ID: ${id}`);
 
         // 1. Lấy đơn hàng hiện tại để kiểm tra
         const order = await Order.findById(id).lean();
@@ -325,6 +326,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
         let updateObject = { ...body, updatedBy: req.user._id };
 
         // 3. Xử lý logic trạng thái
+        req.logger.info(`    - Trạng thái lệnh: ${status}`);
         switch (status) {
             case "in_progress":
                 if (order.status !== "in_progress") {
@@ -335,7 +337,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
                 }
                 if (order.device && order.device.length > 0) {
                     const lastDeviceId = order.device[order.device.length - 1];
-                    req.logger.info(`    - Tìm thấy phương tiện: ${lastDeviceId}`);
+                    req.logger.info(`- Tìm thấy phương tiện: ${lastDeviceId}`);
                     await Device.updateOne({ _id: lastDeviceId }, { status: "in_use" });
                 }
                 updateObject.status = status;
@@ -427,6 +429,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
             message: 'Sửa thành công',
             data: updatedOrder
         });
+        req.logger.info(`🔍 Kết thúc xử lý request thành công: ${id}`);
         req.logger.info("✨ Kết thúc xử lý request thành công.");
 
     } catch (err) {
@@ -434,6 +437,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
     }
 });
+
 router.delete('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
         const user = req.user

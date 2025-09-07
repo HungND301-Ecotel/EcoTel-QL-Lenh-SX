@@ -71,6 +71,7 @@ services:
       # For development only, to synced src code to container
       # - ./Backend:/usr/src/app
       - /usr/src/app/node_modules
+      - ./Backend/serviceAccountKey.json:/usr/src/app/serviceAccountKey.json:ro
     depends_on:
       - ktv_db
     # ports:
@@ -163,24 +164,24 @@ services:
         max-size: "100m"
         max-file: "30"
   
-  ktv_backup:
-    env_file:
-      - ./Backend/.env
-    image: ktv_ecotel_backup_img
-    build: ./backup
-    container_name: mongo_backup
-    environment:
-      - TZ=Asia/Ho_Chi_Minh
-    depends_on:
-      - ktv_db
-    restart: unless-stopped
-    networks:
-      - backnet
-    volumes:
-      - .mongodb_backup:/app/backup
-      - .mongodb_restore:/app/restore
-    # This keeps the cron container running
-    command: ["cron", "-f"]
+  # ktv_backup:
+  #   env_file:
+  #     - ./Backend/.env
+  #   image: ktv_ecotel_backup_img
+  #   build: ./backup
+  #   container_name: mongo_backup
+  #   environment:
+  #     - TZ=Asia/Ho_Chi_Minh
+  #   depends_on:
+  #     - ktv_db
+  #   restart: unless-stopped
+  #   networks:
+  #     - backnet
+  #   volumes:
+  #     - .mongodb_backup:/app/backup
+  #     - .mongodb_restore:/app/restore
+  #   # This keeps the cron container running
+  #   command: ["cron", "-f"]
 
 
 networks:
@@ -192,6 +193,6 @@ volumes:
   promtail-state:
   loki-data:
   .ktv-mongodb-data:
-  .mongodb_backup:
-  .mongodb_restore:
+  # .mongodb_backup:
+  # .mongodb_restore:
   grafana-storage:

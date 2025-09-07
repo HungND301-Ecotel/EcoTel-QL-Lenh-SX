@@ -120,7 +120,6 @@ const Orders: React.FC = () => {
         { id: 'startTime', label: 'Bắt đầu' },
         { id: 'endTime', label: 'Kết thúc' },
         { id: 'status', label: 'Trạng thái' },
-        { id: 'note', label: 'Ghi chú' },
         { id: 'view', label: 'Xem' },
         { id: 'edit', label: 'Sửa' },
         { id: 'cancel', label: 'Hủy' },
@@ -153,13 +152,9 @@ const Orders: React.FC = () => {
     });
 
     const { data: orders = [], isLoading } = useQuery({
-        queryKey: ['orders', status, employee, department, device, startTime, endTime],
-        queryFn: () => api.get(`/orders?status=${status}&employee=${employee}&department=${department}&device=${device}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
-    });
+        queryKey: ['orders', employee, department, device, startTime, endTime],
+        queryFn: () => api.get(`/orders?employee=${employee}&department=${department}&device=${device}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
 
-    const { data: allOrders = [] } = useQuery({
-        queryKey: ['allOrders'],
-        queryFn: () => api.get(`/orders`).then(res => res.data.data),
     });
 
 
@@ -353,7 +348,11 @@ const Orders: React.FC = () => {
         }
         return data
     }
-    const paginatedOrders = pageData(orders, page, pageSize);
+    const filteredOrders = React.useMemo(() => {
+        if (!status) return orders;
+        return orders.filter((o: Order) => o.status === status);
+    }, [orders, status]);
+    const paginatedOrders = pageData(filteredOrders, page, pageSize);
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -557,32 +556,32 @@ const Orders: React.FC = () => {
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='info' name="status" checked={status === ''}
                         onChange={() => handleChange('')} />
-                    <ListItemText primary={`Tất cả (${allOrders.length})`} sx={{ color: 'blue' }} />
+                    <ListItemText primary={`Tất cả (${orders.length})`} sx={{ color: 'blue' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='default' name="status" checked={status === 'pending'}
                         onChange={() => handleChange('pending')} />
-                    <ListItemText primary={`Chưa nhận lệnh (${allOrders.filter((o: Order) => o.status === "pending").length})`} sx={{ color: 'grey' }} />
+                    <ListItemText primary={`Chưa nhận lệnh (${orders.filter((o: Order) => o.status === "pending").length})`} sx={{ color: 'grey' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='success' name="status" checked={status === 'in_progress'}
                         onChange={() => handleChange('in_progress')} />
-                    <ListItemText primary={`Đã nhận lệnh (${allOrders.filter((o: Order) => o.status === "in_progress").length})`} sx={{ color: 'green' }} />
+                    <ListItemText primary={`Đã nhận lệnh (${orders.filter((o: Order) => o.status === "in_progress").length})`} sx={{ color: 'green' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='warning' name="status" checked={status === 'warning'}
                         onChange={() => handleChange('warning')} />
-                    <ListItemText primary={`Lỗi (${allOrders.filter((o: Order) => o.status === "warning").length})`} sx={{ color: 'orange' }} />
+                    <ListItemText primary={`Lỗi (${orders.filter((o: Order) => o.status === "warning").length})`} sx={{ color: 'orange' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='error' name="status" checked={status === 'completed'}
                         onChange={() => handleChange('completed')} />
-                    <ListItemText primary={`Đã kết thúc (${allOrders.filter((o: Order) => o.status === "completed").length})`} sx={{ color: 'red' }} />
+                    <ListItemText primary={`Đã kết thúc (${orders.filter((o: Order) => o.status === "completed").length})`} sx={{ color: 'red' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='secondary' name="status" checked={status === 'cancel'}
                         onChange={() => handleChange('cancel')} />
-                    <ListItemText primary={`Đã hủy (${allOrders.filter((o: Order) => o.status === "cancel").length})`} sx={{ color: 'purple' }} />
+                    <ListItemText primary={`Đã hủy (${orders.filter((o: Order) => o.status === "cancel").length})`} sx={{ color: 'purple' }} />
                 </Box>
             </Box>
             <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
@@ -663,7 +662,6 @@ const Orders: React.FC = () => {
                                         {visibleColumns.includes('startTime') && <TableCell align='center' sx={{ minWidth: 120, fontWeight: 'bold', fontSize: 18 }}>Bắt đầu</TableCell>}
                                         {visibleColumns.includes('endTime') && <TableCell align='center' sx={{ minWidth: 120, fontWeight: 'bold', fontSize: 18 }}>Kết thúc</TableCell>}
                                         {visibleColumns.includes('status') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>}
-                                        {visibleColumns.includes('note') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Ghi chú</TableCell>}
                                         {visibleColumns.includes('view') && <TableCell align='center' sx={{ minWidth: 100, fontWeight: 'bold', fontSize: 18 }}>Xem báo công</TableCell>}
                                         {visibleColumns.includes('edit') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Sửa</TableCell>}
                                         {visibleColumns.includes('cancel') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Hủy</TableCell>}

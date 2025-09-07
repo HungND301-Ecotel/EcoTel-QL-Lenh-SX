@@ -15,6 +15,7 @@ const Shiftreport = new mongoose.Schema({
         {
             vehicle: { type: mongoose.Schema.Types.ObjectId, ref: 'Device' },
             repairHours: Number,
+            distanceKm:Number,
             travelHours: Number,
             fuelRemain: Number,
             fuelReceived: Number,

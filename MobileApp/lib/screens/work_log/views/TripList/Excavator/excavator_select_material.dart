@@ -80,7 +80,7 @@ class _ExcavatorSelectMaterial
       appBar: AppBar(
         backgroundColor: Colors.blue,
         title: Text(
-          'Chủng loại',
+          'Vật liệu',
           style: TextStyle(
             color: Colors.white,
             fontSize: 18,
