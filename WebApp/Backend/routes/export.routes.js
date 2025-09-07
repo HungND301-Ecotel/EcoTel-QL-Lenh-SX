@@ -454,7 +454,7 @@ async function buildSheetPXVT6(req, res, next) {
     }
 };
 
-async function buildSheetDefault(req, res, next) {
+async function buildSheetDefault(req, res, next) {  
     try {
         const { ids } = req.body; // mảng entity id
 
@@ -770,6 +770,7 @@ async function buildSheetDefault(req, res, next) {
             worksheet.getCell(`I${totalRow + 10 + deviceRow}`).font = { bold: true };
             worksheet.getCell(`I${totalRow + 10 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
             worksheet.getCell(`I${totalRow + 10 + deviceRow}`).value = order.createdBy?.fullName || "";
+
 
 
             worksheet.pageSetup = {

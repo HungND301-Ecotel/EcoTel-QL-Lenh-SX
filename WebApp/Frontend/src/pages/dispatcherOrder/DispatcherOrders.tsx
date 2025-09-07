@@ -140,6 +140,7 @@ const DispatcherOrders: React.FC = () => {
     const { data: orders = [], isLoading } = useQuery({
         queryKey: ['orders', employee, department, startTime, endTime],
         queryFn: () => api.get(`/orders?employee=${employee}&&department=${department}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
+
     });
 
 
@@ -368,6 +369,7 @@ const DispatcherOrders: React.FC = () => {
         return orders.filter((o: Order) => o.status === status);
     }, [orders, status]);
     const groupedOrders = React.useMemo(() => groupOrdersByBatch(filteredOrders), [filteredOrders]);
+
 
     // 3. Phân trang theo batch
     const pageData = (entries: [string, any[]][], page: number, pageSize: number) => {
