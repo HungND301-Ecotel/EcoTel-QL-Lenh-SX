@@ -99,9 +99,14 @@ const Users: React.FC = () => {
         setShowPassword((prev) => !prev);
     };
 
+    const handleChange = (value: string) => {
+        setActive(prev => (prev === value ? '' : value)); // bỏ chọn nếu click lại
+    };
+
     const { data: users = [], isLoading } = useQuery({
         queryKey: ['users', value, department, active],
         queryFn: () => api.get(`/users?q=${value}&&department=${department}`).then(res => res.data.data),
+
     });
     const filteredOrders = React.useMemo(() => {
         if (!active) return users;
@@ -806,16 +811,19 @@ const Users: React.FC = () => {
                             <Checkbox color='info' name="status" checked={active === ''}
                                 onChange={() => setActive('')} />
                             <ListItemText primary={`Tất cả (${users.length})`} sx={{ color: 'blue' }} />
+
                         </Box>
                         <Box display="flex" alignItems={'center'}>
                             <Checkbox color='default' name="status" checked={active === 'true'}
                                 onChange={() => setActive('true')} />
                             <ListItemText primary={`Hoạt động (${users.filter((o: User) => o.active).length})`} sx={{ color: 'grey' }} />
+
                         </Box>
                         <Box display="flex" alignItems={'center'}>
                             <Checkbox color='default' name="status" checked={active === 'false'}
                                 onChange={() => setActive('false')} />
                             <ListItemText primary={`Không hoạt động (${users.filter((o: User) => !o.active).length})`} sx={{ color: 'grey' }} />
+
                         </Box>
                     </Box>
                 </Box>

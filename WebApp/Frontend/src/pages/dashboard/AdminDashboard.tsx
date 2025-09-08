@@ -18,6 +18,7 @@ import {
     TableBody,
     Popover,
     Button,
+
 } from '@mui/material';
 import {
     Assignment as OrderIcon,
@@ -512,6 +513,7 @@ const AdminDashboard: React.FC = () => {
                                                         <TableCell align='center' onClick={(e) => handleDetailClick(e, "in_use", item?.code, type.typeName)} sx={{ backgroundColor: (s.in_use || 0) > 0 ? 'red' : '', color: (s.in_use || 0) > 0 ? 'white' : '', cursor: 'pointer' }}>{s.in_use || 0}</TableCell>
                                                         <TableCell align='center' onClick={(e) => handleDetailClick(e, "maintenance", item?.code, type.typeName)} sx={{ backgroundColor: (s.maintenance || 0) > 0 ? 'yellow' : '', cursor: 'pointer' }}>{s.maintenance || 0}</TableCell>
                                                         <TableCell align='center' onClick={(e) => handleDetailClick(e, "retired", item?.code, type.typeName)} sx={{ backgroundColor: (s.retired || 0) > 0 ? 'black' : '', color: (s.retired || 0) > 0 ? 'white' : '', cursor: 'pointer' }}>{s.retired || 0}</TableCell>
+
                                                     </React.Fragment>
                                                 );
                                             })}
