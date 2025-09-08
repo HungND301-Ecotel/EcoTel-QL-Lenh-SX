@@ -687,7 +687,7 @@ async function buildSheetDefault(req, res, next) {
             worksheet.mergeCells(`A${totalRow + 1}:M${totalRow + 1}`);
             worksheet.getCell(`A${totalRow + 1}`).value = 'Mức bồi dưỡng (x1000đ):';
 
-            worksheet.mergeCells(`A${totalRow + 2}:L${totalRow + 2}`);
+            worksheet.mergeCells(`A${totalRow + 2}:M${totalRow + 2}`);
             const header3 = worksheet.getCell(`A${totalRow + 2}`);
             header3.value = `II.NHIÊN LIỆU`;
             header3.font = { bold: true, size: 14 };

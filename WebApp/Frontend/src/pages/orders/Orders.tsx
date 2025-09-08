@@ -68,6 +68,7 @@ import ShiftReport from '../../components/ShiftReport/ShiftReport';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
+import { DataGrid, GridColDef } from '@mui/x-data-grid';
 
 const StyledPopper = styled(Popper)({
     '& .MuiAutocomplete-listbox': {
@@ -331,6 +332,215 @@ const Orders: React.FC = () => {
 
 
     //
+
+    const orderColumns: GridColDef[] = [
+        {
+            field: 'number', headerName: 'STT', width: 50, headerAlign: 'center', align: 'center',
+            valueGetter: (params) => params.api.getRowIndexRelativeToVisibleRows(params.row._id) + 1,
+            headerClassName: 'super-sticky-col-number',
+            cellClassName: 'super-sticky-col-number',
+        },
+        {
+            field: 'fullName', headerName: 'Nhân viên', width: 200, headerAlign: 'center',
+            valueGetter: (params) => params.row.assignedTo?.fullName || '',
+            headerClassName: 'super-sticky-col-fullName',
+            cellClassName: 'super-sticky-col-fullName',
+        },
+        {
+            field: 'salaryCode',
+            headerName: 'Mã thẻ lương',
+            align: 'center',
+            width: 120,
+            headerAlign: 'center',
+            valueGetter: (params) => params.row.assignedTo?.salaryCode || ''
+        },
+        {
+            field: 'workingDate', headerName: 'Ngày làm việc', width: 150, headerAlign: 'center', align: 'center',
+            valueGetter: (params) => params.row.workingDate ? format(new Date(params.row.workingDate), 'yyyy-MM-dd') : ''
+        },
+        {
+            field: 'shift', headerName: 'Ca', width: 50, headerAlign: 'center', align: 'center',
+            valueGetter: (params) => params.row.shift?.name || ''
+        },
+        { field: 'shiftHour', headerName: 'Giờ làm', width: 100, headerAlign: 'center', align: 'center' },
+        {
+            field: 'job',
+            headerName: 'Công việc',
+            valueGetter: (params) => params.row.job?.name || '',
+            width: 250,
+            headerAlign: 'center'
+        },
+        {
+            field: 'workContent',
+            headerName: 'Nội dung',
+            minWidth: 250,
+            flex: 1,
+            headerAlign: 'center'
+        },
+        {
+            field: 'device', headerName: 'Phương tiện', width: 150, headerAlign: 'center',
+            valueGetter: (params) => params.row.device?.map((dev: any) => dev.code).join(', ') || params.row.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')
+        },
+        {
+            field: 'excavator', headerName: 'Máy xúc', width: 150, headerAlign: 'center',
+            valueGetter: (params) => params.row.excavator?.map((dev: any) => dev.code).join(', ')
+        },
+        {
+            field: 'material', headerName: 'Vật liệu', width: 150, headerAlign: 'center',
+            valueGetter: (params) => params.row.material?.map((mat: any) => mat.name).join(', ')
+        },
+        {
+            field: 'location', headerName: 'Điểm đổ', width: 150, headerAlign: 'center',
+            valueGetter: (params) => params.row.location?.map((loc: any) => loc.name).join(', ')
+        },
+        {
+            field: 'createdBy', headerName: 'Người tạo lệnh', width: 200, headerAlign: 'center', align: 'center',
+            valueGetter: (params) => params.row.createdBy?.username || ''
+        },
+        {
+            field: 'createdAt', headerName: 'Thời gian tạo lệnh', width: 170, headerAlign: 'center', align: 'center',
+            valueGetter: (params) => params.row.createdAt ? format(new Date(params.row.createdAt), 'yyyy-MM-dd HH:mm') : ''
+        },
+        {
+            field: 'startTime', headerName: 'Bắt đầu', width: 100, headerAlign: 'center', align: 'center',
+            valueGetter: (params) => params.row.startTime ? format(new Date(params.row.startTime), 'HH:mm:ss') : ''
+        },
+        {
+            field: 'endTime', headerName: 'Kết thúc', width: 100, headerAlign: 'center', align: 'center',
+            valueGetter: (params) => params.row.endTime ? format(new Date(params.row.endTime), 'HH:mm:ss') : ''
+        },
+        {
+            field: 'status', headerName: 'Trạng thái', width: 150, headerAlign: 'center', align: 'center',
+            renderCell: (params) => (
+                <Chip
+                    sx={{ width: '120px' }}
+                    label={params.row.status === 'pending' ? 'Chưa nhận lệnh' :
+                        params.row.status === 'in_progress' ? 'Đã nhận lệnh' :
+                            params.row.status === 'completed' ? 'Đã hoàn thành' :
+                                params.row.status === 'warning' ? 'Lỗi' : "Đã hủy"
+                    }
+                    color={
+                        params.row.status === 'pending' ? 'default' :
+                            params.row.status === 'completed' ? 'error' :
+                                params.row.status === 'in_progress' ? 'success' :
+                                    params.row.status === 'warning' ? 'warning' : 'secondary'}
+                />
+            )
+        },
+        {
+            field: 'view',
+            headerName: 'Xem báo công',
+            width: 100,
+            headerAlign: 'center',
+            align: 'center',
+            renderCell: (params) => (
+                <IconButton
+                    color="secondary"
+                    onClick={() => {
+                        setSelectedOrder(params.row)
+                        setShiftReport(true)
+                    }}
+                >
+                    <Tooltip title="Báo công" placement='top'>
+                        <Visibility />
+                    </Tooltip>
+                </IconButton>
+            ),
+            sortable: false,
+            filterable: false,
+        },
+        {
+            field: 'edit',
+            headerName: 'Sửa',
+            width: 60,
+            headerAlign: 'center',
+            renderCell: (params) => (
+                <IconButton
+                    color="primary"
+                    disabled={!['pending', 'warning'].includes(params.row?.status)
+                    }
+                    onClick={async () => {
+                        if (open) {
+                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                            if (result.isConfirmed) {
+                                handleOpen(params.row);
+                            }
+                        } else {
+                            handleOpen(params.row);
+                        }
+                    }}
+                >
+                    <Tooltip title="Sửa" placement='top'>
+                        <EditIcon />
+                    </Tooltip>
+                </IconButton >
+            ),
+            sortable: false,
+            filterable: false,
+        },
+        {
+            field: 'cancel',
+            headerName: 'Hủy',
+            width: 60,
+            headerAlign: 'center',
+            renderCell: (params) => (
+                <IconButton
+                    disabled={!['pending', 'warning'].includes(params.row.status)}
+                    color="warning"
+                    onClick={() => handleCancel(params.row)}
+                >
+                    <Tooltip title="Hủy" placement='top'>
+                        <CancelOutlined />
+                    </Tooltip>
+                </IconButton>
+            ),
+            sortable: false,
+            filterable: false,
+        },
+        {
+            field: 'tranfer',
+            headerName: 'Chuyển ca',
+            width: 100,
+            headerAlign: 'center',
+            align: 'center',
+            renderCell: (params) => (
+                <IconButton
+                    color="info"
+                    onClick={async () => {
+                        if (open) {
+                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                            if (result.isConfirmed) {
+                                setSelectedOrder(params.row)
+                                setOpen(false)
+                                setExpanded(true)
+                                setTransfer(true)
+
+                            }
+                        } else {
+                            setSelectedOrder(params.row)
+                            setOpen(false)
+                            setExpanded(true)
+                            setTransfer(true)
+                            setTimeout(() => {
+                                if (formRef.current) {
+                                    formRef.current.scrollIntoView({
+                                        behavior: 'smooth',
+                                        block: 'start'
+                                    });
+                                }
+                            }, 500);
+                        }
+                    }}
+                >
+                    <Tooltip title="Chuyển ca" placement='top'>
+                        <SyncAlt />
+                    </Tooltip>
+                </IconButton>
+            ),
+            sortable: false,
+            filterable: false,
+        },
+    ];
 
     const [page, setPage] = React.useState(0);
     const [pageSize, setPageSize] = React.useState(10);
@@ -605,282 +815,65 @@ const Orders: React.FC = () => {
             </Box>
             <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={12} sm={9}>
-                    <Paper sx={{ width: '100%', overflowX: "initial" }}>
-                        <TableContainer sx={{ maxHeight: '80vh' }}>
-                            <Table stickyHeader aria-label="sticky table" sx={{
-                                "& td, & th": { padding: "4px 8px" },
-                            }}>
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell align='center' sx={{
-                                            position: 'sticky',
-                                            left: 0,
-                                            top: 0,
-                                            zIndex: 3,
-                                            width: 50,
+                    <DataGrid
+                        rows={filteredOrders}
+                        columns={orderColumns}
+                        getRowId={(row) => row._id}
+                        rowsPerPageOptions={[10, 50, 100, 200]}
+                        autoHeight
+                        disableSelectionOnClick
+                        checkboxSelection
+                        isRowSelectable={(params) => params.row.role !== 'admin'}
+                        onSelectionModelChange={(newSelection) => {
+                            setSelectedOrders(newSelection as string[]);
+                        }}
+                        onRowClick={(params) => {
+                            setSelectedRow(params.row); // lưu cả object row
+                        }}
+                        initialState={{
+                            pagination: {
+                                pageSize: 10,
+                            },
+                        }}
+                        loading={isLoading}
+                        getRowClassName={(params) => `status-${params.row.status}`}
+                        sx={{
+                            '& .MuiDataGrid-columnHeaderTitle': {
+                                width: '100%',
+                                textAlign: 'center',
+                                fontWeight: 'bold',
+                                fontSize: 18,
+                            },
+                            '& .status-pending': { backgroundColor: 'white' },
+                            '& .status-completed': { backgroundColor: '#ffe5e5' },
+                            '& .status-in_progress': { backgroundColor: '#e5f7e5' },
+                            '& .status-warning': { backgroundColor: '#fff8e1' },
+                            '& .status-other': { backgroundColor: '#ede7f6' },
+                            '& .MuiDataGrid-columnHeaders': { backgroundColor: '#f5f5f5' },
 
-                                            fontWeight: 'bold', fontSize: 18
-                                        }}> <Checkbox
-                                                color="primary"
-                                                checked={orders.length > 0 && selectedOrders.length === orders.length}
-                                                indeterminate={selectedOrders.length > 0 && selectedOrders.length < orders.length}
-                                                onChange={() => {
-                                                    if (selectedOrders.length === orders.length) {
-                                                        setSelectedOrders([]);
-                                                    } else {
-                                                        setSelectedOrders(orders);
-                                                    }
-                                                }}
-                                            /></TableCell>
-                                        <TableCell align='center' sx={{
-                                            position: 'sticky',
-                                            left: 50,
-                                            top: 0,
-                                            zIndex: 3,
-                                            width: 50,
-
-                                            fontWeight: 'bold', fontSize: 18
-                                        }}>STT</TableCell>
-                                        {visibleColumns.includes('assignedTo') && <TableCell align='center' sx={{
-                                            position: 'sticky',
-                                            left: 100,
-                                            top: 0,
-                                            zIndex: 3,
-                                            minWidth: 150,
-
-                                            fontWeight: 'bold', fontSize: 18
-                                        }}>Nhân viên</TableCell>}
-                                        {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{ minWidth: 130, fontWeight: 'bold', fontSize: 18 }}>Mã thẻ lương</TableCell>}
-                                        {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{ minWidth: 120, fontWeight: 'bold', fontSize: 18 }}>Ngày làm việc</TableCell>}
-                                        {visibleColumns.includes('shift') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Ca</TableCell>}
-                                        {visibleColumns.includes('shiftHour') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Giờ làm</TableCell>}
-                                        {visibleColumns.includes('job') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Công việc</TableCell>}
-                                        {visibleColumns.includes('content') && <TableCell align='center' sx={{ minWidth: 200, fontWeight: 'bold', fontSize: 18 }}>Nội dung</TableCell>}
-                                        {visibleColumns.includes('device') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Phương tiện</TableCell>}
-                                        {visibleColumns.includes('createdBy') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Người tạo lệnh</TableCell>}
-                                        {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Thời gian tạo lệnh</TableCell>}
-                                        {visibleColumns.includes('startTime') && <TableCell align='center' sx={{ minWidth: 120, fontWeight: 'bold', fontSize: 18 }}>Bắt đầu</TableCell>}
-                                        {visibleColumns.includes('endTime') && <TableCell align='center' sx={{ minWidth: 120, fontWeight: 'bold', fontSize: 18 }}>Kết thúc</TableCell>}
-                                        {visibleColumns.includes('status') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>}
-                                        {visibleColumns.includes('view') && <TableCell align='center' sx={{ minWidth: 100, fontWeight: 'bold', fontSize: 18 }}>Xem báo công</TableCell>}
-                                        {visibleColumns.includes('edit') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Sửa</TableCell>}
-                                        {visibleColumns.includes('cancel') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Hủy</TableCell>}
-                                        {visibleColumns.includes('transfer') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Chuyển ca</TableCell>}
-
-                                    </TableRow>
-                                </TableHead>
-                                {!isLoading ? <TableBody>
-                                    {paginatedOrders.map((order: any, index: number) => (
-                                        <TableRow key={order._id} sx={{
-                                            cursor: 'pointer',
-                                            backgroundColor: order.status === 'pending'
-                                                ? 'white' // xám nhạt
-                                                : order.status === 'completed'
-                                                    ? '#ffe5e5' // đỏ nhạt
-                                                    : order.status === 'in_progress'
-                                                        ? '#e5f7e5' // xanh lá nhạt
-                                                        : order.status === 'warning'
-                                                            ? '#fff8e1' // vàng nhạt
-                                                            : '#ede7f6', // tím nhạt
-                                        }} onClick={() => setSelectedRow(order)}>
-                                            <TableCell align='center' sx={{
-                                                position: 'sticky',
-                                                left: 0,
-                                                zIndex: 1,
-                                                width: 50,
-                                                backgroundColor: order.status === 'pending'
-                                                    ? 'white' // xám nhạt
-                                                    : order.status === 'completed'
-                                                        ? '#ffe5e5' // đỏ nhạt
-                                                        : order.status === 'in_progress'
-                                                            ? '#e5f7e5' // xanh lá nhạt
-                                                            : order.status === 'warning'
-                                                                ? '#fff8e1' // vàng nhạt
-                                                                : '#ede7f6', // tím nhạt
-                                            }}><Checkbox onChange={() => handleSelected(order)} checked={selectedOrders.some(o => o._id === order._id)} /></TableCell>
-                                            <TableCell align='center' sx={{
-                                                position: 'sticky',
-                                                left: 50,
-                                                zIndex: 1,
-                                                width: 50,
-                                                backgroundColor: order.status === 'pending'
-                                                    ? 'white' // xám nhạt
-                                                    : order.status === 'completed'
-                                                        ? '#ffe5e5' // đỏ nhạt
-                                                        : order.status === 'in_progress'
-                                                            ? '#e5f7e5' // xanh lá nhạt
-                                                            : order.status === 'warning'
-                                                                ? '#fff8e1' // vàng nhạt
-                                                                : '#ede7f6', // tím nhạt,
-                                            }}>{index + 1}</TableCell>
-                                            {visibleColumns.includes('assignedTo') && <TableCell sx={{
-                                                position: 'sticky',
-                                                left: 100,
-                                                zIndex: 1,
-                                                minWidth: 150,
-                                                backgroundColor: order.status === 'pending'
-                                                    ? 'white' // xám nhạt
-                                                    : order.status === 'completed'
-                                                        ? '#ffe5e5' // đỏ nhạt
-                                                        : order.status === 'in_progress'
-                                                            ? '#e5f7e5' // xanh lá nhạt
-                                                            : order.status === 'warning'
-                                                                ? '#fff8e1' // vàng nhạt
-                                                                : '#ede7f6', // tím nhạt,
-                                            }}>{order.assignedTo?.fullName}</TableCell>}
-                                            {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{}}>
-                                                {order.assignedTo?.salaryCode}
-                                            </TableCell>}
-                                            {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{}}>
-                                                {order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('shift') && <TableCell align='center' sx={{}}>
-                                                {order.shift?.name}
-                                            </TableCell>}
-                                            {visibleColumns.includes('shiftHour') && <TableCell align='center' sx={{}}>
-                                                {order.shiftHour || ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('job') && <TableCell sx={{}}>
-                                                {order.job?.name || ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('content') && <TableCell sx={{
-                                                whiteSpace: 'nowrap',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                maxWidth: 300,
-                                            }}>
-                                                {order.workContent || ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('device') && <TableCell sx={{}}>
-                                                {order.device?.map((dev: any) => dev.code).join(', ') || order.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')}
-                                            </TableCell>}
-                                            {visibleColumns.includes('createdBy') && <TableCell sx={{}}>
-                                                {order.createdBy?.username || ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{}}>
-                                                {order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm') : ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('startTime') && <TableCell align='center' sx={{}}>
-                                                {order.startTime ? format(new Date(order.startTime), 'HH:mm:ss') : ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('endTime') && <TableCell align='center' sx={{}}>
-                                                {order.endTime ? format(new Date(order.endTime), 'HH:mm:ss') : ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('status') && <TableCell sx={{}}>
-                                                <Chip
-                                                    sx={{ width: '120px' }}
-                                                    label={order.status === 'pending' ? 'Chưa nhận lệnh' :
-                                                        order.status === 'in_progress' ? 'Đã nhận lệnh' :
-                                                            order.status === 'completed' ? 'Đã hoàn thành' :
-                                                                order.status === 'warning' ? 'Lỗi' : "Đã hủy"
-                                                    }
-                                                    color={
-                                                        order.status === 'pending' ? 'default' :
-                                                            order.status === 'completed' ? 'error' :
-                                                                order.status === 'in_progress' ? 'success' :
-                                                                    order.status === 'warning' ? 'warning' : 'secondary'}
-                                                />
-                                            </TableCell>}
-                                            {visibleColumns.includes('note') && <TableCell sx={{}}>
-                                                {order.temporaryError || ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('view') && <TableCell align='center' sx={{}}>
-                                                <IconButton
-                                                    color="secondary"
-                                                    onClick={() => {
-                                                        setSelectedOrder(order)
-                                                        setShiftReport(true)
-                                                    }}
-                                                >
-                                                    <Tooltip title="Báo công" placement='top'>
-                                                        <Visibility />
-                                                    </Tooltip>
-                                                </IconButton>
-
-                                            </TableCell>}
-                                            {visibleColumns.includes('edit') && <TableCell align='center' sx={{}}>
-                                                <IconButton
-                                                    color="primary"
-                                                    disabled={!['pending', 'warning'].includes(order.status)}
-                                                    onClick={async () => {
-                                                        if (open) {
-                                                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                                                            if (result.isConfirmed) {
-                                                                handleOpen(order);
-                                                            }
-                                                        } else {
-                                                            handleOpen(order);
-                                                        }
-                                                    }}
-                                                >
-                                                    <Tooltip title="Sửa" placement='top'>
-                                                        <EditIcon />
-                                                    </Tooltip>
-                                                </IconButton>
-                                            </TableCell>}
-                                            {visibleColumns.includes('cancel') && <TableCell align='center' sx={{}}>
-                                                <IconButton
-                                                    disabled={!['pending', 'warning'].includes(order.status)}
-                                                    color="warning"
-                                                    onClick={() => handleCancel(order)}
-                                                >
-                                                    <Tooltip title="Hủy" placement='top'>
-                                                        <CancelOutlined />
-                                                    </Tooltip>
-                                                </IconButton>
-                                            </TableCell>}
-                                            {visibleColumns.includes('transfer') && <TableCell align='center' sx={{}}>
-                                                <IconButton
-                                                    color="info"
-                                                    onClick={async () => {
-                                                        if (open) {
-                                                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                                                            if (result.isConfirmed) {
-                                                                setSelectedOrder(order)
-                                                                setOpen(false)
-                                                                setExpanded(true)
-                                                                setTransfer(true)
-
-                                                            }
-                                                        } else {
-                                                            setSelectedOrder(order)
-                                                            setOpen(false)
-                                                            setExpanded(true)
-                                                            setTransfer(true)
-                                                            setTimeout(() => {
-                                                                if (formRef.current) {
-                                                                    formRef.current.scrollIntoView({
-                                                                        behavior: 'smooth',
-                                                                        block: 'start'
-                                                                    });
-                                                                }
-                                                            }, 500);
-                                                        }
-                                                    }}
-                                                >
-                                                    <Tooltip title="Chuyển ca" placement='top'>
-                                                        <SyncAlt />
-                                                    </Tooltip>
-                                                </IconButton>
-
-                                            </TableCell>}
-                                        </TableRow>
-                                    ))}
-                                </TableBody> : <Typography>Loading...</Typography>}
-                            </Table>
-                        </TableContainer>
-                        <TablePagination
-                            component="div"
-                            count={orders.length}
-                            page={page}
-                            onPageChange={handleChangePage}
-                            rowsPerPage={pageSize}
-                            onRowsPerPageChange={(event) => {
-                                setPageSize(parseInt(event.target.value, 10));
-                                setPage(0);
-                            }}
-                        />
-                    </Paper>
+                            // 🔒 Ghim 3 cột đầu: checkbox + STT + Nhân viên
+                            '& .MuiDataGrid-columnHeaderCheckbox, & .MuiDataGrid-cellCheckbox': {
+                                position: 'sticky',
+                                left: 0,
+                                zIndex: 3,
+                                background: '#fff',
+                                minWidth: 50,
+                                maxWidth: 50,
+                            },
+                            '& .super-sticky-col-number': {
+                                position: 'sticky',
+                                left: 50, // checkbox
+                                zIndex: 3,
+                                background: '#fff',
+                            },
+                            '& .super-sticky-col-fullName': {
+                                position: 'sticky',
+                                left: 100, // checkbox (50) + STT (50)
+                                zIndex: 3,
+                                background: '#fff',
+                            },
+                        }}
+                    />
                 </Grid>
                 <Grid item xs={12} sm={3}>
                     <Box sx={{ position: 'sticky', top: 0, maxHeight: '80vh', overflowY: 'auto', border: '1px solid #ccc', borderRadius: 2, p: 2 }}>
