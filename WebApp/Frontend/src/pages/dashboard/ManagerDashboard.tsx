@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     Grid,
     Paper,
@@ -17,6 +17,8 @@ import {
     TableRow,
     TableBody,
     Popover,
+    Button,
+
 } from '@mui/material';
 import {
     Assignment as OrderIcon,
@@ -37,6 +39,7 @@ import { Order, Device, Department, Location } from '../../types';
 // import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { customIcon } from '../../fixLeafletIcon'
+import { showErrorAlert } from '../../components/Alert';
 
 const containerStyle = {
     width: '100%',
@@ -78,6 +81,18 @@ const ManagerDashboard: React.FC = () => {
             )
         )
     );
+    const queryClient = useQueryClient();
+
+    const handleUpdateDevices = useMutation({
+        mutationFn: () => api.post('/devices/update_status').then(res => res.data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['devices'] });
+            queryClient.invalidateQueries({ queryKey: ['count'] });
+        },
+        onError: (error: any) => {
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
+        }
+    });
 
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -227,13 +242,16 @@ const ManagerDashboard: React.FC = () => {
                                 }}
                             >
                                 <Box>
-                                    <Typography
-                                        variant="h4"
-                                        gutterBottom
-                                        sx={{ fontWeight: 'bold', }}
-                                    >
-                                        Phương tiện
-                                    </Typography>
+                                    <Box display="flex" justifyContent="space-between" gap={5} alignItems="center">
+                                        <Typography
+                                            variant="h4"
+                                            gutterBottom
+                                            sx={{ fontWeight: 'bold', }}
+                                        >
+                                            Phương tiện
+                                        </Typography>
+                                        <Button variant="outlined" size="small" onClick={() => handleUpdateDevices.mutate()}>Cập nhật</Button>
+                                    </Box>
                                     <Typography
                                         variant="h4"
                                         gutterBottom
@@ -427,10 +445,9 @@ const ManagerDashboard: React.FC = () => {
                                                         >
                                                             {s.available || 0}
                                                         </TableCell>
-                                                        <TableCell align='center' onClick={(e) => handleDetailClick(e, "in_use", item, type.typeName)} sx={{ backgroundColor: (s.in_use || 0) > 0 ? 'red' : '', color: (s.in_use || 0) > 0 ? 'white' : '',cursor: 'pointer' }}>{s.in_use || 0}</TableCell>
-                                                        <TableCell align='center' onClick={(e) => handleDetailClick(e, "maintenance", item, type.typeName)} sx={{ backgroundColor: (s.maintenance || 0) > 0 ? 'yellow' : '',cursor: 'pointer' }}>{s.maintenance || 0}</TableCell>
-                                                        <TableCell align='center' onClick={(e) => handleDetailClick(e, "retired", item, type.typeName)} sx={{ backgroundColor: (s.retired || 0) > 0 ? 'black' : '', color: (s.retired || 0) > 0 ? 'white' : '',cursor: 'pointer' }}>{s.retired || 0}</TableCell>
-
+                                                        <TableCell align='center' onClick={(e) => handleDetailClick(e, "in_use", item, type.typeName)} sx={{ backgroundColor: (s.in_use || 0) > 0 ? 'red' : '', color: (s.in_use || 0) > 0 ? 'white' : '', cursor: 'pointer' }}>{s.in_use || 0}</TableCell>
+                                                        <TableCell align='center' onClick={(e) => handleDetailClick(e, "maintenance", item, type.typeName)} sx={{ backgroundColor: (s.maintenance || 0) > 0 ? 'yellow' : '', cursor: 'pointer' }}>{s.maintenance || 0}</TableCell>
+                                                        <TableCell align='center' onClick={(e) => handleDetailClick(e, "retired", item, type.typeName)} sx={{ backgroundColor: (s.retired || 0) > 0 ? 'black' : '', color: (s.retired || 0) > 0 ? 'white' : '', cursor: 'pointer' }}>{s.retired || 0}</TableCell>
                                                     </React.Fragment>
                                                 );
                                             })}

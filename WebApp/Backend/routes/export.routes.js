@@ -772,7 +772,6 @@ async function buildSheetDefault(req, res, next) {
             worksheet.getCell(`I${totalRow + 10 + deviceRow}`).value = order.createdBy?.fullName || "";
 
 
-
             worksheet.pageSetup = {
                 paperSize: 9,                // A4
                 orientation: 'landscape',    // ngang
