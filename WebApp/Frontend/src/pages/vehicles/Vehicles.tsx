@@ -624,7 +624,8 @@ const Vehicles: React.FC = () => {
                                     >
                                         <MenuItem value="available">Chờ điều động</MenuItem>
                                         <MenuItem value="in_use">Đang hoạt động</MenuItem>
-                                        <MenuItem value="maintenance">S/C; BD</MenuItem>
+                                        <MenuItem value="maintenance">SC; BD</MenuItem>
+
                                         <MenuItem value="retired">Niêm cất</MenuItem>
                                     </TextField>
                                     <Autocomplete
@@ -737,7 +738,8 @@ const Vehicles: React.FC = () => {
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='warning' name="status" checked={status === 'maintenance'}
                         onChange={() => handleChange('maintenance')} />
-                    <ListItemText primary={`S/C; BD (${allVehicles.filter((o: Device) => o.status === "maintenance").length})`} sx={{ color: 'orange' }} />
+                    <ListItemText primary={`SC; BD (${allVehicles.filter((o: Device) => o.status === "maintenance").length})`} sx={{ color: 'orange' }} />
+
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='default' name="status" checked={status === 'retired'}
@@ -847,7 +849,8 @@ const Vehicles: React.FC = () => {
                                             <Chip
                                                 sx={{ width: '120px' }}
                                                 label={device.status === 'in_use' ? 'Đang hoạt động' :
-                                                    device.status === 'maintenance' ? 'S/C; BD' :
+                                                    device.status === 'maintenance' ? 'SC; BD' :
+
                                                         device.status === 'retired' ? 'Niêm cất' :
                                                             device.status === 'available' ? 'Chờ điều động' : device.status}
                                                 color={device.status === 'in_use' ? 'error' :
