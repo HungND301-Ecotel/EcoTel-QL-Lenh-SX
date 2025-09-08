@@ -154,6 +154,7 @@ const Orders: React.FC = () => {
     const { data: orders = [], isLoading } = useQuery({
         queryKey: ['orders', employee, department, device, startTime, endTime],
         queryFn: () => api.get(`/orders?employee=${employee}&department=${department}&device=${device}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
+
     });
 
 

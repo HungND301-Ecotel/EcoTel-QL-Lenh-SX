@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     Grid,
     Typography,
@@ -17,6 +17,8 @@ import {
     TableCell,
     TableBody,
     Popover,
+    Button,
+
 } from '@mui/material';
 import {
     Assignment as OrderIcon,
@@ -32,6 +34,7 @@ import { Order, Device, Department, Location } from '../../types';
 // import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { customIcon } from '../../fixLeafletIcon'
+import { showErrorAlert } from '../../components/Alert';
 
 
 const containerStyle = {
@@ -47,14 +50,7 @@ const defaultCenter = {
 const AdminDashboard: React.FC = () => {
     const [mapCoords, setMapCoords] = useState<{ lat: number, lng: number; } | null>(null);
     const [tabIndex, setTabIndex] = useState(0);
-    // const apiKey = process.env.REACT_APP_MAP_API_KEY;
-
-    // if (!apiKey) {
-    //     throw new Error('REACT_APP_MAP_API_KEY is not defined');
-    // }
-    // const { isLoaded } = useJsApiLoader({
-    //     googleMapsApiKey: apiKey,
-    // });
+    const queryClient = useQueryClient();
     const { data: orders = [] } = useQuery({
         queryKey: ['orders'],
         queryFn: () => api.get('/orders').then(res => res.data.data),
@@ -81,6 +77,17 @@ const AdminDashboard: React.FC = () => {
     const { data: count = [] } = useQuery({
         queryKey: ['count'],
         queryFn: () => api.get('/devices/count/status').then(res => res.data.data),
+    });
+
+    const handleUpdateDevices = useMutation({
+        mutationFn: () => api.post('/devices/update_status').then(res => res.data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['devices'] });
+            queryClient.invalidateQueries({ queryKey: ['count'] });
+        },
+        onError: (error: any) => {
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
+        }
     });
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -230,13 +237,16 @@ const AdminDashboard: React.FC = () => {
                                 }}
                             >
                                 <Box>
-                                    <Typography
-                                        variant="h4"
-                                        gutterBottom
-                                        sx={{ fontWeight: 'bold', }}
-                                    >
-                                        Phương tiện
-                                    </Typography>
+                                    <Box display="flex" justifyContent="space-between" gap={5} alignItems="center">
+                                        <Typography
+                                            variant="h4"
+                                            gutterBottom
+                                            sx={{ fontWeight: 'bold', }}
+                                        >
+                                            Phương tiện
+                                        </Typography>
+                                        <Button variant="outlined" size="small" onClick={() => handleUpdateDevices.mutate()}>Cập nhật</Button>
+                                    </Box>
                                     <Typography
                                         variant="h4"
                                         gutterBottom
@@ -503,6 +513,7 @@ const AdminDashboard: React.FC = () => {
                                                         <TableCell align='center' onClick={(e) => handleDetailClick(e, "in_use", item?.code, type.typeName)} sx={{ backgroundColor: (s.in_use || 0) > 0 ? 'red' : '', color: (s.in_use || 0) > 0 ? 'white' : '', cursor: 'pointer' }}>{s.in_use || 0}</TableCell>
                                                         <TableCell align='center' onClick={(e) => handleDetailClick(e, "maintenance", item?.code, type.typeName)} sx={{ backgroundColor: (s.maintenance || 0) > 0 ? 'yellow' : '', cursor: 'pointer' }}>{s.maintenance || 0}</TableCell>
                                                         <TableCell align='center' onClick={(e) => handleDetailClick(e, "retired", item?.code, type.typeName)} sx={{ backgroundColor: (s.retired || 0) > 0 ? 'black' : '', color: (s.retired || 0) > 0 ? 'white' : '', cursor: 'pointer' }}>{s.retired || 0}</TableCell>
+
                                                     </React.Fragment>
                                                 );
                                             })}
