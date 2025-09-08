@@ -244,6 +244,42 @@ router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res,
     }
 });
 
+router.post('/update_status', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
+    try {
+        const user=req.user
+        const endOfToday = new Date();
+        endOfToday.setHours(23, 59, 59, 999);
+        let lte = endOfToday;
+        const orders = await Order.find({ workingDate: { $lte: lte }, status: "in_progress" }).populate("device")
+
+        for (const order of orders) {
+            if (order.device && order.device.length > 0) {
+                // Lấy device cuối cùng trong mảng
+                const lastDevice = order.device[order.device.length - 1];
+
+                // Update status sang in_use
+                await Device.findByIdAndUpdate(
+                    lastDevice._id,
+                    { status: "in_use" },
+                    { new: true }
+                );
+
+                req.logger.info(`✅ Device ${lastDevice._id} đã cập nhật sang in_use`);
+            }
+        }
+
+        req.logger.info(`🔥${user?.username}  cập nhật trạng thái phương tiện thành công`);
+        res.status(200).json({
+            status: 'success',
+
+        });
+    } catch (err) {
+        req.logger.error("❌ Lỗi", err);
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+});
+
+
 router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
         const { ids } = req.body;
