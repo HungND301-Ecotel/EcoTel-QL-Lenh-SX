@@ -614,6 +614,7 @@ const Machines: React.FC = () => {
                                     <MenuItem value="available">Chờ điều động</MenuItem>
                                     <MenuItem value="in_use">Đang hoạt động</MenuItem>
                                     <MenuItem value="maintenance">SC; BD</MenuItem>
+
                                     <MenuItem value="retired">Niêm cất</MenuItem>
                                 </TextField>
                                 <Autocomplete
@@ -727,6 +728,7 @@ const Machines: React.FC = () => {
                     <Checkbox color='warning' name="status" checked={status === 'maintenance'}
                         onChange={() => handleChange('maintenance')} />
                     <ListItemText primary={`SC; BD (${allMachines.filter((o: Device) => o.status === "maintenance").length})`} sx={{ color: 'orange' }} />
+
                 </Box>
             </Box>
             <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
@@ -832,6 +834,7 @@ const Machines: React.FC = () => {
                                                 sx={{ width: '120px' }}
                                                 label={device.status === 'in_use' ? 'Đang hoạt động' :
                                                     device.status === 'maintenance' ? 'SC; BD' :
+
                                                         device.status === 'retired' ? 'Niêm cất' :
                                                             device.status === 'available' ? 'Chờ điều động' : device.status}
                                                 color={device.status === 'in_use' ? 'error' :

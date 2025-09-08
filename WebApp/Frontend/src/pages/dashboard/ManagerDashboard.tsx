@@ -106,6 +106,7 @@ const ManagerDashboard: React.FC = () => {
     const [anchorElDetail, setAnchorElDetail] = useState<HTMLElement | null>(null);
     const [selectedDetailDevices, setSelectedDetailDevices] = useState<any[]>([]);
 
+
     const getDevicesByStatusGrouped = (status: string) => {
         // Gom theo typeName
         return count.map((type: any) => {
@@ -126,7 +127,7 @@ const ManagerDashboard: React.FC = () => {
         setAnchorElSummary(null);
         setSelectedSummaryDevices([]);
     };
-    console.log(devices);
+
     // Mở/đóng popover chi tiết
     const handleDetailClick = (
         event: React.MouseEvent<HTMLElement>,
@@ -250,6 +251,7 @@ const ManagerDashboard: React.FC = () => {
                                         >
                                             Phương tiện
                                         </Typography>
+
                                     </Box>
                                     <Typography
                                         variant="h4"
@@ -314,12 +316,14 @@ const ManagerDashboard: React.FC = () => {
                 >
                     <Box sx={{ p: 2, maxHeight: 300, overflowY: 'auto' }}>
                         <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', }}>Danh sách phương tiện</Typography>
+
                         {selectedSummaryDevices.length > 0 ? (
                             <Table size="small">
                                 <TableHead>
                                     <TableRow>
                                         <TableCell sx={{ fontWeight: 'bold', }}>Loại xe</TableCell>
                                         <TableCell sx={{ fontWeight: 'bold', }}>Số lượng</TableCell>
+
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -404,6 +408,7 @@ const ManagerDashboard: React.FC = () => {
                                                     zIndex: 1,
                                                     color: 'orange',
                                                 }}>SC; BD</TableCell>
+
                                                 <TableCell align='center' sx={{
                                                     minWidth: 100, position: 'sticky',
                                                     top: 56,
@@ -465,6 +470,7 @@ const ManagerDashboard: React.FC = () => {
                     >
                         <Box sx={{ p: 2, maxHeight: 300, overflowY: 'auto' }}>
                             <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', }}>Danh sách phương tiện chi tiết</Typography>
+
                             {selectedDetailDevices.length > 0 ? (
                                 <Table size="small">
                                     <TableHead>
@@ -473,6 +479,7 @@ const ManagerDashboard: React.FC = () => {
                                             <TableCell sx={{ fontWeight: 'bold', }}>Sản lượng</TableCell>
                                             <TableCell sx={{ fontWeight: 'bold', }}>Người vận hành</TableCell>
                                             <TableCell sx={{ fontWeight: 'bold', }}>Ghi chú</TableCell>
+
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
@@ -481,6 +488,7 @@ const ManagerDashboard: React.FC = () => {
                                                 <TableCell>{d.code}</TableCell>
                                                 <TableCell>0</TableCell>
                                                 <TableCell>{d.assignedTo || ''}</TableCell>
+
                                                 <TableCell></TableCell>
                                             </TableRow>
                                         ))}

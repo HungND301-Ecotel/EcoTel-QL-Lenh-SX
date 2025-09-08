@@ -289,6 +289,7 @@ const AdminDashboard: React.FC = () => {
                                     <Box display="flex" gap={2} alignItems={'center'}>
                                         <DeviceIcon color='warning' fontSize='medium' />
                                         <Typography variant='h6' onClick={(e) => handleSummaryClick(e, "maintenance")} sx={{ fontWeight: 'bold', cursor: 'pointer' }}>SC; BD</Typography>
+
                                     </Box>
                                     <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{devices.filter((o: Device) => o.status === "maintenance").length}</Typography>
                                 </Box>
@@ -310,12 +311,14 @@ const AdminDashboard: React.FC = () => {
                     >
                         <Box sx={{ p: 2, maxHeight: 300, overflowY: 'auto' }}>
                             <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', }}>Danh sách phương tiện</Typography>
+
                             {selectedSummaryDevices.length > 0 ? (
                                 <Table size="small">
                                     <TableHead>
                                         <TableRow>
                                             <TableCell sx={{ fontWeight: 'bold', }}>Loại xe</TableCell>
                                             <TableCell sx={{ fontWeight: 'bold', }}>Số lượng</TableCell>
+
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
@@ -473,6 +476,7 @@ const AdminDashboard: React.FC = () => {
                                                     fontSize: 18,
                                                     color: 'orange',
                                                 }}>SC; BD</TableCell>
+
                                                 <TableCell align='center' sx={{
                                                     minWidth: 100, position: 'sticky',
                                                     top: 100,
@@ -533,6 +537,7 @@ const AdminDashboard: React.FC = () => {
                     >
                         <Box sx={{ p: 2, maxHeight: 300, overflowY: 'auto' }}>
                             <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', }}>Danh sách phương tiện chi tiết</Typography>
+
                             {selectedDetailDevices.length > 0 ? (
                                 <Table size="small">
                                     <TableHead>
@@ -541,6 +546,7 @@ const AdminDashboard: React.FC = () => {
                                             <TableCell sx={{ fontWeight: 'bold', }}>Sản lượng</TableCell>
                                             <TableCell sx={{ fontWeight: 'bold', }}>Người vận hành</TableCell>
                                             {selectedDetailDevices[0].status === 'maintenance' && <TableCell sx={{ fontWeight: 'bold', }}>Ghi chú</TableCell>}
+
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
@@ -550,6 +556,7 @@ const AdminDashboard: React.FC = () => {
                                                 <TableCell>0</TableCell>
                                                 <TableCell>{d.assignedTo || ''}</TableCell>
                                                 {selectedDetailDevices[0].status === 'maintenance' && <TableCell></TableCell>}
+
                                             </TableRow>
                                         ))}
                                     </TableBody>

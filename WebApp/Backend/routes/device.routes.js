@@ -273,6 +273,7 @@ router.post('/update_status', verifyToken, restrictTo('admin', 'manager'), async
         const orders = await Order.find({ workingDate: { $lte: lte }, status: "in_progress" }).populate("device").populate("job")
         const operatingJobs = Object.values(JobConfig);
         console.log(operatingJobs)
+      
         for (const order of orders) {
             if (order.device && order.device.length > 0) {
                 // Lấy device cuối cùng trong mảng
@@ -298,6 +299,7 @@ router.post('/update_status', verifyToken, restrictTo('admin', 'manager'), async
 
                     req.logger.info(`✅ Device ${lastDevice._id} đã cập nhật ${newStatus}`);
                 }
+
             }
         }
 
