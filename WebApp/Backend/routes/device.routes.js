@@ -267,13 +267,14 @@ router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res,
 router.post('/update_status', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
         const user = req.user
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
         const endOfToday = new Date();
         endOfToday.setHours(23, 59, 59, 999);
-        let lte = endOfToday;
-        const orders = await Order.find({ workingDate: { $lte: lte }, status: "in_progress" }).populate("device").populate("job")
+        const orders = await Order.find({ workingDate: { $gte: startOfToday, $lte: endOfToday }, status: "in_progress" }).populate("device").populate("job")
         const operatingJobs = Object.values(JobConfig);
         console.log(operatingJobs)
-      
+
         for (const order of orders) {
             if (order.device && order.device.length > 0) {
                 // Lấy device cuối cùng trong mảng
@@ -281,7 +282,7 @@ router.post('/update_status', verifyToken, restrictTo('admin', 'manager'), async
 
                 let newStatus = null;
                 if (order.job && order.job.name) {
-                    if (order.job.name.toLowerCase() === 'sửa chữa'.toLowerCase()) {
+                    if (order.job?.name?.toLowerCase().includes('sửa chữa')) {
                         newStatus = 'maintenance';
                     }
                 }

@@ -2,4 +2,5 @@ node_modules
 .env
 logs/error.log
 logs/combined.log
+logs/*.log
 serviceAccountKey.json

@@ -33,6 +33,7 @@ import {
     ViewList,
     BorderRight,
     Crop169Outlined,
+    Autorenew,
 } from '@mui/icons-material';
 import api from '../../config/api.config';
 import { Order, Device, Department, Location } from '../../types';
@@ -343,7 +344,28 @@ const ManagerDashboard: React.FC = () => {
             </Grid>
             <Box sx={{ mt: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Button variant="contained" sx={{ height: 50 }} onClick={() => handleUpdateDevices.mutate()}>Cập nhật</Button>
+                    <Button
+                        variant="outlined"
+                        startIcon={<Autorenew sx={{ color: "#1976d2" }} />} // Đặt màu xanh cho icon
+                        sx={{
+                            height: 50,
+                            px: 4,
+                            fontSize: "1.1rem",
+                            fontWeight: "bold",
+                            borderRadius: "12px",
+                            textTransform: "none",
+                            border: "2px solid #1976d2", // Viền xanh dương
+                            color: "#333333", // Màu chữ đen
+                            backgroundColor: "#f9f9f9", // Nền rất nhạt
+                            "&:hover": {
+                                backgroundColor: "#e3f2fd", // Hiệu ứng hover cho nền
+                                borderColor: "#1565c0", // Hiệu ứng hover cho viền
+                            },
+                        }}
+                        onClick={() => handleUpdateDevices.mutate()}
+                    >
+                        Cập nhật
+                    </Button>
                     <Tabs value={tabIndex} onChange={handleTabChange} sx={{ mb: 2 }}>
                         <Tab label="Phương tiện" icon={<ViewList />} />
                         <Tab label="Bản đồ" icon={<MapOutlined />} />

@@ -214,12 +214,12 @@ async function buildSheetPXVT6(req, res, next) {
             worksheet.mergeCells('F8:G8');
             worksheet.getCell('F8').value = 'Giờ hoạt động trên đồng hồ';
             worksheet.getCell('F8').font = { bold: true };
-            worksheet.getCell('H8').value = order?.shiftReport?.vehicleSummaries.reduce((sum, report) => { return sum + report?.travelHours }, 0) || '';
+            worksheet.getCell('H8').value = (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => { return sum + report?.travelHours }, 0) || '';
 
             worksheet.mergeCells('I8:J8');
             worksheet.getCell('I8').value = 'Km hoạt động trên đồng hồ';
             worksheet.getCell('I8').font = { bold: true };
-            worksheet.getCell('K8').value = order?.shiftReport?.vehicleSummaries.reduce((sum, report) => { return sum + report?.distanceKm }, 0) || '';
+            worksheet.getCell('K8').value = (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => { return sum + report?.distanceKm }, 0) || '';
 
 
 
@@ -454,7 +454,7 @@ async function buildSheetPXVT6(req, res, next) {
     }
 };
 
-async function buildSheetDefault(req, res, next) {  
+async function buildSheetDefault(req, res, next) {
     try {
         const { ids } = req.body; // mảng entity id
 
@@ -2902,8 +2902,7 @@ const addTableBorders = (
     startCol,
     endCol
 ) => {
-    const thin = { style: 'medium' };
-    const medium = { style: 'medium' };
+    const lightBorder = { style: 'thin', color: { argb: 'FFBFBFBF' } };
 
     for (let r = startRow; r <= endRow; r++) {
         const row = ws.getRow(r);
@@ -2911,10 +2910,10 @@ const addTableBorders = (
             const cell = row.getCell(c);
 
             cell.border = {
-                top: medium,
-                bottom: medium,
-                left: medium,
-                right: medium,
+                top: lightBorder,
+                bottom: lightBorder,
+                left: lightBorder,
+                right: lightBorder,
             };
         }
     }

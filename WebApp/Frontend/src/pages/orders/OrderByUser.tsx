@@ -12,7 +12,6 @@ import {
     Grid,
     IconButton,
     Paper,
-    Table,
     TableBody,
     TableCell,
     TableContainer,
@@ -55,6 +54,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { useSocket } from '../../hooks/useSocket';
+import { Table, TableProps } from 'antd';
 
 const OrderByUsers: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -69,11 +69,16 @@ const OrderByUsers: React.FC = () => {
     const [selectedRow, setSelectedRow] = useState<any | null>(null);
 
     const queryClient = useQueryClient();
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(20);
+    const [total, setTotal] = useState(0);
+    const [orderByUser, setOrderByUser] = useState<any[]>([]);
 
 
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
 
     const defaultColumns = [
+        { id: 'number', label: 'Số thứ tự' },
         { id: 'assignedTo', label: 'Nhân viên' },
         { id: 'salaryCode', label: 'Mã thẻ lương' },
         { id: 'workingDate', label: 'Ngày làm việc' },
@@ -87,7 +92,6 @@ const OrderByUsers: React.FC = () => {
         { id: 'startTime', label: 'Bắt đầu' },
         { id: 'endTime', label: 'Kết thúc' },
         { id: 'status', label: 'Trạng thái' },
-        { id: 'note', label: 'Ghi chú' },
     ]
     const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
 
@@ -98,33 +102,109 @@ const OrderByUsers: React.FC = () => {
     const handleChange = (value: string) => {
         setStatus(prev => (prev === value ? '' : value)); // bỏ chọn nếu click lại
     };
-    const { data: orderByUser = [], isLoading } = useQuery({
-        queryKey: ['orderByUser', startTime, endTime],
-        queryFn: () => api.get(`/orders/user?startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
+    const { isLoading } = useQuery({
+        queryKey: ['orderByUser',page, pageSize, startTime, endTime],
+        queryFn: () => api.get(`/orders/user?page=${page}&limit=${pageSize}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => {
+            setOrderByUser(res.data.data);
+            setTotal(res.data.totalDocs);
+        }),
     });
 
-    const [page, setPage] = React.useState(0);
-    const [pageSize, setPageSize] = React.useState(10);
-
-    const handleChangePage = (event: React.MouseEvent<HTMLButtonElement, MouseEvent> | null, page: number) => {
-        setPage(page);
-    };
-
-    const pageData = (orders: any[], page: number, pageSize: number) => {
-        let data;
-        if (!page && !pageSize) {
-            data = orders
-        } else {
-            data = orders.slice(page * pageSize, (page + 1) * pageSize)
-        }
-        return data
-    }
+    const orderColumns: TableProps<any>['columns'] = [
+        {
+            title: 'STT', dataIndex: 'number', key: 'number', width: 50, align: 'center',
+            render: (text, record, index) => index + 1,
+            fixed: 'left'
+        },
+        {
+            title: 'Nhân viên', dataIndex: 'assignedTo', key: 'assignedTo', width: 200, align: 'center',
+            render: (text, record) => record.assignedTo?.fullName || '',
+            fixed: 'left',
+        },
+        {
+            title: 'Mã thẻ lương', dataIndex: 'salaryCode', key: 'salaryCode', width: 120, align: 'center',
+            render: (text, record) => record.assignedTo?.salaryCode || '',
+        },
+        {
+            title: 'Ngày làm việc', dataIndex: 'workingDate', key: 'workingDate', width: 150, align: 'center',
+            render: (text, record) => record.workingDate ? format(new Date(record.workingDate), 'yyyy-MM-dd') : ''
+        },
+        {
+            title: 'Ca', dataIndex: 'shift', key: 'shift', width: 50, align: 'center',
+            render: (text, record) => record.shift?.name || ''
+        },
+        { title: 'Giờ làm', dataIndex: 'shiftHour', key: 'shiftHour', width: 100, align: 'center' },
+        {
+            title: 'Công việc',
+            dataIndex: 'job',
+            key: 'job',
+            width: 250,
+            align: 'center',
+            render: (text, record) => record.job?.name || '',
+        },
+        {
+            title: 'Nội dung',
+            dataIndex: 'workContent',
+            key: 'content',
+            render: (text: string) => (
+                <span
+                    style={{
+                        display: 'inline-block',
+                        width: 250,
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                        textOverflow: 'ellipsis',
+                        verticalAlign: 'middle',
+                    }}
+                >
+                    {text}
+                </span>
+            ),
+        },
+        {
+            title: 'Phương tiện', dataIndex: 'device', key: 'device', width: 150,
+            render: (text, record) => record.device?.map((dev: any) => dev.code).join(', ') || record.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n'),
+        },
+        {
+            title: 'Người tạo lệnh', dataIndex: 'createdBy', key: 'createdBy', width: 200, align: 'center',
+            render: (text, record) => record.createdBy?.username || ''
+        },
+        {
+            title: 'Thời gian tạo lệnh', dataIndex: 'createdAt', key: 'createdAt', width: 170, align: 'center',
+            render: (text, record) => record.createdAt ? format(new Date(record.createdAt), 'yyyy-MM-dd HH:mm') : ''
+        },
+        {
+            title: 'Bắt đầu', dataIndex: 'startTime', key: 'startTime', width: 100, align: 'center',
+            render: (text, record) => record.startTime ? format(new Date(record.startTime), 'HH:mm:ss') : ''
+        },
+        {
+            title: 'Kết thúc', dataIndex: 'endTime', key: 'endTime', width: 100, align: 'center',
+            render: (text, record) => record.endTime ? format(new Date(record.endTime), 'HH:mm:ss') : ''
+        },
+        {
+            title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 150, align: 'center',
+            render: (text, record) => (
+                <Chip
+                    sx={{ width: '120px' }}
+                    label={record.status === 'pending' ? 'Chưa nhận lệnh' :
+                        record.status === 'in_progress' ? 'Đã nhận lệnh' :
+                            record.status === 'completed' ? 'Đã hoàn thành' :
+                                record.status === 'warning' ? 'Lỗi' : "Đã hủy"
+                    }
+                    color={
+                        record.status === 'pending' ? 'default' :
+                            record.status === 'completed' ? 'error' :
+                                record.status === 'in_progress' ? 'success' :
+                                    record.status === 'warning' ? 'warning' : 'secondary'}
+                />
+            )
+        },
+    ];
 
     const filteredOrders = React.useMemo(() => {
         if (!status) return orderByUser;
         return orderByUser.filter((o: Order) => o.status === status);
     }, [orderByUser, status]);
-    const paginatedOrders = pageData(filteredOrders, page, pageSize);
     return (
         <Box>
             <Typography variant="h3" color='blue'>Công việc của tôi</Typography>
@@ -210,160 +290,45 @@ const OrderByUsers: React.FC = () => {
             </Box>
             <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={12} sm={9}>
-                    <Paper sx={{ width: '100%', overflowX: "initial" }}>
-                        <TableContainer sx={{ maxHeight: '80vh' }}>
-                            <Table stickyHeader aria-label="sticky table" sx={{
-                                "& td, & th": { padding: "4px 8px" },
-                            }}>
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell align='center' sx={{
-                                            position: 'sticky',
-                                            left: 0,
-                                            zIndex: 3,
-                                            width: 50,
-
-                                            fontWeight: 'bold', fontSize: 18
-                                        }}>STT</TableCell>
-                                        {visibleColumns.includes('assignedTo') && <TableCell align='center' sx={{
-                                            position: 'sticky',
-                                            left: 50,
-                                            zIndex: 3,
-                                            minWidth: 100,
-
-                                            fontWeight: 'bold', fontSize: 18
-                                        }}>Nhân viên</TableCell>}
-                                        {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{ minWidth: 130, fontWeight: 'bold', fontSize: 18 }}>Mã thẻ lương</TableCell>}
-                                        {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{ minWidth: 120, fontWeight: 'bold', fontSize: 18 }}>Ngày làm việc</TableCell>}
-                                        {visibleColumns.includes('shift') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Ca</TableCell>}
-                                        {visibleColumns.includes('shiftHour') && <TableCell align='center' sx={{ minWidth: 100, fontWeight: 'bold', fontSize: 18 }}>Giờ làm</TableCell>}
-                                        {visibleColumns.includes('job') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Công việc</TableCell>}
-                                        {visibleColumns.includes('content') && <TableCell align='center' sx={{ minWidth: 200, fontWeight: 'bold', fontSize: 18 }}>Nội dung</TableCell>}
-                                        {visibleColumns.includes('device') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Phương tiện</TableCell>}
-                                        {visibleColumns.includes('createdBy') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Người tạo lệnh</TableCell>}
-                                        {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Thời gian tạo lệnh</TableCell>}
-                                        {visibleColumns.includes('startTime') && <TableCell align='center' sx={{ minWidth: 120, fontWeight: 'bold', fontSize: 18 }}>Bắt đầu</TableCell>}
-                                        {visibleColumns.includes('endTime') && <TableCell align='center' sx={{ minWidth: 120, fontWeight: 'bold', fontSize: 18 }}>Kết thúc</TableCell>}
-                                        {visibleColumns.includes('status') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>}
-                                        {visibleColumns.includes('note') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Ghi chú</TableCell>}
-                                    </TableRow>
-                                </TableHead>
-                                {!isLoading ? <TableBody>
-                                    {paginatedOrders.map((order: any, index: number) => (
-                                        <TableRow key={order._id} sx={{
-                                            cursor: 'pointer', backgroundColor: order.status === 'pending'
-                                                ? 'white' // xám nhạt
-                                                : order.status === 'completed'
-                                                    ? '#ffe5e5' // đỏ nhạt
-                                                    : order.status === 'in_progress'
-                                                        ? '#e5f7e5' // xanh lá nhạt
-                                                        : order.status === 'warning'
-                                                            ? '#fff8e1' // vàng nhạt
-                                                            : '#ede7f6', // tím nhạt
-                                        }} onClick={() => setSelectedRow(order)}>
-                                            <TableCell align='center' sx={{
-                                                position: 'sticky',
-                                                left: 0,
-                                                zIndex: 1,
-                                                width: 50,
-                                                backgroundColor: order.status === 'pending'
-                                                    ? 'white' // xám nhạt
-                                                    : order.status === 'completed'
-                                                        ? '#ffe5e5' // đỏ nhạt
-                                                        : order.status === 'in_progress'
-                                                            ? '#e5f7e5' // xanh lá nhạt
-                                                            : order.status === 'warning'
-                                                                ? '#fff8e1' // vàng nhạt
-                                                                : '#ede7f6', // tím nhạt
-                                            }}>{index + 1}</TableCell>
-                                            {visibleColumns.includes('assignedTo') && <TableCell sx={{
-                                                position: 'sticky',
-                                                left: 50,
-                                                zIndex: 1,
-                                                minWidth: 150,
-                                                backgroundColor: order.status === 'pending'
-                                                    ? 'white' // xám nhạt
-                                                    : order.status === 'completed'
-                                                        ? '#ffe5e5' // đỏ nhạt
-                                                        : order.status === 'in_progress'
-                                                            ? '#e5f7e5' // xanh lá nhạt
-                                                            : order.status === 'warning'
-                                                                ? '#fff8e1' // vàng nhạt
-                                                                : '#ede7f6', // tím nhạt
-                                            }}>{order.assignedTo?.fullName}</TableCell>}
-                                            {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{}}>
-                                                {order.assignedTo?.salaryCode}
-                                            </TableCell>}
-                                            {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{}}>
-                                                {order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('shift') && <TableCell align='center' sx={{}}>
-                                                {order.shift?.name}
-                                            </TableCell>}
-                                            {visibleColumns.includes('shiftHour') && <TableCell align='center' sx={{}}>
-                                                {order.shiftHour}
-                                            </TableCell>}
-                                            {visibleColumns.includes('job') && <TableCell sx={{}}>
-                                                {order.job?.name || ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('content') && <TableCell sx={{
-                                                whiteSpace: 'nowrap',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                maxWidth: 300,
-                                            }}>
-                                                {order.workContent || ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('device') && <TableCell sx={{}}>
-                                                {order.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')}
-                                            </TableCell>}
-                                            {visibleColumns.includes('createdBy') && <TableCell sx={{}}>
-                                                {order.createdBy?.username || ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{}}>
-                                                {order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm') : ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('startTime') && <TableCell align='center' sx={{}}>
-                                                {order.startTime ? format(new Date(order.startTime), 'HH:mm:ss') : ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('endTime') && <TableCell align='center' sx={{}}>
-                                                {order.endTime ? format(new Date(order.endTime), 'HH:mm:ss') : ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('status') && <TableCell align='center' sx={{}}>
-                                                <Chip
-                                                    sx={{ width: '120px' }}
-                                                    label={order.status === 'pending' ? 'Chưa nhận lệnh' :
-                                                        order.status === 'in_progress' ? 'Đã nhận lệnh' :
-                                                            order.status === 'completed' ? 'Đã hoàn thành' :
-                                                                order.status === 'warning' ? 'Lỗi' : "Đã hủy"
-                                                    }
-                                                    color={
-                                                        order.status === 'pending' ? 'default' :
-                                                            order.status === 'completed' ? 'error' :
-                                                                order.status === 'in_progress' ? 'success' :
-                                                                    order.status === 'warning' ? 'warning' : 'secondary'}
-                                                />
-                                            </TableCell>}
-                                            {visibleColumns.includes('note') && <TableCell sx={{}}>
-                                                {order.temporaryError || ''}
-                                            </TableCell>}
-                                        </TableRow>
-                                    ))}
-                                </TableBody> : <Typography>Loading...</Typography>}
-                            </Table>
-                        </TableContainer>
-                        <TablePagination
-                            component="div"
-                            count={orderByUser.length}
-                            page={page}
-                            onPageChange={handleChangePage}
-                            rowsPerPage={pageSize}
-                            onRowsPerPageChange={(event) => {
-                                setPageSize(parseInt(event.target.value, 10));
-                                setPage(0);
-                            }}
-                        />
-                    </Paper>
+                    <Table<any> rowKey="_id"
+                        pagination={{
+                            current: page,
+                            pageSize,
+                            total,
+                            showSizeChanger: true,
+                            pageSizeOptions: ['50', '100', '150', '200'],
+                            showTotal: (total, range) => (
+                                <div style={{ flex: 1, textAlign: 'left' }}>
+                                    Hiển thị {range[0]}-{range[1]}/ {total}
+                                </div>
+                            ),
+                            onChange: (p, ps) => {
+                                setPage(p);
+                                setPageSize(ps);
+                            },
+                        }}
+                        columns={orderColumns.filter(col => col.key && visibleColumns.includes(col.key.toString()))}
+                        dataSource={filteredOrders}
+                        loading={{
+                            spinning: isLoading,
+                            tip: 'Đang tải dữ liệu...',
+                        }}
+                        scroll={{ x: 'max-content', y: 500 }}
+                        tableLayout="fixed"
+                        onRow={(record) => ({
+                            onClick: () => setSelectedRow(record),
+                        })}
+                        rowClassName={(record) => {
+                            let base = '';
+                            switch (record.status) {
+                                case 'pending': base = 'row-pending'; break;
+                                case 'in_progress': base = 'row-in-progress'; break;
+                                case 'completed': base = 'row-completed'; break;
+                                case 'warning': base = 'row-warning'; break;
+                                case 'cancel': base = 'row-cancel'; break;
+                            }
+                            return `${base} ${selectedRow?._id === record._id ? 'row-selected' : ''}`;
+                        }} />
                 </Grid>
                 <Grid item xs={12} sm={3}>
                     <Box sx={{ position: 'sticky', top: 0, maxHeight: '80vh', overflowY: 'auto', border: '1px solid #ccc', borderRadius: 2, p: 2 }}>

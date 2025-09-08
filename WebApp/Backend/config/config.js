@@ -1,4 +1,4 @@
-export const JobConfig = Object.freeze({
+const JobConfig = Object.freeze({
     VEHICLE: "vận hành xe",
     EXCAVATOR: "vận hành xúc",
     SERVICE_VEHICLE: "vận hành xe phục vụ",
@@ -6,3 +6,4 @@ export const JobConfig = Object.freeze({
     DOZER: "vận hành gạt",
     SIEVE: "vận hành sàng",
 });
+module.exports = { JobConfig };

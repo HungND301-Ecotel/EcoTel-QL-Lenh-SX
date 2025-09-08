@@ -4,3 +4,44 @@
      padding: 0;
      height: 100%;
  }
+
+ /* Pending */
+ .row-pending td,
+ .row-pending .ant-table-cell-fix-left,
+ .row-pending .ant-table-cell-fix-right {
+     background-color: #ffffff !important;
+ }
+
+ /* In Progress */
+ .row-in-progress td,
+ .row-in-progress .ant-table-cell-fix-left,
+ .row-in-progress .ant-table-cell-fix-right {
+     background-color: #e8f5e9 !important;
+ }
+
+ /* Completed */
+ .row-completed td,
+ .row-completed .ant-table-cell-fix-left,
+ .row-completed .ant-table-cell-fix-right {
+     background-color: #ffebee !important;
+ }
+
+ /* Warning */
+ .row-warning td,
+ .row-warning .ant-table-cell-fix-left,
+ .row-warning .ant-table-cell-fix-right {
+     background-color: #fff8e1 !important;
+ }
+
+ /* Cancel */
+ .row-cancel td,
+ .row-cancel .ant-table-cell-fix-left,
+ .row-cancel .ant-table-cell-fix-right {
+     background-color: #ede7f6 !important;
+ }
+
+ .ant-table-thead>tr>th {
+     font-weight: bold !important;
+     font-size: 16px !important;
+     text-align: center;
+ }

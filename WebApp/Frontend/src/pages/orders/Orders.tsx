@@ -12,7 +12,6 @@ import {
     Grid,
     IconButton,
     Paper,
-    Table,
     TableBody,
     TableCell,
     TableContainer,
@@ -69,6 +68,8 @@ import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../compon
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { Table, TableColumnsType, TableProps } from 'antd';
+import { TableRowSelection } from 'antd/es/table/interface';
 
 const StyledPopper = styled(Popper)({
     '& .MuiAutocomplete-listbox': {
@@ -97,17 +98,15 @@ const Orders: React.FC = () => {
     const [expanded, setExpanded] = useState(false);
     const formRef = useRef<HTMLDivElement>(null);
 
-    const handleSelected = (order: any) => {
-        setSelectedOrders(prev =>
-            prev.some(o => o._id === order._id)
-                ? prev.filter(o => o._id !== order._id)
-                : [...prev, order]
-        );
-    };
-
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
 
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(20);
+    const [total, setTotal] = useState(0);
+    const [orders, setOrders] = useState<any[]>([]);
+
     const defaultColumns = [
+        { id: 'number', label: 'Số thứ tự' },
         { id: 'assignedTo', label: 'Nhân viên' },
         { id: 'salaryCode', label: 'Mã thẻ lương' },
         { id: 'workingDate', label: 'Ngày làm việc' },
@@ -116,6 +115,9 @@ const Orders: React.FC = () => {
         { id: 'job', label: 'Công việc' },
         { id: 'content', label: 'Nội dung' },
         { id: 'device', label: 'Phương tiện' },
+        { id: 'excavator', label: 'Máy xúc' },
+        { id: 'material', label: 'Vật liệu' },
+        { id: 'location', label: 'Điểm đổ' },
         { id: 'createdBy', label: 'Người tạo lệnh' },
         { id: 'createdAt', label: 'Thời gian tạo lệnh' },
         { id: 'startTime', label: 'Bắt đầu' },
@@ -142,7 +144,10 @@ const Orders: React.FC = () => {
         queryKey: ['devices'],
         queryFn: () => api.get('/devices').then(res => res.data.data),
     });
-
+    const { data: jobs = [] } = useQuery({
+        queryKey: ['jobs'],
+        queryFn: () => api.get('/jobs').then(res => res.data.data),
+    });
     const { data: users = [] } = useQuery({
         queryKey: ['users'],
         queryFn: () => api.get('/users').then(res => res.data.data),
@@ -152,9 +157,12 @@ const Orders: React.FC = () => {
         queryFn: () => api.get('/departments').then(res => res.data.data),
     });
 
-    const { data: orders = [], isLoading } = useQuery({
-        queryKey: ['orders', employee, department, device, startTime, endTime],
-        queryFn: () => api.get(`/orders?employee=${employee}&department=${department}&device=${device}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
+    const { isLoading } = useQuery({
+        queryKey: ['orders', page, pageSize, employee, department, device, startTime, endTime],
+        queryFn: () => api.get(`/orders?page=${page}&limit=${pageSize}&employee=${employee}&department=${department}&device=${device}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => {
+            setOrders(res.data.data);     // mảng order
+            setTotal(res.data.totalDocs);   // tổng số bản ghi từ API
+        }),
 
     });
 
@@ -333,111 +341,152 @@ const Orders: React.FC = () => {
 
     //
 
-    const orderColumns: GridColDef[] = [
+    const orderColumns: TableProps<any>['columns'] = [
         {
-            field: 'number', headerName: 'STT', width: 50, headerAlign: 'center', align: 'center',
-            valueGetter: (params) => params.api.getRowIndexRelativeToVisibleRows(params.row._id) + 1,
-            headerClassName: 'super-sticky-col-number',
-            cellClassName: 'super-sticky-col-number',
+            title: 'STT', dataIndex: 'number', key: 'number', width: 50, align: 'center',
+            render: (text, record, index) => index + 1,
+            fixed: 'left'
         },
         {
-            field: 'fullName', headerName: 'Nhân viên', width: 200, headerAlign: 'center',
-            valueGetter: (params) => params.row.assignedTo?.fullName || '',
-            headerClassName: 'super-sticky-col-fullName',
-            cellClassName: 'super-sticky-col-fullName',
+            title: 'Nhân viên', dataIndex: 'assignedTo', key: 'assignedTo', width: 200, align: 'center',
+            render: (text, record) => record.assignedTo?.fullName || '',
+            fixed: 'left',
+            filterSearch: true,
+            filters: Array.from(
+                new Set(
+                    users.map((o: any) => o.fullName + '-' + o.salaryCode).filter(Boolean)
+                )
+            ).map((name) => ({
+                text: String(name),   // 👈 ép kiểu về string
+                value: String(name),
+            })),
+            filterMultiple: true,
+            onFilter: (value, record) => record.assignedTo?.fullName + '-' + record.assignedTo?.salaryCode === value,
         },
         {
-            field: 'salaryCode',
-            headerName: 'Mã thẻ lương',
-            align: 'center',
-            width: 120,
-            headerAlign: 'center',
-            valueGetter: (params) => params.row.assignedTo?.salaryCode || ''
+            title: 'Mã thẻ lương', dataIndex: 'salaryCode', key: 'salaryCode', width: 120, align: 'center',
+            render: (text, record) => record.assignedTo?.salaryCode || '',
         },
         {
-            field: 'workingDate', headerName: 'Ngày làm việc', width: 150, headerAlign: 'center', align: 'center',
-            valueGetter: (params) => params.row.workingDate ? format(new Date(params.row.workingDate), 'yyyy-MM-dd') : ''
+            title: 'Ngày làm việc', dataIndex: 'workingDate', key: 'workingDate', width: 150, align: 'center',
+            render: (text, record) => record.workingDate ? format(new Date(record.workingDate), 'yyyy-MM-dd') : ''
         },
         {
-            field: 'shift', headerName: 'Ca', width: 50, headerAlign: 'center', align: 'center',
-            valueGetter: (params) => params.row.shift?.name || ''
+            title: 'Ca', dataIndex: 'shift', key: 'shift', width: 50, align: 'center',
+            render: (text, record) => record.shift?.name || ''
         },
-        { field: 'shiftHour', headerName: 'Giờ làm', width: 100, headerAlign: 'center', align: 'center' },
+        { title: 'Giờ làm', dataIndex: 'shiftHour', key: 'shiftHour', width: 100, align: 'center' },
         {
-            field: 'job',
-            headerName: 'Công việc',
-            valueGetter: (params) => params.row.job?.name || '',
+            title: 'Công việc',
+            dataIndex: 'job',
+            key: 'job',
             width: 250,
-            headerAlign: 'center'
+            align: 'center',
+            render: (text, record) => record.job?.name || '',
+            filterSearch: true,
+            filters: Array.from(
+                new Set(
+                    jobs.map((o: any) => o.name).filter(Boolean)
+                )
+            ).map((name) => ({
+                text: String(name),   // 👈 ép kiểu về string
+                value: String(name),
+            })),
+            filterMultiple: true,
+            onFilter: (value, record) => record.job?.name === value,
         },
         {
-            field: 'workContent',
-            headerName: 'Nội dung',
-            minWidth: 250,
-            flex: 1,
-            headerAlign: 'center'
+            title: 'Nội dung',
+            dataIndex: 'workContent',
+            key: 'content',
+            render: (text: string) => (
+                <span
+                    style={{
+                        display: 'inline-block',
+                        width: 250,
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                        textOverflow: 'ellipsis',
+                        verticalAlign: 'middle',
+                    }}
+                >
+                    {text}
+                </span>
+            ),
         },
         {
-            field: 'device', headerName: 'Phương tiện', width: 150, headerAlign: 'center',
-            valueGetter: (params) => params.row.device?.map((dev: any) => dev.code).join(', ') || params.row.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')
+            title: 'Phương tiện', dataIndex: 'device', key: 'device', width: 150,
+            render: (text, record) => record.device?.map((dev: any) => dev.code).join(', ') || record.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n'),
+            filterSearch: true,
+            filters: Array.from(
+                new Set(
+                    devices.map((o: any) => o.code).filter(Boolean)
+                )
+            ).map((name) => ({
+                text: String(name),   // 👈 ép kiểu về string
+                value: String(name),
+            })),
+            filterMultiple: true,
+            onFilter: (value, record) =>
+                record.device?.some((dev: any) => dev.code === value),
         },
         {
-            field: 'excavator', headerName: 'Máy xúc', width: 150, headerAlign: 'center',
-            valueGetter: (params) => params.row.excavator?.map((dev: any) => dev.code).join(', ')
+            title: 'Máy xúc', dataIndex: 'excavator', key: 'excavator', width: 150,
+            render: (text, record) => record.excavator?.map((dev: any) => dev.code).join(', ')
         },
         {
-            field: 'material', headerName: 'Vật liệu', width: 150, headerAlign: 'center',
-            valueGetter: (params) => params.row.material?.map((mat: any) => mat.name).join(', ')
+            title: 'Vật liệu', dataIndex: 'material', key: 'material', width: 150,
+            render: (text, record) => record.material?.map((mat: any) => mat.name).join(', ')
         },
         {
-            field: 'location', headerName: 'Điểm đổ', width: 150, headerAlign: 'center',
-            valueGetter: (params) => params.row.location?.map((loc: any) => loc.name).join(', ')
+            title: 'Điểm đổ', dataIndex: 'location', key: 'location', width: 150,
+            render: (text, record) => record.location?.map((loc: any) => loc.name).join(', ')
         },
         {
-            field: 'createdBy', headerName: 'Người tạo lệnh', width: 200, headerAlign: 'center', align: 'center',
-            valueGetter: (params) => params.row.createdBy?.username || ''
+            title: 'Người tạo lệnh', dataIndex: 'createdBy', key: 'createdBy', width: 200, align: 'center',
+            render: (text, record) => record.createdBy?.username || ''
         },
         {
-            field: 'createdAt', headerName: 'Thời gian tạo lệnh', width: 170, headerAlign: 'center', align: 'center',
-            valueGetter: (params) => params.row.createdAt ? format(new Date(params.row.createdAt), 'yyyy-MM-dd HH:mm') : ''
+            title: 'Thời gian tạo lệnh', dataIndex: 'createdAt', key: 'createdAt', width: 170, align: 'center',
+            render: (text, record) => record.createdAt ? format(new Date(record.createdAt), 'yyyy-MM-dd HH:mm') : ''
         },
         {
-            field: 'startTime', headerName: 'Bắt đầu', width: 100, headerAlign: 'center', align: 'center',
-            valueGetter: (params) => params.row.startTime ? format(new Date(params.row.startTime), 'HH:mm:ss') : ''
+            title: 'Bắt đầu', dataIndex: 'startTime', key: 'startTime', width: 100, align: 'center',
+            render: (text, record) => record.startTime ? format(new Date(record.startTime), 'HH:mm:ss') : ''
         },
         {
-            field: 'endTime', headerName: 'Kết thúc', width: 100, headerAlign: 'center', align: 'center',
-            valueGetter: (params) => params.row.endTime ? format(new Date(params.row.endTime), 'HH:mm:ss') : ''
+            title: 'Kết thúc', dataIndex: 'endTime', key: 'endTime', width: 100, align: 'center',
+            render: (text, record) => record.endTime ? format(new Date(record.endTime), 'HH:mm:ss') : ''
         },
         {
-            field: 'status', headerName: 'Trạng thái', width: 150, headerAlign: 'center', align: 'center',
-            renderCell: (params) => (
+            title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 150, align: 'center',
+            render: (text, record) => (
                 <Chip
                     sx={{ width: '120px' }}
-                    label={params.row.status === 'pending' ? 'Chưa nhận lệnh' :
-                        params.row.status === 'in_progress' ? 'Đã nhận lệnh' :
-                            params.row.status === 'completed' ? 'Đã hoàn thành' :
-                                params.row.status === 'warning' ? 'Lỗi' : "Đã hủy"
+                    label={record.status === 'pending' ? 'Chưa nhận lệnh' :
+                        record.status === 'in_progress' ? 'Đã nhận lệnh' :
+                            record.status === 'completed' ? 'Đã hoàn thành' :
+                                record.status === 'warning' ? 'Lỗi' : "Đã hủy"
                     }
                     color={
-                        params.row.status === 'pending' ? 'default' :
-                            params.row.status === 'completed' ? 'error' :
-                                params.row.status === 'in_progress' ? 'success' :
-                                    params.row.status === 'warning' ? 'warning' : 'secondary'}
+                        record.status === 'pending' ? 'default' :
+                            record.status === 'completed' ? 'error' :
+                                record.status === 'in_progress' ? 'success' :
+                                    record.status === 'warning' ? 'warning' : 'secondary'}
                 />
             )
         },
         {
-            field: 'view',
-            headerName: 'Xem báo công',
+            title: 'Xem báo công',
+            dataIndex: 'view',
+            key: 'view',
             width: 100,
-            headerAlign: 'center',
             align: 'center',
-            renderCell: (params) => (
+            render: (text, record) => (
                 <IconButton
                     color="secondary"
                     onClick={() => {
-                        setSelectedOrder(params.row)
+                        setSelectedOrder(record)
                         setShiftReport(true)
                     }}
                 >
@@ -446,27 +495,25 @@ const Orders: React.FC = () => {
                     </Tooltip>
                 </IconButton>
             ),
-            sortable: false,
-            filterable: false,
         },
         {
-            field: 'edit',
-            headerName: 'Sửa',
+            title: 'Sửa',
+            dataIndex: 'edit',
+            key: 'edit',
             width: 60,
-            headerAlign: 'center',
-            renderCell: (params) => (
+            render: (text, record) => (
                 <IconButton
                     color="primary"
-                    disabled={!['pending', 'warning'].includes(params.row?.status)
+                    disabled={!['pending', 'warning'].includes(record?.status)
                     }
                     onClick={async () => {
                         if (open) {
                             const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
                             if (result.isConfirmed) {
-                                handleOpen(params.row);
+                                handleOpen(record);
                             }
                         } else {
-                            handleOpen(params.row);
+                            handleOpen(record);
                         }
                     }}
                 >
@@ -474,50 +521,46 @@ const Orders: React.FC = () => {
                         <EditIcon />
                     </Tooltip>
                 </IconButton >
-            ),
-            sortable: false,
-            filterable: false,
+            )
         },
         {
-            field: 'cancel',
-            headerName: 'Hủy',
+            title: 'Hủy',
+            dataIndex: 'cancel',
+            key: 'cancel',
             width: 60,
-            headerAlign: 'center',
-            renderCell: (params) => (
+            render: (text, record) => (
                 <IconButton
-                    disabled={!['pending', 'warning'].includes(params.row.status)}
+                    disabled={!['pending', 'warning'].includes(record.status)}
                     color="warning"
-                    onClick={() => handleCancel(params.row)}
+                    onClick={() => handleCancel(record)}
                 >
                     <Tooltip title="Hủy" placement='top'>
                         <CancelOutlined />
                     </Tooltip>
                 </IconButton>
             ),
-            sortable: false,
-            filterable: false,
         },
         {
-            field: 'tranfer',
-            headerName: 'Chuyển ca',
+            title: 'Chuyển ca',
+            dataIndex: 'transfer',
+            key: 'transfer',
             width: 100,
-            headerAlign: 'center',
             align: 'center',
-            renderCell: (params) => (
+            render: (text, record) => (
                 <IconButton
                     color="info"
                     onClick={async () => {
                         if (open) {
                             const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
                             if (result.isConfirmed) {
-                                setSelectedOrder(params.row)
+                                setSelectedOrder(record)
                                 setOpen(false)
                                 setExpanded(true)
                                 setTransfer(true)
 
                             }
                         } else {
-                            setSelectedOrder(params.row)
+                            setSelectedOrder(record)
                             setOpen(false)
                             setExpanded(true)
                             setTransfer(true)
@@ -537,32 +580,21 @@ const Orders: React.FC = () => {
                     </Tooltip>
                 </IconButton>
             ),
-            sortable: false,
-            filterable: false,
         },
     ];
 
-    const [page, setPage] = React.useState(0);
-    const [pageSize, setPageSize] = React.useState(10);
-
-    const handleChangePage = (event: React.MouseEvent<HTMLButtonElement, MouseEvent> | null, page: number) => {
-        setPage(page);
+    const rowSelection: TableRowSelection<any> = {
+        // AntD yêu cầu selectedRowKeys phải là mảng id
+        selectedRowKeys: selectedOrders.map(o => o._id),
+        onChange: (newKeys: React.Key[], newRows: any[]) => {
+            setSelectedOrders(newRows);   // lưu luôn object đầy đủ
+        },
     };
 
-    const pageData = (orders: any[], page: number, pageSize: number) => {
-        let data;
-        if (!page && !pageSize) {
-            data = orders
-        } else {
-            data = orders.slice(page * pageSize, (page + 1) * pageSize)
-        }
-        return data
-    }
     const filteredOrders = React.useMemo(() => {
         if (!status) return orders;
         return orders.filter((o: Order) => o.status === status);
     }, [orders, status]);
-    const paginatedOrders = pageData(filteredOrders, page, pageSize);
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -815,65 +847,45 @@ const Orders: React.FC = () => {
             </Box>
             <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={12} sm={9}>
-                    <DataGrid
-                        rows={filteredOrders}
-                        columns={orderColumns}
-                        getRowId={(row) => row._id}
-                        rowsPerPageOptions={[10, 50, 100, 200]}
-                        autoHeight
-                        disableSelectionOnClick
-                        checkboxSelection
-                        isRowSelectable={(params) => params.row.role !== 'admin'}
-                        onSelectionModelChange={(newSelection) => {
-                            setSelectedOrders(newSelection as string[]);
-                        }}
-                        onRowClick={(params) => {
-                            setSelectedRow(params.row); // lưu cả object row
-                        }}
-                        initialState={{
-                            pagination: {
-                                pageSize: 10,
+                    <Table<any> rowKey="_id" rowSelection={rowSelection}
+                        pagination={{
+                            current: page,
+                            pageSize,
+                            total,
+                            showSizeChanger: true,
+                            pageSizeOptions: ['50', '100', '150', '200'],
+                            showTotal: (total, range) => (
+                                <div style={{ flex: 1, textAlign: 'left' }}>
+                                    Hiển thị {range[0]}-{range[1]}/ {total}
+                                </div>
+                            ),
+                            onChange: (p, ps) => {
+                                setPage(p);
+                                setPageSize(ps);
                             },
                         }}
-                        loading={isLoading}
-                        getRowClassName={(params) => `status-${params.row.status}`}
-                        sx={{
-                            '& .MuiDataGrid-columnHeaderTitle': {
-                                width: '100%',
-                                textAlign: 'center',
-                                fontWeight: 'bold',
-                                fontSize: 18,
-                            },
-                            '& .status-pending': { backgroundColor: 'white' },
-                            '& .status-completed': { backgroundColor: '#ffe5e5' },
-                            '& .status-in_progress': { backgroundColor: '#e5f7e5' },
-                            '& .status-warning': { backgroundColor: '#fff8e1' },
-                            '& .status-other': { backgroundColor: '#ede7f6' },
-                            '& .MuiDataGrid-columnHeaders': { backgroundColor: '#f5f5f5' },
-
-                            // 🔒 Ghim 3 cột đầu: checkbox + STT + Nhân viên
-                            '& .MuiDataGrid-columnHeaderCheckbox, & .MuiDataGrid-cellCheckbox': {
-                                position: 'sticky',
-                                left: 0,
-                                zIndex: 3,
-                                background: '#fff',
-                                minWidth: 50,
-                                maxWidth: 50,
-                            },
-                            '& .super-sticky-col-number': {
-                                position: 'sticky',
-                                left: 50, // checkbox
-                                zIndex: 3,
-                                background: '#fff',
-                            },
-                            '& .super-sticky-col-fullName': {
-                                position: 'sticky',
-                                left: 100, // checkbox (50) + STT (50)
-                                zIndex: 3,
-                                background: '#fff',
-                            },
+                        columns={orderColumns.filter(col => col.key && visibleColumns.includes(col.key.toString()))}
+                        dataSource={filteredOrders}
+                        loading={{
+                            spinning: isLoading,
+                            tip: 'Đang tải dữ liệu...',
                         }}
-                    />
+                        scroll={{ x: 'max-content', y: 500 }}
+                        tableLayout="fixed"
+                        onRow={(record) => ({
+                            onClick: () => setSelectedRow(record),
+                        })}
+                        rowClassName={(record) => {
+                            let base = '';
+                            switch (record.status) {
+                                case 'pending': base = 'row-pending'; break;
+                                case 'in_progress': base = 'row-in-progress'; break;
+                                case 'completed': base = 'row-completed'; break;
+                                case 'warning': base = 'row-warning'; break;
+                                case 'cancel': base = 'row-cancel'; break;
+                            }
+                            return `${base} ${selectedRow?._id === record._id ? 'row-selected' : ''}`;
+                        }} />
                 </Grid>
                 <Grid item xs={12} sm={3}>
                     <Box sx={{ position: 'sticky', top: 0, maxHeight: '80vh', overflowY: 'auto', border: '1px solid #ccc', borderRadius: 2, p: 2 }}>
