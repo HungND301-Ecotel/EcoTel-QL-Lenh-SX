@@ -157,7 +157,9 @@ router.put('/update/:id', verifyToken, async (req, res) => {
                 message: 'Không tìm thấy người dùng'
             });
         }
-
+        if ('password' in req.body) {
+            delete req.body.password;
+        }
         const userUpdate = await User.findByIdAndUpdate(
             req.params.id,
             req.body,

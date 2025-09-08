@@ -335,7 +335,7 @@ const DeviceTypes: React.FC = () => {
                             </TableCell>
                             {visibleColumns.includes('name') && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>Tên loại phương tiện</TableCell>}
                             {visibleColumns.includes('group') && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 150 }}>Nhóm phương tiện</TableCell>}
-                            {visibleColumns.includes('edit') && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 100, minWidth: 100 }}>Sửa</TableCell>)}
+                            {user?.role==="admin" && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 100, minWidth: 100 }}>Sửa</TableCell>}
                         </TableRow>
                     </TableHead>
                     <TableBody>
