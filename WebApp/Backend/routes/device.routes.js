@@ -270,7 +270,6 @@ router.post('/update_status', verifyToken, async (req, res, next) => {
     try {
         const user = req.user
         const now = new Date();
-
         const startOfToday = new Date();
         startOfToday.setHours(0, 0, 0, 0);
         const endOfToday = new Date();
@@ -339,7 +338,6 @@ router.post('/update_status', verifyToken, async (req, res, next) => {
 
             if (newStatus) {
                 await updateDeviceStatus(lastDevice._id, newStatus);
-
             }
         }
 

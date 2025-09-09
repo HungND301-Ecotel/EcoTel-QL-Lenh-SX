@@ -294,7 +294,6 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                 </Grid>
 
                 {["Vận hành xe", "Vận hành xúc", "Vận hành gạt", "Vận hành khoan", "Vận hành sàng", "Vận hành xe phục vụ", "Sửa chữa, bảo dưỡng"].includes(selectedJob?.type ?? "") && <Grid item xs={6}>
-
                     <Autocomplete
                         fullWidth
                         multiple

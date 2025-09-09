@@ -366,7 +366,6 @@ const ManagerDashboard: React.FC = () => {
                     >
                         Cập nhật
                     </Button>
-
                     <Tabs value={tabIndex} onChange={handleTabChange} sx={{ mb: 2 }}>
                         <Tab label="Phương tiện" icon={<ViewList />} />
                         <Tab label="Bản đồ" icon={<MapOutlined />} />
@@ -512,7 +511,6 @@ const ManagerDashboard: React.FC = () => {
                                                 <TableCell>0</TableCell>
                                                 <TableCell>{d.assignedTo || ''}</TableCell>
                                                 <TableCell>{d.note || ''}</TableCell>
-
                                             </TableRow>
                                         ))}
                                     </TableBody>

@@ -113,8 +113,6 @@ const Orders: React.FC = () => {
         cancel: 0,
     });
 
-
-
     const defaultColumns = [
         { id: 'number', label: 'Số thứ tự' },
         { id: 'assignedTo', label: 'Nhân viên' },
@@ -220,7 +218,6 @@ const Orders: React.FC = () => {
             });
         }
     }, [data]);
-
 
     const createMutation = useMutation({
         mutationFn: (newOrder: Partial<Order>) =>
@@ -407,12 +404,10 @@ const Orders: React.FC = () => {
             filters: users.map((d: any) => ({ text: `${d.fullName}-${d.salaryCode}`, value: d._id })),
             onFilter: undefined,
             filteredValue: serverFilters.assignedTo ?? null,
-
         },
         {
             title: 'Mã thẻ lương', dataIndex: 'salaryCode', key: 'salaryCode', width: 120, align: 'center',
             render: (text, record) => record.assignedTo?.salaryCode || '',
-
         },
         {
             title: 'Ngày làm việc', dataIndex: 'workingDate', key: 'workingDate', width: 150, align: 'center',
@@ -425,7 +420,6 @@ const Orders: React.FC = () => {
             filters: shifts.map((d: any) => ({ text: d.name, value: d._id })),
             onFilter: undefined,
             filteredValue: serverFilters.shift ?? null,
-
         },
         { title: 'Giờ làm', dataIndex: 'shiftHour', key: 'shiftHour', width: 100, align: 'center' },
         {
@@ -439,7 +433,6 @@ const Orders: React.FC = () => {
             filters: jobs.map((d: any) => ({ text: d.name, value: d._id })),
             onFilter: undefined,
             filteredValue: serverFilters.job ?? null,
-
         },
         {
             title: 'Nội dung',
@@ -467,7 +460,6 @@ const Orders: React.FC = () => {
             filters: devices.map((d: any) => ({ text: d.code, value: d._id })),
             onFilter: undefined,
             filteredValue: serverFilters.device ?? null,
-
         },
         {
             title: 'Máy xúc', dataIndex: 'excavator', key: 'excavator', width: 150,
@@ -476,7 +468,6 @@ const Orders: React.FC = () => {
             filters: excavators.map((d: any) => ({ text: d.code, value: d._id })),
             onFilter: undefined,
             filteredValue: serverFilters.excavator ?? null,
-
         },
         {
             title: 'Vật liệu', dataIndex: 'material', key: 'material', width: 150,
@@ -485,7 +476,6 @@ const Orders: React.FC = () => {
             filters: materials.map((d: any) => ({ text: d.name, value: d._id })),
             onFilter: undefined,
             filteredValue: serverFilters.material ?? null,
-
         },
         {
             title: 'Điểm đổ', dataIndex: 'location', key: 'location', width: 150,
@@ -502,7 +492,6 @@ const Orders: React.FC = () => {
             onFilter: undefined,
             filteredValue: serverFilters.createdBy ?? null,
             render: (text, record) => record.createdBy?.username || '',
-
         },
         {
             title: 'Thời gian tạo lệnh', dataIndex: 'createdAt', key: 'createdAt', width: 170, align: 'center',
@@ -533,7 +522,6 @@ const Orders: React.FC = () => {
                                     record.status === 'warning' ? 'warning' : 'secondary'}
                 />
             ),
-
         },
         {
             title: 'Xem báo công',
@@ -649,8 +637,6 @@ const Orders: React.FC = () => {
             setSelectedOrders(newRows);   // lưu luôn object đầy đủ
         },
     };
-
-
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -742,7 +728,6 @@ const Orders: React.FC = () => {
                                 },
                             }}
                         >
-
                             {user?.role === "admin" && <Autocomplete
                                 fullWidth
                                 options={departments}
@@ -817,37 +802,31 @@ const Orders: React.FC = () => {
                     <Checkbox color='info' name="status" checked={status === ''}
                         onChange={() => handleChange('')} />
                     <ListItemText primary={`Tất cả (${statusCounts.all})`} sx={{ color: 'blue' }} />
-
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='default' name="status" checked={status === 'pending'}
                         onChange={() => handleChange('pending')} />
                     <ListItemText primary={`Chưa nhận lệnh (${statusCounts.pending})`} sx={{ color: 'grey' }} />
-
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='success' name="status" checked={status === 'in_progress'}
                         onChange={() => handleChange('in_progress')} />
                     <ListItemText primary={`Đã nhận lệnh (${statusCounts.in_progress})`} sx={{ color: 'green' }} />
-
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='warning' name="status" checked={status === 'warning'}
                         onChange={() => handleChange('warning')} />
                     <ListItemText primary={`Lỗi (${statusCounts.warning})`} sx={{ color: 'orange' }} />
-
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='error' name="status" checked={status === 'completed'}
                         onChange={() => handleChange('completed')} />
                     <ListItemText primary={`Đã kết thúc (${statusCounts.completed})`} sx={{ color: 'red' }} />
-
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='secondary' name="status" checked={status === 'cancel'}
                         onChange={() => handleChange('cancel')} />
                     <ListItemText primary={`Đã hủy (${statusCounts.cancel})`} sx={{ color: 'purple' }} />
-
                 </Box>
             </Box>
             <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
@@ -874,7 +853,6 @@ const Orders: React.FC = () => {
                     <Table<any>
                         size="small"
                         rowKey="_id" rowSelection={rowSelection}
-
                         pagination={{
                             current: page,
                             pageSize,
@@ -894,7 +872,6 @@ const Orders: React.FC = () => {
                             setPageSize(pagination.pageSize!); // 👈 cập nhật pageSize
                             setServerFilters(filters);         // 👈 cập nhật filters
                         }}
-
                         loading={{
                             spinning: isLoading,
                             tip: 'Đang tải dữ liệu...',
@@ -915,7 +892,6 @@ const Orders: React.FC = () => {
                             }
                             return `${base} ${selectedRow?._id === record._id ? 'row-selected' : ''}`;
                         }} />
-
                 </Grid>
                 <Grid item xs={12} sm={3}>
                     <Box sx={{ position: 'sticky', top: 0, maxHeight: '80vh', overflowY: 'auto', border: '1px solid #ccc', borderRadius: 2, p: 2 }}>
@@ -940,7 +916,6 @@ const Orders: React.FC = () => {
                                 {selectedRow.excavator?.length > 0 && <Typography><strong>Máy xúc:</strong> {selectedRow.excavator?.map((dev: any) => dev.code).join(', ')}</Typography>}
                                 {selectedRow.location?.length > 0 && <Typography><strong>Vật liệu:</strong> {selectedRow.location?.map((dev: any) => dev.name).join(', ')}</Typography>}
                                 {selectedRow.material?.length > 0 && <Typography><strong>Điểm đổ:</strong> {selectedRow.material?.map((dev: any) => dev.name).join(', ')}</Typography>}
-
                                 <Typography><strong>Nội dung:</strong> {selectedRow.workContent}</Typography>
                                 <Typography><strong>Trạng thái:</strong> {
                                     selectedRow.status === 'pending' ? 'Chưa nhận lệnh' :

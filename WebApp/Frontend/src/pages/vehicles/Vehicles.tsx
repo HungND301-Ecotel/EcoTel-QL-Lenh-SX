@@ -477,7 +477,6 @@ const Vehicles: React.FC = () => {
                             </Box>
                         </Box>
                         {user?.role === "admin" && <Box display="flex" gap={2} sx={{
-
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
