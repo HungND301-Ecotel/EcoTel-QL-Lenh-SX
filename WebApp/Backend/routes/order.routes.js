@@ -125,6 +125,7 @@ router.get('/', verifyToken, async (req, res, next) => {
             orders = await baseQuery;
         }
 
+
         // ---- Sort bổ sung theo shift.name ở JS ----
         orders.sort((a, b) => {
             const dateA = new Date(a.workingDate);
@@ -135,6 +136,7 @@ router.get('/', verifyToken, async (req, res, next) => {
             const nameB = b.shift?.name ? String(b.shift.name) : "";
             return nameB.localeCompare(nameA);
         })
+
         return res.status(200).json({
             status: 'success',
             totalDocs,
@@ -143,6 +145,7 @@ router.get('/', verifyToken, async (req, res, next) => {
             results: orders.length,
             data: orders,
             statusCounts
+
         });
     } catch (err) {
         req.logger.error('❌ Lỗi', err);
@@ -270,6 +273,7 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
 
         req.logger.info("🔔 Gửi thông báo đến người dùng.");
         const tokens = user?.deviceTokens;
+
         await Promise.all(tokens.map(t => sendPushNotification(t, "Bạn có thông báo mới", "Có 1 lệnh được cập nhật")));
         await Notification.createNotification({
             title: "Lệnh mới",
@@ -353,6 +357,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
                         await Device.updateOne({ _id: lastDeviceId }, { status: deviceStatus });
                         req.logger.info(`✅ Device ${lastDeviceId} cập nhật sang ${deviceStatus}`);
                     }
+
                 }
                 updateObject.status = status;
                 break;
@@ -444,6 +449,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
             data: updatedOrder
         });
         req.logger.info(`🔍${user?.username} Kết thúc xử lý lệnh request thành công: ${id}`);
+
 
     } catch (err) {
         req.logger.error("❌ Lỗi khi cập nhật lệnh", err);
@@ -653,6 +659,7 @@ router.get('/user', verifyToken, async (req, res, next) => {
                 .populate(orderPopulateOptions)
                 .sort({ workingDate: -1 });
         }
+
         orders.sort((a, b) => {
             // 1. So sánh workingDate (DESC)
             const dateA = new Date(a.workingDate);
@@ -667,6 +674,7 @@ router.get('/user', verifyToken, async (req, res, next) => {
         });
         req.logger.info(`✅ Đã tìm thấy ${orders.length} lệnh.`);
         res.status(200).send({ status: 'success', data: orders, totalDocs, statusCounts });
+
 
     } catch (err) {
         req.logger.error("❌ Lỗi khi lấy danh sách lệnh", err);

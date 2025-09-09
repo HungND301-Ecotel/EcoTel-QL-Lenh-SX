@@ -66,6 +66,7 @@ const OrderByUsers: React.FC = () => {
     const queryClient = useQueryClient();
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(50);
+
     const [total, setTotal] = useState(0);
     const [orderByUser, setOrderByUser] = useState<any[]>([]);
 
@@ -102,6 +103,7 @@ const OrderByUsers: React.FC = () => {
         warning: 0,
         completed: 0,
         cancel: 0,
+
     });
     const { data, isLoading } = useQuery({
         queryKey: ['orders', page, pageSize, status, startTime, endTime, serverFilters],
@@ -258,26 +260,31 @@ const OrderByUsers: React.FC = () => {
                     <Checkbox color='info' name="status" checked={status === ''}
                         onChange={() => handleChange('')} />
                     <ListItemText primary={`Tất cả (${statusCounts.all})`} sx={{ color: 'blue' }} />
+
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='default' name="status" checked={status === 'pending'}
                         onChange={() => handleChange('pending')} />
                     <ListItemText primary={`Chưa nhận lệnh (${statusCounts.pending})`} sx={{ color: 'grey' }} />
+
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='success' name="status" checked={status === 'in_progress'}
                         onChange={() => handleChange('in_progress')} />
                     <ListItemText primary={`Đã nhận lệnh (${statusCounts.in_progress})`} sx={{ color: 'green' }} />
+
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='warning' name="status" checked={status === 'warning'}
                         onChange={() => handleChange('warning')} />
                     <ListItemText primary={`Lỗi (${statusCounts.warning})`} sx={{ color: 'orange' }} />
+
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='error' name="status" checked={status === 'completed'}
                         onChange={() => handleChange('completed')} />
                     <ListItemText primary={`Đã kết thúc (${statusCounts.completed})`} sx={{ color: 'red' }} />
+
                 </Box>
             </Box>
             <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
@@ -303,12 +310,14 @@ const OrderByUsers: React.FC = () => {
                     <Table<any>
                         size="small"
                         rowKey="_id"
+
                         pagination={{
                             current: page,
                             pageSize,
                             total,
                             showSizeChanger: true,
                             pageSizeOptions: ['50', '100', '150', '200', '500'],
+
                             showTotal: (total, range) => (
                                 <div style={{ flex: 1, textAlign: 'left' }}>
                                     Hiển thị {range[0]}-{range[1]}/ {total}
@@ -322,6 +331,7 @@ const OrderByUsers: React.FC = () => {
                             setPageSize(pagination.pageSize!); // 👈 cập nhật pageSize
                             setServerFilters(filters);         // 👈 cập nhật filters
                         }}
+
                         loading={{
                             spinning: isLoading,
                             tip: 'Đang tải dữ liệu...',
