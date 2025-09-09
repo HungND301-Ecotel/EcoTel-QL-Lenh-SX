@@ -132,7 +132,6 @@ const OrderByUsers: React.FC = () => {
         }
     }, [data]);
 
-
     const orderColumns: TableProps<any>['columns'] = [
         {
             title: 'STT', dataIndex: 'number', key: 'number', width: 50, align: 'center',

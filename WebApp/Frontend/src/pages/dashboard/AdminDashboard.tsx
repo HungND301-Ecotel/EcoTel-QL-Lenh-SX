@@ -567,7 +567,6 @@ const AdminDashboard: React.FC = () => {
                                             <TableCell sx={{ fontWeight: 'bold', }}>Sản lượng</TableCell>
                                             <TableCell sx={{ fontWeight: 'bold', }}>Người vận hành</TableCell>
                                             <TableCell sx={{ fontWeight: 'bold', }}>Ghi chú</TableCell>
-
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
@@ -577,7 +576,6 @@ const AdminDashboard: React.FC = () => {
                                                 <TableCell>0</TableCell>
                                                 <TableCell>{d.assignedTo || ''}</TableCell>
                                                 <TableCell>{d.note || ''}</TableCell>
-
                                             </TableRow>
                                         ))}
                                     </TableBody>
