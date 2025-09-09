@@ -479,6 +479,7 @@ const Users: React.FC = () => {
         ? userColumns
         : userColumns.filter((col: GridColDef) => col.field !== 'resetpass' && col.field !== 'active' && col.field !== 'edit');
 
+    
     return (
         <Box>
             <Breadcrumbs aria-label="breadcrumb">

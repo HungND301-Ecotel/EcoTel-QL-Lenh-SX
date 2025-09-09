@@ -12,7 +12,6 @@ import {
     Grid,
     IconButton,
     Paper,
-    Table,
     TableBody,
     TableCell,
     TableContainer,
@@ -55,7 +54,7 @@ import {
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import api from '../../config/api.config';
-import { Order } from '../../types';
+import { Order, Shift } from '../../types';
 import OrderFormAdd from './OrderFormAdd';
 import OrderFormEdit from './OrderFormEdit';
 import OrderHistories from '../../components/OrderHistory/OrderHistories';
@@ -68,6 +67,9 @@ import ShiftReport from '../../components/ShiftReport/ShiftReport';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
+import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { Table, TableColumnsType, TableProps } from 'antd';
+import { TableRowSelection } from 'antd/es/table/interface';
 
 const StyledPopper = styled(Popper)({
     '& .MuiAutocomplete-listbox': {
@@ -96,17 +98,15 @@ const Orders: React.FC = () => {
     const [expanded, setExpanded] = useState(false);
     const formRef = useRef<HTMLDivElement>(null);
 
-    const handleSelected = (order: any) => {
-        setSelectedOrders(prev =>
-            prev.some(o => o._id === order._id)
-                ? prev.filter(o => o._id !== order._id)
-                : [...prev, order]
-        );
-    };
-
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
 
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(50);
+    const [total, setTotal] = useState(0);
+    const [orders, setOrders] = useState<any[]>([]);
+
     const defaultColumns = [
+        { id: 'number', label: 'Số thứ tự' },
         { id: 'assignedTo', label: 'Nhân viên' },
         { id: 'salaryCode', label: 'Mã thẻ lương' },
         { id: 'workingDate', label: 'Ngày làm việc' },
@@ -115,6 +115,9 @@ const Orders: React.FC = () => {
         { id: 'job', label: 'Công việc' },
         { id: 'content', label: 'Nội dung' },
         { id: 'device', label: 'Phương tiện' },
+        { id: 'excavator', label: 'Máy xúc' },
+        { id: 'material', label: 'Vật liệu' },
+        { id: 'location', label: 'Điểm đổ' },
         { id: 'createdBy', label: 'Người tạo lệnh' },
         { id: 'createdAt', label: 'Thời gian tạo lệnh' },
         { id: 'startTime', label: 'Bắt đầu' },
@@ -141,7 +144,26 @@ const Orders: React.FC = () => {
         queryKey: ['devices'],
         queryFn: () => api.get('/devices').then(res => res.data.data),
     });
-
+    const { data: excavators = [] } = useQuery({
+        queryKey: ['excavators'],
+        queryFn: () => api.get('/devices/excavators/all').then(res => res.data.data),
+    });
+    const { data: locations = [] } = useQuery({
+        queryKey: ['locations'],
+        queryFn: () => api.get('/locations').then(res => res.data.data),
+    });
+    const { data: materials = [] } = useQuery({
+        queryKey: ['materials'],
+        queryFn: () => api.get('/materials').then(res => res.data.data),
+    });
+    const { data: jobs = [] } = useQuery({
+        queryKey: ['jobs'],
+        queryFn: () => api.get('/jobs').then(res => res.data.data),
+    });
+    const { data: shifts = [] } = useQuery({
+        queryKey: ['shifts'],
+        queryFn: () => api.get('/shifts').then(res => res.data.data),
+    });
     const { data: users = [] } = useQuery({
         queryKey: ['users'],
         queryFn: () => api.get('/users').then(res => res.data.data),
@@ -151,9 +173,13 @@ const Orders: React.FC = () => {
         queryFn: () => api.get('/departments').then(res => res.data.data),
     });
 
-    const { data: orders = [], isLoading } = useQuery({
-        queryKey: ['orders', employee, department, device, startTime, endTime],
-        queryFn: () => api.get(`/orders?employee=${employee}&department=${department}&device=${device}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
+    const { isLoading } = useQuery({
+        queryKey: ['orders', page, pageSize, employee, department, device, startTime, endTime],
+        queryFn: () => api.get(`/orders?page=${page}&limit=${pageSize}&employee=${employee}&department=${department}&device=${device}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => {
+            setOrders(res.data.data);     // mảng order
+            setTotal(res.data.totalDocs);   // tổng số bản ghi từ API
+        }),
+
 
     });
 
@@ -332,27 +358,345 @@ const Orders: React.FC = () => {
 
     //
 
-    const [page, setPage] = React.useState(0);
-    const [pageSize, setPageSize] = React.useState(10);
+    const orderColumns: TableProps<any>['columns'] = [
+        {
+            title: 'STT', dataIndex: 'number', key: 'number', width: 50, align: 'center',
+            render: (text, record, index) => index + 1,
+            fixed: 'left'
+        },
+        {
+            title: 'Nhân viên', dataIndex: 'assignedTo', key: 'assignedTo', width: 200, align: 'center',
+            render: (text, record) => record.assignedTo?.fullName || '',
+            fixed: 'left',
+            filterSearch: true,
+            filters: Array.from(
+                new Set(
+                    users.map((o: any) => o.fullName + '-' + o.salaryCode).filter(Boolean)
+                )
+            ).map((name) => ({
+                text: String(name),   // 👈 ép kiểu về string
+                value: String(name),
+            })),
+            filterMultiple: true,
+            onFilter: (value, record) => record.assignedTo?.fullName + '-' + record.assignedTo?.salaryCode === value,
+        },
+        {
+            title: 'Mã thẻ lương', dataIndex: 'salaryCode', key: 'salaryCode', width: 120, align: 'center',
+            render: (text, record) => record.assignedTo?.salaryCode || '',
+            filterSearch: true,
+            filters: Array.from(
+                new Set(
+                    users.map((o: any) => o.fullName + '-' + o.salaryCode).filter(Boolean)
+                )
+            ).map((name) => ({
+                text: String(name),   // 👈 ép kiểu về string
+                value: String(name),
+            })),
+            filterMultiple: true,
+            onFilter: (value, record) => record.assignedTo?.fullName + '-' + record.assignedTo?.salaryCode === value,
+        },
+        {
+            title: 'Ngày làm việc', dataIndex: 'workingDate', key: 'workingDate', width: 150, align: 'center',
+            render: (text, record) => record.workingDate ? format(new Date(record.workingDate), 'yyyy-MM-dd') : ''
+        },
+        {
+            title: 'Ca', dataIndex: 'shift', key: 'shift', width: 50, align: 'center',
+            render: (text, record) => record.shift?.name || '',
+            filterSearch: true,
+            filters: Array.from(
+                new Set(
+                    shifts.map((o: any) => o.name).filter(Boolean)
+                )
+            ).map((name) => ({
+                text: String(name),   // 👈 ép kiểu về string
+                value: String(name),
+            })),
+            filterMultiple: true,
+            onFilter: (value, record) => {
+                console.log('>>> value:', value, typeof value);
+                console.log('>>> record:', record.shift?.name, typeof record.shift?.name);
+                return record.shift?.name.toString() === String(value);
+            }
+        },
+        { title: 'Giờ làm', dataIndex: 'shiftHour', key: 'shiftHour', width: 100, align: 'center' },
+        {
+            title: 'Công việc',
+            dataIndex: 'job',
+            key: 'job',
+            width: 250,
+            align: 'center',
+            render: (text, record) => record.job?.name || '',
+            filterSearch: true,
+            filters: Array.from(
+                new Set(
+                    jobs.map((o: any) => o.name).filter(Boolean)
+                )
+            ).map((name) => ({
+                text: String(name),   // 👈 ép kiểu về string
+                value: String(name),
+            })),
+            filterMultiple: true,
+            onFilter: (value, record) => record.job?.name === value,
+        },
+        {
+            title: 'Nội dung',
+            dataIndex: 'workContent',
+            key: 'content',
+            render: (text: string) => (
+                <span
+                    style={{
+                        display: 'inline-block',
+                        width: 250,
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                        textOverflow: 'ellipsis',
+                        verticalAlign: 'middle',
+                    }}
+                >
+                    {text}
+                </span>
+            ),
+        },
+        {
+            title: 'Phương tiện', dataIndex: 'device', key: 'device', width: 150,
+            render: (text, record) => record.device?.map((dev: any) => dev.code).join(', ') || record.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n'),
+            filterSearch: true,
+            filters: Array.from(
+                new Set(
+                    devices.map((o: any) => o.code).filter(Boolean)
+                )
+            ).map((name) => ({
+                text: String(name),   // 👈 ép kiểu về string
+                value: String(name),
+            })),
+            filterMultiple: true,
+            onFilter: (value, record) =>
+                record.device?.some((dev: any) => dev.code === value),
+        },
+        {
+            title: 'Máy xúc', dataIndex: 'excavator', key: 'excavator', width: 150,
+            render: (text, record) => record.excavator?.map((dev: any) => dev.code).join(', '),
+            filterSearch: true,
+            filters: Array.from(
+                new Set(
+                    excavators.map((o: any) => o.code).filter(Boolean)
+                )
+            ).map((name) => ({
+                text: String(name),   // 👈 ép kiểu về string
+                value: String(name),
+            })),
+            filterMultiple: true,
+            onFilter: (value, record) =>
+                record.excavator?.some((dev: any) => dev.code === value),
+        },
+        {
+            title: 'Vật liệu', dataIndex: 'material', key: 'material', width: 150,
+            render: (text, record) => record.material?.map((mat: any) => mat.name).join(', '),
+            filterSearch: true,
+            filters: Array.from(
+                new Set(
+                    materials.map((o: any) => o.name).filter(Boolean)
+                )
+            ).map((name) => ({
+                text: String(name),   // 👈 ép kiểu về string
+                value: String(name),
+            })),
+            filterMultiple: true,
+            onFilter: (value, record) =>
+                record.material?.some((dev: any) => dev.name === value),
+        },
+        {
+            title: 'Điểm đổ', dataIndex: 'location', key: 'location', width: 150,
+            render: (text, record) => record.location?.map((loc: any) => loc.name).join(', '),
+            filterSearch: true,
+            filters: Array.from(
+                new Set(
+                    locations.map((o: any) => o.name).filter(Boolean)
+                )
+            ).map((name) => ({
+                text: String(name),   // 👈 ép kiểu về string
+                value: String(name),
+            })),
+            filterMultiple: true,
+            onFilter: (value, record) =>
+                record.location?.some((dev: any) => dev.name === value),
+        },
+        {
+            title: 'Người tạo lệnh', dataIndex: 'createdBy', key: 'createdBy', width: 200, align: 'center',
+            render: (text, record) => record.createdBy?.username || '',
+            filterSearch: true,
+            filters: Array.from(
+                new Set(
+                    users.map((o: any) => o.username + '-' + o.salaryCode).filter(Boolean)
+                )
+            ).map((name) => ({
+                text: String(name),   // 👈 ép kiểu về string
+                value: String(name),
+            })),
+            filterMultiple: true,
+            onFilter: (value, record) => record.createdBy?.username + '-' + record.createdBy?.salaryCode === value,
+        },
+        {
+            title: 'Thời gian tạo lệnh', dataIndex: 'createdAt', key: 'createdAt', width: 170, align: 'center',
+            render: (text, record) => record.createdAt ? format(new Date(record.createdAt), 'yyyy-MM-dd HH:mm') : ''
+        },
+        {
+            title: 'Bắt đầu', dataIndex: 'startTime', key: 'startTime', width: 100, align: 'center',
+            render: (text, record) => record.startTime ? format(new Date(record.startTime), 'HH:mm:ss') : ''
+        },
+        {
+            title: 'Kết thúc', dataIndex: 'endTime', key: 'endTime', width: 100, align: 'center',
+            render: (text, record) => record.endTime ? format(new Date(record.endTime), 'HH:mm:ss') : ''
+        },
+        {
+            title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 150, align: 'center',
+            render: (text, record) => (
+                <Chip
+                    sx={{ width: '120px' }}
+                    label={record.status === 'pending' ? 'Chưa nhận lệnh' :
+                        record.status === 'in_progress' ? 'Đã nhận lệnh' :
+                            record.status === 'completed' ? 'Đã hoàn thành' :
+                                record.status === 'warning' ? 'Lỗi' : "Đã hủy"
+                    }
+                    color={
+                        record.status === 'pending' ? 'default' :
+                            record.status === 'completed' ? 'error' :
+                                record.status === 'in_progress' ? 'success' :
+                                    record.status === 'warning' ? 'warning' : 'secondary'}
+                />
+            ),
+            filterSearch: true,
+            filters: [
+                { text: "Chưa nhận lệnh", value: "pending", },
+                { text: "Đã nhận lệnh", value: "in_progress", },
+                { text: "Đã hoàn thành", value: "completed", },
+                { text: "Lỗi", value: "warning", },
+                { text: "Đã hủy", value: "canceled", },
+            ],
+            filterMultiple: true,
+            onFilter: (value, record) => record.status === value,
+        },
+        {
+            title: 'Xem báo công',
+            dataIndex: 'view',
+            key: 'view',
+            width: 100,
+            align: 'center',
+            render: (text, record) => (
+                <IconButton
+                    color="secondary"
+                    onClick={() => {
+                        setSelectedOrder(record)
+                        setShiftReport(true)
+                    }}
+                >
+                    <Tooltip title="Báo công" placement='top'>
+                        <Visibility />
+                    </Tooltip>
+                </IconButton>
+            ),
+        },
+        {
+            title: 'Sửa',
+            dataIndex: 'edit',
+            key: 'edit',
+            width: 60,
+            render: (text, record) => (
+                <IconButton
+                    color="primary"
+                    disabled={!['pending', 'warning'].includes(record?.status)
+                    }
+                    onClick={async () => {
+                        if (open) {
+                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                            if (result.isConfirmed) {
+                                handleOpen(record);
+                            }
+                        } else {
+                            handleOpen(record);
+                        }
+                    }}
+                >
+                    <Tooltip title="Sửa" placement='top'>
+                        <EditIcon />
+                    </Tooltip>
+                </IconButton >
+            )
+        },
+        {
+            title: 'Hủy',
+            dataIndex: 'cancel',
+            key: 'cancel',
+            width: 60,
+            render: (text, record) => (
+                <IconButton
+                    disabled={!['pending', 'warning'].includes(record.status)}
+                    color="warning"
+                    onClick={() => handleCancel(record)}
+                >
+                    <Tooltip title="Hủy" placement='top'>
+                        <CancelOutlined />
+                    </Tooltip>
+                </IconButton>
+            ),
+        },
+        {
+            title: 'Chuyển ca',
+            dataIndex: 'transfer',
+            key: 'transfer',
+            width: 100,
+            align: 'center',
+            render: (text, record) => (
+                <IconButton
+                    color="info"
+                    onClick={async () => {
+                        if (open) {
+                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                            if (result.isConfirmed) {
+                                setSelectedOrder(record)
+                                setOpen(false)
+                                setExpanded(true)
+                                setTransfer(true)
 
-    const handleChangePage = (event: React.MouseEvent<HTMLButtonElement, MouseEvent> | null, page: number) => {
-        setPage(page);
+                            }
+                        } else {
+                            setSelectedOrder(record)
+                            setOpen(false)
+                            setExpanded(true)
+                            setTransfer(true)
+                            setTimeout(() => {
+                                if (formRef.current) {
+                                    formRef.current.scrollIntoView({
+                                        behavior: 'smooth',
+                                        block: 'start'
+                                    });
+                                }
+                            }, 500);
+                        }
+                    }}
+                >
+                    <Tooltip title="Chuyển ca" placement='top'>
+                        <SyncAlt />
+                    </Tooltip>
+                </IconButton>
+            ),
+        },
+    ];
+
+    const rowSelection: TableRowSelection<any> = {
+        // AntD yêu cầu selectedRowKeys phải là mảng id
+        selectedRowKeys: selectedOrders.map(o => o._id),
+        onChange: (newKeys: React.Key[], newRows: any[]) => {
+            setSelectedOrders(newRows);   // lưu luôn object đầy đủ
+        },
     };
 
-    const pageData = (orders: any[], page: number, pageSize: number) => {
-        let data;
-        if (!page && !pageSize) {
-            data = orders
-        } else {
-            data = orders.slice(page * pageSize, (page + 1) * pageSize)
-        }
-        return data
-    }
+
     const filteredOrders = React.useMemo(() => {
         if (!status) return orders;
         return orders.filter((o: Order) => o.status === status);
     }, [orders, status]);
-    const paginatedOrders = pageData(filteredOrders, page, pageSize);
+
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -444,25 +788,6 @@ const Orders: React.FC = () => {
                                 },
                             }}
                         >
-                            <Autocomplete
-                                fullWidth
-                                options={users}
-                                getOptionLabel={(option: any) =>
-                                    `${option?.fullName || ""}-${option?.salaryCode || ''}`
-                                }
-                                value={users.find((p: any) => p._id === employee) || null}
-                                onChange={(event, newValue) => {
-                                    setEmployee(newValue?._id || '');
-                                }}
-                                PopperComponent={StyledPopper}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        size='small'
-                                        label="Nhân viên"
-                                    />
-                                )}
-                            />
                             <Autocomplete
                                 fullWidth
                                 options={devices}
@@ -605,282 +930,46 @@ const Orders: React.FC = () => {
             </Box>
             <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={12} sm={9}>
-                    <Paper sx={{ width: '100%', overflowX: "initial" }}>
-                        <TableContainer sx={{ maxHeight: '80vh' }}>
-                            <Table stickyHeader aria-label="sticky table" sx={{
-                                "& td, & th": { padding: "4px 8px" },
-                            }}>
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell align='center' sx={{
-                                            position: 'sticky',
-                                            left: 0,
-                                            top: 0,
-                                            zIndex: 3,
-                                            width: 50,
+                    <Table<any> rowKey="_id" rowSelection={rowSelection}
+                        pagination={{
+                            current: page,
+                            pageSize,
+                            total,
+                            showSizeChanger: true,
+                            pageSizeOptions: ['50', '100', '150', '200', '500'],
+                            showTotal: (total, range) => (
+                                <div style={{ flex: 1, textAlign: 'left' }}>
+                                    Hiển thị {range[0]}-{range[1]}/ {total}
+                                </div>
+                            ),
+                            onChange: (p, ps) => {
+                                setPage(p);
+                                setPageSize(ps);
+                            },
+                        }}
+                        columns={orderColumns.filter(col => col.key && visibleColumns.includes(col.key.toString()))}
+                        dataSource={filteredOrders}
+                        loading={{
+                            spinning: isLoading,
+                            tip: 'Đang tải dữ liệu...',
+                        }}
+                        scroll={{ x: 'max-content', y: 500 }}
+                        tableLayout="fixed"
+                        onRow={(record) => ({
+                            onClick: () => setSelectedRow(record),
+                        })}
+                        rowClassName={(record) => {
+                            let base = '';
+                            switch (record.status) {
+                                case 'pending': base = 'row-pending'; break;
+                                case 'in_progress': base = 'row-in-progress'; break;
+                                case 'completed': base = 'row-completed'; break;
+                                case 'warning': base = 'row-warning'; break;
+                                case 'cancel': base = 'row-cancel'; break;
+                            }
+                            return `${base} ${selectedRow?._id === record._id ? 'row-selected' : ''}`;
+                        }} />
 
-                                            fontWeight: 'bold', fontSize: 18
-                                        }}> <Checkbox
-                                                color="primary"
-                                                checked={orders.length > 0 && selectedOrders.length === orders.length}
-                                                indeterminate={selectedOrders.length > 0 && selectedOrders.length < orders.length}
-                                                onChange={() => {
-                                                    if (selectedOrders.length === orders.length) {
-                                                        setSelectedOrders([]);
-                                                    } else {
-                                                        setSelectedOrders(orders);
-                                                    }
-                                                }}
-                                            /></TableCell>
-                                        <TableCell align='center' sx={{
-                                            position: 'sticky',
-                                            left: 50,
-                                            top: 0,
-                                            zIndex: 3,
-                                            width: 50,
-
-                                            fontWeight: 'bold', fontSize: 18
-                                        }}>STT</TableCell>
-                                        {visibleColumns.includes('assignedTo') && <TableCell align='center' sx={{
-                                            position: 'sticky',
-                                            left: 100,
-                                            top: 0,
-                                            zIndex: 3,
-                                            minWidth: 150,
-
-                                            fontWeight: 'bold', fontSize: 18
-                                        }}>Nhân viên</TableCell>}
-                                        {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{ minWidth: 130, fontWeight: 'bold', fontSize: 18 }}>Mã thẻ lương</TableCell>}
-                                        {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{ minWidth: 120, fontWeight: 'bold', fontSize: 18 }}>Ngày làm việc</TableCell>}
-                                        {visibleColumns.includes('shift') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Ca</TableCell>}
-                                        {visibleColumns.includes('shiftHour') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Giờ làm</TableCell>}
-                                        {visibleColumns.includes('job') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Công việc</TableCell>}
-                                        {visibleColumns.includes('content') && <TableCell align='center' sx={{ minWidth: 200, fontWeight: 'bold', fontSize: 18 }}>Nội dung</TableCell>}
-                                        {visibleColumns.includes('device') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Phương tiện</TableCell>}
-                                        {visibleColumns.includes('createdBy') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Người tạo lệnh</TableCell>}
-                                        {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Thời gian tạo lệnh</TableCell>}
-                                        {visibleColumns.includes('startTime') && <TableCell align='center' sx={{ minWidth: 120, fontWeight: 'bold', fontSize: 18 }}>Bắt đầu</TableCell>}
-                                        {visibleColumns.includes('endTime') && <TableCell align='center' sx={{ minWidth: 120, fontWeight: 'bold', fontSize: 18 }}>Kết thúc</TableCell>}
-                                        {visibleColumns.includes('status') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>}
-                                        {visibleColumns.includes('view') && <TableCell align='center' sx={{ minWidth: 100, fontWeight: 'bold', fontSize: 18 }}>Xem báo công</TableCell>}
-                                        {visibleColumns.includes('edit') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Sửa</TableCell>}
-                                        {visibleColumns.includes('cancel') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Hủy</TableCell>}
-                                        {visibleColumns.includes('transfer') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Chuyển ca</TableCell>}
-
-                                    </TableRow>
-                                </TableHead>
-                                {!isLoading ? <TableBody>
-                                    {paginatedOrders.map((order: any, index: number) => (
-                                        <TableRow key={order._id} sx={{
-                                            cursor: 'pointer',
-                                            backgroundColor: order.status === 'pending'
-                                                ? 'white' // xám nhạt
-                                                : order.status === 'completed'
-                                                    ? '#ffe5e5' // đỏ nhạt
-                                                    : order.status === 'in_progress'
-                                                        ? '#e5f7e5' // xanh lá nhạt
-                                                        : order.status === 'warning'
-                                                            ? '#fff8e1' // vàng nhạt
-                                                            : '#ede7f6', // tím nhạt
-                                        }} onClick={() => setSelectedRow(order)}>
-                                            <TableCell align='center' sx={{
-                                                position: 'sticky',
-                                                left: 0,
-                                                zIndex: 1,
-                                                width: 50,
-                                                backgroundColor: order.status === 'pending'
-                                                    ? 'white' // xám nhạt
-                                                    : order.status === 'completed'
-                                                        ? '#ffe5e5' // đỏ nhạt
-                                                        : order.status === 'in_progress'
-                                                            ? '#e5f7e5' // xanh lá nhạt
-                                                            : order.status === 'warning'
-                                                                ? '#fff8e1' // vàng nhạt
-                                                                : '#ede7f6', // tím nhạt
-                                            }}><Checkbox onChange={() => handleSelected(order)} checked={selectedOrders.some(o => o._id === order._id)} /></TableCell>
-                                            <TableCell align='center' sx={{
-                                                position: 'sticky',
-                                                left: 50,
-                                                zIndex: 1,
-                                                width: 50,
-                                                backgroundColor: order.status === 'pending'
-                                                    ? 'white' // xám nhạt
-                                                    : order.status === 'completed'
-                                                        ? '#ffe5e5' // đỏ nhạt
-                                                        : order.status === 'in_progress'
-                                                            ? '#e5f7e5' // xanh lá nhạt
-                                                            : order.status === 'warning'
-                                                                ? '#fff8e1' // vàng nhạt
-                                                                : '#ede7f6', // tím nhạt,
-                                            }}>{index + 1}</TableCell>
-                                            {visibleColumns.includes('assignedTo') && <TableCell sx={{
-                                                position: 'sticky',
-                                                left: 100,
-                                                zIndex: 1,
-                                                minWidth: 150,
-                                                backgroundColor: order.status === 'pending'
-                                                    ? 'white' // xám nhạt
-                                                    : order.status === 'completed'
-                                                        ? '#ffe5e5' // đỏ nhạt
-                                                        : order.status === 'in_progress'
-                                                            ? '#e5f7e5' // xanh lá nhạt
-                                                            : order.status === 'warning'
-                                                                ? '#fff8e1' // vàng nhạt
-                                                                : '#ede7f6', // tím nhạt,
-                                            }}>{order.assignedTo?.fullName}</TableCell>}
-                                            {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{}}>
-                                                {order.assignedTo?.salaryCode}
-                                            </TableCell>}
-                                            {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{}}>
-                                                {order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('shift') && <TableCell align='center' sx={{}}>
-                                                {order.shift?.name}
-                                            </TableCell>}
-                                            {visibleColumns.includes('shiftHour') && <TableCell align='center' sx={{}}>
-                                                {order.shiftHour || ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('job') && <TableCell sx={{}}>
-                                                {order.job?.name || ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('content') && <TableCell sx={{
-                                                whiteSpace: 'nowrap',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                maxWidth: 300,
-                                            }}>
-                                                {order.workContent || ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('device') && <TableCell sx={{}}>
-                                                {order.device?.map((dev: any) => dev.code).join(', ') || order.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')}
-                                            </TableCell>}
-                                            {visibleColumns.includes('createdBy') && <TableCell sx={{}}>
-                                                {order.createdBy?.username || ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{}}>
-                                                {order.createdAt ? format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm') : ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('startTime') && <TableCell align='center' sx={{}}>
-                                                {order.startTime ? format(new Date(order.startTime), 'HH:mm:ss') : ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('endTime') && <TableCell align='center' sx={{}}>
-                                                {order.endTime ? format(new Date(order.endTime), 'HH:mm:ss') : ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('status') && <TableCell sx={{}}>
-                                                <Chip
-                                                    sx={{ width: '120px' }}
-                                                    label={order.status === 'pending' ? 'Chưa nhận lệnh' :
-                                                        order.status === 'in_progress' ? 'Đã nhận lệnh' :
-                                                            order.status === 'completed' ? 'Đã hoàn thành' :
-                                                                order.status === 'warning' ? 'Lỗi' : "Đã hủy"
-                                                    }
-                                                    color={
-                                                        order.status === 'pending' ? 'default' :
-                                                            order.status === 'completed' ? 'error' :
-                                                                order.status === 'in_progress' ? 'success' :
-                                                                    order.status === 'warning' ? 'warning' : 'secondary'}
-                                                />
-                                            </TableCell>}
-                                            {visibleColumns.includes('note') && <TableCell sx={{}}>
-                                                {order.temporaryError || ''}
-                                            </TableCell>}
-                                            {visibleColumns.includes('view') && <TableCell align='center' sx={{}}>
-                                                <IconButton
-                                                    color="secondary"
-                                                    onClick={() => {
-                                                        setSelectedOrder(order)
-                                                        setShiftReport(true)
-                                                    }}
-                                                >
-                                                    <Tooltip title="Báo công" placement='top'>
-                                                        <Visibility />
-                                                    </Tooltip>
-                                                </IconButton>
-
-                                            </TableCell>}
-                                            {visibleColumns.includes('edit') && <TableCell align='center' sx={{}}>
-                                                <IconButton
-                                                    color="primary"
-                                                    disabled={!['pending', 'warning'].includes(order.status)}
-                                                    onClick={async () => {
-                                                        if (open) {
-                                                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                                                            if (result.isConfirmed) {
-                                                                handleOpen(order);
-                                                            }
-                                                        } else {
-                                                            handleOpen(order);
-                                                        }
-                                                    }}
-                                                >
-                                                    <Tooltip title="Sửa" placement='top'>
-                                                        <EditIcon />
-                                                    </Tooltip>
-                                                </IconButton>
-                                            </TableCell>}
-                                            {visibleColumns.includes('cancel') && <TableCell align='center' sx={{}}>
-                                                <IconButton
-                                                    disabled={!['pending', 'warning'].includes(order.status)}
-                                                    color="warning"
-                                                    onClick={() => handleCancel(order)}
-                                                >
-                                                    <Tooltip title="Hủy" placement='top'>
-                                                        <CancelOutlined />
-                                                    </Tooltip>
-                                                </IconButton>
-                                            </TableCell>}
-                                            {visibleColumns.includes('transfer') && <TableCell align='center' sx={{}}>
-                                                <IconButton
-                                                    color="info"
-                                                    onClick={async () => {
-                                                        if (open) {
-                                                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                                                            if (result.isConfirmed) {
-                                                                setSelectedOrder(order)
-                                                                setOpen(false)
-                                                                setExpanded(true)
-                                                                setTransfer(true)
-
-                                                            }
-                                                        } else {
-                                                            setSelectedOrder(order)
-                                                            setOpen(false)
-                                                            setExpanded(true)
-                                                            setTransfer(true)
-                                                            setTimeout(() => {
-                                                                if (formRef.current) {
-                                                                    formRef.current.scrollIntoView({
-                                                                        behavior: 'smooth',
-                                                                        block: 'start'
-                                                                    });
-                                                                }
-                                                            }, 500);
-                                                        }
-                                                    }}
-                                                >
-                                                    <Tooltip title="Chuyển ca" placement='top'>
-                                                        <SyncAlt />
-                                                    </Tooltip>
-                                                </IconButton>
-
-                                            </TableCell>}
-                                        </TableRow>
-                                    ))}
-                                </TableBody> : <Typography>Loading...</Typography>}
-                            </Table>
-                        </TableContainer>
-                        <TablePagination
-                            component="div"
-                            count={orders.length}
-                            page={page}
-                            onPageChange={handleChangePage}
-                            rowsPerPage={pageSize}
-                            onRowsPerPageChange={(event) => {
-                                setPageSize(parseInt(event.target.value, 10));
-                                setPage(0);
-                            }}
-                        />
-                    </Paper>
                 </Grid>
                 <Grid item xs={12} sm={3}>
                     <Box sx={{ position: 'sticky', top: 0, maxHeight: '80vh', overflowY: 'auto', border: '1px solid #ccc', borderRadius: 2, p: 2 }}>

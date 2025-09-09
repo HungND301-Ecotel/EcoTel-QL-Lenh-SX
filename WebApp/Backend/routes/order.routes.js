@@ -24,23 +24,15 @@ router.get('/', verifyToken, async (req, res, next) => {
         const user = req.user;
         const query = {};
 
-        // Các bộ lọc chung
-        if (req.query.employee) {
-            query.assignedTo = new mongoose.Types.ObjectId(req.query.employee);
-        }
-        if (req.query.status) {
-            query.status = req.query.status;
-        }
-        if (req.query.device) {
-            query.device = new mongoose.Types.ObjectId(req.query.device);
-        }
+        // ---- Bộ lọc chung ----
+        if (req.query.employee) query.assignedTo = new mongoose.Types.ObjectId(req.query.employee);
+        if (req.query.status) query.status = req.query.status;
+        if (req.query.device) query.device = new mongoose.Types.ObjectId(req.query.device);
+
         if (req.query.startTime && req.query.endTime) {
             const endTime = new Date(req.query.endTime);
             endTime.setHours(23, 59, 59, 999);
-            query.workingDate = {
-                $gte: new Date(req.query.startTime),
-                $lte: new Date(endTime)
-            };
+            query.workingDate = { $gte: new Date(req.query.startTime), $lte: new Date(endTime) };
         } else if (req.query.startTime) {
             query.workingDate = { $gte: new Date(req.query.startTime) };
         } else if (req.query.endTime) {
@@ -49,118 +41,83 @@ router.get('/', verifyToken, async (req, res, next) => {
             query.workingDate = { $lte: new Date(endTime) };
         }
 
-        let orders;
-
+        // ---- Bộ lọc role ----
         if (user?.role === 'manager' && user?.department) {
-
-            query.department = new mongoose.Types.ObjectId(user?.department?._id)
-
-            orders = await Order.find(query)
-                .populate({
-                    path: 'assignedTo',
-                    select: 'username fullName salaryCode department',
-                    populate: {
-                        path: 'department',
-                        select: 'code'
-                    }
-                })
-                .populate('job', 'name type content')
-                .populate('devicesToProduce.deviceType')
-                .populate('device', 'code')
-                .populate('excavator', 'code')
-                .populate('location', 'name')
-                .populate('material', 'name')
-                .populate('shift')
-                .populate({
-                    path: "assistants",
-                    select: "username fullName salaryCode",
-                })
-                .populate({
-                    path: "shiftReport",
-                    populate: [
-                        {
-                            path: "vehicleSummaries.vehicle",
-                            select: "code"
-                        },
-                    ]
-                })
-                .populate('createdBy', 'username fullName salaryCode')
-                .populate('updatedBy', 'username fullName')
-                .sort({ workingDate: -1 });
-
-        } else {
-            // Trường hợp người dùng khác: sử dụng Mongoose find() thông thường
-            if (user?.role === 'dispatcher') {
-                const dispatcherIds = await User.find(
-                    { role: 'dispatcher' },
-                    '_id'
-                ).lean();
-
-                const ids = dispatcherIds.map(d => d._id);
-                query.$or = [
-                    { department: user.department._id },
-                    { createdBy: { $in: ids } }
-                ];
-            }
-            if (req.query.department) {
-                query.department = new mongoose.Types.ObjectId(req.query.department);
-            }
-            orders = await Order.find(query)
-                .populate({
-                    path: 'assignedTo',
-                    select: 'username fullName salaryCode department',
-                    populate: {
-                        path: 'department',
-                        select: 'code'
-                    }
-                })
-                .populate('job', 'name type content')
-                .populate('devicesToProduce.deviceType')
-                .populate('device', 'code')
-                .populate('excavator', 'code')
-                .populate('location', 'name')
-                .populate('material', 'name')
-                .populate('shift')
-                .populate({
-                    path: "assistants",
-                    select: "username fullName salaryCode",
-                })
-                .populate({
-                    path: "shiftReport",
-                    populate: [
-                        {
-                            path: "vehicleSummaries.vehicle",
-                            select: "code"
-                        },
-                    ]
-                })
-                .populate('createdBy', 'username fullName salaryCode')
-                .populate('updatedBy', 'username fullName')
-                .sort({ workingDate: -1 });
+            query.department = new mongoose.Types.ObjectId(user.department._id);
         }
+        if (user?.role === 'dispatcher') {
+            const dispatcherIds = await User.find({ role: 'dispatcher' }, '_id').lean();
+            const ids = dispatcherIds.map(d => d._id);
+            query.$or = [{ department: user.department._id }, { createdBy: { $in: ids } }];
+        }
+        if (req.query.department) {
+            query.department = new mongoose.Types.ObjectId(req.query.department);
+        }
+
+        // ---- Pagination ----
+        const page = parseInt(req.query.page);
+        const limit = parseInt(req.query.limit);
+        const skip = (page - 1) * limit;
+
+        let totalDocs = 0;
+
+        let baseQuery = Order.find(query)
+            .populate({
+                path: 'assignedTo',
+                select: 'username fullName salaryCode department',
+                populate: { path: 'department', select: 'code' },
+            })
+            .populate('job', 'name type content')
+            .populate('devicesToProduce.deviceType')
+            .populate('device', 'code')
+            .populate('excavator', 'code')
+            .populate('location', 'name')
+            .populate('material', 'name')
+            .populate('shift')
+            .populate({ path: 'assistants', select: 'username fullName salaryCode' })
+            .populate({
+                path: 'shiftReport',
+                populate: [{ path: 'vehicleSummaries.vehicle', select: 'code' }],
+            })
+            .populate('createdBy', 'username fullName salaryCode')
+            .populate('updatedBy', 'username fullName')
+            .sort({ workingDate: -1 }); // chỉ sort workingDate trong DB
+
+
+        let orders;
+        if (!isNaN(page) && !isNaN(limit)) {
+            totalDocs = await Order.countDocuments(query);
+            orders = await baseQuery.skip(skip).limit(limit);
+        } else {
+            orders = await baseQuery;
+
+        }
+
+        // ---- Sort bổ sung theo shift.name ở JS ----
         orders.sort((a, b) => {
-            // 1. So sánh workingDate (DESC)
             const dateA = new Date(a.workingDate);
             const dateB = new Date(b.workingDate);
             if (dateA > dateB) return -1;
             if (dateA < dateB) return 1;
-
-            // 2. So sánh shift.name (DESC)
             const nameA = a.shift?.name ? String(a.shift.name) : "";
             const nameB = b.shift?.name ? String(b.shift.name) : "";
-            return nameB.localeCompare(nameA);  // DESC
-        });
-        req.logger.info(`✅ Load lệnh sản xuất thành công`);
-        res.status(200).json({
+            return nameB.localeCompare(nameA);
+        })
+
+        return res.status(200).json({
             status: 'success',
+            totalDocs,
+            page: !isNaN(page) ? page : undefined,
+            totalPages: !isNaN(page) && !isNaN(limit) ? Math.ceil(totalDocs / limit) : undefined,
             results: orders.length,
-            data: orders
+            data: orders,
         });
     } catch (err) {
-        req.logger.error("❌ Lỗi", err);
+        req.logger.error('❌ Lỗi', err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
     }
 });
+
 router.post('/checkExist', verifyToken, async (req, res, next) => {
     try {
         const {
@@ -594,12 +551,32 @@ router.get('/user', verifyToken, async (req, res, next) => {
             }
         }
 
+
         // Gán workingDate một lần, không bị ghi đè
         query.workingDate = {};
         if (gte) query.workingDate.$gte = gte;
         if (lte) query.workingDate.$lte = lte;
-        const orders = await Order.find(query)
-            .populate(orderPopulateOptions); // Sử dụng biến chung
+
+        // Phân trang
+        const page = parseInt(req.query.page);
+        const limit = parseInt(req.query.limit);
+        const skip = (page - 1) * limit;
+
+        let totalDocs = 0;
+        let orders;
+        if (!isNaN(page) && !isNaN(limit)) {
+            totalDocs = await Order.countDocuments(query);
+            orders = await Order.find(query)
+                .populate(orderPopulateOptions)
+                .sort({ workingDate: -1 }) // chỉ sort theo workingDate trong DB
+                .skip(skip)
+                .limit(limit);
+        } else {
+            orders = await Order.find(query)
+                .populate(orderPopulateOptions)
+                .sort({ workingDate: -1 });
+        }
+
         orders.sort((a, b) => {
             // 1. So sánh workingDate (DESC)
             const dateA = new Date(a.workingDate);
@@ -613,7 +590,7 @@ router.get('/user', verifyToken, async (req, res, next) => {
             return nameB.localeCompare(nameA);  // DESC
         });
         req.logger.info(`✅ Đã tìm thấy ${orders.length} lệnh.`);
-        res.status(200).send({ status: 'success', data: orders });
+        res.status(200).send({ status: 'success', data: orders , totalDocs,});
 
     } catch (err) {
         req.logger.error("❌ Lỗi khi lấy danh sách lệnh", err);

@@ -8,7 +8,8 @@ const Job = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['Vận hành xe', 'Vận hành khoan', 'Vận hành xe phục vụ', 'Vận hành gạt', 'Vận hành xúc', 'Vận hành sàng', 'Khác'],
+        enum: ['Vận hành xe', 'Vận hành khoan', 'Vận hành xe phục vụ', 'Vận hành gạt', 'Vận hành xúc', 'Vận hành sàng', 'Sửa chữa, bảo dưỡng', 'Khác'],
+
     },
 },
     {
