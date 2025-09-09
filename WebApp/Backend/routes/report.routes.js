@@ -48,12 +48,13 @@ router.get('/getByOrder/:orderId', verifyToken, async (req, res, next) => {
 
 router.delete('/:id', verifyToken, async (req, res, next) => {
     try {
+        const user = req.user;
         const reports = await Report.findByIdAndDelete(req.params.id);
         if (!reports) {
             req.logger.warn(`⚠️ Xóa thất bại - Không tìm thấy báo cáo với ID: ${req.params.id}`);
             res.status(404).send({ status: 'error', message: 'Không tìm thấy dữ liệu' });
         } else {
-            req.logger.info(`✅ Xóa báo cáo thành công với ID: ${req.params.id}`);
+            req.logger.info(`✅ ${user?.username}  Xóa báo cáo thành công với ID: ${req.params.id}`);
             res.status(200).send({ status: 'success', message: 'Xóa thành công', data: reports });
         }
     } catch (err) {
@@ -71,6 +72,7 @@ const trackedFieldsTrip = [
 ];
 router.put('/:id', verifyToken, async (req, res) => {
     try {
+        const user = req.user;
         const report = await Report.findById(req.params.id);
         if (!report) {
             req.logger.warn(`⚠️ Không tìm thấy báo cáo với ID: ${req.params.id}`);
@@ -105,7 +107,7 @@ router.put('/:id', verifyToken, async (req, res) => {
         Object.assign(report, updates);
         await report.save();
 
-        req.logger.info(`✅ Cập nhật báo cáo thành công cho ID: ${req.params.id}`);
+        req.logger.info(`✅ ${user?.username} Cập nhật báo cáo thành công cho ID: ${req.params.id}`);
         res.status(200).send({ status: 'success', message: "Sửa thành công", data: report });
 
     } catch (err) {

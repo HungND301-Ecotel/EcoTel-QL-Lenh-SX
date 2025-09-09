@@ -1,5 +1,4 @@
 const JobConfig = Object.freeze({
-
     VEHICLE: "vận hành xe",
     EXCAVATOR: "vận hành xúc",
     SERVICE_VEHICLE: "vận hành xe phục vụ",
@@ -8,5 +7,4 @@ const JobConfig = Object.freeze({
     SIEVE: "vận hành sàng",
     REPAIR:"sửa chữa"
 });
-
 module.exports = { JobConfig };

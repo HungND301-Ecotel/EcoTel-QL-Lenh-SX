@@ -174,6 +174,7 @@ router.get('/:id', verifyToken, async (req, res, next) => {
  */
 router.put('/:id', verifyToken, restrictTo('admin', 'manager',), async (req, res, next) => {
     try {
+        const user = req.user;
         const department = await Department.findByIdAndUpdate(
             req.params.id,
             req.body,
@@ -186,7 +187,7 @@ router.put('/:id', verifyToken, restrictTo('admin', 'manager',), async (req, res
             req.logger.error("❌ không tìm thấy đơn vị");
             return res.status(404).send({ status: 'error', message: 'No department found with that ID' });
         }
-        req.logger.info(`🔥  Sửa đơn vị thành công`);
+        req.logger.info(`🔥${user?.username}   Sửa đơn vị thành công`);
         res.status(200).json({
             status: 'success',
             data:
@@ -245,6 +246,7 @@ const columnMapping = {
 };
 router.post('/importFile', upload.single('file'), verifyToken, async (req, res) => {
     try {
+        const user = req.user;
         if (!req.file) {
             req.logger.warn("⚠️ Import file thất bại - Không có file được chọn.");
             return res.status(400).json({ status: 'error', message: 'Vui lòng chọn file' });
@@ -285,7 +287,7 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         });
 
         await Department.bulkWrite(operations);
-        req.logger.info(`✅ Import file thành công. Đã xử lý ${dataImport.length} bản ghi.`);
+        req.logger.info(`✅ ${user?.username}  Import file thành công. Đã xử lý ${dataImport.length} bản ghi.`);
         res.status(200).json({
             status: 'success',
             message: ` Import file thành công. Đã xử lý ${dataImport.length} bản ghi.`,

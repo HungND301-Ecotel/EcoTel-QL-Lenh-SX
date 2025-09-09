@@ -33,6 +33,7 @@ router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, n
 
 router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
+        const user = req.user;
         const { ids } = req.body;
         if (!ids || !Array.isArray(ids) || ids.length === 0) {
             req.logger.warn('⚠️ Yêu cầu xóa không có IDs hợp lệ');
@@ -45,7 +46,7 @@ router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res,
             return res.status(200).send({ status: 'error', message: 'Không tìm thấy bản ghi để xóa' });
         }
 
-        req.logger.info(`✅ Xóa thành công ${result.deletedCount} bản ghi`);
+        req.logger.info(`✅ ${user?.username}  Xóa thành công ${result.deletedCount} bản ghi`);
         res.status(200).json({
             status: 'success',
             message: `Đã xóa ${result.deletedCount} bản ghi`
@@ -58,6 +59,7 @@ router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res,
 
 router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
+        const user = req.user;
         const position = await Position.findByIdAndUpdate(req.params.id, req.body, { new: true });
 
         if (!position) {
@@ -65,7 +67,7 @@ router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res,
             return res.status(404).send({ status: 'error', message: 'Sửa thất bại ' });
         }
 
-        req.logger.info(`✅ Cập nhật chức vụ thành công cho ID: ${req.params.id}`);
+        req.logger.info(`✅ ${user?.username} Cập nhật chức vụ thành công cho ID: ${req.params.id}`);
         res.status(200).json({
             status: 'success',
             message: 'Sửa thành công'
@@ -100,6 +102,7 @@ const columnMapping = {
 };
 router.post('/importFile', upload.single('file'), verifyToken, async (req, res) => {
     try {
+        const user = req.user;
         if (!req.file) {
             req.logger.warn("⚠️ Import file thất bại - Không có file được chọn.");
             return res.status(400).json({ status: 'error', message: 'Vui lòng chọn file' });
@@ -140,7 +143,7 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         });
 
         await Position.bulkWrite(operations);
-        req.logger.info(`✅ Import file thành công. Đã xử lý ${dataImport.length} bản ghi.`);
+        req.logger.info(`✅ ${user?.username}  Import file thành công. Đã xử lý ${dataImport.length} bản ghi.`);
         res.status(200).json({
             status: 'success',
             message: `Import file thành công. Đã xử lý ${dataImport.length} bản ghi.`,

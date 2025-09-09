@@ -27,6 +27,7 @@ router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, n
 
 router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
+        const user = req.user
         const { ids } = req.body;
         if (!ids || !Array.isArray(ids) || ids.length === 0) {
             req.logger.error("❌ Chọn bản ghi cần xóa");
@@ -38,7 +39,7 @@ router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res,
             req.logger.error("❌ Không tìm thấy bản ghi cần xóa");
             return res.status(200).send({ status: 'error', message: 'Không tìm thấy bản ghi để xóa' });
         }
-        req.logger.info(`🔥  Đã xóa ${result.deletedCount} bản ghi`);
+        req.logger.info(`🔥 ${user?.username}  Đã xóa ${result.deletedCount} bản ghi`);
         res.status(200).json({
             status: 'success',
             message: `Đã xóa ${result.deletedCount} bản ghi`
@@ -50,13 +51,14 @@ router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res,
 });
 router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
+        const user = req.user
         const deviceType = await DeviceType.findByIdAndUpdate(req.params.id, req.body, { new: true });
 
         if (!deviceType) {
             req.logger.error("❌ Sửa thất bại");
             return res.status(404).send({ status: 'error', message: 'Sửa thất bại ' });
         }
-        req.logger.info(`🔥  Sửa thành công`);
+        req.logger.info(`🔥${user?.username}  Sửa loại phương tiện thành công`);
         res.status(200).json({
             status: 'success',
             message: 'Sửa thành công'

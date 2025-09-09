@@ -50,6 +50,7 @@ import {
     CancelOutlined,
     Settings,
     ExpandMore,
+    FilterTiltShiftSharp,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -84,7 +85,6 @@ const Orders: React.FC = () => {
     const [history, setHistory] = useState(false);
     const [shiftReport, setShiftReport] = useState(false);
     const [transfer, setTransfer] = useState(false);
-    const [employee, setEmployee] = useState("");
     const [status, setStatus] = useState("");
     const [startTime, setStartTime] = useState<Dayjs | null>(null);
     const [endTime, setEndTime] = useState<Dayjs | null>(null);
@@ -104,6 +104,16 @@ const Orders: React.FC = () => {
     const [pageSize, setPageSize] = useState(50);
     const [total, setTotal] = useState(0);
     const [orders, setOrders] = useState<any[]>([]);
+    const [statusCounts, setStatusCounts] = useState<any>({
+        all: 0,
+        pending: 0,
+        in_progress: 0,
+        warning: 0,
+        completed: 0,
+        cancel: 0,
+    });
+
+
 
     const defaultColumns = [
         { id: 'number', label: 'Số thứ tự' },
@@ -139,7 +149,7 @@ const Orders: React.FC = () => {
         setStatus(prev => (prev === value ? '' : value)); // bỏ chọn nếu click lại
     };
 
-
+    const [serverFilters, setServerFilters] = useState<any>({});
     const { data: devices = [] } = useQuery({
         queryKey: ['devices'],
         queryFn: () => api.get('/devices').then(res => res.data.data),
@@ -173,15 +183,43 @@ const Orders: React.FC = () => {
         queryFn: () => api.get('/departments').then(res => res.data.data),
     });
 
-    const { isLoading } = useQuery({
-        queryKey: ['orders', page, pageSize, employee, department, device, startTime, endTime],
-        queryFn: () => api.get(`/orders?page=${page}&limit=${pageSize}&employee=${employee}&department=${department}&device=${device}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => {
-            setOrders(res.data.data);     // mảng order
-            setTotal(res.data.totalDocs);   // tổng số bản ghi từ API
-        }),
+    const { data, isLoading } = useQuery({
+        queryKey: ['orders', page, pageSize, status, department, device, startTime, endTime, serverFilters],
+        queryFn: () => api.get(`/orders`, {
+            params: {
+                page,
+                limit: pageSize,
+                department,
+                status: status || undefined,
+                startTime: startTime ? startTime.toISOString() : '',
+                endTime: endTime ? endTime.toISOString() : '',
 
-
-    });
+                // filters từ Table
+                assignedTo: serverFilters.assignedTo || undefined,
+                createdBy: serverFilters.createdBy || undefined,
+                shift: serverFilters.shift || undefined,
+                job: serverFilters.job || undefined,
+                device: serverFilters.device || undefined,
+                excavator: serverFilters.excavator || undefined,
+                location: serverFilters.location || undefined,
+                material: serverFilters.material || undefined,
+            }
+        }).then(res => res.data)
+    })
+    useEffect(() => {
+        if (data) {
+            setOrders(data.data);     // mảng order
+            setTotal(data.totalDocs);   // tổng số bản ghi từ API
+            setStatusCounts({
+                all: data.statusCounts.all,
+                pending: data.statusCounts.pending,
+                in_progress: data.statusCounts.in_progress,
+                warning: data.statusCounts.warning,
+                completed: data.statusCounts.completed,
+                cancel: data.statusCounts.cancel,
+            });
+        }
+    }, [data]);
 
 
     const createMutation = useMutation({
@@ -224,7 +262,6 @@ const Orders: React.FC = () => {
             setSelectedOrders([])
         },
         onError: (error: any) => {
-            console.log(error)
             showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
@@ -356,8 +393,6 @@ const Orders: React.FC = () => {
     }, [transfer]);
 
 
-    //
-
     const orderColumns: TableProps<any>['columns'] = [
         {
             title: 'STT', dataIndex: 'number', key: 'number', width: 50, align: 'center',
@@ -369,31 +404,15 @@ const Orders: React.FC = () => {
             render: (text, record) => record.assignedTo?.fullName || '',
             fixed: 'left',
             filterSearch: true,
-            filters: Array.from(
-                new Set(
-                    users.map((o: any) => o.fullName + '-' + o.salaryCode).filter(Boolean)
-                )
-            ).map((name) => ({
-                text: String(name),   // 👈 ép kiểu về string
-                value: String(name),
-            })),
-            filterMultiple: true,
-            onFilter: (value, record) => record.assignedTo?.fullName + '-' + record.assignedTo?.salaryCode === value,
+            filters: users.map((d: any) => ({ text: `${d.fullName}-${d.salaryCode}`, value: d._id })),
+            onFilter: undefined,
+            filteredValue: serverFilters.assignedTo ?? null,
+
         },
         {
             title: 'Mã thẻ lương', dataIndex: 'salaryCode', key: 'salaryCode', width: 120, align: 'center',
             render: (text, record) => record.assignedTo?.salaryCode || '',
-            filterSearch: true,
-            filters: Array.from(
-                new Set(
-                    users.map((o: any) => o.fullName + '-' + o.salaryCode).filter(Boolean)
-                )
-            ).map((name) => ({
-                text: String(name),   // 👈 ép kiểu về string
-                value: String(name),
-            })),
-            filterMultiple: true,
-            onFilter: (value, record) => record.assignedTo?.fullName + '-' + record.assignedTo?.salaryCode === value,
+
         },
         {
             title: 'Ngày làm việc', dataIndex: 'workingDate', key: 'workingDate', width: 150, align: 'center',
@@ -403,20 +422,10 @@ const Orders: React.FC = () => {
             title: 'Ca', dataIndex: 'shift', key: 'shift', width: 50, align: 'center',
             render: (text, record) => record.shift?.name || '',
             filterSearch: true,
-            filters: Array.from(
-                new Set(
-                    shifts.map((o: any) => o.name).filter(Boolean)
-                )
-            ).map((name) => ({
-                text: String(name),   // 👈 ép kiểu về string
-                value: String(name),
-            })),
-            filterMultiple: true,
-            onFilter: (value, record) => {
-                console.log('>>> value:', value, typeof value);
-                console.log('>>> record:', record.shift?.name, typeof record.shift?.name);
-                return record.shift?.name.toString() === String(value);
-            }
+            filters: shifts.map((d: any) => ({ text: d.name, value: d._id })),
+            onFilter: undefined,
+            filteredValue: serverFilters.shift ?? null,
+
         },
         { title: 'Giờ làm', dataIndex: 'shiftHour', key: 'shiftHour', width: 100, align: 'center' },
         {
@@ -427,16 +436,10 @@ const Orders: React.FC = () => {
             align: 'center',
             render: (text, record) => record.job?.name || '',
             filterSearch: true,
-            filters: Array.from(
-                new Set(
-                    jobs.map((o: any) => o.name).filter(Boolean)
-                )
-            ).map((name) => ({
-                text: String(name),   // 👈 ép kiểu về string
-                value: String(name),
-            })),
-            filterMultiple: true,
-            onFilter: (value, record) => record.job?.name === value,
+            filters: jobs.map((d: any) => ({ text: d.name, value: d._id })),
+            onFilter: undefined,
+            filteredValue: serverFilters.job ?? null,
+
         },
         {
             title: 'Nội dung',
@@ -461,80 +464,45 @@ const Orders: React.FC = () => {
             title: 'Phương tiện', dataIndex: 'device', key: 'device', width: 150,
             render: (text, record) => record.device?.map((dev: any) => dev.code).join(', ') || record.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n'),
             filterSearch: true,
-            filters: Array.from(
-                new Set(
-                    devices.map((o: any) => o.code).filter(Boolean)
-                )
-            ).map((name) => ({
-                text: String(name),   // 👈 ép kiểu về string
-                value: String(name),
-            })),
-            filterMultiple: true,
-            onFilter: (value, record) =>
-                record.device?.some((dev: any) => dev.code === value),
+            filters: devices.map((d: any) => ({ text: d.code, value: d._id })),
+            onFilter: undefined,
+            filteredValue: serverFilters.device ?? null,
+
         },
         {
             title: 'Máy xúc', dataIndex: 'excavator', key: 'excavator', width: 150,
             render: (text, record) => record.excavator?.map((dev: any) => dev.code).join(', '),
             filterSearch: true,
-            filters: Array.from(
-                new Set(
-                    excavators.map((o: any) => o.code).filter(Boolean)
-                )
-            ).map((name) => ({
-                text: String(name),   // 👈 ép kiểu về string
-                value: String(name),
-            })),
-            filterMultiple: true,
-            onFilter: (value, record) =>
-                record.excavator?.some((dev: any) => dev.code === value),
+            filters: excavators.map((d: any) => ({ text: d.code, value: d._id })),
+            onFilter: undefined,
+            filteredValue: serverFilters.excavator ?? null,
+
         },
         {
             title: 'Vật liệu', dataIndex: 'material', key: 'material', width: 150,
             render: (text, record) => record.material?.map((mat: any) => mat.name).join(', '),
             filterSearch: true,
-            filters: Array.from(
-                new Set(
-                    materials.map((o: any) => o.name).filter(Boolean)
-                )
-            ).map((name) => ({
-                text: String(name),   // 👈 ép kiểu về string
-                value: String(name),
-            })),
-            filterMultiple: true,
-            onFilter: (value, record) =>
-                record.material?.some((dev: any) => dev.name === value),
+            filters: materials.map((d: any) => ({ text: d.name, value: d._id })),
+            onFilter: undefined,
+            filteredValue: serverFilters.material ?? null,
+
         },
         {
             title: 'Điểm đổ', dataIndex: 'location', key: 'location', width: 150,
             render: (text, record) => record.location?.map((loc: any) => loc.name).join(', '),
             filterSearch: true,
-            filters: Array.from(
-                new Set(
-                    locations.map((o: any) => o.name).filter(Boolean)
-                )
-            ).map((name) => ({
-                text: String(name),   // 👈 ép kiểu về string
-                value: String(name),
-            })),
-            filterMultiple: true,
-            onFilter: (value, record) =>
-                record.location?.some((dev: any) => dev.name === value),
+            filters: locations.map((d: any) => ({ text: d.name, value: d._id })),
+            onFilter: undefined,
+            filteredValue: serverFilters.location ?? null,
         },
         {
             title: 'Người tạo lệnh', dataIndex: 'createdBy', key: 'createdBy', width: 200, align: 'center',
-            render: (text, record) => record.createdBy?.username || '',
             filterSearch: true,
-            filters: Array.from(
-                new Set(
-                    users.map((o: any) => o.username + '-' + o.salaryCode).filter(Boolean)
-                )
-            ).map((name) => ({
-                text: String(name),   // 👈 ép kiểu về string
-                value: String(name),
-            })),
-            filterMultiple: true,
-            onFilter: (value, record) => record.createdBy?.username + '-' + record.createdBy?.salaryCode === value,
+            filters: users.map((d: any) => ({ text: `${d.username}-${d.salaryCode}`, value: d._id })),
+            onFilter: undefined,
+            filteredValue: serverFilters.createdBy ?? null,
+            render: (text, record) => record.createdBy?.username || '',
+
         },
         {
             title: 'Thời gian tạo lệnh', dataIndex: 'createdAt', key: 'createdAt', width: 170, align: 'center',
@@ -565,16 +533,7 @@ const Orders: React.FC = () => {
                                     record.status === 'warning' ? 'warning' : 'secondary'}
                 />
             ),
-            filterSearch: true,
-            filters: [
-                { text: "Chưa nhận lệnh", value: "pending", },
-                { text: "Đã nhận lệnh", value: "in_progress", },
-                { text: "Đã hoàn thành", value: "completed", },
-                { text: "Lỗi", value: "warning", },
-                { text: "Đã hủy", value: "canceled", },
-            ],
-            filterMultiple: true,
-            onFilter: (value, record) => record.status === value,
+
         },
         {
             title: 'Xem báo công',
@@ -692,11 +651,6 @@ const Orders: React.FC = () => {
     };
 
 
-    const filteredOrders = React.useMemo(() => {
-        if (!status) return orders;
-        return orders.filter((o: Order) => o.status === status);
-    }, [orders, status]);
-
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -788,26 +742,7 @@ const Orders: React.FC = () => {
                                 },
                             }}
                         >
-                            <Autocomplete
-                                fullWidth
-                                options={devices}
-                                getOptionLabel={(option: any) =>
-                                    option.code || ''
-                                }
-                                value={devices.find((p: any) => p._id === device) || null}
-                                onChange={(event, newValue) => {
-                                    setDevice(newValue?._id || '');
-                                }}
-                                PopperComponent={StyledPopper}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        fullWidth
-                                        size='small'
-                                        label="Phương tiện"
-                                    />
-                                )}
-                            />
+
                             {user?.role === "admin" && <Autocomplete
                                 fullWidth
                                 options={departments}
@@ -881,32 +816,38 @@ const Orders: React.FC = () => {
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='info' name="status" checked={status === ''}
                         onChange={() => handleChange('')} />
-                    <ListItemText primary={`Tất cả (${orders.length})`} sx={{ color: 'blue' }} />
+                    <ListItemText primary={`Tất cả (${statusCounts.all})`} sx={{ color: 'blue' }} />
+
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='default' name="status" checked={status === 'pending'}
                         onChange={() => handleChange('pending')} />
-                    <ListItemText primary={`Chưa nhận lệnh (${orders.filter((o: Order) => o.status === "pending").length})`} sx={{ color: 'grey' }} />
+                    <ListItemText primary={`Chưa nhận lệnh (${statusCounts.pending})`} sx={{ color: 'grey' }} />
+
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='success' name="status" checked={status === 'in_progress'}
                         onChange={() => handleChange('in_progress')} />
-                    <ListItemText primary={`Đã nhận lệnh (${orders.filter((o: Order) => o.status === "in_progress").length})`} sx={{ color: 'green' }} />
+                    <ListItemText primary={`Đã nhận lệnh (${statusCounts.in_progress})`} sx={{ color: 'green' }} />
+
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='warning' name="status" checked={status === 'warning'}
                         onChange={() => handleChange('warning')} />
-                    <ListItemText primary={`Lỗi (${orders.filter((o: Order) => o.status === "warning").length})`} sx={{ color: 'orange' }} />
+                    <ListItemText primary={`Lỗi (${statusCounts.warning})`} sx={{ color: 'orange' }} />
+
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='error' name="status" checked={status === 'completed'}
                         onChange={() => handleChange('completed')} />
-                    <ListItemText primary={`Đã kết thúc (${orders.filter((o: Order) => o.status === "completed").length})`} sx={{ color: 'red' }} />
+                    <ListItemText primary={`Đã kết thúc (${statusCounts.completed})`} sx={{ color: 'red' }} />
+
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='secondary' name="status" checked={status === 'cancel'}
                         onChange={() => handleChange('cancel')} />
-                    <ListItemText primary={`Đã hủy (${orders.filter((o: Order) => o.status === "cancel").length})`} sx={{ color: 'purple' }} />
+                    <ListItemText primary={`Đã hủy (${statusCounts.cancel})`} sx={{ color: 'purple' }} />
+
                 </Box>
             </Box>
             <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
@@ -930,7 +871,10 @@ const Orders: React.FC = () => {
             </Box>
             <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={12} sm={9}>
-                    <Table<any> rowKey="_id" rowSelection={rowSelection}
+                    <Table<any>
+                        size="small"
+                        rowKey="_id" rowSelection={rowSelection}
+
                         pagination={{
                             current: page,
                             pageSize,
@@ -942,13 +886,15 @@ const Orders: React.FC = () => {
                                     Hiển thị {range[0]}-{range[1]}/ {total}
                                 </div>
                             ),
-                            onChange: (p, ps) => {
-                                setPage(p);
-                                setPageSize(ps);
-                            },
                         }}
                         columns={orderColumns.filter(col => col.key && visibleColumns.includes(col.key.toString()))}
-                        dataSource={filteredOrders}
+                        dataSource={orders}
+                        onChange={(pagination, filters) => {
+                            setPage(pagination.current!);      // 👈 cập nhật page
+                            setPageSize(pagination.pageSize!); // 👈 cập nhật pageSize
+                            setServerFilters(filters);         // 👈 cập nhật filters
+                        }}
+
                         loading={{
                             spinning: isLoading,
                             tip: 'Đang tải dữ liệu...',
@@ -976,20 +922,32 @@ const Orders: React.FC = () => {
                         <Typography variant="h6" sx={{ mb: 2 }}>Thông tin lệnh sản xuất</Typography>
                         {selectedRow ? (
                             <Box>
-                                <Typography><strong>Nhân viên:</strong> {selectedRow.assignedTo?.fullName}-{selectedRow.assignedTo?.salaryCode}</Typography>
-                                <Typography><strong>Ngày:</strong> {selectedRow.workingDate ? format(new Date(selectedRow.workingDate), 'yyyy-MM-dd') : ''}</Typography>
-                                <Typography><strong>Ca:</strong> {selectedRow.shift?.name} {selectedRow.shiftHour ?? ''}</Typography>
+                                <Typography sx={{ display: 'flex', gap: 3 }}>
+                                    <Typography><strong>Ngày:</strong> {selectedRow.workingDate ? format(new Date(selectedRow.workingDate), 'yyyy-MM-dd') : ''}</Typography>
+                                    <Typography><strong>Ca:</strong> {selectedRow.shift?.name}</Typography>
+                                    <Typography><strong>Giờ ca:</strong>  {selectedRow.shiftHour ?? ''}</Typography>
+                                </Typography>
+                                <Typography sx={{ display: 'flex', gap: 3 }}>
+                                    <Typography><strong>Nhân viên:</strong> {selectedRow.assignedTo?.fullName}</Typography>
+                                    <Typography><strong>Thẻ lương: </strong>{selectedRow.assignedTo?.salaryCode}</Typography>
+                                </Typography>
+                                <Typography sx={{ display: 'flex', gap: 2 }}>
+                                    <Typography><strong>Người tạo lệnh:</strong> {selectedRow.createdBy?.username}</Typography>
+                                    <Typography><strong>Thẻ lương: </strong>{selectedRow.createdBy?.salaryCode}</Typography>
+                                </Typography>
                                 <Typography><strong>Công việc:</strong> {selectedRow.job?.name}</Typography>
-                                <Typography><strong>Phương tiện:</strong> {selectedRow.device?.map((dev: any) => dev.code).join(', ')}</Typography>
-                                <Typography><strong>Máy xúc:</strong> {selectedRow.excavator?.map((dev: any) => dev.code).join(', ')}</Typography>
-                                <Typography><strong>Vật liệu:</strong> {selectedRow.material?.map((dev: any) => dev.name).join(', ')}</Typography>
-                                <Typography><strong>Điểm đổ:</strong> {selectedRow.location?.map((dev: any) => dev.name).join(', ')}</Typography>
+                                {selectedRow.device?.length > 0 && <Typography><strong>Phương tiện:</strong> {selectedRow.device?.map((dev: any) => dev.code).join(', ')}</Typography>}
+                                {selectedRow.excavator?.length > 0 && <Typography><strong>Máy xúc:</strong> {selectedRow.excavator?.map((dev: any) => dev.code).join(', ')}</Typography>}
+                                {selectedRow.location?.length > 0 && <Typography><strong>Vật liệu:</strong> {selectedRow.location?.map((dev: any) => dev.name).join(', ')}</Typography>}
+                                {selectedRow.material?.length > 0 && <Typography><strong>Điểm đổ:</strong> {selectedRow.material?.map((dev: any) => dev.name).join(', ')}</Typography>}
+
                                 <Typography><strong>Nội dung:</strong> {selectedRow.workContent}</Typography>
                                 <Typography><strong>Trạng thái:</strong> {
                                     selectedRow.status === 'pending' ? 'Chưa nhận lệnh' :
                                         selectedRow.status === 'in_progress' ? 'Đã nhận lệnh' :
                                             selectedRow.status === 'completed' ? 'Đã hoàn thành' :
                                                 selectedRow.status === 'warning' ? 'Lỗi' : "Đã hủy"}</Typography>
+                                <Typography><strong>Nội dung bàn giao ca:</strong> {selectedRow?.note}</Typography>
                             </Box>
                         ) : (
                             <Typography>Chọn một lệnh sản xuất để xem chi tiết</Typography>

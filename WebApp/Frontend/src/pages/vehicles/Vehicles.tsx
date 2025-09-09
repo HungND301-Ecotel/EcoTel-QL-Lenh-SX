@@ -270,6 +270,7 @@ const Vehicles: React.FC = () => {
             category: '',
             material: '',
             fuelType: '',
+            note: '',
             capacity: undefined as number | undefined,
             department: user?.role === "manager" ? user?.department?._id : '',
             status: 'available' as 'available' | 'in_use' | 'maintenance' | 'retired',
@@ -475,7 +476,8 @@ const Vehicles: React.FC = () => {
                                 />}
                             </Box>
                         </Box>
-                        {user?.role==="admin" &&<Box display="flex" gap={2} sx={{
+                        {user?.role === "admin" && <Box display="flex" gap={2} sx={{
+
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -649,6 +651,18 @@ const Vehicles: React.FC = () => {
                                                 helperText={formik.touched.department && typeof formik.errors.department === 'string' ? formik.errors.department : ''}
                                             />
                                         )}
+                                    />
+                                    <TextField
+                                        fullWidth
+                                        multiline
+                                        rows={3}
+                                        id="note"
+                                        name="note"
+                                        label="Ghi chú"
+                                        value={formik.values.note}
+                                        onChange={formik.handleChange}
+                                        error={formik.touched.note && Boolean(formik.errors.note)}
+                                        helperText={formik.touched.note && formik.errors.note}
                                     />
                                     <TextField
                                         fullWidth

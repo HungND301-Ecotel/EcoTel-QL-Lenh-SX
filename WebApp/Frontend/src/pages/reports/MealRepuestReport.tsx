@@ -6,27 +6,28 @@ export default function mealRequestReport({ data, signatureUrl }: { data: any[],
 
     const reportColumns: GridColDef[] = [
         {
-            field: 'STT', headerName: 'STT', width: 50,
+            field: 'STT', headerName: 'STT', width: 50, headerAlign: 'center', align: 'center',
             renderCell: (params) => params.api.getRowIndex(params.id) + 1,
         },
         {
-            field: 'fullName', headerName: 'Họ và tên', flex: 1,
+            field: 'fullName', headerName: 'Họ và tên', flex: 1, headerAlign: 'center',
         },
         {
-            field: 'salaryCode', headerName: 'Số thẻ', width: 100,
+            field: 'salaryCode', headerName: 'Số thẻ', flex: 1, headerAlign: 'center', align: 'center',
         },
         {
-            field: 'device', headerName: 'Số xe', width: 150,
+            field: 'device', headerName: 'Số xe', flex: 1, headerAlign: 'center', align: 'center',
         },
         {
             field: 'job',
             headerName: 'Công việc',
+            headerAlign: 'center',
             flex: 1,
         },
         {
-            field: 'eatPosition', headerName: 'Vị trí ăn', width: 100,
+            field: 'eatPosition', headerName: 'Vị trí ăn', flex: 1, headerAlign: 'center', align: 'center',
         },
-        { field: 'generalNote', headerName: 'Ghi chú', minWidth: 100 },
+        { field: 'generalNote', headerName: 'Ghi chú', flex: 1, headerAlign: 'center' },
     ];
 
     return (

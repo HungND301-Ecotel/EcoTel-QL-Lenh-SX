@@ -567,8 +567,7 @@ const AdminDashboard: React.FC = () => {
                                             <TableCell sx={{ fontWeight: 'bold', }}>Phương tiện</TableCell>
                                             <TableCell sx={{ fontWeight: 'bold', }}>Sản lượng</TableCell>
                                             <TableCell sx={{ fontWeight: 'bold', }}>Người vận hành</TableCell>
-                                            {selectedDetailDevices[0].status === 'maintenance' && <TableCell sx={{ fontWeight: 'bold', }}>Ghi chú</TableCell>}
-
+                                            <TableCell sx={{ fontWeight: 'bold', }}>Ghi chú</TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
@@ -577,7 +576,8 @@ const AdminDashboard: React.FC = () => {
                                                 <TableCell>{d.code}</TableCell>
                                                 <TableCell>0</TableCell>
                                                 <TableCell>{d.assignedTo || ''}</TableCell>
-                                                {selectedDetailDevices[0].status === 'maintenance' && <TableCell></TableCell>}
+                                                <TableCell>{d.note || ''}</TableCell>
+
 
                                             </TableRow>
                                         ))}
@@ -651,7 +651,6 @@ const AdminDashboard: React.FC = () => {
                         {locations.map((location: any) => {
                             if (!location.coordinates?.coordinates) return null;
                             const [lng, lat] = location.coordinates.coordinates;
-                            console.log([lat, lng])
                             return (
                                 <Marker key={location._id} position={[lat, lng]}>
                                     <Popup>{location.name}</Popup>
@@ -660,7 +659,6 @@ const AdminDashboard: React.FC = () => {
                         {devices.map((device: any) => {
                             if (!device.coordinates?.coordinates) return null;
                             const [lng, lat] = device.coordinates.coordinates;
-                            console.log([lat, lng])
                             return (
                                 <Marker key={device._id} position={[lat, lng]} icon={customIcon}>
                                     <Popup>{device.code}</Popup>

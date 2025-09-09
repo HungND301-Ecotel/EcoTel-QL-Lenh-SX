@@ -34,7 +34,6 @@ import {
     BorderRight,
     Crop169Outlined,
     Autorenew,
-
 } from '@mui/icons-material';
 import api from '../../config/api.config';
 import { Order, Device, Department, Location } from '../../types';
@@ -512,8 +511,8 @@ const ManagerDashboard: React.FC = () => {
                                                 <TableCell>{d.code}</TableCell>
                                                 <TableCell>0</TableCell>
                                                 <TableCell>{d.assignedTo || ''}</TableCell>
+                                                <TableCell>{d.note || ''}</TableCell>
 
-                                                <TableCell></TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>

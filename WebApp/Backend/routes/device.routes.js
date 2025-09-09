@@ -170,7 +170,7 @@ router.get('/vehicle/all', verifyToken, async (req, res, next) => {
 });
 router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
-        const { name, code, vehicleNumber, category, material, fuelType, capacity, power, coordinates, department, status } = req.body;
+        const { name, code, vehicleNumber, category, material, note, fuelType, capacity, power, coordinates, department, status } = req.body;
         const existingDevice = await Device.findOne({ code });
         if (existingDevice) {
             return res.status(400).send({ status: 'error', message: 'Mã thiết bị đã tồn tại' });
@@ -185,6 +185,7 @@ router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, n
             fuelType,
             capacity, power,
             status,
+            note,
             coordinates: {
                 type: 'Point',
                 coordinates: [coordinates.lng, coordinates.lat],
@@ -231,6 +232,7 @@ router.get('/:id', verifyToken, async (req, res, next) => {
 
 router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
+        const user = req.user;
         const device = await Device.findByIdAndUpdate(
             req.params.id,
             {
@@ -251,7 +253,7 @@ router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res,
             req.logger.error("❌ không tìm thấy phương tiện");
             return res.status(404).json({ status: 'error', message: 'No device found with that ID' });
         }
-        req.logger.info(`🔥  Load phương tiện thành công`);
+        req.logger.info(`🔥${user?.username}  Sửa phương tiện thành công`);
         res.status(200).json({
             status: 'success',
             data:
@@ -264,50 +266,79 @@ router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res,
     }
 });
 
-router.post('/update_status', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
+router.post('/update_status', verifyToken, async (req, res, next) => {
     try {
         const user = req.user
+        const now = new Date();
+
         const startOfToday = new Date();
         startOfToday.setHours(0, 0, 0, 0);
         const endOfToday = new Date();
         endOfToday.setHours(23, 59, 59, 999);
-        const orders = await Order.find({ workingDate: { $gte: startOfToday, $lte: endOfToday }, status: "in_progress" }).populate("device").populate("job")
+        const orders = await Order.find({ workingDate: { $gte: startOfToday, $lte: endOfToday } }).populate("device").populate("job").populate("shift")
 
+        const updateDeviceStatus = async (deviceId, newStatus) => {
+            if (!deviceId || !newStatus) return;
+            await Device.findByIdAndUpdate(deviceId, { status: newStatus }, { new: true });
+            req.logger.info(`✅ Device ${deviceId} đã cập nhật ${newStatus}`);
+        };
+        const isNowInShift = (shift) => {
+            if (!shift?.startTime || !shift?.endTime) return false;
+            const [sh, sm] = shift.startTime.split(":").map(Number);
+            const [eh, em] = shift.endTime.split(":").map(Number);
 
+            const shiftStart = new Date(now);
+            shiftStart.setHours(sh, sm, 0, 0);
+
+            const shiftEnd = new Date(now);
+            shiftEnd.setHours(eh, em, 0, 0);
+
+            console.log(shiftStart, shiftEnd, now);
+
+            return now >= shiftStart && now <= shiftEnd;
+        };
         for (const order of orders) {
-            if (order.device && order.device.length > 0) {
-                // Lấy device cuối cùng trong mảng
-                const lastDevice = order.device[order.device.length - 1];
+            if (!isNowInShift(order.shift)) continue; // chỉ xử lý ca hiện tại
 
-                let newStatus = null;
-                if (order.job?.type) {
-                    if (order.job.type.toLowerCase().includes(JobConfig.REPAIR.toLowerCase())) {
-                        newStatus = "maintenance";
+            const lastDevice = order.device?.length ? order.device[order.device.length - 1] : null;
+            if (!lastDevice) continue;
+
+            let newStatus = null;
+
+            switch (order.status) {
+                case "in_progress":
+                    if (order.job?.type) {
+                        const type = order.job.type.toLowerCase();
+
+                        if (type.includes(JobConfig.REPAIR.toLowerCase())) {
+                            newStatus = "maintenance";
+                        } else if (
+                            [
+                                JobConfig.VEHICLE,
+                                JobConfig.EXCAVATOR,
+                                JobConfig.SERVICE_VEHICLE,
+                                JobConfig.DRILLING,
+                                JobConfig.DOZER,
+                                JobConfig.SIEVE,
+                            ].map(j => j.toLowerCase()).includes(type)
+                        ) {
+                            newStatus = "in_use";
+                        }
                     }
-                }
-                const operatingJobs = [
-                    JobConfig.VEHICLE,
-                    JobConfig.EXCAVATOR,
-                    JobConfig.SERVICE_VEHICLE,
-                    JobConfig.DRILLING,
-                    JobConfig.DOZER,
-                    JobConfig.SIEVE,
-                ];
+                    break;
 
-                if (order.job?.type && operatingJobs.includes(order.job.type.toLowerCase())) {
-                    newStatus = 'in_use';
-                }
+                case "completed":
+                case "warning":
+                case "cancel":
+                    newStatus = "available";
+                    break;
 
-                if (newStatus) {
-                    // Update status sang in_use
-                    await Device.findByIdAndUpdate(
-                        lastDevice._id,
-                        { status: newStatus },
-                        { new: true }
-                    );
+                default:
+                    break;
+            }
 
-                    req.logger.info(`✅ Device ${lastDevice._id} đã cập nhật ${newStatus}`);
-                }
+            if (newStatus) {
+                await updateDeviceStatus(lastDevice._id, newStatus);
 
             }
         }
@@ -326,6 +357,7 @@ router.post('/update_status', verifyToken, restrictTo('admin', 'manager'), async
 
 router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
+        const user = req.user
         const { ids } = req.body;
         if (!ids || !Array.isArray(ids) || ids.length === 0) {
             req.logger.error("❌ Chọn bản ghi cần xóa");
@@ -337,7 +369,7 @@ router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res,
             req.logger.error("❌ không tìm thấy bản ghi cần xóa");
             return res.status(200).send({ status: 'error', message: 'Không tìm thấy bản ghi để xóa' });
         }
-        req.logger.info(`🔥  Đã xóa ${result.deletedCount} bản ghi`);
+        req.logger.info(`🔥${user?.username}  Đã xóa ${result.deletedCount} bản ghi`);
         res.status(200).json({
             status: 'success',
             message: `Đã xóa ${result.deletedCount} bản ghi`
@@ -431,6 +463,7 @@ const columnMapping = {
 };
 router.post('/importFile', upload.single('file'), verifyToken, async (req, res) => {
     try {
+        const user = req.user;
         if (!req.file) {
             req.logger.error("❌ Vui lòng chọn file");
             return res.status(400).json({ status: 'error', message: 'Vui lòng chọn file' });
@@ -514,7 +547,7 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         if (operations.length > 0) {
             bulkResult = await Device.bulkWrite(operations);
         }
-        req.logger.info(`🔥  Import thành công`);
+        req.logger.info(`🔥${user?.username}   Import thành công ${devicesToProcess.length} bản ghi.`);
         res.status(200).json({
             status: 'success',
             message: 'Import dữ liệu hoàn tất.',

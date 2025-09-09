@@ -65,6 +65,7 @@ export interface Device {
         lng: number,
     },
     status: 'available' | 'in_use' | 'maintenance' | 'retired';
+    note?: string;
     createdBy?: string;
     updatedBy?: string;
     createdAt?: string;
@@ -120,7 +121,6 @@ export interface Job {
     _id: string;
     name: string;
     type: 'Vận hành xe' | 'Vận hành khoan' | 'Vận hành xe phục vụ' | 'Vận hành gạt' | 'Vận hành xúc' | 'Vận hành sàng' | 'Sửa chữa, bảo dưỡng' | 'Khác',
-
     createdAt?: string;
     updatedAt?: string;
 }
