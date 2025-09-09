@@ -2129,7 +2129,6 @@ router.post('/worklog/view', verifyToken, restrictTo('admin', 'dispatcher', 'man
             .populate('shiftReport')
 
         const formattedData = orders
-            .filter(order => order.shiftReport)
             .map(order => ({
                 _id: order._id,
                 fullName: order.assignedTo?.fullName,
@@ -2171,7 +2170,6 @@ router.post('/worklog', verifyToken, restrictTo('admin', 'dispatcher', 'manager'
                     .populate('shiftReport')
                 console.log(orders)
                 const formattedData = orders
-                    .filter(order => order.shiftReport)
                     .map(order => ({
                         _id: order._id,
                         fullName: order.assignedTo?.fullName,
