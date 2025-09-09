@@ -54,7 +54,7 @@ import {
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import api from '../../config/api.config';
-import { Order } from '../../types';
+import { Order, Shift } from '../../types';
 import OrderFormAdd from './OrderFormAdd';
 import OrderFormEdit from './OrderFormEdit';
 import OrderHistories from '../../components/OrderHistory/OrderHistories';
@@ -101,7 +101,7 @@ const Orders: React.FC = () => {
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
 
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(20);
+    const [pageSize, setPageSize] = useState(50);
     const [total, setTotal] = useState(0);
     const [orders, setOrders] = useState<any[]>([]);
 
@@ -144,9 +144,25 @@ const Orders: React.FC = () => {
         queryKey: ['devices'],
         queryFn: () => api.get('/devices').then(res => res.data.data),
     });
+    const { data: excavators = [] } = useQuery({
+        queryKey: ['excavators'],
+        queryFn: () => api.get('/devices/excavators/all').then(res => res.data.data),
+    });
+    const { data: locations = [] } = useQuery({
+        queryKey: ['locations'],
+        queryFn: () => api.get('/locations').then(res => res.data.data),
+    });
+    const { data: materials = [] } = useQuery({
+        queryKey: ['materials'],
+        queryFn: () => api.get('/materials').then(res => res.data.data),
+    });
     const { data: jobs = [] } = useQuery({
         queryKey: ['jobs'],
         queryFn: () => api.get('/jobs').then(res => res.data.data),
+    });
+    const { data: shifts = [] } = useQuery({
+        queryKey: ['shifts'],
+        queryFn: () => api.get('/shifts').then(res => res.data.data),
     });
     const { data: users = [] } = useQuery({
         queryKey: ['users'],
@@ -366,6 +382,17 @@ const Orders: React.FC = () => {
         {
             title: 'Mã thẻ lương', dataIndex: 'salaryCode', key: 'salaryCode', width: 120, align: 'center',
             render: (text, record) => record.assignedTo?.salaryCode || '',
+            filterSearch: true,
+            filters: Array.from(
+                new Set(
+                    users.map((o: any) => o.fullName + '-' + o.salaryCode).filter(Boolean)
+                )
+            ).map((name) => ({
+                text: String(name),   // 👈 ép kiểu về string
+                value: String(name),
+            })),
+            filterMultiple: true,
+            onFilter: (value, record) => record.assignedTo?.fullName + '-' + record.assignedTo?.salaryCode === value,
         },
         {
             title: 'Ngày làm việc', dataIndex: 'workingDate', key: 'workingDate', width: 150, align: 'center',
@@ -373,7 +400,22 @@ const Orders: React.FC = () => {
         },
         {
             title: 'Ca', dataIndex: 'shift', key: 'shift', width: 50, align: 'center',
-            render: (text, record) => record.shift?.name || ''
+            render: (text, record) => record.shift?.name || '',
+            filterSearch: true,
+            filters: Array.from(
+                new Set(
+                    shifts.map((o: any) => o.name).filter(Boolean)
+                )
+            ).map((name) => ({
+                text: String(name),   // 👈 ép kiểu về string
+                value: String(name),
+            })),
+            filterMultiple: true,
+            onFilter: (value, record) => {
+                console.log('>>> value:', value, typeof value);
+                console.log('>>> record:', record.shift?.name, typeof record.shift?.name);
+                return record.shift?.name.toString() === String(value);
+            }
         },
         { title: 'Giờ làm', dataIndex: 'shiftHour', key: 'shiftHour', width: 100, align: 'center' },
         {
@@ -432,19 +474,66 @@ const Orders: React.FC = () => {
         },
         {
             title: 'Máy xúc', dataIndex: 'excavator', key: 'excavator', width: 150,
-            render: (text, record) => record.excavator?.map((dev: any) => dev.code).join(', ')
+            render: (text, record) => record.excavator?.map((dev: any) => dev.code).join(', '),
+            filterSearch: true,
+            filters: Array.from(
+                new Set(
+                    excavators.map((o: any) => o.code).filter(Boolean)
+                )
+            ).map((name) => ({
+                text: String(name),   // 👈 ép kiểu về string
+                value: String(name),
+            })),
+            filterMultiple: true,
+            onFilter: (value, record) =>
+                record.excavator?.some((dev: any) => dev.code === value),
         },
         {
             title: 'Vật liệu', dataIndex: 'material', key: 'material', width: 150,
-            render: (text, record) => record.material?.map((mat: any) => mat.name).join(', ')
+            render: (text, record) => record.material?.map((mat: any) => mat.name).join(', '),
+            filterSearch: true,
+            filters: Array.from(
+                new Set(
+                    materials.map((o: any) => o.name).filter(Boolean)
+                )
+            ).map((name) => ({
+                text: String(name),   // 👈 ép kiểu về string
+                value: String(name),
+            })),
+            filterMultiple: true,
+            onFilter: (value, record) =>
+                record.material?.some((dev: any) => dev.name === value),
         },
         {
             title: 'Điểm đổ', dataIndex: 'location', key: 'location', width: 150,
-            render: (text, record) => record.location?.map((loc: any) => loc.name).join(', ')
+            render: (text, record) => record.location?.map((loc: any) => loc.name).join(', '),
+            filterSearch: true,
+            filters: Array.from(
+                new Set(
+                    locations.map((o: any) => o.name).filter(Boolean)
+                )
+            ).map((name) => ({
+                text: String(name),   // 👈 ép kiểu về string
+                value: String(name),
+            })),
+            filterMultiple: true,
+            onFilter: (value, record) =>
+                record.location?.some((dev: any) => dev.name === value),
         },
         {
             title: 'Người tạo lệnh', dataIndex: 'createdBy', key: 'createdBy', width: 200, align: 'center',
-            render: (text, record) => record.createdBy?.username || ''
+            render: (text, record) => record.createdBy?.username || '',
+            filterSearch: true,
+            filters: Array.from(
+                new Set(
+                    users.map((o: any) => o.username + '-' + o.salaryCode).filter(Boolean)
+                )
+            ).map((name) => ({
+                text: String(name),   // 👈 ép kiểu về string
+                value: String(name),
+            })),
+            filterMultiple: true,
+            onFilter: (value, record) => record.createdBy?.username + '-' + record.createdBy?.salaryCode === value,
         },
         {
             title: 'Thời gian tạo lệnh', dataIndex: 'createdAt', key: 'createdAt', width: 170, align: 'center',
@@ -474,7 +563,17 @@ const Orders: React.FC = () => {
                                 record.status === 'in_progress' ? 'success' :
                                     record.status === 'warning' ? 'warning' : 'secondary'}
                 />
-            )
+            ),
+            filterSearch: true,
+            filters: [
+                { text: "Chưa nhận lệnh", value: "pending", },
+                { text: "Đã nhận lệnh", value: "in_progress", },
+                { text: "Đã hoàn thành", value: "completed", },
+                { text: "Lỗi", value: "warning", },
+                { text: "Đã hủy", value: "canceled", },
+            ],
+            filterMultiple: true,
+            onFilter: (value, record) => record.status === value,
         },
         {
             title: 'Xem báo công',
@@ -688,25 +787,6 @@ const Orders: React.FC = () => {
                         >
                             <Autocomplete
                                 fullWidth
-                                options={users}
-                                getOptionLabel={(option: any) =>
-                                    `${option?.fullName || ""}-${option?.salaryCode || ''}`
-                                }
-                                value={users.find((p: any) => p._id === employee) || null}
-                                onChange={(event, newValue) => {
-                                    setEmployee(newValue?._id || '');
-                                }}
-                                PopperComponent={StyledPopper}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        size='small'
-                                        label="Nhân viên"
-                                    />
-                                )}
-                            />
-                            <Autocomplete
-                                fullWidth
                                 options={devices}
                                 getOptionLabel={(option: any) =>
                                     option.code || ''
@@ -853,7 +933,7 @@ const Orders: React.FC = () => {
                             pageSize,
                             total,
                             showSizeChanger: true,
-                            pageSizeOptions: ['50', '100', '150', '200'],
+                            pageSizeOptions: ['50', '100', '150', '200', '500'],
                             showTotal: (total, range) => (
                                 <div style={{ flex: 1, textAlign: 'left' }}>
                                     Hiển thị {range[0]}-{range[1]}/ {total}

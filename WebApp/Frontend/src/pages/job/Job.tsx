@@ -53,7 +53,7 @@ const validationSchema = yup.object({
     name: yup.string().required('Vui lòng nhập tên công việc'),
     type: yup
         .string()
-        .oneOf(['Vận hành xe', 'Vận hành khoan', 'Vận hành xe phục vụ', 'Vận hành gạt', 'Vận hành xúc', 'Vận hành sàng', 'Khác'])
+        .oneOf(['Vận hành xe', 'Vận hành khoan', 'Vận hành xe phục vụ', 'Vận hành gạt', 'Vận hành xúc', 'Vận hành sàng', 'Sửa chữa, bảo dưỡng', 'Khác'])
         .required('Vui lòng chọn loại công việc'),
 });
 
@@ -321,7 +321,7 @@ const Jobs: React.FC = () => {
                                 }}>
                             </TextField>
                         </Box>
-                        {user?.role==="admin" &&<Box display="flex" gap={2} sx={{
+                        {user?.role === "admin" && <Box display="flex" gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -400,6 +400,7 @@ const Jobs: React.FC = () => {
                                     <MenuItem value="Vận hành gạt">Vận hành gạt</MenuItem>
                                     <MenuItem value="Vận hành xúc">Vận hành xúc</MenuItem>
                                     <MenuItem value="Vận hành sàng">Vận hành sàng</MenuItem>
+                                    <MenuItem value="Sửa chữa, bảo dưỡng">Sửa chữa, bảo dưỡng</MenuItem>
                                     <MenuItem value="Khác">Khác</MenuItem>
                                 </TextField>
                             </Box>
@@ -475,7 +476,7 @@ const Jobs: React.FC = () => {
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) && (
                                     <TableCell key={col.id} align="center" sx={{
-                                        backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, 
+                                        backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18,
                                     }}>
                                         {col.label}
                                     </TableCell>
@@ -497,7 +498,7 @@ const Jobs: React.FC = () => {
                                 <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(job._id)} checked={selectedJobs.includes(job._id)} /></TableCell>
                                 {visibleColumns.includes('name') && <TableCell sx={{}}>{job.name}</TableCell>}
                                 {visibleColumns.includes('category') && <TableCell align='center' sx={{}}>{job.type}</TableCell>}
-                                {user?.role==="admin" && <TableCell sx={{}}>
+                                {user?.role === "admin" && <TableCell sx={{}}>
                                     <IconButton color="primary" onClick={async () => {
                                         if (open) {
                                             const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');

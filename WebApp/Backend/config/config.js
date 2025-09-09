@@ -5,5 +5,6 @@ const JobConfig = Object.freeze({
     DRILLING: "vận hành khoan",
     DOZER: "vận hành gạt",
     SIEVE: "vận hành sàng",
+    REPAIR:"sửa chữa"
 });
 module.exports = { JobConfig };

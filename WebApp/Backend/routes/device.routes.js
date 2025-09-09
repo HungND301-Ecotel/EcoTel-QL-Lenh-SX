@@ -272,8 +272,6 @@ router.post('/update_status', verifyToken, restrictTo('admin', 'manager'), async
         const endOfToday = new Date();
         endOfToday.setHours(23, 59, 59, 999);
         const orders = await Order.find({ workingDate: { $gte: startOfToday, $lte: endOfToday }, status: "in_progress" }).populate("device").populate("job")
-        const operatingJobs = Object.values(JobConfig);
-        console.log(operatingJobs)
 
         for (const order of orders) {
             if (order.device && order.device.length > 0) {
@@ -281,11 +279,19 @@ router.post('/update_status', verifyToken, restrictTo('admin', 'manager'), async
                 const lastDevice = order.device[order.device.length - 1];
 
                 let newStatus = null;
-                if (order.job && order.job.name) {
-                    if (order.job?.name?.toLowerCase().includes('sửa chữa')) {
-                        newStatus = 'maintenance';
+                if (order.job?.type) {
+                    if (order.job.type.toLowerCase().includes(JobConfig.REPAIR.toLowerCase())) {
+                        newStatus = "maintenance";
                     }
                 }
+                const operatingJobs = [
+                    JobConfig.VEHICLE,
+                    JobConfig.EXCAVATOR,
+                    JobConfig.SERVICE_VEHICLE,
+                    JobConfig.DRILLING,
+                    JobConfig.DOZER,
+                    JobConfig.SIEVE,
+                ];
                 if (order.job?.type && operatingJobs.includes(order.job.type.toLowerCase())) {
                     newStatus = 'in_use';
                 }
