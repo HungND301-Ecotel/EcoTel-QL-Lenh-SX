@@ -109,7 +109,6 @@ const DispatcherOrderFormEdit: React.FC<OrderFormProps> = ({
         validationSchema,
         enableReinitialize: true, // Để cập nhật lại giá trị khi initialValues thay đổi
         onSubmit: async (values) => {
-            console.log(values.usersAndDepartments)
             const currentIds = values.usersAndDepartments
                 .map(item => item._id)
                 .filter(Boolean);
@@ -150,7 +149,6 @@ const DispatcherOrderFormEdit: React.FC<OrderFormProps> = ({
         },
     });
 
-    console.log(formik.values)
     return (
         <FormikProvider value={formik}>
             <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>

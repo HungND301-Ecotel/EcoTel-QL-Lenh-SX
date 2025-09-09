@@ -65,6 +65,7 @@ export interface Device {
         lng: number,
     },
     status: 'available' | 'in_use' | 'maintenance' | 'retired';
+    note?: string;
     createdBy?: string;
     updatedBy?: string;
     createdAt?: string;

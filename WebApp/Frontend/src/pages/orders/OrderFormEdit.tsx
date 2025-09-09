@@ -74,7 +74,14 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
         setAnchorEl(null);
     };
     const handleSelectSample = (content: string) => {
-        formik.setFieldValue('safetyMeasure', content);
+        const currentValue = formik.values.safetyMeasure || "";
+
+        // Nếu có sẵn nội dung thì thêm xuống dòng, còn nếu trống thì chỉ gán content
+        const newValue = currentValue
+            ? `${currentValue}\n${content}`
+            : content;
+
+        formik.setFieldValue('safetyMeasure', newValue);
         setAnchorEl(null);
     };
     const { data: locations = [] } = useQuery({
@@ -461,36 +468,6 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                         )}
                     />
                 </Grid>}
-                {/* <Grid item xs={12} sm={6}>
-                    <TextField
-                        fullWidth
-                        id="distance"
-                        name="distance"
-                        label="Cung độ"
-                        type="number"
-                        value={formik.values.distance}
-                        onChange={formik.handleChange}
-                        error={formik.touched.distance && Boolean(formik.errors.distance)}
-                        helperText={formik.touched.distance && typeof formik.errors.distance === 'number'
-                            ? formik.errors.distance
-                            : ''}
-                    />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                    <TextField
-                        fullWidth
-                        id="liftHeight"
-                        name="liftHeight"
-                        type="number"
-                        label="Chiều cao nâng tải"
-                        value={formik.values.liftHeight}
-                        onChange={formik.handleChange}
-                        error={formik.touched.liftHeight && Boolean(formik.errors.liftHeight)}
-                        helperText={formik.touched.liftHeight && typeof formik.errors.liftHeight === 'number'
-                            ? formik.errors.liftHeight
-                            : ''}
-                    />
-                </Grid> */}
 
                 <Grid item xs={12}>
                     <TextField

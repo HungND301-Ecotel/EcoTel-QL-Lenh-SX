@@ -57,20 +57,15 @@ import { useSocket } from '../../hooks/useSocket';
 import { Table, TableProps } from 'antd';
 
 const OrderByUsers: React.FC = () => {
-    const [open, setOpen] = useState(false);
-    const [history, setHistory] = useState(false);
-    const [transfer, setTransfer] = useState(false);
-    const [employee, setEmployee] = useState("");
+
     const [startTime, setStartTime] = useState<Dayjs | null>(null);
     const [endTime, setEndTime] = useState<Dayjs | null>(null);
-    const [department, setDepartment] = useState("");
-    const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
     const [status, setStatus] = useState('')
     const [selectedRow, setSelectedRow] = useState<any | null>(null);
 
     const queryClient = useQueryClient();
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(20);
+    const [pageSize, setPageSize] = useState(50);
     const [total, setTotal] = useState(0);
     const [orderByUser, setOrderByUser] = useState<any[]>([]);
 
@@ -82,11 +77,8 @@ const OrderByUsers: React.FC = () => {
         { id: 'assignedTo', label: 'Nhân viên' },
         { id: 'salaryCode', label: 'Mã thẻ lương' },
         { id: 'workingDate', label: 'Ngày làm việc' },
-        { id: 'shift', label: 'Ca' },
-        { id: 'shiftHour', label: 'Giờ làm việc' },
         { id: 'job', label: 'Công việc' },
         { id: 'content', label: 'Nội dung' },
-        { id: 'device', label: 'Phương tiện' },
         { id: 'createdBy', label: 'Người tạo lệnh' },
         { id: 'createdAt', label: 'Thời gian tạo lệnh' },
         { id: 'startTime', label: 'Bắt đầu' },
@@ -102,13 +94,44 @@ const OrderByUsers: React.FC = () => {
     const handleChange = (value: string) => {
         setStatus(prev => (prev === value ? '' : value)); // bỏ chọn nếu click lại
     };
-    const { isLoading } = useQuery({
-        queryKey: ['orderByUser',page, pageSize, startTime, endTime],
-        queryFn: () => api.get(`/orders/user?page=${page}&limit=${pageSize}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => {
-            setOrderByUser(res.data.data);
-            setTotal(res.data.totalDocs);
-        }),
+    const [serverFilters, setServerFilters] = useState<any>({});
+    const [statusCounts, setStatusCounts] = useState<any>({
+        all: 0,
+        pending: 0,
+        in_progress: 0,
+        warning: 0,
+        completed: 0,
+        cancel: 0,
     });
+    const { data, isLoading } = useQuery({
+        queryKey: ['orders', page, pageSize, status, startTime, endTime, serverFilters],
+        queryFn: () => api.get(`/orders`, {
+            params: {
+                page,
+                limit: pageSize,
+                status: status || undefined,
+                startTime: startTime ? startTime.toISOString() : '',
+                endTime: endTime ? endTime.toISOString() : '',
+
+                shift: serverFilters.shift || undefined,
+            }
+        }).then(res => res.data)
+    })
+    useEffect(() => {
+        if (data) {
+            setOrderByUser(data.data);     // mảng order
+            setTotal(data.totalDocs);   // tổng số bản ghi từ API
+            setStatusCounts({
+                all: data.statusCounts.all,
+                pending: data.statusCounts.pending,
+                in_progress: data.statusCounts.in_progress,
+                warning: data.statusCounts.warning,
+                completed: data.statusCounts.completed,
+                cancel: data.statusCounts.cancel,
+            });
+        }
+    }, [data]);
+
 
     const orderColumns: TableProps<any>['columns'] = [
         {
@@ -119,7 +142,7 @@ const OrderByUsers: React.FC = () => {
         {
             title: 'Nhân viên', dataIndex: 'assignedTo', key: 'assignedTo', width: 200, align: 'center',
             render: (text, record) => record.assignedTo?.fullName || '',
-            fixed: 'left',
+            fixed: 'left'
         },
         {
             title: 'Mã thẻ lương', dataIndex: 'salaryCode', key: 'salaryCode', width: 120, align: 'center',
@@ -129,11 +152,6 @@ const OrderByUsers: React.FC = () => {
             title: 'Ngày làm việc', dataIndex: 'workingDate', key: 'workingDate', width: 150, align: 'center',
             render: (text, record) => record.workingDate ? format(new Date(record.workingDate), 'yyyy-MM-dd') : ''
         },
-        {
-            title: 'Ca', dataIndex: 'shift', key: 'shift', width: 50, align: 'center',
-            render: (text, record) => record.shift?.name || ''
-        },
-        { title: 'Giờ làm', dataIndex: 'shiftHour', key: 'shiftHour', width: 100, align: 'center' },
         {
             title: 'Công việc',
             dataIndex: 'job',
@@ -162,12 +180,8 @@ const OrderByUsers: React.FC = () => {
             ),
         },
         {
-            title: 'Phương tiện', dataIndex: 'device', key: 'device', width: 150,
-            render: (text, record) => record.device?.map((dev: any) => dev.code).join(', ') || record.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n'),
-        },
-        {
             title: 'Người tạo lệnh', dataIndex: 'createdBy', key: 'createdBy', width: 200, align: 'center',
-            render: (text, record) => record.createdBy?.username || ''
+            render: (text, record) => record.createdBy?.username || '',
         },
         {
             title: 'Thời gian tạo lệnh', dataIndex: 'createdAt', key: 'createdAt', width: 170, align: 'center',
@@ -197,14 +211,10 @@ const OrderByUsers: React.FC = () => {
                                 record.status === 'in_progress' ? 'success' :
                                     record.status === 'warning' ? 'warning' : 'secondary'}
                 />
-            )
+            ),
         },
     ];
 
-    const filteredOrders = React.useMemo(() => {
-        if (!status) return orderByUser;
-        return orderByUser.filter((o: Order) => o.status === status);
-    }, [orderByUser, status]);
     return (
         <Box>
             <Typography variant="h3" color='blue'>Công việc của tôi</Typography>
@@ -247,27 +257,27 @@ const OrderByUsers: React.FC = () => {
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='info' name="status" checked={status === ''}
                         onChange={() => handleChange('')} />
-                    <ListItemText primary={`Tất cả (${orderByUser.length})`} sx={{ color: 'blue' }} />
+                    <ListItemText primary={`Tất cả (${statusCounts.all})`} sx={{ color: 'blue' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='default' name="status" checked={status === 'pending'}
                         onChange={() => handleChange('pending')} />
-                    <ListItemText primary={`Chưa nhận lệnh (${orderByUser.filter((o: Order) => o.status === "pending").length})`} sx={{ color: 'grey' }} />
+                    <ListItemText primary={`Chưa nhận lệnh (${statusCounts.pending})`} sx={{ color: 'grey' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='success' name="status" checked={status === 'in_progress'}
                         onChange={() => handleChange('in_progress')} />
-                    <ListItemText primary={`Đã nhận lệnh (${orderByUser.filter((o: Order) => o.status === "in_progress").length})`} sx={{ color: 'green' }} />
+                    <ListItemText primary={`Đã nhận lệnh (${statusCounts.in_progress})`} sx={{ color: 'green' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='warning' name="status" checked={status === 'warning'}
                         onChange={() => handleChange('warning')} />
-                    <ListItemText primary={`Lỗi (${orderByUser.filter((o: Order) => o.status === "warning").length})`} sx={{ color: 'orange' }} />
+                    <ListItemText primary={`Lỗi (${statusCounts.warning})`} sx={{ color: 'orange' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
                     <Checkbox color='error' name="status" checked={status === 'completed'}
                         onChange={() => handleChange('completed')} />
-                    <ListItemText primary={`Đã kết thúc (${orderByUser.filter((o: Order) => o.status === "completed").length})`} sx={{ color: 'red' }} />
+                    <ListItemText primary={`Đã kết thúc (${statusCounts.completed})`} sx={{ color: 'red' }} />
                 </Box>
             </Box>
             <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
@@ -290,25 +300,28 @@ const OrderByUsers: React.FC = () => {
             </Box>
             <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={12} sm={9}>
-                    <Table<any> rowKey="_id"
+                    <Table<any>
+                        size="small"
+                        rowKey="_id"
                         pagination={{
                             current: page,
                             pageSize,
                             total,
                             showSizeChanger: true,
-                            pageSizeOptions: ['50', '100', '150', '200'],
+                            pageSizeOptions: ['50', '100', '150', '200', '500'],
                             showTotal: (total, range) => (
                                 <div style={{ flex: 1, textAlign: 'left' }}>
                                     Hiển thị {range[0]}-{range[1]}/ {total}
                                 </div>
                             ),
-                            onChange: (p, ps) => {
-                                setPage(p);
-                                setPageSize(ps);
-                            },
                         }}
                         columns={orderColumns.filter(col => col.key && visibleColumns.includes(col.key.toString()))}
-                        dataSource={filteredOrders}
+                        dataSource={orderByUser}
+                        onChange={(pagination, filters) => {
+                            setPage(pagination.current!);      // 👈 cập nhật page
+                            setPageSize(pagination.pageSize!); // 👈 cập nhật pageSize
+                            setServerFilters(filters);         // 👈 cập nhật filters
+                        }}
                         loading={{
                             spinning: isLoading,
                             tip: 'Đang tải dữ liệu...',
@@ -335,12 +348,17 @@ const OrderByUsers: React.FC = () => {
                         <Typography variant="h6" sx={{ mb: 2 }}>Thông tin lệnh sản xuất</Typography>
                         {selectedRow ? (
                             <Box>
-                                <Typography><strong>Nhân viên:</strong> {selectedRow.assignedTo?.fullName}-{selectedRow.assignedTo?.salaryCode}</Typography>
                                 <Typography><strong>Ngày:</strong> {selectedRow.workingDate ? format(new Date(selectedRow.workingDate), 'yyyy-MM-dd') : ''}</Typography>
-                                <Typography><strong>Ca:</strong> {selectedRow.shift?.name}</Typography>
+                                <Typography sx={{ display: 'flex', gap: 3 }}>
+                                    <Typography><strong>Nhân viên:</strong> {selectedRow.assignedTo?.fullName}</Typography>
+                                    <Typography><strong>Thẻ lương: </strong>{selectedRow.assignedTo?.salaryCode}</Typography>
+                                </Typography>
+                                <Typography sx={{ display: 'flex', gap: 2 }}>
+                                    <Typography><strong>Người tạo lệnh:</strong> {selectedRow.createdBy?.username}</Typography>
+                                    <Typography><strong>Thẻ lương: </strong>{selectedRow.createdBy?.salaryCode}</Typography>
+                                </Typography>
                                 <Typography><strong>Công việc:</strong> {selectedRow.job?.name}</Typography>
                                 <Typography><strong>Nội dung:</strong> {selectedRow.workContent}</Typography>
-                                <Typography><strong>Phương tiện:</strong> {selectedRow.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')}</Typography>
                                 <Typography><strong>Trạng thái:</strong> {
                                     selectedRow.status === 'pending' ? 'Chưa nhận lệnh' :
                                         selectedRow.status === 'in_progress' ? 'Đã nhận lệnh' :

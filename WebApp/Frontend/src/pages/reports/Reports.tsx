@@ -65,7 +65,6 @@ function Reports() {
             return userData.user?.signature;
         },
         onSuccess: (signature: string) => {
-            console.log(signature)
             if (!signature || signature === "") {
                 showErrorAlert("Bạn không có chữ kí")
             } else {

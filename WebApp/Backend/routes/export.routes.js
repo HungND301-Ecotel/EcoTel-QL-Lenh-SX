@@ -2101,10 +2101,16 @@ router.post('/productReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
 
 router.post('/worklog/view', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
-        const { shift, startDate, endDate, } = req.body
+        const { shift, startDate, endDate, department } = req.body
+        const user = req.user
         let query = {
-            createdBy: req.userId
+            status: { $in: ["in_progress", "completed", "warning"] }
         };
+        if (user?.role === "admin") {
+            query.department = new mongoose.Types.ObjectId(department)
+        } else {
+            query.department = new mongoose.Types.ObjectId(user.department?._id)
+        }
         if (Array.isArray(shift) && shift.length > 0) {
             query.shift = { $in: shift };
         }
@@ -2141,7 +2147,8 @@ router.post('/worklog/view', verifyToken, restrictTo('admin', 'dispatcher', 'man
 
 router.post('/worklog', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
-        const { shift, startDate, endDate, signature } = req.body
+        const { shift, startDate, endDate, department, signature } = req.body
+        const user = req.user
         const shiftList = await Shift.find({ _id: { $in: shift } });
         const start = new Date(startDate);
         const end = new Date(endDate);
@@ -2155,13 +2162,14 @@ router.post('/worklog', verifyToken, restrictTo('admin', 'dispatcher', 'manager'
                 const orders = await Order.find({
                     workingDate: d,
                     shift: ca._id,
-                    createdBy: req.userId
+                    status: { $in: ["in_progress", "completed", "warning"] },
+                    department: user?.role === "admin" ? new mongoose.Types.ObjectId(department) : new mongoose.Types.ObjectId(user.department?._id)
                 })
                     .populate('assignedTo', 'fullName salaryCode department')
                     .populate('job', 'name')
                     .populate('device', 'code')
                     .populate('shiftReport')
-
+                console.log(orders)
                 const formattedData = orders
                     .filter(order => order.shiftReport)
                     .map(order => ({
@@ -2175,29 +2183,35 @@ router.post('/worklog', verifyToken, restrictTo('admin', 'dispatcher', 'manager'
 
                 const worksheet = workbook.addWorksheet(sheetName);
 
-
+                // --- HEADER ---
                 worksheet.mergeCells('A1:I1');
-                const infoRow = worksheet.getCell('A1');
-                infoRow.value = `Ca: ${ca.name}, ngày: ${formatDate(d)}         Tên cán bộ: ${req.user?.fullName}`;
-                infoRow.font = { italic: true, size: 12 };
-                infoRow.alignment = { horizontal: 'left', vertical: 'middle' };
-                // Tiêu đề bảng
+                worksheet.getCell('A1').value = `Ca: ${ca.name}, ngày: ${formatDate(d)}         Tên cán bộ: ${req.user?.fullName}`;
+                worksheet.getCell('A1').font = { italic: true, size: 12 };
+                worksheet.getCell('A1').alignment = { horizontal: 'left', vertical: 'middle' };
+
                 worksheet.mergeCells('A2:I2');
-                const header = worksheet.getCell('A2');
-                header.value = "Báo công hàng ngày";
-                header.font = { bold: true, size: 14 };
-                header.alignment = { horizontal: 'center', vertical: 'middle' };
+                worksheet.getCell('A2').value = "Báo công hàng ngày";
+                worksheet.getCell('A2').font = { bold: true, size: 14 };
+                worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+                const headerRow = worksheet.getRow(3);
+                headerRow.values = [
+                    "STT",
+                    "Họ và tên",
+                    "Số thẻ",
+                    "Thiết bị vận hành,\n vị trí làm việc",
+                    "Vị trí ăn",
+                    "Lương cấp bậc\n 1 ngày",
+                    "Lương sản phẩm",
+                    "Nội dung công việc",
+                    "Ghi chú",
+                ];
+                headerRow.eachCell((cell) => {
+                    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                    cell.font = { bold: true, size: 10 }; // hoặc 14 cho rõ
+                });
 
-                setCell(worksheet, 'A3', 'STT')
-                setCell(worksheet, 'B3', 'Họ và tên')
-                setCell(worksheet, 'C3', 'Số thẻ')
-                setCell(worksheet, 'D3', 'Thiết bị vận hành, vị trí làm việc')
-                setCell(worksheet, 'E3', 'Vị trí ăn')
-                setCell(worksheet, 'F3', 'Lương cấp bậc 1 ngày')
-                setCell(worksheet, 'G3', 'Lương sản phẩm')
-                setCell(worksheet, 'H3', 'Nội dung công việc')
-                setCell(worksheet, 'I3', 'Ghi chú')
 
+                // --- DATA ---
 
                 let index = 1;
                 for (const item of formattedData) {
@@ -2213,6 +2227,8 @@ router.post('/worklog', verifyToken, restrictTo('admin', 'dispatcher', 'manager'
                         ''
                     ]);
                 }
+                addTableBorders(worksheet, 3, formattedData.length + 3, 1, 9);
+
 
                 worksheet.getColumn(1).width = 6;
                 worksheet.getColumn(1).alignment = { horizontal: 'center' }
@@ -2228,8 +2244,16 @@ router.post('/worklog', verifyToken, restrictTo('admin', 'dispatcher', 'manager'
                 worksheet.getColumn(9).width = 10;
 
                 const length = formattedData.length
-                setCell(worksheet, `C${length + 7}:D${length + 7}`, 'TỔ TRƯỞNG')
-                setCell(worksheet, `H${length + 7}:I${length + 7}`, 'QUẢN ĐỐC')
+                worksheet.mergeCells(`C${length + 7}:D${length + 7}`);
+                worksheet.getCell(`C${length + 7}`).value = "TỔ TRƯỞNG";
+                worksheet.getCell(`C${length + 7}`).alignment = { horizontal: 'center', vertical: 'middle' };
+                worksheet.getCell(`C${length + 7}`).font = { bold: true };
+
+                // Merge ô H..I và ghi "QUẢN ĐỐC"
+                worksheet.mergeCells(`H${length + 7}:I${length + 7}`);
+                worksheet.getCell(`H${length + 7}`).value = "QUẢN ĐỐC";
+                worksheet.getCell(`H${length + 7}`).alignment = { horizontal: 'center', vertical: 'middle' };
+                worksheet.getCell(`H${length + 7}`).font = { bold: true };
 
 
                 if (signature) {
@@ -2252,13 +2276,6 @@ router.post('/worklog', verifyToken, restrictTo('admin', 'dispatcher', 'manager'
                     });
                 }
 
-                worksheet.eachRow((row) => {
-                    row.eachCell((cell) => {
-                        // Nếu chưa có font, tạo font mới
-                        if (!cell.font) cell.font = {};
-                        cell.font.size = 8; // hoặc 8, tuỳ theo bạn muốn nhỏ đến đâu
-                    });
-                });
             }
         }
 
@@ -2284,11 +2301,17 @@ router.post('/worklog', verifyToken, restrictTo('admin', 'dispatcher', 'manager'
 
 router.post('/meal_request/view', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
-        const { shift, startDate, endDate, } = req.body
+        const { shift, startDate, endDate, department } = req.body
+        const user = req.user
         let query = {
-            createdBy: req.userId,
-            status: { $nin: ["pending", "cancel"] }
+            status: { $in: ["in_progress", "completed", "warning"] }
         };
+        if (user?.role === "admin") {
+            query.department = new mongoose.Types.ObjectId(department)
+        } else {
+            query.department = new mongoose.Types.ObjectId(user.department?._id)
+        }
+
         if (Array.isArray(shift) && shift.length > 0) {
             query.shift = { $in: shift };
         }
@@ -2326,7 +2349,8 @@ router.post('/meal_request/view', verifyToken, restrictTo('admin', 'dispatcher',
 
 router.post('/meal_request', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     try {
-        const { shift, startDate, endDate, signature } = req.body
+        const { shift, startDate, endDate, department, signature } = req.body
+        const user = req.user
         const shiftList = await Shift.find({ _id: { $in: shift } });
         const start = new Date(startDate);
         const end = new Date(endDate);
@@ -2340,8 +2364,8 @@ router.post('/meal_request', verifyToken, restrictTo('admin', 'dispatcher', 'man
                 const orders = await Order.find({
                     workingDate: d,
                     shift: ca._id,
-                    createdBy: req.userId,
-                    status: { $nin: ["pending", "cancel"] }
+                    department: user?.role === "admin" ? new mongoose.Types.ObjectId(department) : new mongoose.Types.ObjectId(user.department?._id),
+                    status: { $in: ["in_progress", "completed", "warning"] }
                 })
                     .populate('assignedTo', 'fullName salaryCode department')
                     .populate('job', 'name')
@@ -2400,32 +2424,26 @@ router.post('/meal_request', verifyToken, restrictTo('admin', 'dispatcher', 'man
                         ''
                     ]);
                 }
+                addTableBorders(worksheet, 3, formattedData.length + 3, 1, 7);
 
-                worksheet.getColumn(1).width = 6;
-                worksheet.getColumn(1).alignment = { horizontal: 'center' }
-                worksheet.getColumn(2).width = 20;
-                worksheet.getColumn(2).alignment = { horizontal: 'center' }
-                worksheet.getColumn(3).width = 10;
-                worksheet.getColumn(3).alignment = { horizontal: 'center' }
-                worksheet.getColumn(4).width = 15;
-                worksheet.getColumn(5).width = 25;
-                worksheet.getColumn(6).width = 15
-                worksheet.getColumn(7).width = 15;
+                worksheet.columns = [
+                    { key: 'A', width: 10 },
+                    { key: 'B', width: 25 },
+                    { key: 'C', width: 10 },
+                    { key: 'D', width: 15 },
+                    { key: 'E', width: 25 },
+                    { key: 'F', width: 15 },
+                    { key: 'G', width: 15 },
+                ];
+
+
 
                 const length = formattedData.length
-                setCell(worksheet, `E${length + 7}:G${length + 7}`, 'CÁN BỘ ĐI CA')
+                worksheet.mergeCells(`E${length + 7}:G${length + 7}`);
+                worksheet.getCell(`E${length + 7}`).value = "CÁN BỘ ĐI CA";
+                worksheet.getCell(`E${length + 7}`).alignment = { horizontal: 'center', vertical: 'middle' };
+                worksheet.getCell(`E${length + 7}`).font = { bold: true };
 
-                // for (let row = length + 6; row <= length + 10; row++) {
-                //     for (let col = 1; col <= 7; col++) { // A = 1, M = 13
-                //         const cell = worksheet.getRow(row).getCell(col);
-                //         cell.border = {};
-                //         cell.fill = {
-                //             type: 'pattern',
-                //             pattern: 'solid',
-                //             fgColor: { argb: 'FFFFFFFF' }
-                //         }; // Xóa tất cả border
-                //     }
-                // }
 
                 if (signature) {
                     const response = await axios.get(signature, { responseType: 'arraybuffer' });

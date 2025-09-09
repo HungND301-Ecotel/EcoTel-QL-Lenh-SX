@@ -61,7 +61,6 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
     const queryClient = useQueryClient();
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedJob, setSelectedJob] = useState<Job | null>(null)
-    console.log(initialValues)
     useEffect(() => {
         setSelectedJob(initialValues?.job || null)
     }, [initialValues])
@@ -71,7 +70,14 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
         setAnchorEl(null);
     };
     const handleSelectSample = (content: string) => {
-        formik.setFieldValue('safetyMeasure', content);
+        const currentValue = formik.values.safetyMeasure || "";
+
+        // Nếu có sẵn nội dung thì thêm xuống dòng, còn nếu trống thì chỉ gán content
+        const newValue = currentValue
+            ? `${currentValue}\n${content}`
+            : content;
+
+        formik.setFieldValue('safetyMeasure', newValue);
         setAnchorEl(null);
     };
     const { data: locations = [] } = useQuery({
@@ -165,10 +171,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                 : [],
             workContent: initialValues?.workContent || '',
             status: initialValues?.status,
-            note: initialValues?.shiftReport?.vehicleSummaries
-                ?.filter((item: any) => item.note?.trim()) // bỏ null, undefined, chuỗi rỗng
-                .map((item: any) => `${item.vehicle?.code} : ${item.note}`)
-                .join('\n') || '',
+            note: initialValues?.shiftReport?.handoverNotes || '',
             previous_order_id: initialValues?._id
         },
         enableReinitialize: true, // Để cập nhật lại giá trị khi initialValues thay đổi

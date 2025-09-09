@@ -16,7 +16,7 @@ router.post('/', verifyToken, async (req, res, next) => {
         if (vehicleSummaries) {
             for (var item of vehicleSummaries) {
                 const device = await Device.findById(item.vehicle);
-                device.status = item.status === "good" ? "available" : "maintenance";
+                device.note = item.note || "";
                 await device.save();
             }
         }
@@ -55,6 +55,7 @@ const trackedFieldsWork = [
 
 router.put('/:id', verifyToken, async (req, res) => {
     try {
+        const user = req.user
         const shiftReport = await ShiftReport.findById(req.params.id);
         if (!shiftReport) {
             req.logger.warn(`⚠️ Không tìm thấy báo cáo ca với ID: ${req.params.id}`);
@@ -110,6 +111,7 @@ router.put('/:id', verifyToken, async (req, res) => {
                 const device = await Device.findById(item.vehicle);
                 if (device) {
                     device.status = item.status === "good" ? "available" : "maintenance";
+                    device.note = item.note || '';
                     await device.save();
                 }
             }
@@ -119,7 +121,7 @@ router.put('/:id', verifyToken, async (req, res) => {
         Object.assign(shiftReport, updates);
         await shiftReport.save();
 
-        req.logger.info(`✅ Cập nhật báo cáo ca thành công cho ID: ${req.params.id}`);
+        req.logger.info(`✅ ${user?.username} Cập nhật báo cáo ca thành công cho ID: ${req.params.id}`);
         res.status(200).send({ status: 'success', message: "Sửa thành công", data: shiftReport });
 
     } catch (err) {

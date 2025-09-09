@@ -48,6 +48,9 @@ const deviceSchema = new mongoose.Schema({
             default: [0, 0]
         }
     },
+    note:{
+        type: String,
+    },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',

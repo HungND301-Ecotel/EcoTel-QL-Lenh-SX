@@ -36,6 +36,7 @@ router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, n
 
 router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
+        const user = req.user
         const { ids } = req.body;
         if (!ids || !Array.isArray(ids) || ids.length === 0) {
             req.logger.error("❌ Vui lòng chọn bản ghi cần xóa");
@@ -48,7 +49,7 @@ router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res,
 
             return res.status(200).send({ status: 'error', message: 'Không tìm thấy bản ghi để xóa' });
         }
-        req.logger.info(`🔥 Đã xóa ${result.deletedCount} bản ghi`);
+        req.logger.info(`🔥 ${user?.username}  Đã xóa ${result.deletedCount} bản ghi`);
 
         res.status(200).json({
             status: 'success',
@@ -62,6 +63,7 @@ router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res,
 });
 router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
     try {
+        const user = req.user
         const material = await Material.findByIdAndUpdate(req.params.id, req.body, { new: true });
 
         if (!material) {
@@ -69,7 +71,7 @@ router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res,
 
             return res.status(404).send({ status: 'error', message: 'Sửa thất bại ' });
         }
-        req.logger.info(`🔥 Sửa thành công`);
+        req.logger.info(`🔥 ${user?.username} Sửa vật liệu thành công`);
 
         res.status(200).json({
             status: 'success',
@@ -126,6 +128,7 @@ const columnMapping = {
 };
 router.post('/importFile', upload.single('file'), verifyToken, async (req, res) => {
     try {
+        const user = req.user;
         if (!req.file) {
             req.logger.warn("⚠️ Import file thất bại - Không có file được chọn.");
             return res.status(400).json({ status: 'error', message: 'Vui lòng chọn file' });
@@ -166,7 +169,7 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         });
 
         await Material.bulkWrite(operations);
-        req.logger.info(`✅ Import file thành công. Đã xử lý ${dataImport.length} bản ghi.`);
+        req.logger.info(`✅ ${user?.username}  Import file thành công. Đã xử lý ${dataImport.length} bản ghi.`);
         res.status(200).json({
             status: 'success',
             message: `Import file thành công. Đã xử lý ${dataImport.length} bản ghi.`,

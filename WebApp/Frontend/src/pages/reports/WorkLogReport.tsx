@@ -6,37 +6,38 @@ export default function WorkLogReport({ data, signatureUrl }: { data: any[], sig
 
     const reportColumns: GridColDef[] = [
         {
-            field: 'STT', headerName: 'STT', width: 50,
+            field: 'STT', headerName: 'STT', width: 50, align: 'center', headerAlign: 'center',
             renderCell: (params) => params.api.getRowIndex(params.id) + 1,
         },
         {
-            field: 'fullName', headerName: 'Họ và tên', minWidth: 200,
+            field: 'fullName', headerName: 'Họ và tên', flex: 1, headerAlign: 'center',
         },
         {
-            field: 'salaryCode', headerName: 'Số thẻ', width: 100,
+            field: 'salaryCode', headerName: 'Số thẻ', flex: 0.5, headerAlign: 'center',
         },
         {
-            field: 'device', headerName: 'Thiết bị vận hành, vị trí làm việc', width: 150,
+            field: 'device', headerName: 'Thiết bị vận hành, vị trí làm việc', flex: 1, headerAlign: 'center',
         },
         {
-            field: 'eatPosition', headerName: 'Vị trí ăn', width: 100,
+            field: 'eatPosition', headerName: 'Vị trí ăn', flex: 0.5, headerAlign: 'center',
         },
         {
-            field: 'lv1Salary', headerName: 'Lương cấp bậc 1 ngày', width: 100,
+            field: 'lv1Salary', headerName: 'Lương cấp bậc 1 ngày', flex: 0.5, headerAlign: 'center',
         }, {
-            field: 'productSalary', headerName: 'Lương sản phẩm', minWidth: 100,
+            field: 'productSalary', headerName: 'Lương sản phẩm', flex: 0.5, headerAlign: 'center',
         },
         {
             field: 'job',
-            headerName: 'Nội dung công việc và TH SP trong ca',
-            minWidth: 200,
+            headerName: 'Nội dung công việc và TH SP trong ca', headerAlign: 'center',
+            flex: 1,
         },
-        { field: 'generalNote', headerName: 'Ghi chú', minWidth: 100 },
+        { field: 'generalNote', headerName: 'Ghi chú', flex: 1, headerAlign: 'center' },
     ];
 
     return (
         <Grid item xs={12}>
             <Paper sx={{ minHeight: "80vh", overflowX: 'auto', padding: 1, width: '100%', }}>
+                <Typography textAlign={'center'} mb={2} variant='h3'>Danh sách báo công</Typography>
                 <DataGrid
                     rows={data}
                     columns={reportColumns}

@@ -176,7 +176,7 @@ router.put('/update/:id', verifyToken, async (req, res) => {
             await newHistory.save();
         }
 
-        req.logger.info(`✅ Cập nhật người dùng thành công cho ID: ${req.params.id}`);
+        req.logger.info(`✅ ${req.user?.username} Cập nhật người dùng thành công cho ID: ${user.username}`);
         res.json({
             status: 'success',
             data: user
@@ -248,11 +248,12 @@ router.put('/changepass', verifyToken, async (req, res) => {
 // reset pass
 router.get('/resetpass/:id', verifyToken, async (req, res) => {
     try {
+
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash("123456", salt);
         const user = await User.findByIdAndUpdate(req.params.id, { password: hashedPassword })
 
-        req.logger.info(`✅ Reset mật khẩu thành công cho người dùng: ${user.username}`);
+        req.logger.info(`✅ ${req.user?.username} Reset mật khẩu thành công cho người dùng: ${user.username}`);
         res.status(200).send({
             status: 'success',
             message: "Reset mật khẩu thành công",
@@ -276,7 +277,7 @@ router.put('/addphone', verifyToken, async (req, res) => {
         }
         const userData = userUpdate.toObject();
         delete userData.password;
-        req.logger.info(`✅ Thêm số điện thoại thành công cho người dùng: ${userUpdate.username}`);
+        req.logger.info(`✅ ${req.user?.username} Thêm số điện thoại thành công cho người dùng: ${userUpdate.username}`);
         res.status(200).send({
             status: 'success',
             message: "Thêm số điện thoại thành công",
@@ -337,6 +338,7 @@ router.post("/remove-token", verifyToken, async (req, res) => {
 // Delete user
 router.delete('/', verifyToken, async (req, res) => {
     try {
+        const user = req.user;
         const { ids } = req.body;
         if (!ids || !Array.isArray(ids) || ids.length === 0) {
             req.logger.warn("⚠️ Yêu cầu xóa không có IDs hợp lệ.");
@@ -349,7 +351,7 @@ router.delete('/', verifyToken, async (req, res) => {
             return res.status(200).send({ status: 'error', message: 'Không tìm thấy bản ghi để xóa' });
         }
 
-        req.logger.info(`✅ Đã xóa thành công ${result.deletedCount} người dùng.`);
+        req.logger.info(`✅ ${user?.username}  Đã xóa thành công ${result.deletedCount} người dùng.`);
         res.status(200).json({
             status: 'success',
             message: `Đã xóa ${result.deletedCount} bản ghi`
@@ -365,13 +367,14 @@ router.delete('/', verifyToken, async (req, res) => {
 });
 router.delete('/me', verifyToken, async (req, res) => {
     try {
+        const user = req.user;
         const result = await User.findByIdAndDelete(req.userId);
         if (!result) {
             req.logger.info("ℹ️ Không tìm thấy người dùng để xóa.");
             return res.status(200).send({ status: 'error', message: 'Không tìm thấy người dùng để xóa' });
         }
 
-        req.logger.info(`✅ Đã xóa thành công người dùng ${req.userId}`);
+        req.logger.info(`✅ ${user?.username}  Đã xóa thành công người dùng ${req.userId}`);
         res.status(200).json({
             status: 'success',
             message: `Xóa người dùng thành công`
@@ -400,6 +403,7 @@ const columnMapping = {
 };
 router.post('/importFile', upload.single('file'), verifyToken, async (req, res) => {
     try {
+        const user = req.user;
         if (!req.file) {
             req.logger.warn("⚠️ Import file thất bại - Không có file được chọn.");
             return res.status(400).json({ status: 'error', message: 'Vui lòng chọn file' });
@@ -492,7 +496,7 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
             bulkResult = await User.bulkWrite(operations);
         }
 
-        req.logger.info(`✅ Import file hoàn tất. Đã xử lý ${usersToImport.length} bản ghi.`);
+        req.logger.info(`✅ ${user?.username}  Import file hoàn tất. Đã xử lý ${usersToImport.length} bản ghi.`);
         req.logger.info(`📊 Thống kê: Thêm mới: ${bulkResult?.upsertedCount || 0}, Cập nhật: ${bulkResult?.modifiedCount || 0}, Lỗi: ${invalidRows.length}`);
 
         res.status(200).json({

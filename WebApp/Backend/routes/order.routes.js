@@ -8,7 +8,7 @@ const Notification = require('../models/Notification');
 const History = require('../models/History');
 const User = require('../models/User')
 const mongoose = require('mongoose')
-
+const { JobConfig } = require('../config/config');
 
 
 const Device = require('../models/Device');
@@ -25,9 +25,14 @@ router.get('/', verifyToken, async (req, res, next) => {
         const query = {};
 
         // ---- Bộ lọc chung ----
-        if (req.query.employee) query.assignedTo = new mongoose.Types.ObjectId(req.query.employee);
-        if (req.query.status) query.status = req.query.status;
-        if (req.query.device) query.device = new mongoose.Types.ObjectId(req.query.device);
+        if (req.query.assignedTo) query.assignedTo = { $in: Array.isArray(req.query.assignedTo) ? req.query.assignedTo.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.assignedTo)] };
+        if (req.query.job) query.job = { $in: Array.isArray(req.query.job) ? req.query.job.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.job)] };
+        if (req.query.excavator) query.excavator = { $in: Array.isArray(req.query.excavator) ? req.query.excavator.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.excavator)] };
+        if (req.query.material) query.material = { $in: Array.isArray(req.query.material) ? req.query.material.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.material)] };
+        if (req.query.location) query.location = { $in: Array.isArray(req.query.location) ? req.query.location.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.location)] };
+        if (req.query.createdBy) query.createdBy = { $in: Array.isArray(req.query.createdBy) ? req.query.createdBy.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.createdBy)] };
+        if (req.query.job) query.job = { $in: Array.isArray(req.query.job) ? req.query.job.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.job)] };
+        if (req.query.shift) query.shift = { $in: Array.isArray(req.query.shift) ? req.query.shift.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.shift)] };
 
         if (req.query.startTime && req.query.endTime) {
             const endTime = new Date(req.query.endTime);
@@ -54,14 +59,43 @@ router.get('/', verifyToken, async (req, res, next) => {
             query.department = new mongoose.Types.ObjectId(req.query.department);
         }
 
+
+        // chỉ sort workingDate trong DB
+
+        // ---- 1. Tính statusCounts (chưa filter status) ----
+        const statusAgg = await Order.aggregate([
+            { $match: query },
+            { $group: { _id: "$status", count: { $sum: 1 } } },
+        ]);
+
+        const statusCounts = {
+            all: 0,
+            pending: 0,
+            in_progress: 0,
+            warning: 0,
+            completed: 0,
+            cancel: 0,
+        };
+
+        statusAgg.forEach(s => {
+            statusCounts.all += s.count;
+            if (s._id && statusCounts.hasOwnProperty(s._id)) {
+                statusCounts[s._id] = s.count;
+            }
+        });
+
+        const dataFilter = { ...query };
+        if (req.query.status) {
+            dataFilter.status = req.query.status;
+        }
+
         // ---- Pagination ----
         const page = parseInt(req.query.page);
         const limit = parseInt(req.query.limit);
         const skip = (page - 1) * limit;
 
         let totalDocs = 0;
-
-        let baseQuery = Order.find(query)
+        let baseQuery = Order.find(dataFilter)
             .populate({
                 path: 'assignedTo',
                 select: 'username fullName salaryCode department',
@@ -81,11 +115,11 @@ router.get('/', verifyToken, async (req, res, next) => {
             })
             .populate('createdBy', 'username fullName salaryCode')
             .populate('updatedBy', 'username fullName')
-            .sort({ workingDate: -1 }); // chỉ sort workingDate trong DB
+            .sort({ workingDate: -1 });
 
         let orders;
         if (!isNaN(page) && !isNaN(limit)) {
-            totalDocs = await Order.countDocuments(query);
+            totalDocs = await Order.countDocuments(dataFilter);
             orders = await baseQuery.skip(skip).limit(limit);
         } else {
             orders = await baseQuery;
@@ -101,7 +135,6 @@ router.get('/', verifyToken, async (req, res, next) => {
             const nameB = b.shift?.name ? String(b.shift.name) : "";
             return nameB.localeCompare(nameA);
         })
-
         return res.status(200).json({
             status: 'success',
             totalDocs,
@@ -109,6 +142,7 @@ router.get('/', verifyToken, async (req, res, next) => {
             totalPages: !isNaN(page) && !isNaN(limit) ? Math.ceil(totalDocs / limit) : undefined,
             results: orders.length,
             data: orders,
+            statusCounts
         });
     } catch (err) {
         req.logger.error('❌ Lỗi', err);
@@ -236,7 +270,6 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
 
         req.logger.info("🔔 Gửi thông báo đến người dùng.");
         const tokens = user?.deviceTokens;
-        console.log(tokens)
         await Promise.all(tokens.map(t => sendPushNotification(t, "Bạn có thông báo mới", "Có 1 lệnh được cập nhật")));
         await Notification.createNotification({
             title: "Lệnh mới",
@@ -265,12 +298,13 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
 
 router.put('/:id', verifyToken, async (req, res, next) => {
     try {
+        const user = req.user
         const { status, ...body } = req.body;
         const { id } = req.params;
         req.logger.info(`🔍 Bắt đầu cập nhật lệnh với ID: ${id}`);
 
         // 1. Lấy đơn hàng hiện tại để kiểm tra
-        const order = await Order.findById(id).lean();
+        const order = await Order.findById(id).populate('job').lean();
 
         if (!order) {
             req.logger.warn("⚠️ Lỗi 404 - Không tìm thấy lệnh với ID này.");
@@ -293,7 +327,32 @@ router.put('/:id', verifyToken, async (req, res, next) => {
                 if (order.device && order.device.length > 0) {
                     const lastDeviceId = order.device[order.device.length - 1];
                     req.logger.info(`- Tìm thấy phương tiện: ${lastDeviceId}`);
-                    await Device.updateOne({ _id: lastDeviceId }, { status: "in_use" });
+                    let deviceStatus = null;
+
+                    if (order.job?.type) {
+                        const type = order.job.type.toLowerCase();
+
+                        if (type.includes(JobConfig.REPAIR.toLowerCase())) {
+                            deviceStatus = "maintenance";
+                        } else if (
+                            [
+                                JobConfig.VEHICLE,
+                                JobConfig.EXCAVATOR,
+                                JobConfig.SERVICE_VEHICLE,
+                                JobConfig.DRILLING,
+                                JobConfig.DOZER,
+                                JobConfig.SIEVE,
+                            ].map(j => j.toLowerCase())
+                                .includes(type)
+                        ) {
+                            deviceStatus = "in_use";
+                        }
+                    }
+
+                    if (deviceStatus) {
+                        await Device.updateOne({ _id: lastDeviceId }, { status: deviceStatus });
+                        req.logger.info(`✅ Device ${lastDeviceId} cập nhật sang ${deviceStatus}`);
+                    }
                 }
                 updateObject.status = status;
                 break;
@@ -384,8 +443,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
             message: 'Sửa thành công',
             data: updatedOrder
         });
-        req.logger.info(`🔍 Kết thúc xử lý request thành công: ${id}`);
-        req.logger.info("✨ Kết thúc xử lý request thành công.");
+        req.logger.info(`🔍${user?.username} Kết thúc xử lý lệnh request thành công: ${id}`);
 
     } catch (err) {
         req.logger.error("❌ Lỗi khi cập nhật lệnh", err);
@@ -519,11 +577,7 @@ router.get('/user', verifyToken, async (req, res, next) => {
     try {
         const query = { assignedTo: req.user._id };
 
-        if (req.query.status) {
-            query.status = req.query.status;
-        } else {
-            query.status = { $ne: "cancel" };
-        }
+        query.status = { $ne: "cancel" };
 
         const endOfToday = new Date();
         endOfToday.setHours(23, 59, 59, 999);
@@ -554,6 +608,32 @@ router.get('/user', verifyToken, async (req, res, next) => {
         if (gte) query.workingDate.$gte = gte;
         if (lte) query.workingDate.$lte = lte;
 
+        const statusAgg = await Order.aggregate([
+            { $match: query },
+            { $group: { _id: "$status", count: { $sum: 1 } } },
+        ]);
+
+        const statusCounts = {
+            all: 0,
+            pending: 0,
+            in_progress: 0,
+            warning: 0,
+            completed: 0,
+            cancel: 0,
+        };
+
+        statusAgg.forEach(s => {
+            statusCounts.all += s.count;
+            if (s._id && statusCounts.hasOwnProperty(s._id)) {
+                statusCounts[s._id] = s.count;
+            }
+        });
+
+        const dataFilter = { ...query };
+        if (req.query.status) {
+            dataFilter.status = req.query.status;
+        }
+
         // Phân trang
         const page = parseInt(req.query.page);
         const limit = parseInt(req.query.limit);
@@ -562,14 +642,14 @@ router.get('/user', verifyToken, async (req, res, next) => {
         let totalDocs = 0;
         let orders;
         if (!isNaN(page) && !isNaN(limit)) {
-            totalDocs = await Order.countDocuments(query);
-            orders = await Order.find(query)
+            totalDocs = await Order.countDocuments(dataFilter);
+            orders = await Order.find(dataFilter)
                 .populate(orderPopulateOptions)
                 .sort({ workingDate: -1 }) // chỉ sort theo workingDate trong DB
                 .skip(skip)
                 .limit(limit);
         } else {
-            orders = await Order.find(query)
+            orders = await Order.find(dataFilter)
                 .populate(orderPopulateOptions)
                 .sort({ workingDate: -1 });
         }
@@ -586,7 +666,7 @@ router.get('/user', verifyToken, async (req, res, next) => {
             return nameB.localeCompare(nameA);  // DESC
         });
         req.logger.info(`✅ Đã tìm thấy ${orders.length} lệnh.`);
-        res.status(200).send({ status: 'success', data: orders , totalDocs,});
+        res.status(200).send({ status: 'success', data: orders, totalDocs, statusCounts });
 
     } catch (err) {
         req.logger.error("❌ Lỗi khi lấy danh sách lệnh", err);

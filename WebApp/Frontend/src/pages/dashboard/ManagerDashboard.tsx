@@ -510,8 +510,7 @@ const ManagerDashboard: React.FC = () => {
                                                 <TableCell>{d.code}</TableCell>
                                                 <TableCell>0</TableCell>
                                                 <TableCell>{d.assignedTo || ''}</TableCell>
-
-                                                <TableCell></TableCell>
+                                                <TableCell>{d.note || ''}</TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
