@@ -432,6 +432,7 @@ const AdminDashboard: React.FC = () => {
                     >
                         Cập nhật
                     </Button>                    <Tabs value={tabIndex} onChange={handleTabChange} sx={{ mb: 2 }}>
+
                         <Tab label="Phương tiện" icon={<ViewList />} />
                         <Tab label="Bản đồ" icon={<MapOutlined />} />
                     </Tabs>

@@ -83,12 +83,14 @@ router.get('/', verifyToken, async (req, res, next) => {
             .populate('updatedBy', 'username fullName')
             .sort({ workingDate: -1 }); // chỉ sort workingDate trong DB
 
+
         let orders;
         if (!isNaN(page) && !isNaN(limit)) {
             totalDocs = await Order.countDocuments(query);
             orders = await baseQuery.skip(skip).limit(limit);
         } else {
             orders = await baseQuery;
+
         }
 
         // ---- Sort bổ sung theo shift.name ở JS ----
@@ -549,6 +551,7 @@ router.get('/user', verifyToken, async (req, res, next) => {
             }
         }
 
+
         // Gán workingDate một lần, không bị ghi đè
         query.workingDate = {};
         if (gte) query.workingDate.$gte = gte;
@@ -573,6 +576,7 @@ router.get('/user', verifyToken, async (req, res, next) => {
                 .populate(orderPopulateOptions)
                 .sort({ workingDate: -1 });
         }
+
         orders.sort((a, b) => {
             // 1. So sánh workingDate (DESC)
             const dateA = new Date(a.workingDate);

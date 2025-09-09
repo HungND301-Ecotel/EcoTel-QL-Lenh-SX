@@ -179,6 +179,7 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
             type: 'list',
             allowBlank: true,
             formulae: ['"Vận hành xe,Vận hành gạt,Vận hành khoan,Vận hành xúc,Vận hành xe phục vụ,Vận hành sàng,Sửa chữa, bảo dưỡng, Khác"'],
+
             showErrorMessage: true,
             errorTitle: 'Giá trị không hợp lệ',
         });

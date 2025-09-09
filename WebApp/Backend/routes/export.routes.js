@@ -216,10 +216,12 @@ async function buildSheetPXVT6(req, res, next) {
             worksheet.getCell('F8').font = { bold: true };
             worksheet.getCell('H8').value = (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => { return sum + report?.travelHours }, 0) || '';
 
+
             worksheet.mergeCells('I8:J8');
             worksheet.getCell('I8').value = 'Km hoạt động trên đồng hồ';
             worksheet.getCell('I8').font = { bold: true };
             worksheet.getCell('K8').value = (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => { return sum + report?.distanceKm }, 0) || '';
+
 
 
 
@@ -454,7 +456,7 @@ async function buildSheetPXVT6(req, res, next) {
     }
 };
 
-async function buildSheetDefault(req, res, next) {
+async function buildSheetDefault(req, res, next) {  
     try {
         const { ids } = req.body; // mảng entity id
 

@@ -180,6 +180,7 @@ const Orders: React.FC = () => {
             setTotal(res.data.totalDocs);   // tổng số bản ghi từ API
         }),
 
+
     });
 
 
@@ -690,10 +691,12 @@ const Orders: React.FC = () => {
         },
     };
 
+
     const filteredOrders = React.useMemo(() => {
         if (!status) return orders;
         return orders.filter((o: Order) => o.status === status);
     }, [orders, status]);
+
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -966,6 +969,7 @@ const Orders: React.FC = () => {
                             }
                             return `${base} ${selectedRow?._id === record._id ? 'row-selected' : ''}`;
                         }} />
+
                 </Grid>
                 <Grid item xs={12} sm={3}>
                     <Box sx={{ position: 'sticky', top: 0, maxHeight: '80vh', overflowY: 'auto', border: '1px solid #ccc', borderRadius: 2, p: 2 }}>

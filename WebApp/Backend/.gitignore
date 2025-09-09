@@ -3,4 +3,5 @@ node_modules
 logs/error.log
 logs/combined.log
 logs/*.log
+
 serviceAccountKey.json

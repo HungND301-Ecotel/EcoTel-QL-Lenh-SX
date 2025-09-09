@@ -34,6 +34,7 @@ import {
     BorderRight,
     Crop169Outlined,
     Autorenew,
+
 } from '@mui/icons-material';
 import api from '../../config/api.config';
 import { Order, Device, Department, Location } from '../../types';
@@ -366,6 +367,7 @@ const ManagerDashboard: React.FC = () => {
                     >
                         Cập nhật
                     </Button>
+
                     <Tabs value={tabIndex} onChange={handleTabChange} sx={{ mb: 2 }}>
                         <Tab label="Phương tiện" icon={<ViewList />} />
                         <Tab label="Bản đồ" icon={<MapOutlined />} />

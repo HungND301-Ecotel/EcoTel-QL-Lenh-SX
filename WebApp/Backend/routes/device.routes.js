@@ -273,6 +273,7 @@ router.post('/update_status', verifyToken, restrictTo('admin', 'manager'), async
         endOfToday.setHours(23, 59, 59, 999);
         const orders = await Order.find({ workingDate: { $gte: startOfToday, $lte: endOfToday }, status: "in_progress" }).populate("device").populate("job")
 
+
         for (const order of orders) {
             if (order.device && order.device.length > 0) {
                 // Lấy device cuối cùng trong mảng
@@ -292,6 +293,7 @@ router.post('/update_status', verifyToken, restrictTo('admin', 'manager'), async
                     JobConfig.DOZER,
                     JobConfig.SIEVE,
                 ];
+
                 if (order.job?.type && operatingJobs.includes(order.job.type.toLowerCase())) {
                     newStatus = 'in_use';
                 }
