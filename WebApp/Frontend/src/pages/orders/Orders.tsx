@@ -113,7 +113,6 @@ const Orders: React.FC = () => {
         cancel: 0,
     });
 
-
     const defaultColumns = [
         { id: 'number', label: 'Số thứ tự' },
         { id: 'assignedTo', label: 'Nhân viên' },
@@ -638,7 +637,6 @@ const Orders: React.FC = () => {
             setSelectedOrders(newRows);   // lưu luôn object đầy đủ
         },
     };
-
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>

@@ -454,7 +454,7 @@ async function buildSheetPXVT6(req, res, next) {
     }
 };
 
-async function buildSheetDefault(req, res, next) {
+async function buildSheetDefault(req, res, next) {  
     try {
         const { ids } = req.body; // mảng entity id
 
