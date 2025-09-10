@@ -27,6 +27,7 @@ router.get('/', verifyToken, async (req, res, next) => {
         // ---- Bộ lọc chung ----
         if (req.query.assignedTo) query.assignedTo = { $in: Array.isArray(req.query.assignedTo) ? req.query.assignedTo.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.assignedTo)] };
         if (req.query.job) query.job = { $in: Array.isArray(req.query.job) ? req.query.job.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.job)] };
+        if (req.query.device) query.device = { $in: Array.isArray(req.query.device) ? req.query.device.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.device)] };
         if (req.query.excavator) query.excavator = { $in: Array.isArray(req.query.excavator) ? req.query.excavator.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.excavator)] };
         if (req.query.material) query.material = { $in: Array.isArray(req.query.material) ? req.query.material.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.material)] };
         if (req.query.location) query.location = { $in: Array.isArray(req.query.location) ? req.query.location.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.location)] };
