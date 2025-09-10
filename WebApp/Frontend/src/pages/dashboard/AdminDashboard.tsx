@@ -97,17 +97,6 @@ const AdminDashboard: React.FC = () => {
         }
     });
 
-    const handleUpdateDevices = useMutation({
-        mutationFn: () => api.post('/devices/update_status').then(res => res.data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['devices'] });
-            queryClient.invalidateQueries({ queryKey: ['count'] });
-        },
-        onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
-        }
-    });
-
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setTabIndex(newValue);
     };
