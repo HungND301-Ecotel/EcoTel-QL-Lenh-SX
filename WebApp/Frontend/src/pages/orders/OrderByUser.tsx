@@ -364,7 +364,7 @@ const OrderByUsers: React.FC = () => {
                                 <Grid container spacing={2}>
                                     {/* Nhân viên */}
                                     <Grid item xs={12} sm={6}>
-                                        <Typography fontWeight="bold">Nhân viên:</Typography>
+                                        <Typography fontWeight="bold">Người tạo lệnh:</Typography>
                                         <Typography>{selectedRow.createdBy?.username}</Typography>
                                     </Grid>
 
