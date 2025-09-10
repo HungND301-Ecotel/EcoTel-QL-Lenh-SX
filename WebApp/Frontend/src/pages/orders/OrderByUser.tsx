@@ -104,8 +104,8 @@ const OrderByUsers: React.FC = () => {
         cancel: 0,
     });
     const { data, isLoading } = useQuery({
-        queryKey: ['orders', page, pageSize, status, startTime, endTime, serverFilters],
-        queryFn: () => api.get(`/orders`, {
+        queryKey: ['orderByUser', page, pageSize, status, startTime, endTime, serverFilters],
+        queryFn: () => api.get(`/orders/user`, {
             params: {
                 page,
                 limit: pageSize,

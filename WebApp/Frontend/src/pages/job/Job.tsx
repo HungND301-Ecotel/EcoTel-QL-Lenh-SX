@@ -459,7 +459,7 @@ const Jobs: React.FC = () => {
                 }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>
+                            {user?.role === "admin" &&<TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>
                                 <Checkbox
                                     color="primary"
                                     checked={jobs.length > 0 && selectedJobs.length === jobs.length}
@@ -472,7 +472,7 @@ const Jobs: React.FC = () => {
                                         }
                                     }}
                                 />
-                            </TableCell>
+                            </TableCell>}
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) && (
                                     <TableCell key={col.id} align="center" sx={{
@@ -495,7 +495,7 @@ const Jobs: React.FC = () => {
                                 // Dùng chỉ mục index để tạo màu xen kẽ
                                 backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
                             }}>
-                                <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(job._id)} checked={selectedJobs.includes(job._id)} /></TableCell>
+                                {user?.role === "admin" &&<TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(job._id)} checked={selectedJobs.includes(job._id)} /></TableCell>}
                                 {visibleColumns.includes('name') && <TableCell sx={{}}>{job.name}</TableCell>}
                                 {visibleColumns.includes('category') && <TableCell align='center' sx={{}}>{job.type}</TableCell>}
                                 {user?.role === "admin" && <TableCell sx={{}}>

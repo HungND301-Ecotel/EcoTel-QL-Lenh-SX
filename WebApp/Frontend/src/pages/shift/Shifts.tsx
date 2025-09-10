@@ -312,7 +312,7 @@ const Shifts: React.FC = () => {
                     }}>
                         <TableHead>
                             <TableRow>
-                                <TableCell align="center" sx={{
+                                {user?.role === "admin" && <TableCell align="center" sx={{
                                     backgroundColor: '#f5f5f5',
                                 }}>
                                     <Checkbox
@@ -327,7 +327,7 @@ const Shifts: React.FC = () => {
                                             }
                                         }}
                                     />
-                                </TableCell>
+                                </TableCell>}
                                 {defaultColumns.map((col) =>
                                     visibleColumns.includes(col.id) && (
                                         <TableCell key={col.id} align="center" sx={{
@@ -337,7 +337,7 @@ const Shifts: React.FC = () => {
                                         </TableCell>
                                     )
                                 )}
-                                {user?.role==="admin"&&<TableCell align="center" sx={{
+                                {user?.role === "admin" && <TableCell align="center" sx={{
                                     backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 50
                                 }}>
                                     Sửa
@@ -350,7 +350,7 @@ const Shifts: React.FC = () => {
                                     // Dùng chỉ mục index để tạo màu xen kẽ
                                     backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
                                 }}>
-                                    <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(shift._id)} checked={selectedShifts.includes(shift._id)} /></TableCell>
+                                    {user?.role === "admin" && <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(shift._id)} checked={selectedShifts.includes(shift._id)} /></TableCell>}
                                     {visibleColumns.includes('name') && (
                                         <TableCell align='center' sx={{}}>{shift.name}</TableCell>
                                     )}
@@ -360,7 +360,7 @@ const Shifts: React.FC = () => {
                                     {visibleColumns.includes('endTime') && (
                                         <TableCell align='center' sx={{}}>{shift.endTime}</TableCell>
                                     )}
-                                    {user?.role==="admin" && (
+                                    {user?.role === "admin" && (
                                         <TableCell align='center' sx={{}}>
                                             <IconButton color="primary" onClick={async () => {
                                                 if (open) {
