@@ -347,15 +347,33 @@ const OrderByUsers: React.FC = () => {
                         <Typography variant="h6" sx={{ mb: 2 }}>Thông tin lệnh sản xuất</Typography>
                         {selectedRow ? (
                             <Box>
-                                <Typography><strong>Ngày:</strong> {selectedRow.workingDate ? format(new Date(selectedRow.workingDate), 'yyyy-MM-dd') : ''}</Typography>
-                                <Typography sx={{ display: 'flex', gap: 3 }}>
-                                    <Typography><strong>Nhân viên:</strong> {selectedRow.assignedTo?.fullName}</Typography>
-                                    <Typography><strong>Thẻ lương: </strong>{selectedRow.assignedTo?.salaryCode}</Typography>
-                                </Typography>
-                                <Typography sx={{ display: 'flex', gap: 2 }}>
-                                    <Typography><strong>Người tạo lệnh:</strong> {selectedRow.createdBy?.username}</Typography>
-                                    <Typography><strong>Thẻ lương: </strong>{selectedRow.createdBy?.salaryCode}</Typography>
-                                </Typography>
+                                <Typography><strong>Ngày:</strong> {selectedRow.workingDate ? format(new Date(selectedRow.workingDate), 'dd-MM-yyyy') : ''}</Typography>
+                                <Grid container spacing={2}>
+                                    {/* Nhân viên */}
+                                    <Grid item xs={12} sm={6}>
+                                        <Typography fontWeight="bold">Nhân viên:</Typography>
+                                        <Typography>{selectedRow.assignedTo?.fullName}</Typography>
+                                    </Grid>
+
+                                    {/* Thẻ lương */}
+                                    <Grid item xs={12} sm={6}>
+                                        <Typography fontWeight="bold">Thẻ lương:</Typography>
+                                        <Typography>{selectedRow.assignedTo?.salaryCode}</Typography>
+                                    </Grid>
+                                </Grid>
+                                <Grid container spacing={2}>
+                                    {/* Nhân viên */}
+                                    <Grid item xs={12} sm={6}>
+                                        <Typography fontWeight="bold">Người tạo lệnh:</Typography>
+                                        <Typography>{selectedRow.createdBy?.username}</Typography>
+                                    </Grid>
+
+                                    {/* Thẻ lương */}
+                                    <Grid item xs={12} sm={6}>
+                                        <Typography fontWeight="bold">Thẻ lương:</Typography>
+                                        <Typography>{selectedRow.createdBy?.salaryCode}</Typography>
+                                    </Grid>
+                                </Grid>
                                 <Typography><strong>Công việc:</strong> {selectedRow.job?.name}</Typography>
                                 <Typography><strong>Nội dung:</strong> {selectedRow.workContent}</Typography>
                                 <Typography><strong>Trạng thái:</strong> {

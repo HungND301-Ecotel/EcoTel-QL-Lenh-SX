@@ -899,18 +899,36 @@ const Orders: React.FC = () => {
                         {selectedRow ? (
                             <Box>
                                 <Typography sx={{ display: 'flex', gap: 3 }}>
-                                    <Typography><strong>Ngày:</strong> {selectedRow.workingDate ? format(new Date(selectedRow.workingDate), 'yyyy-MM-dd') : ''}</Typography>
+                                    <Typography><strong>Ngày:</strong> {selectedRow.workingDate ? format(new Date(selectedRow.workingDate), 'dd-MM-yyyy') : ''}</Typography>
                                     <Typography><strong>Ca:</strong> {selectedRow.shift?.name}</Typography>
                                     <Typography><strong>Giờ ca:</strong>  {selectedRow.shiftHour ?? ''}</Typography>
                                 </Typography>
-                                <Typography sx={{ display: 'flex', gap: 3 }}>
-                                    <Typography><strong>Nhân viên:</strong> {selectedRow.assignedTo?.fullName}</Typography>
-                                    <Typography><strong>Thẻ lương: </strong>{selectedRow.assignedTo?.salaryCode}</Typography>
-                                </Typography>
-                                <Typography sx={{ display: 'flex', gap: 2 }}>
-                                    <Typography><strong>Người tạo lệnh:</strong> {selectedRow.createdBy?.username}</Typography>
-                                    <Typography><strong>Thẻ lương: </strong>{selectedRow.createdBy?.salaryCode}</Typography>
-                                </Typography>
+                                <Grid container spacing={2}>
+                                    {/* Nhân viên */}
+                                    <Grid item xs={12} sm={6}>
+                                        <Typography fontWeight="bold">Nhân viên:</Typography>
+                                        <Typography>{selectedRow.assignedTo?.fullName}</Typography>
+                                    </Grid>
+
+                                    {/* Thẻ lương */}
+                                    <Grid item xs={12} sm={6}>
+                                        <Typography fontWeight="bold">Thẻ lương:</Typography>
+                                        <Typography>{selectedRow.assignedTo?.salaryCode}</Typography>
+                                    </Grid>
+                                </Grid>
+                                <Grid container spacing={2}>
+                                    {/* Nhân viên */}
+                                    <Grid item xs={12} sm={6}>
+                                        <Typography fontWeight="bold">Người tạo lệnh:</Typography>
+                                        <Typography>{selectedRow.createdBy?.username}</Typography>
+                                    </Grid>
+
+                                    {/* Thẻ lương */}
+                                    <Grid item xs={12} sm={6}>
+                                        <Typography fontWeight="bold">Thẻ lương:</Typography>
+                                        <Typography>{selectedRow.createdBy?.salaryCode}</Typography>
+                                    </Grid>
+                                </Grid>
                                 <Typography><strong>Công việc:</strong> {selectedRow.job?.name}</Typography>
                                 {selectedRow.device?.length > 0 && <Typography><strong>Phương tiện:</strong> {selectedRow.device?.map((dev: any) => dev.code).join(', ')}</Typography>}
                                 {selectedRow.excavator?.length > 0 && <Typography><strong>Máy xúc:</strong> {selectedRow.excavator?.map((dev: any) => dev.code).join(', ')}</Typography>}

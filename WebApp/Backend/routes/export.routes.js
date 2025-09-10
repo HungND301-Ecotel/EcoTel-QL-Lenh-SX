@@ -158,7 +158,7 @@ async function buildSheetPXVT6(req, res, next) {
             worksheet.getCell('B4').font = { bold: true };
             worksheet.getCell('C4').value = order.createdBy?.fullName || '';
 
-            worksheet.getCell('F4').value = 'Số thẻ';
+            worksheet.getCell('F4').value = 'Mã thẻ lương';
             worksheet.getCell('F4').font = { bold: true };
             worksheet.getCell('G4').value = order.createdBy?.salaryCode || '';
 
@@ -173,11 +173,11 @@ async function buildSheetPXVT6(req, res, next) {
             worksheet.getCell('B5').font = { bold: true };
             worksheet.getCell('C5').value = order.assignedTo?.fullName || '';
 
-            worksheet.getCell('F5').value = 'Số thẻ';
+            worksheet.getCell('F5').value = 'Mã thẻ lương';
             worksheet.getCell('F5').font = { bold: true };
             worksheet.getCell('G5').value = order.assignedTo?.salaryCode || '';
 
-            worksheet.getCell('I5').value = 'Số xe';
+            worksheet.getCell('I5').value = 'Phương tiện';
             worksheet.getCell('I5').font = { bold: true };
             worksheet.getCell('J5').value = order.device?.map(e => e.code).join(', ') || '';
 
@@ -193,7 +193,7 @@ async function buildSheetPXVT6(req, res, next) {
             worksheet.getCell('J6').value = order.excavator?.map(e => e.code).join(', ') || '';
             // 6. Bàn giao ca và Đổ tải
             // Dòng 7
-            worksheet.getCell('B7').value = 'Bàn giao ca';
+            worksheet.getCell('B7').value = 'Biện pháp an toàn';
             worksheet.getCell('B7').font = { bold: true };
             // Gộp ô cho nội dung bàn giao ca
             worksheet.getCell('C7').value = order.shiftReport?.handoverNotes || '';
@@ -203,46 +203,57 @@ async function buildSheetPXVT6(req, res, next) {
             worksheet.getCell('J7').value = order.location?.name || '';
 
             // Dòng 8
-            worksheet.getCell('B8').value = 'Giờ nhận lệnh';
+
+            worksheet.getCell('B8').value = 'Bàn giao ca';
             worksheet.getCell('B8').font = { bold: true };
-            worksheet.getCell('C8').value = order.startTime ? new Date(order.startTime).toLocaleTimeString() : "";
-
-            worksheet.getCell('D8').value = 'Giờ kết thúc';
-            worksheet.getCell('D8').font = { bold: true };
-            worksheet.getCell('E8').value = order.endTime ? new Date(order.endTime).toLocaleTimeString() : "";
-
-            worksheet.mergeCells('F8:G8');
-            worksheet.getCell('F8').value = 'Giờ hoạt động trên đồng hồ';
-            worksheet.getCell('F8').font = { bold: true };
-            worksheet.getCell('H8').value = (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => { return sum + report?.travelHours }, 0) || '';
-
-            worksheet.mergeCells('I8:J8');
-            worksheet.getCell('I8').value = 'Km hoạt động trên đồng hồ';
-            worksheet.getCell('I8').font = { bold: true };
-            worksheet.getCell('K8').value = (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => { return sum + report?.distanceKm }, 0) || '';
+            // Gộp ô cho nội dung bàn giao ca
+            worksheet.getCell('C8').value = order.shiftReport?.handoverNotes || '';
 
 
+            // Dòng 9
+            worksheet.getCell('B9').value = 'Giờ nhận lệnh';
+            worksheet.getCell('B9').font = { bold: true };
+            worksheet.getCell('C9').value = order.startTime
+                ? new Date(order.startTime).toLocaleTimeString('vi-VN', { hour12: false })
+                : "";
 
-            worksheet.mergeCells('A10:L10');
-            const product = worksheet.getCell('A10');
+            worksheet.getCell('D9').value = 'Giờ kết thúc';
+            worksheet.getCell('D9').font = { bold: true };
+            worksheet.getCell('E9').value = order.endTime
+                ? new Date(order.endTime).toLocaleTimeString('vi-VN', { hour12: false })
+                : "";
+            worksheet.mergeCells('F9:G9');
+            worksheet.getCell('F9').value = 'Giờ hoạt động trên đồng hồ';
+            worksheet.getCell('F9').font = { bold: true };
+            worksheet.getCell('H9').value = (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => { return sum + report?.travelHours }, 0) || '';
+
+            worksheet.mergeCells('I9:J9');
+            worksheet.getCell('I9').value = 'Km hoạt động trên đồng hồ';
+            worksheet.getCell('I9').font = { bold: true };
+            worksheet.getCell('K9').value = (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => { return sum + report?.distanceKm }, 0) || '';
+
+
+
+            worksheet.mergeCells('A11:L11');
+            const product = worksheet.getCell('A11');
             product.value = `I. SẢN PHẨM`;
             product.font = { bold: true, size: 14 };
             product.alignment = { horizontal: 'center', vertical: 'middle' };
 
-            worksheet.getCell('A11').value = 'STT';
-            worksheet.getCell('B11').value = 'Điểm đi';
-            worksheet.getCell('C11').value = 'Điểm đến';
-            worksheet.getCell('D11').value = 'Loại hàng';
-            worksheet.getCell('E11').value = 'Cung độ \n(km)';
-            worksheet.getCell('F11').value = 'Định mức';
-            worksheet.getCell('G11').value = 'Số chuyển \nthực hiện';
-            worksheet.getCell('H11').value = 'Thời gian \n thực hiện';
-            worksheet.getCell('I11').value = 'Nhiên liệu \n định mức';
-            worksheet.getCell('J11').value = 'Điểm lương';
-            worksheet.getCell('K11').value = 'Mức bồi dưỡng';
-            worksheet.getCell('L11').value = 'Ghi chứ';
+            worksheet.getCell('A12').value = 'STT';
+            worksheet.getCell('B12').value = 'Điểm đi';
+            worksheet.getCell('C12').value = 'Điểm đến';
+            worksheet.getCell('D12').value = 'Loại hàng';
+            worksheet.getCell('E12').value = 'Cung độ \n(km)';
+            worksheet.getCell('F12').value = 'Định mức';
+            worksheet.getCell('G12').value = 'Số chuyển \nthực hiện';
+            worksheet.getCell('H12').value = 'Thời gian \n thực hiện';
+            worksheet.getCell('I12').value = 'Nhiên liệu \n định mức';
+            worksheet.getCell('J12').value = 'Điểm lương';
+            worksheet.getCell('K12').value = 'Mức bồi dưỡng';
+            worksheet.getCell('L12').value = 'Ghi chứ';
 
-            const headerRow = worksheet.getRow(11);
+            const headerRow = worksheet.getRow(12);
             for (let col = 1; col <= 12; col++) {
                 const cell = headerRow.getCell(col);
                 cell.font = { bold: true };
@@ -259,7 +270,7 @@ async function buildSheetPXVT6(req, res, next) {
 
             for (let i = 0; i < grouped.length; i++) {
                 const g = grouped[i];
-                const rowIndex = 12 + i;
+                const rowIndex = 13 + i;
                 worksheet.getCell(`A${rowIndex}`).value = i + 1;
                 worksheet.getCell(`B${rowIndex}`).value = g.from?.name || g.from?.code || '';
                 worksheet.getCell(`C${rowIndex}`).value = g.to?.name || '';
@@ -274,8 +285,8 @@ async function buildSheetPXVT6(req, res, next) {
                 worksheet.getCell(`L${rowIndex}`).value = "";
 
             };
-            const totalRow = (grouped?.length || 0) + 13;
-            addTableBorders(worksheet, 10, totalRow + 1, 1, 12);
+            const totalRow = (grouped?.length || 0) + 14;
+            addTableBorders(worksheet, 11, totalRow + 1, 1, 12);
             worksheet.mergeCells(`A${totalRow}:B${totalRow}`);
             worksheet.getCell(`A${totalRow}`).value = 'Tổng cộng';
             worksheet.getCell(`A${totalRow}`).font = { bold: true };
@@ -550,7 +561,7 @@ async function buildSheetDefault(req, res, next) {
             worksheet.getCell('B4').font = { bold: true };
             worksheet.getCell('C4').value = order.createdBy?.fullName || '';
 
-            worksheet.getCell('F4').value = 'Số thẻ';
+            worksheet.getCell('F4').value = 'Mã thẻ lương';
             worksheet.getCell('F4').font = { bold: true };
             worksheet.getCell('G4').value = order.createdBy?.salaryCode || '';
 
@@ -565,11 +576,11 @@ async function buildSheetDefault(req, res, next) {
             worksheet.getCell('B5').font = { bold: true };
             worksheet.getCell('C5').value = order.assignedTo?.fullName || '';
 
-            worksheet.getCell('F5').value = 'Số thẻ';
+            worksheet.getCell('F5').value = 'Mã thẻ lương';
             worksheet.getCell('F5').font = { bold: true };
             worksheet.getCell('G5').value = order.assignedTo?.salaryCode || '';
 
-            worksheet.getCell('I5').value = 'Số xe';
+            worksheet.getCell('I5').value = 'Phương tiện';
             worksheet.getCell('I5').font = { bold: true };
             worksheet.getCell('J5').value = order.device?.map(e => e.code).join(', ') || '';
 
@@ -585,56 +596,68 @@ async function buildSheetDefault(req, res, next) {
             worksheet.getCell('J6').value = order.excavator?.map(e => e.code).join(', ') || '';
             // 6. Bàn giao ca và Đổ tải
             // Dòng 7
-            worksheet.getCell('B7').value = 'Bàn giao ca';
+            worksheet.getCell('B7').value = 'Biện pháp an toàn';
             worksheet.getCell('B7').font = { bold: true };
             // Gộp ô cho nội dung bàn giao ca
-            worksheet.getCell('C7').value = order.shiftReport?.handoverNotes || '';
+            worksheet.getCell('C7').value = order.safetyMeasure + " " + order.safetyMeasureSpecific || '';
 
             worksheet.getCell('I7').value = 'Đổ tải';
             worksheet.getCell('I7').font = { bold: true };
             worksheet.getCell('J7').value = order.location?.name || '';
 
             // Dòng 8
-            worksheet.getCell('B8').value = 'Giờ nhận lệnh';
+
+            worksheet.getCell('B8').value = 'Bàn giao ca';
             worksheet.getCell('B8').font = { bold: true };
-            worksheet.getCell('C8').value = order.startTime ? new Date(order.startTime).toLocaleTimeString() : "";
-
-            worksheet.getCell('D8').value = 'Giờ kết thúc';
-            worksheet.getCell('D8').font = { bold: true };
-            worksheet.getCell('E8').value = order.endTime ? new Date(order.endTime).toLocaleTimeString() : "";
-
-            worksheet.mergeCells('F8:G8');
-            worksheet.getCell('F8').value = 'Giờ hoạt động trên đồng hồ';
-            worksheet.getCell('F8').font = { bold: true };
-            worksheet.getCell('H8').value = order?.shiftReport?.vehicleSummaries.reduce((sum, report) => { return sum + report?.travelHours }, 0) || '';
-
-            worksheet.mergeCells('I8:J8');
-            worksheet.getCell('I8').value = 'Km hoạt động trên đồng hồ';
-            worksheet.getCell('I8').font = { bold: true };
-            worksheet.getCell('K8').value = order?.shiftReport?.vehicleSummaries.reduce((sum, report) => { return sum + report?.distanceKm }, 0) || '';
+            // Gộp ô cho nội dung bàn giao ca
+            worksheet.getCell('C8').value = order.shiftReport?.handoverNotes || '';
 
 
-            worksheet.mergeCells('A10:M10');
-            const product = worksheet.getCell('A10');
+            // Dòng 9
+            worksheet.getCell('B9').value = 'Giờ nhận lệnh';
+            worksheet.getCell('B9').font = { bold: true };
+            worksheet.getCell('C9').value = order.startTime
+                ? new Date(order.startTime).toLocaleTimeString('vi-VN', { hour12: false })
+                : "";
+
+            worksheet.getCell('D9').value = 'Giờ kết thúc';
+            worksheet.getCell('D9').font = { bold: true };
+            worksheet.getCell('E9').value = order.endTime
+                ? new Date(order.endTime).toLocaleTimeString('vi-VN', { hour12: false })
+                : "";
+
+            worksheet.mergeCells('F9:G9');
+            worksheet.getCell('F9').value = 'Giờ hoạt động trên đồng hồ';
+            worksheet.getCell('F9').font = { bold: true };
+            worksheet.getCell('H9').value = (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => { return sum + report?.travelHours }, 0) || '';
+
+            worksheet.mergeCells('I9:J9');
+            worksheet.getCell('I9').value = 'Km hoạt động trên đồng hồ';
+            worksheet.getCell('I9').font = { bold: true };
+            worksheet.getCell('K9').value = (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => { return sum + report?.distanceKm }, 0) || '';
+
+
+            worksheet.mergeCells('A11:M11');
+            const product = worksheet.getCell('A11');
             product.value = `I. SẢN PHẨM`;
             product.font = { bold: true, size: 14 };
             product.alignment = { horizontal: 'center', vertical: 'middle' };
 
-            worksheet.getCell('A11').value = 'STT';
-            worksheet.getCell('B11').value = 'Nhận tải';
-            worksheet.getCell('C11').value = 'Đổ tải(dừng/đỗ)';
-            worksheet.getCell('D11').value = 'Loại hàng';
-            worksheet.getCell('E11').value = 'Cung độ \ntạm tính \n(km)';
-            worksheet.getCell('F11').value = 'Chiều cao \nnâng tải \ntạm tính';
-            worksheet.getCell('G11').value = 'Số chuyển \nthực hiện';
-            worksheet.getCell('H11').value = 'Khối lượng \n tạm tính \nm3';
-            worksheet.getCell('I11').value = 'Trọng lượng \n tạm tính \n tấn';
-            worksheet.getCell('J11').value = 'Sản lượng \n tạm tính \n(tkm)';
-            worksheet.getCell('K11').value = 'Nhiên liệu \n định mức';
-            worksheet.getCell('L11').value = 'Điểm lương \n tạm tính';
-            worksheet.getCell('M11').value = 'Ghi chú';
+            worksheet.getCell('A12').value = 'STT';
+            worksheet.getCell('B12').value = 'Nhận tải';
+            worksheet.getCell('C12').value = 'Đổ tải(dừng/đỗ)';
+            worksheet.getCell('D12').value = 'Loại hàng';
+            worksheet.getCell('E12').value = 'Cung độ \ntạm tính \n(km)';
+            worksheet.getCell('F12').value = 'Chiều cao \nnâng tải \ntạm tính';
+            worksheet.getCell('G12').value = 'Số chuyển \nthực hiện';
+            worksheet.getCell('H12').value = 'Khối lượng \n tạm tính \nm3';
+            worksheet.getCell('I12').value = 'Trọng lượng \n tạm tính \n tấn';
+            worksheet.getCell('J12').value = 'Sản lượng \n tạm tính \n(tkm)';
+            worksheet.getCell('K12').value = 'Nhiên liệu \n định mức';
+            worksheet.getCell('L12').value = 'Điểm lương \n tạm tính';
+            worksheet.getCell('M12').value = 'Ghi chú';
 
-            const headerRow = worksheet.getRow(11);
+            const headerRow = worksheet.getRow(12);
             for (let col = 1; col <= 13; col++) {
                 const cell = headerRow.getCell(col);
                 cell.font = { bold: true };
@@ -650,7 +673,7 @@ async function buildSheetDefault(req, res, next) {
 
             for (let i = 0; i < grouped.length; i++) {
                 const g = grouped[i];
-                const rowIndex = 12 + i;
+                const rowIndex = 13 + i;
                 worksheet.getCell(`A${rowIndex}`).value = i + 1;
                 worksheet.getCell(`B${rowIndex}`).value = g.from?.name || g.from?.code || '';
                 worksheet.getCell(`C${rowIndex}`).value = g.to?.name || '';
@@ -666,8 +689,8 @@ async function buildSheetDefault(req, res, next) {
                 worksheet.getCell(`M${rowIndex}`).value = "";
 
             };
-            const totalRow = (grouped?.length || 0) + 13;
-            addTableBorders(worksheet, 10, totalRow + 1, 1, 13);
+            const totalRow = (grouped?.length || 0) + 14;
+            addTableBorders(worksheet, 11, totalRow + 1, 1, 13);
             worksheet.mergeCells(`A${totalRow}:B${totalRow}`);
             worksheet.getCell(`A${totalRow}`).value = 'Tổng cộng';
             worksheet.getCell(`A${totalRow}`).font = { bold: true };
