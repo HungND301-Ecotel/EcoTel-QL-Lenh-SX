@@ -97,6 +97,17 @@ const AdminDashboard: React.FC = () => {
         }
     });
 
+    const handleUpdateDevices = useMutation({
+        mutationFn: () => api.post('/devices/update_status').then(res => res.data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['devices'] });
+            queryClient.invalidateQueries({ queryKey: ['count'] });
+        },
+        onError: (error: any) => {
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
+        }
+    });
+
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setTabIndex(newValue);
     };
@@ -583,7 +594,6 @@ const AdminDashboard: React.FC = () => {
                                             <TableCell sx={{ fontWeight: 'bold', }}>Sản lượng</TableCell>
                                             <TableCell sx={{ fontWeight: 'bold', }}>Người vận hành</TableCell>
                                             <TableCell sx={{ fontWeight: 'bold', }}>Ghi chú</TableCell>
-
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
@@ -593,7 +603,6 @@ const AdminDashboard: React.FC = () => {
                                                 <TableCell>0</TableCell>
                                                 <TableCell>{d.assignedTo || ''}</TableCell>
                                                 <TableCell>{d.note || ''}</TableCell>
-
                                             </TableRow>
                                         ))}
                                     </TableBody>
