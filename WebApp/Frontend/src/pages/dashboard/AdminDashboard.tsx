@@ -18,6 +18,8 @@ import {
     TableBody,
     Popover,
     Button,
+    Snackbar,
+    Alert,
 
 } from '@mui/material';
 import {
@@ -78,6 +80,21 @@ const AdminDashboard: React.FC = () => {
     const { data: count = [] } = useQuery({
         queryKey: ['count'],
         queryFn: () => api.get('/devices/count/status').then(res => res.data.data),
+    });
+    const [alert, setAlert] = useState<{ open: boolean; message: string }>({ open: false, message: '' });
+    const showAlert = (message: string) => {
+        setAlert({ open: true, message });
+    };
+    const handleUpdateDevices = useMutation({
+        mutationFn: () => api.post('/devices/update_status').then(res => res.data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['devices'] });
+            queryClient.invalidateQueries({ queryKey: ['count'] });
+            showAlert('Cập nhật thành công')
+        },
+        onError: (error: any) => {
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
+        }
     });
 
     const handleUpdateDevices = useMutation({
@@ -144,6 +161,16 @@ const AdminDashboard: React.FC = () => {
 
     return (
         <Box>
+            <Snackbar
+                open={alert.open}
+                onClose={() => setAlert({ ...alert, open: false })}
+                autoHideDuration={4000}
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            >
+                <Alert severity="success" variant="filled" onClose={() => setAlert({ ...alert, open: false })}>
+                    {alert.message}
+                </Alert>
+            </Snackbar>
             <Typography variant="h4" gutterBottom>
                 Tổng quan
             </Typography>
