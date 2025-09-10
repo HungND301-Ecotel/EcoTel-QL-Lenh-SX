@@ -117,6 +117,16 @@ export interface Material {
     createdAt?: string;
     updatedAt?: string;
 }
+export interface TravelLog {
+    _id: string;
+    excavator?: string;
+    location?: number;
+    distance?: number;
+    startTime?: Date;
+    endTime?: Date;
+    createdAt?: string;
+    updatedAt?: string;
+}
 export interface Job {
     _id: string;
     name: string;
