@@ -909,7 +909,7 @@ export default function ShiftReport({
                 <Box>
                     <Grid container spacing={2}>
                         <Grid item xs={3}>
-                            <Typography>Giờ bàn giao ca:</Typography>
+                            <Typography>Giờ bàn giao ca (phút):</Typography>
                         </Grid>
                         <Grid item xs={9}>
                             <TextField
@@ -930,34 +930,6 @@ export default function ShiftReport({
                                     return (
                                         <Typography key={i} variant="caption" color="secondary" display="block">
                                             Nội dung: Giờ bàn giao ca: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
-                                            {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
-                                        </Typography>
-                                    );
-                                })}
-                        </Grid>
-
-                        <Grid item xs={3}>
-                            <Typography>Giờ khác:</Typography>
-                        </Grid>
-                        <Grid item xs={9}>
-                            <TextField
-                                fullWidth
-                                type="number"
-                                size="small"
-                                name="otherHours"
-                                value={shiftReportFormik.values.otherHours || ''}
-                                onChange={shiftReportFormik.handleChange}
-                            />
-                            {shiftReportHistories
-                                .filter((h: any) => h.changes.some((c: any) => c.field === 'otherHours'))
-                                .map((h: any, i: number) => {
-                                    const changesText = h.changes
-                                        .filter((c: any) => c.field === 'otherHours')
-                                        .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
-                                        .join(', ');
-                                    return (
-                                        <Typography key={i} variant="caption" color="secondary" display="block">
-                                            Nội dung: Giờ khác: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
                                             {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
                                         </Typography>
                                     );

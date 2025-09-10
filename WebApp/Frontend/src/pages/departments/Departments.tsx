@@ -314,7 +314,7 @@ const Departments = () => {
                                 }}>
                             </TextField>
                         </Box>
-                        {user?.role==="admin" &&<Box display="flex" gap={2} sx={{
+                        {user?.role === "admin" && <Box display="flex" gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -464,7 +464,7 @@ const Departments = () => {
                 }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>
+                            {user?.role === "admin" && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>
                                 <Checkbox
                                     color="primary"
                                     checked={departments.length > 0 && selectedDepartments.length === departments.length}
@@ -477,7 +477,7 @@ const Departments = () => {
                                         }
                                     }}
                                 />
-                            </TableCell>
+                            </TableCell>}
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) && (
                                     <TableCell key={col.id} align="center" sx={{
@@ -500,8 +500,8 @@ const Departments = () => {
                                 // Dùng chỉ mục index để tạo màu xen kẽ
                                 backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
                             }}>
-                                <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(department._id)} checked={selectedDepartments.includes(department._id)} /></TableCell>
-                                {visibleColumns.includes('code') && <TableCell align='center' sx={{}}>{department.code}</TableCell>}
+                                {user?.role === "admin" && <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(department._id)} checked={selectedDepartments.includes(department._id)} /></TableCell>}
+                                {visibleColumns.includes('code') && <TableCell align='center' sx={{ width: 200 }}>{department.code}</TableCell>}
                                 {visibleColumns.includes('name') && <TableCell sx={{}}>{department.name}</TableCell>}
                                 {visibleColumns.includes('description') && <TableCell sx={{}}>{department.description}</TableCell>}
                                 {user?.role === "admin" && <TableCell sx={{}}>

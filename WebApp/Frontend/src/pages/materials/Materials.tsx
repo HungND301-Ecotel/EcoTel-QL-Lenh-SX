@@ -59,7 +59,7 @@ const Materials: React.FC = () => {
     const [value, setValue] = useState("")
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
-    const [user]=useAtom(userAtom)
+    const [user] = useAtom(userAtom)
     const formRef = useRef<HTMLDivElement>(null);
     const handleSelected = (materialId: string) => {
         setSelectedMaterials(prev =>
@@ -325,7 +325,7 @@ const Materials: React.FC = () => {
                                 }}>
                             </TextField>
                         </Box>
-                        {user?.role==="admin" &&<Box display="flex" gap={2} sx={{
+                        {user?.role === "admin" && <Box display="flex" gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -465,7 +465,7 @@ const Materials: React.FC = () => {
                 }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', width: 50 }}>
+                            {user?.role === "admin" && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', width: 50 }}>
                                 <Checkbox
                                     color="primary"
                                     checked={materials.length > 0 && selectedMaterials.length === materials.length}
@@ -478,16 +478,16 @@ const Materials: React.FC = () => {
                                         }
                                     }}
                                 />
-                            </TableCell>
+                            </TableCell>}
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) &&
-                                <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18}}>{col.label}</TableCell>
+                                <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>{col.label}</TableCell>
                             )}
-                            {user?.role==="admin"&&<TableCell align="center" sx={{
-                                    backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 50
-                                }}>
-                                    Sửa
-                                </TableCell>}
+                            {user?.role === "admin" && <TableCell align="center" sx={{
+                                backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 50
+                            }}>
+                                Sửa
+                            </TableCell>}
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -496,11 +496,11 @@ const Materials: React.FC = () => {
                                 // Dùng chỉ mục index để tạo màu xen kẽ
                                 backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
                             }}>
-                                <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(material._id)} checked={selectedMaterials.includes(material._id)} /></TableCell>
+                                {user?.role === "admin" && <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(material._id)} checked={selectedMaterials.includes(material._id)} /></TableCell>}
                                 {visibleColumns.includes('name') && <TableCell sx={{}}>{material.name}</TableCell>}
                                 {visibleColumns.includes('density') && <TableCell align='center' sx={{}}>{material.density}</TableCell>}
                                 {visibleColumns.includes("mass") && <TableCell align='center' sx={{}}>{material.mass}</TableCell>}
-                                {user?.role==="admin" && <TableCell align='center' sx={{}}>
+                                {user?.role === "admin" && <TableCell align='center' sx={{}}>
                                     <IconButton color="primary" onClick={async () => {
                                         if (open) {
                                             const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');

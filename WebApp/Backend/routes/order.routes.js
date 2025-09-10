@@ -116,7 +116,7 @@ router.get('/', verifyToken, async (req, res, next) => {
             })
             .populate('createdBy', 'username fullName salaryCode')
             .populate('updatedBy', 'username fullName')
-            .sort({ workingDate: -1 });
+            .sort({ workingDate: -1, createdAt: -1 });
 
         let orders;
         if (!isNaN(page) && !isNaN(limit)) {
@@ -125,17 +125,19 @@ router.get('/', verifyToken, async (req, res, next) => {
         } else {
             orders = await baseQuery;
         }
-
-        // ---- Sort bổ sung theo shift.name ở JS ----
         orders.sort((a, b) => {
+            // 1. So sánh workingDate (DESC)
             const dateA = new Date(a.workingDate);
             const dateB = new Date(b.workingDate);
             if (dateA > dateB) return -1;
             if (dateA < dateB) return 1;
+
+            // 2. So sánh shift.name (DESC)
             const nameA = a.shift?.name ? String(a.shift.name) : "";
             const nameB = b.shift?.name ? String(b.shift.name) : "";
-            return nameB.localeCompare(nameA);
-        })
+            return nameB.localeCompare(nameA);  // DESC
+        });
+
         return res.status(200).json({
             status: 'success',
             totalDocs,
@@ -646,13 +648,13 @@ router.get('/user', verifyToken, async (req, res, next) => {
             totalDocs = await Order.countDocuments(dataFilter);
             orders = await Order.find(dataFilter)
                 .populate(orderPopulateOptions)
-                .sort({ workingDate: -1 }) // chỉ sort theo workingDate trong DB
+                .sort({ workingDate: -1, createdAt: -1 })
                 .skip(skip)
                 .limit(limit);
         } else {
             orders = await Order.find(dataFilter)
                 .populate(orderPopulateOptions)
-                .sort({ workingDate: -1 });
+                .sort({ workingDate: -1, createdAt: -1 });
         }
         orders.sort((a, b) => {
             // 1. So sánh workingDate (DESC)
