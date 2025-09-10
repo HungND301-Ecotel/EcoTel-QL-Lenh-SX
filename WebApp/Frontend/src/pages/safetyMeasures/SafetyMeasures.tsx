@@ -378,7 +378,7 @@ const SafetyMeasures: React.FC = () => {
                                 }}>
                             </TextField>
                         </Box>
-                        {user?.role==="admin" &&<Box display="flex" gap={2} sx={{
+                        {user?.role === "admin" && <Box display="flex" gap={2} sx={{
                             display: 'flex',
                             gap: 1, // Khoảng cách nhỏ hơn giữa các nút
                             flexDirection: {
@@ -560,7 +560,7 @@ const SafetyMeasures: React.FC = () => {
                 <Table sx={{ tableLayout: 'fixed', width: '100%', "& td, & th": { padding: "4px 8px" } }} >
                     <TableHead>
                         <TableRow>
-                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', width: 50 }}>
+                            {user?.role === "admin" && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', width: 50 }}>
                                 <Checkbox
                                     color="primary"
                                     checked={safetyMeasures.length > 0 && selectedSafetyMeasures.length === safetyMeasures.length}
@@ -573,7 +573,7 @@ const SafetyMeasures: React.FC = () => {
                                         }
                                     }}
                                 />
-                            </TableCell>
+                            </TableCell>}
                             {defaultColumns.map((item) =>
                                 visibleColumns.includes(item.id) && (
                                     <TableCell key={item.id} align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: item.width, minWidth: item.width }}>{item.label}</TableCell>
@@ -592,7 +592,7 @@ const SafetyMeasures: React.FC = () => {
                                 // Dùng chỉ mục index để tạo màu xen kẽ
                                 backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
                             }}>
-                                <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(safetyMeasure._id)} checked={selectedSafetyMeasures.includes(safetyMeasure._id)} /></TableCell>
+                                {user?.role === "admin" && <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(safetyMeasure._id)} checked={selectedSafetyMeasures.includes(safetyMeasure._id)} /></TableCell>}
                                 {visibleColumns.includes('number') &&
                                     <TableCell align='center' sx={{}}>{index + 1}</TableCell>
                                 }

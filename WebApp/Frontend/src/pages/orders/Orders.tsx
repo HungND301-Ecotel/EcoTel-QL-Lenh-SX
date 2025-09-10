@@ -455,7 +455,7 @@ const Orders: React.FC = () => {
         },
         {
             title: 'Phương tiện', dataIndex: 'device', key: 'device', width: 150,
-            render: (text, record) => record.device?.map((dev: any) => dev.code).join(', ') || record.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n'),
+            render: (text, record) => record.device?.map((dev: any) => dev.code).join(', ') ,
             filterSearch: true,
             filters: devices.map((d: any) => ({ text: d.code, value: d._id })),
             onFilter: undefined,

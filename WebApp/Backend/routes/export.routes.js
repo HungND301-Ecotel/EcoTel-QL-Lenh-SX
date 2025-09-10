@@ -344,20 +344,20 @@ async function buildSheetPXVT6(req, res, next) {
             for (let index = 0; index < (order.shiftReport?.vehicleSummaries?.length || 0); index++) {
                 const rep = order.shiftReport?.vehicleSummaries[index];
 
-                worksheet.getCell(`A${totalRow + 5 + index}`).value = rep?.vehicle?.code || '';
-                worksheet.getCell(`B${totalRow + 5 + index}`).value = rep?.fuelRemain || '';
-                worksheet.getCell(`C${totalRow + 5 + index}`).value = rep?.fuelReceived || '';
-                worksheet.getCell(`D${totalRow + 5 + index}`).value = rep?.fuelRemainEnd || '';
-                worksheet.getCell(`E${totalRow + 5 + index}`).value =
+                worksheet.getCell(`A${totalRow +4 + index}`).value = rep?.vehicle?.code || '';
+                worksheet.getCell(`B${totalRow +4 + index}`).value = rep?.fuelRemain || '';
+                worksheet.getCell(`C${totalRow +4 + index}`).value = rep?.fuelReceived || '';
+                worksheet.getCell(`D${totalRow +4 + index}`).value = rep?.fuelRemainEnd || '';
+                worksheet.getCell(`E${totalRow +4 + index}`).value =
                     (rep?.fuelRemain ?? 0) + (rep?.fuelReceived ?? 0) - (rep?.fuelRemainEnd ?? 0);
 
-                worksheet.getCell(`F${totalRow + 5 + index}`).value = '';
+                worksheet.getCell(`F${totalRow +4 + index}`).value = '';
 
-                worksheet.mergeCells(`H${totalRow + 5 + index}:I${totalRow + 5 + index}`);
-                worksheet.getCell(`H${totalRow + 5 + index}`).value = '';
+                worksheet.mergeCells(`H${totalRow +4 + index}:I${totalRow +4 + index}`);
+                worksheet.getCell(`H${totalRow +4 + index}`).value = '';
 
-                worksheet.mergeCells(`J${totalRow + 5 + index}:L${totalRow + 5 + index}`);
-                worksheet.getCell(`J${totalRow + 5 + index}`).value = '';
+                worksheet.mergeCells(`J${totalRow +4 + index}:L${totalRow +4 + index}`);
+                worksheet.getCell(`J${totalRow +4 + index}`).value = '';
             }
 
             worksheet.mergeCells(`A${fuelEndRow}:L${fuelEndRow}`);

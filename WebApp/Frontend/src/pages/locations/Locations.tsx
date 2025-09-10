@@ -511,7 +511,7 @@ const Locations: React.FC = () => {
                 }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>
+                            {user?.role === "admin" &&<TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>
                                 <Checkbox
                                     color="primary"
                                     checked={locations.length > 0 && selectedLocations.length === locations.length}
@@ -524,7 +524,7 @@ const Locations: React.FC = () => {
                                         }
                                     }}
                                 />
-                            </TableCell>
+                            </TableCell>}
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) && (
                                     <TableCell key={col.id} align="center" sx={{
@@ -559,7 +559,7 @@ const Locations: React.FC = () => {
                                     // Dùng chỉ mục index để tạo màu xen kẽ
                                     backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
                                 }}>
-                                    <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(loc._id)} checked={selectedLocations.includes(loc._id)} /></TableCell>
+                                    {user?.role === "admin" &&<TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(loc._id)} checked={selectedLocations.includes(loc._id)} /></TableCell>}
                                     {visibleColumns.includes('name') && <TableCell sx={{}}>{loc.name}</TableCell>}
                                     {visibleColumns.includes('coordinates') && <TableCell sx={{}}>{coordsDisplay}</TableCell>}
                                     {user?.role === "admin" && <TableCell sx={{}}>

@@ -103,11 +103,8 @@ const DispatcherOrders: React.FC = () => {
         { id: 'assignedTo', label: 'Nhân viên' },
         { id: 'salaryCode', label: 'Mã thẻ lương' },
         { id: 'workingDate', label: 'Ngày làm việc' },
-        { id: 'shiftHour', label: 'Giờ làm' },
-        { id: 'shift', label: 'Ca' },
         { id: 'job', label: 'Công việc' },
         { id: 'content', label: 'Nội dung' },
-        { id: 'device', label: 'Phương tiện' },
         { id: 'createdBy', label: 'Người tạo lệnh' },
         { id: 'createdAt', label: 'Thời gian tạo lệnh' },
         { id: 'startTime', label: 'Bắt đầu' },
@@ -616,11 +613,8 @@ const DispatcherOrders: React.FC = () => {
                                         }}>Nhân viên</TableCell>}
                                         {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{ minWidth: 130, fontWeight: 'bold', fontSize: 18 }}>Mã thẻ lương</TableCell>}
                                         {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{ minWidth: 120, fontWeight: 'bold', fontSize: 18 }}>Ngày làm việc</TableCell>}
-                                        {visibleColumns.includes('shift') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Ca</TableCell>}
-                                        {visibleColumns.includes('shiftHour') && <TableCell align='center' sx={{ minWidth: 100, fontWeight: 'bold', fontSize: 18 }}>Giờ làm</TableCell>}
                                         {visibleColumns.includes('job') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Công việc</TableCell>}
                                         {visibleColumns.includes('content') && <TableCell align='center' sx={{ minWidth: 200, fontWeight: 'bold', fontSize: 18 }}>Nội dung</TableCell>}
-                                        {visibleColumns.includes('device') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Phương tiện</TableCell>}
                                         {visibleColumns.includes('createdBy') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Người tạo lệnh</TableCell>}
                                         {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Thời gian tạo lệnh</TableCell>}
                                         {visibleColumns.includes('startTime') && <TableCell align='center' sx={{ minWidth: 120, fontWeight: 'bold', fontSize: 18 }}>Bắt đầu</TableCell>}
@@ -792,14 +786,6 @@ const DispatcherOrders: React.FC = () => {
                                                                 {order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''}
                                                             </TableCell>}
 
-                                                            {visibleColumns.includes('shift') && <TableCell align='center' sx={{}}>
-                                                                {order.shift?.name}
-                                                            </TableCell>}
-
-                                                            {visibleColumns.includes('shiftHour') && <TableCell align='center' sx={{}}>
-                                                                {order.shiftHour || ''}
-                                                            </TableCell>}
-
                                                             {visibleColumns.includes('job') && <TableCell sx={{}}>
                                                                 {order.job?.name || ''}
                                                             </TableCell>}
@@ -812,12 +798,6 @@ const DispatcherOrders: React.FC = () => {
 
                                                             }}>
                                                                 {order.workContent || ''}
-                                                            </TableCell>}
-
-                                                            {visibleColumns.includes('device') && <TableCell sx={{}}>
-                                                                <Typography whiteSpace="pre-line" fontSize={14}>
-                                                                    {order.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')}
-                                                                </Typography>
                                                             </TableCell>}
 
                                                             {visibleColumns.includes('createdBy') && <TableCell sx={{}}>
@@ -938,12 +918,35 @@ const DispatcherOrders: React.FC = () => {
                         <Typography variant="h6" sx={{ mb: 2 }}>Thông tin lệnh sản xuất</Typography>
                         {selectedRow ? (
                             <Box>
-                                <Typography><strong>Nhân viên:</strong> {selectedRow.assignedTo?.fullName}-{selectedRow.assignedTo?.salaryCode}</Typography>
-                                <Typography><strong>Ngày:</strong> {selectedRow.workingDate ? format(new Date(selectedRow.workingDate), 'yyyy-MM-dd') : ''}</Typography>
-                                <Typography><strong>Ca:</strong> {selectedRow.shift?.name}</Typography>
+                                <Typography><strong>Ngày:</strong> {selectedRow.workingDate ? format(new Date(selectedRow.workingDate), 'dd-MM-yyyy') : ''}</Typography>
+                                <Grid container spacing={2}>
+                                    {/* Nhân viên */}
+                                    <Grid item xs={12} sm={6}>
+                                        <Typography fontWeight="bold">Nhân viên:</Typography>
+                                        <Typography>{selectedRow.assignedTo?.fullName}</Typography>
+                                    </Grid>
+
+                                    {/* Thẻ lương */}
+                                    <Grid item xs={12} sm={6}>
+                                        <Typography fontWeight="bold">Thẻ lương:</Typography>
+                                        <Typography>{selectedRow.assignedTo?.salaryCode}</Typography>
+                                    </Grid>
+                                </Grid>
+                                <Grid container spacing={2}>
+                                    {/* Nhân viên */}
+                                    <Grid item xs={12} sm={6}>
+                                        <Typography fontWeight="bold">Người tạo lệnh:</Typography>
+                                        <Typography>{selectedRow.createdBy?.username}</Typography>
+                                    </Grid>
+
+                                    {/* Thẻ lương */}
+                                    <Grid item xs={12} sm={6}>
+                                        <Typography fontWeight="bold">Thẻ lương:</Typography>
+                                        <Typography>{selectedRow.createdBy?.salaryCode}</Typography>
+                                    </Grid>
+                                </Grid>
                                 <Typography><strong>Công việc:</strong> {selectedRow.job?.name}</Typography>
                                 <Typography><strong>Nội dung:</strong> {selectedRow.workContent}</Typography>
-                                <Typography><strong>Phương tiện:</strong> {selectedRow.devicesToProduce?.map((dev: any) => `${dev?.deviceType?.name}-SL:${dev?.quantity}`).join('\n')}</Typography>
                                 <Typography><strong>Trạng thái:</strong> {
                                     selectedRow.status === 'pending' ? 'Chưa nhận lệnh' :
                                         selectedRow.status === 'in_progress' ? 'Đã nhận lệnh' :

@@ -319,7 +319,7 @@ const Positions: React.FC = () => {
                                 }}>
                             </TextField>
                         </Box>
-                        {user?.role==="admin" &&<Box display="flex" gap={2} sx={{
+                        {user?.role === "admin" && <Box display="flex" gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -447,7 +447,7 @@ const Positions: React.FC = () => {
                 }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>
+                            {user?.role === "admin" && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>
                                 <Checkbox
                                     color="primary"
                                     checked={positions.length > 0 && selectedPositions.length === positions.length}
@@ -460,7 +460,7 @@ const Positions: React.FC = () => {
                                         }
                                     }}
                                 />
-                            </TableCell>
+                            </TableCell>}
                             {defaultColumns.map((col) =>
                                 visibleColumns.includes(col.id) && (
                                     <TableCell key={col.id} align="center" sx={{
@@ -483,7 +483,7 @@ const Positions: React.FC = () => {
                                 // Dùng chỉ mục index để tạo màu xen kẽ
                                 backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
                             }}>
-                                <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(position._id)} checked={selectedPositions.includes(position._id)} /></TableCell>
+                                {user?.role === "admin" && <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(position._id)} checked={selectedPositions.includes(position._id)} /></TableCell>}
                                 {visibleColumns.includes('name') && <TableCell sx={{}}>{position.name}</TableCell>}
                                 {visibleColumns.includes('note') && <TableCell sx={{
                                     whiteSpace: 'nowrap',

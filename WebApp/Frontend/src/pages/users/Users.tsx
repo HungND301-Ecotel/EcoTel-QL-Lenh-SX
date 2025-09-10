@@ -372,9 +372,9 @@ const Users: React.FC = () => {
             width: 120,
             headerAlign: 'center'
         },
-        { field: 'gender', headerName: 'Giới tính', width: 120, headerAlign: 'center',align: 'center' },
-        { field: 'phone', headerName: 'Số điện thoại', width: 150, headerAlign: 'center',align: 'center' },
-        { field: 'email', headerName: 'Email', width: 150, headerAlign: 'center',align: 'center' },
+        { field: 'gender', headerName: 'Giới tính', width: 120, headerAlign: 'center', align: 'center' },
+        { field: 'phone', headerName: 'Số điện thoại', width: 150, headerAlign: 'center', align: 'center' },
+        { field: 'email', headerName: 'Email', width: 150, headerAlign: 'center', align: 'center' },
         {
             field: 'position',
             headerName: 'Chức danh, nghề nghiệp',
@@ -569,7 +569,7 @@ const Users: React.FC = () => {
                                 />}
                             </Box>
                         </Box>
-                        {user?.role==="admin" &&<Box display="flex" gap={2} sx={{
+                        {user?.role === "admin" && <Box display="flex" gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -835,7 +835,7 @@ const Users: React.FC = () => {
                     rowsPerPageOptions={[10, 20, 50]}
                     autoHeight
                     disableSelectionOnClick
-                    checkboxSelection
+                    checkboxSelection={user?.role === "admin"}
                     isRowSelectable={(params) => params.row.role !== 'admin'}
                     onSelectionModelChange={(newSelection) => {
                         setSelectedUsers(newSelection as string[]);
