@@ -51,12 +51,14 @@ import {
     Settings,
     ExpandMore,
     FilterTiltShiftSharp,
+    Download,
+    UploadFile,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import api from '../../config/api.config';
-import { Order, Shift } from '../../types';
-import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { Device, Location, Order, Shift } from '../../types';
+import { DatePicker, DateTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 import { useSocket } from '../../hooks/useSocket';
@@ -67,14 +69,13 @@ import { userAtom } from '../../atoms/userAtoms';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { Table, TableColumnsType, TableProps } from 'antd';
 import { TableRowSelection } from 'antd/es/table/interface';
-
+import { trvelLogValidationSchema } from '../../utils/validate';
 const StyledPopper = styled(Popper)({
     '& .MuiAutocomplete-listbox': {
-        maxHeight: '200px', // Đặt chiều cao tối đa mong muốn
-        overflowY: 'auto', // Thêm thanh cuộn khi nội dung vượt quá chiều cao
+        maxHeight: '300px',
+        overflowY: 'auto',
     },
 });
-
 
 const TravelLogs: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -115,9 +116,6 @@ const TravelLogs: React.FC = () => {
         setVisibleColumns(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
     }
 
-    const handleChange = (value: string) => {
-        setStatus(prev => (prev === value ? '' : value)); // bỏ chọn nếu click lại
-    };
 
     const [serverFilters, setServerFilters] = useState<any>({});
     const { data: excavators = [] } = useQuery({
@@ -170,35 +168,78 @@ const TravelLogs: React.FC = () => {
         }
     });
 
-    const reportExcel = useMutation({
-        mutationFn: () =>
-            api.post(`/exports/order/bulk`, { ids: selectedOrders.map(o => o._id) }, {
+    const [progress, setProgress] = useState(0)
+    const [isUploading, setIsUploading] = useState(false);
+    const importFile = useMutation({
+        mutationFn: (formData: FormData) =>
+            api.post('/safetyMeasures/importFile', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+                onUploadProgress: (progressEvent) => {
+                    const percent = Math.round(
+                        (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
+                    );
+                    setProgress(percent);
+                }
+            }).then(res => res.data),
+        onMutate: () => {
+            setIsUploading(true);
+            setProgress(0); // Reset tiến trình khi bắt đầu
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['safetyMeasures'] });
+            setIsUploading(false);
+            let combinedMessage = `Import dữ liệu hoàn tất. Đã xử lý ${data.summary.totalProcessed} bản ghi.`;
+            combinedMessage += `\nĐã thêm mới: ${data.summary.insertedCount}`;
+            combinedMessage += `\nĐã cập nhật: ${data.summary.updatedCount}`;
+
+            // Thêm chi tiết lỗi nếu có
+            if (data.invalidRows && data.invalidRows.length > 0) {
+                combinedMessage += `\n\n--- CÓ LỖI XẢY RA TRONG QUÁ TRÌNH IMPORT ---`;
+                combinedMessage += `\n${data.invalidRows.length} bản ghi không hợp lệ:`;
+
+                // Liệt kê chi tiết một vài lỗi đầu tiên
+                data.invalidRows.slice(0, 5).forEach((item: any, index: number) => {
+                    combinedMessage += `\n- Dòng ${index + 1}: Lỗi "${item.error}"`;
+                });
+
+                // Thông báo nếu còn nhiều lỗi hơn
+                if (data.invalidRows.length > 5) {
+                    combinedMessage += `\n... và ${data.invalidRows.length - 5} lỗi khác.`;
+                }
+            }
+
+            showSuccessAlert(combinedMessage);
+            handleClose()
+        },
+        onError: (error: any) => {
+            setIsUploading(false);
+            showErrorAlert(error.response?.data?.message || 'Lỗi khi import');
+        }
+    });
+
+    const exportExcel = useMutation({
+        mutationFn: () => {
+            return api.post('/safetyMeasures/exportFile', {}, {
                 responseType: 'blob',
             }).then(res => {
                 const blob = new Blob([res.data], {
                     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 });
 
-                // Tạo một URL tạm từ Blob
                 const url = window.URL.createObjectURL(blob);
-                // Tạo thẻ <a> động và kích hoạt tải file
                 const link = document.createElement('a');
                 link.href = url;
-                link.setAttribute('download', '*.xlsx');
+                link.setAttribute('download', `*.xlsx`);
 
                 document.body.appendChild(link);
                 link.click();
-
-                // Dọn dẹp URL Blob và xóa thẻ <a>
                 link.parentNode?.removeChild(link);
                 window.URL.revokeObjectURL(url);
-            }),
-        onSuccess: () => {
-            showSuccessAlert('Xuất file thành công');
-            setSelectedOrders([])
+            });
         },
+        onSuccess: () => { },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
+            showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
         }
     });
 
@@ -227,6 +268,26 @@ const TravelLogs: React.FC = () => {
             showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
+
+    const formik = useFormik({
+        initialValues: {
+            excavator: undefined,
+            location: undefined,
+            distance: undefined as number | undefined,
+            startTime: '',
+            endTime: '',
+        },
+        enableReinitialize: true,
+        validationSchema: trvelLogValidationSchema,
+        onSubmit: (values) => {
+            // if (selectedMaterial) {
+            //     updateMutation.mutate({ ...values, _id: selectedMaterial._id });
+            // } else {
+            //     createMutation.mutate({ ...values });
+            // }
+        },
+    });
+
 
     const handleCancel = (order: any) => {
         if (order.status === "in_progress") {
@@ -329,7 +390,7 @@ const TravelLogs: React.FC = () => {
     }, [transfer]);
 
 
-    const orderColumns: TableProps<any>['columns'] = [
+    const trvelLogColumns: TableProps<any>['columns'] = [
         {
             title: 'STT', dataIndex: 'number', key: 'number', width: 50, align: 'center',
             render: (text, record, index) => index + 1,
@@ -353,7 +414,7 @@ const TravelLogs: React.FC = () => {
             filteredValue: serverFilters.location ?? null,
         },
         {
-            title: 'Cung độ', dataIndex: 'distance', key: 'distance', width: 170, align: 'center',
+            title: 'Cung độ (km)', dataIndex: 'distance', key: 'distance', width: 170, align: 'center',
             render: (text, record) => record.distance ?? ''
         },
         {
@@ -486,7 +547,7 @@ const TravelLogs: React.FC = () => {
     return (
         <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h3" color={'blue'}>Lệnh sản xuất</Typography>
+                <Typography variant="h3" color={'blue'}>Cung độ</Typography>
             </Box>
             <Accordion expanded={expanded} ref={formRef}>
                 <AccordionSummary
@@ -593,10 +654,167 @@ const TravelLogs: React.FC = () => {
                                 />
                             </LocalizationProvider>
                         </Box>
+
+                        <Box display="flex" gap={2} sx={{
+                            display: 'flex',
+                            gap: 1, // Khoảng cách nhỏ hơn giữa các nút
+                            flexDirection: {
+                                xs: 'column',
+                                md: 'row',
+                            },
+                            width: {
+                                xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                md: 'auto',
+                            },
+                        }}>
+                            <input
+                                id="upload-excel"
+                                type="file"
+                                accept=".xlsx, .xls"
+                                style={{ display: 'none' }}
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        const formData = new FormData();
+                                        formData.append('file', file);
+                                        importFile.mutate(formData);
+                                    }
+                                    e.target.value = "";
+                                }}
+                            />
+
+                            <label htmlFor="upload-excel">
+                                <Button
+                                    fullWidth
+                                    component="span"
+                                    variant="contained"
+                                    startIcon={<UploadFile />}
+                                >
+                                    Tải lên excel
+                                </Button>
+                            </label>
+                            <Button
+                                component="span"
+                                variant="contained"
+                                startIcon={<Download />}
+                                onClick={() => exportExcel.mutate()}
+                            >
+                                Tải xuống
+                            </Button>
+                        </Box>
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
-
+                    <AccordionDetails>
+                        <DialogTitle>Thêm cung độ</DialogTitle>
+                        <DialogContent>
+                            <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                    <Autocomplete
+                                        fullWidth
+                                        options={excavators}
+                                        getOptionLabel={(option: Device) =>
+                                            option.name || ''
+                                        }
+                                        value={excavators.find((p: any) => p._id === formik.values.excavator) || null}
+                                        onChange={(event, newValue) => {
+                                            formik.setFieldValue('excavator', newValue?._id || '');
+                                        }}
+                                        PopperComponent={StyledPopper}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                label="Máy xúc"
+                                                error={formik.touched.excavator && Boolean(formik.errors.excavator)}
+                                                helperText={formik.touched.excavator && typeof formik.errors.excavator === 'string' ? formik.errors.excavator : ''}
+                                            />
+                                        )}
+                                    />
+                                    <Autocomplete
+                                        fullWidth
+                                        options={locations}
+                                        getOptionLabel={(option: Location) =>
+                                            option.name || ''
+                                        }
+                                        value={locations.find((p: any) => p._id === formik.values.location) || null}
+                                        onChange={(event, newValue) => {
+                                            formik.setFieldValue('location', newValue?._id || '');
+                                        }}
+                                        PopperComponent={StyledPopper}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                label="Điểm đổ tải"
+                                                error={formik.touched.location && Boolean(formik.errors.location)}
+                                                helperText={formik.touched.location && typeof formik.errors.location === 'string' ? formik.errors.excavator : ''}
+                                            />
+                                        )}
+                                    />
+                                    <TextField
+                                        type="number"
+                                        fullWidth
+                                        id="distance"
+                                        name="distance"
+                                        label="Cung độ (km)"
+                                        value={formik.values.distance?.toString() ?? ''}
+                                        onChange={formik.handleChange}
+                                        error={formik.touched.distance && Boolean(formik.errors.distance)}
+                                        helperText={formik.touched.distance && formik.errors.distance}
+                                    />
+                                    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="vi">
+                                        <DateTimePicker
+                                            label="Bắt đầu"
+                                            inputFormat="DD/MM/YYYY HH:mm" // v5 vẫn hỗ trợ
+                                            value={formik.values.startTime ? dayjs(formik.values.startTime) : null}
+                                            onChange={(value) => {
+                                                formik.setFieldValue('startTime', value ? value : '');
+                                            }}
+                                            renderInput={(params) => (
+                                                <TextField
+                                                    {...params}
+                                                    fullWidth
+                                                    error={formik.touched.startTime && Boolean(formik.errors.startTime)}
+                                                    helperText={
+                                                        formik.touched.startTime && typeof formik.errors.startTime === 'string'
+                                                            ? formik.errors.startTime
+                                                            : ''
+                                                    }
+                                                />
+                                            )}
+                                        />
+                                    </LocalizationProvider>
+                                    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="vi">
+                                        <DateTimePicker
+                                            label="Kết thúc"
+                                            inputFormat="DD/MM/YYYY HH:mm" // v5 vẫn hỗ trợ
+                                            value={formik.values.endTime ? dayjs(formik.values.endTime) : null}
+                                            onChange={(value) => {
+                                                formik.setFieldValue('endTime', value ? value : '');
+                                            }}
+                                            renderInput={(params) => (
+                                                <TextField
+                                                    {...params}
+                                                    fullWidth
+                                                    error={formik.touched.endTime && Boolean(formik.errors.endTime)}
+                                                    helperText={
+                                                        formik.touched.endTime && typeof formik.errors.endTime === 'string'
+                                                            ? formik.errors.endTime
+                                                            : ''
+                                                    }
+                                                />
+                                            )}
+                                        />
+                                    </LocalizationProvider>
+                                </Box>
+                            </Box>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={handleClose}>Hủy</Button>
+                            <Button onClick={() => formik.submitForm()} variant="contained">
+                                Thêm mới
+                            </Button>
+                        </DialogActions>
+                    </AccordionDetails>
                 </AccordionDetails>
             </Accordion>
             <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
@@ -618,40 +836,36 @@ const TravelLogs: React.FC = () => {
                     ))}
                 </Menu>
             </Box>
-            <Grid container spacing={2} sx={{ mb: 2 }}>
-                <Grid item xs={12} sm={9}>
-                    <Table<any>
-                        size="small"
-                        rowKey="_id" rowSelection={rowSelection}
-                        pagination={{
-                            current: page,
-                            pageSize,
-                            total,
-                            showSizeChanger: true,
-                            pageSizeOptions: ['50', '100', '150', '200', '500'],
-                            showTotal: (total, range) => (
-                                <div style={{ flex: 1, textAlign: 'left' }}>
-                                    Hiển thị {range[0]}-{range[1]}/ {total}
-                                </div>
-                            ),
-                        }}
-                        columns={orderColumns.filter(col => col.key && visibleColumns.includes(col.key.toString()))}
-                        dataSource={orders}
-                        onChange={(pagination, filters) => {
-                            setPage(pagination.current!);      // 👈 cập nhật page
-                            setPageSize(pagination.pageSize!); // 👈 cập nhật pageSize
-                            setServerFilters(filters);         // 👈 cập nhật filters
-                        }}
-                        loading={{
-                            spinning: isLoading,
-                            tip: 'Đang tải dữ liệu...',
-                        }}
-                        scroll={{ x: 'max-content', y: 500 }}
-                        tableLayout="fixed"
-                    />
-                </Grid>
-               
-            </Grid>
+            <Table<any>
+                size="small"
+                rowKey="_id" rowSelection={rowSelection}
+                pagination={{
+                    current: page,
+                    pageSize,
+                    total,
+                    showSizeChanger: true,
+                    pageSizeOptions: ['50', '100', '150', '200', '500'],
+                    showTotal: (total, range) => (
+                        <div style={{ flex: 1, textAlign: 'left' }}>
+                            Hiển thị {range[0]}-{range[1]}/ {total}
+                        </div>
+                    ),
+                }}
+                columns={trvelLogColumns.filter(col => col.key && visibleColumns.includes(col.key.toString()))}
+                dataSource={orders}
+                onChange={(pagination, filters) => {
+                    setPage(pagination.current!);      // 👈 cập nhật page
+                    setPageSize(pagination.pageSize!); // 👈 cập nhật pageSize
+                    setServerFilters(filters);         // 👈 cập nhật filters
+                }}
+                loading={{
+                    spinning: isLoading,
+                    tip: 'Đang tải dữ liệu...',
+                }}
+                scroll={{ x: 'max-content', y: '60vh' }}
+                tableLayout="fixed"
+            />
+
         </Box >
     );
 };
