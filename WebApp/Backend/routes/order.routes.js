@@ -125,14 +125,13 @@ router.get('/', verifyToken, async (req, res, next) => {
         } else {
             orders = await baseQuery;
         }
+
+        // ---- Sort bổ sung theo shift.name ở JS ----
         orders.sort((a, b) => {
-            // 1. So sánh workingDate (DESC)
             const dateA = new Date(a.workingDate);
             const dateB = new Date(b.workingDate);
             if (dateA > dateB) return -1;
             if (dateA < dateB) return 1;
-
-            // 2. So sánh shift.name (DESC)
             const nameA = a.shift?.name ? String(a.shift.name) : "";
             const nameB = b.shift?.name ? String(b.shift.name) : "";
             return nameB.localeCompare(nameA);  // DESC
