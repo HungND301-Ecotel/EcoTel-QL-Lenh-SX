@@ -39,6 +39,7 @@ const StyledPopper = styled(Popper)({
     },
 });
 
+
 const validationSchema = yup.object({
     assignedTo: yup.string().required('Vui lòng chọn thẻ lương'),
     device: yup.array(),
