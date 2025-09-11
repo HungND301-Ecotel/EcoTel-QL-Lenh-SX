@@ -23,14 +23,9 @@ import dayjs from 'dayjs';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
+import { StyledPopper } from '../../ui/poppers';
 
 
-const StyledPopper = styled(Popper)({
-    '& .MuiAutocomplete-listbox': {
-        maxHeight: '200px', // Đặt chiều cao tối đa mong muốn
-        overflowY: 'auto', // Thêm thanh cuộn khi nội dung vượt quá chiều cao
-    },
-});
 const validationSchema = yup.object({
     usersAndDepartments: yup.array().of(
         yup.object().shape({

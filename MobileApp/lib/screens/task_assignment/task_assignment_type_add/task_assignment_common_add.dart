@@ -505,7 +505,14 @@ class _TaskAssignmentCommonAdd
                         if (selected is String &&
                             selected.trim().isNotEmpty) {
                           setState(() {
-                            _safetyController.text =
+                            // Kiểm tra nếu TextField không rỗng, thêm dấu xuống dòng
+                            if (_safetyController
+                                .text
+                                .isNotEmpty) {
+                              _safetyController.text +=
+                                  '\n';
+                            }
+                            _safetyController.text +=
                                 selected;
                           });
                         }

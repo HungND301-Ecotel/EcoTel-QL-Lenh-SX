@@ -79,6 +79,33 @@ router.get('/', verifyToken, async (req, res) => {
         });
     }
 });
+//count
+router.get('/count', verifyToken, async (req, res) => {
+    try {
+        const user = req.user;
+        const query = {};
+
+
+        if (user?.role === "manager" || user?.role === "dispatcher") {
+            query.department = user?.department?._id;
+        }
+
+
+        const count = await User.countDocuments(query);
+        req.logger.info(`✅ Lấy thành công ${count} người dùng.`);
+        res.json({
+            status: 'success',
+            data: count
+        });
+    } catch (error) {
+        req.logger.error("❌ Lỗi khi lấy danh sách người dùng", error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Lấy danh sách người dùng thất bại',
+            error: error.message
+        });
+    }
+});
 
 // Get user by ID
 router.get('/:id', verifyToken, async (req, res) => {
@@ -123,7 +150,9 @@ router.get('/getOne/salaryCodeOrName', verifyToken, async (req, res) => {
                 message: 'Thiếu tham số tìm kiếm',
             });
         }
-        const user = await User.findOne(query).populate('position', 'name');
+        const user = await User.findOne(query)
+            .populate('position', 'name')
+            .populate('department', 'code')
         if (!user) {
             req.logger.warn("⚠️ Không tìm thấy người dùng với từ khóa đã cho.");
             return res.status(404).json({

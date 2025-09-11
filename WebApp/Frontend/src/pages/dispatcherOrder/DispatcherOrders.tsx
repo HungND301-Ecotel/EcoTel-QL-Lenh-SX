@@ -65,12 +65,8 @@ import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { useSocket } from '../../hooks/useSocket';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
-const StyledPopper = styled(Popper)({
-    '& .MuiAutocomplete-listbox': {
-        maxHeight: '200px', // Đặt chiều cao tối đa mong muốn
-        overflowY: 'auto', // Thêm thanh cuộn khi nội dung vượt quá chiều cao
-    },
-});
+import { StyledPopper } from '../../ui/poppers';
+
 const DispatcherOrders: React.FC = () => {
     const [open, setOpen] = useState(false);
     const [history, setHistory] = useState(false);

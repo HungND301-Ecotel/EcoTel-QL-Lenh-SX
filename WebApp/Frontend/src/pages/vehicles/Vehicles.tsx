@@ -54,6 +54,7 @@ import LocationSelector from '../../fixLeafletIcon';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
+import { StyledPopper } from '../../ui/poppers';
 
 const containerStyle = {
     width: '100%',
@@ -65,12 +66,6 @@ const defaultCenter = {
     lng: 105.8437303,
 };
 
-const StyledPopper = styled(Popper)({
-    '& .MuiAutocomplete-listbox': {
-        maxHeight: '200px', // Đặt chiều cao tối đa mong muốn
-        overflowY: 'auto', // Thêm thanh cuộn khi nội dung vượt quá chiều cao
-    },
-});
 
 const validationSchema = yup.object({
     code: yup.string().required('Vui lòng nhập biển số'),

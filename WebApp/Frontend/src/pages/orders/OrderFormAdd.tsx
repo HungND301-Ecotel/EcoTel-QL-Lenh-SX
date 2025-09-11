@@ -25,14 +25,9 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { showConfirmAlert, showSuccessAlert } from '../../components/Alert';
 import { ContentCopy } from '@mui/icons-material';
+import { StyledPopper } from '../../ui/poppers';
 dayjs.extend(utc);
 
-const StyledPopper = styled(Popper)({
-    '& .MuiAutocomplete-listbox': {
-        maxHeight: '300px', // Đặt chiều cao tối đa mong muốn
-        overflowY: 'auto', // Thêm thanh cuộn khi nội dung vượt quá chiều cao
-    },
-});
 
 const validationSchema = yup.object({
     usersAndDevices: yup.array().of(

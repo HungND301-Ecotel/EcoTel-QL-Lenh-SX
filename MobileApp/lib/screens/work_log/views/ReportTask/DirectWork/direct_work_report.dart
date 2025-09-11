@@ -610,20 +610,6 @@ class _DirectWorkeport extends State<DirectWorkeport> {
                       ],
                     ),
                     Text(
-                      'Giờ khác(phút)',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    TextField(
-                      controller: _otherHoursController,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter
-                            .digitsOnly,
-                      ],
-                    ),
-                    Text(
                       'Tình trạng công việc',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,

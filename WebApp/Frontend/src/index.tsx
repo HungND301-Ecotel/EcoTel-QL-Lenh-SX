@@ -10,6 +10,7 @@ import './fixLeafletIcon';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import theme from './theme';
+import { ConfigProvider } from 'antd';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
@@ -19,9 +20,11 @@ const queryClient = new QueryClient();
 root.render(
   <React.StrictMode>
     <ThemeProvider theme={theme}>
-      <QueryClientProvider client={queryClient}>
-        <App />
-      </QueryClientProvider>
+      <ConfigProvider theme={{ token: { fontFamily: "'Times New Roman', Times, serif" } }}>
+        <QueryClientProvider client={queryClient}>
+          <App />
+        </QueryClientProvider>
+      </ConfigProvider>
     </ThemeProvider>
   </React.StrictMode>
 );

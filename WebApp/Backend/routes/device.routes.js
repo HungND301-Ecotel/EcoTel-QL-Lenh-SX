@@ -329,7 +329,21 @@ router.post('/update_status', verifyToken, async (req, res, next) => {
                 case "completed":
                 case "warning":
                 case "cancel":
-                    newStatus = "available";
+                    if (order.job?.type) {
+                        const type = order.job.type.toLowerCase();
+                        if (
+                            [
+                                JobConfig.VEHICLE,
+                                JobConfig.EXCAVATOR,
+                                JobConfig.SERVICE_VEHICLE,
+                                JobConfig.DRILLING,
+                                JobConfig.DOZER,
+                                JobConfig.SIEVE,
+                            ].map(j => j.toLowerCase()).includes(type)
+                        ) {
+                            newStatus = "available";
+                        }
+                    }
                     break;
 
                 default:

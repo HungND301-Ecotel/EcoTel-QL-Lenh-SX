@@ -151,6 +151,54 @@ router.get('/', verifyToken, async (req, res, next) => {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
     }
 });
+router.get('/count_status', verifyToken, async (req, res, next) => {
+    try {
+        const user = req.user;
+        const query = {};
+
+        // ---- Bộ lọc role ----
+        if (user?.role === 'manager' && user?.department) {
+            query.department = new mongoose.Types.ObjectId(user.department._id);
+        }
+        if (user?.role === 'dispatcher') {
+            const dispatcherIds = await User.find({ role: 'dispatcher' }, '_id').lean();
+            const ids = dispatcherIds.map(d => d._id);
+            query.$or = [{ department: user.department._id }, { createdBy: { $in: ids } }];
+        }
+
+
+
+        // ---- 1. Tính statusCounts (chưa filter status) ----
+        const statusAgg = await Order.aggregate([
+            { $match: query },
+            { $group: { _id: "$status", count: { $sum: 1 } } },
+        ]);
+
+        const statusCounts = {
+            all: 0,
+            pending: 0,
+            in_progress: 0,
+            warning: 0,
+            completed: 0,
+            cancel: 0,
+        };
+
+        statusAgg.forEach(s => {
+            statusCounts.all += s.count;
+            if (s._id && statusCounts.hasOwnProperty(s._id)) {
+                statusCounts[s._id] = s.count;
+            }
+        });
+
+        return res.status(200).json({
+            status: 'success',
+            statusCounts
+        });
+    } catch (err) {
+        req.logger.error('❌ Lỗi', err);
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
+    }
+});
 
 router.post('/checkExist', verifyToken, async (req, res, next) => {
     try {
@@ -365,7 +413,29 @@ router.put('/:id', verifyToken, async (req, res, next) => {
                 if (order.device && order.device.length > 0) {
                     const lastDeviceId = order.device[order.device.length - 1];
                     req.logger.info(`    - Giải phóng phương tiện cuối cùng: ${lastDeviceId}`);
-                    await Device.updateOne({ _id: lastDeviceId }, { status: "available" });
+                    let deviceStatus = null;
+
+                    if (order.job?.type) {
+                        const type = order.job.type.toLowerCase();
+                        if (
+                            [
+                                JobConfig.VEHICLE,
+                                JobConfig.EXCAVATOR,
+                                JobConfig.SERVICE_VEHICLE,
+                                JobConfig.DRILLING,
+                                JobConfig.DOZER,
+                                JobConfig.SIEVE,
+                            ].map(j => j.toLowerCase())
+                                .includes(type)
+                        ) {
+                            deviceStatus = "available";
+                        }
+                    }
+
+                    if (deviceStatus) {
+                        await Device.updateOne({ _id: lastDeviceId }, { status: deviceStatus });
+                        req.logger.info(`✅ Device ${lastDeviceId} cập nhật sang ${deviceStatus}`);
+                    }
                 }
                 break;
 
@@ -375,7 +445,29 @@ router.put('/:id', verifyToken, async (req, res, next) => {
                 if (order.device && order.device.length > 0) {
                     const lastDeviceId = order.device[order.device.length - 1];
                     req.logger.info(`    - Giải phóng phương tiện cuối cùng: ${lastDeviceId}`);
-                    await Device.updateOne({ _id: lastDeviceId }, { status: "available" });
+                    let deviceStatus = null;
+
+                    if (order.job?.type) {
+                        const type = order.job.type.toLowerCase();
+                        if (
+                            [
+                                JobConfig.VEHICLE,
+                                JobConfig.EXCAVATOR,
+                                JobConfig.SERVICE_VEHICLE,
+                                JobConfig.DRILLING,
+                                JobConfig.DOZER,
+                                JobConfig.SIEVE,
+                            ].map(j => j.toLowerCase())
+                                .includes(type)
+                        ) {
+                            deviceStatus = "available";
+                        }
+                    }
+
+                    if (deviceStatus) {
+                        await Device.updateOne({ _id: lastDeviceId }, { status: deviceStatus });
+                        req.logger.info(`✅ Device ${lastDeviceId} cập nhật sang ${deviceStatus}`);
+                    }
                 }
                 break;
             default:
@@ -389,7 +481,11 @@ router.put('/:id', verifyToken, async (req, res, next) => {
             updateObject,
             { new: true }
         )
-            .populate({ path: "assignedTo", select: "_id fullName phone salaryCode" })
+            .populate({
+                path: 'assignedTo',
+                select: 'username fullName salaryCode department',
+                populate: { path: 'department', select: 'code' },
+            })
             .populate('job', 'name type content')
             .populate('device', 'code')
             .populate('excavator', 'code')

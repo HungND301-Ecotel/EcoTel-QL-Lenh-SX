@@ -28,16 +28,10 @@ import utc from 'dayjs/plugin/utc';
 import { showErrorAlert } from '../../components/Alert';
 import { ContentCopy } from '@mui/icons-material';
 import { DesktopTimePicker } from '@mui/x-date-pickers';
-
+import { StyledPopper } from '../../ui/poppers';
 dayjs.extend(utc);
 
 
-const StyledPopper = styled(Popper)({
-    '& .MuiAutocomplete-listbox': {
-        maxHeight: '200px', // Đặt chiều cao tối đa mong muốn
-        overflowY: 'auto', // Thêm thanh cuộn khi nội dung vượt quá chiều cao
-    },
-});
 
 const validationSchema = yup.object({
     assignedTo: yup.string().required('Vui lòng chọn thẻ lương'),
