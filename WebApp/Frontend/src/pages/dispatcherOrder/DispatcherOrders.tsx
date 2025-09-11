@@ -781,7 +781,6 @@ const DispatcherOrders: React.FC = () => {
                                                             {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{}}>
                                                                 {order.workingDate ? format(new Date(order.workingDate), 'yyyy-MM-dd') : ''}
                                                             </TableCell>}
-
                                                             {visibleColumns.includes('job') && <TableCell sx={{}}>
                                                                 {order.job?.name || ''}
                                                             </TableCell>}
@@ -795,7 +794,6 @@ const DispatcherOrders: React.FC = () => {
                                                             }}>
                                                                 {order.workContent || ''}
                                                             </TableCell>}
-
                                                             {visibleColumns.includes('createdBy') && <TableCell sx={{}}>
                                                                 {order.createdBy?.username || ''}
                                                             </TableCell>}

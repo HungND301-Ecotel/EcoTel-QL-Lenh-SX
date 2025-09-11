@@ -75,6 +75,7 @@ import { StyledPopper } from '../../ui/poppers';
 import { useResizableColumns } from '../../hooks/useResizableColumns';
 import ResizableTitle from '../../components/ResizableTable/ResizableTable';
 
+
 const Orders: React.FC = () => {
     const [open, setOpen] = useState(false);
     const [history, setHistory] = useState(false);
@@ -623,6 +624,7 @@ const Orders: React.FC = () => {
 
     // 👉 truyền visibleColumns như 1 dep cho hook
     const { mergedColumns } = useResizableColumns<any>(filteredColumns, [visibleColumns]);
+
     const rowSelection: TableRowSelection<any> = {
         // AntD yêu cầu selectedRowKeys phải là mảng id
         selectedRowKeys: selectedOrders.map(o => o._id),
