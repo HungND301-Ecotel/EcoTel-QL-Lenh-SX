@@ -71,13 +71,9 @@ import { userAtom } from '../../atoms/userAtoms';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { Table, TableColumnsType, TableProps } from 'antd';
 import { TableRowSelection } from 'antd/es/table/interface';
-
-const StyledPopper = styled(Popper)({
-    '& .MuiAutocomplete-listbox': {
-        maxHeight: '200px', // Đặt chiều cao tối đa mong muốn
-        overflowY: 'auto', // Thêm thanh cuộn khi nội dung vượt quá chiều cao
-    },
-});
+import { StyledPopper } from '../../ui/poppers';
+import { useResizableColumns } from '../../hooks/useResizableColumns';
+import ResizableTitle from '../../components/ResizableTable/ResizableTable';
 
 
 const Orders: React.FC = () => {
@@ -414,7 +410,7 @@ const Orders: React.FC = () => {
             render: (text, record) => record.workingDate ? format(new Date(record.workingDate), 'yyyy-MM-dd') : ''
         },
         {
-            title: 'Ca', dataIndex: 'shift', key: 'shift', width: 50, align: 'center',
+            title: 'Ca', dataIndex: 'shift', key: 'shift', width: 70, align: 'center',
             render: (text, record) => record.shift?.name || '',
             filterSearch: true,
             filters: shifts.map((d: any) => ({ text: d.name, value: d._id })),
@@ -428,6 +424,7 @@ const Orders: React.FC = () => {
             key: 'job',
             width: 250,
             align: 'center',
+            ellipsis: true,
             render: (text, record) => record.job?.name || '',
             filterSearch: true,
             filters: jobs.map((d: any) => ({ text: d.name, value: d._id })),
@@ -438,24 +435,12 @@ const Orders: React.FC = () => {
             title: 'Nội dung',
             dataIndex: 'workContent',
             key: 'content',
-            render: (text: string) => (
-                <span
-                    style={{
-                        display: 'inline-block',
-                        width: 250,
-                        overflow: 'hidden',
-                        whiteSpace: 'nowrap',
-                        textOverflow: 'ellipsis',
-                        verticalAlign: 'middle',
-                    }}
-                >
-                    {text}
-                </span>
-            ),
+            width: 250,           // width khởi tạo, sẽ được update khi resize
+            ellipsis: true,       // để AntD tự xử lý cắt ...
         },
         {
             title: 'Phương tiện', dataIndex: 'device', key: 'device', width: 150,
-            render: (text, record) => record.device?.map((dev: any) => dev.code).join(', ') ,
+            render: (text, record) => record.device?.map((dev: any) => dev.code).join(', '),
             filterSearch: true,
             filters: devices.map((d: any) => ({ text: d.code, value: d._id })),
             onFilter: undefined,
@@ -629,6 +614,16 @@ const Orders: React.FC = () => {
             ),
         },
     ];
+
+    const filteredColumns = React.useMemo(
+        () => orderColumns.filter(
+            (col) => col.key && visibleColumns.includes(String(col.key))
+        ),
+        [orderColumns, visibleColumns]
+    );
+
+    // 👉 truyền visibleColumns như 1 dep cho hook
+    const { mergedColumns } = useResizableColumns<any>(filteredColumns, [visibleColumns]);
 
     const rowSelection: TableRowSelection<any> = {
         // AntD yêu cầu selectedRowKeys phải là mảng id
@@ -865,7 +860,8 @@ const Orders: React.FC = () => {
                                 </div>
                             ),
                         }}
-                        columns={orderColumns.filter(col => col.key && visibleColumns.includes(col.key.toString()))}
+                        columns={mergedColumns}
+                        components={{ header: { cell: ResizableTitle } }}
                         dataSource={orders}
                         onChange={(pagination, filters) => {
                             setPage(pagination.current!);      // 👈 cập nhật page
@@ -876,7 +872,7 @@ const Orders: React.FC = () => {
                             spinning: isLoading,
                             tip: 'Đang tải dữ liệu...',
                         }}
-                        scroll={{ x: 'max-content', y: 500 }}
+                        scroll={{ x: '100vw', y: 500 }}
                         tableLayout="fixed"
                         onRow={(record) => ({
                             onClick: () => setSelectedRow(record),

@@ -58,14 +58,8 @@ import { userAtom } from '../../atoms/userAtoms';
 import imageCompression from 'browser-image-compression';
 import UserHistories from '../../components/UserHistory/UserHistories';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
+import { StyledPopper } from '../../ui/poppers';
 
-
-const StyledPopper = styled(Popper)({
-    '& .MuiAutocomplete-listbox': {
-        maxHeight: '200px', // Đặt chiều cao tối đa mong muốn
-        overflowY: 'auto', // Thêm thanh cuộn khi nội dung vượt quá chiều cao
-    },
-});
 const validationSchema = yup.object({
     username: yup.string().required('Vui lòng nhập tên đăng nhập'),
     password: yup.string().when('_id', {
@@ -479,7 +473,7 @@ const Users: React.FC = () => {
         ? userColumns
         : userColumns.filter((col: GridColDef) => col.field !== 'resetpass' && col.field !== 'active' && col.field !== 'edit');
 
-
+    
     return (
         <Box>
             <Breadcrumbs aria-label="breadcrumb">

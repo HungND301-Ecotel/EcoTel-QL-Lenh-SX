@@ -59,9 +59,9 @@ const ManagerDashboard: React.FC = () => {
     const apiKey = process.env.REACT_APP_MAP_API_KEY;
 
 
-    const { data: orders = [] } = useQuery({
-        queryKey: ['orders'],
-        queryFn: () => api.get('/orders').then(res => res.data.data),
+    const { data: orderCount = { all: 0, pending: 0, in_progress: 0, warning: 0, completed: 0, cancel: 0 } } = useQuery({
+        queryKey: ['orderCount'],
+        queryFn: () => api.get('/orders/count_status').then(res => res.data.statusCounts),
     });
 
     const { data: devices = [] } = useQuery({
@@ -193,7 +193,7 @@ const ManagerDashboard: React.FC = () => {
                                         gutterBottom
                                         sx={{ fontWeight: 'bold', }}
                                     >
-                                        {orders.length}
+                                        {orderCount.all}
                                     </Typography>
                                 </Box>
                                 <Box
@@ -216,35 +216,35 @@ const ManagerDashboard: React.FC = () => {
                                         <OrderIcon color='disabled' fontSize='medium' />
                                         <Typography variant='h6' sx={{ fontWeight: 'bold', }}>Chưa nhận lệnh</Typography>
                                     </Box>
-                                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{orders.filter((o: Order) => o.status === "pending").length}</Typography>
+                                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{orderCount.pending}</Typography>
                                 </Box>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <Box display="flex" gap={2} alignItems={'center'}>
                                         <OrderIcon sx={{ color: 'green' }} fontSize='medium' />
                                         <Typography variant='h6' sx={{ fontWeight: 'bold', }}>Đã nhận lệnh</Typography>
                                     </Box>
-                                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{orders.filter((o: Order) => o.status === "in_progress").length}</Typography>
+                                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{orderCount.in_progress}</Typography>
                                 </Box>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <Box display="flex" gap={2} alignItems={'center'}>
                                         <OrderIcon color='warning' fontSize='medium' />
                                         <Typography variant='h6' sx={{ fontWeight: 'bold', }}>Lỗi</Typography>
                                     </Box>
-                                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{orders.filter((o: Order) => o.status === "warning").length}</Typography>
+                                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{orderCount.warning}</Typography>
                                 </Box>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <Box display="flex" gap={2} alignItems={'center'}>
                                         <OrderIcon color='error' fontSize='medium' />
                                         <Typography variant='h6' sx={{ fontWeight: 'bold', }}>Đã hoàn thành</Typography>
                                     </Box>
-                                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{orders.filter((o: Order) => o.status === "completed").length}</Typography>
+                                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{orderCount.completed}</Typography>
                                 </Box>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <Box display="flex" gap={2} alignItems={'center'}>
                                         <OrderIcon color='secondary' fontSize='medium' />
                                         <Typography variant='h6' sx={{ fontWeight: 'bold', }}>Đã hủy</Typography>
                                     </Box>
-                                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{orders.filter((o: Order) => o.status === "cancel").length}</Typography>
+                                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{orderCount.cancel}</Typography>
                                 </Box>
                             </Box>
                         </CardContent>

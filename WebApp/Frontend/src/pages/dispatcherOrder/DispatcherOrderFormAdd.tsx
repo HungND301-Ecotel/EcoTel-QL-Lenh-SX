@@ -28,14 +28,8 @@ import { ContentCopy } from '@mui/icons-material';
 import { v4 as uuidv4 } from 'uuid'
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
+import { StyledPopper } from '../../ui/poppers';
 dayjs.extend(utc);
-
-const StyledPopper = styled(Popper)({
-    '& .MuiAutocomplete-listbox': {
-        maxHeight: '300px', // Đặt chiều cao tối đa mong muốn
-        overflowY: 'auto', // Thêm thanh cuộn khi nội dung vượt quá chiều cao
-    },
-});
 
 const validationSchema = yup.object({
     usersAndDepartments: yup.array().of(

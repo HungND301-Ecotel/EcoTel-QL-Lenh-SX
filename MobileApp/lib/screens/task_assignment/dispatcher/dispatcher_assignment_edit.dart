@@ -28,9 +28,7 @@ class DispatcherAssignmentEdit extends StatefulWidget {
 class _DispatcherAssignmentEdit
     extends State<DispatcherAssignmentEdit> {
   DateTime? _selectedDateTime;
-  List<Map<String, dynamic>?> deviceToProduce = [];
   UserModel? user;
-  ShiftModel? _shift;
 
   @override
   void initState() {
@@ -39,32 +37,12 @@ class _DispatcherAssignmentEdit
     if (widget.order != null) {
       final order = widget.order!;
 
-      // Gán lại vehicle nếu có
-      if (order.devicesToProduce != null) {
-        for (var item in order.devicesToProduce!) {
-          deviceToProduce.add({
-            "deviceType": item.deviceType.id,
-            "quantity": item.quantity,
-          });
-          _quantityControllers.add(
-            TextEditingController(
-              text: item.quantity.toString(),
-            ),
-          );
-        }
-      }
       // Gán lại ngày làm việc nếu có
       _selectedDateTime = order.workingDate;
-      _shift = order.shift;
 
       _descriptionController.text = order.workContent ?? '';
       _noteController.text = order.note ?? '';
-    } else {
-      deviceToProduce.add({
-        "deviceType": null,
-        "quantity": null,
-      });
-    }
+    } else {}
   }
 
   Future<void> _pickDateTime() async {
@@ -88,43 +66,15 @@ class _DispatcherAssignmentEdit
     });
   }
 
-  void _updateShift(ShiftModel? selectedShift) {
-    setState(() {
-      _shift = selectedShift;
-    });
-  }
-
   final TextEditingController _descriptionController =
       TextEditingController();
   final TextEditingController _noteController =
       TextEditingController();
-  List<TextEditingController> _quantityControllers = [];
   final OrderService _orderService = OrderService();
 
   void createOrders() async {
     String description = _descriptionController.text.trim();
     String note = _noteController.text.trim();
-    List<Map<String, dynamic>> validDevices =
-        deviceToProduce
-            .where(
-              (item) =>
-                  item?['deviceType'] != null &&
-                  item?['quantity'] != null,
-            )
-            .cast<Map<String, dynamic>>()
-            .toList();
-
-    // if (validDevices.isEmpty) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     const SnackBar(
-    //       content: Text(
-    //         "Vui lòng nhập ít nhất một phương tiện và số lượng.",
-    //       ),
-    //       backgroundColor: Colors.red,
-    //     ),
-    //   );
-    //   return;
-    // }
 
     var result = await _orderService
         .update(widget.order!.id, {
@@ -135,8 +85,6 @@ class _DispatcherAssignmentEdit
                 _selectedDateTime!.month,
                 _selectedDateTime!.day,
               ).toIso8601String(),
-          "shift": _shift?.id,
-          "devicesToProduce": validDevices,
           "assignedTo": user?.id,
           "workContent": description,
           "status": "in_progress",
@@ -184,83 +132,23 @@ class _DispatcherAssignmentEdit
                   initialPayroll:
                       widget.order?.assignedTo.salaryCode,
                 ),
-                IconButton(
-                  onPressed: () {
-                    setState(() {
-                      deviceToProduce.add({
-                        "deviceType": null,
-                        "quantity": null,
-                      });
-                      _quantityControllers.add(
-                        TextEditingController(),
-                      );
-                    });
-                  },
-                  icon: Icon(
-                    Icons.add_circle,
-                    color: Colors.blue,
+                Text(
+                  'Đơn vị',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                for (
-                  int i = 0;
-                  i < deviceToProduce.length;
-                  i++
-                )
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          children: [
-                            Text(
-                              'Loại phương tiện',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            DeviceTypeButton(
-                              deviceType:
-                                  deviceToProduce[i]?["deviceType"],
-                              onSelectDeviceType: (
-                                selected,
-                              ) {
-                                setState(() {
-                                  deviceToProduce[i]?["deviceType"] =
-                                      selected;
-                                });
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: Column(
-                          children: [
-                            Text(
-                              'Số lượng',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            TextField(
-                              controller:
-                                  _quantityControllers[i],
-                              keyboardType:
-                                  TextInputType.number,
-                              onChanged:
-                                  (value) => {
-                                    setState(() {
-                                      deviceToProduce[i]?["quantity"] =
-                                          int.tryParse(
-                                            value,
-                                          );
-                                    }),
-                                  },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                TextFormField(
+                  initialValue:
+                      widget
+                          .order
+                          ?.assignedTo
+                          .department
+                          ?.code ??
+                      '',
+                  readOnly: true,
+                  enableInteractiveSelection: false,
+                ),
                 Text(
                   'Ngày',
                   style: TextStyle(
@@ -272,16 +160,6 @@ class _DispatcherAssignmentEdit
                   onPressed: _pickDateTime,
                 ),
                 Text(
-                  'Ca làm việc',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                ShiftSelect(
-                  initialShift: _shift,
-                  onSelected: _updateShift,
-                ),
-                Text(
                   'Nội dung công việc',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
@@ -289,17 +167,6 @@ class _DispatcherAssignmentEdit
                 ),
                 TextField(
                   controller: _descriptionController,
-                  maxLines: null,
-                  minLines: 5,
-                ),
-                Text(
-                  'Nội dung bàn giao ca ',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                TextField(
-                  controller: _noteController,
                   maxLines: null,
                   minLines: 5,
                 ),

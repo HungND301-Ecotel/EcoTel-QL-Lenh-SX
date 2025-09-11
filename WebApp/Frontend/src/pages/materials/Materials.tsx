@@ -60,6 +60,7 @@ const Materials: React.FC = () => {
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
     const [user] = useAtom(userAtom)
+
     const formRef = useRef<HTMLDivElement>(null);
     const handleSelected = (materialId: string) => {
         setSelectedMaterials(prev =>
