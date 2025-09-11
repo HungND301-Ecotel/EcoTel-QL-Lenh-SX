@@ -304,12 +304,12 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                                             />
                                         </Grid>
 
-                                        {["Vận hành xe", "Vận hành xúc", "Vận hành gạt", "Vận hành khoan", "Vận hành sàng", "Vận hành xe phục vụ", "Sửa chữa, bảo dưỡng"].includes(selectedJob?.type ?? "") && <Grid item xs={5}>
+                                        {["Vận hành xe", "Vận hành xúc", "Vận hành gạt", "Vận hành khoan", "Vận hành sàng", "Vận hành xe phục vụ", "Sửa chữa, bảo dưỡng", "Vận hành bơm"].includes(selectedJob?.type ?? "") && <Grid item xs={5}>
                                             < Autocomplete
                                                 fullWidth
                                                 options={devices}
                                                 getOptionLabel={(option: Device) => option.code || ''}
-                                                value={devices.find((d: Device) => d._id === item.device[0]) || []}
+                                                value={devices.find((d: Device) => d._id === item.device[0]) || null}
                                                 onChange={(event, newValue) => {
                                                     formik.setFieldValue(`usersAndDevices[${index}].device`, newValue?._id ? [newValue?._id] : []);
                                                 }}
