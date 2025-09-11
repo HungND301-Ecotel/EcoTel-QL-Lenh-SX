@@ -53,7 +53,7 @@ const validationSchema = yup.object({
     name: yup.string().required('Vui lòng nhập tên công việc'),
     type: yup
         .string()
-        .oneOf(['Vận hành xe', 'Vận hành khoan', 'Vận hành xe phục vụ', 'Vận hành gạt', 'Vận hành xúc', 'Vận hành sàng', 'Sửa chữa, bảo dưỡng', 'Khác'])
+        .oneOf(['Vận hành xe', 'Vận hành khoan', 'Vận hành xe phục vụ', 'Vận hành gạt', 'Vận hành xúc', 'Vận hành sàng', 'Sửa chữa, bảo dưỡng', 'Vận hành bơm', 'Khác'])
         .required('Vui lòng chọn loại công việc'),
 });
 
@@ -401,6 +401,7 @@ const Jobs: React.FC = () => {
                                     <MenuItem value="Vận hành xúc">Vận hành xúc</MenuItem>
                                     <MenuItem value="Vận hành sàng">Vận hành sàng</MenuItem>
                                     <MenuItem value="Sửa chữa, bảo dưỡng">Sửa chữa, bảo dưỡng</MenuItem>
+                                    <MenuItem value="Vận hành bơm">Vận hành bơm</MenuItem>
                                     <MenuItem value="Khác">Khác</MenuItem>
                                 </TextField>
                             </Box>
@@ -459,7 +460,7 @@ const Jobs: React.FC = () => {
                 }}>
                     <TableHead>
                         <TableRow>
-                            {user?.role === "admin" &&<TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>
+                            {user?.role === "admin" && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>
                                 <Checkbox
                                     color="primary"
                                     checked={jobs.length > 0 && selectedJobs.length === jobs.length}
@@ -495,7 +496,7 @@ const Jobs: React.FC = () => {
                                 // Dùng chỉ mục index để tạo màu xen kẽ
                                 backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
                             }}>
-                                {user?.role === "admin" &&<TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(job._id)} checked={selectedJobs.includes(job._id)} /></TableCell>}
+                                {user?.role === "admin" && <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(job._id)} checked={selectedJobs.includes(job._id)} /></TableCell>}
                                 {visibleColumns.includes('name') && <TableCell sx={{}}>{job.name}</TableCell>}
                                 {visibleColumns.includes('category') && <TableCell align='center' sx={{}}>{job.type}</TableCell>}
                                 {user?.role === "admin" && <TableCell sx={{}}>
