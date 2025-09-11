@@ -392,6 +392,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
                                 JobConfig.DRILLING,
                                 JobConfig.DOZER,
                                 JobConfig.SIEVE,
+                                JobConfig.PUMP,
                             ].map(j => j.toLowerCase())
                                 .includes(type)
                         ) {
@@ -425,6 +426,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
                                 JobConfig.DRILLING,
                                 JobConfig.DOZER,
                                 JobConfig.SIEVE,
+                                JobConfig.PUMP,
                             ].map(j => j.toLowerCase())
                                 .includes(type)
                         ) {
@@ -457,6 +459,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
                                 JobConfig.DRILLING,
                                 JobConfig.DOZER,
                                 JobConfig.SIEVE,
+                                JobConfig.PUMP,
                             ].map(j => j.toLowerCase())
                                 .includes(type)
                         ) {

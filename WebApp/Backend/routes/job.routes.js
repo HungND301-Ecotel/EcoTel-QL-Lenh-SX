@@ -181,7 +181,7 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
         worksheet.dataValidations.add(`B2:B${MAX}`, {
             type: 'list',
             allowBlank: true,
-            formulae: ['"Vận hành xe,Vận hành gạt,Vận hành khoan,Vận hành xúc,Vận hành xe phục vụ,Vận hành sàng,Sửa chữa, bảo dưỡng, Khác"'],
+            formulae: ['"Vận hành xe,Vận hành gạt,Vận hành khoan,Vận hành xúc,Vận hành xe phục vụ,Vận hành sàng,Sửa chữa, bảo dưỡng,Vận hành bơm, Khác"'],
             showErrorMessage: true,
             errorTitle: 'Giá trị không hợp lệ',
         });

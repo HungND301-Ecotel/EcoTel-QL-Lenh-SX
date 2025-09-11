@@ -319,6 +319,7 @@ router.post('/update_status', verifyToken, async (req, res, next) => {
                                 JobConfig.DRILLING,
                                 JobConfig.DOZER,
                                 JobConfig.SIEVE,
+                                JobConfig.PUMP,
                             ].map(j => j.toLowerCase()).includes(type)
                         ) {
                             newStatus = "in_use";
@@ -339,6 +340,7 @@ router.post('/update_status', verifyToken, async (req, res, next) => {
                                 JobConfig.DRILLING,
                                 JobConfig.DOZER,
                                 JobConfig.SIEVE,
+                                JobConfig.PUMP,
                             ].map(j => j.toLowerCase()).includes(type)
                         ) {
                             newStatus = "available";

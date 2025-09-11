@@ -28,10 +28,16 @@ import utc from 'dayjs/plugin/utc';
 import { showErrorAlert } from '../../components/Alert';
 import { ContentCopy } from '@mui/icons-material';
 import { DesktopTimePicker } from '@mui/x-date-pickers';
-import { StyledPopper } from '../../ui/poppers';
+import { MultiSelectField } from '../../components/MultiSelectField';
+// import { StyledPopper } from '../../ui/poppers';
 dayjs.extend(utc);
 
-
+const StyledPopper = styled(Popper)({
+    '& .MuiAutocomplete-listbox': {
+        maxHeight: '200px',
+        overflowY: 'auto',
+    },
+});
 
 const validationSchema = yup.object({
     assignedTo: yup.string().required('Vui lòng chọn thẻ lương'),
@@ -181,27 +187,6 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
         },
     });
 
-    const initialDeviceIds = useMemo(() => {
-        return Array.isArray(initialValues.device)
-            ? initialValues.device.map((d: any) => typeof d === 'object' ? d._id : d)
-            : [];
-    }, [initialValues.device]);
-
-    const initialExcavatorIds = useMemo(() => {
-        return Array.isArray(initialValues.excavator)
-            ? initialValues.excavator.map((d: any) => typeof d === 'object' ? d._id : d)
-            : [];
-    }, [initialValues.excavator]);
-    const initialLocationIds = useMemo(() => {
-        return Array.isArray(initialValues.location)
-            ? initialValues.location.map((d: any) => typeof d === 'object' ? d._id : d)
-            : [];
-    }, [initialValues.location]);
-    const initialMaterialIds = useMemo(() => {
-        return Array.isArray(initialValues.material)
-            ? initialValues.material.map((d: any) => typeof d === 'object' ? d._id : d)
-            : [];
-    }, [initialValues.material]);
 
     return (
 
@@ -231,38 +216,7 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                     />
                 </Grid>
                 {selectedJob?.type === "Vận hành xe" && <Grid item xs={12}>
-                    <Autocomplete
-                        fullWidth
-                        multiple // 👈 Cho phép chọn nhiều
-                        options={excavators}
-                        getOptionLabel={(option: Device) => option.code || ''}
-                        value={excavators.filter((p: any) => formik.values.excavator?.includes(p._id))}
-                        onChange={(event, newValue) => {
-                            const selectedIds = newValue.map((item: any) => item._id);
-                            const hasDeletedInitial = initialExcavatorIds.some((id: String) => !selectedIds.includes(id));
-                            if (hasDeletedInitial) {
-                                return;
-                            }
-                            // if (formik.values.device.length > 1 && selectedIds.length > 1) {
-                            //     showErrorAlert('Chỉ nên bổ sung máy xúc khi chỉ có một phương tiện.');
-                            //     return;
-                            // }
-                            formik.setFieldValue('excavator', selectedIds);
-                        }}
-                        PopperComponent={StyledPopper}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                label="Máy xúc"
-                                error={formik.touched.excavator && Boolean(formik.errors.excavator)}
-                                helperText={
-                                    formik.touched.excavator && typeof formik.errors.excavator === 'string'
-                                        ? formik.errors.excavator
-                                        : ''
-                                }
-                            />
-                        )}
-                    />
+                    <MultiSelectField title="Máy xúc" fieldName="excavator" options={excavators} formik={formik} initData={initialValues} labelKey="code" />
                 </Grid>}
                 <Grid item xs={6}>
                     <Autocomplete
@@ -287,36 +241,8 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                     />
                 </Grid>
 
-                {["Vận hành xe", "Vận hành xúc", "Vận hành gạt", "Vận hành khoan", "Vận hành sàng", "Vận hành xe phục vụ", "Sửa chữa, bảo dưỡng"].includes(selectedJob?.type ?? "") && <Grid item xs={6}>
-                    <Autocomplete
-                        fullWidth
-                        multiple
-                        options={devices}
-                        getOptionLabel={(option: any) =>
-                            option.code || ''
-                        }
-                        value={devices.filter((d: any) =>
-                            formik.values.device.includes(d._id)
-                        )}
-                        onChange={(event, newValue) => {
-                            const selectedIds = newValue.map((item: any) => item._id);
-                            const hasDeletedInitial = initialDeviceIds.some((id: String) => !selectedIds.includes(id));
-                            if (hasDeletedInitial) {
-                                return;
-                            }
-
-                            formik.setFieldValue('device', selectedIds);
-                        }}
-                        PopperComponent={StyledPopper}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                label="Phương tiện"
-                                error={formik.touched.device && Boolean(formik.errors.device)}
-                                helperText={formik.touched.device && typeof formik.errors.device === 'string' ? formik.errors.device : ''}
-                            />
-                        )}
-                    />
+                {["Vận hành xe", "Vận hành xúc", "Vận hành gạt", "Vận hành khoan", "Vận hành sàng", "Vận hành xe phục vụ", "Sửa chữa, bảo dưỡng", "Vận hành bơm"].includes(selectedJob?.type ?? "") && <Grid item xs={6}>
+                    <MultiSelectField title="Phương tiện" fieldName="device" options={devices} formik={formik} initData={initialValues} labelKey="code" />
                 </Grid>}
 
                 <Grid item xs={12} sm={6}>
@@ -400,67 +326,11 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                     </LocalizationProvider>
                 </Grid>
                 {['Vận hành sàng', "Vận hành xe"].includes(selectedJob?.type ?? '') && <Grid item xs={12} sm={6}>
-                    <Autocomplete
-                        fullWidth
-                        multiple
-                        options={locations}
-                        getOptionLabel={(option: Location) =>
-                            option.name || ''
-                        }
-                        value={locations.filter((d: any) =>
-                            formik.values.location.includes(d._id)
-                        )}
-                        onChange={(event, newValue) => {
-                            const selectedIds = newValue.map((item: any) => item._id);
-                            const hasDeletedInitial = initialLocationIds.some((id: String) => !selectedIds.includes(id));
-                            if (hasDeletedInitial) {
-                                return;
-                            }
-
-                            formik.setFieldValue('location', selectedIds);
-                        }}
-                        PopperComponent={StyledPopper}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                label="Điểm đổ"
-                                error={formik.touched.location && Boolean(formik.errors.location)}
-                                helperText={formik.touched.location && typeof formik.errors.location === 'string' ? formik.errors.location : ''}
-                            />
-                        )}
-                    />
+                    <MultiSelectField title="Điểm đổ tải" fieldName="location" options={locations} formik={formik} initData={initialValues} labelKey="name" />
                 </Grid>}
 
                 {selectedJob?.type === "Vận hành xe" && <Grid item xs={12} sm={6}>
-                    <Autocomplete
-                        fullWidth
-                        multiple
-                        options={materials}
-                        getOptionLabel={(option: Material) =>
-                            option.name || ''
-                        }
-                        value={materials.filter((d: any) =>
-                            formik.values.material.includes(d._id)
-                        )}
-                        onChange={(event, newValue) => {
-                            const selectedIds = newValue.map((item: any) => item._id);
-                            const hasDeletedInitial = initialMaterialIds.some((id: String) => !selectedIds.includes(id));
-                            if (hasDeletedInitial) {
-                                return;
-                            }
-
-                            formik.setFieldValue('material', selectedIds);
-                        }}
-                        PopperComponent={StyledPopper}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                label="Loại vật liệu"
-                                error={formik.touched.material && Boolean(formik.errors.material)}
-                                helperText={formik.touched.material && typeof formik.errors.material === 'string' ? formik.errors.material : ''}
-                            />
-                        )}
-                    />
+                    <MultiSelectField title="Loại vật liệu" fieldName="material" options={materials} formik={formik} initData={initialValues} labelKey="name" />
                 </Grid>}
 
                 <Grid item xs={12}>
