@@ -53,7 +53,6 @@ import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import { StyledPopper } from '../../ui/poppers';
 
-
 const validationSchema = yup.object({
     name: yup.string().required('Tên biện pháp an toàn chung'),
     content: yup.string().required('Nhập nội dung'),
