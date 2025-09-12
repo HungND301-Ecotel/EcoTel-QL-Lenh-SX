@@ -27,12 +27,12 @@ export default function CarTripReportTable({
                         <TableHead>
                             <TableRow>
                                 <TableCell align='center' sx={{ width: 60 }}>STT</TableCell>
-                                <TableCell align='center'>Người ra lệnh</TableCell>
-                                <TableCell align='center' sx={{ width: 180 }}>Thẻ lương công nhân</TableCell>
-                                <TableCell align='center' sx={{ width: 200 }}>Đơn vị</TableCell>
-                                <TableCell align='center' sx={{ width: 160 }}>Biển số ô tô</TableCell>
-                                <TableCell align='center' sx={{ width: 160 }}>Vật liệu</TableCell>
-                                <TableCell align='center' sx={{ width: 120 }}>Số chuyến</TableCell>
+                                <TableCell align='center'>Người tạo lệnh</TableCell>
+                                <TableCell align='center' sx={{ width: "20%" }}>Công nhân</TableCell>
+                                <TableCell align='center' sx={{ width: "20%" }}>Đơn vị</TableCell>
+                                <TableCell align='center' sx={{ width: "10%" }}>Biển số ô tô</TableCell>
+                                <TableCell align='center' sx={{ width: "10%" }}>Vật liệu</TableCell>
+                                <TableCell align='center' sx={{ width: "10%" }}>Số chuyến</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
