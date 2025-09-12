@@ -140,7 +140,7 @@ router.get('/getOne/salaryCodeOrName', verifyToken, async (req, res) => {
         if (req.query.q) {
             const regex = new RegExp(req.query.q, 'i');
             query.$or = [
-                { salaryCode: regex },
+                { salaryCode: req.query.q },
                 { fullName: regex },
             ];
         } else {
