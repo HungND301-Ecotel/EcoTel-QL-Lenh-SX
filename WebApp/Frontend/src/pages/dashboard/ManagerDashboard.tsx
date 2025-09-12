@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     Grid,
-    Paper,
     Typography,
     Box,
     Card,
@@ -10,16 +9,19 @@ import {
     Tooltip,
     Tabs,
     Tab,
-    Table,
+    Paper,
     TableContainer,
+    Table,
+    TableRow,
     TableHead,
     TableCell,
-    TableRow,
     TableBody,
     Popover,
     Button,
     Snackbar,
     Alert,
+    TextField,
+    Autocomplete,
 
 } from '@mui/material';
 import {
@@ -28,36 +30,38 @@ import {
     AccessTime as ShiftIcon,
     Business as DepartmentIcon,
     Person2,
-    TableBar,
-    MapOutlined,
-    Grid3x3,
-    Grid3x3Sharp,
     ViewList,
-    BorderRight,
-    Crop169Outlined,
+    MapOutlined,
     Autorenew,
 } from '@mui/icons-material';
 import api from '../../config/api.config';
 import { Order, Device, Department, Location } from '../../types';
-// import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { customIcon } from '../../fixLeafletIcon'
 import { showErrorAlert } from '../../components/Alert';
+import GoogleMap from './GoogleMap';
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { StyledPopper } from '../../ui/poppers';
+import dayjs, { Dayjs } from 'dayjs';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
-const containerStyle = {
-    width: '100%',
-    height: '70vh',
-};
-const defaultCenter = {
-    lat: 20.9926575,
-    lng: 105.8437303,
-};
+
 
 const ManagerDashboard: React.FC = () => {
-    const [mapCoords, setMapCoords] = useState<{ lat: number, lng: number; } | null>(null);
     const [tabIndex, setTabIndex] = useState(0);
-    const apiKey = process.env.REACT_APP_MAP_API_KEY;
+    const [department, setDepartment] = useState("");
+    const [startTime, setStartTime] = useState<Dayjs | null>(null);
+    const [endTime, setEndTime] = useState<Dayjs | null>(null);
 
+    const productions = [
+        { key: "SLD", name: "Sản lượng đất thực hiện (m3)" },
+        { key: "SLT", name: "Sản lượng than nguyên khai (m3)" },
+        { key: "MKS", name: "Mét khoan sâu (m3)" },
+        { key: "KLD", name: "Khối lượng vận chuyển đất (Tkm)" },
+        { key: "KLT", name: "Khối lượng vận chuyển than" },
+        { key: "TTK", name: "Thể tích khối thực hiện" },
+        { key: "CD", name: "Cung độ thực hiện" },
+    ]
+
+    const queryClient = useQueryClient();
 
     const { data: orderCount = { all: 0, pending: 0, in_progress: 0, warning: 0, completed: 0, cancel: 0 } } = useQuery({
         queryKey: ['orderCount'],
@@ -68,24 +72,19 @@ const ManagerDashboard: React.FC = () => {
         queryKey: ['devices'],
         queryFn: () => api.get('/devices').then(res => res.data.data),
     });
-    const { data: locations = [] } = useQuery({
-        queryKey: ['locations'],
-        queryFn: () => api.get('/locations').then(res => res.data.data),
-    });
 
-    const { data: count = [] } = useQuery({
-        queryKey: ['count'],
+    const { data: departments = [] } = useQuery({
+        queryKey: ['departments'],
+        queryFn: () => api.get('/departments').then(res => res.data.data),
+    });
+    const { data: userCount = 0 } = useQuery({
+        queryKey: ['userCount'],
+        queryFn: () => api.get('/users/count').then(res => res.data.data),
+    });
+    const { data: deviceCount = [] } = useQuery({
+        queryKey: ['deviceCount'],
         queryFn: () => api.get('/devices/count/status').then(res => res.data.data),
     });
-    const departments: string[] = Array.from(
-        new Set(
-            count.flatMap((c: any) =>
-                c.organizations.map((o: any) => o.departmentName)
-            )
-        )
-    );
-    const queryClient = useQueryClient();
-
     const [alert, setAlert] = useState<{ open: boolean; message: string }>({ open: false, message: '' });
     const showAlert = (message: string) => {
         setAlert({ open: true, message });
@@ -102,7 +101,6 @@ const ManagerDashboard: React.FC = () => {
         }
     });
 
-
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setTabIndex(newValue);
     };
@@ -116,14 +114,16 @@ const ManagerDashboard: React.FC = () => {
 
 
     const getDevicesByStatusGrouped = (status: string) => {
-        // Gom theo typeName
-        return count.map((type: any) => {
-            const total = type.organizations.reduce((sum: number, org: any) => {
-                return sum + (org.statusCounts[status] || 0);
-            }, 0);
+        const map = new Map<string, number>();
 
-            return { typeName: type.typeName, total };
+        deviceCount.forEach((group: any) => {
+            group.deviceTypes.forEach((device: any) => {
+                const current = map.get(device.typeName) || 0;
+                map.set(device.typeName, current + (device.statusCounts?.[status] ?? 0));
+            });
         });
+
+        return Array.from(map, ([typeName, total]) => ({ typeName, total }));
     };
 
     const handleSummaryClick = (event: React.MouseEvent<HTMLElement>, status: string) => {
@@ -140,19 +140,19 @@ const ManagerDashboard: React.FC = () => {
     const handleDetailClick = (
         event: React.MouseEvent<HTMLElement>,
         status: string,
-        departmentId: string,
+        departmentCode: string,
         typeName: string
     ) => {
-        console.log("Detail Clicked:", { status, departmentId, typeName });
         setAnchorElDetail(event.currentTarget);
         setSelectedDetailDevices(devices.filter((d: any) =>
-            d.status === status && d.department?.code === departmentId && d.category?.name === typeName
+            d.status === status && d.department?.code === departmentCode && d.category?.name === typeName
         ));
     };
     const handleDetailClose = () => {
         setAnchorElDetail(null);
         setSelectedDetailDevices([]);
     };
+
 
     return (
         <Box>
@@ -312,6 +312,7 @@ const ManagerDashboard: React.FC = () => {
                                     <Box display="flex" gap={2} alignItems={'center'}>
                                         <DeviceIcon color='warning' fontSize='medium' />
                                         <Typography variant='h6' onClick={(e) => handleSummaryClick(e, "maintenance")} sx={{ fontWeight: 'bold', cursor: 'pointer' }}>SC; BD</Typography>
+
                                     </Box>
                                     <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{devices.filter((o: Device) => o.status === "maintenance").length}</Typography>
                                 </Box>
@@ -325,39 +326,39 @@ const ManagerDashboard: React.FC = () => {
                             </Box>
                         </CardContent>
                     </Card>
-                </Grid>
-                <Popover
-                    open={Boolean(anchorElSummary)}
-                    anchorEl={anchorElSummary}
-                    onClose={handleSummaryClose}
-                    anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-                >
-                    <Box sx={{ p: 2, maxHeight: 300, overflowY: 'auto' }}>
-                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', }}>Danh sách phương tiện</Typography>
+                    <Popover
+                        open={Boolean(anchorElSummary)}
+                        anchorEl={anchorElSummary}
+                        onClose={handleSummaryClose}
+                        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                    >
+                        <Box sx={{ p: 2, maxHeight: 300, overflowY: 'auto' }}>
+                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', }}>Danh sách phương tiện</Typography>
 
-                        {selectedSummaryDevices.length > 0 ? (
-                            <Table size="small">
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell sx={{ fontWeight: 'bold', }}>Loại xe</TableCell>
-                                        <TableCell sx={{ fontWeight: 'bold', }}>Số lượng</TableCell>
-
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {selectedSummaryDevices.map((d) => (
+                            {selectedSummaryDevices.length > 0 ? (
+                                <Table size="small">
+                                    <TableHead>
                                         <TableRow>
-                                            <TableCell>{d.typeName}</TableCell>
-                                            <TableCell>{d.total}</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold', }}>Loại xe</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold', }}>Số lượng</TableCell>
+
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        ) : (
-                            <Typography>Không có phương tiện nào</Typography>
-                        )}
-                    </Box>
-                </Popover>
+                                    </TableHead>
+                                    <TableBody>
+                                        {selectedSummaryDevices.map((d) => (
+                                            <TableRow>
+                                                <TableCell>{d.typeName}</TableCell>
+                                                <TableCell>{d.total}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            ) : (
+                                <Typography>Không có phương tiện nào</Typography>
+                            )}
+                        </Box>
+                    </Popover>
+                </Grid>
             </Grid>
             <Box sx={{ mt: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -389,6 +390,109 @@ const ManagerDashboard: React.FC = () => {
                     </Tabs>
                 </Box>
                 {tabIndex === 0 && <Box>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            flexGrow: 1, // Chiếm hết phần còn lại của không gian
+                            gap: 2,
+                            alignItems: 'center',
+                            flexDirection: {
+                                xs: 'column',
+                                md: 'row',
+                            },
+                            width: {
+                                xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                md: 'auto',
+                            },
+                        }}
+                    >
+                        <Autocomplete
+                            fullWidth
+                            readOnly
+                            options={departments}
+                            getOptionLabel={(option: any) =>
+                                option.code || ''
+                            }
+                            value={departments.find((p: any) => p._id === department) || null}
+                            onChange={(event, newValue) => {
+                                setDepartment(newValue?._id || '');
+                            }}
+                            PopperComponent={StyledPopper}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    fullWidth
+                                    size='small'
+                                    label="Đơn vị"
+                                />
+                            )}
+                        />
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DatePicker
+                                readOnly
+                                label="Từ ngày"
+                                inputFormat="DD/MM/YYYY"
+                                value={startTime ? dayjs(startTime) : null}
+                                onChange={(value) => setStartTime(value)}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        fullWidth
+                                        size="small"
+                                    />
+                                )}
+                            />
+                        </LocalizationProvider>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DatePicker
+                                readOnly
+                                label="Đến ngày"
+                                inputFormat="DD/MM/YYYY"
+                                value={endTime ? dayjs(endTime) : null}
+                                onChange={(value) => setEndTime(value)}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        fullWidth
+                                        size="small"
+                                    />
+                                )}
+                            />
+                        </LocalizationProvider>
+                    </Box>
+                    <Paper sx={{ width: '100%', overflowX: "initial", mt: 5 }}>
+                        <TableContainer sx={{ maxHeight: '80vh' }}>
+                            <Table stickyHeader aria-label="sticky table" sx={{
+                                "& td, & th": { padding: "4px 8px", top: 0 },
+                            }}>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell colSpan={7} align='center' sx={{ fontSize: 18, border: '1px solid black', backgroundColor: '#FFCC99', fontWeight: 600 }}>SẢN LƯỢNG</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell align='center' sx={{ width: '2%', border: '1px solid black', fontWeight: 600, fontSize: 18, }}></TableCell>
+                                        <TableCell align='center' sx={{ width: '20%', border: '1px solid black', fontWeight: 600, fontSize: 18, }}>Đơn vị</TableCell>
+                                        <TableCell align='center' sx={{ width: '10%', border: '1px solid black', fontWeight: 600, fontSize: 18, }}>Ca 1</TableCell>
+                                        <TableCell align='center' sx={{ width: '10%', border: '1px solid black', fontWeight: 600, fontSize: 18, }}>Ca 2</TableCell>
+                                        <TableCell align='center' sx={{ width: '10%', border: '1px solid black', fontWeight: 600, fontSize: 18, }}>Ca 3</TableCell>
+                                        <TableCell align='center' sx={{ width: '10%', border: '1px solid black', fontWeight: 600, fontSize: 18, }}>Ngày</TableCell>
+                                        <TableCell align='center' sx={{ width: '10%', border: '1px solid black', fontWeight: 600, fontSize: 18, }}>Tháng</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {productions.map((item, index) => (<TableRow>
+                                        <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 600, fontSize: 18, }}>{index + 1}</TableCell>
+                                        <TableCell sx={{ border: '1px solid black', fontWeight: 600, fontSize: 18, }}>{item.name}</TableCell>
+                                        <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 600, fontSize: 18, }}></TableCell>
+                                        <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 600, fontSize: 18, }}></TableCell>
+                                        <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 600, fontSize: 18, }}></TableCell>
+                                        <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 600, fontSize: 18, }}></TableCell>
+                                        <TableCell align='center' sx={{ border: '1px solid black', fontWeight: 600, fontSize: 18, }}></TableCell>
+                                    </TableRow>))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </Paper>
                     <Paper sx={{ width: '100%', overflowX: "initial" }}>
                         <TableContainer sx={{ maxHeight: '80vh' }}>
                             <Table stickyHeader aria-label="sticky table" sx={{
@@ -396,108 +500,67 @@ const ManagerDashboard: React.FC = () => {
                             }}>
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell align='center' rowSpan={2} sx={{
-
-                                            minWidth: 150,
-                                            position: 'sticky',
-                                            left: 0,
-                                            top: 0,
-                                            fontWeight: 'bold',
-                                            fontSize: 18,
-                                            zIndex: 3,
-                                        }}>Đơn vị</TableCell>
-                                        {count.map((item: any, index: number) => (
-                                            <TableCell align='center' colSpan={4} key={index} sx={{
-
-                                                position: 'sticky',
-                                                top: 0,
-                                                fontWeight: 'bold',
-                                                fontSize: 18,
-                                                zIndex: 2,
-                                            }}>{item.typeName}</TableCell>
-                                        ))}
+                                        <TableCell colSpan={7} align='center' sx={{ fontSize: 18, border: '1px solid black', backgroundColor: '#c6e4faff', fontWeight: 600 }}>PHƯƠNG TIỆN</TableCell>
                                     </TableRow>
-                                    <TableRow sx={{
-                                        position: 'sticky',
-                                        top: 34,
-                                    }}>
-                                        {count.map((item: any) => (
-                                            <>
-                                                <TableCell align='center' sx={{
-                                                    minWidth: 150, position: 'sticky',
-                                                    top: 56,
-                                                    fontWeight: 'bold',
-                                                    fontSize: 18,
-                                                    zIndex: 1,
-                                                    color: 'green',
-                                                }}>Chờ điều động</TableCell>
-                                                <TableCell align='center' sx={{
-                                                    minWidth: 150, position: 'sticky',
-                                                    top: 56,
-                                                    fontWeight: 'bold',
-                                                    fontSize: 18,
-                                                    zIndex: 1,
-                                                    color: 'red',
-                                                }}>Đang hoạt động</TableCell>
-                                                <TableCell align='center' sx={{
-                                                    minWidth: 70, position: 'sticky',
-                                                    top: 56,
-                                                    fontWeight: 'bold',
-                                                    fontSize: 18,
-                                                    zIndex: 1,
-                                                    color: 'orange',
-                                                }}>SC; BD</TableCell>
-
-                                                <TableCell align='center' sx={{
-                                                    minWidth: 100, position: 'sticky',
-                                                    top: 56,
-                                                    fontWeight: 'bold',
-                                                    fontSize: 18,
-                                                    zIndex: 1,
-                                                    borderRight: '1px solid grey',
-                                                }}>Niêm cất</TableCell>
-                                            </>
-                                        ))}
+                                    <TableRow>
+                                        <TableCell align='center' sx={{ width: '2%', border: '1px solid black', fontWeight: 600, fontSize: 18, }}></TableCell>
+                                        <TableCell align='center' sx={{ width: '20%', border: '1px solid black', fontWeight: 600, fontSize: 18, }}>Đơn vị</TableCell>
+                                        <TableCell align='center' sx={{ width: '10%', border: '1px solid black', fontWeight: 600, fontSize: 18, }}>Phương tiện</TableCell>
+                                        <TableCell align='center' sx={{ width: '10%', border: '1px solid black', fontWeight: 600, fontSize: 18, color: 'green' }}>Chờ điều động</TableCell>
+                                        <TableCell align='center' sx={{ width: '10%', border: '1px solid black', fontWeight: 600, fontSize: 18, color: 'red' }}>Đang hoạt động</TableCell>
+                                        <TableCell align='center' sx={{ width: '10%', border: '1px solid black', fontWeight: 600, fontSize: 18, color: 'orange' }}>SC; BD</TableCell>
+                                        <TableCell align='center' sx={{ width: '10%', border: '1px solid black', fontWeight: 600, fontSize: 18, }}>Niêm cất</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {departments.map((item: string, index: number) => (
-                                        <TableRow key={index}>
-                                            <TableCell align='center' sx={{
-                                                position: 'sticky',
-                                                left: 0,
-                                                fontWeight: 'bold',
-                                                backgroundColor: 'white',
-                                                fontSize: 18,
-                                                zIndex: 1,
-                                                minWidth: 150,
-                                            }}>{item}</TableCell>
-                                            {count.map((type: any, typeIndex: number) => {
-                                                const org = type.organizations.find((o: any) => o.departmentName === item);
-                                                const s = org?.statusCounts ?? {};
+                                    {deviceCount.map((group: any, groupIndex: number) => {
+                                        const reps = (group.deviceTypes && group.deviceTypes.length)
+                                            ? group.deviceTypes
+                                            : [{ typeName: '', statusCounts: { available: 0, in_use: 0, maintenance: 0, retired: 0 } }];
+                                        const span = reps.length;
+                                        return reps.map((item: any, index: number) => (
+                                            <TableRow key={`${groupIndex}-${index}`}>
+                                                {/* STT chỉ in 1 lần, ghép nhiều dòng */}
+                                                {index === 0 && (
+                                                    <TableCell
+                                                        align="center"
+                                                        rowSpan={span}
+                                                        sx={{ width: 50, border: '1px solid black', fontWeight: 600, fontSize: 18 }}
+                                                    >
+                                                        {groupIndex + 1}
+                                                    </TableCell>
+                                                )}
 
-                                                return (
-                                                    <React.Fragment key={typeIndex}>
-                                                        <TableCell
-                                                            align="center"
-                                                            sx={{
-                                                                backgroundColor: (s.available || 0) > 0 ? 'green' : '',
-                                                                color: (s.available || 0) > 0 ? 'white' : '',
-                                                                cursor: 'pointer'
-                                                            }}
-                                                            onClick={(e) => handleDetailClick(e, "available", item, type.typeName)}
-                                                        >
-                                                            {s.available || 0}
-                                                        </TableCell>
-                                                        <TableCell align='center' onClick={(e) => handleDetailClick(e, "in_use", item, type.typeName)} sx={{ backgroundColor: (s.in_use || 0) > 0 ? 'red' : '', color: (s.in_use || 0) > 0 ? 'white' : '', cursor: 'pointer' }}>{s.in_use || 0}</TableCell>
-                                                        <TableCell align='center' onClick={(e) => handleDetailClick(e, "maintenance", item, type.typeName)} sx={{ backgroundColor: (s.maintenance || 0) > 0 ? 'yellow' : '', cursor: 'pointer' }}>{s.maintenance || 0}</TableCell>
-                                                        <TableCell align='center' onClick={(e) => handleDetailClick(e, "retired", item, type.typeName)} sx={{ backgroundColor: (s.retired || 0) > 0 ? 'black' : '', color: (s.retired || 0) > 0 ? 'white' : '', cursor: 'pointer' }}>{s.retired || 0}</TableCell>
-                                                    </React.Fragment>
-                                                );
-                                            })}
-                                        </TableRow>
-                                    ))}
+                                                {index === 0 && (
+                                                    <TableCell
+                                                        align="center"
+                                                        rowSpan={span}
+                                                        sx={{ border: '1px solid black', fontWeight: 600, fontSize: 18 }}
+                                                    >
+                                                        {group.departmentName}
+                                                    </TableCell>
+                                                )}
+
+                                                <TableCell align="center" sx={{ border: '1px solid black', fontWeight: 600, fontSize: 18 }}>
+                                                    {item.typeName}
+                                                </TableCell>
+                                                <TableCell align="center" sx={{ border: '1px solid black', fontWeight: 600, fontSize: 18 }} onClick={(e) => handleDetailClick(e, "available", group.departmentName, item.typeName)}>
+                                                    {item.statusCounts?.available}
+                                                </TableCell>
+                                                <TableCell align="center" sx={{ border: '1px solid black', fontWeight: 600, fontSize: 18 }} onClick={(e) => handleDetailClick(e, "in_use", group.departmentName, item.typeName)}>
+                                                    {item.statusCounts?.in_use}
+                                                </TableCell>
+                                                <TableCell align="center" sx={{ border: '1px solid black', fontWeight: 600, fontSize: 18 }} onClick={(e) => handleDetailClick(e, "maintenance", group.departmentName, item.typeName)}>
+                                                    {item.statusCounts?.maintenance}
+                                                </TableCell>
+                                                <TableCell align="center" sx={{ border: '1px solid black', fontWeight: 600, fontSize: 18 }} onClick={(e) => handleDetailClick(e, "retired", group.departmentName, item.typeName)}>
+                                                    {item.statusCounts?.retired}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    })}
                                 </TableBody>
+
                             </Table>
                         </TableContainer>
                     </Paper>
@@ -518,7 +581,6 @@ const ManagerDashboard: React.FC = () => {
                                             <TableCell sx={{ fontWeight: 'bold', }}>Sản lượng</TableCell>
                                             <TableCell sx={{ fontWeight: 'bold', }}>Người vận hành</TableCell>
                                             <TableCell sx={{ fontWeight: 'bold', }}>Ghi chú</TableCell>
-
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
@@ -537,38 +599,8 @@ const ManagerDashboard: React.FC = () => {
                             )}
                         </Box>
                     </Popover>
-
                 </Box>}
-                {tabIndex === 1 && <Box>
-                    <MapContainer
-                        center={[defaultCenter.lat, defaultCenter.lng]}
-                        zoom={18}
-                        style={containerStyle}
-                    >
-                        {/* Giao diện bản đồ giống Google Maps (CartoDB) */}
-                        <TileLayer
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                            attribution='&copy; OpenStreetMap contributors'
-                        />
-                        {locations.map((location: any) => {
-                            if (!location.coordinates?.coordinates) return null;
-                            const [lng, lat] = location.coordinates.coordinates;
-                            return (
-                                <Marker key={location._id} position={[lat, lng]}>
-                                    <Popup>{location.name}</Popup>
-                                </Marker>)
-                        })}
-                        {devices.map((device: any) => {
-                            if (!device.coordinates?.coordinates) return null;
-                            const [lng, lat] = device.coordinates.coordinates;
-                            console.log([lat, lng])
-                            return (
-                                <Marker key={device._id} position={[lat, lng]} icon={customIcon}>
-                                    <Popup>{device.code}</Popup>
-                                </Marker>)
-                        })}
-                    </MapContainer>
-                </Box>}
+                {tabIndex === 1 && <GoogleMap />}
             </Box>
         </Box >
     );

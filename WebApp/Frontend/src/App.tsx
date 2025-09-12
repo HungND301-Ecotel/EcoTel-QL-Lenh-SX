@@ -18,7 +18,6 @@ import api from './config/api.config';
 import { userAtom } from './atoms/userAtoms';
 import { useAtom } from 'jotai'
 import DeviceTypes from './pages/deviceTypes/DeviceTypes';
-import AdminDashboard from './pages/dashboard/AdminDashboard';
 import ManagerDashboard from './pages/dashboard/ManagerDashboard';
 import DispatcherOrders from './pages/dispatcherOrder/DispatcherOrders';
 import SafetyMeasures from './pages/safetyMeasures/SafetyMeasures';
@@ -28,6 +27,7 @@ import OrderByUsers from './pages/orders/OrderByUser';
 import './index.css'
 import { useSocket } from './hooks/useSocket';
 import PrivacyPolicy from './pages/PrivacyPolicy/PrivacyPolicy';
+import AdminDashboard from './pages/dashboard/AdminDashboard';
 
 
 interface PrivateRouteProps {
