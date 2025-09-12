@@ -264,6 +264,7 @@ async function buildSheetPXVT6(req, res, next) {
             worksheet.getCell('L14').value = 'Ghi chứ';
 
             const headerRow = worksheet.getRow(14);
+
             for (let col = 1; col <= 12; col++) {
                 const cell = headerRow.getCell(col);
                 cell.font = { bold: true };
@@ -362,20 +363,20 @@ async function buildSheetPXVT6(req, res, next) {
             for (let index = 0; index < (order.shiftReport?.vehicleSummaries?.length + 1 || 1); index++) {
                 const rep = order.shiftReport?.vehicleSummaries[index];
 
-                worksheet.getCell(`A${totalRow + 4 + index}`).value = rep?.vehicle?.code || '';
-                worksheet.getCell(`B${totalRow + 4 + index}`).value = rep?.fuelRemain || '';
-                worksheet.getCell(`C${totalRow + 4 + index}`).value = rep?.fuelReceived || '';
-                worksheet.getCell(`D${totalRow + 4 + index}`).value = rep?.fuelRemainEnd || '';
-                worksheet.getCell(`E${totalRow + 4 + index}`).value =
+                worksheet.getCell(`A${totalRow +4 + index}`).value = rep?.vehicle?.code || '';
+                worksheet.getCell(`B${totalRow +4 + index}`).value = rep?.fuelRemain || '';
+                worksheet.getCell(`C${totalRow +4 + index}`).value = rep?.fuelReceived || '';
+                worksheet.getCell(`D${totalRow +4 + index}`).value = rep?.fuelRemainEnd || '';
+                worksheet.getCell(`E${totalRow +4 + index}`).value =
                     (rep?.fuelRemain ?? 0) + (rep?.fuelReceived ?? 0) - (rep?.fuelRemainEnd ?? 0);
 
-                worksheet.getCell(`F${totalRow + 4 + index}`).value = '';
+                worksheet.getCell(`F${totalRow +4 + index}`).value = '';
 
-                worksheet.mergeCells(`H${totalRow + 4 + index}:I${totalRow + 4 + index}`);
-                worksheet.getCell(`H${totalRow + 4 + index}`).value = '';
+                worksheet.mergeCells(`H${totalRow +4 + index}:I${totalRow +4 + index}`);
+                worksheet.getCell(`H${totalRow +4 + index}`).value = '';
 
-                worksheet.mergeCells(`J${totalRow + 4 + index}:L${totalRow + 4 + index}`);
-                worksheet.getCell(`J${totalRow + 4 + index}`).value = '';
+                worksheet.mergeCells(`J${totalRow +4 + index}:L${totalRow +4 + index}`);
+                worksheet.getCell(`J${totalRow +4 + index}`).value = '';
             }
 
             worksheet.mergeCells(`A${fuelEndRow}:L${fuelEndRow}`);
@@ -497,7 +498,7 @@ async function buildSheetPXVT6(req, res, next) {
     }
 };
 
-async function buildSheetDefault(req, res, next) {
+async function buildSheetDefault(req, res, next) {  
     try {
         const { ids } = req.body; // mảng entity id
 
@@ -732,6 +733,7 @@ async function buildSheetDefault(req, res, next) {
             };
             const totalRow = (grouped?.length || 0) + 16;
             addTableBorders(worksheet, 13, totalRow + 1, 1, 13);
+
             worksheet.mergeCells(`A${totalRow}:B${totalRow}`);
             worksheet.getCell(`A${totalRow}`).value = 'Tổng cộng';
             worksheet.getCell(`A${totalRow}`).font = { bold: true };
@@ -791,7 +793,7 @@ async function buildSheetDefault(req, res, next) {
 
             const fuelHeaderRow = totalRow + 2;
             const fuelRows = order.shiftReport?.vehicleSummaries?.length || 0;
-            const fuelEndRow = fuelHeaderRow + fuelRows + 2;
+            const fuelEndRow = fuelHeaderRow + fuelRows + 1;
 
             addTableBorders(worksheet, fuelHeaderRow, fuelEndRow, 1, 13);
             for (let index = 0; index < (order.shiftReport?.vehicleSummaries?.length + 1 || 1); index++) {
