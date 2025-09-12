@@ -29,15 +29,8 @@ import { showErrorAlert } from '../../components/Alert';
 import { ContentCopy } from '@mui/icons-material';
 import { DesktopTimePicker } from '@mui/x-date-pickers';
 import { MultiSelectField } from '../../components/MultiSelectField';
-// import { StyledPopper } from '../../ui/poppers';
+import { StyledPopper } from '../../ui/poppers';
 dayjs.extend(utc);
-
-const StyledPopper = styled(Popper)({
-    '& .MuiAutocomplete-listbox': {
-        maxHeight: '200px',
-        overflowY: 'auto',
-    },
-});
 
 const validationSchema = yup.object({
     assignedTo: yup.string().required('Vui lòng chọn thẻ lương'),

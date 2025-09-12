@@ -619,9 +619,8 @@ const Vehicles: React.FC = () => {
                                         helperText={formik.touched.status && formik.errors.status}
                                     >
                                         <MenuItem value="available">Chờ điều động</MenuItem>
-                                        <MenuItem value="in_use">Đang hoạt động</MenuItem>
+                                        {user?.role !== "manager" && <MenuItem value="in_use">Đang hoạt động</MenuItem>}
                                         <MenuItem value="maintenance">SC; BD</MenuItem>
-
                                         <MenuItem value="retired">Niêm cất</MenuItem>
                                     </TextField>
                                     <Autocomplete

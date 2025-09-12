@@ -25,7 +25,6 @@ import { StyledPopper } from '../../ui/poppers';
 
 
 
-
 const validationSchema = yup.object({
     usersAndDepartments: yup.array().of(
         yup.object().shape({
