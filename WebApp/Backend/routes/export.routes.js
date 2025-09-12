@@ -362,20 +362,20 @@ async function buildSheetPXVT6(req, res, next) {
             for (let index = 0; index < (order.shiftReport?.vehicleSummaries?.length + 1 || 1); index++) {
                 const rep = order.shiftReport?.vehicleSummaries[index];
 
-                worksheet.getCell(`A${totalRow + 4 + index}`).value = rep?.vehicle?.code || '';
-                worksheet.getCell(`B${totalRow + 4 + index}`).value = rep?.fuelRemain || '';
-                worksheet.getCell(`C${totalRow + 4 + index}`).value = rep?.fuelReceived || '';
-                worksheet.getCell(`D${totalRow + 4 + index}`).value = rep?.fuelRemainEnd || '';
-                worksheet.getCell(`E${totalRow + 4 + index}`).value =
+                worksheet.getCell(`A${totalRow +4 + index}`).value = rep?.vehicle?.code || '';
+                worksheet.getCell(`B${totalRow +4 + index}`).value = rep?.fuelRemain || '';
+                worksheet.getCell(`C${totalRow +4 + index}`).value = rep?.fuelReceived || '';
+                worksheet.getCell(`D${totalRow +4 + index}`).value = rep?.fuelRemainEnd || '';
+                worksheet.getCell(`E${totalRow +4 + index}`).value =
                     (rep?.fuelRemain ?? 0) + (rep?.fuelReceived ?? 0) - (rep?.fuelRemainEnd ?? 0);
 
-                worksheet.getCell(`F${totalRow + 4 + index}`).value = '';
+                worksheet.getCell(`F${totalRow +4 + index}`).value = '';
 
-                worksheet.mergeCells(`H${totalRow + 4 + index}:I${totalRow + 4 + index}`);
-                worksheet.getCell(`H${totalRow + 4 + index}`).value = '';
+                worksheet.mergeCells(`H${totalRow +4 + index}:I${totalRow +4 + index}`);
+                worksheet.getCell(`H${totalRow +4 + index}`).value = '';
 
-                worksheet.mergeCells(`J${totalRow + 4 + index}:L${totalRow + 4 + index}`);
-                worksheet.getCell(`J${totalRow + 4 + index}`).value = '';
+                worksheet.mergeCells(`J${totalRow +4 + index}:L${totalRow +4 + index}`);
+                worksheet.getCell(`J${totalRow +4 + index}`).value = '';
             }
 
             worksheet.mergeCells(`A${fuelEndRow}:L${fuelEndRow}`);
@@ -497,7 +497,7 @@ async function buildSheetPXVT6(req, res, next) {
     }
 };
 
-async function buildSheetDefault(req, res, next) {
+async function buildSheetDefault(req, res, next) {  
     try {
         const { ids } = req.body; // mảng entity id
 
@@ -732,6 +732,7 @@ async function buildSheetDefault(req, res, next) {
             };
             const totalRow = (grouped?.length || 0) + 16;
             addTableBorders(worksheet, 13, totalRow + 1, 1, 13);
+
             worksheet.mergeCells(`A${totalRow}:B${totalRow}`);
             worksheet.getCell(`A${totalRow}`).value = 'Tổng cộng';
             worksheet.getCell(`A${totalRow}`).font = { bold: true };
@@ -1666,15 +1667,6 @@ router.post('/carTripReport/view', verifyToken, restrictTo('admin', 'dispatcher'
         }
         const orders = await Order.find(query)
             .populate({
-                path: "shiftReport",
-                populate: [
-                    {
-                        path: "vehicleSummaries.vehicle",
-                        select: "_id code vehicleNumber"
-                    },
-                ]
-            })
-            .populate({
                 path: 'assignedTo',
                 select: 'salaryCode department',
                 populate: ('department')
@@ -1683,28 +1675,23 @@ router.post('/carTripReport/view', verifyToken, restrictTo('admin', 'dispatcher'
                 path: 'createdBy',
                 select: 'fullName',
             })
-            .populate('job', 'name type')
-            .populate('location', 'name')
-            .populate('material', 'name')
-            .populate('excavator', 'code')
-            .populate({
-                path: 'device',
-                select: 'code category',
-                populate: {
-                    path: 'category',
-                    select: 'name'
-                }
-            })
-            .populate('shift')
-        const filteredOrders = orders.filter(order =>
-            order.job?.type === "Vận hành xe"
-        );
 
         let result = []
-        for (const order of filteredOrders) {
-            const reports = await Report.find({ orderId: order._id })
-                .populate('device', 'code')
+        for (const order of orders) {
+            let reports = await Report.find({ orderId: order._id })
+                .populate({
+                    path: 'device',
+                    select: 'code category',
+                    populate: {
+                        path: 'category',
+                        select: 'name'
+                    }
+                })
                 .populate('material', 'name')
+            reports = reports.filter(r =>
+                r.device?.category?.name?.toLowerCase().includes("vận tải".toLowerCase())
+            );
+            if (!reports.length) continue;
             const grouped = groupReportsForProduct(reports)
 
             result.push({
@@ -1748,53 +1735,39 @@ router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
                     department: user?.role === "admin" ? new mongoose.Types.ObjectId(department) : new mongoose.Types.ObjectId(user.department?._id)
                 })
                     .populate({
-                        path: "shiftReport",
-                        populate: [
-                            {
-                                path: "vehicleSummaries.vehicle",
-                                select: "_id code vehicleNumber"
-                            },
-                        ]
-                    })
-                    .populate({
                         path: 'assignedTo',
                         select: 'fullName salaryCode department',
                         populate: ('department')
                     })
                     .populate({
                         path: 'createdBy',
-                        select: 'fullName salaryCode department',
+                        select: 'fullName',
                     })
-                    .populate('job', 'name type')
-                    .populate('location', 'name')
-                    .populate('material', 'name')
-                    .populate('excavator', 'code')
-                    .populate({
-                        path: 'device',
-                        select: 'code category',
-                        populate: {
-                            path: 'category',
-                            select: 'name'
-                        }
-                    })
-                    .populate('shift')
 
-                const filteredOrders = orders.filter(order =>
-                    order.job?.type === "Vận hành xe"
-                );
 
                 let result = []
-                for (const order of filteredOrders) {
-                    const reports = await Report.find({ orderId: order._id })
-                        .populate('device', 'code')
+                for (const order of orders) {
+                    let reports = await Report.find({ orderId: order._id })
+                        .populate({
+                            path: 'device',
+                            select: 'code category',
+                            populate: {
+                                path: 'category',
+                                select: 'name'
+                            }
+                        })
                         .populate('material', 'name')
+                    reports = reports.filter(r =>
+                        r.device?.category?.name?.toLowerCase().includes("vận tải".toLowerCase())
+                    );
+                    if (!reports.length) continue;
 
                     const grouped = groupReportsForProduct(reports)
 
                     result.push({
                         _id: order._id,
                         fullName: order?.createdBy?.fullName,
-                        salaryCode: order?.assignedTo?.salaryCode,
+                        salaryCode: (order?.assignedTo?.fullName || "") + "-" + (order?.assignedTo?.salaryCode || ""),
                         department: order?.assignedTo?.department?.name,
                         reports: grouped.map(g => ({
                             code: g.device?.code || '',
@@ -1811,21 +1784,35 @@ router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
                 worksheet.mergeCells('A1:G1');
                 const infoRow = worksheet.getCell('A1');
                 infoRow.value = `Ca: ${ca.name}, ngày: ${formatDate(d)}         Tên cán bộ:`;
-                infoRow.font = { italic: true, size: 12 };
+                infoRow.font = { italic: true, size: 14 };
                 infoRow.alignment = { horizontal: 'left', vertical: 'middle' };
                 // Tiêu đề bảng
-                worksheet.mergeCells('A2:G2');
-                const header = worksheet.getCell('A2');
+                worksheet.mergeCells('A3:G3');
+                const header = worksheet.getCell('A3');
                 header.value = 'DANH SÁCH CHUYẾN Ô TÔ';
-                header.font = { bold: true, size: 20 };
+                header.font = { bold: true, size: 16 };
                 header.alignment = { horizontal: 'center', vertical: 'middle' };
 
-                const headerRow = worksheet.addRow(['STT', 'Người ra lệnh', 'Thẻ lương \ncông nhân', 'Đơn vị', 'Biển số \nô tô', 'Vật liệu', 'Số chuyến']);
-                headerRow.font = { bold: true };
-                headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+                const headerRowNumber = 5;
+                const headers = [
+                    'STT',
+                    'Người tạo lệnh',
+                    'Công nhân',
+                    'Đơn vị',
+                    'Biển số ô tô',
+                    'Vật liệu',
+                    'Số chuyến'
+                ];
+
+                headers.forEach((text, index) => {
+                    const cell = worksheet.getRow(headerRowNumber).getCell(index + 1);
+                    cell.value = text;
+                    cell.font = { bold: true };
+                    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                });
 
                 let index = 1;
-                let totalDataRows = 0;
+                let totalDataRows = 5;
                 for (const item of result) {
                     const reps = item.reports && item.reports.length ? item.reports : [{ code: '', material: '', tripCount: '' }];
                     const startRow = worksheet.lastRow ? worksheet.lastRow.number + 1 : 4; // 3 dòng đầu là info/title/header
@@ -1859,7 +1846,17 @@ router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
                     index++;
                 }
 
-                addTableBorders(worksheet, 3, totalDataRows + 3, 1, 7);
+                addTableBorders(worksheet, 5, totalDataRows, 1, 7);
+
+                worksheet.pageSetup = {
+                    paperSize: 9,                // A4
+                    orientation: 'landscape',    // ngang
+                    fitToPage: true,
+                    fitToWidth: 1,               // vừa 1 trang theo chiều ngang
+                    fitToHeight: 0,              // không ép theo chiều dọc
+                    margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } // inch
+                };
+
 
                 worksheet.pageSetup = {
                     paperSize: 9,                // A4
@@ -1873,13 +1870,13 @@ router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
 
                 worksheet.getColumn(1).width = 6;
                 worksheet.getColumn(1).alignment = { horizontal: 'center' }
-                worksheet.getColumn(2).width = 20;
+                worksheet.getColumn(2).width = 25;
                 worksheet.getColumn(2).alignment = { horizontal: 'center' }
-                worksheet.getColumn(3).width = 20;
+                worksheet.getColumn(3).width = 50;
                 worksheet.getColumn(3).alignment = { horizontal: 'center' }
-                worksheet.getColumn(4).width = 40;
-                worksheet.getColumn(5).width = 15;
-                worksheet.getColumn(6).width = 15;
+                worksheet.getColumn(4).width = 25;
+                worksheet.getColumn(5).width = 20;
+                worksheet.getColumn(6).width = 25;
                 worksheet.getColumn(7).width = 15;
 
                 if (signature) {
@@ -1906,7 +1903,7 @@ router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
                     row.eachCell((cell) => {
                         // Nếu chưa có font, tạo font mới
                         if (!cell.font) cell.font = {};
-                        cell.font.size = 9; // hoặc 8, tuỳ theo bạn muốn nhỏ đến đâu
+                        cell.font.size = 12; // hoặc 8, tuỳ theo bạn muốn nhỏ đến đâu
                     });
                 });
             }
