@@ -16,11 +16,33 @@ class TaskAssignmentList extends StatefulWidget {
 class _TaskAssignmentList
     extends State<TaskAssignmentList> {
   bool _isLoading = true;
+  int _page = 1;
+  final int _limit = 50;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
   final List<OrderModel> tasks = [];
   final OrderService _orderService = OrderService();
 
-  void getAllOrder() async {
-    var result = await _orderService.getAllOrder();
+  final TextEditingController _searchController =
+      TextEditingController();
+  String _searchText = '';
+
+  void getAllOrder({bool reset = false}) async {
+    if (reset) {
+      setState(() {
+        _page = 1;
+        _hasMore = true;
+        tasks.clear();
+      });
+    }
+
+    if (!_hasMore) return;
+
+    var result = await _orderService.getAllOrder(
+      page: _page,
+      limit: _limit,
+      search: _searchText,
+    );
     if (!mounted) return;
     if (result['status'] == 'error') {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -32,12 +54,20 @@ class _TaskAssignmentList
     } else {
       var data = result['data'];
       setState(() {
-        tasks.clear(); // Nếu cần làm sạch danh sách trước
+        if (reset) {
+          tasks.clear();
+        }
         tasks.addAll(
           (data as List)
               .map((e) => OrderModel.fromJson(e))
               .toList(),
         );
+        _isLoadingMore = false;
+        if (data.length < _limit) {
+          _hasMore = false; // không còn dữ liệu
+        } else {
+          _page++;
+        }
       });
     }
     setState(() {
@@ -49,17 +79,33 @@ class _TaskAssignmentList
     setState(() {
       _isLoading = true;
     });
-    getAllOrder();
+    getAllOrder(reset: true);
   }
 
+  final ScrollController _scrollController =
+      ScrollController();
   @override
   void initState() {
     super.initState();
-    getAllOrder();
+    getAllOrder(reset: true);
+
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >=
+              _scrollController.position.maxScrollExtent -
+                  200 &&
+          !_isLoadingMore &&
+          _hasMore) {
+        setState(() {
+          _isLoadingMore = true;
+        });
+        getAllOrder();
+      }
+    });
   }
 
   @override
   void dispose() {
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -112,30 +158,77 @@ class _TaskAssignmentList
                   null;
             });
           }
-
-          return _isLoading
-              ? Center(child: CircularProgressIndicator())
-              : tasks.isEmpty
-              ? const Center(
-                child: Text(
-                  'Không có dữ liệu',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText:
+                        'Tìm kiếm thẻ lương, công việc...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(
+                        12,
+                      ),
+                    ),
+                    contentPadding:
+                        const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                   ),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchText = value;
+                      _isLoading = true;
+                    });
+                    getAllOrder(reset: true);
+                  },
                 ),
-              )
-              : SingleChildScrollView(
-                child: Column(
-                  children:
-                      tasks
-                          .map(
-                            (item) =>
-                                TaskAssignItem(data: item),
-                          )
-                          .toList(),
-                ),
-              );
+              ),
+              Expanded(
+                child:
+                    _isLoading
+                        ? const Center(
+                          child:
+                              CircularProgressIndicator(),
+                        )
+                        : tasks.isEmpty
+                        ? const Center(
+                          child: Text(
+                            'Không có dữ liệu',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        )
+                        : ListView.builder(
+                          itemCount:
+                              tasks.length +
+                              1, // +1 để hiển thị loading cuối danh sách
+                          itemBuilder: (context, index) {
+                            if (index < tasks.length) {
+                              return TaskAssignItem(
+                                data: tasks[index],
+                              );
+                            } else {
+                              // Hiện loading khi đang tải thêm
+                              return _isLoadingMore
+                                  ? Center(
+                                    child:
+                                        CircularProgressIndicator(),
+                                  )
+                                  : SizedBox();
+                            }
+                          },
+                          controller: _scrollController,
+                        ),
+              ),
+            ],
+          );
         },
       ),
     );

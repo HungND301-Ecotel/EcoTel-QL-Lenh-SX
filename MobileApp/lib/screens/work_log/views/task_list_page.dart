@@ -17,6 +17,10 @@ class TaskListPage extends StatefulWidget {
 class _TaskListPage extends State<TaskListPage> {
   final List<OrderModel> taskList = [];
   bool _isLoading = true;
+  int _page = 1;
+  final int _limit = 50;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
   final OrderService _orderService = OrderService();
 
   Future<OrderModel?> getCachedOrder() async {
@@ -45,8 +49,21 @@ class _TaskListPage extends State<TaskListPage> {
     });
   }
 
-  void getOrderByUser() async {
-    var result = await _orderService.getByUser();
+  void getOrderByUser({bool reset = false}) async {
+    if (reset) {
+      setState(() {
+        _page = 1;
+        _hasMore = true;
+        taskList.clear();
+      });
+    }
+
+    if (!_hasMore) return;
+
+    var result = await _orderService.getByUser(
+      page: _page,
+      limit: _limit,
+    );
     if (!mounted) return;
     if (result['status'] == 'error') {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -59,13 +76,20 @@ class _TaskListPage extends State<TaskListPage> {
     } else {
       var data = result['data'];
       setState(() {
-        taskList
-            .clear(); // Nếu cần làm sạch danh sách trước
+        if (reset) {
+          taskList.clear();
+        }
         taskList.addAll(
           (data as List)
               .map((e) => OrderModel.fromJson(e))
               .toList(),
         );
+        _isLoadingMore = false;
+        if (data.length < _limit) {
+          _hasMore = false; // không còn dữ liệu
+        } else {
+          _page++;
+        }
       });
     }
     setState(() {
@@ -77,18 +101,33 @@ class _TaskListPage extends State<TaskListPage> {
     setState(() {
       _isLoading = true;
     });
-    getOrderByUser();
+    getOrderByUser(reset: true);
   }
 
   @override
   void initState() {
     super.initState();
-    getOrderByUser();
+    getOrderByUser(reset: true);
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >=
+              _scrollController.position.maxScrollExtent -
+                  200 &&
+          !_isLoadingMore &&
+          _hasMore) {
+        setState(() {
+          _isLoadingMore = true;
+        });
+        getOrderByUser();
+      }
+    });
   }
 
+  final ScrollController _scrollController =
+      ScrollController();
   @override
   void dispose() {
     super.dispose();
+    _scrollController.dispose();
   }
 
   @override
@@ -140,15 +179,26 @@ class _TaskListPage extends State<TaskListPage> {
                   ),
                 ),
               )
-              : SingleChildScrollView(
-                child: Column(
-                  children:
-                      taskList
-                          .map(
-                            (item) => TaskItem(data: item),
-                          )
-                          .toList(),
-                ),
+              : ListView.builder(
+                itemCount:
+                    taskList.length +
+                    1, // +1 để hiển thị loading cuối danh sách
+                itemBuilder: (context, index) {
+                  if (index < taskList.length) {
+                    return TaskItem(
+                      data: taskList[index],
+                    );
+                  } else {
+                    // Hiện loading khi đang tải thêm
+                    return _isLoadingMore
+                        ? Center(
+                          child:
+                              CircularProgressIndicator(),
+                        )
+                        : SizedBox();
+                  }
+                },
+                controller: _scrollController,
               );
         },
       ),
