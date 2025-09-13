@@ -7,6 +7,7 @@ const Notification = require('../models/Notification');
 
 const History = require('../models/History');
 const User = require('../models/User')
+const Job = require('../models/Job')
 const mongoose = require('mongoose')
 const { JobConfig } = require('../config/config');
 
@@ -25,6 +26,37 @@ router.get('/', verifyToken, async (req, res, next) => {
         const query = {};
 
         // ---- Bộ lọc chung ----
+        if (req.query.q) {
+            const regex = new RegExp(req.query.q, 'i');
+
+            // 1. Tìm user theo salaryCode
+            const matchedUsers = await User.find(
+                { salaryCode: req.query.q },   // salaryCode thường là số => match chính xác
+                { _id: 1 }
+            ).lean();
+            const userIds = matchedUsers.map(u => u._id);
+
+            // 2. Tìm job theo name
+            const matchedJobs = await Job.find(
+                { name: regex },
+                { _id: 1 }
+            ).lean();
+            const jobIds = matchedJobs.map(j => j._id);
+
+            // 3. Thêm điều kiện OR vào query Order
+            const orConditions = [];
+            if (userIds.length > 0) {
+                orConditions.push({ assignedTo: { $in: userIds } });
+            }
+            if (jobIds.length > 0) {
+                orConditions.push({ job: { $in: jobIds } });
+            }
+
+            if (orConditions.length > 0) {
+                query.$or = orConditions;
+            }
+
+        }
         if (req.query.assignedTo) query.assignedTo = { $in: Array.isArray(req.query.assignedTo) ? req.query.assignedTo.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.assignedTo)] };
         if (req.query.job) query.job = { $in: Array.isArray(req.query.job) ? req.query.job.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.job)] };
         if (req.query.device) query.device = { $in: Array.isArray(req.query.device) ? req.query.device.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.device)] };

@@ -1,4 +1,3 @@
-
 import 'package:soft/services/api_service.dart';
 
 class OrderService {
@@ -11,8 +10,14 @@ class OrderService {
     return await _apiService.post('/orders', data);
   }
 
-  Future<Map<String, dynamic>> getAllOrder() async {
-    return await _apiService.get('/orders');
+  Future<Map<String, dynamic>> getAllOrder({
+    int page = 1,
+    int limit = 50,
+    String search = "",
+  }) async {
+    return await _apiService.get(
+      '/orders?page=$page&limit=$limit&q=$search',
+    );
   }
 
   Future<Map<String, dynamic>> delete(String id) async {
@@ -26,8 +31,13 @@ class OrderService {
     return await _apiService.put('/orders/$id', data);
   }
 
-  Future<Map<String, dynamic>> getByUser() async {
-    return await _apiService.get('/orders/user');
+  Future<Map<String, dynamic>> getByUser({
+    int page = 1,
+    int limit = 50,
+  }) async {
+    return await _apiService.get(
+      '/orders/user?page=$page&limit=$limit',
+    );
   }
 
   Future<Map<String, dynamic>> getbyId(String id) async {
