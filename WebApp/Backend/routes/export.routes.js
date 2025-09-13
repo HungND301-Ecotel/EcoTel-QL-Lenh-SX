@@ -18,11 +18,11 @@ const pickFrom = (r) => r?.fromLocation || r?.excavator || null;
 const getId = (obj, fallback) => (obj && obj._id) ? obj._id : fallback;
 
 const getProductGroupKey = (r) => {
-    const deviceId = getId(r?.device, `device-unknown:${r._id}`);
+    const deviceId = getId(r?.device, `device-unknown`);
     const from = pickFrom(r);
-    const fromId = getId(from, `from-unknown:${r._id}`);
-    const toId = getId(r?.toLocation, `to-unknown:${r._id}`);
-    const matId = getId(r?.material, `mat-unknown:${r._id}`);
+    const fromId = getId(from, `from-unknown`);
+    const toId = getId(r?.toLocation, `to-unknown`);
+    const matId = getId(r?.material, `mat-unknown`);
     return `device:${deviceId}__from:${fromId}__to:${toId}__mat:${matId}`;
 };
 
@@ -1380,52 +1380,49 @@ router.post('/excavatorTripReport/view', verifyToken, restrictTo('admin', 'dispa
         }
         const orders = await Order.find(query)
             .populate({
-                path: "shiftReport",
-                populate: [
-                    {
-                        path: "vehicleSummaries.vehicle",
-                        select: "_id code vehicleNumber"
-                    },
-                ]
-            })
-            .populate({
                 path: 'assignedTo',
-                select: 'salaryCode department',
+                select: 'fullName salaryCode department',
                 populate: ('department')
             })
             .populate({
                 path: 'createdBy',
                 select: 'fullName',
             })
-            .populate('job', 'name type')
-            .populate('location', 'name')
-            .populate('material', 'name')
-            .populate('excavator', 'code')
             .populate({
-                path: 'device',
-                select: 'code category',
+                path: "device",
+                select: "code category",
                 populate: {
                     path: 'category',
-                    select: 'name'
+                    select: "name"
                 }
             })
-            .populate('shift')
         const filteredOrders = orders.filter(order =>
-            order.job?.type === "Vận hành xúc"
+            order.device?.some(d =>
+                d.category?.name?.toLowerCase().includes("máy xúc")
+            )
         );
 
         let result = []
         for (const order of filteredOrders) {
-            const reports = await Report.find({ orderId: order._id })
-                .populate('device', 'code')
+            let reports = await Report.find({ orderId: order._id })
+                .populate({
+                    path: 'device',
+                    select: 'code category',
+                    populate: {
+                        path: 'category',
+                        select: 'name'
+                    }
+                })
                 .populate('material', 'name')
+            if (!reports.length) continue;
             const grouped = groupReportsForProduct(reports)
 
             result.push({
                 _id: order._id,
                 fullName: order?.createdBy?.fullName,
-                salaryCode: order?.assignedTo?.salaryCode,
+                salaryCode: (order?.assignedTo?.fullName || "") + "-" + (order?.assignedTo?.salaryCode || ""),
                 department: order?.assignedTo?.department?.name,
+                excavator: order?.device.map(i => i?.code).join(','),
                 reports: grouped.map(g => ({
                     code: g.device?.code || '',
                     material: g.material?.name || '',
@@ -1462,54 +1459,51 @@ router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher
                     department: user?.role === "admin" ? new mongoose.Types.ObjectId(department) : new mongoose.Types.ObjectId(user.department?._id)
                 })
                     .populate({
-                        path: "shiftReport",
-                        populate: [
-                            {
-                                path: "vehicleSummaries.vehicle",
-                                select: "_id code vehicleNumber"
-                            },
-                        ]
-                    })
-                    .populate({
                         path: 'assignedTo',
                         select: 'fullName salaryCode department',
                         populate: ('department')
                     })
                     .populate({
                         path: 'createdBy',
-                        select: 'fullName salaryCode department',
+                        select: 'fullName',
                     })
-                    .populate('job', 'name type')
-                    .populate('location', 'name')
-                    .populate('material', 'name')
-                    .populate('excavator', 'code')
                     .populate({
-                        path: 'device',
-                        select: 'code category',
+                        path: "device",
+                        select: "code category",
                         populate: {
                             path: 'category',
-                            select: 'name'
+                            select: "name"
                         }
                     })
-                    .populate('shift')
 
                 const filteredOrders = orders.filter(order =>
-                    order.job?.type === "Vận hành xúc"
+                    order.device?.some(d =>
+                        d.category?.name?.toLowerCase().includes("máy xúc")
+                    )
                 );
 
                 let result = []
                 for (const order of filteredOrders) {
-                    const reports = await Report.find({ orderId: order._id })
-                        .populate('device', 'code')
+                    let reports = await Report.find({ orderId: order._id })
+                        .populate({
+                            path: 'device',
+                            select: 'code category',
+                            populate: {
+                                path: 'category',
+                                select: 'name'
+                            }
+                        })
                         .populate('material', 'name')
+                    if (!reports.length) continue;
 
                     const grouped = groupReportsForProduct(reports)
 
                     result.push({
                         _id: order._id,
                         fullName: order?.createdBy?.fullName,
-                        salaryCode: order?.assignedTo?.salaryCode,
+                        salaryCode: (order?.assignedTo?.fullName || "") + "-" + (order?.assignedTo?.salaryCode || ""),
                         department: order?.assignedTo?.department?.name,
+                        excavator: order?.device.map(i => i?.code).join(','),
                         reports: grouped.map(g => ({
                             code: g.device?.code || '',
                             material: g.material?.name || '',
@@ -1525,21 +1519,35 @@ router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher
                 worksheet.mergeCells('A1:G1');
                 const infoRow = worksheet.getCell('A1');
                 infoRow.value = `Ca: ${ca.name}, ngày: ${formatDate(d)}         Tên cán bộ:`;
-                infoRow.font = { italic: true, size: 12 };
+                infoRow.font = { italic: true, size: 14 };
                 infoRow.alignment = { horizontal: 'left', vertical: 'middle' };
                 // Tiêu đề bảng
-                worksheet.mergeCells('A2:G2');
-                const header = worksheet.getCell('A2');
+                worksheet.mergeCells('A3:G3');
+                const header = worksheet.getCell('A3');
                 header.value = 'DANH SÁCH CHUYẾN MÁY XÚC';
-                header.font = { bold: true, size: 20 };
+                header.font = { bold: true, size: 16 };
                 header.alignment = { horizontal: 'center', vertical: 'middle' };
 
-                const headerRow = worksheet.addRow(['STT', 'Người ra lệnh', 'Thẻ lương \ncông nhân', 'Đơn vị', 'Biển số \nô tô', 'Vật liệu', 'Số chuyến']);
-                headerRow.font = { bold: true };
-                headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+                const headerRowNumber = 5;
+                const headers = [
+                    'STT',
+                    'Người tạo lệnh',
+                    'Công nhân',
+                    'Đơn vị',
+                    'Biển số máy vận hành',
+                    'Vật liệu',
+                    'Số chuyến'
+                ];
+
+                headers.forEach((text, index) => {
+                    const cell = worksheet.getRow(headerRowNumber).getCell(index + 1);
+                    cell.value = text;
+                    cell.font = { bold: true };
+                    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                });
 
                 let index = 1;
-                let totalDataRows = 0;
+                let totalDataRows = 5;
                 for (const item of result) {
                     const reps = item.reports && item.reports.length ? item.reports : [{ code: '', material: '', tripCount: '' }];
                     const startRow = worksheet.lastRow ? worksheet.lastRow.number + 1 : 4; // 3 dòng đầu là info/title/header
@@ -1552,14 +1560,14 @@ router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher
                             i === 0 ? (item.fullName || '') : '',
                             i === 0 ? (item.salaryCode || '') : '',
                             i === 0 ? (item.department || '') : '',
-                            r.code || '',
+                            i === 0 ? (item.excavator || '') : '',
                             r.material || '',
                             r.tripCount ?? '',
                         ]);
                     });
                     if (span > 1) {
                         const endRow = startRow + span - 1;
-                        ['A', 'B', 'C', 'D'].forEach((col) => worksheet.mergeCells(`${col}${startRow}:${col}${endRow}`));
+                        ['A', 'B', 'C', 'D', 'E'].forEach((col) => worksheet.mergeCells(`${col}${startRow}:${col}${endRow}`));
                     }
 
                     // Căn giữa 4 cột đầu, trái 3 cột sau, bật wrapText cho 3 cột sau
@@ -1573,7 +1581,7 @@ router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher
                     index++;
                 }
 
-                addTableBorders(worksheet, 3, totalDataRows + 3, 1, 7);
+                addTableBorders(worksheet, 5, totalDataRows, 1, 7);
 
                 worksheet.pageSetup = {
                     paperSize: 9,                // A4
@@ -1586,14 +1594,15 @@ router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher
 
 
                 worksheet.getColumn(1).width = 6;
-                worksheet.getColumn(1).alignment = { horizontal: 'center' }
-                worksheet.getColumn(2).width = 20;
-                worksheet.getColumn(2).alignment = { horizontal: 'center' }
-                worksheet.getColumn(3).width = 20;
-                worksheet.getColumn(3).alignment = { horizontal: 'center' }
-                worksheet.getColumn(4).width = 40;
-                worksheet.getColumn(5).width = 15;
-                worksheet.getColumn(6).width = 15;
+                worksheet.getColumn(1).alignment = { horizontal: 'center', vertical: 'middle', }
+                worksheet.getColumn(2).width = 25;
+                worksheet.getColumn(2).alignment = { horizontal: 'center', vertical: 'middle', }
+                worksheet.getColumn(3).width = 50;
+                worksheet.getColumn(3).alignment = { horizontal: 'center', vertical: 'middle', }
+                worksheet.getColumn(4).width = 25;
+                worksheet.getColumn(4).alignment = { horizontal: 'center', vertical: 'middle', }
+                worksheet.getColumn(5).width = 20;
+                worksheet.getColumn(6).width = 25;
                 worksheet.getColumn(7).width = 15;
 
                 if (signature) {
@@ -1668,7 +1677,7 @@ router.post('/carTripReport/view', verifyToken, restrictTo('admin', 'dispatcher'
         const orders = await Order.find(query)
             .populate({
                 path: 'assignedTo',
-                select: 'salaryCode department',
+                select: 'fullName salaryCode department',
                 populate: ('department')
             })
             .populate({
@@ -1697,7 +1706,7 @@ router.post('/carTripReport/view', verifyToken, restrictTo('admin', 'dispatcher'
             result.push({
                 _id: order._id,
                 fullName: order?.createdBy?.fullName,
-                salaryCode: order?.assignedTo?.salaryCode,
+                salaryCode: (order?.assignedTo?.fullName || "") + "-" + (order?.assignedTo?.salaryCode || ""),
                 department: order?.assignedTo?.department?.name,
                 reports: grouped.map(g => ({
                     code: g.device?.code || '',
@@ -1858,22 +1867,12 @@ router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
                 };
 
 
-                worksheet.pageSetup = {
-                    paperSize: 9,                // A4
-                    orientation: 'landscape',    // ngang
-                    fitToPage: true,
-                    fitToWidth: 1,               // vừa 1 trang theo chiều ngang
-                    fitToHeight: 0,              // không ép theo chiều dọc
-                    margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } // inch
-                };
-
-
                 worksheet.getColumn(1).width = 6;
-                worksheet.getColumn(1).alignment = { horizontal: 'center' }
+                worksheet.getColumn(1).alignment = { horizontal: 'center', vertical: 'middle', }
                 worksheet.getColumn(2).width = 25;
-                worksheet.getColumn(2).alignment = { horizontal: 'center' }
+                worksheet.getColumn(2).alignment = { horizontal: 'center', vertical: 'middle', }
                 worksheet.getColumn(3).width = 50;
-                worksheet.getColumn(3).alignment = { horizontal: 'center' }
+                worksheet.getColumn(3).alignment = { horizontal: 'center', vertical: 'middle', }
                 worksheet.getColumn(4).width = 25;
                 worksheet.getColumn(5).width = 20;
                 worksheet.getColumn(6).width = 25;
