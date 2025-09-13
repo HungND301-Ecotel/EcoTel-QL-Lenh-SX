@@ -1475,7 +1475,6 @@ router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher
                             select: "name"
                         }
                     })
-
                 const filteredOrders = orders.filter(order =>
                     order.device?.some(d =>
                         d.category?.name?.toLowerCase().includes("máy xúc")
