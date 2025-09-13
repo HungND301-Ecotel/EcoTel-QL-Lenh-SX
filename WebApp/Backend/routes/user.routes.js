@@ -136,34 +136,59 @@ router.get('/:id', verifyToken, async (req, res) => {
 // Get user by salaryCode
 router.get('/getOne/salaryCodeOrName', verifyToken, async (req, res) => {
     try {
-        let query = {};
-        if (req.query.q) {
-            const regex = new RegExp(req.query.q, 'i');
-            query.$or = [
-                { salaryCode: req.query.q },
-                { fullName: regex },
-            ];
-        } else {
-            req.logger.warn("⚠️ Yêu cầu tìm kiếm người dùng thiếu tham số.");
+        const currentUser = req.user
+        let finalQuery = {}
+        if (!req.query.q) {
             return res.status(400).json({
                 status: 'error',
-                message: 'Thiếu tham số tìm kiếm',
+                message: 'Nhập tìm kiểm thẻ lương'
             });
         }
-        const user = await User.findOne(query)
+        if (req.query.q) {
+            let searchCondition = {
+                $or: [
+                    { salaryCode: req.query.q },
+                    { fullName: req.query.q },
+                    { username: req.query.q }
+                ]
+            };
+
+            // Điều kiện theo role
+            let roleCondition = {};
+            if (currentUser?.role === "manager" || currentUser?.role === "employee") {
+                roleCondition = { department: currentUser?.department?._id };
+            }
+            if (currentUser?.role === "dispatcher") {
+                const userDeptId = currentUser?.department?._id;
+                roleCondition = {
+                    $or: [
+                        { department: userDeptId },
+                        { role: "manager" }
+                    ]
+                };
+            }
+
+            // Kết hợp: chỉ tìm khi có q + role condition
+            finalQuery = { $and: [searchCondition] };
+            if (Object.keys(roleCondition).length > 0) {
+                finalQuery.$and.push(roleCondition);
+            }
+        }
+
+        const data = await User.findOne(finalQuery)
             .populate('position', 'name')
             .populate('department', 'code')
-        if (!user) {
+        if (!data) {
             req.logger.warn("⚠️ Không tìm thấy người dùng với từ khóa đã cho.");
             return res.status(404).json({
                 status: 'error',
                 message: 'Không tìm thấy người dùng'
             });
         }
-        req.logger.info(`✅ Lấy thông tin người dùng thành công: ${user.username}`);
+        req.logger.info(`✅ Lấy thông tin người dùng thành công: ${data.username}`);
         res.json({
             status: 'success',
-            data: user
+            data: data
         });
     } catch (error) {
         req.logger.error("❌ Lỗi khi lấy thông tin người dùng", error);

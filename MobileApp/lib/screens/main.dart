@@ -8,6 +8,7 @@ import 'package:soft/routes/task_assignment_route.dart';
 import 'package:soft/screens/setting/setting_page.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
 import 'package:provider/provider.dart';
+import 'package:soft/services/update_version_service.dart';
 
 class MyPage extends StatefulWidget {
   const MyPage({super.key});
@@ -26,6 +27,9 @@ class MyHomePageState extends State<MyPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      UpdateVersionService.checkForUpdate(context);
+    });
     Future.microtask(() async {
       if (!mounted) return;
 
