@@ -53,6 +53,7 @@ export default function ExcavatorTripReport({
                                                 <TableCell rowSpan={span}>{item.excavator || ''}</TableCell>
                                             </>
                                         )}
+
                                         <TableCell align='center'>{r.material || ''}</TableCell>
                                         <TableCell align='center'>
                                             {r.tripCount ?? ''}
