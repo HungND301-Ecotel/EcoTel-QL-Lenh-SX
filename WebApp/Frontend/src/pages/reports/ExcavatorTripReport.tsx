@@ -27,12 +27,12 @@ export default function ExcavatorTripReport({
                         <TableHead>
                             <TableRow>
                                 <TableCell align='center' sx={{ width: 60 }}>STT</TableCell>
-                                <TableCell align='center'>Người ra lệnh</TableCell>
-                                <TableCell align='center' sx={{ width: 180 }}>Thẻ lương công nhân</TableCell>
-                                <TableCell align='center' sx={{ width: 200 }}>Đơn vị</TableCell>
-                                <TableCell align='center' sx={{ width: 160 }}>Biển số máy vận hành</TableCell>
-                                <TableCell align='center' sx={{ width: 160 }}>Vật liệu</TableCell>
-                                <TableCell align='center' sx={{ width: 120 }}>Số chuyến</TableCell>
+                                <TableCell align='center' sx={{ width: "20%" }}>Người tạo lệnh</TableCell>
+                                <TableCell align='center' sx={{ width: "20%" }}>Công nhân</TableCell>
+                                <TableCell align='center' sx={{ width: "20%" }}>Đơn vị</TableCell>
+                                <TableCell align='center' sx={{ width: "10%" }}>Biển số máy vận hành</TableCell>
+                                <TableCell align='center' sx={{ width: "10%" }}>Vật liệu</TableCell>
+                                <TableCell align='center' sx={{ width: "10%" }}>Số chuyến</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -50,9 +50,9 @@ export default function ExcavatorTripReport({
                                                 <TableCell rowSpan={span}>{item.fullName || ''}</TableCell>
                                                 <TableCell align='center' rowSpan={span}>{item.salaryCode || ''}</TableCell>
                                                 <TableCell rowSpan={span}>{item.department || ''}</TableCell>
+                                                <TableCell rowSpan={span}>{item.excavator || ''}</TableCell>
                                             </>
                                         )}
-                                        <TableCell align='center'>{r.code || ''}</TableCell>
                                         <TableCell align='center'>{r.material || ''}</TableCell>
                                         <TableCell align='center'>
                                             {r.tripCount ?? ''}
