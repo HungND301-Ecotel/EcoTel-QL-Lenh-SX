@@ -120,7 +120,7 @@ export interface Material {
 export interface TravelLog {
     _id: string;
     excavator?: string;
-    location?: number;
+    location?: string;
     distance?: number;
     startTime?: Date;
     endTime?: Date;
