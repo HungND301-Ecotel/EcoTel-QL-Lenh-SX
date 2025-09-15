@@ -157,6 +157,7 @@ const Orders: React.FC = () => {
         });
         return out;
     };
+
     const { data: devices = [] } = useQuery({
         queryKey: ['devices'],
         queryFn: () => api.get('/devices').then(res => res.data.data),

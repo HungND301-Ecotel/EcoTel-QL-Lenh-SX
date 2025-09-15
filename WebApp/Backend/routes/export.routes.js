@@ -11,6 +11,7 @@ const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 const mongoose = require('mongoose');
 const { groupReportsByExcavator, groupReportsForProduct } = require('../utils/reportGrouping');
 
+
 // lệnh sx
 router.post('/order/bulk', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
     const user = req.user
@@ -123,7 +124,6 @@ async function buildSheetPXVT6(req, res, next) {
             worksheet.getCell('F5').font = { bold: true };
             worksheet.getCell('G5').value = order.createdBy?.salaryCode || '';
 
-
             worksheet.getCell('I5').value = 'Chức vụ';
             worksheet.getCell('I5').font = { bold: true };
             worksheet.getCell('J5').value = order.createdBy?.position?.name || '';
@@ -201,7 +201,6 @@ async function buildSheetPXVT6(req, res, next) {
             worksheet.getCell('I11').font = { bold: true };
             worksheet.getCell('K11').value = (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => { return sum + report?.distanceKm }, 0) || '';
             worksheet.getCell('K11').alignment = { horizontal: 'left' }
-
 
 
             worksheet.mergeCells('A13:L13');
@@ -323,20 +322,20 @@ async function buildSheetPXVT6(req, res, next) {
             for (let index = 0; index < (order.shiftReport?.vehicleSummaries?.length + 1 || 1); index++) {
                 const rep = order.shiftReport?.vehicleSummaries[index];
 
-                worksheet.getCell(`A${totalRow + 4 + index}`).value = rep?.vehicle?.code || '';
-                worksheet.getCell(`B${totalRow + 4 + index}`).value = rep?.fuelRemain || '';
-                worksheet.getCell(`C${totalRow + 4 + index}`).value = rep?.fuelReceived || '';
-                worksheet.getCell(`D${totalRow + 4 + index}`).value = rep?.fuelRemainEnd || '';
-                worksheet.getCell(`E${totalRow + 4 + index}`).value =
+                worksheet.getCell(`A${totalRow +4 + index}`).value = rep?.vehicle?.code || '';
+                worksheet.getCell(`B${totalRow +4 + index}`).value = rep?.fuelRemain || '';
+                worksheet.getCell(`C${totalRow +4 + index}`).value = rep?.fuelReceived || '';
+                worksheet.getCell(`D${totalRow +4 + index}`).value = rep?.fuelRemainEnd || '';
+                worksheet.getCell(`E${totalRow +4 + index}`).value =
                     (rep?.fuelRemain ?? 0) + (rep?.fuelReceived ?? 0) - (rep?.fuelRemainEnd ?? 0);
 
-                worksheet.getCell(`F${totalRow + 4 + index}`).value = '';
+                worksheet.getCell(`F${totalRow +4 + index}`).value = '';
 
-                worksheet.mergeCells(`H${totalRow + 4 + index}:I${totalRow + 4 + index}`);
-                worksheet.getCell(`H${totalRow + 4 + index}`).value = '';
+                worksheet.mergeCells(`H${totalRow +4 + index}:I${totalRow +4 + index}`);
+                worksheet.getCell(`H${totalRow +4 + index}`).value = '';
 
-                worksheet.mergeCells(`J${totalRow + 4 + index}:L${totalRow + 4 + index}`);
-                worksheet.getCell(`J${totalRow + 4 + index}`).value = '';
+                worksheet.mergeCells(`J${totalRow +4 + index}:L${totalRow +4 + index}`);
+                worksheet.getCell(`J${totalRow +4 + index}`).value = '';
             }
 
             worksheet.mergeCells(`A${fuelEndRow}:L${fuelEndRow}`);
@@ -458,7 +457,7 @@ async function buildSheetPXVT6(req, res, next) {
     }
 };
 
-async function buildSheetDefault(req, res, next) {
+async function buildSheetDefault(req, res, next) {  
     try {
         const { ids } = req.body; // mảng entity id
 
@@ -557,7 +556,6 @@ async function buildSheetDefault(req, res, next) {
             worksheet.getCell('F5').value = 'Mã thẻ lương';
             worksheet.getCell('F5').font = { bold: true };
             worksheet.getCell('G5').value = order.createdBy?.salaryCode || '';
-
 
             worksheet.getCell('I5').value = 'Chức vụ';
             worksheet.getCell('I5').font = { bold: true };
@@ -1532,6 +1530,7 @@ router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher
                         })
                         .populate('material', 'name')
                     if (!reports.length) continue;
+
                     const grouped = groupReportsForProduct(reports)
 
                     result.push({
