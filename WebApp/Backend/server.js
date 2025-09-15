@@ -32,6 +32,8 @@ const UploadRoutes = require('./routes/upload.routes');
 const ExportRoutes = require('./routes/export.routes');
 const ShiftRoutes = require('./routes/shift.routes');
 const ReportHistoryRoutes = require('./routes/reportHistory.routes');
+const TravelLogRoutes = require('./routes/travelLog.routes');
+
 
 
 
@@ -151,6 +153,8 @@ app.use('/api/uploads', UploadRoutes);
 app.use('/api/exports', ExportRoutes);
 app.use('/api/shifts', ShiftRoutes);
 app.use('/api/reporthistories', ReportHistoryRoutes);
+app.use('/api/travellogs', TravelLogRoutes);
+
 
 
 

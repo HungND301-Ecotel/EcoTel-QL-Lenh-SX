@@ -57,7 +57,7 @@ import {
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import api from '../../config/api.config';
-import { Device, Location, Order, Shift } from '../../types';
+import { Device, Location, TravelLog } from '../../types';
 import { DatePicker, DateTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
@@ -79,16 +79,10 @@ const StyledPopper = styled(Popper)({
 
 const TravelLogs: React.FC = () => {
     const [open, setOpen] = useState(false);
-    const [history, setHistory] = useState(false);
-    const [shiftReport, setShiftReport] = useState(false);
-    const [transfer, setTransfer] = useState(false);
-    const [status, setStatus] = useState("");
     const [startTime, setStartTime] = useState<Dayjs | null>(null);
     const [endTime, setEndTime] = useState<Dayjs | null>(null);
-    const [device, setDevice] = useState("");
-    const [department, setDepartment] = useState("");
-    const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
-    const [selectedOrders, setSelectedOrders] = useState<any[]>([]);
+    const [selectedTravelLog, setSelectedTravelLog] = useState<any | null>(null);
+    const [selectedTravelLogs, setSelectedTravelLogs] = useState<any[]>([]);
     const [user] = useAtom(userAtom)
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
@@ -99,7 +93,7 @@ const TravelLogs: React.FC = () => {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(50);
     const [total, setTotal] = useState(0);
-    const [orders, setOrders] = useState<any[]>([]);
+    const [travelLogs, setTravelLogs] = useState<any[]>([]);
 
     const defaultColumns = [
         { id: 'number', label: 'STT' },
@@ -127,40 +121,28 @@ const TravelLogs: React.FC = () => {
         queryFn: () => api.get('/locations').then(res => res.data.data),
     });
     const { data, isLoading } = useQuery({
-        queryKey: ['orders', page, pageSize, status, department, device, startTime, endTime, serverFilters],
-        queryFn: () => api.get(`/orders`, {
+        queryKey: ['travellogs', page, pageSize, startTime, endTime],
+        queryFn: () => api.get(`/travellogs`, {
             params: {
                 page,
                 limit: pageSize,
-                department,
-                status: status || undefined,
                 startTime: startTime ? startTime.toISOString() : '',
                 endTime: endTime ? endTime.toISOString() : '',
-
-                // filters từ Table
-                assignedTo: serverFilters.assignedTo || undefined,
-                createdBy: serverFilters.createdBy || undefined,
-                shift: serverFilters.shift || undefined,
-                job: serverFilters.job || undefined,
-                device: serverFilters.device || undefined,
-                excavator: serverFilters.excavator || undefined,
-                location: serverFilters.location || undefined,
-                material: serverFilters.material || undefined,
             }
         }).then(res => res.data)
     })
     useEffect(() => {
         if (data) {
-            setOrders(data.data);     // mảng order
-            setTotal(data.totalDocs);   // tổng số bản ghi từ API
+            setTravelLogs(data.data);
+            setTotal(data.totalDocs);
         }
     }, [data]);
 
     const createMutation = useMutation({
-        mutationFn: (newOrder: Partial<Order>) =>
-            api.post('/orders', newOrder).then(res => res.data),
+        mutationFn: (newTravelLog: Partial<TravelLog>) =>
+            api.post('/travellogs', newTravelLog).then(res => res.data),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['orders'] });
+            queryClient.invalidateQueries({ queryKey: ['travellogs'] });
             handleClose();
         },
         onError: (error: any) => {
@@ -172,7 +154,7 @@ const TravelLogs: React.FC = () => {
     const [isUploading, setIsUploading] = useState(false);
     const importFile = useMutation({
         mutationFn: (formData: FormData) =>
-            api.post('/safetyMeasures/importFile', formData, {
+            api.post('/travellogs/importFile', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
                 onUploadProgress: (progressEvent) => {
                     const percent = Math.round(
@@ -219,7 +201,7 @@ const TravelLogs: React.FC = () => {
 
     const exportExcel = useMutation({
         mutationFn: () => {
-            return api.post('/safetyMeasures/exportFile', {}, {
+            return api.post('/travellogs/exportFile', {}, {
                 responseType: 'blob',
             }).then(res => {
                 const blob = new Blob([res.data], {
@@ -244,10 +226,10 @@ const TravelLogs: React.FC = () => {
     });
 
     const updateMutation = useMutation({
-        mutationFn: (updatedOrder: Partial<Order>) =>
-            api.put(`/orders/${updatedOrder._id}`, updatedOrder).then(res => res.data),
+        mutationFn: (updatedTravelLog: Partial<TravelLog>) =>
+            api.put(`/travellogs/${updatedTravelLog._id}`, updatedTravelLog).then(res => res.data),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['orders'] });
+            queryClient.invalidateQueries({ queryKey: ['travellogs'] });
             showSuccessAlert('Cập nhật lệnh sản xuất thành công');
             handleClose();
         },
@@ -257,10 +239,10 @@ const TravelLogs: React.FC = () => {
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (ids: string[]) => api.delete(`/orders`, { data: { ids } }).then(res => res.data.message),
+        mutationFn: (ids: string[]) => api.delete(`/travellogs`, { data: { ids } }).then(res => res.data.message),
         onSuccess: (message) => {
-            queryClient.invalidateQueries({ queryKey: ['orders'] });
-            setSelectedOrders([]);
+            queryClient.invalidateQueries({ queryKey: ['travellogs'] });
+            setSelectedTravelLogs([]);
             showSuccessAlert(message || 'Xóa thành công');
             handleClose()
         },
@@ -271,45 +253,46 @@ const TravelLogs: React.FC = () => {
 
     const formik = useFormik({
         initialValues: {
-            excavator: undefined,
-            location: undefined,
+            excavator: '',
+            location: '',
             distance: undefined as number | undefined,
-            startTime: '',
-            endTime: '',
+            startTime: new Date(),
+            endTime: new Date(),
         },
-        enableReinitialize: true,
+        // enableReinitialize: true,
         validationSchema: trvelLogValidationSchema,
         onSubmit: (values) => {
-            // if (selectedMaterial) {
-            //     updateMutation.mutate({ ...values, _id: selectedMaterial._id });
-            // } else {
-            //     createMutation.mutate({ ...values });
-            // }
+            if (selectedTravelLog) {
+                updateMutation.mutate({
+                    ...values,
+                    startTime: dayjs.utc(dayjs(values.startTime).format('YYYY-MM-DD')).toDate(),
+                    endTime: dayjs.utc(dayjs(values.endTime).format('YYYY-MM-DD')).toDate(),
+                    _id: selectedTravelLog._id
+                });
+            } else {
+                createMutation.mutate({
+                    ...values,
+                    startTime: dayjs.utc(dayjs(values.startTime).format('YYYY-MM-DD HH:mm')).toDate(),
+                    endTime: dayjs.utc(dayjs(values.endTime).format('YYYY-MM-DD HH:mm')).toDate(),
+                });
+            }
         },
     });
 
-
-    const handleCancel = (order: any) => {
-        if (order.status === "in_progress") {
-            return showErrorAlert('Lệnh đang thực hiện không thể hủy')
-        }
-        if (order.status === "completed") {
-            return showErrorAlert('Lệnh đã hoàn thành không thể hủy')
-        }
-        showConfirmAlert('Bạn có chắc chắn muốn hủy lệnh sản xuất này?. Bạn sẽ không thể thay đổi').then((result) => {
-            if (result.isConfirmed) {
-                updateMutation.mutate({ _id: order._id, status: 'cancel' });
-            }
-        })
-    }
-
-    const handleOpen = (order?: any) => {
-        if (order) {
-            setSelectedOrder(order);
+    const handleOpen = (travellog?: any) => {
+        if (travellog) {
+            setSelectedTravelLog({
+                ...travellog,
+                excavator: travellog.excavator !== null && typeof travellog.excavator === 'object'
+                    ? travellog.excavator._id
+                    : travellog.excavator || undefined,
+                location: travellog.location !== null && typeof travellog.location === 'object'
+                    ? travellog.location._id
+                    : travellog.location || '',
+            });
         } else {
-            setSelectedOrder(null);
+            setSelectedTravelLog(null);
         }
-        setTransfer(false)
         setExpanded(true)
         setOpen(true);
         setTimeout(() => {
@@ -324,70 +307,20 @@ const TravelLogs: React.FC = () => {
 
     const handleClose = () => {
         setOpen(false);
-        setTransfer(false);
-        setSelectedOrder(null);
+        setSelectedTravelLog(null);
         setExpanded(false)
     };
 
-    const handleSubmit = (values: Partial<Order>) => {
-        if (selectedOrder) {
-            updateMutation.mutate({ ...values, _id: selectedOrder._id });
-        } else {
-            createMutation.mutate(values);
-        }
-    };
     const handleDelete = () => {
-        if (selectedOrders.length === 0) {
+        if (selectedTravelLogs.length === 0) {
             return showErrorAlert('Không tìm thấy bản ghi cần xóa');
         }
-
-        if (user?.role === "admin") {
-            showConfirmAlert('Bạn có muốn xóa?. Bạn sẽ không thể hoàn tác.').then((result) => {
-                if (result.isConfirmed) {
-                    deleteMutation.mutate(selectedOrders.map(o => o._id));
-                }
-            });
-        } else {
-            // lọc ra những order có thể xoá
-            const deletableOrders = selectedOrders.filter(o =>
-                o.status !== "in_progress" && o.status !== "completed"
-            );
-
-            if (deletableOrders.length === 0) {
-                return showErrorAlert("Không có bản ghi nào hợp lệ để xoá");
+        showConfirmAlert('Bạn có muốn xóa?. Bạn sẽ không thể hoàn tác.').then((result) => {
+            if (result.isConfirmed) {
+                deleteMutation.mutate(selectedTravelLogs.map(o => o._id));
             }
-
-            // cảnh báo cho các bản ghi bị bỏ qua
-            const skipped = selectedOrders.length - deletableOrders.length;
-
-            let message = "";
-            if (skipped > 0) {
-                message = `${skipped} bản ghi đang thực hiện hoặc đã hoàn thành. `;
-            }
-
-            message += `Bạn có thể xóa ${deletableOrders.length} bản ghi. Bạn có muốn xóa?`;
-
-            showConfirmAlert(message).then((result) => {
-                if (result.isConfirmed) {
-                    deleteMutation.mutate(deletableOrders.map(o => o._id));
-                }
-            });
-        }
-
+        });
     };
-
-    useEffect(() => {
-        if (transfer && formRef.current) {
-            setTimeout(() => {
-                if (formRef.current) {
-                    formRef.current.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            }, 500);
-        }
-    }, [transfer]);
 
 
     const trvelLogColumns: TableProps<any>['columns'] = [
@@ -407,7 +340,7 @@ const TravelLogs: React.FC = () => {
         },
         {
             title: 'Điểm đổ tải', dataIndex: 'location', key: 'location', width: 150,
-            render: (text, record) => record.location?.map((loc: any) => loc.name).join(', '),
+            render: (text, record) => record.location?.name || '',
             filterSearch: true,
             filters: locations.map((d: any) => ({ text: d.name, value: d._id })),
             onFilter: undefined,
@@ -419,128 +352,23 @@ const TravelLogs: React.FC = () => {
         },
         {
             title: 'Bắt đầu', dataIndex: 'startTime', key: 'startTime', width: 100, align: 'center',
-            render: (text, record) => record.startTime ? format(new Date(record.startTime), 'HH:mm:ss') : ''
+            render: (text, record) => record.startTime
+                ? dayjs.utc(record.startTime).format('DD-MM-YYYY HH:mm') // giữ nguyên UTC
+                : ''
         },
         {
             title: 'Kết thúc', dataIndex: 'endTime', key: 'endTime', width: 100, align: 'center',
-            render: (text, record) => record.endTime ? format(new Date(record.endTime), 'HH:mm:ss') : ''
-        },
-        {
-            title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 150, align: 'center',
-            render: (text, record) => record.note ?? ''
-        },
-        {
-            title: 'Xem báo công',
-            dataIndex: 'view',
-            key: 'view',
-            width: 100,
-            align: 'center',
-            render: (text, record) => (
-                <IconButton
-                    color="secondary"
-                    onClick={() => {
-                        setSelectedOrder(record)
-                        setShiftReport(true)
-                    }}
-                >
-                    <Tooltip title="Báo công" placement='top'>
-                        <Visibility />
-                    </Tooltip>
-                </IconButton>
-            ),
-        },
-        {
-            title: 'Sửa',
-            dataIndex: 'edit',
-            key: 'edit',
-            width: 60,
-            render: (text, record) => (
-                <IconButton
-                    color="primary"
-                    disabled={!['pending', 'warning'].includes(record?.status)
-                    }
-                    onClick={async () => {
-                        if (open) {
-                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                            if (result.isConfirmed) {
-                                handleOpen(record);
-                            }
-                        } else {
-                            handleOpen(record);
-                        }
-                    }}
-                >
-                    <Tooltip title="Sửa" placement='top'>
-                        <EditIcon />
-                    </Tooltip>
-                </IconButton >
-            )
-        },
-        {
-            title: 'Hủy',
-            dataIndex: 'cancel',
-            key: 'cancel',
-            width: 60,
-            render: (text, record) => (
-                <IconButton
-                    disabled={!['pending', 'warning'].includes(record.status)}
-                    color="warning"
-                    onClick={() => handleCancel(record)}
-                >
-                    <Tooltip title="Hủy" placement='top'>
-                        <CancelOutlined />
-                    </Tooltip>
-                </IconButton>
-            ),
-        },
-        {
-            title: 'Chuyển ca',
-            dataIndex: 'transfer',
-            key: 'transfer',
-            width: 100,
-            align: 'center',
-            render: (text, record) => (
-                <IconButton
-                    color="info"
-                    onClick={async () => {
-                        if (open) {
-                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                            if (result.isConfirmed) {
-                                setSelectedOrder(record)
-                                setOpen(false)
-                                setExpanded(true)
-                                setTransfer(true)
-
-                            }
-                        } else {
-                            setSelectedOrder(record)
-                            setOpen(false)
-                            setExpanded(true)
-                            setTransfer(true)
-                            setTimeout(() => {
-                                if (formRef.current) {
-                                    formRef.current.scrollIntoView({
-                                        behavior: 'smooth',
-                                        block: 'start'
-                                    });
-                                }
-                            }, 500);
-                        }
-                    }}
-                >
-                    <Tooltip title="Chuyển ca" placement='top'>
-                        <SyncAlt />
-                    </Tooltip>
-                </IconButton>
-            ),
+            render: (text, record) => record.endTime
+                ? dayjs.utc(record.endTime).format('DD-MM-YYYY HH:mm') // giữ nguyên UTC
+                : ''
         },
     ];
 
     const rowSelection: TableRowSelection<any> = {
         // AntD yêu cầu selectedRowKeys phải là mảng id
-        selectedRowKeys: selectedOrders.map(o => o._id),
+        selectedRowKeys: selectedTravelLogs.map(o => o._id),
         onChange: (newKeys: React.Key[], newRows: any[]) => {
-            setSelectedOrders(newRows);   // lưu luôn object đầy đủ
+            setSelectedTravelLogs(newRows);   // lưu luôn object đầy đủ
         },
     };
 
@@ -714,7 +542,7 @@ const TravelLogs: React.FC = () => {
                                         fullWidth
                                         options={excavators}
                                         getOptionLabel={(option: Device) =>
-                                            option.name || ''
+                                            option.code || ''
                                         }
                                         value={excavators.find((p: any) => p._id === formik.values.excavator) || null}
                                         onChange={(event, newValue) => {
@@ -756,7 +584,7 @@ const TravelLogs: React.FC = () => {
                                         id="distance"
                                         name="distance"
                                         label="Cung độ (km)"
-                                        value={formik.values.distance?.toString() ?? ''}
+                                        value={formik.values.distance ?? ''}
                                         onChange={formik.handleChange}
                                         error={formik.touched.distance && Boolean(formik.errors.distance)}
                                         helperText={formik.touched.distance && formik.errors.distance}
@@ -852,7 +680,7 @@ const TravelLogs: React.FC = () => {
                     ),
                 }}
                 columns={trvelLogColumns.filter(col => col.key && visibleColumns.includes(col.key.toString()))}
-                dataSource={orders}
+                dataSource={travelLogs}
                 onChange={(pagination, filters) => {
                     setPage(pagination.current!);      // 👈 cập nhật page
                     setPageSize(pagination.pageSize!); // 👈 cập nhật pageSize
