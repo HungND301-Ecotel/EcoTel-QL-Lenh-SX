@@ -126,8 +126,11 @@ router.get('/', verifyToken, async (req, res, next) => {
         let baseQuery = Order.find(dataFilter)
             .populate({
                 path: 'assignedTo',
-                select: 'username fullName salaryCode department',
-                populate: { path: 'department', select: 'code' },
+                select: 'username fullName salaryCode department position',
+                populate: [
+                    { path: 'department', select: 'code' },
+                    { path: 'position', select: 'name' }
+                ],
             })
             .populate('job', 'name type content')
             .populate('devicesToProduce.deviceType')
@@ -141,7 +144,11 @@ router.get('/', verifyToken, async (req, res, next) => {
                 path: 'shiftReport',
                 populate: [{ path: 'vehicleSummaries.vehicle', select: 'code' }],
             })
-            .populate('createdBy', 'username fullName salaryCode')
+            .populate({
+                path: 'createdBy',
+                select: 'username fullName salaryCode position',
+                populate: { path: 'position', select: 'name' },
+            })
             .populate('updatedBy', 'username fullName')
             .sort({ workingDate: -1, createdAt: -1 });
 
@@ -677,7 +684,11 @@ router.delete('/:id', verifyToken, restrictTo('admin', 'dispatcher', 'manager'),
 const orderPopulateOptions = [
     {
         path: "assignedTo",
-        select: "username fullName phone salaryCode",
+        select: "username fullName phone salaryCode department position",
+        populate: [
+            { path: 'department', select: 'code' },
+            { path: 'position', select: 'name' }
+        ],
     },
     { path: 'job', select: 'name type content' },
     { path: 'devicesToProduce.deviceType' },
@@ -698,7 +709,10 @@ const orderPopulateOptions = [
     },
     {
         path: "createdBy",
-        select: "username fullName phone salaryCode",
+        select: "username fullName phone salaryCode department",
+        populate: [
+            { path: 'department', select: 'code' },
+        ]
     }
 ];
 router.get('/user', verifyToken, async (req, res, next) => {

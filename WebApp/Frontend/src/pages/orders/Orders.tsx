@@ -34,6 +34,7 @@ import {
     AccordionDetails,
     Pagination,
     TablePagination,
+    InputAdornment,
 } from '@mui/material';
 import { format } from 'date-fns';
 import {
@@ -72,8 +73,6 @@ import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { Table, TableColumnsType, TableProps } from 'antd';
 import { TableRowSelection } from 'antd/es/table/interface';
 import { StyledPopper } from '../../ui/poppers';
-import { useResizableColumns } from '../../hooks/useResizableColumns';
-import ResizableTitle from '../../components/ResizableTable/ResizableTable';
 
 
 const Orders: React.FC = () => {
@@ -89,6 +88,7 @@ const Orders: React.FC = () => {
     const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
     const [selectedRow, setSelectedRow] = useState<any | null>(null);
     const [selectedOrders, setSelectedOrders] = useState<any[]>([]);
+    const [value, setValue] = useState("")
     const [user] = useAtom(userAtom)
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
@@ -111,22 +111,23 @@ const Orders: React.FC = () => {
 
     const defaultColumns = [
         { id: 'number', label: 'Số thứ tự' },
-        { id: 'assignedTo', label: 'Nhân viên' },
-        { id: 'salaryCode', label: 'Mã thẻ lương' },
+        { id: 'assignedTo', label: 'Người nhận lệnh' },
+        { id: 'salaryCode', label: 'Số thẻ' },
         { id: 'workingDate', label: 'Ngày làm việc' },
         { id: 'shift', label: 'Ca' },
         { id: 'shiftHour', label: 'Giờ làm việc' },
         { id: 'job', label: 'Công việc' },
-        { id: 'content', label: 'Nội dung' },
-        { id: 'device', label: 'Phương tiện' },
+        { id: 'content', label: 'Nội dung lệnh' },
+        { id: 'device', label: 'Thiết bị' },
         { id: 'excavator', label: 'Máy xúc' },
         { id: 'material', label: 'Vật liệu' },
         { id: 'location', label: 'Điểm đổ' },
-        { id: 'createdBy', label: 'Người tạo lệnh' },
+        { id: 'createdBy', label: 'Người ra lệnh' },
         { id: 'createdAt', label: 'Thời gian tạo lệnh' },
         { id: 'startTime', label: 'Bắt đầu' },
         { id: 'endTime', label: 'Kết thúc' },
-        { id: 'status', label: 'Trạng thái' },
+        { id: 'status', label: 'Trạng thái lệnh' },
+        { id: 'deviceStatus', label: 'Tình trạng thiết bị' },
         { id: 'view', label: 'Xem' },
         { id: 'edit', label: 'Sửa' },
         { id: 'cancel', label: 'Hủy' },
@@ -143,7 +144,20 @@ const Orders: React.FC = () => {
         setStatus(prev => (prev === value ? '' : value)); // bỏ chọn nếu click lại
     };
 
-    const [serverFilters, setServerFilters] = useState<any>({});
+    const [serverFilters, setServerFilters] = useState<Record<string, React.Key[] | null>>({});
+
+    const normalizeFilters = (filters: Record<string, React.Key[] | null | undefined>) => {
+        const out: Record<string, React.Key[] | null> = {};
+        Object.entries(filters).forEach(([key, val]) => {
+            if (Array.isArray(val) && val.length > 0) {
+                out[key] = val;         // có chọn => giữ mảng
+            } else {
+                out[key] = null;        // Reset / bỏ hết chọn / undefined / [] => null
+            }
+        });
+        return out;
+    };
+
     const { data: devices = [] } = useQuery({
         queryKey: ['devices'],
         queryFn: () => api.get('/devices').then(res => res.data.data),
@@ -178,7 +192,7 @@ const Orders: React.FC = () => {
     });
 
     const { data, isLoading } = useQuery({
-        queryKey: ['orders', page, pageSize, status, department, device, startTime, endTime, serverFilters],
+        queryKey: ['orders', page, pageSize, value, status, department, device, startTime, endTime, serverFilters],
         queryFn: () => api.get(`/orders`, {
             params: {
                 page,
@@ -187,6 +201,7 @@ const Orders: React.FC = () => {
                 status: status || undefined,
                 startTime: startTime ? startTime.toISOString() : '',
                 endTime: endTime ? endTime.toISOString() : '',
+                q: value,
 
                 // filters từ Table
                 assignedTo: serverFilters.assignedTo || undefined,
@@ -393,7 +408,7 @@ const Orders: React.FC = () => {
             fixed: 'left'
         },
         {
-            title: 'Nhân viên', dataIndex: 'assignedTo', key: 'assignedTo', width: 200, align: 'center',
+            title: 'Người nhận lệnh', dataIndex: 'assignedTo', key: 'assignedTo', width: 200,
             render: (text, record) => record.assignedTo?.fullName || '',
             fixed: 'left',
             filterSearch: true,
@@ -402,7 +417,7 @@ const Orders: React.FC = () => {
             filteredValue: serverFilters.assignedTo ?? null,
         },
         {
-            title: 'Mã thẻ lương', dataIndex: 'salaryCode', key: 'salaryCode', width: 120, align: 'center',
+            title: 'Số thẻ', dataIndex: 'salaryCode', key: 'salaryCode', width: 120, align: 'center',
             render: (text, record) => record.assignedTo?.salaryCode || '',
         },
         {
@@ -432,14 +447,14 @@ const Orders: React.FC = () => {
             filteredValue: serverFilters.job ?? null,
         },
         {
-            title: 'Nội dung',
+            title: 'Nội dung lệnh',
             dataIndex: 'workContent',
             key: 'content',
             width: 250,           // width khởi tạo, sẽ được update khi resize
             ellipsis: true,       // để AntD tự xử lý cắt ...
         },
         {
-            title: 'Phương tiện', dataIndex: 'device', key: 'device', width: 150,
+            title: 'Thiết bị', dataIndex: 'device', key: 'device', width: 150,
             render: (text, record) => record.device?.map((dev: any) => dev.code).join(', '),
             filterSearch: true,
             filters: devices.map((d: any) => ({ text: d.code, value: d._id })),
@@ -471,7 +486,7 @@ const Orders: React.FC = () => {
             filteredValue: serverFilters.location ?? null,
         },
         {
-            title: 'Người tạo lệnh', dataIndex: 'createdBy', key: 'createdBy', width: 200, align: 'center',
+            title: 'Người ra lệnh', dataIndex: 'createdBy', key: 'createdBy', width: 200,
             filterSearch: true,
             filters: users.map((d: any) => ({ text: `${d.username}-${d.salaryCode}`, value: d._id })),
             onFilter: undefined,
@@ -491,7 +506,7 @@ const Orders: React.FC = () => {
             render: (text, record) => record.endTime ? format(new Date(record.endTime), 'HH:mm:ss') : ''
         },
         {
-            title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 150, align: 'center',
+            title: 'Trạng thái lệnh', dataIndex: 'status', key: 'status', width: 150, align: 'center',
             render: (text, record) => (
                 <Chip
                     sx={{ width: '120px' }}
@@ -507,6 +522,10 @@ const Orders: React.FC = () => {
                                     record.status === 'warning' ? 'warning' : 'secondary'}
                 />
             ),
+        },
+        {
+            title: 'Tình trạng thiết bị', dataIndex: 'deviceStatus', key: 'deviceStatus', width: 150, align: 'center',
+            render: (text, record) => record.shiftReport?.vehicleSummaries.map((i: any) => i.status === "good" ? "Tốt" : "Hỏng").join(', '),
         },
         {
             title: 'Xem báo công',
@@ -616,14 +635,10 @@ const Orders: React.FC = () => {
     ];
 
     const filteredColumns = React.useMemo(
-        () => orderColumns.filter(
-            (col) => col.key && visibleColumns.includes(String(col.key))
-        ),
+        () => orderColumns.filter(col => col.key && visibleColumns.includes(String(col.key))),
         [orderColumns, visibleColumns]
     );
 
-    // 👉 truyền visibleColumns như 1 dep cho hook
-    const { mergedColumns } = useResizableColumns<any>(filteredColumns, [visibleColumns]);
 
     const rowSelection: TableRowSelection<any> = {
         // AntD yêu cầu selectedRowKeys phải là mảng id
@@ -723,6 +738,17 @@ const Orders: React.FC = () => {
                                 },
                             }}
                         >
+                            <TextField fullWidth size="small" value={value}
+                                placeholder='Thẻ lương, công việc ...'
+                                onChange={(e) => setValue(e.target.value)}
+                                InputProps={{
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <Search sx={{ fontSize: 24 }} />
+                                        </InputAdornment>
+                                    )
+                                }}>
+                            </TextField>
                             {user?.role === "admin" && <Autocomplete
                                 fullWidth
                                 options={departments}
@@ -844,7 +870,7 @@ const Orders: React.FC = () => {
                 </Menu>
             </Box>
             <Grid container spacing={2} sx={{ mb: 2 }}>
-                <Grid item xs={12} sm={9}>
+                <Grid item xs={12} sm={8}>
                     <Table<any>
                         size="small"
                         rowKey="_id" rowSelection={rowSelection}
@@ -860,13 +886,12 @@ const Orders: React.FC = () => {
                                 </div>
                             ),
                         }}
-                        columns={mergedColumns}
-                        components={{ header: { cell: ResizableTitle } }}
+                        columns={filteredColumns}
                         dataSource={orders}
                         onChange={(pagination, filters) => {
                             setPage(pagination.current!);      // 👈 cập nhật page
                             setPageSize(pagination.pageSize!); // 👈 cập nhật pageSize
-                            setServerFilters(filters);         // 👈 cập nhật filters
+                            setServerFilters(normalizeFilters(filters as any));
                         }}
                         loading={{
                             spinning: isLoading,
@@ -889,49 +914,70 @@ const Orders: React.FC = () => {
                             return `${base} ${selectedRow?._id === record._id ? 'row-selected' : ''}`;
                         }} />
                 </Grid>
-                <Grid item xs={12} sm={3}>
+                <Grid item xs={12} sm={4}>
                     <Box sx={{ position: 'sticky', top: 0, maxHeight: '80vh', overflowY: 'auto', border: '1px solid #ccc', borderRadius: 2, p: 2 }}>
                         <Typography variant="h6" sx={{ mb: 2 }}>Thông tin lệnh sản xuất</Typography>
                         {selectedRow ? (
                             <Box>
                                 <Typography sx={{ display: 'flex', gap: 3 }}>
-                                    <Typography><strong>Ngày:</strong> {selectedRow.workingDate ? format(new Date(selectedRow.workingDate), 'dd-MM-yyyy') : ''}</Typography>
-                                    <Typography><strong>Ca:</strong> {selectedRow.shift?.name}</Typography>
-                                    <Typography><strong>Giờ ca:</strong>  {selectedRow.shiftHour ?? ''}</Typography>
+                                    <Typography><strong>Đơn vị: </strong>{selectedRow.assignedTo?.department?.code}</Typography>
+                                    <Typography><strong>Ngày: </strong>{selectedRow.workingDate ? format(new Date(selectedRow.workingDate), 'dd-MM-yyyy') : ''}</Typography>
+                                    <Typography><strong>Ca: </strong> {selectedRow.shift?.name}</Typography>
                                 </Typography>
                                 <Grid container spacing={2}>
-                                    {/* Nhân viên */}
-                                    <Grid item xs={12} sm={6}>
-                                        <Typography fontWeight="bold">Nhân viên:</Typography>
+                                    {/* Người nhận lệnh */}
+                                    <Grid item xs={12} sm={4}>
+                                        <Typography fontWeight="bold">Người ra lệnh:</Typography>
+                                        <Typography>{selectedRow.createdBy?.fullName}</Typography>
+                                    </Grid>
+
+                                    {/* Thẻ lương */}
+                                    <Grid item xs={12} sm={4}>
+                                        <Typography fontWeight="bold">Số thẻ:</Typography>
+                                        <Typography>{selectedRow.createdBy?.salaryCode}</Typography>
+                                    </Grid>
+                                    {/* Chức vụ */}
+                                    <Grid item xs={12} sm={4}>
+                                        <Typography fontWeight="bold">Chức vụ:</Typography>
+                                        <Typography>{selectedRow.createdBy?.position?.name}</Typography>
+                                    </Grid>
+                                </Grid>
+                                <Grid container spacing={2}>
+                                    {/* Người nhận lệnh */}
+                                    <Grid item xs={12} sm={4}>
+                                        <Typography fontWeight="bold">Người nhận lệnh:</Typography>
                                         <Typography>{selectedRow.assignedTo?.fullName}</Typography>
                                     </Grid>
 
                                     {/* Thẻ lương */}
-                                    <Grid item xs={12} sm={6}>
-                                        <Typography fontWeight="bold">Thẻ lương:</Typography>
+                                    <Grid item xs={12} sm={4}>
+                                        <Typography fontWeight="bold">Số thẻ:</Typography>
                                         <Typography>{selectedRow.assignedTo?.salaryCode}</Typography>
                                     </Grid>
-                                </Grid>
-                                <Grid container spacing={2}>
-                                    {/* Nhân viên */}
-                                    <Grid item xs={12} sm={6}>
-                                        <Typography fontWeight="bold">Người tạo lệnh:</Typography>
-                                        <Typography>{selectedRow.createdBy?.username}</Typography>
-                                    </Grid>
-
-                                    {/* Thẻ lương */}
-                                    <Grid item xs={12} sm={6}>
-                                        <Typography fontWeight="bold">Thẻ lương:</Typography>
-                                        <Typography>{selectedRow.createdBy?.salaryCode}</Typography>
+                                    {/* Chức vụ */}
+                                    <Grid item xs={12} sm={4}>
+                                        <Typography fontWeight="bold">Chức vụ:</Typography>
+                                        <Typography>{selectedRow.assignedTo?.position?.name}</Typography>
                                     </Grid>
                                 </Grid>
+                                {selectedRow.job?.type === "Vận hành xúc" && <Grid container spacing={2}>
+                                    {/* Người nhận lệnh */}
+                                    <Grid item xs={12} sm={3}>
+                                        <Typography fontWeight="bold">Phụ máy:</Typography>
+                                    </Grid>
+                                    <Grid item xs={12} sm={9}>
+                                        {selectedRow.assistants.map((i: any) => (
+                                            <Typography>{i?.fullName || ''} {i?.salaryCode || ''}</Typography>
+                                        ))}
+                                    </Grid>
+                                </Grid>}
                                 <Typography><strong>Công việc:</strong> {selectedRow.job?.name}</Typography>
-                                {selectedRow.device?.length > 0 && <Typography><strong>Phương tiện:</strong> {selectedRow.device?.map((dev: any) => dev.code).join(', ')}</Typography>}
+                                {selectedRow.device?.length > 0 && <Typography><strong>Thiết bị vận hành:</strong> {selectedRow.device?.map((dev: any) => dev.code).join(', ')}</Typography>}
                                 {selectedRow.excavator?.length > 0 && <Typography><strong>Máy xúc:</strong> {selectedRow.excavator?.map((dev: any) => dev.code).join(', ')}</Typography>}
                                 {selectedRow.location?.length > 0 && <Typography><strong>Vật liệu:</strong> {selectedRow.location?.map((dev: any) => dev.name).join(', ')}</Typography>}
                                 {selectedRow.material?.length > 0 && <Typography><strong>Điểm đổ:</strong> {selectedRow.material?.map((dev: any) => dev.name).join(', ')}</Typography>}
-                                <Typography><strong>Nội dung:</strong> {selectedRow.workContent}</Typography>
-                                <Typography><strong>Trạng thái:</strong> {
+                                <Typography><strong>Nội dung lệnh:</strong> {selectedRow.workContent}</Typography>
+                                <Typography><strong>Trạng thái lệnh:</strong> {
                                     selectedRow.status === 'pending' ? 'Chưa nhận lệnh' :
                                         selectedRow.status === 'in_progress' ? 'Đã nhận lệnh' :
                                             selectedRow.status === 'completed' ? 'Đã hoàn thành' :

@@ -26,6 +26,7 @@ export default function VehicleShiftReport({ data, signatureUrl }: { data: any[]
     return (
         <Grid item xs={12}>
             <Paper sx={{ minHeight: "80vh", overflowX: 'auto', padding: 1, width: '100%', }}>
+                <Typography textAlign={'center'} mb={2} variant='h3'>Xe không hoạt động</Typography>
                 <DataGrid
                     rows={data}
                     columns={reportColumns}
