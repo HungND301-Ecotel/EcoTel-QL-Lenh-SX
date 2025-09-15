@@ -96,17 +96,16 @@ const DispatcherOrders: React.FC = () => {
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
 
     const defaultColumns = [
-        { id: 'assignedTo', label: 'Nhân viên' },
-        { id: 'salaryCode', label: 'Mã thẻ lương' },
+        { id: 'assignedTo', label: 'Người nhận lệnh' },
+        { id: 'salaryCode', label: 'Số thẻ' },
         { id: 'workingDate', label: 'Ngày làm việc' },
         { id: 'job', label: 'Công việc' },
-        { id: 'content', label: 'Nội dung' },
-        { id: 'createdBy', label: 'Người tạo lệnh' },
+        { id: 'content', label: 'Nội dung lệnh' },
+        { id: 'createdBy', label: 'Người ra lệnh' },
         { id: 'createdAt', label: 'Thời gian tạo lệnh' },
         { id: 'startTime', label: 'Bắt đầu' },
         { id: 'endTime', label: 'Kết thúc' },
-        { id: 'status', label: 'Trạng thái' },
-        { id: 'note', label: 'Ghi chú' },
+        { id: 'status', label: 'Trạng thái lệnh' },
         { id: 'view', label: 'Xem' },
         { id: 'edit', label: 'Sửa' },
         { id: 'cancel', label: 'Hủy' },
@@ -562,7 +561,7 @@ const DispatcherOrders: React.FC = () => {
                 </Menu>
             </Box>
             <Grid container spacing={2} sx={{ mb: 2 }}>
-                <Grid item xs={12} sm={9}>
+                <Grid item xs={12} sm={8}>
                     <Paper sx={{ width: '100%', overflowX: "initial" }}>
                         <TableContainer sx={{ maxHeight: '80vh' }}>
                             <Table stickyHeader aria-label="sticky table" sx={{
@@ -606,17 +605,16 @@ const DispatcherOrders: React.FC = () => {
                                             minWidth: 150,
 
                                             fontWeight: 'bold', fontSize: 18
-                                        }}>Nhân viên</TableCell>}
-                                        {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{ minWidth: 130, fontWeight: 'bold', fontSize: 18 }}>Mã thẻ lương</TableCell>}
+                                        }}>Người nhận lệnh</TableCell>}
+                                        {visibleColumns.includes('salaryCode') && <TableCell align='center' sx={{ minWidth: 130, fontWeight: 'bold', fontSize: 18 }}>Số thẻ</TableCell>}
                                         {visibleColumns.includes('workingDate') && <TableCell align='center' sx={{ minWidth: 120, fontWeight: 'bold', fontSize: 18 }}>Ngày làm việc</TableCell>}
                                         {visibleColumns.includes('job') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Công việc</TableCell>}
-                                        {visibleColumns.includes('content') && <TableCell align='center' sx={{ minWidth: 200, fontWeight: 'bold', fontSize: 18 }}>Nội dung</TableCell>}
-                                        {visibleColumns.includes('createdBy') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Người tạo lệnh</TableCell>}
+                                        {visibleColumns.includes('content') && <TableCell align='center' sx={{ minWidth: 200, fontWeight: 'bold', fontSize: 18 }}>Nội dung lệnh</TableCell>}
+                                        {visibleColumns.includes('createdBy') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Người ra lệnh</TableCell>}
                                         {visibleColumns.includes('createdAt') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Thời gian tạo lệnh</TableCell>}
                                         {visibleColumns.includes('startTime') && <TableCell align='center' sx={{ minWidth: 120, fontWeight: 'bold', fontSize: 18 }}>Bắt đầu</TableCell>}
                                         {visibleColumns.includes('endTime') && <TableCell align='center' sx={{ minWidth: 120, fontWeight: 'bold', fontSize: 18 }}>Kết thúc</TableCell>}
-                                        {visibleColumns.includes('status') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>}
-                                        {visibleColumns.includes('note') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Ghi chú</TableCell>}
+                                        {visibleColumns.includes('status') && <TableCell align='center' sx={{ minWidth: 150, fontWeight: 'bold', fontSize: 18 }}>Trạng thái lệnh</TableCell>}
                                         {visibleColumns.includes('edit') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Sửa</TableCell>}
                                         {visibleColumns.includes('cancel') && <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Hủy</TableCell>}
                                         <TableCell align='center' sx={{ minWidth: 50, fontWeight: 'bold', fontSize: 18 }}>Sao chép</TableCell>
@@ -907,41 +905,55 @@ const DispatcherOrders: React.FC = () => {
                         />
                     </Paper>
                 </Grid>
-                <Grid item xs={12} sm={3}>
+                <Grid item xs={12} sm={4}>
                     <Box sx={{ position: 'sticky', top: 0, maxHeight: '80vh', overflowY: 'auto', border: '1px solid #ccc', borderRadius: 2, p: 2 }}>
                         <Typography variant="h6" sx={{ mb: 2 }}>Thông tin lệnh sản xuất</Typography>
                         {selectedRow ? (
                             <Box>
-                                <Typography><strong>Ngày:</strong> {selectedRow.workingDate ? format(new Date(selectedRow.workingDate), 'dd-MM-yyyy') : ''}</Typography>
+                                <Typography sx={{ display: 'flex', gap: 3 }}>
+                                    <Typography><strong>Đơn vị: </strong>{selectedRow.assignedTo?.department?.code}</Typography>
+                                    <Typography><strong>Ngày: </strong>{selectedRow.workingDate ? format(new Date(selectedRow.workingDate), 'dd-MM-yyyy') : ''}</Typography>
+                                    <Typography><strong>Ca: </strong> {selectedRow.shift?.name}</Typography>
+                                </Typography>
                                 <Grid container spacing={2}>
-                                    {/* Nhân viên */}
-                                    <Grid item xs={12} sm={6}>
-                                        <Typography fontWeight="bold">Nhân viên:</Typography>
+                                    {/* Người nhận lệnh */}
+                                    <Grid item xs={12} sm={4}>
+                                        <Typography fontWeight="bold">Người ra lệnh:</Typography>
+                                        <Typography>{selectedRow.createdBy?.fullName}</Typography>
+                                    </Grid>
+
+                                    {/* Thẻ lương */}
+                                    <Grid item xs={12} sm={4}>
+                                        <Typography fontWeight="bold">Số thẻ:</Typography>
+                                        <Typography>{selectedRow.createdBy?.salaryCode}</Typography>
+                                    </Grid>
+                                    {/* Chức vụ */}
+                                    <Grid item xs={12} sm={4}>
+                                        <Typography fontWeight="bold">Chức vụ:</Typography>
+                                        <Typography>{selectedRow.createdBy?.position?.name}</Typography>
+                                    </Grid>
+                                </Grid>
+                                <Grid container spacing={2}>
+                                    {/* Người nhận lệnh */}
+                                    <Grid item xs={12} sm={4}>
+                                        <Typography fontWeight="bold">Người nhận lệnh:</Typography>
                                         <Typography>{selectedRow.assignedTo?.fullName}</Typography>
                                     </Grid>
 
                                     {/* Thẻ lương */}
-                                    <Grid item xs={12} sm={6}>
-                                        <Typography fontWeight="bold">Thẻ lương:</Typography>
+                                    <Grid item xs={12} sm={4}>
+                                        <Typography fontWeight="bold">Số thẻ:</Typography>
                                         <Typography>{selectedRow.assignedTo?.salaryCode}</Typography>
                                     </Grid>
-                                </Grid>
-                                <Grid container spacing={2}>
-                                    {/* Nhân viên */}
-                                    <Grid item xs={12} sm={6}>
-                                        <Typography fontWeight="bold">Người tạo lệnh:</Typography>
-                                        <Typography>{selectedRow.createdBy?.username}</Typography>
-                                    </Grid>
-
-                                    {/* Thẻ lương */}
-                                    <Grid item xs={12} sm={6}>
-                                        <Typography fontWeight="bold">Thẻ lương:</Typography>
-                                        <Typography>{selectedRow.createdBy?.salaryCode}</Typography>
+                                    {/* Chức vụ */}
+                                    <Grid item xs={12} sm={4}>
+                                        <Typography fontWeight="bold">Chức vụ:</Typography>
+                                        <Typography>{selectedRow.assignedTo?.position?.name}</Typography>
                                     </Grid>
                                 </Grid>
                                 <Typography><strong>Công việc:</strong> {selectedRow.job?.name}</Typography>
-                                <Typography><strong>Nội dung:</strong> {selectedRow.workContent}</Typography>
-                                <Typography><strong>Trạng thái:</strong> {
+                                <Typography><strong>Nội dung lệnh:</strong> {selectedRow.workContent}</Typography>
+                                <Typography><strong>Trạng thái lệnh:</strong> {
                                     selectedRow.status === 'pending' ? 'Chưa nhận lệnh' :
                                         selectedRow.status === 'in_progress' ? 'Đã nhận lệnh' :
                                             selectedRow.status === 'completed' ? 'Đã hoàn thành' :
