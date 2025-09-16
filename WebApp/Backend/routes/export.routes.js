@@ -125,7 +125,6 @@ async function buildSheetPXVT6(req, res, next) {
             worksheet.getCell('F5').font = { bold: true };
             worksheet.getCell('G5').value = order.createdBy?.salaryCode || '';
 
-
             worksheet.getCell('I5').value = 'Chức vụ';
             worksheet.getCell('I5').font = { bold: true };
             worksheet.getCell('J5').value = order.createdBy?.position?.name || '';
@@ -203,8 +202,6 @@ async function buildSheetPXVT6(req, res, next) {
             worksheet.getCell('I11').font = { bold: true };
             worksheet.getCell('K11').value = (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => { return sum + report?.distanceKm }, 0) || '';
             worksheet.getCell('K11').alignment = { horizontal: 'left' }
-
-
 
             worksheet.mergeCells('A13:L13');
             const product = worksheet.getCell('A13');
@@ -325,20 +322,20 @@ async function buildSheetPXVT6(req, res, next) {
             for (let index = 0; index < (order.shiftReport?.vehicleSummaries?.length + 1 || 1); index++) {
                 const rep = order.shiftReport?.vehicleSummaries[index];
 
-                worksheet.getCell(`A${totalRow + 4 + index}`).value = rep?.vehicle?.code || '';
-                worksheet.getCell(`B${totalRow + 4 + index}`).value = rep?.fuelRemain || '';
-                worksheet.getCell(`C${totalRow + 4 + index}`).value = rep?.fuelReceived || '';
-                worksheet.getCell(`D${totalRow + 4 + index}`).value = rep?.fuelRemainEnd || '';
-                worksheet.getCell(`E${totalRow + 4 + index}`).value =
+                worksheet.getCell(`A${totalRow +4 + index}`).value = rep?.vehicle?.code || '';
+                worksheet.getCell(`B${totalRow +4 + index}`).value = rep?.fuelRemain || '';
+                worksheet.getCell(`C${totalRow +4 + index}`).value = rep?.fuelReceived || '';
+                worksheet.getCell(`D${totalRow +4 + index}`).value = rep?.fuelRemainEnd || '';
+                worksheet.getCell(`E${totalRow +4 + index}`).value =
                     (rep?.fuelRemain ?? 0) + (rep?.fuelReceived ?? 0) - (rep?.fuelRemainEnd ?? 0);
 
-                worksheet.getCell(`F${totalRow + 4 + index}`).value = '';
+                worksheet.getCell(`F${totalRow +4 + index}`).value = '';
 
-                worksheet.mergeCells(`H${totalRow + 4 + index}:I${totalRow + 4 + index}`);
-                worksheet.getCell(`H${totalRow + 4 + index}`).value = '';
+                worksheet.mergeCells(`H${totalRow +4 + index}:I${totalRow +4 + index}`);
+                worksheet.getCell(`H${totalRow +4 + index}`).value = '';
 
-                worksheet.mergeCells(`J${totalRow + 4 + index}:L${totalRow + 4 + index}`);
-                worksheet.getCell(`J${totalRow + 4 + index}`).value = '';
+                worksheet.mergeCells(`J${totalRow +4 + index}:L${totalRow +4 + index}`);
+                worksheet.getCell(`J${totalRow +4 + index}`).value = '';
             }
 
             worksheet.mergeCells(`A${fuelEndRow}:L${fuelEndRow}`);
@@ -460,7 +457,7 @@ async function buildSheetPXVT6(req, res, next) {
     }
 };
 
-async function buildSheetDefault(req, res, next) {
+async function buildSheetDefault(req, res, next) {  
     try {
         const { ids } = req.body; // mảng entity id
 
@@ -1288,8 +1285,23 @@ router.post('/carReport', verifyToken, restrictTo('admin', 'dispatcher', 'manage
                         fuelRemainEnd: order?.shiftReport?.vehicleSummaries.map(item => item?.fuelRemainEnd) || [],
                         consume: order?.shiftReport?.vehicleSummaries?.map((item) => (item?.fuelRemain || 0) + (item?.fuelReceived || 0) - (item?.fuelRemainEnd || 0)) || []
                     });
+                    if (span > 1) {
+                        const endRow = startRow + span - 1;
+                        ['A', 'B', 'C', 'D', 'E', 'I', 'J', 'K', 'L', 'M'].forEach((col) => worksheet.mergeCells(`${col}${startRow}:${col}${endRow}`));
+                    }
+
+                    // Căn giữa 4 cột đầu, trái 3 cột sau, bật wrapText cho 3 cột sau
+                    for (let r = startRow; r < startRow + span; r++) {
+                        ['A', 'B', 'C', 'D', 'E', 'I', 'J', 'K', 'L', 'M'].forEach((col) => {
+                            const cell = worksheet.getCell(`${col}${r}`);
+                            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                        });
+                    }
+
+                    index++;
                 }
 
+                addTableBorders(worksheet, 6, totalDataRows + 1, 1, 13);
 
                 let index = 1;
                 let totalDataRows = 6;
@@ -1933,6 +1945,7 @@ router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher
                         })
                         .populate('material', 'name')
                     if (!reports.length) continue;
+
                     const grouped = groupReportsForProduct(reports)
 
                     result.push({
