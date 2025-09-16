@@ -12,7 +12,10 @@ const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 router.post('/', verifyToken, async (req, res, next) => {
     try {
         const { orderId, assignedTo, vehicleSummaries, handoverHours, otherHours, handoverNotes, risks } = req.body;
-
+        if (!handoverNotes) {
+            req.logger.error(`❌ Tình trạng công việc là bắt buộc: ${orderId}`);
+            return res.status(400).send({ status: 'error', message: "Tình trạng công việc là bắt buộc" });
+        }
         if (vehicleSummaries) {
             for (var item of vehicleSummaries) {
                 const device = await Device.findById(item.vehicle);
@@ -60,6 +63,10 @@ router.put('/:id', verifyToken, async (req, res) => {
         if (!shiftReport) {
             req.logger.warn(`⚠️ Không tìm thấy báo cáo ca với ID: ${req.params.id}`);
             return res.status(404).send({ status: 'error', message: "Not found" });
+        }
+        if (!req.body.handoverNotes) {
+            req.logger.error(`❌ Tình trạng công việc là bắt buộc`);
+            return res.status(400).send({ status: 'error', message: "Tình trạng công việc là bắt buộc" });
         }
 
         const updates = req.body;
