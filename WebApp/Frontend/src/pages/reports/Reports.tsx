@@ -34,6 +34,7 @@ import { Close, Edit } from '@mui/icons-material';
 import { showErrorAlert } from '../../components/Alert';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
+import ExcavatorReport from './ExcavatorReport';
 
 
 function Reports() {
@@ -87,7 +88,7 @@ function Reports() {
         // { name: 'Phiếu lĩnh dầu', },
         // { name: 'Tổng hợp số liệu trong ca (Gạt)', },
         // { name: 'Tổng hợp số liệu trong ca (Khoan)', },
-        // { name: 'Tổng hợp số liệu trong ca (Máy xúc)', },
+        { name: 'Tổng hợp số liệu trong ca (Máy xúc)', },
         { name: 'Tổng hợp số liệu trong ca (Ô tô)', },
         { name: 'Theo dõi sản lượng, nhiên liệu, dầu mỡ' }
     ];
@@ -136,6 +137,11 @@ function Reports() {
             viewUrl: '/exports/carReport/view',
             exportUrl: '/exports/carReport',
             PreviewComponent: CarReport,
+        },
+        'Tổng hợp số liệu trong ca (Máy xúc)': {
+            viewUrl: '/exports/excavatorReport/view',
+            exportUrl: '/exports/excavatorReport',
+            PreviewComponent: ExcavatorReport,
         },
 
     };

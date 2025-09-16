@@ -5,12 +5,13 @@ const ExcelJS = require('exceljs');
 const Order = require('../models/Order');
 const Shift = require('../models/Shift');
 const Report = require('../models/Report');
+const Department = require('../models/Department');
+
 
 
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 const mongoose = require('mongoose');
 const { groupReportsByExcavator, groupReportsForProduct } = require('../utils/reportGrouping');
-
 
 // lệnh sx
 router.post('/order/bulk', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
@@ -201,7 +202,6 @@ async function buildSheetPXVT6(req, res, next) {
             worksheet.getCell('I11').font = { bold: true };
             worksheet.getCell('K11').value = (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => { return sum + report?.distanceKm }, 0) || '';
             worksheet.getCell('K11').alignment = { horizontal: 'left' }
-
 
             worksheet.mergeCells('A13:L13');
             const product = worksheet.getCell('A13');
@@ -556,6 +556,7 @@ async function buildSheetDefault(req, res, next) {
             worksheet.getCell('F5').value = 'Mã thẻ lương';
             worksheet.getCell('F5').font = { bold: true };
             worksheet.getCell('G5').value = order.createdBy?.salaryCode || '';
+
 
             worksheet.getCell('I5').value = 'Chức vụ';
             worksheet.getCell('I5').font = { bold: true };
@@ -1068,10 +1069,17 @@ router.post('/carReport/view', verifyToken, restrictTo('admin', 'dispatcher', 'm
             })
             .populate('createdBy', 'fullName salaryCode')
             .populate('device', 'code')
+            .populate({
+                path: 'job',
+                select: 'type',
+            })
+        const filterOrders = orders.filter(r =>
+            r.job?.type?.toLowerCase().includes("vận hành xe".toLowerCase())
+        );
 
         let index = 1
         const results = [];
-        for (const order of orders) {
+        for (const order of filterOrders) {
             let reports = await Report.find({ orderId: order._id })
                 .populate({
                     path: 'device',
@@ -1122,6 +1130,12 @@ router.post('/carReport', verifyToken, restrictTo('admin', 'dispatcher', 'manage
         const shiftList = await Shift.find({ _id: { $in: shift } });
         const start = new Date(startDate);
         const end = new Date(endDate);
+        let dep;
+        if (department) {
+            dep = await Department.findById(department).select('name')
+        } else {
+            dep = user?.department
+        }
 
         // Đảm bảo end không nhỏ hơn start
         if (end < start) return res.status(400).json({ message: "Ngày kết thúc phải sau ngày bắt đầu" });
@@ -1153,6 +1167,13 @@ router.post('/carReport', verifyToken, restrictTo('admin', 'dispatcher', 'manage
                     })
                     .populate('createdBy', 'fullName salaryCode')
                     .populate('device', 'code')
+                    .populate({
+                        path: 'job',
+                        select: 'type',
+                    })
+                const filterOrders = orders.filter(r =>
+                    r.job?.type?.toLowerCase().includes("vận hành xe".toLowerCase())
+                );
 
 
                 const sheetName = `${formatDate(d)}_${ca.name}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
@@ -1177,7 +1198,7 @@ router.post('/carReport', verifyToken, restrictTo('admin', 'dispatcher', 'manage
 
                 worksheet.getCell('B4').value = 'Đơn vị';
                 worksheet.getCell('B4').font = { bold: true };
-                worksheet.getCell('C4').value = req.user?.department?.name || '';
+                worksheet.getCell('C4').value = dep?.name || '';
 
                 worksheet.getCell('E4').value = 'Giờ hệ thống';
                 worksheet.getCell('E4').font = { bold: true };
@@ -1230,7 +1251,7 @@ router.post('/carReport', verifyToken, restrictTo('admin', 'dispatcher', 'manage
                 });
 
                 let results = []
-                for (const order of orders) {
+                for (const order of filterOrders) {
                     let reports = await Report.find({ orderId: order._id })
                         .populate({
                             path: 'device',
@@ -1264,8 +1285,23 @@ router.post('/carReport', verifyToken, restrictTo('admin', 'dispatcher', 'manage
                         fuelRemainEnd: order?.shiftReport?.vehicleSummaries.map(item => item?.fuelRemainEnd) || [],
                         consume: order?.shiftReport?.vehicleSummaries?.map((item) => (item?.fuelRemain || 0) + (item?.fuelReceived || 0) - (item?.fuelRemainEnd || 0)) || []
                     });
+                    if (span > 1) {
+                        const endRow = startRow + span - 1;
+                        ['A', 'B', 'C', 'D', 'E', 'I', 'J', 'K', 'L', 'M'].forEach((col) => worksheet.mergeCells(`${col}${startRow}:${col}${endRow}`));
+                    }
+
+                    // Căn giữa 4 cột đầu, trái 3 cột sau, bật wrapText cho 3 cột sau
+                    for (let r = startRow; r < startRow + span; r++) {
+                        ['A', 'B', 'C', 'D', 'E', 'I', 'J', 'K', 'L', 'M'].forEach((col) => {
+                            const cell = worksheet.getCell(`${col}${r}`);
+                            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                        });
+                    }
+
+                    index++;
                 }
 
+                addTableBorders(worksheet, 6, totalDataRows + 1, 1, 13);
 
                 let index = 1;
                 let totalDataRows = 6;
@@ -1364,7 +1400,371 @@ router.post('/carReport', verifyToken, restrictTo('admin', 'dispatcher', 'manage
                 }
 
                 worksheet.eachRow((row, rowNumber) => {
-                    if (rowNumber > 2) { 
+                    if (rowNumber > 2) {
+                        row.eachCell((cell) => {
+                            if (!cell.font) cell.font = {};
+                            cell.font.size = 12;
+                        });
+                    }
+                });
+            }
+        }
+
+        // Xuất file
+        const buffer = await workbook.xlsx.writeBuffer();
+
+        // Thiết lập header để tải file về
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader(
+            'Content-Disposition',
+            "attachment; filename*=UTF-8''*.xlsx"
+        );    // Gửi buffer về client
+        res.send(buffer);
+        req.logger.info(`✅ Export excel thành công`);
+
+    } catch (err) {
+        req.logger.error("❌ Lỗi khi export", err);
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+});
+
+// báo tổng hợp máy xúc
+router.post('/excavatorReport/view', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+    try {
+        const { shift, startDate, endDate, department } = req.body
+        const user = req.user
+        let query = {}
+        if (user?.role === "admin") {
+            query.department = new mongoose.Types.ObjectId(department)
+        } else {
+            query.department = new mongoose.Types.ObjectId(user.department?._id)
+        }
+        if (Array.isArray(shift) && shift.length > 0) {
+            query.shift = { $in: shift };
+        }
+
+        if (startDate && endDate) {
+            query.workingDate = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate),
+            };
+        }
+        const orders = await Order.find(query)
+            .populate({
+                path: "shiftReport",
+                populate: [
+                    {
+                        path: "vehicleSummaries.vehicle",
+                        select: "code"
+                    },
+                ]
+            })
+            .populate({
+                path: "assignedTo",
+                select: "fullName salaryCode department",
+                populate: {
+                    path: 'department',
+                    select: 'name'
+                }
+            })
+            .populate('createdBy', 'fullName salaryCode')
+            .populate({
+                path: 'device',
+                select: 'code category',
+                populate: [{ path: 'category', select: 'name' }]
+            })
+            .populate({
+                path: 'job',
+                select: 'type',
+            })
+        const filteredOrders = orders.filter(order =>
+            order.device?.some(d =>
+                d.category?.name?.toLowerCase().includes("máy xúc")
+            ) &&
+            order.job?.type?.toLowerCase().includes("vận hành xúc".toLowerCase())
+        );
+
+        let index = 1
+        const results = [];
+        for (const order of filteredOrders) {
+            const codes = await Report.find({ orderId: order._id })
+                .populate('device', 'code')
+                .then(reports => [...new Set(reports.map(r => r.device?.code).filter(Boolean))]);
+
+            if (!codes.length) continue;
+
+            results.push({
+                _id: order._id,
+                STT: index++,
+                createdBy: order.createdBy?.fullName || '',
+                assignedTo: (order.assignedTo?.fullName || '') + "-" + (order.assignedTo?.salaryCode || ''),
+                department: order.assignedTo?.department?.name || '',
+                excavator: order.device?.map(item => item.code).join(', ') || [],
+                fuelRemain: order?.shiftReport?.vehicleSummaries.map(item => item?.fuelRemain) || [],
+                fuelReceived: order?.shiftReport?.vehicleSummaries.map(item => item?.fuelReceived) || [],
+                fuelRemainEnd: order?.shiftReport?.vehicleSummaries.map(item => item?.fuelRemainEnd) || [],
+                consume: order?.shiftReport?.vehicleSummaries?.map((item) => (item?.fuelRemain || 0) + (item?.fuelReceived || 0) - (item?.fuelRemainEnd || 0)) || [],
+                vehicle: codes,
+                travelHours: order?.shiftReport?.vehicleSummaries.map(item => item?.travelHours) || [],
+            });
+        }
+
+        res.status(200).send({ status: 'success', data: results })
+    } catch (err) {
+        req.logger.error("❌ Lỗi khi load", err);
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+})
+router.post('/excavatorReport', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+    try {
+        const { shift, startDate, endDate, title, signature, department } = req.body
+        const user = req.user
+        const shiftList = await Shift.find({ _id: { $in: shift } });
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        let dep;
+        if (department) {
+            dep = await Department.findById(department).select('name')
+        } else {
+            dep = user?.department
+        }
+
+        // Đảm bảo end không nhỏ hơn start
+        if (end < start) return res.status(400).json({ message: "Ngày kết thúc phải sau ngày bắt đầu" });
+
+        const workbook = new ExcelJS.Workbook();
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            for (const ca of shiftList) {
+                const orders = await Order.find({
+                    workingDate: d,
+                    shift: ca._id,
+                    department: new mongoose.Types.ObjectId(dep?._id)
+                })
+                    .populate({
+                        path: "shiftReport",
+                        populate: [
+                            {
+                                path: "vehicleSummaries.vehicle",
+                                select: "code"
+                            },
+                        ]
+                    })
+                    .populate({
+                        path: "assignedTo",
+                        select: "fullName salaryCode department",
+                        populate: {
+                            path: 'department',
+                            select: 'name'
+                        }
+                    })
+                    .populate('createdBy', 'fullName salaryCode')
+                    .populate({
+                        path: 'device',
+                        select: 'code category',
+                        populate: [{ path: 'category', select: 'name' }]
+                    })
+                    .populate({
+                        path: 'job',
+                        select: 'type',
+                    })
+                const filteredOrders = orders.filter(order =>
+                    order.device?.some(d =>
+                        d.category?.name?.toLowerCase().includes("máy xúc")
+                    ) &&
+                    order.job?.type?.toLowerCase().includes("vận hành xúc".toLowerCase())
+                );
+
+
+
+                const sheetName = `${formatDate(d)}_${ca.name}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
+
+                const worksheet = workbook.addWorksheet(sheetName);
+
+                // === DÒNG 1: Tiêu đề bảng ===
+                worksheet.mergeCells('A1:L2');
+                const header = worksheet.getCell('A1');
+                header.value = 'Tổng hợp số liệu trong ca (Máy xúc)';
+                header.font = { bold: true, size: 16 };
+                header.alignment = { horizontal: 'center', vertical: 'middle' };
+
+                // === DÒNG 2–4: Thông tin người ra lệnh ===
+                worksheet.getCell('B3').value = 'Ca';
+                worksheet.getCell('B3').font = { bold: true };
+                worksheet.getCell('C3').value = ca?.name;
+
+                worksheet.getCell('E3').value = 'Ngày';
+                worksheet.getCell('E3').font = { bold: true };
+                worksheet.getCell('F3').value = formatDate(d);
+
+                worksheet.getCell('B4').value = 'Đơn vị';
+                worksheet.getCell('B4').font = { bold: true };
+                worksheet.getCell('C4').value = dep?.name || '';
+
+                worksheet.getCell('E4').value = 'Giờ hệ thống';
+                worksheet.getCell('E4').font = { bold: true };
+                worksheet.getCell('F4').value = new Date().toLocaleTimeString('vi-VN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false,
+                });
+
+                worksheet.getCell('B5').value = 'Người ra lệnh';
+                worksheet.getCell('B5').font = { bold: true };
+                worksheet.getCell('C5').value = req.user?.fullName || '';
+
+                worksheet.getCell('E5').value = 'Số thẻ';
+                worksheet.getCell('E5').font = { bold: true };
+                worksheet.getCell('F5').value = req.user?.salaryCode || '';
+
+                worksheet.getCell('G5').value = 'Chức vụ';
+                worksheet.getCell('G5').font = { bold: true };
+                worksheet.getCell('H5').value = req.user?.position?.name || '';
+
+                worksheet.mergeCells('A7:F7');
+                worksheet.mergeCells('G7:I7'); // Nhiên liệu
+                worksheet.getCell('G7').value = 'Nhiên liệu (lít)';
+                worksheet.getCell('G7').alignment = { horizontal: 'center', vertical: 'middle' };
+                worksheet.getCell('G7').font = { bold: true };
+                worksheet.mergeCells('J7:L7');
+
+
+                // === DÒNG 7: Header chi tiết ===
+                const headerRow = worksheet.getRow(8);
+                headerRow.values = [
+                    'STT',
+                    'Người tạo lệnh',
+                    'Công nhân',
+                    'Đơn vị',
+                    'Biển số máy xúc',
+                    'Thiết bị \nnhận tải',
+                    'Tồn dầu',
+                    'Lĩnh dầu',
+                    'Tiêu thụ',
+                    'Số giờ vận hành thực tế',
+                    'Phụ cấp/ \nbồi dưỡng',
+                    'Lương tạm tính'
+                ];
+                headerRow.font = { bold: true };
+                headerRow.eachCell(cell => {
+                    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                });
+
+                let results = []
+                for (const order of filteredOrders) {
+                    const codes = await Report.find({ orderId: order._id })
+                        .populate('device', 'code')
+                        .then(reports => [...new Set(reports.map(r => r.device?.code).filter(Boolean))]);
+
+                    if (!codes.length) continue;
+
+                    results.push({
+                        _id: order._id,
+                        createdBy: order.createdBy?.fullName || '',
+                        assignedTo: (order.assignedTo?.fullName || '') + "-" + (order.assignedTo?.salaryCode || ''),
+                        department: order.assignedTo?.department?.name || '',
+                        excavator: order.device?.map(item => item.code).join(', ') || [],
+                        fuelRemain: order?.shiftReport?.vehicleSummaries.map(item => item?.fuelRemain) || [],
+                        fuelReceived: order?.shiftReport?.vehicleSummaries.map(item => item?.fuelReceived) || [],
+                        fuelRemainEnd: order?.shiftReport?.vehicleSummaries.map(item => item?.fuelRemainEnd) || [],
+                        consume: order?.shiftReport?.vehicleSummaries?.map((item) => (item?.fuelRemain || 0) + (item?.fuelReceived || 0) - (item?.fuelRemainEnd || 0)) || [],
+                        vehicle: codes,
+                        travelHours: order?.shiftReport?.vehicleSummaries.map(item => item?.travelHours) || [],
+                    });
+                }
+
+
+                let index = 1;
+                let totalDataRows = 7;
+                for (const item of results) {
+                    const reps = item.vehicle && item.vehicle.length ? item.vehicle : [];
+                    const startRow = worksheet.lastRow ? worksheet.lastRow.number + 1 : 7; // 3 dòng đầu là info/title/header
+                    const span = reps.length;
+                    totalDataRows += reps.length;
+                    reps.forEach((r, i) => {
+                        worksheet.addRow([
+                            i === 0 ? index : '',            // STT chỉ ở dòng đầu
+                            i === 0 ? (item.createdBy || '') : '',
+                            i === 0 ? (item.assignedTo || '') : '',
+                            i === 0 ? (item.department || '') : '',
+                            i === 0 ? (item.excavator || '') : '',
+                            (r || '') || '',
+                            i === 0 ? (item.fuelRemain || []).join('\n') : '',
+                            i === 0 ? (item.fuelReceived || []).join('\n') : '',
+                            i === 0 ? (item.consume || []).join('\n') : '',
+                            i === 0 ? (item.travelHours || []).join('\n') : '',
+                            i === 0 ? '' : '',
+                            i === 0 ? '' : '',
+
+                        ]);
+                    })
+                    if (span > 1) {
+                        const endRow = startRow + span - 1;
+                        ['A', 'B', 'C', 'D', 'E', 'G', 'H', 'I', 'J', 'K', 'L'].forEach((col) => worksheet.mergeCells(`${col}${startRow}:${col}${endRow}`));
+                    }
+
+                    // Căn giữa 4 cột đầu, trái 3 cột sau, bật wrapText cho 3 cột sau
+                    for (let r = startRow; r < startRow + span; r++) {
+                        ['A', 'B', 'C', 'D', 'E', 'G', 'H', 'I', 'J', 'K', 'L'].forEach((col) => {
+                            const cell = worksheet.getCell(`${col}${r}`);
+                            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                        });
+                    }
+                    index++;
+                }
+
+                addTableBorders(worksheet, 7, totalDataRows + 2, 1, 12);
+
+                worksheet.pageSetup = {
+                    paperSize: 9,                // A4
+                    orientation: 'landscape',    // ngang
+                    fitToPage: true,
+                    fitToWidth: 1,               // vừa 1 trang theo chiều ngang
+                    fitToHeight: 0,              // không ép theo chiều dọc
+                    margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } // inch
+                };
+
+
+                worksheet.getColumn(1).width = 6;
+                // worksheet.getColumn(1).alignment = { horizontal: 'center', vertical: 'middle', }
+                worksheet.getColumn(2).width = 25;
+                // worksheet.getColumn(2).alignment = { horizontal: 'center', vertical: 'middle', }
+                worksheet.getColumn(3).width = 30;
+                // worksheet.getColumn(3).alignment = { horizontal: 'center', vertical: 'middle', }
+                worksheet.getColumn(4).width = 25;
+                // worksheet.getColumn(4).alignment = { horizontal: 'center', vertical: 'middle', }
+                worksheet.getColumn(5).width = 15;
+                worksheet.getColumn(6).width = 20;
+                worksheet.getColumn(7).width = 12;
+                worksheet.getColumn(8).width = 12;
+                worksheet.getColumn(9).width = 12;
+                worksheet.getColumn(10).width = 15;
+                worksheet.getColumn(11).width = 15;
+                worksheet.getColumn(12).width = 15;
+
+
+                // add chu ki
+                if (signature) {
+                    const response = await axios.get(signature, { responseType: 'arraybuffer' });
+                    const contentType = response.headers['content-type'];
+                    const extension = contentType.split('/')[1];
+                    const imageBuffer = Buffer.from(response.data, 'binary');
+
+                    // Thêm ảnh vào workbook
+                    const imageId = workbook.addImage({
+                        buffer: imageBuffer,
+                        extension
+                    });
+
+                    // Gán ảnh vào vị trí (dùng topleft + extents hoặc range)
+                    const lastCol = worksheet.columnCount;
+                    worksheet.addImage(imageId, {
+                        tl: { col: lastCol - 2, row: index + 7 }, // H30
+                        ext: { width: 150, height: 150 },
+                    });
+                }
+
+                worksheet.eachRow((row, rowNumber) => {
+                    if (rowNumber > 2) {
                         row.eachCell((cell) => {
                             if (!cell.font) cell.font = {};
                             cell.font.size = 12;
@@ -1432,10 +1832,15 @@ router.post('/excavatorTripReport/view', verifyToken, restrictTo('admin', 'dispa
                     select: "name"
                 }
             })
+            .populate({
+                path: 'job',
+                select: 'type',
+            })
         const filteredOrders = orders.filter(order =>
             order.device?.some(d =>
                 d.category?.name?.toLowerCase().includes("máy xúc")
-            )
+            ) &&
+            order.job?.type?.toLowerCase().includes("vận hành xúc".toLowerCase())
         );
 
         let result = []
@@ -1481,7 +1886,12 @@ router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher
         const start = new Date(startDate);
         const end = new Date(endDate);
         const user = req.user
-
+        let dep;
+        if (department) {
+            dep = await Department.findById(department).select('name')
+        } else {
+            dep = user?.department
+        }
 
         // Đảm bảo end không nhỏ hơn start
         if (end < start) return res.status(400).json({ message: "Ngày kết thúc phải sau ngày bắt đầu" });
@@ -1492,7 +1902,7 @@ router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher
                 const orders = await Order.find({
                     workingDate: d,
                     shift: ca._id,
-                    department: user?.role === "admin" ? new mongoose.Types.ObjectId(department) : new mongoose.Types.ObjectId(user.department?._id)
+                    department: new mongoose.Types.ObjectId(dep?._id)
                 })
                     .populate({
                         path: 'assignedTo',
@@ -1511,10 +1921,15 @@ router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher
                             select: "name"
                         }
                     })
+                    .populate({
+                        path: 'job',
+                        select: 'type',
+                    })
                 const filteredOrders = orders.filter(order =>
                     order.device?.some(d =>
                         d.category?.name?.toLowerCase().includes("máy xúc")
-                    )
+                    ) &&
+                    order.job?.type?.toLowerCase().includes("vận hành xúc".toLowerCase())
                 );
 
                 let result = []
@@ -1719,9 +2134,16 @@ router.post('/carTripReport/view', verifyToken, restrictTo('admin', 'dispatcher'
                 path: 'createdBy',
                 select: 'fullName',
             })
+            .populate({
+                path: 'job',
+                select: 'type',
+            })
+        const filterOrders = orders.filter(r =>
+            r.job?.type?.toLowerCase().includes("vận hành xe".toLowerCase())
+        );
 
         let result = []
-        for (const order of orders) {
+        for (const order of filterOrders) {
             let reports = await Report.find({ orderId: order._id })
                 .populate({
                     path: 'device',
@@ -1765,7 +2187,12 @@ router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
         const start = new Date(startDate);
         const end = new Date(endDate);
         const user = req.user
-
+        let dep;
+        if (department) {
+            dep = await Department.findById(department).select('name')
+        } else {
+            dep = user?.department
+        }
 
         // Đảm bảo end không nhỏ hơn start
         if (end < start) return res.status(400).json({ message: "Ngày kết thúc phải sau ngày bắt đầu" });
@@ -1776,7 +2203,7 @@ router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
                 const orders = await Order.find({
                     workingDate: d,
                     shift: ca._id,
-                    department: user?.role === "admin" ? new mongoose.Types.ObjectId(department) : new mongoose.Types.ObjectId(user.department?._id)
+                    department: new mongoose.Types.ObjectId(dep?._id)
                 })
                     .populate({
                         path: 'assignedTo',
@@ -1787,10 +2214,16 @@ router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
                         path: 'createdBy',
                         select: 'fullName',
                     })
-
+                    .populate({
+                        path: 'job',
+                        select: 'type',
+                    })
+                const filterOrders = orders.filter(r =>
+                    r.job?.type?.toLowerCase().includes("vận hành xe".toLowerCase())
+                );
 
                 let result = []
-                for (const order of orders) {
+                for (const order of filterOrders) {
                     let reports = await Report.find({ orderId: order._id })
                         .populate({
                             path: 'device',

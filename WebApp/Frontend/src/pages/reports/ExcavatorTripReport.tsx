@@ -22,12 +22,12 @@ export default function ExcavatorTripReport({
                 <Typography textAlign={'center'} mb={2} variant='h3'>Báo cáo số chuyến của máy xúc</Typography>
                 <TableContainer sx={{ maxHeight: '80vh' }}>
                     <Table stickyHeader size="small" aria-label="car-trip-report" sx={{
-                        '& th, & td': { border: '1px solid black' }
+                        '& th, & td': { border: '1px solid black', padding: "2px 8px" }
                     }}>
                         <TableHead>
                             <TableRow>
                                 <TableCell align='center' sx={{ width: 60 }}>STT</TableCell>
-                                <TableCell align='center' sx={{ width: "20%" }}>Người tạo lệnh</TableCell>
+                                <TableCell align='center' sx={{ width: "20%" }}>Người ra lệnh</TableCell>
                                 <TableCell align='center' sx={{ width: "20%" }}>Công nhân</TableCell>
                                 <TableCell align='center' sx={{ width: "20%" }}>Đơn vị</TableCell>
                                 <TableCell align='center' sx={{ width: "10%" }}>Biển số máy vận hành</TableCell>
