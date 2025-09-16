@@ -55,6 +55,7 @@ import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { StyledPopper } from '../../ui/poppers';
+import { machineValidationSchema } from '../../utils/validation';
 
 const containerStyle = {
     width: '100%',
@@ -66,18 +67,6 @@ const defaultCenter = {
     lng: 105.8437303,
 };
 
-
-const validationSchema = yup.object({
-    code: yup.string().required('Vui lòng nhập biển số'),
-    name: yup.string(),
-    coordinates: yup.object({
-        lng: yup.number().required('Vui lòng chọn vĩ độ'),
-        lat: yup.number().required('Vui lòng chọn kinh độ'),
-    }).required('Vui lòng chọn tọa độ'),
-    department: yup.string().required('Vui lòng chọn đơn vị'),
-    category: yup.string().required('Vui lòng chọn loại máy'),
-    status: yup.string().oneOf(['available', 'in_use', 'maintenance', 'retired']).required('Vui lòng chọn trạng thái'),
-});
 
 const Machines: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -270,7 +259,7 @@ const Machines: React.FC = () => {
             coordinates: { lat: 0, lng: 0 },
             ...selectedDevice,
         },
-        validationSchema: validationSchema,
+        validationSchema: machineValidationSchema,
         onSubmit: (values) => {
             const submitValues = {
                 ...values,

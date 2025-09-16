@@ -73,6 +73,7 @@ import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { Table, TableColumnsType, TableProps } from 'antd';
 import { TableRowSelection } from 'antd/es/table/interface';
 import { StyledPopper } from '../../ui/poppers';
+import { JobTypeEnum } from '../../types/enums';
 
 
 const Orders: React.FC = () => {
@@ -115,7 +116,6 @@ const Orders: React.FC = () => {
         { id: 'salaryCode', label: 'Số thẻ' },
         { id: 'workingDate', label: 'Ngày làm việc' },
         { id: 'shift', label: 'Ca' },
-        { id: 'shiftHour', label: 'Giờ làm việc' },
         { id: 'job', label: 'Công việc' },
         { id: 'content', label: 'Nội dung lệnh' },
         { id: 'device', label: 'Thiết bị' },
@@ -431,7 +431,6 @@ const Orders: React.FC = () => {
             onFilter: undefined,
             filteredValue: serverFilters.shift ?? null,
         },
-        { title: 'Giờ làm', dataIndex: 'shiftHour', key: 'shiftHour', width: 100, align: 'center' },
         {
             title: 'Công việc',
             dataIndex: 'job',
@@ -959,10 +958,10 @@ const Orders: React.FC = () => {
                                         <Typography>{selectedRow.assignedTo?.position?.name}</Typography>
                                     </Grid>
                                 </Grid>
-                                {selectedRow.job?.type === "Vận hành xúc" && <Grid container spacing={2}>
+                                {[JobTypeEnum.EXCAVATOR, JobTypeEnum.VEHICLE].includes(selectedRow.job?.type) && <Grid container spacing={2}>
                                     {/* Người nhận lệnh */}
                                     <Grid item xs={12} sm={3}>
-                                        <Typography fontWeight="bold">Phụ máy:</Typography>
+                                        <Typography fontWeight="bold">{selectedRow.job?.type === JobTypeEnum.EXCAVATOR ? 'Phụ máy' : 'Lái xe bổ túc'}:</Typography>
                                     </Grid>
                                     <Grid item xs={12} sm={9}>
                                         {selectedRow.assistants.map((i: any) => (

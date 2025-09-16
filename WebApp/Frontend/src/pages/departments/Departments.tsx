@@ -38,12 +38,8 @@ import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../compon
 import { Department } from '../../types';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
+import { departmentValidationSchema } from '../../utils/validation';
 
-const validationSchema = yup.object({
-    name: yup.string().required('Vui lòng nhập tên đơn vị'),
-    code: yup.string().required('Vui lòng nhập mã đơn vị'),
-    description: yup.string(),
-});
 
 const Departments = () => {
     const [open, setOpen] = useState(false);
@@ -179,7 +175,7 @@ const Departments = () => {
             code: '',
             description: '',
         },
-        validationSchema,
+        validationSchema:departmentValidationSchema,
         onSubmit: (values) => {
             if (selectedDepartment) {
                 updateMutation.mutate(values);

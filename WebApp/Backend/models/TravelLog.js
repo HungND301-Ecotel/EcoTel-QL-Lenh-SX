@@ -18,6 +18,9 @@ const travelLogSchema = new mongoose.Schema({
     distance: {
         type: Number
     },
+    note: {
+        type: String
+    },
 }, {
     timestamps: true
 });

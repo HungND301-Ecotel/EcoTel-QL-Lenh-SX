@@ -52,11 +52,8 @@ import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../compon
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import { StyledPopper } from '../../ui/poppers';
+import { safetyMeasureValidationSchema } from '../../utils/validation';
 
-const validationSchema = yup.object({
-    name: yup.string().required('Tên biện pháp an toàn chung'),
-    content: yup.string().required('Nhập nội dung'),
-});
 
 const SafetyMeasures: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -225,7 +222,7 @@ const SafetyMeasures: React.FC = () => {
             job: [] as string[],
             position: [] as string[]
         },
-        validationSchema: validationSchema,
+        validationSchema: safetyMeasureValidationSchema,
         onSubmit: (values) => {
             if (selectedSafetyMeasure) {
                 updateMutation.mutate({ ...values, _id: selectedSafetyMeasure._id });

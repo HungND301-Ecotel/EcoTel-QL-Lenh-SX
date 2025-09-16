@@ -8,13 +8,15 @@ const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 const ExcelJS = require('exceljs');
 const xlsx = require('xlsx');
+const dayjs = require('dayjs');
+
 
 
 router.post('/', verifyToken, async (req, res, next) => {
     try {
-        const { excavator, distance, location, startTime, endTime } = req.body
+        const { excavator, distance, location, startTime, endTime, note } = req.body
         const newTravelLog = new TravelLog({
-            excavator, distance, location, startTime, endTime
+            excavator, distance, location, startTime, endTime, note
         });
         await newTravelLog.save();
         req.logger.info(`🔥 Tạo thành công cung độ`);
@@ -114,6 +116,7 @@ const columnMapping = {
     'Cung độ (km)': 'distance',
     'Bắt đầu': 'startTime',
     'Kết thúc': 'endTime',
+    'Ghi chú': 'note'
 };
 router.post('/importFile', upload.single('file'), verifyToken, async (req, res) => {
     try {
@@ -236,14 +239,16 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
             { header: 'Cung độ (km)', key: 'distance', width: 20 },
             { header: 'Bắt đầu', key: 'startTime', width: 20 },
             { header: 'Kết thúc', key: 'endTime', width: 20 },
+            { header: 'Ghi chú', key: 'note', width: 20 },
         ];
 
         const formattedTravelLogs = (data || []).map(item => ({
             excavator: item?.excavator?.code || '',
             location: item?.location?.name || '',
             distance: item?.distance || '',
-            startTime: item?.startTime || '',
-            endTime: item?.endTime || '',
+            startTime: item?.startTime ? dayjs(item.startTime).format('DD-MM-YYYY HH:mm') : '',
+            endTime: item?.endTime ? dayjs(item.endTime).format('DD-MM-YYYY HH:mm') : '',
+            note: item?.note || '',
         }));
         worksheet.addRows(formattedTravelLogs);
 

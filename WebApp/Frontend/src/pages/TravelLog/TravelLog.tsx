@@ -69,7 +69,7 @@ import { userAtom } from '../../atoms/userAtoms';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { Table, TableColumnsType, TableProps } from 'antd';
 import { TableRowSelection } from 'antd/es/table/interface';
-import { trvelLogValidationSchema } from '../../utils/validate';
+import { trvelLogValidationSchema } from '../../utils/validation';
 const StyledPopper = styled(Popper)({
     '& .MuiAutocomplete-listbox': {
         maxHeight: '300px',
@@ -103,6 +103,7 @@ const TravelLogs: React.FC = () => {
         { id: 'startTime', label: 'Bắt đầu' },
         { id: 'endTime', label: 'Kết thúc' },
         { id: 'note', label: 'Ghi chú' },
+        { id: 'edit', label: 'Sửa' },
     ]
     const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
 
@@ -258,6 +259,7 @@ const TravelLogs: React.FC = () => {
             distance: undefined as number | undefined,
             startTime: new Date(),
             endTime: new Date(),
+            note: ''
         },
         // enableReinitialize: true,
         validationSchema: trvelLogValidationSchema,
@@ -282,6 +284,15 @@ const TravelLogs: React.FC = () => {
     const handleOpen = (travellog?: any) => {
         if (travellog) {
             setSelectedTravelLog({
+                ...travellog,
+                excavator: travellog.excavator !== null && typeof travellog.excavator === 'object'
+                    ? travellog.excavator._id
+                    : travellog.excavator || undefined,
+                location: travellog.location !== null && typeof travellog.location === 'object'
+                    ? travellog.location._id
+                    : travellog.location || '',
+            });
+            formik.setValues({
                 ...travellog,
                 excavator: travellog.excavator !== null && typeof travellog.excavator === 'object'
                     ? travellog.excavator._id
@@ -330,7 +341,7 @@ const TravelLogs: React.FC = () => {
             fixed: 'left'
         },
         {
-            title: 'Máy xúc', dataIndex: 'excavator', key: 'excavator', width: 200, align: 'center',
+            title: 'Máy xúc', dataIndex: 'excavator', key: 'excavator', align: 'center',
             render: (text, record) => record.excavator?.code || '',
             fixed: 'left',
             filterSearch: true,
@@ -339,7 +350,7 @@ const TravelLogs: React.FC = () => {
             filteredValue: serverFilters.excavator ?? null,
         },
         {
-            title: 'Điểm đổ tải', dataIndex: 'location', key: 'location', width: 150,
+            title: 'Điểm đổ tải', dataIndex: 'location', key: 'location',
             render: (text, record) => record.location?.name || '',
             filterSearch: true,
             filters: locations.map((d: any) => ({ text: d.name, value: d._id })),
@@ -347,20 +358,43 @@ const TravelLogs: React.FC = () => {
             filteredValue: serverFilters.location ?? null,
         },
         {
-            title: 'Cung độ (km)', dataIndex: 'distance', key: 'distance', width: 170, align: 'center',
+            title: 'Cung độ (km)', dataIndex: 'distance', key: 'distance', align: 'center',
             render: (text, record) => record.distance ?? ''
         },
         {
-            title: 'Bắt đầu', dataIndex: 'startTime', key: 'startTime', width: 100, align: 'center',
+            title: 'Bắt đầu', dataIndex: 'startTime', key: 'startTime', align: 'center',
             render: (text, record) => record.startTime
                 ? dayjs.utc(record.startTime).format('DD-MM-YYYY HH:mm') // giữ nguyên UTC
                 : ''
         },
         {
-            title: 'Kết thúc', dataIndex: 'endTime', key: 'endTime', width: 100, align: 'center',
+            title: 'Kết thúc', dataIndex: 'endTime', key: 'endTime', align: 'center',
             render: (text, record) => record.endTime
                 ? dayjs.utc(record.endTime).format('DD-MM-YYYY HH:mm') // giữ nguyên UTC
                 : ''
+        },
+        {
+            title: 'Ghi chú', dataIndex: 'note', key: 'note', align: 'center', width: 300,
+            ellipsis: true,
+        },
+        {
+            title: 'Sửa', dataIndex: 'edit', key: 'edit', align: 'center', width: 50,
+            render: (text, record) => (
+                <>
+                    <IconButton color="primary" onClick={async () => {
+                        if (open) {
+                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                            if (result.isConfirmed) {
+                                handleOpen(record);
+                            }
+                        } else {
+                            handleOpen(record);
+                        }
+                    }}>
+                        <EditIcon />
+                    </IconButton>
+                </>
+            ),
         },
     ];
 
@@ -408,7 +442,7 @@ const TravelLogs: React.FC = () => {
                         }}
                     >
                         {/* Nhóm các nút lại với nhau */}
-                        <Box
+                        {user?.role === "admin" && <Box
                             sx={{
                                 display: 'flex',
                                 gap: 1, // Khoảng cách nhỏ hơn giữa các nút
@@ -432,7 +466,7 @@ const TravelLogs: React.FC = () => {
                             <Button variant="contained" startIcon={<DeleteIcon />} color="error" onClick={handleDelete}>
                                 Xóa
                             </Button>
-                        </Box>
+                        </Box>}
 
                         {/* Nhóm các Autocomplete và DatePicker lại với nhau */}
                         <Box
@@ -483,7 +517,7 @@ const TravelLogs: React.FC = () => {
                             </LocalizationProvider>
                         </Box>
 
-                        <Box display="flex" gap={2} sx={{
+                        {user?.role === "admin" && <Box display="flex" gap={2} sx={{
                             display: 'flex',
                             gap: 1, // Khoảng cách nhỏ hơn giữa các nút
                             flexDirection: {
@@ -529,12 +563,12 @@ const TravelLogs: React.FC = () => {
                             >
                                 Tải xuống
                             </Button>
-                        </Box>
+                        </Box>}
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
                     <AccordionDetails>
-                        <DialogTitle>Thêm cung độ</DialogTitle>
+                        <DialogTitle>{selectedTravelLog ? 'Sửa cung độ' : 'Thêm cung độ'}</DialogTitle>
                         <DialogContent>
                             <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
                                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -574,7 +608,7 @@ const TravelLogs: React.FC = () => {
                                                 {...params}
                                                 label="Điểm đổ tải"
                                                 error={formik.touched.location && Boolean(formik.errors.location)}
-                                                helperText={formik.touched.location && typeof formik.errors.location === 'string' ? formik.errors.excavator : ''}
+                                                helperText={formik.touched.location && typeof formik.errors.location === 'string' ? formik.errors.location : ''}
                                             />
                                         )}
                                     />
@@ -633,13 +667,25 @@ const TravelLogs: React.FC = () => {
                                             )}
                                         />
                                     </LocalizationProvider>
+                                    <TextField
+                                        fullWidth
+                                        id="note"
+                                        name="note"
+                                        label="Ghi chú"
+                                        multiline
+                                        rows={5}
+                                        value={formik.values.note ?? ''}
+                                        onChange={formik.handleChange}
+                                        error={formik.touched.note && Boolean(formik.errors.note)}
+                                        helperText={formik.touched.note && formik.errors.note}
+                                    />
                                 </Box>
                             </Box>
                         </DialogContent>
                         <DialogActions>
                             <Button onClick={handleClose}>Hủy</Button>
                             <Button onClick={() => formik.submitForm()} variant="contained">
-                                Thêm mới
+                                {selectedTravelLog ? 'Sửa' : 'Thêm mới'}
                             </Button>
                         </DialogActions>
                     </AccordionDetails>

@@ -29,18 +29,9 @@ import { v4 as uuidv4 } from 'uuid'
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import { StyledPopper } from '../../ui/poppers';
+import { dispatcherOrderValidationSchema } from '../../utils/validation';
 dayjs.extend(utc);
 
-const validationSchema = yup.object({
-    usersAndDepartments: yup.array().of(
-        yup.object().shape({
-            assignedTo: yup.string().required('Vui lòng chọn thẻ lương'),
-            department: yup.string(),
-        })
-    ),
-    workingDate: yup.string().required('Vui lòng chọn ngày làm việc'),
-    workContent: yup.string().required('Vui lòng nhập nội dung'),
-});
 
 interface OrderFormProps {
     onSubmit: (values: Partial<Order>) => void;
@@ -76,7 +67,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
             workContent: '',
             note: '',
         },
-        validationSchema,
+        validationSchema:dispatcherOrderValidationSchema,
         onSubmit: async (values) => {
             const orders: Partial<Order>[] = values.usersAndDepartments.map(item => ({
                 assignedTo: item.assignedTo,

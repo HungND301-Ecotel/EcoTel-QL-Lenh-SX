@@ -48,14 +48,9 @@ import { Job } from '../../types';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
+import { jobValidationSchema } from '../../utils/validation';
+import { JOB_TYPE_OPTIONS } from '../../utils/const';
 
-const validationSchema = yup.object({
-    name: yup.string().required('Vui lòng nhập tên công việc'),
-    type: yup
-        .string()
-        .oneOf(['Vận hành xe', 'Vận hành khoan', 'Vận hành xe phục vụ', 'Vận hành gạt', 'Vận hành xúc', 'Vận hành sàng', 'Sửa chữa, bảo dưỡng', 'Vận hành bơm', 'Khác'])
-        .required('Vui lòng chọn loại công việc'),
-});
 
 const Jobs: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -191,7 +186,7 @@ const Jobs: React.FC = () => {
             name: '',
             type: '',
         },
-        validationSchema: validationSchema,
+        validationSchema: jobValidationSchema,
         onSubmit: (values) => {
             if (selectedJob) {
                 updateMutation.mutate({ ...values, _id: selectedJob._id, type: values.type as Job['type'] });
@@ -394,15 +389,11 @@ const Jobs: React.FC = () => {
                                     error={formik.touched.type && Boolean(formik.errors.type)}
                                     helperText={formik.touched.type && formik.errors.type}
                                 >
-                                    <MenuItem value="Vận hành xe">Vận hành xe</MenuItem>
-                                    <MenuItem value="Vận hành khoan">Vận hành khoan</MenuItem>
-                                    <MenuItem value="Vận hành xe phục vụ">Vận hành xe phục vụ</MenuItem>
-                                    <MenuItem value="Vận hành gạt">Vận hành gạt</MenuItem>
-                                    <MenuItem value="Vận hành xúc">Vận hành xúc</MenuItem>
-                                    <MenuItem value="Vận hành sàng">Vận hành sàng</MenuItem>
-                                    <MenuItem value="Sửa chữa, bảo dưỡng">Sửa chữa, bảo dưỡng</MenuItem>
-                                    <MenuItem value="Vận hành bơm">Vận hành bơm</MenuItem>
-                                    <MenuItem value="Khác">Khác</MenuItem>
+                                    {JOB_TYPE_OPTIONS.map((opt) => (
+                                        <MenuItem key={opt.value} value={opt.value}>
+                                            {opt.label}
+                                        </MenuItem>
+                                    ))}
                                 </TextField>
                             </Box>
                         </Box>

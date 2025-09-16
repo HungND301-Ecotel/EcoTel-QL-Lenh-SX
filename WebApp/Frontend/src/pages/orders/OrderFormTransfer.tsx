@@ -29,18 +29,10 @@ import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../compon
 import { DesktopTimePicker } from '@mui/x-date-pickers';
 import { ContentCopy } from '@mui/icons-material';
 import { StyledPopper } from '../../ui/poppers';
+import { editAndTransferOrderValidationSchema } from '../../utils/validation';
+import { JobTypeEnum } from '../../types/enums';
 dayjs.extend(utc);
 
-
-const validationSchema = yup.object({
-    assignedTo: yup.string().required('Vui lòng chọn thẻ lương'),
-    device: yup.array(),
-    job: yup.string().required('Vui lòng chọn loại công việc'),
-    workingDate: yup.string().required('Vui lòng chọn ngày làm việc'),
-    shift: yup.string().required('Vui lòng chọn ca làm việc'),
-    shiftHour: yup.string().required('Vui lòng nhập giờ làm việc'),
-    workContent: yup.string().required('Vui lòng nhập nội dung'),
-});
 
 interface OrderFormProps {
     initialValues: any;
@@ -168,7 +160,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
             previous_order_id: initialValues?._id
         },
         enableReinitialize: true, // Để cập nhật lại giá trị khi initialValues thay đổi
-        validationSchema,
+        validationSchema: editAndTransferOrderValidationSchema,
         onSubmit: async (values) => {
             const order: Partial<Order> = {
                 assignedTo: values.assignedTo,
@@ -236,7 +228,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                         )}
                     />
                 </Grid>
-                {selectedJob?.type === "Vận hành xe" && <Grid item xs={12}>
+                {selectedJob?.type === JobTypeEnum.VEHICLE && <Grid item xs={12}>
                     <Autocomplete
                         fullWidth
                         options={excavators}
@@ -281,7 +273,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                     />
                 </Grid>
 
-                {["Vận hành xe", "Vận hành xúc", "Vận hành gạt", "Vận hành khoan", "Vận hành sàng", "Vận hành xe phục vụ", "Sửa chữa, bảo dưỡng", "Vận hành bơm"].includes(selectedJob?.type ?? "") && <Grid item xs={6}>
+                {selectedJob?.type && [JobTypeEnum.DOZER, JobTypeEnum.DRILL, JobTypeEnum.EXCAVATOR, JobTypeEnum.MAINTENANCE, JobTypeEnum.PUMP, JobTypeEnum.SERVICE_VEHICLE, JobTypeEnum.SIEVE, JobTypeEnum.VEHICLE].includes(selectedJob?.type ?? "") && <Grid item xs={6}>
                     <Autocomplete
                         fullWidth
                         options={devices}
@@ -384,7 +376,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                         />
                     </LocalizationProvider>
                 </Grid>
-                {['Vận hành sàng', "Vận hành xe"].includes(selectedJob?.type ?? '') && <Grid item xs={12} sm={6}>
+                {selectedJob?.type && [JobTypeEnum.SIEVE, JobTypeEnum.VEHICLE].includes(selectedJob?.type ?? '') && <Grid item xs={12} sm={6}>
                     <Autocomplete
                         fullWidth
                         options={locations}
@@ -407,7 +399,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                     />
                 </Grid>}
 
-                {selectedJob?.type === "Vận hành xe" && <Grid item xs={12} sm={6}>
+                {selectedJob?.type === JobTypeEnum.VEHICLE && <Grid item xs={12} sm={6}>
                     <Autocomplete
                         fullWidth
                         options={materials}
