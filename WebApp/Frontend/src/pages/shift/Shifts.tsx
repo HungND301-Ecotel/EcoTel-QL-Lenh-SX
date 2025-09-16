@@ -46,13 +46,7 @@ import dayjs from 'dayjs';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
-
-const validationSchema = yup.object({
-    name: yup.number().required('Vui lòng nhập ca làm việc'),
-    startTime: yup.string().required('Vui lòng nhập thời gian bắt đầu'),
-    endTime: yup.string().required('Vui lòng nhập thời gian kết thúc'),
-
-});
+import { shiftValidationSchema } from '../../utils/validation';
 
 const Shifts: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -138,7 +132,7 @@ const Shifts: React.FC = () => {
             startTime: '',
             endTime: '',
         },
-        validationSchema: validationSchema,
+        validationSchema: shiftValidationSchema,
         onSubmit: (values) => {
             if (selectedShift) {
                 updateMutation.mutate({ ...values, _id: selectedShift._id });

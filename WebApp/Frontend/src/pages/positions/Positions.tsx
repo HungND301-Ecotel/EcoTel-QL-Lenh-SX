@@ -47,11 +47,8 @@ import { Job, Position } from '../../types';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
+import { positionValidationSchema } from '../../utils/validation';
 
-const validationSchema = yup.object({
-    name: yup.string().required('Vui lòng nhập tên chức danh'),
-    note: yup.string(),
-});
 
 const Positions: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -185,7 +182,7 @@ const Positions: React.FC = () => {
             name: '',
             note: ''
         },
-        validationSchema: validationSchema,
+        validationSchema: positionValidationSchema,
         onSubmit: (values) => {
             if (selectedPosition) {
                 updateMutation.mutate({ ...values, _id: selectedPosition._id });

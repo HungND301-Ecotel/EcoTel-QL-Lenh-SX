@@ -59,20 +59,8 @@ import imageCompression from 'browser-image-compression';
 import UserHistories from '../../components/UserHistory/UserHistories';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { StyledPopper } from '../../ui/poppers';
+import { userValidationSchema } from '../../utils/validation';
 
-const validationSchema = yup.object({
-    username: yup.string().required('Vui lòng nhập tên đăng nhập'),
-    password: yup.string().when('_id', {
-        is: (id: string) => !id,
-        then: () => yup.string().required('Vui lòng nhập mật khẩu'),
-        otherwise: () => yup.string(),
-    }),
-    fullName: yup.string().required('Vui lòng nhập họ tên'),
-    salaryCode: yup.string().required('Vui lòng nhập mã thẻ lương'),
-    position: yup.string().required('Vui lòng chọn chức vụ'),
-    department: yup.string().required('Vui lòng chọn đơn vị'),
-    role: yup.string().required('Vui lòng chọn quyền hạn'),
-});
 
 const Users: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -255,7 +243,7 @@ const Users: React.FC = () => {
             role: '',
             ...selectedUser,
         },
-        validationSchema: validationSchema,
+        validationSchema: userValidationSchema,
         onSubmit: (values) => {
             const submitValues: Partial<User> = {
                 ...values,

@@ -47,10 +47,8 @@ import { Material } from '../../types';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
+import { materialValidationSchema } from '../../utils/validation';
 
-const validationSchema = yup.object({
-    name: yup.string().required('Vui lòng nhập tên vật liệu'),
-});
 
 const Materials: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -192,7 +190,7 @@ const Materials: React.FC = () => {
             mass: undefined as number | undefined
         },
         enableReinitialize: true,
-        validationSchema: validationSchema,
+        validationSchema: materialValidationSchema,
         onSubmit: (values) => {
             if (selectedMaterial) {
                 updateMutation.mutate({ ...values, _id: selectedMaterial._id });

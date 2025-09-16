@@ -82,6 +82,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
     const menuItems = [
         ["admin", "manager"].includes(user?.role) && {
+            text: 'Cung độ', icon: <Timelapse color='primary' />, path: '/travelLog'
+        },
+        ["admin", "manager"].includes(user?.role) && {
             text: 'Ca làm việc', icon: <Timelapse color='primary' />, path: '/shifts'
         },
         ["admin", "manager"].includes(user?.role) && {

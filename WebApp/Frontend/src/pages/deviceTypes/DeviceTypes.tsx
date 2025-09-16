@@ -45,11 +45,8 @@ import { DeviceType } from '../../types';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
+import { deviceTypeValidationSchema } from '../../utils/validation';
 
-const validationSchema = yup.object({
-    name: yup.string().required('Vui lòng nhập tên loại phương tiện'),
-    group: yup.string().required('Vui lòng chọn nhóm phương tiện'),
-});
 
 const DeviceTypes: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -128,7 +125,7 @@ const DeviceTypes: React.FC = () => {
             name: '',
             group: ''
         },
-        validationSchema: validationSchema,
+        validationSchema: deviceTypeValidationSchema,
         onSubmit: (values) => {
             if (selectedDeviceType) {
                 updateMutation.mutate({ ...values, _id: selectedDeviceType._id, group: values.group as DeviceType["group"] });

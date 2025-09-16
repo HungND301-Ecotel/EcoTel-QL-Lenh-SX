@@ -28,6 +28,7 @@ import OrderByUsers from './pages/orders/OrderByUser';
 import './index.css'
 import { useSocket } from './hooks/useSocket';
 import PrivacyPolicy from './pages/PrivacyPolicy/PrivacyPolicy';
+import TravelLogs from './pages/TravelLog/TravelLog';
 
 
 interface PrivateRouteProps {
@@ -208,6 +209,14 @@ const App = () => {
                     element={
                         <PrivateRoute>
                             <Users />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/travelLog"
+                    element={
+                        <PrivateRoute>
+                            <TravelLogs />
                         </PrivateRoute>
                     }
                 />

@@ -1,3 +1,5 @@
+import { JobTypeEnum } from "./enums";
+
 export interface User {
     _id: string;
     username: string;
@@ -117,10 +119,21 @@ export interface Material {
     createdAt?: string;
     updatedAt?: string;
 }
+export interface TravelLog {
+    _id: string;
+    excavator?: string;
+    location?: string;
+    distance?: number;
+    startTime?: Date;
+    endTime?: Date;
+    note?: string;
+    createdAt?: string;
+    updatedAt?: string;
+}
 export interface Job {
     _id: string;
     name: string;
-    type: 'Vận hành xe' | 'Vận hành khoan' | 'Vận hành xe phục vụ' | 'Vận hành gạt' | 'Vận hành xúc' | 'Vận hành sàng' | 'Sửa chữa, bảo dưỡng' | 'Vận hành bơm' | 'Khác',
+    type: JobTypeEnum,
     createdAt?: string;
     updatedAt?: string;
 }
