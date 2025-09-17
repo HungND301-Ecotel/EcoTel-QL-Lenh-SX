@@ -398,67 +398,69 @@ router.get('/count/status', verifyToken, restrictTo('admin', 'manager', 'dispatc
     try {
         const user = req.user
         const query = {}
-        const query2 = {}
+        const queryDept = {}
 
         if (user.role === "manager") {
             query.department = user?.department._id
-            query2._id = user?.department._id
+            queryDept._id = user?.department._id
         }
-        const departments = await Department.find(query2);
-        const devices = await Device.find(query).populate("department")
-        const deviceTypes = await DeviceType.find()
 
-        const statusList = ['available', 'in_use', 'maintenance', 'retired']
+        const departments = await Department.find(queryDept);
+        const devices = await Device.find(query)
+            .populate("department")
+            .populate("category"); // populate category để lấy DeviceType trực tiếp
+
+        const statusList = ['available', 'in_use', 'maintenance', 'retired'];
 
         let data = [];
 
-        for (let type of deviceTypes) {
-            // Lọc thiết bị theo loại
-            const devicesByType = devices.filter(d => d?.category?.toString() === type._id.toString());
+        for (let dept of departments) {
+            const deptId = dept._id.toString();
 
-            const organizations = [];
+            // Lọc thiết bị theo phân xưởng
+            const devicesInDept = devices.filter(d => d.department?._id?.toString() === deptId);
 
-            for (let dept of departments) {
-                const deptId = dept._id.toString();
+            // Nhóm theo loại phương tiện
+            const typesMap = new Map();
 
-                // Lọc các thiết bị thuộc đơn vị này
-                const devicesInDept = devicesByType.filter(d => d.department?._id?.toString() === deptId);
+            for (let device of devicesInDept) {
+                const typeId = device.category?._id?.toString();
+                const typeName = device.category?.name || "Unknown";
 
-                // Tính số lượng theo trạng thái
-                const statusCounts = {
-                    available: 0,
-                    in_use: 0,
-                    maintenance: 0,
-                    retired: 0
-                };
-
-                for (let device of devicesInDept) {
-                    if (statusList.includes(device.status)) {
-                        statusCounts[device.status]++;
-                    }
+                if (!typesMap.has(typeId)) {
+                    typesMap.set(typeId, {
+                        typeId,
+                        typeName,
+                        statusCounts: {
+                            available: 0,
+                            in_use: 0,
+                            maintenance: 0,
+                            retired: 0
+                        }
+                    });
                 }
 
-                organizations.push({
-                    departmentId: dept._id,
-                    departmentName: dept.code,
-                    statusCounts
-                });
+                const typeGroup = typesMap.get(typeId);
+                if (statusList.includes(device.status)) {
+                    typeGroup.statusCounts[device.status]++;
+                }
             }
 
             data.push({
-                typeName: type.name,
-                organizations
+                departmentId: dept._id,
+                departmentName: dept.code,
+                deviceTypes: Array.from(typesMap.values())
             });
         }
-        req.logger.info(`🔥  Load thành công`);
-        res.status(200).json({ status: 'success', data: data })
 
+        req.logger.info(`🔥 Load thành công`);
+        res.status(200).json({ status: 'success', data });
 
     } catch (err) {
         req.logger.error("❌ Lỗi", err);
         res.status(500).json({ status: 'error', message: err.message })
     }
-})
+});
 
 
 

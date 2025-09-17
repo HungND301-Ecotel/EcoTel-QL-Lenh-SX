@@ -56,7 +56,7 @@ import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import imageCompression from 'browser-image-compression';
-import UserHistories from '../../components/UserHistory/UserHistories';
+import UserHistories from '../../components/Modal/UserHistories';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { StyledPopper } from '../../ui/poppers';
 import { userValidationSchema } from '../../utils/validation';

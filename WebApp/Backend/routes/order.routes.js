@@ -188,51 +188,139 @@ router.get('/', verifyToken, async (req, res, next) => {
 router.get('/count_status', verifyToken, async (req, res, next) => {
     try {
         const user = req.user;
-        const query = {};
+        let baseQuery = {};
 
-        // ---- Bộ lọc role ----
+        // --- Bộ lọc role ---
         if (user?.role === 'manager' && user?.department) {
-            query.department = new mongoose.Types.ObjectId(user.department._id);
+            baseQuery.department = new mongoose.Types.ObjectId(user.department._id);
+        }
+        if (user?.role === 'admin' && req.query.department) {
+            baseQuery.department = new mongoose.Types.ObjectId(req.query.department);
         }
         if (user?.role === 'dispatcher') {
             const dispatcherIds = await User.find({ role: 'dispatcher' }, '_id').lean();
             const ids = dispatcherIds.map(d => d._id);
-            query.$or = [{ department: user.department._id }, { createdBy: { $in: ids } }];
+            baseQuery.$or = [{ department: new mongoose.Types.ObjectId(user.department._id) }, { createdBy: { $in: ids } }];
         }
 
+        // --- Ngày được chọn ---
+        let dayStart, dayEnd;
+        if (req.query.date) {
+            const date = new Date(req.query.date);
+            dayStart = new Date(date.setHours(0, 0, 0, 0));
+            dayEnd = new Date(date.setHours(23, 59, 59, 999));
+        } else {
+            const now = new Date();
+            dayStart = new Date(now.setHours(0, 0, 0, 0));
+            dayEnd = new Date(now.setHours(23, 59, 59, 999));
+        }
 
+        // --- Đầu tháng ---
+        const monthStart = new Date(dayStart.getFullYear(), dayStart.getMonth(), 1);
 
-        // ---- 1. Tính statusCounts (chưa filter status) ----
-        const statusAgg = await Order.aggregate([
-            { $match: query },
-            { $group: { _id: "$status", count: { $sum: 1 } } },
-        ]);
-
-        const statusCounts = {
-            all: 0,
-            pending: 0,
-            in_progress: 0,
-            warning: 0,
-            completed: 0,
-            cancel: 0,
+        const dayQuery = {
+            ...baseQuery,
+            workingDate: { $gte: dayStart, $lte: dayEnd }
         };
 
-        statusAgg.forEach(s => {
-            statusCounts.all += s.count;
-            if (s._id && statusCounts.hasOwnProperty(s._id)) {
-                statusCounts[s._id] = s.count;
+        // --- filter tháng ---
+        const monthQuery = {
+            ...baseQuery,
+            workingDate: { $gte: monthStart, $lte: dayEnd }
+        };
+
+        // ---- 1. Tính theo ngày, group theo status + ca ----
+        const dailyAgg = await Order.aggregate([
+            { $match: dayQuery },
+            {
+                $lookup: {
+                    from: "shifts",
+                    localField: "shift",
+                    foreignField: "_id",
+                    as: "shift"
+                }
+            },
+            { $unwind: "$shift" },
+            {
+                $group: {
+                    _id: { status: "$status", shift: "$shift.name" },
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        // ---- 1b. Tính số lượng theo ngày (không phân ca) ----
+        const dailyTotalAgg = await Order.aggregate([
+            { $match: dayQuery },
+            {
+                $group: {
+                    _id: "$status",
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+
+        // ---- 2. Tính lũy kế tháng, group theo status ----
+        const monthlyAgg = await Order.aggregate([
+            { $match: monthQuery },
+            {
+                $group: {
+                    _id: "$status",
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        // ---- Chuẩn hóa kết quả ----
+        const result = {};
+
+        const allStatuses = ["pending", "in_progress", "warning", "completed", "cancel"];
+
+        allStatuses.forEach(st => {
+            result[st] = {
+                ca1: 0,
+                ca2: 0,
+                ca3: 0,
+                day: 0,
+                month: 0
+            };
+        });
+
+        // Lấp daily
+        dailyAgg.forEach(d => {
+            const { status, shift } = d._id;
+            if (result[status]) {
+                if (shift === 1) result[status].ca1 = d.count;
+                if (shift === 2) result[status].ca2 = d.count;
+                if (shift === 3) result[status].ca3 = d.count;
+            }
+        });
+
+        // Lấp day
+        dailyTotalAgg.forEach(day => {
+            if (result[day._id]) {
+                result[day._id].day = day.count;
+            }
+        });
+        // Lấp monthly
+        monthlyAgg.forEach(m => {
+            if (result[m._id]) {
+                result[m._id].month = m.count;
             }
         });
 
         return res.status(200).json({
-            status: 'success',
-            statusCounts
+            status: "success",
+            data: result
         });
+
     } catch (err) {
-        req.logger.error('❌ Lỗi', err);
+        req.logger.error("❌ Lỗi", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
     }
 });
+
 
 router.post('/checkExist', verifyToken, async (req, res, next) => {
     try {
@@ -281,48 +369,6 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
 
 
         const user = await User.findById(assignedTo)
-        // if (devicesToProduce?.length > 0) {
-        //     if (!user) {
-        //         req.logger.warn(`✅ Không tìm thấy người dùng công với ID: ${assignedTo}`);
-        //         return res.status(404).json({ status: 'error', message: 'Không tìm thấy người dùng' })
-        //     }
-        //     for (const item of devicesToProduce) {
-        //         const { deviceType, quantity } = item;
-
-        //         try {
-        //             const type = await DeviceType.findById(deviceType);
-
-        //             const devices = await Device.find({ department: user.department, category: deviceType });
-
-        //             if (!devices || devices.length === 0) {
-        //                 req.logger.warn(`    - Cảnh báo: Loại phương tiện ${type?.name} không tồn tại trong đơn vị.`);
-        //                 return res.status(400).send({
-        //                     status: 'error',
-        //                     message: `Loại phương tiện ${type?.name} không tồn tại trong đơn vị`
-        //                 });
-        //             }
-
-        //             const deviceActive = devices.filter(d => d.status === "available");
-
-        //             if (quantity > devices.length) {
-        //                 req.logger.warn(`    - Cảnh báo: Số lượng yêu cầu (${quantity}) vượt quá khả dụng (${deviceActive.length}) cho ${type?.name}.`);
-        //                 return res.status(400).send({
-        //                     status: 'error',
-        //                     message: `Số lượng yêu cầu (${quantity}) vượt quá số lượng phương tiện khả dụng (${deviceActive.length}) cho loại ${type?.name}`
-        //                 });
-        //             }
-
-        //             req.logger.info(`    - Kiểm tra thành công: Đủ số lượng cho ${type?.name}.`);
-        //         } catch (err) {
-        //             req.logger.error("❌ Lỗi khi kiểm tra loại phương tiện.", err);
-        //             return res.status(500).send({
-        //                 status: 'error',
-        //                 message: `Lỗi khi kiểm tra loại phương tiện: ${err.message}`
-        //             });
-        //         }
-        //     }
-        // }
-
         // Generate order number
         const date = new Date();
         const year = date.getFullYear().toString().slice(-2);
