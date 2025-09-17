@@ -115,7 +115,6 @@ const Orders: React.FC = () => {
         { id: 'salaryCode', label: 'Số thẻ' },
         { id: 'workingDate', label: 'Ngày làm việc' },
         { id: 'shift', label: 'Ca' },
-        { id: 'shiftHour', label: 'Giờ làm việc' },
         { id: 'job', label: 'Công việc' },
         { id: 'content', label: 'Nội dung lệnh' },
         { id: 'device', label: 'Thiết bị' },
@@ -431,7 +430,6 @@ const Orders: React.FC = () => {
             onFilter: undefined,
             filteredValue: serverFilters.shift ?? null,
         },
-        { title: 'Giờ làm', dataIndex: 'shiftHour', key: 'shiftHour', width: 100, align: 'center' },
         {
             title: 'Công việc',
             dataIndex: 'job',
@@ -973,8 +971,8 @@ const Orders: React.FC = () => {
                                 <Typography><strong>Công việc:</strong> {selectedRow.job?.name}</Typography>
                                 {selectedRow.device?.length > 0 && <Typography><strong>Thiết bị vận hành:</strong> {selectedRow.device?.map((dev: any) => dev.code).join(', ')}</Typography>}
                                 {selectedRow.excavator?.length > 0 && <Typography><strong>Máy xúc:</strong> {selectedRow.excavator?.map((dev: any) => dev.code).join(', ')}</Typography>}
-                                {selectedRow.location?.length > 0 && <Typography><strong>Vật liệu:</strong> {selectedRow.location?.map((dev: any) => dev.name).join(', ')}</Typography>}
-                                {selectedRow.material?.length > 0 && <Typography><strong>Điểm đổ:</strong> {selectedRow.material?.map((dev: any) => dev.name).join(', ')}</Typography>}
+                                {selectedRow.material?.length > 0 && <Typography><strong>Vật liệu:</strong> {selectedRow.material?.map((dev: any) => dev.name).join(', ')}</Typography>}
+                                {selectedRow.location?.length > 0 && <Typography><strong>Điểm đổ:</strong> {selectedRow.location?.map((dev: any) => dev.name).join(', ')}</Typography>}
                                 <Typography><strong>Nội dung lệnh:</strong> {selectedRow.workContent}</Typography>
                                 <Typography><strong>Trạng thái lệnh:</strong> {
                                     selectedRow.status === 'pending' ? 'Chưa nhận lệnh' :
