@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
-import MainLayout from './components/MainLayout';
 import Login from './pages/auth/Login';
 import Orders from './pages/orders/Orders';
 import Devices from './pages/vehicles/Vehicles';
@@ -29,6 +28,7 @@ import { useSocket } from './hooks/useSocket';
 import PrivacyPolicy from './pages/PrivacyPolicy/PrivacyPolicy';
 import TravelLogs from './pages/TravelLog/TravelLog';
 import AdminDashboard from './pages/dashboard/AdminDashboard';
+import MainLayout from './components/layout/MainLayout';
 
 
 interface PrivateRouteProps {

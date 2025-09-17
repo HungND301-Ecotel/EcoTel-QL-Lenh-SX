@@ -62,7 +62,7 @@ import { DatePicker, DateTimePicker, LocalizationProvider } from '@mui/x-date-pi
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 import { useSocket } from '../../hooks/useSocket';
-import ShiftReport from '../../components/ShiftReport/ShiftReport';
+import ShiftReport from '../../components/Modal/ShiftReport';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';

@@ -48,7 +48,7 @@ import api from '../../config/api.config';
 import { Order } from '../../types';
 import OrderFormAdd from './OrderFormAdd';
 import OrderFormEdit from './OrderFormEdit';
-import OrderHistories from '../../components/OrderHistory/OrderHistories';
+import OrderHistories from '../../components/Modal/OrderHistories';
 import OrderFormTransfer from './OrderFormTransfer';
 import dayjs, { Dayjs } from 'dayjs';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
