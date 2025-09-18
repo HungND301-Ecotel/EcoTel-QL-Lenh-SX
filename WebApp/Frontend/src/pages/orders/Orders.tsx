@@ -406,21 +406,23 @@ const Orders: React.FC = () => {
             fixed: 'left'
         },
         {
-            title: 'Người nhận lệnh', dataIndex: 'assignedTo', key: 'assignedTo', width: 200,
+            title: 'Người nhận lệnh', dataIndex: 'assignedTo', key: 'assignedTo', width: 150,
             render: (text, record) => record.assignedTo?.fullName || '',
             fixed: 'left',
+            ellipsis: true,
             filterSearch: true,
             filters: users.map((d: any) => ({ text: `${d.fullName}-${d.salaryCode}`, value: d._id })),
             onFilter: undefined,
             filteredValue: serverFilters.assignedTo ?? null,
         },
         {
-            title: 'Số thẻ', dataIndex: 'salaryCode', key: 'salaryCode', width: 120, align: 'center',
+            title: 'Số thẻ', dataIndex: 'salaryCode', key: 'salaryCode', width: 70, align: 'center',
             render: (text, record) => record.assignedTo?.salaryCode || '',
         },
         {
-            title: 'Ngày làm việc', dataIndex: 'workingDate', key: 'workingDate', width: 150, align: 'center',
-            render: (text, record) => record.workingDate ? format(new Date(record.workingDate), 'yyyy-MM-dd') : ''
+            title: 'Ngày làm việc', dataIndex: 'workingDate', key: 'workingDate', width: 100, align: 'center',
+            ellipsis: true,
+            render: (text, record) => record.workingDate ? format(new Date(record.workingDate), 'dd-MM-yyyy') : ''
         },
         {
             title: 'Ca', dataIndex: 'shift', key: 'shift', width: 70, align: 'center',
@@ -434,8 +436,7 @@ const Orders: React.FC = () => {
             title: 'Công việc',
             dataIndex: 'job',
             key: 'job',
-            width: 250,
-            align: 'center',
+            width: 100,
             ellipsis: true,
             render: (text, record) => record.job?.name || '',
             filterSearch: true,
@@ -447,59 +448,65 @@ const Orders: React.FC = () => {
             title: 'Nội dung lệnh',
             dataIndex: 'workContent',
             key: 'content',
-            width: 250,           // width khởi tạo, sẽ được update khi resize
+            width: 100,           // width khởi tạo, sẽ được update khi resize
             ellipsis: true,       // để AntD tự xử lý cắt ...
         },
         {
-            title: 'Thiết bị', dataIndex: 'device', key: 'device', width: 150,
+            title: 'Thiết bị', dataIndex: 'device', key: 'device', width: 100,
             render: (text, record) => record.device?.map((dev: any) => dev.code).join(', '),
             filterSearch: true,
             filters: devices.map((d: any) => ({ text: d.code, value: d._id })),
             onFilter: undefined,
+            ellipsis: true,
             filteredValue: serverFilters.device ?? null,
         },
         {
-            title: 'Máy xúc', dataIndex: 'excavator', key: 'excavator', width: 150,
+            title: 'Máy xúc', dataIndex: 'excavator', key: 'excavator', width: 100,
             render: (text, record) => record.excavator?.map((dev: any) => dev.code).join(', '),
             filterSearch: true,
             filters: excavators.map((d: any) => ({ text: d.code, value: d._id })),
             onFilter: undefined,
+            ellipsis: true,
             filteredValue: serverFilters.excavator ?? null,
         },
         {
-            title: 'Vật liệu', dataIndex: 'material', key: 'material', width: 150,
+            title: 'Vật liệu', dataIndex: 'material', key: 'material', width: 100,
             render: (text, record) => record.material?.map((mat: any) => mat.name).join(', '),
             filterSearch: true,
             filters: materials.map((d: any) => ({ text: d.name, value: d._id })),
             onFilter: undefined,
+            ellipsis: true,
             filteredValue: serverFilters.material ?? null,
         },
         {
-            title: 'Điểm đổ', dataIndex: 'location', key: 'location', width: 150,
+            title: 'Điểm đổ', dataIndex: 'location', key: 'location', width: 100,
             render: (text, record) => record.location?.map((loc: any) => loc.name).join(', '),
             filterSearch: true,
             filters: locations.map((d: any) => ({ text: d.name, value: d._id })),
             onFilter: undefined,
             filteredValue: serverFilters.location ?? null,
+            ellipsis: true,
         },
         {
-            title: 'Người ra lệnh', dataIndex: 'createdBy', key: 'createdBy', width: 200,
+            title: 'Người ra lệnh', dataIndex: 'createdBy', key: 'createdBy', width: 150,
+            ellipsis: true,
             filterSearch: true,
             filters: users.map((d: any) => ({ text: `${d.username}-${d.salaryCode}`, value: d._id })),
             onFilter: undefined,
             filteredValue: serverFilters.createdBy ?? null,
-            render: (text, record) => record.createdBy?.username || '',
+            render: (text, record) => record.createdBy?.fullName || '',
         },
         {
-            title: 'Thời gian tạo lệnh', dataIndex: 'createdAt', key: 'createdAt', width: 170, align: 'center',
-            render: (text, record) => record.createdAt ? format(new Date(record.createdAt), 'yyyy-MM-dd HH:mm') : ''
+            title: 'Thời gian tạo lệnh', dataIndex: 'createdAt', key: 'createdAt', width: 150, align: 'center',
+            ellipsis: true,
+            render: (text, record) => record.createdAt ? format(new Date(record.createdAt), 'dd-MM-yyyy HH:mm') : ''
         },
         {
-            title: 'Bắt đầu', dataIndex: 'startTime', key: 'startTime', width: 100, align: 'center',
+            title: 'Bắt đầu', dataIndex: 'startTime', key: 'startTime', width: 80, align: 'center',
             render: (text, record) => record.startTime ? format(new Date(record.startTime), 'HH:mm:ss') : ''
         },
         {
-            title: 'Kết thúc', dataIndex: 'endTime', key: 'endTime', width: 100, align: 'center',
+            title: 'Kết thúc', dataIndex: 'endTime', key: 'endTime', width: 80, align: 'center',
             render: (text, record) => record.endTime ? format(new Date(record.endTime), 'HH:mm:ss') : ''
         },
         {
@@ -521,7 +528,8 @@ const Orders: React.FC = () => {
             ),
         },
         {
-            title: 'Tình trạng thiết bị', dataIndex: 'deviceStatus', key: 'deviceStatus', width: 150, align: 'center',
+            title: 'Tình trạng thiết bị', dataIndex: 'deviceStatus', key: 'deviceStatus', width: 100, align: 'center',
+            ellipsis: true,
             render: (text, record) => record.shiftReport?.vehicleSummaries.map((i: any) => i.status === "good" ? "Tốt" : "Hỏng").join(', '),
         },
         {
@@ -530,6 +538,7 @@ const Orders: React.FC = () => {
             key: 'view',
             width: 100,
             align: 'center',
+            ellipsis: true,
             render: (text, record) => (
                 <IconButton
                     color="secondary"
@@ -548,7 +557,7 @@ const Orders: React.FC = () => {
             title: 'Sửa',
             dataIndex: 'edit',
             key: 'edit',
-            width: 60,
+            width: 50,
             render: (text, record) => (
                 <IconButton
                     color="primary"
@@ -575,7 +584,7 @@ const Orders: React.FC = () => {
             title: 'Hủy',
             dataIndex: 'cancel',
             key: 'cancel',
-            width: 60,
+            width: 50,
             render: (text, record) => (
                 <IconButton
                     disabled={!['pending', 'warning'].includes(record.status)}
@@ -592,7 +601,8 @@ const Orders: React.FC = () => {
             title: 'Chuyển ca',
             dataIndex: 'transfer',
             key: 'transfer',
-            width: 100,
+            width: 50,
+            ellipsis: true,
             align: 'center',
             render: (text, record) => (
                 <IconButton
