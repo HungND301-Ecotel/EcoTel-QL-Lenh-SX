@@ -20,6 +20,7 @@ class _ExcavatorSelectVehicle
   bool _isLoading = true;
   final List<DeviceModel> devices = [];
   final DeviceService _deviceService = DeviceService();
+  Set<String> _selectedDevices = {};
 
   void getAllDevice() async {
     var result = await _deviceService.getAllCar();
@@ -70,16 +71,18 @@ class _ExcavatorSelectVehicle
     // });
   }
 
-  String? _selectedDevice;
-  void _onSelectDevice(String selectedDevice) {
+  void _onToggleDevice(String id) {
     setState(() {
-      _selectedDevice = selectedDevice;
+      if (_selectedDevices.contains(id)) {
+        _selectedDevices.remove(id); // bỏ chọn
+      } else {
+        _selectedDevices.add(id); // chọn thêm
+      }
     });
 
-    Provider.of<ReportDraftProvider>(
-      context,
-      listen: false,
-    ).setDevice(selectedDevice);
+    // cập nhật provider (nhiều phương tiện)
+    Provider.of<ReportDraftProvider>(context, listen: false)
+        .devices = _selectedDevices.toList();
   }
 
   String _searchText = '';
@@ -97,7 +100,7 @@ class _ExcavatorSelectVehicle
       appBar: AppBar(
         backgroundColor: Colors.blue,
         title: Text(
-          'Phương tiện',
+          'Xe nhận tải',
           style: TextStyle(
             color: Colors.white,
             fontSize: 18,
@@ -149,13 +152,15 @@ class _ExcavatorSelectVehicle
                                   (item) => ExcavatorItem(
                                     data: item,
                                     selected:
-                                        _selectedDevice ==
-                                        item.id,
-                                    onTap: () {
-                                      _onSelectDevice(
-                                        item.id,
-                                      );
-                                    },
+                                        _selectedDevices
+                                            .contains(
+                                              item.id,
+                                            ),
+                                    onTap:
+                                        () =>
+                                            _onToggleDevice(
+                                              item.id,
+                                            ),
                                   ),
                                 )
                                 .toList(),
@@ -166,7 +171,7 @@ class _ExcavatorSelectVehicle
             width: double.infinity,
             child: ElevatedButton(
               onPressed:
-                  _selectedDevice == null
+                  _selectedDevices.isEmpty
                       ? null
                       : () {
                         Navigator.pushNamed(

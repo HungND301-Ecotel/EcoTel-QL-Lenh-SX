@@ -9,7 +9,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 const ExcelJS = require('exceljs');
 const xlsx = require('xlsx');
 const dayjs = require('dayjs');
-
+const { ROLE } = require('../config/config');
 
 
 router.post('/', verifyToken, async (req, res, next) => {
@@ -223,7 +223,7 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
     }
 });
 
-router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const data = await TravelLog.find().populate('excavator', 'code').populate('location', 'name');
         const devices = await Device.find().populate('category', 'name');

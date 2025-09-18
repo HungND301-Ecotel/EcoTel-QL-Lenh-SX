@@ -48,7 +48,6 @@ import api from '../../config/api.config';
 import { Order } from '../../types';
 import OrderFormAdd from './OrderFormAdd';
 import OrderFormEdit from './OrderFormEdit';
-import OrderHistories from '../../components/Modal/OrderHistories';
 import OrderFormTransfer from './OrderFormTransfer';
 import dayjs, { Dayjs } from 'dayjs';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
@@ -139,59 +138,52 @@ const OrderByUsers: React.FC = () => {
             fixed: 'left'
         },
         {
-            title: 'Người nhận lệnh', dataIndex: 'assignedTo', key: 'assignedTo', width: 200,
+            title: 'Người nhận lệnh', dataIndex: 'assignedTo', key: 'assignedTo', width: 150,
             render: (text, record) => record.assignedTo?.fullName || '',
-            fixed: 'left'
+            fixed: 'left',
+            ellipsis: true,
         },
         {
-            title: 'Số thẻ', dataIndex: 'salaryCode', key: 'salaryCode', width: 120, align: 'center',
+            title: 'Số thẻ', dataIndex: 'salaryCode', key: 'salaryCode', width: 70, align: 'center',
             render: (text, record) => record.assignedTo?.salaryCode || '',
         },
         {
-            title: 'Ngày làm việc', dataIndex: 'workingDate', key: 'workingDate', width: 150, align: 'center',
-            render: (text, record) => record.workingDate ? format(new Date(record.workingDate), 'yyyy-MM-dd') : ''
+            title: 'Ngày làm việc', dataIndex: 'workingDate', key: 'workingDate', width: 100, align: 'center',
+            ellipsis: true,
+            render: (text, record) => record.workingDate ? format(new Date(record.workingDate), 'dd-MM-yyyy') : ''
         },
         {
             title: 'Công việc',
             dataIndex: 'job',
             key: 'job',
-            width: 250,
-            align: 'center',
+            width: 100,
+            ellipsis: true,
             render: (text, record) => record.job?.name || '',
         },
         {
             title: 'Nội dung lệnh',
             dataIndex: 'workContent',
             key: 'content',
-            render: (text: string) => (
-                <span
-                    style={{
-                        display: 'inline-block',
-                        width: 250,
-                        overflow: 'hidden',
-                        whiteSpace: 'nowrap',
-                        textOverflow: 'ellipsis',
-                        verticalAlign: 'middle',
-                    }}
-                >
-                    {text}
-                </span>
-            ),
+            width: 100,           // width khởi tạo, sẽ được update khi resize
+            ellipsis: true,       // để AntD tự xử lý cắt ...
         },
         {
-            title: 'Người ra lệnh', dataIndex: 'createdBy', key: 'createdBy', width: 200,
-            render: (text, record) => record.createdBy?.username || '',
+            title: 'Người ra lệnh', dataIndex: 'createdBy', key: 'createdBy', width: 150,
+            ellipsis: true,
+            filterSearch: true,
+            render: (text, record) => record.createdBy?.fullName || '',
         },
         {
-            title: 'Thời gian tạo lệnh', dataIndex: 'createdAt', key: 'createdAt', width: 170, align: 'center',
-            render: (text, record) => record.createdAt ? format(new Date(record.createdAt), 'yyyy-MM-dd HH:mm') : ''
+            title: 'Thời gian tạo lệnh', dataIndex: 'createdAt', key: 'createdAt', width: 150, align: 'center',
+            ellipsis: true,
+            render: (text, record) => record.createdAt ? format(new Date(record.createdAt), 'dd-MM-yyyy HH:mm') : ''
         },
         {
-            title: 'Bắt đầu', dataIndex: 'startTime', key: 'startTime', width: 100, align: 'center',
+            title: 'Bắt đầu', dataIndex: 'startTime', key: 'startTime', width: 80, align: 'center',
             render: (text, record) => record.startTime ? format(new Date(record.startTime), 'HH:mm:ss') : ''
         },
         {
-            title: 'Kết thúc', dataIndex: 'endTime', key: 'endTime', width: 100, align: 'center',
+            title: 'Kết thúc', dataIndex: 'endTime', key: 'endTime', width: 80, align: 'center',
             render: (text, record) => record.endTime ? format(new Date(record.endTime), 'HH:mm:ss') : ''
         },
         {
@@ -350,7 +342,6 @@ const OrderByUsers: React.FC = () => {
                                 <Typography sx={{ display: 'flex', gap: 3 }}>
                                     <Typography><strong>Đơn vị: </strong>{selectedRow.assignedTo?.department?.code}</Typography>
                                     <Typography><strong>Ngày: </strong>{selectedRow.workingDate ? format(new Date(selectedRow.workingDate), 'dd-MM-yyyy') : ''}</Typography>
-                                    <Typography><strong>Ca: </strong> {selectedRow.shift?.name}</Typography>
                                 </Typography>
                                 <Grid container spacing={2}>
                                     {/* Người nhận lệnh */}

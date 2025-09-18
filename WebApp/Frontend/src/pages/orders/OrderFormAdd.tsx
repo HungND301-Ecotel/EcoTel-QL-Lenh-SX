@@ -145,8 +145,6 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                 shiftHour: values.shiftHour,
                 location: values.location,
                 material: values.material,
-                distance: values.distance,
-                liftHeight: values.liftHeight,
                 workContent: values.workContent,
                 safetyMeasure: values.safetyMeasure,
                 safetyMeasureSpecific: values.safetyMeasureSpecific,

@@ -157,8 +157,6 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                 shift: values.shift,
                 shiftHour: values.shiftHour,
                 excavator: values.excavator,
-                distance: values.distance,
-                liftHeight: values.liftHeight,
                 location: values.location,
                 material: values.material,
                 workContent: values.workContent,

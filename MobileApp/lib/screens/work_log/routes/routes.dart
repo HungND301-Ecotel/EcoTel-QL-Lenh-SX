@@ -14,7 +14,6 @@ import 'package:soft/screens/work_log/views/TripList/Drilling/drilling_product_l
 import 'package:soft/screens/work_log/views/TripList/Drilling/drilling_select_product.dart';
 import 'package:soft/screens/work_log/views/TripList/Drilling/drilling_select_vehicle.dart';
 import 'package:soft/screens/work_log/views/TripList/Excavator/excavator_select_material.dart';
-import 'package:soft/screens/work_log/views/TripList/Excavator/excavator_trip_count.dart';
 import 'package:soft/screens/work_log/views/TripList/Excavator/excavator_trip_list.dart';
 import 'package:soft/screens/work_log/views/TripList/Excavator/excavator_select_vehicle.dart';
 import 'package:soft/screens/work_log/views/TripList/ServiceVehicle/service_vehicle_select_end_point.dart';
@@ -26,7 +25,6 @@ import 'package:soft/screens/work_log/views/TripList/ServiceVehicle/service_vehi
 import 'package:soft/screens/work_log/views/TripList/Vehicle/vehicle_select_destination.dart';
 import 'package:soft/screens/work_log/views/TripList/Vehicle/vehicle_select_excavator.dart';
 import 'package:soft/screens/work_log/views/TripList/Vehicle/vehicle_select_vehicle.dart';
-import 'package:soft/screens/work_log/views/TripList/Vehicle/vehicle_trip_count.dart';
 import 'package:soft/screens/work_log/views/TripList/Vehicle/vehicle_select_material.dart';
 import 'package:soft/screens/work_log/views/task_detail_page.dart';
 import 'package:soft/screens/work_log/views/task_list_page.dart';
@@ -91,10 +89,6 @@ class WorkLogRoute extends StatelessWidget {
             return MaterialPageRoute(
               builder: (_) => VehicleSelectMaterial(),
             );
-          case WorkLogRoutes.vehicleTripCount:
-            return MaterialPageRoute(
-              builder: (_) => VehicleTripCount(),
-            );
           //Excavator
           case WorkLogRoutes.excavatorTripList:
             final orderId = settings.arguments as String;
@@ -110,10 +104,6 @@ class WorkLogRoute extends StatelessWidget {
           case WorkLogRoutes.excavatorSelectMaterial:
             return MaterialPageRoute(
               builder: (_) => ExcavatorSelectMaterial(),
-            );
-          case WorkLogRoutes.excavatorTripCount:
-            return MaterialPageRoute(
-              builder: (_) => ExcavatorTripCount(),
             );
           //Drilling
           case WorkLogRoutes.drillingProductList:

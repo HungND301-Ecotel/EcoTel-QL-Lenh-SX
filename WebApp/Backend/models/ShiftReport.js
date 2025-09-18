@@ -29,9 +29,6 @@ const Shiftreport = new mongoose.Schema({
     handoverHours: {
         type: Number,
     },
-    otherHours: {
-        type: Number,
-    },
     handoverNotes: {
         type: String,
     },

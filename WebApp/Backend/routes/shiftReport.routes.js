@@ -11,7 +11,7 @@ const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 
 router.post('/', verifyToken, async (req, res, next) => {
     try {
-        const { orderId, assignedTo, vehicleSummaries, handoverHours, otherHours, handoverNotes, risks } = req.body;
+        const { orderId, assignedTo, vehicleSummaries, handoverHours, handoverNotes, risks } = req.body;
         if (!handoverNotes) {
             req.logger.error(`❌ Tình trạng công việc là bắt buộc: ${orderId}`);
             return res.status(400).send({ status: 'error', message: "Tình trạng công việc là bắt buộc" });
@@ -24,7 +24,7 @@ router.post('/', verifyToken, async (req, res, next) => {
             }
         }
         const newShiftReport = new ShiftReport({
-            orderId, assignedTo, vehicleSummaries, handoverHours, otherHours, handoverNotes, risks
+            orderId, assignedTo, vehicleSummaries, handoverHours, handoverNotes, risks
         });
         await newShiftReport.save();
         req.logger.info(`✅ Tạo báo cáo ca thành công với Order ID: ${orderId}`);
@@ -51,7 +51,6 @@ router.get('/:id', verifyToken, async (req, res) => {
 });
 const trackedFieldsWork = [
     'handoverHours',
-    'otherHours',
     'handoverNotes',
     'risks'
 ];
@@ -86,7 +85,7 @@ router.put('/:id', verifyToken, async (req, res) => {
                 if (!originalItem) return;
 
                 for (let field of [
-                    'repairHours', 'travelHours', 'fuelRemain',
+                    'repairHours', 'fuelRemain',
                     'fuelReceived', 'fuelRemainEnd', 'status', 'note',
                     'gpsStatus', 'sealStatus'
                 ]) {

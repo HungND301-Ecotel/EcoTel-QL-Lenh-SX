@@ -11,857 +11,449 @@ const Department = require('../models/Department');
 
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 const mongoose = require('mongoose');
-const { groupReportsByExcavator, groupReportsForProduct } = require('../utils/reportGrouping');
-
+const { groupReportsByExcavator, groupReportsForProduct, groupTripsVehicle } = require('../utils/reportGrouping');
+const { ROLE, STATUS_ORDER, JOB_TYPE } = require('../config/config');
 // lệnh sx
-router.post('/order/bulk', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
-    const user = req.user
-    const department = user?.department?.code
-    if (department === "PXVT6") {
-        buildSheetPXVT6(req, res, next);
-    } else {
-        buildSheetDefault(req, res, next);
-    }
+router.post('/order/bulk', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
+    try {
+        const { ids } = req.body; // mảng entity id
 
+        if (!Array.isArray(ids) || ids.length === 0) {
+            req.logger.error("❌ Chọn bản ghi tải xuống");
+            return res.status(400).send({ status: 'error', message: 'Chọn bản ghi cần tải xuống' });
+        }
+
+        const orders = await Order.find({ _id: { $in: ids } })
+            .populate({
+                path: "assignedTo",
+                select: "username fullName department phone salaryCode",
+                populate: [
+                    { path: "department", select: 'code' }
+                ]
+            })
+            .populate('job', 'name type')
+            .populate('device', 'code')
+            .populate('excavator', 'code')
+            .populate('location', 'name')
+            .populate('material', 'name')
+            .populate('shift')
+            .populate({
+                path: "shiftReport",
+                populate: [
+                    {
+                        path: "vehicleSummaries.vehicle",
+                        select: "code"
+                    }
+                ]
+            })
+            .populate('safetyMeasure')
+            .populate({
+                path: "assistants",
+                select: "salaryCode fullName position",
+                populate: {
+                    path: "position",
+                    select: "name",
+                }
+            })
+            .populate({
+                path: "createdBy",
+                select: "fullName phone salaryCode position signature",
+                populate: {
+                    path: "position",
+                    select: "name",
+                }
+            })
+        const workbook = new ExcelJS.Workbook();
+        for (const order of orders) {
+            const department = order.assignedTo?.department?.code
+            const jobType = order.job?.type
+            if (jobType === JOB_TYPE.VAN_HANH_XE) {
+                await buildVehicle(order, workbook);
+            }
+        }
+        const buffer = await workbook.xlsx.writeBuffer();
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', "attachment; filename*=UTF-8''bulk.xlsx");
+        res.send(buffer);
+        req.logger.info(`✅ Export excel thành công`);
+    } catch (err) {
+        req.logger.error("❌ Lỗi khi export", err);
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
 })
 
-async function buildSheetPXVT6(req, res, next) {
-    try {
-        const { ids } = req.body; // mảng entity id
+async function buildVehicle(order, workbook) {
+    const reports = await Report.find({ orderId: order._id })
+        .populate("device", "code")
+        .populate("material", "name")
+        .populate("excavator", "code")
+        .populate("fromLocation", "name")
+        .populate("toLocation", "name")
+    const sheetName = `${order.assignedTo?.username}_${formatDate(order.workingDate)}_${order.shift?.name}_${order._id}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
 
-        if (!Array.isArray(ids) || ids.length === 0) {
-            req.logger.error("❌ Chọn bản ghi tải xuống");
-            return res.status(400).send({ status: 'error', message: 'Chọn bản ghi cần tải xuống' });
-        }
+    const worksheet = workbook.addWorksheet(sheetName);
 
-        const orders = await Order.find({ _id: { $in: ids } })
-            .populate({
-                path: "assignedTo",
-                select: "username fullName department phone salaryCode",
-                populate: [
-                    { path: "department" }
-                ]
-            })
-            .populate('job', 'name type content')
-            .populate('devicesToProduce.deviceType')
-            .populate('device', 'code')
-            .populate('excavator', 'code')
-            .populate('location', 'name')
-            .populate('material', 'name')
-            .populate('shift')
-            .populate({
-                path: "shiftReport",
-                populate: [
-                    {
-                        path: "vehicleSummaries.vehicle",
-                        select: "code"
-                    }
-                ]
-            })
-            .populate('safetyMeasure')
-            .populate({
-                path: "assistants",
-                select: "username fullName",
-            })
-            .populate({
-                path: "createdBy",
-                select: "fullName phone salaryCode position",
-                populate: {
-                    path: "position",
-                    select: "name",
-                }
-            })
-
-
-        const workbook = new ExcelJS.Workbook();
-        for (const order of orders) {
-            const reports = await Report.find({ orderId: order._id })
-                .populate("device", "code")
-                .populate("material", "name")
-                .populate("excavator", "code")
-                .populate("fromLocation", "name")
-                .populate("toLocation", "name")
-            const sheetName = `${order.assignedTo?.username}_${formatDate(order.workingDate)}_${order.shift?.name}_${order._id}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
-
-            const worksheet = workbook.addWorksheet(sheetName);
-
-            // Tiêu đề bảng
-            worksheet.mergeCells('A1:L2');
-            const header = worksheet.getCell('A1');
-            header.value = `LỆNH SẢN XUẤT`;
-            header.font = { bold: true, size: 16 };
-            header.alignment = { horizontal: 'center', vertical: 'middle' };
+    // Tiêu đề bảng
+    worksheet.mergeCells('A1:L2');
+    const header = worksheet.getCell('A1');
+    header.value = `LỆNH SẢN XUẤT`;
+    header.font = { bold: true, size: 16 };
+    header.alignment = { horizontal: 'center', vertical: 'middle' };
 
 
 
 
-            worksheet.getCell('B4').value = 'Đơn vị';
-            worksheet.getCell('B4').font = { bold: true };
-            worksheet.getCell('C4').value = order.assignedTo?.department?.code || '';
+    worksheet.getCell('B4').value = 'Đơn vị';
+    worksheet.getCell('B4').font = { bold: true };
+    worksheet.getCell('C4').value = order.assignedTo?.department?.code || '';
 
-            worksheet.getCell('F4').value = 'Ngày';
-            worksheet.getCell('F4').font = { bold: true };
-            // Lấy ngày từ order.workingDate và định dạng
-            const workingDate = order.workingDate ? new Date(order.workingDate) : null;
-            const ngay = workingDate ? workingDate.toLocaleDateString('vi-VN') : '';
-            worksheet.getCell('G4').value = ngay;
+    worksheet.getCell('F4').value = 'Ngày';
+    worksheet.getCell('F4').font = { bold: true };
+    // Lấy ngày từ order.workingDate và định dạng
+    const workingDate = order.workingDate ? new Date(order.workingDate) : null;
+    const ngay = workingDate ? workingDate.toLocaleDateString('vi-VN') : '';
+    worksheet.getCell('G4').value = ngay;
 
-            worksheet.getCell('H4').value = order.shiftHour || '';
-
-
-            worksheet.getCell('I4').value = 'Ca';
-            worksheet.getCell('I4').font = { bold: true };
-
-            worksheet.getCell('J4').value = order.shift?.name || '';
-            worksheet.getCell('J4').alignment = { horizontal: 'left' }
-
-            // 3. Người ra lệnh
-            // Dòng 5
-            worksheet.getCell('B5').value = 'Người ra lệnh';
-            worksheet.getCell('B5').font = { bold: true };
-            worksheet.getCell('C5').value = order.createdBy?.fullName || '';
-
-            worksheet.getCell('F5').value = 'Mã thẻ lương';
-            worksheet.getCell('F5').font = { bold: true };
-            worksheet.getCell('G5').value = order.createdBy?.salaryCode || '';
+    worksheet.getCell('H4').value = order.shiftHour || '';
 
 
-            worksheet.getCell('I5').value = 'Chức vụ';
-            worksheet.getCell('I5').font = { bold: true };
-            worksheet.getCell('J5').value = order.createdBy?.position?.name || '';
+    worksheet.getCell('I4').value = 'Ca';
+    worksheet.getCell('I4').font = { bold: true };
 
-            // 4. Người nhận lệnh
-            // Dòng 6
-            worksheet.getCell('B6').value = 'Người nhận lệnh';
-            worksheet.getCell('B6').font = { bold: true };
-            worksheet.getCell('C6').value = order.assignedTo?.fullName || '';
+    worksheet.getCell('J4').value = order.shift?.name || '';
+    worksheet.getCell('J4').alignment = { horizontal: 'left' }
 
-            worksheet.getCell('F6').value = 'Mã thẻ lương';
-            worksheet.getCell('F6').font = { bold: true };
-            worksheet.getCell('G6').value = order.assignedTo?.salaryCode || '';
+    // 3. Người ra lệnh
+    // Dòng 5
+    worksheet.getCell('B5').value = 'Người ra lệnh';
+    worksheet.getCell('B5').font = { bold: true };
+    worksheet.getCell('C5').value = order.createdBy?.fullName || '';
 
-            worksheet.getCell('I6').value = 'Phương tiện';
-            worksheet.getCell('I6').font = { bold: true };
-            worksheet.getCell('J6').value = order.device?.map(e => e.code).join(', ') || '';
-
-            // 5. Nội dung
-            // Dòng 7
-            worksheet.getCell('B7').value = 'Nội dung';
-            worksheet.getCell('B7').font = { bold: true };
-            // Gộp ô cho nội dung để hiển thị đầy đủ
-            worksheet.mergeCells('C7:H8')
-            worksheet.getCell('C7').value = order.workContent || '';
-            worksheet.getCell('C7').alignment = { horizontal: 'left', vertical: 'middle' };
-
-            worksheet.getCell('I7').value = 'Máy xúc';
-            worksheet.getCell('I7').font = { bold: true };
-            worksheet.getCell('J7').value = order.excavator?.map(e => e.code).join(', ') || '';
-            // 6. Bàn giao ca và Đổ tải
-            // Dòng 8
-            worksheet.getCell('I8').value = 'Điểm đổ tải';
-            worksheet.getCell('I8').font = { bold: true };
-            worksheet.getCell('J8').value = order.location?.name || '';
-
-            // Dòng 9
-            worksheet.getCell('B9').value = 'Biện pháp an toàn';
-            worksheet.getCell('B9').font = { bold: true };
-            // Gộp ô cho nội dung bàn giao ca
-            worksheet.mergeCells('C9:L9')
-            worksheet.getCell('C9').value = (order?.safetyMeasure || '') + " " + (order?.safetyMeasureSpecific || '');
+    worksheet.getCell('F5').value = 'Số thẻ';
+    worksheet.getCell('F5').font = { bold: true };
+    worksheet.getCell('G5').value = order.createdBy?.salaryCode || '';
 
 
-            // Dòng 10
+    worksheet.getCell('I5').value = 'Chức vụ';
+    worksheet.getCell('I5').font = { bold: true };
+    worksheet.getCell('J5').value = order.createdBy?.position?.name || '';
 
-            worksheet.getCell('B10').value = 'Bàn giao ca';
-            worksheet.getCell('B10').font = { bold: true };
-            // Gộp ô cho nội dung bàn giao ca
-            worksheet.mergeCells('C10:L10')
-            worksheet.getCell('C10').value = order.shiftReport?.handoverNotes || '';
+    // 4. Người nhận lệnh
+    // Dòng 6
+    worksheet.getCell('B6').value = 'Người nhận lệnh';
+    worksheet.getCell('B6').font = { bold: true };
+    worksheet.getCell('C6').value = order.assignedTo?.fullName || '';
 
+    worksheet.getCell('F6').value = 'Số thẻ';
+    worksheet.getCell('F6').font = { bold: true };
+    worksheet.getCell('G6').value = order.assignedTo?.salaryCode || '';
 
-            // Dòng 9
-            worksheet.getCell('B11').value = 'Giờ nhận lệnh';
-            worksheet.getCell('B11').font = { bold: true };
-            worksheet.getCell('C11').value = order.startTime
-                ? new Date(order.startTime).toLocaleTimeString('vi-VN', { hour12: false })
-                : "";
+    worksheet.getCell('I6').value = 'Chức vụ';
+    worksheet.getCell('I6').font = { bold: true };
+    worksheet.getCell('J6').value = order.device?.map(e => e.code).join(', ') || '';
 
-            worksheet.getCell('D11').value = 'Giờ kết thúc';
-            worksheet.getCell('D11').font = { bold: true };
-            worksheet.getCell('E11').value = order.endTime
-                ? new Date(order.endTime).toLocaleTimeString('vi-VN', { hour12: false })
-                : "";
+    // Dòng 6 lx bo tuc
+    worksheet.getCell('B7').value = 'Lái xe bổ túc';
+    worksheet.getCell('B7').font = { bold: true };
+    worksheet.getCell('C7').value = order.assignedTo?.fullName || '';
 
-            worksheet.mergeCells('F11:G11');
-            worksheet.getCell('F11').value = 'Giờ hoạt động trên đồng hồ';
-            worksheet.getCell('F11').font = { bold: true };
-            worksheet.getCell('H11').value = (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => { return sum + report?.travelHours }, 0) || '';
-            worksheet.getCell('H11').alignment = { horizontal: 'left' }
+    let rowIndex = 7;
+    (order.assistants || []).forEach((driver, idx) => {
+        let row = rowIndex + idx;
 
-            worksheet.mergeCells('I11:J11');
-            worksheet.getCell('I11').value = 'Km hoạt động trên đồng hồ';
-            worksheet.getCell('I11').font = { bold: true };
-            worksheet.getCell('K11').value = (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => { return sum + report?.distanceKm }, 0) || '';
-            worksheet.getCell('K11').alignment = { horizontal: 'left' }
+        worksheet.getCell(`C${row}`).value = driver.fullName || '';
+        worksheet.getCell(`F${row}`).value = 'Số thẻ';
+        worksheet.getCell(`F${row}`).font = { bold: true };
+        worksheet.getCell(`G${row}`).value = driver.salaryCode || '';
 
+        worksheet.getCell(`I${row}`).value = 'Chức vụ';
+        worksheet.getCell(`I${row}`).font = { bold: true };
+        worksheet.getCell(`J${row}`).value = driver.position?.name || '';
+    });
 
-
-            worksheet.mergeCells('A13:L13');
-            const product = worksheet.getCell('A13');
-            product.value = `I. SẢN PHẨM`;
-            product.font = { bold: true, size: 14 };
-            product.alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getRow(13).height = 30;
-
-            worksheet.getCell('A14').value = 'STT';
-            worksheet.getCell('B14').value = 'Điểm đi';
-            worksheet.getCell('C14').value = 'Điểm đến';
-            worksheet.getCell('D14').value = 'Loại hàng';
-            worksheet.getCell('E14').value = 'Cung độ \n(km)';
-            worksheet.getCell('F14').value = 'Định mức';
-            worksheet.getCell('G14').value = 'Số chuyển \nthực hiện';
-            worksheet.getCell('H14').value = 'Thời gian \n thực hiện';
-            worksheet.getCell('I14').value = 'Nhiên liệu \n định mức';
-            worksheet.getCell('J14').value = 'Điểm lương';
-            worksheet.getCell('K14').value = 'Mức bồi dưỡng';
-            worksheet.getCell('L14').value = 'Ghi chứ';
-
-            const headerRow = worksheet.getRow(14);
-            for (let col = 1; col <= 12; col++) {
-                const cell = headerRow.getCell(col);
-                cell.font = { bold: true };
-                cell.alignment = {
-                    ...cell.alignment,
-                    wrapText: true,
-                    vertical: 'middle',
-                    horizontal: 'center',
-                };
-            }
-            headerRow.height = 45;
-
-            const grouped = groupReportsForProduct(reports)
-
-            for (let i = 0; i < grouped.length; i++) {
-                const g = grouped[i];
-                const rowIndex = 15 + i;
-                worksheet.getCell(`A${rowIndex}`).value = i + 1;
-                worksheet.getCell(`B${rowIndex}`).value = g.from?.name || g.from?.code || '';
-                worksheet.getCell(`C${rowIndex}`).value = g.to?.name || '';
-                worksheet.getCell(`D${rowIndex}`).value = g.to?.name || '';
-                worksheet.getCell(`E${rowIndex}`).value = '';
-                worksheet.getCell(`F${rowIndex}`).value = '';
-                worksheet.getCell(`G${rowIndex}`).value = g.quantity || 0;
-                worksheet.getCell(`H${rowIndex}`).value = g.quantity || 0;
-                worksheet.getCell(`I${rowIndex}`).value = "";
-                worksheet.getCell(`J${rowIndex}`).value = "";
-                worksheet.getCell(`K${rowIndex}`).value = "";
-                worksheet.getCell(`L${rowIndex}`).value = "";
-
-            };
-            const totalRow = (grouped?.length || 0) + 16;
-            addTableBorders(worksheet, 13, totalRow + 1, 1, 12);
-            worksheet.mergeCells(`A${totalRow}:B${totalRow}`);
-            worksheet.getCell(`A${totalRow}`).value = 'Tổng cộng';
-            worksheet.getCell(`A${totalRow}`).font = { bold: true };
-            worksheet.getCell(`A${totalRow}`).alignment = { horizontal: 'right' }
-
-            worksheet.mergeCells(`C${totalRow}:G${totalRow}`);
-            worksheet.getCell(`C${totalRow}`).value = grouped.reduce((s, g) => s + (g.quantity || 0), 0);
-            worksheet.getCell(`C${totalRow}`).font = { bold: true };
-
-            worksheet.getCell(`H${totalRow}`).value = '';
-            worksheet.getCell(`I${totalRow}`).value = '';
-            worksheet.getCell(`J${totalRow}`).value = '';
-
-            worksheet.mergeCells(`K${totalRow}:L${totalRow}`);
-            worksheet.getCell(`K${totalRow}`).value = '';
-
-            worksheet.mergeCells(`A${totalRow + 1}:L${totalRow + 1}`);
-            worksheet.getCell(`A${totalRow + 1}`).value = 'Mức bồi dưỡng (x1000đ):';
-
-            worksheet.mergeCells(`A${totalRow + 2}:L${totalRow + 2}`);
-            const header3 = worksheet.getCell(`A${totalRow + 2}`);
-            header3.value = `II.NHIÊN LIỆU`;
-            header3.font = { bold: true, size: 14 };
-            header3.alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getRow(12).height = 30;
-
-            worksheet.getCell(`A${totalRow + 3}`).value = 'Phương tiện';
-            worksheet.getCell(`A${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`A${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`B${totalRow + 3}`).value = 'Tồn dầu';
-            worksheet.getCell(`B${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`B${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`C${totalRow + 3}`).value = 'Lĩnh trong ca';
-            worksheet.getCell(`C${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`C${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`D${totalRow + 3}`).value = 'Tồn cuối ca';
-            worksheet.getCell(`D${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`D${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`E${totalRow + 3}`).value = 'Tiêu thụ';
-            worksheet.getCell(`E${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`E${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`F${totalRow + 3}`).value = 'Định mức';
-            worksheet.getCell(`F${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`F${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`G${totalRow + 3}`).value = 'Tiết kiệm';
-            worksheet.getCell(`G${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`G${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.mergeCells(`H${totalRow + 3}:I${totalRow + 3}`)
-            worksheet.getCell(`H${totalRow + 3}`).value = 'Sử dụng vượt';
-            worksheet.getCell(`H${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`H${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.mergeCells(`J${totalRow + 3}:L${totalRow + 3}`)
-            worksheet.getCell(`J${totalRow + 3}`).value = 'Ghi chú';
-            worksheet.getCell(`J${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`J${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle' };
+    let nextRow = rowIndex + (order.assistants?.length || 1);
+    // Dòng 7
+    worksheet.getCell(`B${nextRow}`).value = 'Nội dung lệnh';
+    worksheet.getCell(`B${nextRow}`).font = { bold: true };
+    // Gộp ô cho nội dung để hiển thị đầy đủ
+    worksheet.mergeCells(`C${nextRow}:L${nextRow + 1}`)
+    worksheet.getCell(`C${nextRow}`).value = order.workContent || '';
+    worksheet.getCell(`C${nextRow}`).alignment = { horizontal: 'left', vertical: 'middle' };
 
 
-            const fuelHeaderRow = totalRow + 2;
-            const fuelRows = order.shiftReport?.vehicleSummaries?.length || 0;
-            const fuelEndRow = fuelHeaderRow + fuelRows + 3;
-
-            addTableBorders(worksheet, fuelHeaderRow, fuelEndRow, 1, 12);
-            for (let index = 0; index < (order.shiftReport?.vehicleSummaries?.length + 1 || 1); index++) {
-                const rep = order.shiftReport?.vehicleSummaries[index];
-
-                worksheet.getCell(`A${totalRow + 4 + index}`).value = rep?.vehicle?.code || '';
-                worksheet.getCell(`B${totalRow + 4 + index}`).value = rep?.fuelRemain || '';
-                worksheet.getCell(`C${totalRow + 4 + index}`).value = rep?.fuelReceived || '';
-                worksheet.getCell(`D${totalRow + 4 + index}`).value = rep?.fuelRemainEnd || '';
-                worksheet.getCell(`E${totalRow + 4 + index}`).value =
-                    (rep?.fuelRemain ?? 0) + (rep?.fuelReceived ?? 0) - (rep?.fuelRemainEnd ?? 0);
-
-                worksheet.getCell(`F${totalRow + 4 + index}`).value = '';
-
-                worksheet.mergeCells(`H${totalRow + 4 + index}:I${totalRow + 4 + index}`);
-                worksheet.getCell(`H${totalRow + 4 + index}`).value = '';
-
-                worksheet.mergeCells(`J${totalRow + 4 + index}:L${totalRow + 4 + index}`);
-                worksheet.getCell(`J${totalRow + 4 + index}`).value = '';
-            }
-
-            worksheet.mergeCells(`A${fuelEndRow}:L${fuelEndRow}`);
-            const follow = worksheet.getCell(`A${fuelEndRow}`);
-            follow.value = `III. THEO DÕI SỬ DỤNG THIẾT BỊ`;
-            follow.font = { bold: true, size: 14 };
-            follow.alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getRow(fuelEndRow).height = 30;
-
-            worksheet.getCell(`A${fuelEndRow + 1}`).value = 'Sản phẩm';
-            worksheet.getCell(`B${fuelEndRow + 1}`).value = 'Di chuyển';
-            worksheet.getCell(`C${fuelEndRow + 1}`).value = 'Phục vụ';
-            worksheet.getCell(`D${fuelEndRow + 1}`).value = 'Tổng';
-            worksheet.getCell(`E${fuelEndRow + 1}`).value = 'Giao ca';
-            worksheet.getCell(`F${fuelEndRow + 1}`).value = 'Sửa chữa';
-            worksheet.getCell(`G${fuelEndRow + 1}`).value = 'Tránh mìn';
-            worksheet.getCell(`H${fuelEndRow + 1}`).value = 'Gạt nền';
-            worksheet.getCell(`I${fuelEndRow + 1}`).value = 'Mất điện \nchờ nước';
-            worksheet.getCell(`J${fuelEndRow + 1}`).value = 'nguyên nhân \n khác';
-            worksheet.getCell(`K${fuelEndRow + 1}`).value = 'Tổng';
-            worksheet.getCell(`L${fuelEndRow + 1}`).value = 'Giờ lũy kế';
-            const headerFollow = worksheet.getRow(fuelEndRow + 1);
-            for (let col = 1; col <= 12; col++) {
-                const cell = headerFollow.getCell(col);
-                cell.font = { bold: true };
-                cell.alignment = {
-                    ...cell.alignment,
-                    wrapText: true,
-                    vertical: 'middle',
-                    horizontal: 'center',
-                };
-            }
-            addTableBorders(worksheet, fuelEndRow, fuelEndRow + 2, 1, 12);
-            worksheet.getCell(`A${fuelEndRow + 2}`).value = '';
-            worksheet.getCell(`B${fuelEndRow + 2}`).value = '';
-            worksheet.getCell(`C${fuelEndRow + 2}`).value = '';
-            worksheet.getCell(`D${fuelEndRow + 2}`).value = '';
-            worksheet.getCell(`E${fuelEndRow + 2}`).value = order.shiftReport?.handoverHours || '';
-            worksheet.getCell(`F${fuelEndRow + 2}`).value = '';
-            worksheet.getCell(`G${fuelEndRow + 2}`).value = "";
-            worksheet.getCell(`H${fuelEndRow + 2}`).value = '';
-            worksheet.mergeCells(`I${fuelEndRow + 2}:L${fuelEndRow + 2}`);
-            worksheet.getCell(`I${fuelEndRow + 2}`).value = '';
-
-            const deviceRow = order.device?.length || []
-            worksheet.mergeCells(`B${totalRow + 9 + deviceRow}:D${totalRow + 9 + deviceRow}`)
-            worksheet.getCell(`B${totalRow + 9 + deviceRow}`).value = 'NGƯỜI NHẬN LỆNH';
-            worksheet.getCell(`B${totalRow + 9 + deviceRow}`).font = { bold: true };
-            worksheet.getCell(`B${totalRow + 9 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`C${totalRow + 11 + deviceRow}`).value = '✔';
-            worksheet.getCell(`C${totalRow + 11 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`C${totalRow + 11 + deviceRow}`).font = { bold: true, size: 12 };
-            worksheet.mergeCells(`B${totalRow + 13 + deviceRow}:D${totalRow + 13 + deviceRow}`)
-            worksheet.getCell(`B${totalRow + 13 + deviceRow}`).font = { bold: true };
-            worksheet.getCell(`B${totalRow + 13 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`B${totalRow + 13 + deviceRow}`).value = order.assignedTo?.fullName || "";
+    worksheet.getCell(`B${nextRow + 2}`).value = 'Biện pháp an toàn';
+    worksheet.getCell(`B${nextRow + 2}`).font = { bold: true };
+    // Gộp ô cho nội dung bàn giao ca
+    worksheet.mergeCells(`C${nextRow + 2}:L${nextRow + 2}`)
+    worksheet.getCell(`C${nextRow + 2}`).value = (order?.safetyMeasure || '') + " " + (order?.safetyMeasureSpecific || '');
 
 
-            worksheet.mergeCells(`I${totalRow + 9 + deviceRow}:L${totalRow + 9 + deviceRow}`)
-            worksheet.getCell(`I${totalRow + 9 + deviceRow}`).value = 'NGƯỜI RA LỆNH';
-            worksheet.getCell(`I${totalRow + 9 + deviceRow}`).font = { bold: true };
-            worksheet.getCell(`I${totalRow + 9 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.mergeCells(`I${totalRow + 13 + deviceRow}:L${totalRow + 13 + deviceRow}`)
-            worksheet.getCell(`I${totalRow + 13 + deviceRow}`).font = { bold: true };
-            worksheet.getCell(`I${totalRow + 13 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`I${totalRow + 13 + deviceRow}`).value = order.createdBy?.fullName || "";
+    worksheet.getCell(`B${nextRow + 3}`).value = 'Nội dung bàn giao ca';
+    worksheet.getCell(`B${nextRow + 3}`).font = { bold: true };
+    // Gộp ô cho nội dung bàn giao ca
+    worksheet.mergeCells(`C${nextRow + 3}:L${nextRow + 3}`)
+    worksheet.getCell(`C${nextRow + 3}`).value = order.shiftReport?.handoverNotes || '';
 
 
-            worksheet.pageSetup = {
-                paperSize: 9,                // A4
-                orientation: 'landscape',    // ngang
-                fitToPage: true,
-                fitToWidth: 1,               // vừa 1 trang theo chiều ngang
-                fitToHeight: 0,              // không ép theo chiều dọc
-                margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } // inch
-            };
+    worksheet.getCell(`B${nextRow + 4}`).value = 'Giờ nhận lệnh';
+    worksheet.getCell(`B${nextRow + 4}`).font = { bold: true };
+    worksheet.getCell(`C${nextRow + 4}`).value = order.startTime
+        ? new Date(order.startTime).toLocaleTimeString('vi-VN', { hour12: false })
+        : "";
 
-            // 2) Set width cơ sở (Excel sẽ scale để vừa 1 trang)
-            worksheet.columns = [
-                { key: 'A', width: 14 },
-                { key: 'B', width: 18 },
-                { key: 'C', width: 18 },
-                { key: 'D', width: 14 },
-                { key: 'E', width: 14 },
-                { key: 'F', width: 14 },
-                { key: 'G', width: 14 },
-                { key: 'H', width: 14 },
-                { key: 'I', width: 14 },
-                { key: 'J', width: 13 },
-                { key: 'K', width: 12 },
-                { key: 'L', width: 12 },
-            ];
+    worksheet.getCell(`D${nextRow + 4}`).value = 'Giờ kết thúc';
+    worksheet.getCell(`D${nextRow + 4}`).font = { bold: true };
+    worksheet.getCell(`E${nextRow + 4}`).value = order.endTime
+        ? new Date(order.endTime).toLocaleTimeString('vi-VN', { hour12: false })
+        : "";
 
-            worksheet.eachRow((row) => {
-                row.eachCell((cell) => {
-                    // Nếu chưa có font, tạo font mới
-                    if (!cell.font) cell.font = {};
-                    cell.font.size = 12; // hoặc 8, tuỳ theo bạn muốn nhỏ đến đâu
-                });
+    worksheet.mergeCells(`F${nextRow + 4}:G${nextRow + 4}`);
+    worksheet.getCell(`F${nextRow + 4}`).value = 'Giờ hoạt động trên đồng hồ';
+    worksheet.getCell(`F${nextRow + 4}`).font = { bold: true };
+    worksheet.getCell(`H${nextRow + 4}`).value = (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => { return sum + report?.travelHours }, 0) || '';
+    worksheet.getCell(`H${nextRow + 4}`).alignment = { horizontal: 'left' }
+
+    worksheet.mergeCells(`I${nextRow + 4}:J${nextRow + 4}`);
+    worksheet.getCell(`I${nextRow + 4}`).value = 'Km hoạt động trên đồng hồ';
+    worksheet.getCell(`I${nextRow + 4}`).font = { bold: true };
+    worksheet.getCell(`K${nextRow + 4}`).value = (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => { return sum + report?.distanceKm }, 0) || '';
+    worksheet.getCell(`K${nextRow + 4}`).alignment = { horizontal: 'left' }
+
+    let rowHeader1 = nextRow + 6
+    worksheet.mergeCells(`A${rowHeader1}:L${rowHeader1}`);
+    const product = worksheet.getCell(`A${rowHeader1}`);
+    product.value = `I. SẢN PHẨM`;
+    product.font = { bold: true, size: 14 };
+    product.alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getRow(rowHeader1).height = 30;
+
+    worksheet.getCell(`A${rowHeader1 + 1}`).value = 'STT';
+    worksheet.getCell(`B${rowHeader1 + 1}`).value = 'Máy xúc';
+    worksheet.getCell(`C${rowHeader1 + 1}`).value = 'Điểm đổ tải';
+    worksheet.getCell(`D${rowHeader1 + 1}`).value = 'Vật liệu';
+    worksheet.getCell(`E${rowHeader1 + 1}`).value = 'Số chuyến thực hiện';
+    worksheet.getCell(`F${rowHeader1 + 1}`).value = 'Thời gian';
+    worksheet.getCell(`G${rowHeader1 + 1}`).value = 'Khối lượng \n tạm tính \n(m3)';
+    worksheet.getCell(`H${rowHeader1 + 1}`).value = 'Trọng lượng \n tạm tính \n (tấn)';
+    worksheet.getCell(`I${rowHeader1 + 1}`).value = 'Sản lượng \n tạm tính \n(tkm)';
+    worksheet.getCell(`J${rowHeader1 + 1}`).value = 'Nhiên liệu \n định mức';
+    worksheet.getCell(`K${rowHeader1 + 1}`).value = 'Điểm lương \n tạm tính';
+    worksheet.getCell(`L${rowHeader1 + 1}`).value = 'Ghi chú';
+
+    const headerRow = worksheet.getRow(rowHeader1 + 1);
+    for (let col = 1; col <= 12; col++) {
+        const cell = headerRow.getCell(col);
+        cell.font = { bold: true };
+        cell.alignment = {
+            ...cell.alignment,
+            wrapText: true,
+            vertical: 'middle',
+            horizontal: 'center',
+        };
+    }
+
+    const grouped = groupTripsVehicle(reports)
+
+    let rowIndexTrip = rowHeader1 + 2;
+    grouped.forEach((g, i) => {
+        const startRowTrip = rowIndexTrip;
+        g.materials.forEach(m => {
+            worksheet.getCell(`A${rowIndexTrip}`).value = i + 1;
+            worksheet.getCell(`A${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            worksheet.getCell(`B${rowIndexTrip}`).value = g.excavator?.code || '';
+            worksheet.getCell(`B${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            worksheet.getCell(`C${rowIndexTrip}`).value = g.location?.name || '';
+            worksheet.getCell(`C${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            worksheet.getCell(`D${rowIndexTrip}`).value = m.material?.name || '';
+            worksheet.getCell(`D${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            worksheet.getCell(`E${rowIndexTrip}`).value = m?.quantity || '';
+            worksheet.getCell(`E${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            worksheet.getCell(`F${rowIndexTrip}`).value = (m.times || []).map(item => item.toLocaleTimeString('vi-VN')).join('\n');
+            worksheet.getCell(`F${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            worksheet.getCell(`G${rowIndexTrip}`).value = "";
+            worksheet.getCell(`G${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            worksheet.getCell(`H${rowIndexTrip}`).value = '';
+            worksheet.getCell(`I${rowIndexTrip}`).value = "";
+            worksheet.getCell(`J${rowIndexTrip}`).value = "";
+            worksheet.getCell(`K${rowIndexTrip}`).value = "";
+            worksheet.getCell(`L${rowIndexTrip}`).value = "";
+            rowIndexTrip++;
+        })
+        if (rowIndexTrip - 1 > startRowTrip) {
+            ['A', 'B', 'C'].forEach(col => {
+                worksheet.mergeCells(`${col}${startRowTrip}:${col}${rowIndexTrip - 1}`);
+                worksheet.getCell(`${col}${startRowTrip}`).alignment = { vertical: 'middle', horizontal: 'center' };
             });
         }
+    })
+    const totalRow = rowIndexTrip + 1;
 
-        // Xuất file
-        const buffer = await workbook.xlsx.writeBuffer();
+    worksheet.mergeCells(`A${totalRow}:B${totalRow}`);
+    worksheet.getCell(`A${totalRow}`).value = 'Tổng cộng';
+    worksheet.getCell(`A${totalRow}`).font = { bold: true };
+    worksheet.getCell(`A${totalRow}`).alignment = { horizontal: 'right' }
 
-        // Thiết lập header để tải file về
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader(
-            'Content-Disposition',
-            "attachment; filename*=UTF-8''*.xlsx"
-        );     // Gửi buffer về client
-        res.send(buffer);
-        req.logger.info(`✅ Export excel thành công`);
+    worksheet.mergeCells(`C${totalRow}:E${totalRow}`);
+    worksheet.getCell(`C${totalRow}`).value = reports.reduce((sum, report) => { return sum + report.quantity }, 0) || '';
+    worksheet.getCell(`C${totalRow}`).font = { bold: true };
+
+    worksheet.getCell(`H${totalRow}`).value = '';
+    worksheet.getCell(`I${totalRow}`).value = '';
+    worksheet.getCell(`J${totalRow}`).value = '';
+
+    worksheet.mergeCells(`K${totalRow}:L${totalRow}`);
+    worksheet.getCell(`K${totalRow}`).value = '';
+
+    worksheet.mergeCells(`A${totalRow + 1}:L${totalRow + 1}`);
+    worksheet.getCell(`A${totalRow + 1}`).value = 'Mức bồi dưỡng (x1000đ):';
+
+    worksheet.mergeCells(`A${totalRow + 2}:L${totalRow + 2}`);
+    const header3 = worksheet.getCell(`A${totalRow + 2}`);
+    header3.value = `II.NHIÊN LIỆU`;
+    header3.font = { bold: true, size: 14 };
+    header3.alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getRow(totalRow + 2).height = 30;
+
+    worksheet.mergeCells(`A${totalRow + 3}:B${totalRow + 3}`);
+    worksheet.getCell(`A${totalRow + 3}`).value = 'Thiết bị vận hành';
+    worksheet.getCell(`A${totalRow + 3}`).font = { bold: true };
+    worksheet.getCell(`A${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    worksheet.getCell(`C${totalRow + 3}`).value = 'Tồn dầu';
+    worksheet.getCell(`C${totalRow + 3}`).font = { bold: true };
+    worksheet.getCell(`C${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    worksheet.getCell(`D${totalRow + 3}`).value = 'Lĩnh trong ca';
+    worksheet.getCell(`D${totalRow + 3}`).font = { bold: true };
+    worksheet.getCell(`D${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    worksheet.getCell(`E${totalRow + 3}`).value = 'Tồn cuối ca';
+    worksheet.getCell(`E${totalRow + 3}`).font = { bold: true };
+    worksheet.getCell(`E${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    worksheet.getCell(`F${totalRow + 3}`).value = 'Tiêu thụ';
+    worksheet.getCell(`F${totalRow + 3}`).font = { bold: true };
+    worksheet.getCell(`F${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    worksheet.getCell(`G${totalRow + 3}`).value = 'Định mức';
+    worksheet.getCell(`G${totalRow + 3}`).font = { bold: true };
+    worksheet.getCell(`G${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    worksheet.getCell(`H${totalRow + 3}`).value = 'Tiết kiệm';
+    worksheet.getCell(`H${totalRow + 3}`).font = { bold: true };
+    worksheet.getCell(`H${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    worksheet.getCell(`I${totalRow + 3}`).value = 'Sử dụng vượt';
+    worksheet.getCell(`I${totalRow + 3}`).font = { bold: true };
+    worksheet.getCell(`I${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.mergeCells(`J${totalRow + 3}:L${totalRow + 3}`)
+    worksheet.getCell(`J${totalRow + 3}`).value = 'Ghi chú';
+    worksheet.getCell(`J${totalRow + 3}`).font = { bold: true };
+    worksheet.getCell(`J${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle' };
 
 
-    } catch (err) {
-        req.logger.error("❌ Lỗi khi export", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    const fuelHeaderRow = totalRow + 2;
+    const fuelRows = order.shiftReport?.vehicleSummaries?.length || 0;
+    const fuelEndRow = fuelHeaderRow + fuelRows + 2;
+
+    addTableBorders(worksheet, rowHeader1, fuelEndRow, 1, 12);
+
+    for (let index = 0; index < (order.shiftReport?.vehicleSummaries?.length + 1 || 1); index++) {
+        const rep = order.shiftReport?.vehicleSummaries[index];
+        worksheet.mergeCells(`A${totalRow + 4 + index}:B${totalRow + 4 + index}`);
+        worksheet.getCell(`A${totalRow + 4 + index}`).value = rep?.vehicle?.code || '';
+        worksheet.getCell(`C${totalRow + 4 + index}`).value = rep?.fuelRemain || '';
+        worksheet.getCell(`D${totalRow + 4 + index}`).value = rep?.fuelReceived || '';
+        worksheet.getCell(`E${totalRow + 4 + index}`).value = rep?.fuelRemainEnd || '';
+        worksheet.getCell(`F${totalRow + 4 + index}`).value =
+            (rep?.fuelRemain ?? 0) + (rep?.fuelReceived ?? 0) - (rep?.fuelRemainEnd ?? 0);
+
+        worksheet.getCell(`G${totalRow + 4 + index}`).value = '';
+
+        worksheet.getCell(`H${totalRow + 4 + index}`).value = '';
+        worksheet.getCell(`I${totalRow + 4 + index}`).value = '';
+
+        worksheet.mergeCells(`J${totalRow + 4 + index}:L${totalRow + 4 + index}`);
+        worksheet.getCell(`J${totalRow + 4 + index}`).value = '';
     }
-};
 
-async function buildSheetDefault(req, res, next) {
-    try {
-        const { ids } = req.body; // mảng entity id
-
-        if (!Array.isArray(ids) || ids.length === 0) {
-            req.logger.error("❌ Chọn bản ghi tải xuống");
-            return res.status(400).send({ status: 'error', message: 'Chọn bản ghi cần tải xuống' });
-        }
-
-        const orders = await Order.find({ _id: { $in: ids } })
-            .populate({
-                path: "assignedTo",
-                select: "username fullName department phone salaryCode",
-                populate: [
-                    { path: "department" }
-                ]
-            })
-            .populate('job', 'name type content')
-            .populate('devicesToProduce.deviceType')
-            .populate('device', 'code')
-            .populate('excavator', 'code')
-            .populate('location', 'name')
-            .populate('material', 'name')
-            .populate('shift')
-            .populate({
-                path: "shiftReport",
-                populate: [
-                    {
-                        path: "vehicleSummaries.vehicle",
-                        select: "code"
-                    }
-                ]
-            })
-            .populate('safetyMeasure')
-            .populate({
-                path: "assistants",
-                select: "username fullName",
-            })
-            .populate({
-                path: "createdBy",
-                select: "fullName phone salaryCode position",
-                populate: {
-                    path: "position",
-                    select: "name",
-                }
-            })
-
-
-        const workbook = new ExcelJS.Workbook();
-        for (const order of orders) {
-            const reports = await Report.find({ orderId: order._id })
-                .populate("device", "code")
-                .populate("material", "name")
-                .populate("excavator", "code")
-                .populate("fromLocation", "name")
-                .populate("toLocation", "name")
-            const sheetName = `${order.assignedTo?.username}_${formatDate(order.workingDate)}_${order.shift?.name}_${order._id}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
-
-            const worksheet = workbook.addWorksheet(sheetName);
-
-            // Tiêu đề bảng
-            worksheet.mergeCells('A1:M2');
-            const header = worksheet.getCell('A1');
-            header.value = `LỆNH SẢN XUẤT`;
-            header.font = { bold: true, size: 16 };
-            header.alignment = { horizontal: 'center', vertical: 'middle' };
-
-
-
-
-            worksheet.getCell('B4').value = 'Đơn vị';
-            worksheet.getCell('B4').font = { bold: true };
-            worksheet.getCell('C4').value = order.assignedTo?.department?.code || '';
-
-            worksheet.getCell('F4').value = 'Ngày';
-            worksheet.getCell('F4').font = { bold: true };
-            // Lấy ngày từ order.workingDate và định dạng
-            const workingDate = order.workingDate ? new Date(order.workingDate) : null;
-            const ngay = workingDate ? workingDate.toLocaleDateString('vi-VN') : '';
-            worksheet.getCell('G4').value = ngay;
-
-            worksheet.getCell('H4').value = order.shiftHour || '';
-
-
-            worksheet.getCell('I4').value = 'Ca';
-            worksheet.getCell('I4').font = { bold: true };
-
-            worksheet.getCell('J4').value = order.shift?.name || '';
-            worksheet.getCell('J4').alignment = { horizontal: 'left' }
-
-            // 3. Người ra lệnh
-            // Dòng 5
-            worksheet.getCell('B5').value = 'Người ra lệnh';
-            worksheet.getCell('B5').font = { bold: true };
-            worksheet.getCell('C5').value = order.createdBy?.fullName || '';
-
-            worksheet.getCell('F5').value = 'Mã thẻ lương';
-            worksheet.getCell('F5').font = { bold: true };
-            worksheet.getCell('G5').value = order.createdBy?.salaryCode || '';
-
-
-            worksheet.getCell('I5').value = 'Chức vụ';
-            worksheet.getCell('I5').font = { bold: true };
-            worksheet.getCell('J5').value = order.createdBy?.position?.name || '';
-
-            // 4. Người nhận lệnh
-            // Dòng 6
-            worksheet.getCell('B6').value = 'Người nhận lệnh';
-            worksheet.getCell('B6').font = { bold: true };
-            worksheet.getCell('C6').value = order.assignedTo?.fullName || '';
-
-            worksheet.getCell('F6').value = 'Mã thẻ lương';
-            worksheet.getCell('F6').font = { bold: true };
-            worksheet.getCell('G6').value = order.assignedTo?.salaryCode || '';
-
-            worksheet.getCell('I6').value = 'Phương tiện';
-            worksheet.getCell('I6').font = { bold: true };
-            worksheet.getCell('J6').value = order.device?.map(e => e.code).join(', ') || '';
-
-            // 5. Nội dung
-            // Dòng 7
-            worksheet.getCell('B7').value = 'Nội dung';
-            worksheet.getCell('B7').font = { bold: true };
-            // Gộp ô cho nội dung để hiển thị đầy đủ
-            worksheet.mergeCells('C7:H8')
-            worksheet.getCell('C7').value = order.workContent || '';
-            worksheet.getCell('C7').alignment = { horizontal: 'left', vertical: 'middle' };
-
-            worksheet.getCell('I7').value = 'Máy xúc';
-            worksheet.getCell('I7').font = { bold: true };
-            worksheet.getCell('J7').value = order.excavator?.map(e => e.code).join(', ') || '';
-            // 6. Bàn giao ca và Đổ tải
-            // Dòng 8
-            worksheet.getCell('I8').value = 'Điểm đổ tải';
-            worksheet.getCell('I8').font = { bold: true };
-            worksheet.getCell('J8').value = order.location?.name || '';
-
-            // Dòng 9
-            worksheet.getCell('B9').value = 'Biện pháp an toàn';
-            worksheet.getCell('B9').font = { bold: true };
-            // Gộp ô cho nội dung bàn giao ca
-            worksheet.mergeCells('C9:M9')
-            worksheet.getCell('C9').value = (order?.safetyMeasure || '') + " " + (order?.safetyMeasureSpecific || '');
-
-
-            // Dòng 10
-
-            worksheet.getCell('B10').value = 'Bàn giao ca';
-            worksheet.getCell('B10').font = { bold: true };
-            // Gộp ô cho nội dung bàn giao ca
-            worksheet.mergeCells('C10:M10')
-            worksheet.getCell('C10').value = order.shiftReport?.handoverNotes || '';
-
-
-            // Dòng 9
-            worksheet.getCell('B11').value = 'Giờ nhận lệnh';
-            worksheet.getCell('B11').font = { bold: true };
-            worksheet.getCell('C11').value = order.startTime
-                ? new Date(order.startTime).toLocaleTimeString('vi-VN', { hour12: false })
-                : "";
-
-            worksheet.getCell('D11').value = 'Giờ kết thúc';
-            worksheet.getCell('D11').font = { bold: true };
-            worksheet.getCell('E11').value = order.endTime
-                ? new Date(order.endTime).toLocaleTimeString('vi-VN', { hour12: false })
-                : "";
-
-            worksheet.mergeCells('F11:G11');
-            worksheet.getCell('F11').value = 'Giờ hoạt động trên đồng hồ';
-            worksheet.getCell('F11').font = { bold: true };
-            worksheet.getCell('H11').value = (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => { return sum + report?.travelHours }, 0) || '';
-            worksheet.getCell('H11').alignment = { horizontal: 'left' }
-
-            worksheet.mergeCells('I11:J11');
-            worksheet.getCell('I11').value = 'Km hoạt động trên đồng hồ';
-            worksheet.getCell('I11').font = { bold: true };
-            worksheet.getCell('K11').value = (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => { return sum + report?.distanceKm }, 0) || '';
-            worksheet.getCell('K11').alignment = { horizontal: 'left' }
-
-
-            worksheet.mergeCells('A13:M13');
-            const product = worksheet.getCell('A13');
-            product.value = `I. SẢN PHẨM`;
-            product.font = { bold: true, size: 14 };
-            product.alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getRow(13).height = 30;
-
-            worksheet.getCell('A14').value = 'STT';
-            worksheet.getCell('B14').value = 'Điểm nhận tải';
-            worksheet.getCell('C14').value = 'Điểm đổ tải';
-            worksheet.getCell('D14').value = 'Vật liệu';
-            worksheet.getCell('E14').value = 'Cung độ \ntạm tính \n(km)';
-            worksheet.getCell('F14').value = 'Chiều cao \nnâng tải \ntạm tính';
-            worksheet.getCell('G14').value = 'Số chuyển \nthực hiện';
-            worksheet.getCell('H14').value = 'Khối lượng \n tạm tính \n(m3)';
-            worksheet.getCell('I14').value = 'Trọng lượng \n tạm tính \n (tấn)';
-            worksheet.getCell('J14').value = 'Sản lượng \n tạm tính \n(tkm)';
-            worksheet.getCell('K14').value = 'Nhiên liệu \n định mức';
-            worksheet.getCell('L14').value = 'Điểm lương \n tạm tính';
-            worksheet.getCell('M14').value = 'Ghi chú';
-
-            const headerRow = worksheet.getRow(14);
-            for (let col = 1; col <= 13; col++) {
-                const cell = headerRow.getCell(col);
-                cell.font = { bold: true };
-                cell.alignment = {
-                    ...cell.alignment,
-                    wrapText: true,
-                    vertical: 'middle',
-                    horizontal: 'center',
-                };
-            }
-
-            const grouped = groupReportsForProduct(reports)
-
-            for (let i = 0; i < grouped.length; i++) {
-                const g = grouped[i];
-                const rowIndex = 15 + i;
-                worksheet.getCell(`A${rowIndex}`).value = i + 1;
-                worksheet.getCell(`B${rowIndex}`).value = g.from?.name || g.from?.code || '';
-                worksheet.getCell(`C${rowIndex}`).value = g.to?.name || '';
-                worksheet.getCell(`D${rowIndex}`).value = g.material?.name || '';
-                worksheet.getCell(`E${rowIndex}`).value = '';
-                worksheet.getCell(`F${rowIndex}`).value = '';
-                worksheet.getCell(`G${rowIndex}`).value = g?.quantity || "";
-                worksheet.getCell(`H${rowIndex}`).value = '';
-                worksheet.getCell(`I${rowIndex}`).value = "";
-                worksheet.getCell(`J${rowIndex}`).value = "";
-                worksheet.getCell(`K${rowIndex}`).value = "";
-                worksheet.getCell(`L${rowIndex}`).value = "";
-                worksheet.getCell(`M${rowIndex}`).value = "";
-
-            };
-            const totalRow = (grouped?.length || 0) + 16;
-            addTableBorders(worksheet, 13, totalRow + 1, 1, 13);
-
-            worksheet.mergeCells(`A${totalRow}:B${totalRow}`);
-            worksheet.getCell(`A${totalRow}`).value = 'Tổng cộng';
-            worksheet.getCell(`A${totalRow}`).font = { bold: true };
-            worksheet.getCell(`A${totalRow}`).alignment = { horizontal: 'right' }
-
-            worksheet.mergeCells(`C${totalRow}:G${totalRow}`);
-            worksheet.getCell(`C${totalRow}`).value = reports.reduce((sum, report) => { return sum + report.quantity }, 0) || '';
-            worksheet.getCell(`C${totalRow}`).font = { bold: true };
-
-            worksheet.getCell(`H${totalRow}`).value = '';
-            worksheet.getCell(`I${totalRow}`).value = '';
-            worksheet.getCell(`J${totalRow}`).value = '';
-
-            worksheet.mergeCells(`K${totalRow}:L${totalRow}`);
-            worksheet.getCell(`K${totalRow}`).value = '';
-
-            worksheet.mergeCells(`A${totalRow + 1}:M${totalRow + 1}`);
-            worksheet.getCell(`A${totalRow + 1}`).value = 'Mức bồi dưỡng (x1000đ):';
-
-            worksheet.mergeCells(`A${totalRow + 2}:M${totalRow + 2}`);
-            const header3 = worksheet.getCell(`A${totalRow + 2}`);
-            header3.value = `II.NHIÊN LIỆU`;
-            header3.font = { bold: true, size: 14 };
-            header3.alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getRow(totalRow + 2).height = 30;
-
-            worksheet.mergeCells(`A${totalRow + 3}:B${totalRow + 3}`);
-            worksheet.getCell(`A${totalRow + 3}`).value = 'Phương tiện';
-            worksheet.getCell(`A${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`A${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-            worksheet.getCell(`C${totalRow + 3}`).value = 'Tồn dầu';
-            worksheet.getCell(`C${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`C${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-            worksheet.getCell(`D${totalRow + 3}`).value = 'Lĩnh trong ca';
-            worksheet.getCell(`D${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`D${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-            worksheet.getCell(`E${totalRow + 3}`).value = 'Tồn cuối ca';
-            worksheet.getCell(`E${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`E${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-            worksheet.getCell(`F${totalRow + 3}`).value = 'Tiêu thụ';
-            worksheet.getCell(`F${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`F${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-            worksheet.getCell(`G${totalRow + 3}`).value = 'Định mức';
-            worksheet.getCell(`G${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`G${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-            worksheet.getCell(`H${totalRow + 3}`).value = 'Tiết kiệm';
-            worksheet.getCell(`H${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`H${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-            worksheet.getCell(`I${totalRow + 3}`).value = 'Sử dụng vượt';
-            worksheet.getCell(`I${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`I${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.mergeCells(`J${totalRow + 3}:M${totalRow + 3}`)
-            worksheet.getCell(`J${totalRow + 3}`).value = 'Ghi chú';
-            worksheet.getCell(`J${totalRow + 3}`).font = { bold: true };
-            worksheet.getCell(`J${totalRow + 3}`).alignment = { horizontal: 'center', vertical: 'middle' };
-
-
-            const fuelHeaderRow = totalRow + 2;
-            const fuelRows = order.shiftReport?.vehicleSummaries?.length || 0;
-            const fuelEndRow = fuelHeaderRow + fuelRows + 2;
-
-            addTableBorders(worksheet, fuelHeaderRow, fuelEndRow, 1, 13);
-            for (let index = 0; index < (order.shiftReport?.vehicleSummaries?.length + 1 || 1); index++) {
-                const rep = order.shiftReport?.vehicleSummaries[index];
-                worksheet.mergeCells(`A${totalRow + 4 + index}:B${totalRow + 4 + index}`);
-                worksheet.getCell(`A${totalRow + 4 + index}`).value = rep?.vehicle?.code || '';
-                worksheet.getCell(`C${totalRow + 4 + index}`).value = rep?.fuelRemain || '';
-                worksheet.getCell(`D${totalRow + 4 + index}`).value = rep?.fuelReceived || '';
-                worksheet.getCell(`E${totalRow + 4 + index}`).value = rep?.fuelRemainEnd || '';
-                worksheet.getCell(`F${totalRow + 4 + index}`).value =
-                    (rep?.fuelRemain ?? 0) + (rep?.fuelReceived ?? 0) - (rep?.fuelRemainEnd ?? 0);
-
-                worksheet.getCell(`G${totalRow + 4 + index}`).value = '';
-
-                worksheet.getCell(`H${totalRow + 4 + index}`).value = '';
-                worksheet.getCell(`I${totalRow + 4 + index}`).value = '';
-
-                worksheet.mergeCells(`J${totalRow + 4 + index}:M${totalRow + 4 + index}`);
-                worksheet.getCell(`J${totalRow + 4 + index}`).value = '';
-            }
-
-            const deviceRow = order.device?.length || []
-            worksheet.mergeCells(`B${totalRow + 6 + deviceRow}:D${totalRow + 6 + deviceRow}`)
-            worksheet.getCell(`B${totalRow + 6 + deviceRow}`).value = 'NGƯỜI NHẬN LỆNH';
-            worksheet.getCell(`B${totalRow + 6 + deviceRow}`).font = { bold: true };
-            worksheet.getCell(`B${totalRow + 6 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`C${totalRow + 8 + deviceRow}`).value = '✔';
-            worksheet.getCell(`C${totalRow + 8 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`C${totalRow + 8 + deviceRow}`).font = { bold: true, size: 12 };
-            worksheet.mergeCells(`B${totalRow + 10 + deviceRow}:D${totalRow + 10 + deviceRow}`)
-            worksheet.getCell(`B${totalRow + 10 + deviceRow}`).font = { bold: true };
-            worksheet.getCell(`B${totalRow + 10 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`B${totalRow + 10 + deviceRow}`).value = order.assignedTo?.fullName || "";
-
-
-            worksheet.mergeCells(`I${totalRow + 6 + deviceRow}:M${totalRow + 6 + deviceRow}`)
-            worksheet.getCell(`I${totalRow + 6 + deviceRow}`).value = 'NGƯỜI RA LỆNH';
-            worksheet.getCell(`I${totalRow + 6 + deviceRow}`).font = { bold: true };
-            worksheet.getCell(`I${totalRow + 6 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.mergeCells(`I${totalRow + 10 + deviceRow}:M${totalRow + 10 + deviceRow}`)
-            worksheet.getCell(`I${totalRow + 10 + deviceRow}`).font = { bold: true };
-            worksheet.getCell(`I${totalRow + 10 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
-            worksheet.getCell(`I${totalRow + 10 + deviceRow}`).value = order.createdBy?.fullName || "";
-
-
-            worksheet.pageSetup = {
-                paperSize: 9,                // A4
-                orientation: 'landscape',    // ngang
-                fitToPage: true,
-                fitToWidth: 1,               // vừa 1 trang theo chiều ngang
-                fitToHeight: 0,              // không ép theo chiều dọc
-                margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } // inch
-            };
-
-            // 2) Set width cơ sở (Excel sẽ scale để vừa 1 trang)
-            worksheet.columns = [
-                { key: 'A', width: 6 },   // STT
-                { key: 'B', width: 18 },  // Nhận tải
-                { key: 'C', width: 18 },  // Đổ tải
-                { key: 'D', width: 14 },  // Loại hàng
-                { key: 'E', width: 14 },  // Cung độ tạm tính
-                { key: 'F', width: 14 },  // Chiều cao nâng tải
-                { key: 'G', width: 14 },  // Số chuyến
-                { key: 'H', width: 14 },  // Khối lượng
-                { key: 'I', width: 14 },  // Trọng lượng
-                { key: 'J', width: 13 },  // Sản lượng
-                { key: 'K', width: 12 },  // Nhiên liệu
-                { key: 'L', width: 12 },  // Điểm lương
-                { key: 'M', width: 12 },  // Ghi chú
-            ];
-
-            worksheet.eachRow((row) => {
-                row.eachCell((cell) => {
-                    // Nếu chưa có font, tạo font mới
-                    if (!cell.font) cell.font = {};
-                    cell.font.size = 12; // hoặc 8, tuỳ theo bạn muốn nhỏ đến đâu
-                });
-            });
-        }
-
-        // Xuất file
-        const buffer = await workbook.xlsx.writeBuffer();
-
-        // Thiết lập header để tải file về
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader(
-            'Content-Disposition',
-            "attachment; filename*=UTF-8''*.xlsx"
-        );     // Gửi buffer về client
-        res.send(buffer);
-        req.logger.info(`✅ Export excel thành công`);
-
-
-    } catch (err) {
-        req.logger.error("❌ Lỗi khi export", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    const deviceRow = order.device?.length || []
+    worksheet.mergeCells(`B${totalRow + 6 + deviceRow}:D${totalRow + 6 + deviceRow}`)
+    worksheet.getCell(`B${totalRow + 6 + deviceRow}`).value = 'NGƯỜI NHẬN LỆNH';
+    worksheet.getCell(`B${totalRow + 6 + deviceRow}`).font = { bold: true };
+    worksheet.getCell(`B${totalRow + 6 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getCell(`C${totalRow + 8 + deviceRow}`).value = '✔';
+    worksheet.getCell(`C${totalRow + 8 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getCell(`C${totalRow + 8 + deviceRow}`).font = { bold: true, size: 12 };
+    worksheet.mergeCells(`B${totalRow + 10 + deviceRow}:D${totalRow + 10 + deviceRow}`)
+    worksheet.getCell(`B${totalRow + 10 + deviceRow}`).font = { bold: true };
+    worksheet.getCell(`B${totalRow + 10 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getCell(`B${totalRow + 10 + deviceRow}`).value = order.assignedTo?.fullName || "";
+
+    worksheet.mergeCells(`I${totalRow + 6 + deviceRow}:L${totalRow + 6 + deviceRow}`)
+    worksheet.getCell(`I${totalRow + 6 + deviceRow}`).value = 'NGƯỜI RA LỆNH';
+    worksheet.getCell(`I${totalRow + 6 + deviceRow}`).font = { bold: true };
+    worksheet.getCell(`I${totalRow + 6 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+    if (order.createdBy?.signature) {
+        const response = await axios.get(order.createdBy.signature, { responseType: 'arraybuffer' });
+        const extension = response.headers['content-type'].split('/')[1];
+        const imageBuffer = Buffer.from(response.data, 'binary');
+
+        const imageId = workbook.addImage({
+            buffer: imageBuffer,
+            extension
+        });
+
+        worksheet.mergeCells(`J${totalRow + 7 + deviceRow}:K${totalRow + 9 + deviceRow}`);
+
+        // gán ảnh trực tiếp vào range
+        worksheet.addImage(imageId, `J${totalRow + 7 + deviceRow}:K${totalRow + 9 + deviceRow}`);
     }
+
+    worksheet.mergeCells(`I${totalRow + 10 + deviceRow}:L${totalRow + 10 + deviceRow}`)
+    worksheet.getCell(`I${totalRow + 10 + deviceRow}`).font = { bold: true };
+    worksheet.getCell(`I${totalRow + 10 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getCell(`I${totalRow + 10 + deviceRow}`).value = order.createdBy?.fullName || "";
+
+
+    worksheet.pageSetup = {
+        paperSize: 9,                // A4
+        orientation: 'landscape',    // ngang
+        fitToPage: true,
+        fitToWidth: 1,               // vừa 1 trang theo chiều ngang
+        fitToHeight: 0,              // không ép theo chiều dọc
+        margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } // inch
+    };
+
+    // 2) Set width cơ sở (Excel sẽ scale để vừa 1 trang)
+    worksheet.columns = [
+        { key: 'A', width: 6 },   // STT
+        { key: 'B', width: 18 },  // Nhận tải
+        { key: 'C', width: 18 },  // Đổ tải
+        { key: 'D', width: 14 },  // Loại hàng
+        { key: 'E', width: 14 },  // Cung độ tạm tính
+        { key: 'F', width: 14 },  // Chiều cao nâng tải
+        { key: 'G', width: 14 },  // Số chuyến
+        { key: 'H', width: 14 },  // Khối lượng
+        { key: 'I', width: 14 },  // Trọng lượng
+        { key: 'J', width: 13 },  // Sản lượng
+        { key: 'K', width: 12 },  // Nhiên liệu
+        { key: 'L', width: 12 },  // Điểm lương
+    ];
+
+    worksheet.eachRow((row) => {
+        row.eachCell((cell) => {
+            if (!cell.font) cell.font = {};
+            cell.font = {
+                ...cell.font,            // giữ lại các thuộc tính khác (bold, italic,…)
+                name: 'Times New Roman', // đổi font chữ
+                size: 12                 // kích thước chữ
+            };
+        });
+    });
+
 };
 //
 //báo ca tình trạng xe
-router.post('/vehicleShiftReport/view', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/vehicleShiftReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const { shift, startDate, endDate, department } = req.body
         const user = req.user
         let query = {}
-        if (user?.role === "admin") {
+        if (user?.role === ROLE.ADMIN) {
             query.department = new mongoose.Types.ObjectId(department)
         } else {
             query.department = new mongoose.Types.ObjectId(user.department?._id)
@@ -901,7 +493,7 @@ router.post('/vehicleShiftReport/view', verifyToken, restrictTo('admin', 'dispat
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 })
-router.post('/vehicleShiftReport', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/vehicleShiftReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const { shift, startDate, endDate, department, signature } = req.body
         const user = req.user
@@ -918,7 +510,7 @@ router.post('/vehicleShiftReport', verifyToken, restrictTo('admin', 'dispatcher'
                 const orders = await Order.find({
                     workingDate: d,
                     shift: ca._id,
-                    department: user?.role === "admin" ? new mongoose.Types.ObjectId(department) : new mongoose.Types.ObjectId(user.department?._id)
+                    department: user?.role === ROLE.ADMIN ? new mongoose.Types.ObjectId(department) : new mongoose.Types.ObjectId(user.department?._id)
                 })
                     .populate('device', 'vehicleNumber status note')
 
@@ -1032,12 +624,12 @@ router.post('/vehicleShiftReport', verifyToken, restrictTo('admin', 'dispatcher'
 });
 
 // báo tổng hợp ô tô
-router.post('/carReport/view', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/carReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const { shift, startDate, endDate, department } = req.body
         const user = req.user
         let query = {}
-        if (user?.role === "admin") {
+        if (user?.role === ROLE.ADMIN) {
             query.department = new mongoose.Types.ObjectId(department)
         } else {
             query.department = new mongoose.Types.ObjectId(user.department?._id)
@@ -1126,7 +718,7 @@ router.post('/carReport/view', verifyToken, restrictTo('admin', 'dispatcher', 'm
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 })
-router.post('/carReport', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/carReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const { shift, startDate, endDate, title, signature, department } = req.body
         const user = req.user
@@ -1149,7 +741,7 @@ router.post('/carReport', verifyToken, restrictTo('admin', 'dispatcher', 'manage
                 const orders = await Order.find({
                     workingDate: d,
                     shift: ca._id,
-                    department: user?.role === "admin" ? new mongoose.Types.ObjectId(department) : new mongoose.Types.ObjectId(user.department?._id)
+                    department: user?.role === ROLE.ADMIN ? new mongoose.Types.ObjectId(department) : new mongoose.Types.ObjectId(user.department?._id)
                 })
                     .populate({
                         path: "shiftReport",
@@ -1417,12 +1009,12 @@ router.post('/carReport', verifyToken, restrictTo('admin', 'dispatcher', 'manage
 });
 
 // báo tổng hợp máy xúc
-router.post('/excavatorReport/view', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/excavatorReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const { shift, startDate, endDate, department } = req.body
         const user = req.user
         let query = {}
-        if (user?.role === "admin") {
+        if (user?.role === ROLE.ADMIN) {
             query.department = new mongoose.Types.ObjectId(department)
         } else {
             query.department = new mongoose.Types.ObjectId(user.department?._id)
@@ -1503,7 +1095,7 @@ router.post('/excavatorReport/view', verifyToken, restrictTo('admin', 'dispatche
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 })
-router.post('/excavatorReport', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/excavatorReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const { shift, startDate, endDate, title, signature, department } = req.body
         const user = req.user
@@ -1782,12 +1374,12 @@ router.post('/excavatorReport', verifyToken, restrictTo('admin', 'dispatcher', '
 
 // báo chuyến máy xúc
 
-router.post('/excavatorTripReport/view', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/excavatorTripReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const { shift, startDate, endDate, department } = req.body
         const user = req.user
         let query = {}
-        if (user?.role === "admin") {
+        if (user?.role === ROLE.ADMIN) {
             query.department = new mongoose.Types.ObjectId(department)
         } else {
             query.department = new mongoose.Types.ObjectId(user.department?._id)
@@ -1867,7 +1459,7 @@ router.post('/excavatorTripReport/view', verifyToken, restrictTo('admin', 'dispa
     }
 })
 
-router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/excavatorTripReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const { shift, startDate, endDate, title, signature, department } = req.body
         const shiftList = await Shift.find({ _id: { $in: shift } });
@@ -2091,12 +1683,12 @@ router.post('/excavatorTripReport', verifyToken, restrictTo('admin', 'dispatcher
 
 // báo chuyến ô tô
 
-router.post('/carTripReport/view', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/carTripReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const { shift, startDate, endDate, department } = req.body
         const user = req.user
         let query = {}
-        if (user?.role === "admin") {
+        if (user?.role === ROLE.ADMIN) {
             query.department = new mongoose.Types.ObjectId(department)
         } else {
             query.department = new mongoose.Types.ObjectId(user.department?._id)
@@ -2167,7 +1759,7 @@ router.post('/carTripReport/view', verifyToken, restrictTo('admin', 'dispatcher'
     }
 })
 
-router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/carTripReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const { shift, startDate, endDate, title, signature, department } = req.body
         const shiftList = await Shift.find({ _id: { $in: shift } });
@@ -2383,7 +1975,7 @@ router.post('/carTripReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
 
 // báo sản lượng
 
-router.post('/productReport/view', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/productReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const { shift, startDate, endDate, } = req.body
         let query = {
@@ -2452,7 +2044,7 @@ router.post('/productReport/view', verifyToken, restrictTo('admin', 'dispatcher'
     }
 })
 
-router.post('/productReport', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/productReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const { shift, startDate, endDate, title, signature } = req.body
         const shiftList = await Shift.find({ _id: { $in: shift } });
@@ -2615,14 +2207,14 @@ router.post('/productReport', verifyToken, restrictTo('admin', 'dispatcher', 'ma
 
 // báo công
 
-router.post('/worklog/view', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/worklog/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const { shift, startDate, endDate, department } = req.body
         const user = req.user
         let query = {
-            status: { $in: ["in_progress", "completed", "warning"] }
+            status: { $in: [STATUS_ORDER.INPROGRESS, STATUS_ORDER.COMPLETED, STATUS_ORDER.WARNING] }
         };
-        if (user?.role === "admin") {
+        if (user?.role === ROLE.ADMIN) {
             query.department = new mongoose.Types.ObjectId(department)
         } else {
             query.department = new mongoose.Types.ObjectId(user.department?._id)
@@ -2660,7 +2252,7 @@ router.post('/worklog/view', verifyToken, restrictTo('admin', 'dispatcher', 'man
     }
 })
 
-router.post('/worklog', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/worklog', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const { shift, startDate, endDate, department, signature } = req.body
         const user = req.user
@@ -2677,8 +2269,8 @@ router.post('/worklog', verifyToken, restrictTo('admin', 'dispatcher', 'manager'
                 const orders = await Order.find({
                     workingDate: d,
                     shift: ca._id,
-                    status: { $in: ["in_progress", "completed", "warning"] },
-                    department: user?.role === "admin" ? new mongoose.Types.ObjectId(department) : new mongoose.Types.ObjectId(user.department?._id)
+                    status: { $in: [STATUS_ORDER.INPROGRESS, STATUS_ORDER.COMPLETED, STATUS_ORDER.WARNING] },
+                    department: user?.role === ROLE.ADMIN ? new mongoose.Types.ObjectId(department) : new mongoose.Types.ObjectId(user.department?._id)
                 })
                     .populate('assignedTo', 'fullName salaryCode department')
                     .populate('job', 'name')
@@ -2813,14 +2405,14 @@ router.post('/worklog', verifyToken, restrictTo('admin', 'dispatcher', 'manager'
 
 // báo ăn
 
-router.post('/meal_request/view', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/meal_request/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const { shift, startDate, endDate, department } = req.body
         const user = req.user
         let query = {
-            status: { $in: ["in_progress", "completed", "warning"] }
+            status: { $in: [STATUS_ORDER.INPROGRESS, STATUS_ORDER.COMPLETED, STATUS_ORDER.WARNING] }
         };
-        if (user?.role === "admin") {
+        if (user?.role === ROLE.ADMIN) {
             query.department = new mongoose.Types.ObjectId(department)
         } else {
             query.department = new mongoose.Types.ObjectId(user.department?._id)
@@ -2861,7 +2453,7 @@ router.post('/meal_request/view', verifyToken, restrictTo('admin', 'dispatcher',
     }
 })
 
-router.post('/meal_request', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/meal_request', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const { shift, startDate, endDate, department, signature } = req.body
         const user = req.user
@@ -2878,8 +2470,8 @@ router.post('/meal_request', verifyToken, restrictTo('admin', 'dispatcher', 'man
                 const orders = await Order.find({
                     workingDate: d,
                     shift: ca._id,
-                    department: user?.role === "admin" ? new mongoose.Types.ObjectId(department) : new mongoose.Types.ObjectId(user.department?._id),
-                    status: { $in: ["in_progress", "completed", "warning"] }
+                    department: user?.role === ROLE.ADMIN ? new mongoose.Types.ObjectId(department) : new mongoose.Types.ObjectId(user.department?._id),
+                    status: { $in: [STATUS_ORDER.INPROGRESS, STATUS_ORDER.COMPLETED, STATUS_ORDER.WARNING] }
                 })
                     .populate('assignedTo', 'fullName salaryCode department')
                     .populate('job', 'name')
@@ -3007,7 +2599,7 @@ router.post('/meal_request', verifyToken, restrictTo('admin', 'dispatcher', 'man
     }
 })
 
-router.post('/assignmentTo', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/assignmentTo', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const { shift, startDate, endDate, signature } = req.body
         const shiftList = await Shift.find({ _id: { $in: shift } });
@@ -3024,7 +2616,7 @@ router.post('/assignmentTo', verifyToken, restrictTo('admin', 'dispatcher', 'man
                     workingDate: d,
                     shift: ca._id,
                     createdBy: req.userId,
-                    status: { $nin: ["pending", "cancel"] }
+                    status: { $nin: [STATUS_ORDER.PENDING, STATUS_ORDER.CANCEL] }
                 })
                     .populate('assignedTo', 'fullName salaryCode department')
                     .populate('job', 'name')
@@ -3227,7 +2819,7 @@ router.post('/assignmentTo', verifyToken, restrictTo('admin', 'dispatcher', 'man
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 })
-router.post('/assignmentManager', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/assignmentManager', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const { shift, startDate, endDate, signature } = req.body
         const shiftList = await Shift.find({ _id: { $in: shift } });
@@ -3244,7 +2836,7 @@ router.post('/assignmentManager', verifyToken, restrictTo('admin', 'dispatcher',
                     workingDate: d,
                     shift: ca._id,
                     createdBy: req.userId,
-                    status: { $nin: ["pending", "cancel"] }
+                    status: { $nin: [STATUS_ORDER.PENDING, STATUS_ORDER.CANCEL] }
                 })
                     .populate('assignedTo', 'fullName salaryCode department')
                     .populate('job', 'name')

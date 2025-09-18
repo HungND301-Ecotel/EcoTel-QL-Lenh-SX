@@ -116,4 +116,50 @@ router.put('/:id', verifyToken, async (req, res) => {
     }
 });
 
+router.put('/:id/add-trip-time', verifyToken, async (req, res) => {
+    try {
+        const report = await Report.findById(req.params.id);
+        if (!report) {
+            return res.status(404).json({ status: 'error', message: 'Không tìm thấy báo chuyến' });
+        }
+
+        // Server tự thêm
+        report.quantity = (report.quantity ?? 0) + 1;
+        report.quantityUpdateTimes = [
+            ...(report.quantityUpdateTimes ?? []),
+            new Date()  // giờ server
+        ];
+
+        await report.save();
+
+        res.json({ status: 'success', data: report });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ status: 'error', message: 'Lỗi server' });
+    }
+});
+router.put('/:id/remove-trip-time/:timeIndex', verifyToken, async (req, res) => {
+    try {
+        const report = await Report.findById(req.params.id);
+        if (!report) {
+            return res.status(404).json({ status: 'error', message: 'Không tìm thấy báo chuyến' });
+        }
+
+        const timeIndex = parseInt(req.params.timeIndex, 10);
+        if (isNaN(timeIndex) || timeIndex < 0 || timeIndex >= (report.quantityUpdateTimes?.length ?? 0)) {
+            return res.status(400).json({ status: 'error', message: 'Index không hợp lệ' });
+        }
+
+        // Server tự xoá
+        report.quantity = Math.max(0, (report.quantity ?? 0) - 1);
+        report.quantityUpdateTimes.splice(timeIndex, 1);
+
+        await report.save();
+
+        res.json({ status: 'success', data: report });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ status: 'error', message: 'Lỗi server' });
+    }
+});
 module.exports = router;

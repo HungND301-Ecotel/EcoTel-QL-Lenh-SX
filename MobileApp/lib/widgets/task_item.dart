@@ -57,7 +57,7 @@ class TaskItem extends StatelessWidget {
                 data.status == "warning"
                     ? Icons.warning
                     : Icons.mark_as_unread_outlined,
-                color: getStatusColor(data.status),
+                color: getStatusColor(data.status ?? ''),
                 size: 25,
               ),
             ),
@@ -67,7 +67,7 @@ class TaskItem extends StatelessWidget {
                     CrossAxisAlignment.start,
                 children: [
                   Text(
-                    data.job.name,
+                    data.job?.name ?? '',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.black,
@@ -75,7 +75,7 @@ class TaskItem extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    "${DateFormat('dd/MM/yyyy').format(data.workingDate)} (${(data.shiftHour != '' ? data.shiftHour : data.shift?.startTime) ?? ""})",
+                    "${data.workingDate != null ? DateFormat('dd/MM/yyyy').format(data.workingDate!) : ''} (${(data.shiftHour != '' ? data.shiftHour : data.shift?.startTime) ?? ""})",
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey,

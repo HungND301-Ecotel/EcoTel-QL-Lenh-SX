@@ -5,6 +5,7 @@ import 'package:soft/screens/work_log/routes/routes.dart';
 import 'package:soft/screens/work_log/widgets/material_item.dart';
 import 'package:soft/services/material_service.dart';
 import 'package:provider/provider.dart';
+import 'package:soft/services/report_service.dart';
 
 class ExcavatorSelectMaterial extends StatefulWidget {
   const ExcavatorSelectMaterial({super.key});
@@ -63,6 +64,63 @@ class _ExcavatorSelectMaterial
       context,
       listen: false,
     ).setMaterial(selectedMaterial);
+  }
+
+  final ReportService _reportService = ReportService();
+  void create() async {
+    final provider = Provider.of<ReportDraftProvider>(
+      context,
+      listen: false,
+    );
+
+    provider.setMaterial(_selectedMaterial!);
+
+    try {
+      // Tạo danh sách các Future (gọi API cho từng device)
+      final futures =
+          provider.devices.map((device) {
+            return _reportService.createReport({
+              "orderId": provider.orderId,
+              "material": provider.material,
+              "device": device,
+              "quantity": 0,
+            });
+          }).toList();
+
+      // Đợi tất cả request hoàn thành
+      final results = await Future.wait(futures);
+
+      // Kiểm tra kết quả
+      for (var result in results) {
+        if (result['status'] == 'error') {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message']),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return; // dừng lại nếu có lỗi
+        }
+      }
+
+      // Nếu tất cả đều thành công
+      if (!mounted) return;
+      provider.reset();
+      Navigator.pushNamed(
+        context,
+        WorkLogRoutes.excavatorTripList,
+        arguments: provider.orderId,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Có lỗi xảy ra: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   String _searchText = '';
@@ -170,17 +228,58 @@ class _ExcavatorSelectMaterial
                         _selectedMaterial == null
                             ? null
                             : () {
-                              Navigator.pushNamed(
-                                context,
-                                WorkLogRoutes
-                                    .excavatorTripCount,
+                              showDialog(
+                                context: context,
+                                builder:
+                                    (
+                                      BuildContext
+                                      dialogContext,
+                                    ) => AlertDialog(
+                                      title: Text(
+                                        "Xác nhận",
+                                      ),
+                                      content: Text(
+                                        "Bạn muốn lưu chuyến vào hệ thống",
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.of(
+                                              dialogContext,
+                                            ).pop();
+                                          },
+                                          style: TextButton.styleFrom(
+                                            foregroundColor:
+                                                Colors.blue,
+                                          ),
+                                          child: Text(
+                                            "Bỏ qua",
+                                          ),
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.of(
+                                              dialogContext,
+                                            ).pop();
+                                            create();
+                                          },
+                                          style: TextButton.styleFrom(
+                                            foregroundColor:
+                                                Colors.blue,
+                                          ),
+                                          child: Text(
+                                            "Lưu lại",
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                               );
                             },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,
                     ),
-                    child: Text('Tiếp tục'),
+                    child: Text('Ghi lại'),
                   ),
                 ),
               ],

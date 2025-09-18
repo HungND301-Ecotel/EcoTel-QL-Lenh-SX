@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { ROLES, ROLE } = require('../config/config');
 
 const userSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true },
@@ -12,7 +13,7 @@ const userSchema = new mongoose.Schema({
     salaryCode: { type: String, required: true, unique: true },
     department: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
     position: { type: mongoose.Schema.Types.ObjectId, ref: 'Position' },
-    role: { type: String, default: "employee" },
+    role: { type: String, default: ROLE.EMPLOYEE },
     active: {
         type: Boolean,
         default: true

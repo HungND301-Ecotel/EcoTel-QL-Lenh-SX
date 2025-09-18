@@ -25,8 +25,6 @@ class _TaskAssignmentDetail
   void initState() {
     // TODO: implement initState
     super.initState();
-    print(widget.data.createdBy.phone);
-    print(widget.data.assignedTo.phone);
   }
 
   void deleteOrder() async {
@@ -96,7 +94,7 @@ class _TaskAssignmentDetail
               },
             ),
             title: Text(
-              widget.data.job.name,
+              widget.data.job?.name ?? '',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
@@ -123,9 +121,13 @@ class _TaskAssignmentDetail
                             ),
                           ),
                           Text(
-                            DateFormat('dd/MM/yyyy').format(
-                              widget.data.workingDate,
-                            ),
+                            widget.data.workingDate != null
+                                ? DateFormat(
+                                  'dd/MM/yyyy',
+                                ).format(
+                                  widget.data.workingDate!,
+                                )
+                                : '',
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
                             ),
@@ -152,7 +154,7 @@ class _TaskAssignmentDetail
                             widget
                                     .data
                                     .createdBy
-                                    .fullName ??
+                                    ?.fullName ??
                                 '', // Điền sau nếu có
                             style: TextStyle(
                               fontSize: 16,
@@ -160,60 +162,24 @@ class _TaskAssignmentDetail
                             ),
                           ),
                           SizedBox(width: 6),
-                          if ((widget
-                                      .data
-                                      .createdBy
-                                      .phone ??
-                                  '')
-                              .isNotEmpty)
+                          if (widget
+                                  .data
+                                  .createdBy
+                                  ?.phone !=
+                              null)
                             IconButton(
                               onPressed: () {
-                                _callPhone(
-                                  widget
-                                      .data
-                                      .createdBy
-                                      .phone!,
-                                );
+                                final phone =
+                                    widget
+                                        .data
+                                        .createdBy!
+                                        .phone!;
+                                _callPhone(phone);
                               },
-                              icon: Icon(Icons.phone),
+                              icon: const Icon(Icons.phone),
                             ),
                         ],
                       ),
-                      if (widget.data.devicesToProduce !=
-                              null &&
-                          widget
-                              .data
-                              .devicesToProduce!
-                              .isNotEmpty)
-                        const SizedBox(height: 10),
-                      if (widget.data.devicesToProduce !=
-                              null &&
-                          widget
-                              .data
-                              .devicesToProduce!
-                              .isNotEmpty)
-                        Row(
-                          children: [
-                            Text(
-                              'Loại phương tiện: ',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              (widget.data.devicesToProduce ??
-                                      [])
-                                  .map(
-                                    (e) =>
-                                        '${e.deviceType.name} - Sl:${e.quantity}',
-                                  )
-                                  .join(', '),
-                              softWrap: true,
-                              overflow:
-                                  TextOverflow.visible,
-                            ), // Điền sau nếu có
-                          ],
-                        ),
                       if (widget.data.device != null &&
                           widget.data.device!.isNotEmpty)
                         const SizedBox(height: 10),
@@ -266,10 +232,16 @@ class _TaskAssignmentDetail
                             ), // Điền sau nếu có
                           ],
                         ),
-                      if (widget.data.material?.isNotEmpty ==
+                      if (widget
+                              .data
+                              .material
+                              ?.isNotEmpty ==
                           true)
                         const SizedBox(height: 10),
-                      if (widget.data.material?.isNotEmpty ==
+                      if (widget
+                              .data
+                              .material
+                              ?.isNotEmpty ==
                           true)
                         Row(
                           children: [
@@ -291,10 +263,16 @@ class _TaskAssignmentDetail
                             ), // Điền sau nếu có
                           ],
                         ),
-                      if (widget.data.location?.isNotEmpty ==
+                      if (widget
+                              .data
+                              .location
+                              ?.isNotEmpty ==
                           true)
                         const SizedBox(height: 10),
-                      if (widget.data.location?.isNotEmpty ==
+                      if (widget
+                              .data
+                              .location
+                              ?.isNotEmpty ==
                           true)
                         Row(
                           children: [

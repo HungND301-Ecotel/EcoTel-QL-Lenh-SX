@@ -93,7 +93,6 @@ export default function ShiftReport({
                 },
             ],
             handoverHours: undefined,
-            otherHours: undefined,
             handoverNotes: '',
             risks: '',
         },
@@ -143,7 +142,6 @@ export default function ShiftReport({
                         sealStatus: v?.sealStatus || '',
                     })) || [],
                 handoverHours: shiftReport?.handoverHours,
-                otherHours: shiftReport?.otherHours,
                 handoverNotes: shiftReport?.handoverNotes || '',
                 risks: shiftReport?.risks || '',
             });

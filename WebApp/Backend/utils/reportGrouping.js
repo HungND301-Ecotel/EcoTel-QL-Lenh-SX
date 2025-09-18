@@ -64,7 +64,31 @@ function groupReportsByExcavator(reports = []) {
     return Array.from(map.values());
 }
 
+function groupTripsVehicle(trips) {
+    const groups = {};
+
+    trips.forEach(t => {
+        const key = `${t.excavator}-${t.toLocation}`;
+        if (!groups[key]) {
+            groups[key] = {
+                excavator: t.excavator,
+                location: t.toLocation,
+                materials: []
+            };
+        }
+        groups[key].materials.push({
+            material: t.material,
+            quantity: t.quantity,
+            times: t.quantityUpdateTimes
+        });
+    });
+
+    return Object.values(groups);
+}
+
+
 module.exports = {
     groupReportsByExcavator,
-    groupReportsForProduct
+    groupReportsForProduct,
+    groupTripsVehicle
 };

@@ -1,5 +1,4 @@
 import 'package:soft/models/device_model.dart';
-import 'package:soft/models/device_type_model.dart';
 import 'package:soft/models/location_model.dart';
 import 'package:soft/models/material_model.dart';
 import 'package:soft/models/shift_model.dart';
@@ -7,54 +6,25 @@ import 'package:soft/models/shift_report_model.dart';
 import 'package:soft/models/task_model.dart';
 import 'package:soft/models/user_model.dart';
 
-class DevicesToProduceModel {
-  final DeviceTypeModel deviceType;
-  final num quantity;
-
-  DevicesToProduceModel({
-    required this.deviceType,
-    required this.quantity,
-  });
-
-  factory DevicesToProduceModel.fromJson(
-    Map<String, dynamic>? json,
-  ) {
-    return DevicesToProduceModel(
-      deviceType: DeviceTypeModel.fromJson(
-        json?['deviceType'],
-      ),
-      quantity: json?['quantity'],
-    );
-  }
-  Map<String, dynamic> toJson() {
-    return {
-      'deviceType': deviceType.toJson(),
-      'quantity': quantity,
-    };
-  }
-}
 
 class OrderModel {
   final String id;
   final UserModel assignedTo;
-  final TaskModel job;
-  final DateTime workingDate;
+  final TaskModel? job;
+  final DateTime? workingDate;
   final ShiftModel? shift;
   String? shiftHour;
-  List<DevicesToProduceModel>? devicesToProduce;
   DateTime? startTime;
   DateTime? endTime;
   DateTime? resumeTime;
-  final UserModel createdBy;
+  final UserModel? createdBy;
   final List<DeviceModel>? device;
   final List<DeviceModel>? excavator;
-  final num? distance;
-  final num? liftHeight;
   final List<LocationModel>? location;
   final List<MaterialModel>? material;
   final String? workContent;
   final ShiftReportModel? shiftReport;
-  String status;
+  String? status;
   String? note;
   String? temporaryError;
   String? safetyMeasure;
@@ -64,24 +34,21 @@ class OrderModel {
   OrderModel({
     required this.id,
     required this.assignedTo,
-    required this.job,
-    required this.workingDate,
+    this.job,
+    this.workingDate,
     this.shift,
     this.shiftHour,
-    this.devicesToProduce,
     this.startTime,
     this.endTime,
     this.resumeTime,
-    required this.createdBy,
+    this.createdBy,
     this.device,
     this.excavator,
-    this.distance,
-    this.liftHeight,
     this.location,
     this.material,
     this.workContent,
     this.shiftReport,
-    required this.status,
+    this.status,
     this.assistants,
     this.note,
     this.safetyMeasure,
@@ -101,13 +68,6 @@ class OrderModel {
               ? ShiftModel.fromJson(json?['shift'])
               : null,
       shiftHour: json?['shiftHour'] ?? '',
-      devicesToProduce:
-          (json?['devicesToProduce'] as List?)
-              ?.map(
-                (e) => DevicesToProduceModel.fromJson(e),
-              )
-              .toList() ??
-          [],
       startTime:
           json?['startTime'] != null
               ? DateTime.parse(json?['startTime']).toLocal()
@@ -133,8 +93,6 @@ class OrderModel {
               ?.map((e) => DeviceModel.fromJson(e))
               .toList() ??
           [],
-      distance: json?['distance'],
-      liftHeight: json?['liftHeight'],
       location:
           (json?['location'] as List?)
               ?.map((e) => LocationModel.fromJson(e))
@@ -193,21 +151,17 @@ class OrderModel {
     return {
       '_id': id,
       'assignedTo': assignedTo.toJson(),
-      'job': job.toJson(),
-      'workingDate': workingDate.toIso8601String(),
+      'job': job?.toJson(),
+      'workingDate': workingDate?.toIso8601String(),
       'shift': shift?.toJson(),
       'shiftHour': shiftHour,
-      'devicesToProduce':
-          devicesToProduce?.map((e) => e.toJson()).toList(),
       'startTime': startTime?.toIso8601String(),
       'endTime': endTime?.toIso8601String(),
       'resumeTime': resumeTime?.toIso8601String(),
-      'createdBy': createdBy.toJson(),
+      'createdBy': createdBy?.toJson(),
       'device': device?.map((e) => e.toJson()).toList(),
       'excavator':
           excavator?.map((e) => e.toJson()).toList(),
-      'distance': distance,
-      'liftHeight': liftHeight,
       'location': location?.map((e) => e.toJson()).toList(),
       'material': material?.map((e) => e.toJson()).toList(),
       'workContent': workContent,

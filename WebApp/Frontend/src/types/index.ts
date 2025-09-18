@@ -83,18 +83,12 @@ export interface Order {
     workingDate: Date;
     shift?: string;
     shiftHour?: string;
-    devicesToProduce?: {
-        deviceType: string,
-        quantity: number,
-    }[],
     startTime?: Date;
     endTime?: Date;
     device?: string[];
     excavator?: string[];
     location?: string[];
     material?: string[];
-    distance?: number;
-    liftHeight?: number;
     workContent?: string;
     assistants?: string[];
     status: 'pending' | 'in_progress' | 'completed' | 'warning' | 'cancel';
@@ -163,7 +157,6 @@ export interface ShiftReportType {
         sealStatus?: string,
     }[],
     handoverHours?: number,
-    otherHours?: number,
     handoverNotes?: string,
     risks?: string,
     createdAt?: string;

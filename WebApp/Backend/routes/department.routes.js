@@ -9,6 +9,7 @@ const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 const ExcelJS = require('exceljs');
 const xlsx = require('xlsx');
+const { ROLE } = require('../config/config');
 
 /**
  * @swagger
@@ -72,7 +73,7 @@ router.get('/', verifyToken, async (req, res, next) => {
  *               manager:
  *                 type: string
  */
-router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
+router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
         const { name, code, description } = req.body;
 
@@ -172,7 +173,7 @@ router.get('/:id', verifyToken, async (req, res, next) => {
  *               isActive:
  *                 type: boolean
  */
-router.put('/:id', verifyToken, restrictTo('admin', 'manager',), async (req, res, next) => {
+router.put('/:id', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
         const user = req.user;
         const department = await Department.findByIdAndUpdate(
@@ -215,7 +216,7 @@ router.put('/:id', verifyToken, restrictTo('admin', 'manager',), async (req, res
  *         schema:
  *           type: string
  */
-router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
+router.delete('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
         const { ids } = req.body;
         if (!ids || !Array.isArray(ids) || ids.length === 0) {
@@ -302,7 +303,7 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
     }
 });
 
-router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER,ROLE.ADMIN,ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const data = await Department.find();
 

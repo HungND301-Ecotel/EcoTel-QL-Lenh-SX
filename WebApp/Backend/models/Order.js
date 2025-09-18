@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { STATUS_ORDERS, STATUS_ORDER } = require('../config/config');
 
 const orderSchema = new mongoose.Schema({
     assignedTo: {
@@ -20,13 +21,6 @@ const orderSchema = new mongoose.Schema({
     shiftHour: {
         type: String,
     },
-    devicesToProduce: [{
-        deviceType: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "DeviceType",
-        },
-        quantity: { type: Number },
-    }],
     startTime: {
         type: Date
     },
@@ -52,12 +46,6 @@ const orderSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Material',
     }],
-    distance: {
-        type: Number
-    },
-    liftHeight: {
-        type: Number
-    },
     workContent: {
         type: String,
     },
@@ -66,8 +54,8 @@ const orderSchema = new mongoose.Schema({
     ],
     status: {
         type: String,
-        enum: ['pending', 'in_progress', 'completed', 'warning', 'cancel'],
-        default: 'pending'
+        enum: STATUS_ORDERS,
+        default: STATUS_ORDER.PENDING
     },
     previous_order_id: {
         type: mongoose.Schema.Types.ObjectId,

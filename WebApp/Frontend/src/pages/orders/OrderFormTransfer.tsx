@@ -170,8 +170,6 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                 shift: values.shift,
                 shiftHour: values.shiftHour,
                 excavator: values.excavator,
-                distance: values.distance,
-                liftHeight: values.liftHeight,
                 location: values.location,
                 material: values.material,
                 workContent: values.workContent,
@@ -421,36 +419,6 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                         )}
                     />
                 </Grid>}
-                {/* <Grid item xs={12} sm={6}>
-                    <TextField
-                        fullWidth
-                        id="distance"
-                        name="distance"
-                        label="Cung độ"
-                        type="number"
-                        value={formik.values.distance}
-                        onChange={formik.handleChange}
-                        error={formik.touched.distance && Boolean(formik.errors.distance)}
-                        helperText={formik.touched.distance && typeof formik.errors.distance === 'number'
-                            ? formik.errors.distance
-                            : ''}
-                    />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                    <TextField
-                        fullWidth
-                        id="liftHeight"
-                        name="liftHeight"
-                        type="number"
-                        label="Chiều cao nâng tải"
-                        value={formik.values.liftHeight}
-                        onChange={formik.handleChange}
-                        error={formik.touched.liftHeight && Boolean(formik.errors.liftHeight)}
-                        helperText={formik.touched.liftHeight && typeof formik.errors.liftHeight === 'number'
-                            ? formik.errors.liftHeight
-                            : ''}
-                    />
-                </Grid> */}
                 <Grid item xs={12}>
                     <TextField
                         fullWidth

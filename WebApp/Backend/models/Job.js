@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const { JOB_TYPES } = require('../config/config')
 
 const Job = new mongoose.Schema({
     name: {
@@ -8,7 +9,7 @@ const Job = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['Vận hành xe', 'Vận hành khoan', 'Vận hành xe phục vụ', 'Vận hành gạt', 'Vận hành xúc', 'Vận hành sàng', 'Sửa chữa, bảo dưỡng', 'Vận hành bơm', 'Khác'],
+        enum: JOB_TYPES,
     },
 },
     {

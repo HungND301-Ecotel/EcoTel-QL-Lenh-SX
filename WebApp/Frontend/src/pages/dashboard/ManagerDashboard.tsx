@@ -245,6 +245,14 @@ const ManagerDashboard: React.FC = () => {
             <Grid container spacing={4}>
                 <Grid item xs={12} sm={6}>
                     <SummaryCard
+                        title="Đơn vị"
+                        value={departments.length}
+                        icon={<DepartmentIcon />}
+                        color="#4caf50"
+                    />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                    <SummaryCard
                         title="Nhân viên"
                         value={userCount}
                         icon={<PersonIcon />}

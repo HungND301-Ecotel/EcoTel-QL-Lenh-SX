@@ -76,9 +76,6 @@ class _TaskAssignmentVehicleTransfer
 
       _descriptionController.text = order.workContent ?? '';
       _noteController.text = order.note ?? '';
-      _distanceController.text = order.distance.toString();
-      _liftHeightController.text =
-          order.liftHeight.toString();
       _noteController.text =
           order.shiftReport?.vehicleSummaries
               ?.where(
@@ -160,10 +157,6 @@ class _TaskAssignmentVehicleTransfer
 
   final TextEditingController _descriptionController =
       TextEditingController();
-  final TextEditingController _distanceController =
-      TextEditingController();
-  final TextEditingController _liftHeightController =
-      TextEditingController();
   final TextEditingController _noteController =
       TextEditingController();
   final TextEditingController _safetyController =
@@ -175,10 +168,6 @@ class _TaskAssignmentVehicleTransfer
     String note = _noteController.text.trim();
     String safetyMeasure = _safetyController.text.trim();
 
-    final distace = num.tryParse(_distanceController.text);
-    final liftheight = num.tryParse(
-      _liftHeightController.text,
-    );
     for (var item in userAndDevice) {
       if (item?['user'] == null ||
           item?['device'] == null) {
@@ -219,8 +208,6 @@ class _TaskAssignmentVehicleTransfer
         "device": item?["device"],
         "location": dump?.id,
         "excavator": excavator?.id,
-        "distance": distace,
-        "liftHeight": liftheight,
         "material": material?.id,
         "workContent": description,
         "note": note,
@@ -417,26 +404,6 @@ class _TaskAssignmentVehicleTransfer
                     ),
                   ),
                 ),
-                // Text(
-                //   'Cung độ',
-                //   style: TextStyle(
-                //     fontWeight: FontWeight.bold,
-                //   ),
-                // ),
-                // TextField(
-                //   controller: _distanceController,
-                //   keyboardType: TextInputType.number,
-                // ),
-                // Text(
-                //   'Độ cao nâng tải',
-                //   style: TextStyle(
-                //     fontWeight: FontWeight.bold,
-                //   ),
-                // ),
-                // TextField(
-                //   controller: _liftHeightController,
-                //   keyboardType: TextInputType.number,
-                // ),
                 Text(
                   'Điểm đổ',
                   style: TextStyle(

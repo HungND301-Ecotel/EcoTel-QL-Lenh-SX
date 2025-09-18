@@ -9,7 +9,7 @@ const History = require('../models/History');
 const User = require('../models/User')
 const Job = require('../models/Job')
 const mongoose = require('mongoose')
-const { JobConfig } = require('../config/config');
+const { ROLE, JOB_TYPE,STATUS_DEVICE,STATUS_DEVICES, STATUS_ORDERS, STATUS_ORDER } = require('../config/config');
 
 
 const Device = require('../models/Device');
@@ -75,11 +75,11 @@ router.get('/', verifyToken, async (req, res, next) => {
         }
 
         // ---- Bộ lọc role ----
-        if (user?.role === 'manager' && user?.department) {
+        if (user?.role === ROLE.MANAGER && user?.department) {
             query.department = new mongoose.Types.ObjectId(user.department._id);
         }
-        if (user?.role === 'dispatcher') {
-            const dispatcherIds = await User.find({ role: 'dispatcher' }, '_id').lean();
+        if (user?.role === ROLE.DISPATCHER) {
+            const dispatcherIds = await User.find({ role: ROLE.DISPATCHER }, '_id').lean();
             const ids = dispatcherIds.map(d => d._id);
             query.$or = [{ department: user.department._id }, { createdBy: { $in: ids } }];
         }
@@ -133,7 +133,6 @@ router.get('/', verifyToken, async (req, res, next) => {
                 ],
             })
             .populate('job', 'name type content')
-            .populate('devicesToProduce.deviceType')
             .populate('device', 'code')
             .populate('excavator', 'code')
             .populate('location', 'name')
@@ -191,14 +190,14 @@ router.get('/count_status', verifyToken, async (req, res, next) => {
         let baseQuery = {};
 
         // --- Bộ lọc role ---
-        if (user?.role === 'manager' && user?.department) {
+        if (user?.role === ROLE.MANAGER && user?.department) {
             baseQuery.department = new mongoose.Types.ObjectId(user.department._id);
         }
-        if (user?.role === 'admin' && req.query.department) {
+        if (user?.role === ROLE.ADMIN && req.query.department) {
             baseQuery.department = new mongoose.Types.ObjectId(req.query.department);
         }
-        if (user?.role === 'dispatcher') {
-            const dispatcherIds = await User.find({ role: 'dispatcher' }, '_id').lean();
+        if (user?.role === ROLE.DISPATCHER) {
+            const dispatcherIds = await User.find({ role: ROLE.DISPATCHER }, '_id').lean();
             const ids = dispatcherIds.map(d => d._id);
             baseQuery.$or = [{ department: new mongoose.Types.ObjectId(user.department._id) }, { createdBy: { $in: ids } }];
         }
@@ -275,9 +274,7 @@ router.get('/count_status', verifyToken, async (req, res, next) => {
         // ---- Chuẩn hóa kết quả ----
         const result = {};
 
-        const allStatuses = ["pending", "in_progress", "warning", "completed", "cancel"];
-
-        allStatuses.forEach(st => {
+        STATUS_ORDERS.forEach(st => {
             result[st] = {
                 ca1: 0,
                 ca2: 0,
@@ -346,16 +343,13 @@ router.post('/checkExist', verifyToken, async (req, res, next) => {
 
     }
 });
-router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const {
             assignedTo,
             job,
-            devicesToProduce,
             workingDate,
             device,
-            distance,
-            liftHeight,
             shift,
             shiftHour,
             excavator, location, material, workContent,
@@ -381,13 +375,10 @@ router.post('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), asyn
             orderNumber,
             assignedTo,
             job,
-            devicesToProduce,
             workingDate,
             device,
             shift,
             shiftHour,
-            distance,
-            liftHeight,
             safetyMeasure,
             safetyMeasureSpecific,
             previous_order_id,
@@ -447,8 +438,8 @@ router.put('/:id', verifyToken, async (req, res, next) => {
         // 3. Xử lý logic trạng thái
         req.logger.info(`    - Trạng thái lệnh: ${status}`);
         switch (status) {
-            case "in_progress":
-                if (order.status !== "in_progress") {
+            case STATUS_ORDER.INPROGRESS:
+                if (order.status !== STATUS_ORDER.INPROGRESS) {
                     updateObject.startTime = new Date();
                     updateObject.resumeTime = new Date();
                 } else {
@@ -462,21 +453,21 @@ router.put('/:id', verifyToken, async (req, res, next) => {
                     if (order.job?.type) {
                         const type = order.job.type.toLowerCase();
 
-                        if (type.includes(JobConfig.REPAIR.toLowerCase())) {
-                            deviceStatus = "maintenance";
+                        if (type.includes(JOB_TYPE.SUA_CHUA_BAO_DUONG.toLowerCase())) {
+                            deviceStatus = STATUS_DEVICE.MAINTENANCE;
                         } else if (
                             [
-                                JobConfig.VEHICLE,
-                                JobConfig.EXCAVATOR,
-                                JobConfig.SERVICE_VEHICLE,
-                                JobConfig.DRILLING,
-                                JobConfig.DOZER,
-                                JobConfig.SIEVE,
-                                JobConfig.PUMP,
+                                JOB_TYPE.VAN_HANH_XE,
+                                JOB_TYPE.VAN_HANH_XUC,
+                                JOB_TYPE.VAN_HANH_XE_PHUC_VU,
+                                JOB_TYPE.VAN_HANH_KHOAN,
+                                JOB_TYPE.VAN_HANH_GAT,
+                                JOB_TYPE.VAN_HANH_BOM,
+                                JOB_TYPE.VAN_HANH_SANG,
                             ].map(j => j.toLowerCase())
                                 .includes(type)
                         ) {
-                            deviceStatus = "in_use";
+                            deviceStatus = STATUS_DEVICE.IN_USE;
                         }
                     }
 
@@ -488,7 +479,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
                 updateObject.status = status;
                 break;
 
-            case "completed":
+            case STATUS_ORDER.COMPLETED:
                 updateObject.endTime = new Date();
                 updateObject.status = status;
                 if (order.device && order.device.length > 0) {
@@ -500,17 +491,17 @@ router.put('/:id', verifyToken, async (req, res, next) => {
                         const type = order.job.type.toLowerCase();
                         if (
                             [
-                                JobConfig.VEHICLE,
-                                JobConfig.EXCAVATOR,
-                                JobConfig.SERVICE_VEHICLE,
-                                JobConfig.DRILLING,
-                                JobConfig.DOZER,
-                                JobConfig.SIEVE,
-                                JobConfig.PUMP,
+                                JOB_TYPE.VAN_HANH_XE,
+                                JOB_TYPE.VAN_HANH_XUC,
+                                JOB_TYPE.VAN_HANH_XE_PHUC_VU,
+                                JOB_TYPE.VAN_HANH_KHOAN,
+                                JOB_TYPE.VAN_HANH_GAT,
+                                JOB_TYPE.VAN_HANH_BOM,
+                                JOB_TYPE.VAN_HANH_SANG,
                             ].map(j => j.toLowerCase())
                                 .includes(type)
                         ) {
-                            deviceStatus = "available";
+                            deviceStatus = STATUS_DEVICE.AVAILABLE;
                         }
                     }
 
@@ -521,8 +512,8 @@ router.put('/:id', verifyToken, async (req, res, next) => {
                 }
                 break;
 
-            case "cancel":
-            case "warning":
+            case STATUS_ORDER.CANCEL:
+            case STATUS_ORDER.WARNING:
                 updateObject.status = status;
                 if (order.device && order.device.length > 0) {
                     const lastDeviceId = order.device[order.device.length - 1];
@@ -533,17 +524,17 @@ router.put('/:id', verifyToken, async (req, res, next) => {
                         const type = order.job.type.toLowerCase();
                         if (
                             [
-                                JobConfig.VEHICLE,
-                                JobConfig.EXCAVATOR,
-                                JobConfig.SERVICE_VEHICLE,
-                                JobConfig.DRILLING,
-                                JobConfig.DOZER,
-                                JobConfig.SIEVE,
-                                JobConfig.PUMP,
+                                JOB_TYPE.VAN_HANH_XE,
+                                JOB_TYPE.VAN_HANH_XUC,
+                                JOB_TYPE.VAN_HANH_XE_PHUC_VU,
+                                JOB_TYPE.VAN_HANH_KHOAN,
+                                JOB_TYPE.VAN_HANH_GAT,
+                                JOB_TYPE.VAN_HANH_BOM,
+                                JOB_TYPE.VAN_HANH_SANG,
                             ].map(j => j.toLowerCase())
                                 .includes(type)
                         ) {
-                            deviceStatus = "available";
+                            deviceStatus = STATUS_DEVICE.AVAILABLE;
                         }
                     }
 
@@ -572,7 +563,6 @@ router.put('/:id', verifyToken, async (req, res, next) => {
             .populate('job', 'name type content')
             .populate('device', 'code')
             .populate('excavator', 'code')
-            .populate('devicesToProduce.deviceType', 'name')
             .populate('location', 'name')
             .populate('material', 'name')
             .populate('shift')
@@ -588,7 +578,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
         if (order.status !== updatedOrder.status) {
             await Notification.createNotification({
                 title: "Trạng thái lệnh",
-                message: updatedOrder.status === "warning" ? "Báo lệnh lỗi" : "Chỉnh sửa lệnh",
+                message: updatedOrder.status === STATUS_ORDER.WARNING ? "Báo lệnh lỗi" : "Chỉnh sửa lệnh",
                 type: "order",
                 recipient: req.userId.toString() === updatedOrder.assignedTo?._id.toString() ? updatedOrder.createdBy._id : updatedOrder.assignedTo._id,
                 sender: req.userId
@@ -632,7 +622,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
     }
 });
 
-router.delete('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.delete('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const user = req.user
         const { ids } = req.body;
@@ -693,7 +683,7 @@ router.delete('/', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), as
     }
 });
 
-router.delete('/:id', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.delete('/:id', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const user = req.user
         req.logger.info(`✅ ${user?.username} bắt đầu xóa lệnh`);
@@ -737,7 +727,6 @@ const orderPopulateOptions = [
         ],
     },
     { path: 'job', select: 'name type content' },
-    { path: 'devicesToProduce.deviceType' },
     { path: 'device', select: 'code' },
     { path: 'excavator', select: 'code' },
     { path: 'location', select: 'name' },
@@ -765,7 +754,7 @@ router.get('/user', verifyToken, async (req, res, next) => {
     try {
         const query = { assignedTo: req.user._id };
 
-        query.status = { $ne: "cancel" };
+        query.status = { $ne: STATUS_ORDER.CANCEL };
 
         const endOfToday = new Date();
         endOfToday.setHours(23, 59, 59, 999);
@@ -952,16 +941,16 @@ router.post('/scanWork', verifyToken, async (req, res, next) => {
 
 
         let deviceStatus = vehicle.status;
-        if (orderUpdate.status === "in_progress") {
-            deviceStatus = "in_use"
-        } else if (orderUpdate.status === "completed") {
-            deviceStatus = "available"
+        if (orderUpdate.status === STATUS_ORDER.INPROGRESS) {
+            deviceStatus = STATUS_DEVICE.IN_USE
+        } else if (orderUpdate.status === STATUS_ORDER.COMPLETED) {
+            deviceStatus = STATUS_DEVICE.AVAILABLE
         }
         const device = await Device.findByIdAndUpdate(deviceId, { status: deviceStatus }, { new: true });
 
         res.status(200).send({
             status: 'success',
-            message: orderUpdate.status === "in_progress" ? 'Đã bắt đầu công việc' : 'Đã kết thúc công việc',
+            message: orderUpdate.status === STATUS_ORDER.INPROGRESS ? 'Đã bắt đầu công việc' : 'Đã kết thúc công việc',
             data: orderUpdate
         });
 
@@ -983,7 +972,7 @@ router.post('/checkin', verifyToken, async (req, res, next) => {
         }
 
 
-        if (!order.shiftReport && order.status === "in_progress") {
+        if (!order.shiftReport && order.status === STATUS_ORDER.INPROGRESS) {
             return res
                 .status(400)
                 .send({ status: "error", message: "Bạn cần báo công trước" });

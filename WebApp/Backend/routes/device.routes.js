@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { AppError } = require('../utils/errorHandler');
 const Device = require('../models/Device');
-const { JobConfig } = require('../config/config');
+const { JOB_TYPE, ROLE, STATUS_ORDER, STATUS_DEVICE, STATUS_DEVICES } = require('../config/config');
 const DeviceType = require('../models/DeviceType');
 const Department = require('../models/Department');
 const ExcelJS = require('exceljs')
@@ -36,14 +36,14 @@ router.get('/', verifyToken, async (req, res, next) => {
         }
 
 
-        if (user.role === "manager") {
+        if (user.role === ROLE.MANAGER) {
             query.department = user.department._id;
         }
 
         const endOfToday = new Date();
         endOfToday.setHours(23, 59, 59, 999);
         let lte = endOfToday;
-        const orders = await Order.find({ workingDate: { $lte: lte }, status: "in_progress" }).populate("assignedTo", "fullName salaryCode")
+        const orders = await Order.find({ workingDate: { $lte: lte }, status: STATUS_ORDER.INPROGRESS }).populate("assignedTo", "fullName salaryCode")
         const devices = await Device.find(query)
             .populate('department', 'name code')
             .populate('category')
@@ -168,7 +168,7 @@ router.get('/vehicle/all', verifyToken, async (req, res, next) => {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
-router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
+router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
         const { name, code, vehicleNumber, category, material, note, fuelType, capacity, power, coordinates, department, status } = req.body;
         const existingDevice = await Device.findOne({ code });
@@ -230,7 +230,7 @@ router.get('/:id', verifyToken, async (req, res, next) => {
     }
 });
 
-router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
+router.put('/:id', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
         const user = req.user;
         const device = await Device.findByIdAndUpdate(
@@ -305,45 +305,45 @@ router.post('/update_status', verifyToken, async (req, res, next) => {
             let newStatus = null;
 
             switch (order.status) {
-                case "in_progress":
+                case STATUS_ORDER.INPROGRESS:
                     if (order.job?.type) {
                         const type = order.job.type.toLowerCase();
 
-                        if (type.includes(JobConfig.REPAIR.toLowerCase())) {
-                            newStatus = "maintenance";
+                        if (type.includes(JOB_TYPE.SUA_CHUA_BAO_DUONG.toLowerCase())) {
+                            newStatus = STATUS_DEVICE.MAINTENANCE;
                         } else if (
                             [
-                                JobConfig.VEHICLE,
-                                JobConfig.EXCAVATOR,
-                                JobConfig.SERVICE_VEHICLE,
-                                JobConfig.DRILLING,
-                                JobConfig.DOZER,
-                                JobConfig.SIEVE,
-                                JobConfig.PUMP,
+                                JOB_TYPE.VAN_HANH_XE,
+                                JOB_TYPE.VAN_HANH_XUC,
+                                JOB_TYPE.VAN_HANH_XE_PHUC_VU,
+                                JOB_TYPE.VAN_HANH_KHOAN,
+                                JOB_TYPE.VAN_HANH_GAT,
+                                JOB_TYPE.VAN_HANH_BOM,
+                                JOB_TYPE.VAN_HANH_SANG,
                             ].map(j => j.toLowerCase()).includes(type)
                         ) {
-                            newStatus = "in_use";
+                            newStatus = STATUS_DEVICE.IN_USE;
                         }
                     }
                     break;
 
-                case "completed":
-                case "warning":
-                case "cancel":
+                case STATUS_ORDER.COMPLETED:
+                case STATUS_ORDER.WARNING:
+                case STATUS_ORDER.CANCEL:
                     if (order.job?.type) {
                         const type = order.job.type.toLowerCase();
                         if (
                             [
-                                JobConfig.VEHICLE,
-                                JobConfig.EXCAVATOR,
-                                JobConfig.SERVICE_VEHICLE,
-                                JobConfig.DRILLING,
-                                JobConfig.DOZER,
-                                JobConfig.SIEVE,
-                                JobConfig.PUMP,
+                                JOB_TYPE.VAN_HANH_XE,
+                                JOB_TYPE.VAN_HANH_XUC,
+                                JOB_TYPE.VAN_HANH_XE_PHUC_VU,
+                                JOB_TYPE.VAN_HANH_KHOAN,
+                                JOB_TYPE.VAN_HANH_GAT,
+                                JOB_TYPE.VAN_HANH_BOM,
+                                JOB_TYPE.VAN_HANH_SANG,
                             ].map(j => j.toLowerCase()).includes(type)
                         ) {
-                            newStatus = "available";
+                            newStatus = STATUS_DEVICE.AVAILABLE;
                         }
                     }
                     break;
@@ -369,7 +369,7 @@ router.post('/update_status', verifyToken, async (req, res, next) => {
 });
 
 
-router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
+router.delete('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
         const user = req.user
         const { ids } = req.body;
@@ -394,13 +394,13 @@ router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res,
     }
 });
 
-router.get('/count/status', verifyToken, restrictTo('admin', 'manager', 'dispatcher'), async (req, res, next) => {
+router.get('/count/status', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const user = req.user
         const query = {}
         const queryDept = {}
 
-        if (user.role === "manager") {
+        if (user.role === ROLE.MANAGER) {
             query.department = user?.department._id
             queryDept._id = user?.department._id
         }
@@ -410,7 +410,6 @@ router.get('/count/status', verifyToken, restrictTo('admin', 'manager', 'dispatc
             .populate("department")
             .populate("category"); // populate category để lấy DeviceType trực tiếp
 
-        const statusList = ['available', 'in_use', 'maintenance', 'retired'];
 
         let data = [];
 
@@ -441,7 +440,7 @@ router.get('/count/status', verifyToken, restrictTo('admin', 'manager', 'dispatc
                 }
 
                 const typeGroup = typesMap.get(typeId);
-                if (statusList.includes(device.status)) {
+                if (STATUS_DEVICES.includes(device.status)) {
                     typeGroup.statusCounts[device.status]++;
                 }
             }
@@ -585,12 +584,12 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         });
     }
 });
-router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const data = req.body.data
         const user = req.user
         const query = {}
-        if (user.role === "manager") {
+        if (user.role === ROLE.MANAGER) {
             query.department = user.department._id;
         }
 

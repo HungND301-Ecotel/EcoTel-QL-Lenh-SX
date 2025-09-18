@@ -55,7 +55,6 @@ class _TaskDetailPage extends State<TaskDetailPage> {
     final cachedOrderString = prefs.getString(
       'cached_order',
     );
-    print('Cached Order: $cachedOrderString');
     if (cachedOrderString != null) {
       final Map<String, dynamic> jsonMap = jsonDecode(
         cachedOrderString,
@@ -255,7 +254,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
               //   ),
             ],
             title: Text(
-              data?.job.name ?? '',
+              data!.job?.name ?? '',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
@@ -285,7 +284,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                             data?.workingDate != null
                                 ? DateFormat(
                                   'dd/MM/yyyy',
-                                ).format(data!.workingDate)
+                                ).format(data!.workingDate!)
                                 : '',
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
@@ -310,7 +309,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                             ),
                           ),
                           Text(
-                            data?.createdBy.fullName ??
+                            data?.createdBy?.fullName ??
                                 '', // Điền sau nếu có
                             style: TextStyle(
                               fontSize: 16,
@@ -319,48 +318,18 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                           ),
 
                           SizedBox(width: 6),
-                          if ((data?.createdBy.phone ?? '')
+                          if ((data?.createdBy?.phone ?? '')
                               .isNotEmpty)
                             IconButton(
                               onPressed: () {
                                 _callPhone(
-                                  data!.createdBy.phone!,
+                                  data!.createdBy!.phone!,
                                 );
                               },
                               icon: Icon(Icons.phone),
                             ),
                         ],
                       ),
-                      if (data
-                              ?.devicesToProduce
-                              ?.isNotEmpty ??
-                          false)
-                        const SizedBox(height: 10),
-                      if (data
-                              ?.devicesToProduce
-                              ?.isNotEmpty ??
-                          false)
-                        Row(
-                          children: [
-                            Text(
-                              'Loại phương tiện: ',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              (data?.devicesToProduce ?? [])
-                                  .map(
-                                    (e) =>
-                                        '${e.deviceType.name} - Sl:${e.quantity}',
-                                  )
-                                  .join(', '),
-                              softWrap: true,
-                              overflow:
-                                  TextOverflow.visible,
-                            ), // Điền sau nếu có
-                          ],
-                        ),
                       if (data?.device != null &&
                           data!.device!.isNotEmpty)
                         const SizedBox(height: 10),
@@ -543,7 +512,8 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                         'Vận hành xúc',
                         'Vận hành khoan',
                         'Vận hành gạt',
-                      ].contains(data?.job.type))
+                        'Vận hành xe',
+                      ].contains(data!.job?.type))
                         ElevatedButton(
                           onPressed: () {
                             Navigator.pushNamed(
@@ -553,22 +523,26 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                               arguments: data,
                             );
                           },
-                          child: const Text('Phụ máy'),
+                          child: Text(
+                            data!.job?.type == "Vận hành xe"
+                                ? "Lái xe bổ túc"
+                                : 'Phụ máy',
+                          ),
                         ),
                       const SizedBox(height: 8),
                       if (typeToRoute.containsKey(
-                        data?.job.type,
+                        data!.job?.type,
                       ))
                         ElevatedButton(
                           onPressed: () {
                             Navigator.pushNamed(
                               context,
-                              typeToRoute[data!.job.type]!,
+                              typeToRoute[data!.job?.type]!,
                               arguments: data?.id,
                             );
                           },
                           child: Text(
-                            getActionLabel(data!.job.type),
+                            getActionLabel(data!.job!.type),
                           ),
                         ),
                       const SizedBox(height: 8),
@@ -582,7 +556,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                             'vận hành xe phục vụ'
                                 .toLowerCase(),
                           ].contains(
-                            data?.job.type.toLowerCase(),
+                            data!.job?.type.toLowerCase(),
                           )) {
                             Navigator.pushNamed(
                               context,

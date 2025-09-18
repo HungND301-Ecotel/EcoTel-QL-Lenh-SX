@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { STATUS_DEVICES, STATUS_DEVICE } = require('../config/config');
 
 const deviceSchema = new mongoose.Schema({
     code: {
@@ -34,8 +35,8 @@ const deviceSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['available', 'in_use', 'maintenance', 'retired'],
-        default: 'available'
+        enum: STATUS_DEVICES,
+        default: STATUS_DEVICE.AVAILABLE
     },
     coordinates: {
         type: {

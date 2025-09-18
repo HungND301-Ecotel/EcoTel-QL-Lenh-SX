@@ -90,7 +90,6 @@ class ShiftReportModel {
   final String? assignedTo;
   final List<VehicleSummariesModel>? vehicleSummaries;
   final num? handoverHours;
-  final num? otherHours;
   final String? handoverNotes;
   final String? risks;
 
@@ -100,7 +99,6 @@ class ShiftReportModel {
     this.assignedTo,
     this.vehicleSummaries,
     this.handoverHours,
-    this.otherHours,
     this.handoverNotes,
     this.risks,
   });
@@ -120,7 +118,6 @@ class ShiftReportModel {
               .toList() ??
           [],
       handoverHours: json?['handoverHours'],
-      otherHours: json?['otherHours'],
       handoverNotes: json?['handoverNotes'],
       risks: json?['risks'],
     );
@@ -133,7 +130,6 @@ class ShiftReportModel {
       'vehicleSummaries':
           vehicleSummaries?.map((e) => e.toJson()).toList(),
       'handoverHours': handoverHours,
-      'otherHours': otherHours,
       'handoverNotes': handoverNotes,
       'risks': risks,
     };

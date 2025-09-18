@@ -3,9 +3,10 @@ const router = express.Router();
 const { AppError } = require('../utils/errorHandler');
 const DeviceType = require('../models/DeviceType');
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
+const { ROLE } = require('../config/config');
 
 
-router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
+router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
         const { name, group } = req.body
         const existingDeviceType = await DeviceType.findOne({ name, group });
@@ -25,7 +26,7 @@ router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, n
     }
 });
 
-router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
+router.delete('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
         const user = req.user
         const { ids } = req.body;
@@ -49,7 +50,7 @@ router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res,
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
-router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
+router.put('/:id', verifyToken, restrictTo(ROLE.MANAGER,ROLE.ADMIN), async (req, res, next) => {
     try {
         const user = req.user
         const deviceType = await DeviceType.findByIdAndUpdate(req.params.id, req.body, { new: true });
