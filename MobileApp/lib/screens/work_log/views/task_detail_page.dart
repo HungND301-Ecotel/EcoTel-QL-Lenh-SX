@@ -513,6 +513,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                         'Vận hành khoan',
                         'Vận hành gạt',
                         'Vận hành xe',
+                        'Sửa chữa, bảo dưỡng',
                       ].contains(data!.job?.type))
                         ElevatedButton(
                           onPressed: () {
@@ -526,6 +527,9 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                           child: Text(
                             data!.job?.type == "Vận hành xe"
                                 ? "Lái xe bổ túc"
+                                : data!.job?.type ==
+                                    "Sửa chữa, bảo dưỡng"
+                                ? 'Phụ sửa chữa'
                                 : 'Phụ máy',
                           ),
                         ),

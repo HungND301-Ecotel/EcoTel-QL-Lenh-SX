@@ -968,10 +968,10 @@ const Orders: React.FC = () => {
                                         <Typography>{selectedRow.assignedTo?.position?.name}</Typography>
                                     </Grid>
                                 </Grid>
-                                {[JobTypeEnum.EXCAVATOR, JobTypeEnum.VEHICLE].includes(selectedRow.job?.type) && <Grid container spacing={2}>
+                                {[JobTypeEnum.EXCAVATOR, JobTypeEnum.DRILL, JobTypeEnum.DOZER, JobTypeEnum.VEHICLE, JobTypeEnum.MAINTENANCE].includes(selectedRow.job?.type) && <Grid container spacing={2}>
                                     {/* Người nhận lệnh */}
                                     <Grid item xs={12} sm={3}>
-                                        <Typography fontWeight="bold">{selectedRow.job?.type === JobTypeEnum.EXCAVATOR ? 'Phụ máy' : 'Lái xe bổ túc'}:</Typography>
+                                        <Typography fontWeight="bold">{selectedRow.job?.type === JobTypeEnum.VEHICLE ? 'Lái xe bổ túc' : selectedRow.job?.type === JobTypeEnum.MAINTENANCE ? 'Phụ sửa chữa' : 'Phụ máy'}:</Typography>
                                     </Grid>
                                     <Grid item xs={12} sm={9}>
                                         {selectedRow.assistants.map((i: any) => (
