@@ -317,7 +317,7 @@ class _DirectWorkeport extends State<DirectWorkeport> {
                                 ),
                                 SizedBox(height: 16),
                                 Text(
-                                  'Giờ dhoạt động trên đồng hồ',
+                                  'Giờ hoạt động trên đồng hồ',
                                   style: TextStyle(
                                     fontWeight:
                                         FontWeight.w600,
