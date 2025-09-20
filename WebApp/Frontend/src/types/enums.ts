@@ -7,5 +7,6 @@ export enum JobTypeEnum {
     SIEVE = "Vận hành sàng",
     MAINTENANCE = "Sửa chữa, bảo dưỡng",
     PUMP = "Vận hành bơm",
+    DISPATCHER = "Điều hành sản xuất",
     OTHER = "Khác"
 }

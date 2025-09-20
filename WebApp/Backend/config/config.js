@@ -7,6 +7,7 @@ const JOB_TYPE = {
     VAN_HANH_SANG: 'Vận hành sàng',
     SUA_CHUA_BAO_DUONG: 'Sửa chữa, bảo dưỡng',
     VAN_HANH_BOM: 'Vận hành bơm',
+    DIEU_HANH_SAN_XUAT: 'Điều hành sản xuất',
     KHAC: 'Khác',
 };
 const JOB_TYPES = Object.values(JOB_TYPE);

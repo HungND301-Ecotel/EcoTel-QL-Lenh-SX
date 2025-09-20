@@ -8,7 +8,7 @@ const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 const ExcelJS = require('exceljs');
 const xlsx = require('xlsx');
-const { ROLE } = require('../config/config');
+const { ROLE, JOB_TYPES } = require('../config/config');
 
 router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
@@ -182,7 +182,7 @@ router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
         worksheet.dataValidations.add(`B2:B${MAX}`, {
             type: 'list',
             allowBlank: true,
-            formulae: ['"Vận hành xe,Vận hành gạt,Vận hành khoan,Vận hành xúc,Vận hành xe phục vụ,Vận hành sàng,Sửa chữa, bảo dưỡng,Vận hành bơm, Khác"'],
+            formulae: [`"${JOB_TYPES.join(',')}"`],
             showErrorMessage: true,
             errorTitle: 'Giá trị không hợp lệ',
         });

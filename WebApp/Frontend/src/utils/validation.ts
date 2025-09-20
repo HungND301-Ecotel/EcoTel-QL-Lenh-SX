@@ -1,4 +1,5 @@
 import * as yup from 'yup';
+import { JobTypeEnum } from '../types/enums';
 
 // cung do
 export const trvelLogValidationSchema = yup.object({
@@ -89,7 +90,7 @@ export const jobValidationSchema = yup.object({
     name: yup.string().required('Vui lòng nhập tên công việc'),
     type: yup
         .string()
-        .oneOf(['Vận hành xe', 'Vận hành khoan', 'Vận hành xe phục vụ', 'Vận hành gạt', 'Vận hành xúc', 'Vận hành sàng', 'Sửa chữa, bảo dưỡng', 'Vận hành bơm', 'Khác'])
+        .oneOf(Object.values(JobTypeEnum))
         .required('Vui lòng chọn loại công việc'),
 });
 // loai phuong tien
