@@ -47,6 +47,7 @@ router.post('/order/bulk', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
                     }
                 ]
             })
+            .populate('repairVehicles.device')
             .populate('safetyMeasure')
             .populate({
                 path: "assistants",
@@ -73,6 +74,9 @@ router.post('/order/bulk', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
                 await buildOther(order, workbook);
             } else if (jobType === JOB_TYPE.VAN_HANH_XUC) {
                 await buildExcavator(order, workbook);
+            }
+            else if (jobType === JOB_TYPE.SUA_CHUA_BAO_DUONG) {
+                await buildMaintence(order, workbook);
             }
         }
         const buffer = await workbook.xlsx.writeBuffer();
@@ -977,6 +981,255 @@ async function buildOther(order, workbook) {
         { key: 'J', width: 13 },  // Sản lượng
         { key: 'K', width: 12 },  // Nhiên liệu
         { key: 'L', width: 12 },  // Điểm lương
+    ];
+
+    worksheet.eachRow((row) => {
+        row.eachCell((cell) => {
+            if (!cell.font) cell.font = {};
+            cell.font = {
+                ...cell.font,            // giữ lại các thuộc tính khác (bold, italic,…)
+                name: 'Times New Roman', // đổi font chữ
+                size: 12                 // kích thước chữ
+            };
+        });
+    });
+
+};
+async function buildMaintence(order, workbook) {
+    const sheetName = `${order.assignedTo?.username}_${formatDate(order.workingDate)}_${order.shift?.name}_${order._id}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
+
+    const worksheet = workbook.addWorksheet(sheetName);
+
+    // Tiêu đề bảng
+    worksheet.mergeCells('A1:I2');
+    const header = worksheet.getCell('A1');
+    header.value = `LỆNH SẢN XUẤT`;
+    header.font = { bold: true, size: 16 };
+    header.alignment = { horizontal: 'center', vertical: 'middle' };
+
+
+    worksheet.getCell('B4').value = 'Đơn vị';
+    worksheet.getCell('B4').font = { bold: true };
+    worksheet.getCell('C4').value = order.assignedTo?.department?.code || '';
+
+    worksheet.getCell('E4').value = 'Ngày';
+    worksheet.getCell('E4').font = { bold: true };
+    // Lấy ngày từ order.workingDate và định dạng
+    const workingDate = order.workingDate ? new Date(order.workingDate) : null;
+    const ngay = workingDate ? workingDate.toLocaleDateString('vi-VN') : '';
+    worksheet.getCell('F4').value = ngay;
+
+    worksheet.getCell('G4').value = order.shiftHour || '';
+
+
+    worksheet.getCell('H4').value = 'Ca';
+    worksheet.getCell('H4').font = { bold: true };
+
+    worksheet.getCell('I4').value = order.shift?.name || '';
+    worksheet.getCell('I4').alignment = { horizontal: 'left' }
+
+    // 3. Người ra lệnh
+    // Dòng 5
+    worksheet.getCell('B5').value = 'Người ra lệnh';
+    worksheet.getCell('B5').font = { bold: true };
+    worksheet.getCell('C5').value = order.createdBy?.fullName || '';
+
+    worksheet.getCell('E5').value = 'Số thẻ';
+    worksheet.getCell('E5').font = { bold: true };
+    worksheet.getCell('F5').value = order.createdBy?.salaryCode || '';
+
+
+    worksheet.getCell('H5').value = 'Chức vụ';
+    worksheet.getCell('H5').font = { bold: true };
+    worksheet.getCell('I5').value = order.createdBy?.position?.name || '';
+
+    // 4. Người nhận lệnh
+    // Dòng 6
+    worksheet.getCell('B6').value = 'Người nhận lệnh';
+    worksheet.getCell('B6').font = { bold: true };
+    worksheet.getCell('C6').value = order.assignedTo?.fullName || '';
+
+    worksheet.getCell('E6').value = 'Số thẻ';
+    worksheet.getCell('E6').font = { bold: true };
+    worksheet.getCell('F6').value = order.assignedTo?.salaryCode || '';
+
+    worksheet.getCell('H6').value = 'Chức vụ';
+    worksheet.getCell('H6').font = { bold: true };
+    worksheet.getCell('I6').value = order.assignedTo?.position?.name || '';
+
+    // Dòng 6 lx bo tuc
+    worksheet.getCell('B7').value = 'Phụ sửa chữa';
+    worksheet.getCell('B7').font = { bold: true };
+
+    let rowIndex = 7;
+    (order.assistants || []).forEach((driver, idx) => {
+        let row = rowIndex + idx;
+
+        worksheet.getCell(`C${row}`).value = driver.fullName || '';
+        worksheet.getCell(`E${row}`).value = 'Số thẻ';
+        worksheet.getCell(`E${row}`).font = { bold: true };
+        worksheet.getCell(`F${row}`).value = driver.salaryCode || '';
+
+        worksheet.getCell(`H${row}`).value = 'Chức vụ';
+        worksheet.getCell(`H${row}`).font = { bold: true };
+        worksheet.getCell(`I${row}`).value = driver.position?.name || '';
+    });
+
+    let nextRow = rowIndex + (order.assistants?.length || 1);
+    // Dòng 7
+    worksheet.getCell(`B${nextRow}`).value = 'Nội dung lệnh';
+    worksheet.getCell(`B${nextRow}`).font = { bold: true };
+    // Gộp ô cho nội dung để hiển thị đầy đủ
+    worksheet.mergeCells(`C${nextRow}:I${nextRow + 1}`)
+    worksheet.getCell(`C${nextRow}`).value = order.workContent || '';
+    worksheet.getCell(`C${nextRow}`).alignment = { horizontal: 'left', vertical: 'middle' };
+
+
+    worksheet.getCell(`B${nextRow + 2}`).value = 'Biện pháp an toàn';
+    worksheet.getCell(`B${nextRow + 2}`).font = { bold: true };
+    // Gộp ô cho nội dung bàn giao ca
+    worksheet.mergeCells(`C${nextRow + 2}:I${nextRow + 2}`)
+    worksheet.getCell(`C${nextRow + 2}`).value = (order?.safetyMeasure || '') + " " + (order?.safetyMeasureSpecific || '');
+
+
+    worksheet.getCell(`B${nextRow + 3}`).value = 'Nội dung bàn giao ca';
+    worksheet.getCell(`B${nextRow + 3}`).font = { bold: true };
+    // Gộp ô cho nội dung bàn giao ca
+    worksheet.mergeCells(`C${nextRow + 3}:I${nextRow + 3}`)
+    worksheet.getCell(`C${nextRow + 3}`).value = order.shiftReport?.handoverNotes || '';
+
+
+    worksheet.getCell(`B${nextRow + 4}`).value = 'Giờ nhận lệnh';
+    worksheet.getCell(`B${nextRow + 4}`).font = { bold: true };
+    worksheet.getCell(`C${nextRow + 4}`).value = order.startTime
+        ? new Date(order.startTime).toLocaleTimeString('vi-VN', { hour12: false })
+        : "";
+
+    worksheet.getCell(`E${nextRow + 4}`).value = 'Giờ kết thúc';
+    worksheet.getCell(`E${nextRow + 4}`).font = { bold: true };
+    worksheet.getCell(`F${nextRow + 4}`).value = order.endTime
+        ? new Date(order.endTime).toLocaleTimeString('vi-VN', { hour12: false })
+        : "";
+
+
+    let rowHeader1 = nextRow + 6
+    worksheet.mergeCells(`A${rowHeader1}:I${rowHeader1}`);
+    const product = worksheet.getCell(`A${rowHeader1}`);
+    product.value = `I. TÌNH TRẠNG SỬA CHỮA`;
+    product.font = { bold: true, size: 14 };
+    product.alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getRow(rowHeader1).height = 30;
+
+    worksheet.getCell(`A${rowHeader1 + 1}`).value = 'STT';
+    worksheet.getCell(`B${rowHeader1 + 1}`).value = 'Thiết bị';
+    worksheet.mergeCells(`C${rowHeader1 + 1}:E${rowHeader1 + 1}`)
+    worksheet.getCell(`C${rowHeader1 + 1}`).value = 'Tình trạng hư hỏng';
+    worksheet.mergeCells(`F${rowHeader1 + 1}:H${rowHeader1 + 1}`)
+    worksheet.getCell(`F${rowHeader1 + 1}`).value = 'Kết quả sửa chữa cuối ca';
+    worksheet.getCell(`I${rowHeader1 + 1}`).value = 'Ghi chú';
+
+    const headerRow = worksheet.getRow(rowHeader1 + 1);
+    for (let col = 1; col <= 9; col++) {
+        const cell = headerRow.getCell(col);
+        cell.font = { bold: true };
+        cell.alignment = {
+            ...cell.alignment,
+            wrapText: true,
+            vertical: 'middle',
+            horizontal: 'center',
+        };
+    }
+
+    let rowIndexTrip = rowHeader1 + 2;
+    const data = order.repairVehicles.length > 0 ? order.repairVehicles : [{}];
+    data.forEach((repair, index) => {
+        let report = {};
+        console.log(order.shiftReport)
+
+        if (order.shiftReport && order.shiftReport?.vehicleRepair.length > 0) {
+            report = order.shiftReport.vehicleRepair.find(
+                vr => vr.device.toString() === repair.device?._id.toString()
+            ) || {};
+        }
+        worksheet.getCell(`A${rowIndexTrip}`).value = index + 1;
+        worksheet.getCell(`A${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        worksheet.getCell(`B${rowIndexTrip}`).value = repair.device?.code || '';
+        worksheet.getCell(`B${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        worksheet.mergeCells(`C${rowIndexTrip}:E${rowIndexTrip}`)
+        worksheet.getCell(`C${rowIndexTrip}`).value = repair.note || '';
+        worksheet.getCell(`C${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        worksheet.mergeCells(`F${rowIndexTrip}:H${rowIndexTrip}`)
+        worksheet.getCell(`F${rowIndexTrip}`).value = report.status || '';
+        worksheet.getCell(`F${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        worksheet.getCell(`I${rowIndexTrip}`).value = ""
+        worksheet.getCell(`I${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        rowIndexTrip++
+
+    })
+
+    worksheet.mergeCells(`A${rowIndexTrip}:I${rowIndexTrip}`);
+    worksheet.getCell(`A${rowIndexTrip}`).value = 'Mức bồi dưỡng (x1000đ):';
+
+    addTableBorders(worksheet, rowHeader1, rowIndexTrip, 1, 9)
+
+    worksheet.mergeCells(`B${rowIndexTrip + 2}:D${rowIndexTrip + 2}`)
+    worksheet.getCell(`B${rowIndexTrip + 2}`).value = 'NGƯỜI NHẬN LỆNH';
+    worksheet.getCell(`B${rowIndexTrip + 2}`).font = { bold: true };
+    worksheet.getCell(`B${rowIndexTrip + 2}`).alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getCell(`C${rowIndexTrip + 4}`).value = '✔';
+    worksheet.getCell(`C${rowIndexTrip + 4}`).alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getCell(`C${rowIndexTrip + 4}`).font = { bold: true, size: 12 };
+    worksheet.mergeCells(`B${rowIndexTrip + 6}:D${rowIndexTrip + 6}`)
+    worksheet.getCell(`B${rowIndexTrip + 6}`).font = { bold: true };
+    worksheet.getCell(`B${rowIndexTrip + 6}`).alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getCell(`B${rowIndexTrip + 6}`).value = order.assignedTo?.fullName || "";
+
+    worksheet.mergeCells(`G${rowIndexTrip + 2}:H${rowIndexTrip + 2}`)
+    worksheet.getCell(`G${rowIndexTrip + 2}`).value = 'NGƯỜI RA LỆNH';
+    worksheet.getCell(`G${rowIndexTrip + 2}`).font = { bold: true };
+    worksheet.getCell(`G${rowIndexTrip + 2}`).alignment = { horizontal: 'center', vertical: 'middle' };
+    if (order.createdBy?.signature) {
+        const response = await axios.get(order.createdBy.signature, { responseType: 'arraybuffer' });
+        const extension = response.headers['content-type'].split('/')[1];
+        const imageBuffer = Buffer.from(response.data, 'binary');
+
+        const imageId = workbook.addImage({
+            buffer: imageBuffer,
+            extension
+        });
+
+        worksheet.mergeCells(`G${rowIndexTrip + 3}:H${rowIndexTrip + 5}`);
+
+        // gán ảnh trực tiếp vào range
+        worksheet.addImage(imageId, `G${rowIndexTrip + 3}:H${rowIndexTrip + 5}`);
+    }
+
+    worksheet.mergeCells(`G${rowIndexTrip + 6}:H${rowIndexTrip + 6}`)
+    worksheet.getCell(`G${rowIndexTrip + 6}`).font = { bold: true };
+    worksheet.getCell(`G${rowIndexTrip + 6}`).alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getCell(`G${rowIndexTrip + 6}`).value = order.createdBy?.fullName || "";
+
+
+    worksheet.pageSetup = {
+        paperSize: 9,                // A4
+        orientation: 'landscape',    // ngang
+        fitToPage: true,
+        fitToWidth: 1,               // vừa 1 trang theo chiều ngang
+        fitToHeight: 0,              // không ép theo chiều dọc
+        margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } // inch
+    };
+
+    // 2) Set width cơ sở (Excel sẽ scale để vừa 1 trang)
+    worksheet.columns = [
+        { key: 'A', width: 6 },   // STT
+        { key: 'B', width: 18 },  // Nhận tải
+        { key: 'C', width: 18 },  // Đổ tải
+        { key: 'D', width: 10 },  // Loại hàng
+        { key: 'E', width: 14 },  // Cung độ tạm tính
+        { key: 'F', width: 14 },  // Chiều cao nâng tải
+        { key: 'G', width: 10 },  // Số chuyến
+        { key: 'H', width: 14 },  // Khối lượng
+        { key: 'I', width: 25 },  // Trọng lượng
     ];
 
     worksheet.eachRow((row) => {
