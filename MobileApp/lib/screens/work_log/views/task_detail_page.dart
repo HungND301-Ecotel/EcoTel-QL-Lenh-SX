@@ -355,6 +355,70 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                             ), // Điền sau nếu có
                           ],
                         ),
+                      if (data?.repairVehicles != null &&
+                          data!.repairVehicles!.isNotEmpty)
+                        Text(
+                          'Phương tiện sửa chữa: ',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      if (data?.repairVehicles != null &&
+                          data!.repairVehicles!.isNotEmpty)
+                        Column(
+                          children:
+                              data!.repairVehicles!.map((
+                                repair,
+                              ) {
+                                return Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment
+                                          .start,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment
+                                              .start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.build,
+                                              color:
+                                                  Colors
+                                                      .orange,
+                                              size: 20,
+                                            ),
+                                            Text(
+                                              repair
+                                                      .device
+                                                      ?.code ??
+                                                  '',
+                                            ),
+                                          ],
+                                        ),
+                                        Row(
+                                          children: [
+                                            Text(
+                                              'Tình trạng:  ',
+                                              style: TextStyle(
+                                                fontWeight:
+                                                    FontWeight
+                                                        .w600,
+                                              ),
+                                            ),
+                                            Text(
+                                              '${repair.note}',
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                );
+                              }).toList(),
+                        ),
+
                       if (data?.excavator?.isNotEmpty ==
                           true)
                         const SizedBox(height: 10),
@@ -566,6 +630,18 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                               context,
                               WorkLogRoutes
                                   .directWorkReport,
+                              arguments: data,
+                            );
+                          } else if ([
+                            'sửa chữa, bảo dưỡng'
+                                .toLowerCase(),
+                          ].contains(
+                            data!.job?.type.toLowerCase(),
+                          )) {
+                            Navigator.pushNamed(
+                              context,
+                              WorkLogRoutes
+                                  .maintencetWorkReport,
                               arguments: data,
                             );
                           } else {

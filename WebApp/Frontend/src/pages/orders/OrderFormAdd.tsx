@@ -83,6 +83,10 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
         queryKey: ['devices'],
         queryFn: () => api.get('/devices').then(res => res.data.data),
     });
+    const { data: allDevices = [] } = useQuery({
+        queryKey: ['allDevices'],
+        queryFn: () => api.get('/devices/all').then(res => res.data.data),
+    });
     const { data: excavators = [] } = useQuery({
         queryKey: ['excavators'],
         queryFn: () => api.get('/devices/excavators/all').then(res => res.data.data),
@@ -119,6 +123,12 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                     device: [],
                 },
             ],
+            repairVehicles: [
+                {
+                    device: undefined,
+                    note: '',
+                },
+            ],
             job: '',
             workingDate: new Date(),
             shift: '',
@@ -126,8 +136,6 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
             excavator: [],
             location: undefined,
             material: undefined,
-            distance: undefined,
-            liftHeight: undefined,
             workContent: '',
             note: '',
             safetyMeasure: '',
@@ -138,6 +146,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
             const orders: Partial<Order>[] = values.usersAndDevices.map(item => ({
                 assignedTo: item.assignedTo,
                 device: item.device,
+                repairVehicles: values.repairVehicles,
                 job: values.job,
                 workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
                 excavator: values.excavator,
@@ -323,12 +332,78 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                                         </Grid>}
                                     </Grid>
                                 ))}
-                                <Button variant="outlined" sx={{ mb: 2 }} onClick={() => push({ assignedTo: '', device: [] })}>
+                                {selectedJob.type !== JobTypeEnum.MAINTENANCE && <Button variant="outlined" sx={{ mb: 2 }} onClick={() => push({ assignedTo: '', device: [] })}>
                                     + Thêm
-                                </Button>
+                                </Button>}
                             </>
                         )}
                     </FieldArray>
+                    {selectedJob.type === JobTypeEnum.MAINTENANCE &&
+                        <FieldArray name="repairVehicles">
+                            {({ push, remove }) => (
+                                <>
+                                    {formik.values.repairVehicles.map((item, index) => (
+                                        <Grid container spacing={2} key={index} alignItems="center" sx={{ mb: 2 }}>
+                                            {/* Cột 1: Autocomplete */}
+                                            <Grid item xs={4}>
+                                                <Autocomplete
+                                                    fullWidth
+                                                    options={allDevices}
+                                                    getOptionLabel={(option: any) => option.code || ''}
+                                                    value={allDevices.find((p: any) => p._id === item.device) || null}
+                                                    onChange={(event, newValue) => {
+                                                        formik.setFieldValue(`repairVehicles[${index}].device`, newValue?._id || '');
+                                                    }}
+                                                    renderInput={(params) => (
+                                                        <TextField
+                                                            {...params}
+                                                            label="Phương tiện sửa chữa"
+                                                        />
+                                                    )}
+                                                />
+                                            </Grid>
+
+                                            {/* Cột 2: Note */}
+                                            <Grid item xs={7}>
+                                                <TextField
+                                                    fullWidth
+                                                    label="Tình trạng hư hỏng"
+                                                    multiline
+                                                    rows={2}
+                                                    value={item.note ?? ''}
+                                                    onChange={(e) =>
+                                                        formik.setFieldValue(`repairVehicles[${index}].note`, e.target.value)
+                                                    }
+                                                />
+                                            </Grid>
+
+                                            {/* Cột 3: Nút Xóa */}
+                                            <Grid item xs={1} sx={{ display: 'flex', justifyContent: 'center' }}>
+                                                {index > 0 && (
+                                                    <Button
+                                                        color="error"
+                                                        variant="outlined"
+                                                        size="small"
+                                                        onClick={() => remove(index)}
+                                                    >
+                                                        Xóa
+                                                    </Button>
+                                                )}
+                                            </Grid>
+                                        </Grid>
+                                    ))}
+
+                                    <Button
+                                        variant="outlined"
+                                        sx={{ mb: 2 }}
+                                        onClick={() => push({ device: '', note: '' })}
+                                    >
+                                        + Thêm
+                                    </Button>
+                                </>
+                            )}
+                        </FieldArray>
+                    }
                     <Grid container spacing={2}>
                         <Grid item xs={12} sm={6}>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>

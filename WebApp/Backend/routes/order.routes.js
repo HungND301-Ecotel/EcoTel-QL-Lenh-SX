@@ -9,7 +9,7 @@ const History = require('../models/History');
 const User = require('../models/User')
 const Job = require('../models/Job')
 const mongoose = require('mongoose')
-const { ROLE, JOB_TYPE,STATUS_DEVICE,STATUS_DEVICES, STATUS_ORDERS, STATUS_ORDER } = require('../config/config');
+const { ROLE, JOB_TYPE, STATUS_DEVICE, STATUS_DEVICES, STATUS_ORDERS, STATUS_ORDER, STATUS_REPAIR } = require('../config/config');
 
 
 const Device = require('../models/Device');
@@ -139,9 +139,13 @@ router.get('/', verifyToken, async (req, res, next) => {
             .populate('material', 'name')
             .populate('shift')
             .populate({ path: 'assistants', select: 'username fullName salaryCode' })
+            .populate({ path: 'repairVehicles.device', select: 'code' })
             .populate({
                 path: 'shiftReport',
-                populate: [{ path: 'vehicleSummaries.vehicle', select: 'code' }],
+                populate: [
+                    { path: 'vehicleSummaries.vehicle', select: 'code' },
+                    { path: 'vehicleRepair.device', select: 'code' }
+                ],
             })
             .populate({
                 path: 'createdBy',
@@ -350,6 +354,7 @@ router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCH
             job,
             workingDate,
             device,
+            repairVehicles,
             shift,
             shiftHour,
             excavator, location, material, workContent,
@@ -377,6 +382,7 @@ router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCH
             job,
             workingDate,
             device,
+            repairVehicles,
             shift,
             shiftHour,
             safetyMeasure,
@@ -425,7 +431,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
         req.logger.info(`🔍 Bắt đầu cập nhật lệnh với ID: ${id}`);
 
         // 1. Lấy đơn hàng hiện tại để kiểm tra
-        const order = await Order.findById(id).populate('job').lean();
+        const order = await Order.findById(id).populate('job').populate('shiftReport').lean();
 
         if (!order) {
             req.logger.warn("⚠️ Lỗi 404 - Không tìm thấy lệnh với ID này.");
@@ -453,9 +459,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
                     if (order.job?.type) {
                         const type = order.job.type.toLowerCase();
 
-                        if (type.includes(JOB_TYPE.SUA_CHUA_BAO_DUONG.toLowerCase())) {
-                            deviceStatus = STATUS_DEVICE.MAINTENANCE;
-                        } else if (
+                        if (
                             [
                                 JOB_TYPE.VAN_HANH_XE,
                                 JOB_TYPE.VAN_HANH_XUC,
@@ -464,6 +468,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
                                 JOB_TYPE.VAN_HANH_GAT,
                                 JOB_TYPE.VAN_HANH_BOM,
                                 JOB_TYPE.VAN_HANH_SANG,
+                                JOB_TYPE.SUA_CHUA_BAO_DUONG
                             ].map(j => j.toLowerCase())
                                 .includes(type)
                         ) {
@@ -476,6 +481,12 @@ router.put('/:id', verifyToken, async (req, res, next) => {
                         req.logger.info(`✅ Device ${lastDeviceId} cập nhật sang ${deviceStatus}`);
                     }
                 }
+                if (order.repairVehicles && order.repairVehicles.length > 0) {
+                    for (const item of order.repairVehicles) {
+                        await Device.updateOne({ _id: item.device }, { status: STATUS_DEVICE.MAINTENANCE });
+                        req.logger.info(`✅ Device ${item.device} cập nhật sang ${STATUS_DEVICE.MAINTENANCE}`);
+                    }
+                }
                 updateObject.status = status;
                 break;
 
@@ -485,7 +496,6 @@ router.put('/:id', verifyToken, async (req, res, next) => {
                 if (order.device && order.device.length > 0) {
                     const lastDeviceId = order.device[order.device.length - 1];
                     req.logger.info(`    - Giải phóng phương tiện cuối cùng: ${lastDeviceId}`);
-                    let deviceStatus = null;
 
                     if (order.job?.type) {
                         const type = order.job.type.toLowerCase();
@@ -498,6 +508,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
                                 JOB_TYPE.VAN_HANH_GAT,
                                 JOB_TYPE.VAN_HANH_BOM,
                                 JOB_TYPE.VAN_HANH_SANG,
+                                JOB_TYPE.SUA_CHUA_BAO_DUONG
                             ].map(j => j.toLowerCase())
                                 .includes(type)
                         ) {
@@ -508,6 +519,14 @@ router.put('/:id', verifyToken, async (req, res, next) => {
                     if (deviceStatus) {
                         await Device.updateOne({ _id: lastDeviceId }, { status: deviceStatus });
                         req.logger.info(`✅ Device ${lastDeviceId} cập nhật sang ${deviceStatus}`);
+                    }
+                }
+                if (order.shiftReport?.vehicleRepair && order.shiftReport?.vehicleRepair.length > 0) {
+                    for (const item of order.shiftReport?.vehicleRepair) {
+                        if (item.status === STATUS_REPAIR.COMPLETED) {
+                            await Device.updateOne({ _id: item.device }, { status: STATUS_DEVICE.AVAILABLE });
+                            req.logger.info(`✅ Device ${item.device} cập nhật sang ${STATUS_DEVICE.AVAILABLE}`);
+                        }
                     }
                 }
                 break;
@@ -531,6 +550,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
                                 JOB_TYPE.VAN_HANH_GAT,
                                 JOB_TYPE.VAN_HANH_BOM,
                                 JOB_TYPE.VAN_HANH_SANG,
+                                JOB_TYPE.SUA_CHUA_BAO_DUONG
                             ].map(j => j.toLowerCase())
                                 .includes(type)
                         ) {
@@ -569,7 +589,10 @@ router.put('/:id', verifyToken, async (req, res, next) => {
             .populate({ path: "assistants", select: "username fullName salaryCode" })
             .populate({
                 path: "shiftReport",
-                populate: [{ path: "vehicleSummaries.vehicle", select: "code" }]
+                populate: [
+                    { path: "vehicleSummaries.vehicle", select: "code" },
+                    { path: 'vehicleRepair.device', select: 'code' }
+                ]
             })
             .populate({ path: "createdBy", select: "_id fullName phone salaryCode" })
             .sort('-createdAt');
@@ -736,10 +759,12 @@ const orderPopulateOptions = [
         path: "assistants",
         select: "username fullName salaryCode",
     },
+    { path: 'repairVehicles.device', select: 'code' },
     {
         path: "shiftReport",
         populate: [
-            { path: "vehicleSummaries.vehicle", select: "code" }
+            { path: "vehicleSummaries.vehicle", select: "code" },
+            { path: 'vehicleRepair.device', select: 'code' }
         ]
     },
     {

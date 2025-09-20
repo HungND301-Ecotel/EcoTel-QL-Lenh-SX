@@ -203,6 +203,69 @@ class _TaskAssignmentDetail
                             ), // Điền sau nếu có
                           ],
                         ),
+                      if (widget.data.repairVehicles != null &&
+                          widget.data.repairVehicles!.isNotEmpty)
+                        Text(
+                          'Phương tiện sửa chữa: ',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      if (widget.data.repairVehicles != null &&
+                          widget.data.repairVehicles!.isNotEmpty)
+                        Column(
+                          children:
+                              widget.data.repairVehicles!.map((
+                                repair,
+                              ) {
+                                return Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment
+                                          .start,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment
+                                              .start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.build,
+                                              color:
+                                                  Colors
+                                                      .orange,
+                                              size: 20,
+                                            ),
+                                            Text(
+                                              repair
+                                                      .device
+                                                      ?.code ??
+                                                  '',
+                                            ),
+                                          ],
+                                        ),
+                                        Row(
+                                          children: [
+                                            Text(
+                                              'Tình trạng:  ',
+                                              style: TextStyle(
+                                                fontWeight:
+                                                    FontWeight
+                                                        .w600,
+                                              ),
+                                            ),
+                                            Text(
+                                              '${repair.note}',
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                );
+                              }).toList(),
+                        ),
                       if (widget
                               .data
                               .excavator

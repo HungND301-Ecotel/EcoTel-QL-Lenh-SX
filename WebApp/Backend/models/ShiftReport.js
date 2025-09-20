@@ -1,4 +1,6 @@
 const mongoose = require('mongoose')
+const { STATUS_REPAIRS, STATUS_REPAIR } = require('../config/config');
+
 
 const Shiftreport = new mongoose.Schema({
     orderId: {
@@ -15,7 +17,7 @@ const Shiftreport = new mongoose.Schema({
         {
             vehicle: { type: mongoose.Schema.Types.ObjectId, ref: 'Device' },
             repairHours: Number,
-            distanceKm:Number,
+            distanceKm: Number,
             travelHours: Number,
             fuelRemain: Number,
             fuelReceived: Number,
@@ -24,6 +26,13 @@ const Shiftreport = new mongoose.Schema({
             note: String,
             gpsStatus: { type: String, },
             sealStatus: { type: String, },
+        }
+    ],
+    vehicleRepair: [
+        {
+            device: { type: mongoose.Schema.Types.ObjectId, ref: 'Device' },
+            status: String,
+            noteRepair: String
         }
     ],
     handoverHours: {

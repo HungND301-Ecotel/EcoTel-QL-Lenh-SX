@@ -34,6 +34,13 @@ const orderSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Device',
     }],
+    repairVehicles: [{
+        device: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Device',
+        },
+        note: String
+    }],
     excavator: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Device',

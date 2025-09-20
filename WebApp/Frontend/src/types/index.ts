@@ -86,6 +86,10 @@ export interface Order {
     startTime?: Date;
     endTime?: Date;
     device?: string[];
+    repairVehicles?: {
+        device?: string,
+        note?: string
+    }[],
     excavator?: string[];
     location?: string[];
     material?: string[];
@@ -175,6 +179,7 @@ export interface Report {
     hardnessF?: number,
     workingMinutes?: number,
     quantity?: number,
+    quantityUpdateTimes?: Date[]
 }
 export interface Location {
     _id: string;

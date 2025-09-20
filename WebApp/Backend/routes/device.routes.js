@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { AppError } = require('../utils/errorHandler');
 const Device = require('../models/Device');
-const { JOB_TYPE, ROLE, STATUS_ORDER, STATUS_DEVICE, STATUS_DEVICES } = require('../config/config');
+const { JOB_TYPE, ROLE, STATUS_ORDER, STATUS_DEVICE, STATUS_DEVICES, STATUS_REPAIR } = require('../config/config');
 const DeviceType = require('../models/DeviceType');
 const Department = require('../models/Department');
 const ExcelJS = require('exceljs')
@@ -168,6 +168,23 @@ router.get('/vehicle/all', verifyToken, async (req, res, next) => {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
+
+router.get('/all', verifyToken, async (req, res, next) => {
+    try {
+        const devices = await Device.find()
+
+        req.logger.info(`🔥  Load phương tiện thành công`);
+        res.status(200).json({
+            status: 'success',
+            results: devices.length,
+            data:
+                devices
+        });
+    } catch (err) {
+        req.logger.error("❌ Lỗi", err);
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+});
 router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
         const { name, code, vehicleNumber, category, material, note, fuelType, capacity, power, coordinates, department, status } = req.body;
@@ -274,7 +291,7 @@ router.post('/update_status', verifyToken, async (req, res, next) => {
         startOfToday.setHours(0, 0, 0, 0);
         const endOfToday = new Date();
         endOfToday.setHours(23, 59, 59, 999);
-        const orders = await Order.find({ workingDate: { $gte: startOfToday, $lte: endOfToday } }).populate("device").populate("job").populate("shift")
+        const orders = await Order.find({ workingDate: { $gte: startOfToday, $lte: endOfToday } }).populate("device").populate("shiftReport").populate("job").populate("shift")
 
         const updateDeviceStatus = async (deviceId, newStatus) => {
             if (!deviceId || !newStatus) return;
@@ -302,15 +319,30 @@ router.post('/update_status', verifyToken, async (req, res, next) => {
             const lastDevice = order.device?.length ? order.device[order.device.length - 1] : null;
             if (!lastDevice) continue;
 
-            let newStatus = null;
-
             switch (order.status) {
                 case STATUS_ORDER.INPROGRESS:
                     if (order.job?.type) {
                         const type = order.job.type.toLowerCase();
 
                         if (type.includes(JOB_TYPE.SUA_CHUA_BAO_DUONG.toLowerCase())) {
-                            newStatus = STATUS_DEVICE.MAINTENANCE;
+                            await updateDeviceStatus(lastDevice._id, STATUS_DEVICE.IN_USE);
+                            if (!order.shiftReport) {
+                                for (const rv of order.repairVehicles || []) {
+                                    await updateDeviceStatus(rv.device, STATUS_DEVICE.MAINTENANCE);
+                                }
+                            } else {
+                                if (order.shiftReport?.vehicleRepair && order.shiftReport?.vehicleRepair.length > 0) {
+                                    for (const item of order.shiftReport?.vehicleRepair) {
+                                        if (item.status === STATUS_REPAIR.COMPLETED) {
+                                            await updateDeviceStatus(item.device, STATUS_DEVICE.AVAILABLE);
+                                            req.logger.info(`✅ Device ${item.device} cập nhật sang ${STATUS_DEVICE.AVAILABLE}`);
+                                        } else {
+                                            await updateDeviceStatus(item.device, STATUS_DEVICE.MAINTENANCE);
+                                            req.logger.info(`✅ Device ${item.device} cập nhật sang ${STATUS_DEVICE.MAINTENANCE}`);
+                                        }
+                                    }
+                                }
+                            }
                         } else if (
                             [
                                 JOB_TYPE.VAN_HANH_XE,
@@ -322,7 +354,7 @@ router.post('/update_status', verifyToken, async (req, res, next) => {
                                 JOB_TYPE.VAN_HANH_SANG,
                             ].map(j => j.toLowerCase()).includes(type)
                         ) {
-                            newStatus = STATUS_DEVICE.IN_USE;
+                            await updateDeviceStatus(lastDevice._id, STATUS_DEVICE.IN_USE);
                         }
                     }
                     break;
@@ -341,9 +373,21 @@ router.post('/update_status', verifyToken, async (req, res, next) => {
                                 JOB_TYPE.VAN_HANH_GAT,
                                 JOB_TYPE.VAN_HANH_BOM,
                                 JOB_TYPE.VAN_HANH_SANG,
+                                JOB_TYPE.SUA_CHUA_BAO_DUONG,
                             ].map(j => j.toLowerCase()).includes(type)
                         ) {
-                            newStatus = STATUS_DEVICE.AVAILABLE;
+                            await updateDeviceStatus(lastDevice._id, STATUS_DEVICE.AVAILABLE);
+                        }
+                    }
+                    if (order.shiftReport?.vehicleRepair && order.shiftReport?.vehicleRepair.length > 0) {
+                        for (const item of order.shiftReport?.vehicleRepair) {
+                            if (item.status === STATUS_REPAIR.COMPLETED) {
+                                await updateDeviceStatus(item.device, STATUS_DEVICE.AVAILABLE);
+                                req.logger.info(`✅ Device ${item.device} cập nhật sang ${STATUS_DEVICE.AVAILABLE}`);
+                            } else {
+                                await updateDeviceStatus(item.device, STATUS_DEVICE.MAINTENANCE);
+                                req.logger.info(`✅ Device ${item.device} cập nhật sang ${STATUS_DEVICE.MAINTENANCE}`);
+                            }
                         }
                     }
                     break;
@@ -352,9 +396,6 @@ router.post('/update_status', verifyToken, async (req, res, next) => {
                     break;
             }
 
-            if (newStatus) {
-                await updateDeviceStatus(lastDevice._id, newStatus);
-            }
         }
 
         req.logger.info(`🔥${user?.username}  cập nhật trạng thái phương tiện thành công`);

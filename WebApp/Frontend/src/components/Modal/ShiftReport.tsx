@@ -11,6 +11,7 @@ import {
     Accordion,
     AccordionSummary,
     AccordionDetails,
+    IconButton,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -20,6 +21,8 @@ import api from '../../config/api.config';
 import { ShiftReportType, Report, Job } from '../../types';
 import { showErrorAlert, showSuccessAlert } from '../Alert';
 import { format } from 'date-fns';
+import { JobTypeEnum } from '../../types/enums';
+import { Close } from '@mui/icons-material';
 
 export default function ShiftReport({
     open,
@@ -92,6 +95,13 @@ export default function ShiftReport({
                     sealStatus: '',
                 },
             ],
+            vehicleRepair: [
+                {
+                    device: undefined,
+                    status: '',
+                    noteRepair: '',
+                },
+            ],
             handoverHours: undefined,
             handoverNotes: '',
             risks: '',
@@ -114,6 +124,7 @@ export default function ShiftReport({
                     hardnessF: undefined,
                     workingMinutes: undefined,
                     quantity: undefined,
+                    quantityUpdateTimes: []
                 },
             ],
         },
@@ -141,6 +152,12 @@ export default function ShiftReport({
                         gpsStatus: v?.gpsStatus || '',
                         sealStatus: v?.sealStatus || '',
                     })) || [],
+                vehicleRepair:
+                    shiftReport?.vehicleRepair?.map((v: any) => ({
+                        device: v?.device?._id,
+                        status: v?.status || '',
+                        noteRepair: v?.noteRepair || '',
+                    })) || [],
                 handoverHours: shiftReport?.handoverHours,
                 handoverNotes: shiftReport?.handoverNotes || '',
                 risks: shiftReport?.risks || '',
@@ -166,6 +183,7 @@ export default function ShiftReport({
                         hardnessF: v?.hardnessF,
                         workingMinutes: v?.workingMinutes,
                         quantity: v?.quantity,
+                        quantityUpdateTimes: v?.quantityUpdateTimes
                     })) || [],
             });
         }
@@ -228,12 +246,12 @@ export default function ShiftReport({
 
     function getGroupKey(jt: string, r: any) {
         switch (jt) {
-            case 'Vận hành xúc':
-                // gộp theo Phương tiện + Vật liệu
-                return `device:${r.device?._id || ''}__mat:${r.material?._id || ''}`;
-            case 'Vận hành xe':
-                // gộp theo xe + máy xúc + điểm đến + Vật liệu (tùy nghiệp vụ)
-                return `device:${r.device?._id || ''}__exc:${r.excavator?._id || ''}__to:${r.toLocation?._id || ''}__mat:${r.material?._id || ''}`;
+            // case 'Vận hành xúc':
+            //     // gộp theo Phương tiện + Vật liệu
+            //     return `device:${r.device?._id || ''}__mat:${r.material?._id || ''}`;
+            // case 'Vận hành xe':
+            //     // gộp theo xe + máy xúc + điểm đến + Vật liệu (tùy nghiệp vụ)
+            //     return `device:${r.device?._id || ''}__exc:${r.excavator?._id || ''}__to:${r.toLocation?._id || ''}__mat:${r.material?._id || ''}`;
             case 'Vận hành xe phục vụ':
                 // gộp theo xe + from + to + Vật liệu
                 return `device:${r.device?._id || ''}__from:${r.fromLocation?._id || ''}__to:${r.toLocation?._id || ''}__mat:${r.material?._id || ''}`;
@@ -260,6 +278,7 @@ export default function ShiftReport({
         totalWorkingMinutes?: number;
         totalDrillDepth?: number,
         totalHardnessF?: number,
+        quantityUpdateTimes?: [],
         children: Array<{
             report: any;
             formIndex: number;
@@ -284,6 +303,7 @@ export default function ShiftReport({
                     excavator: r.excavator,
                     fromLocation: r.fromLocation,
                     toLocation: r.toLocation,
+                    quantityUpdateTimes: r.quantityUpdateTimes,
                     totalQuantity: 0,
                     totalDistanceKm: 0,
                     totalWorkingMinutes: 0,
@@ -459,7 +479,7 @@ export default function ShiftReport({
                                                             )}
 
                                                             {/* XE/XÚC/SERVICE: quantity */}
-                                                            {['Vận hành xe', 'Vận hành xúc', 'Vận hành xe phục vụ'].includes(jobType) && (
+                                                            {['Vận hành xe phục vụ'].includes(jobType) && (
                                                                 <>
                                                                     <Grid item xs={3}>
                                                                         <Typography>Số chuyến:</Typography>
@@ -490,7 +510,18 @@ export default function ShiftReport({
                                                                     </Grid>
                                                                 </>
                                                             )}
-
+                                                            {['Vận hành xe', 'Vận hành xúc',].includes(jobType) && (
+                                                                <>
+                                                                    <Grid item xs={3}>
+                                                                        <Typography>Thời gian:</Typography>
+                                                                    </Grid>
+                                                                    <Grid item xs={9}>
+                                                                        {report.quantityUpdateTimes.map((d: any) => (
+                                                                            <Typography>{d ? format(new Date(d), 'dd-MM-yyyy HH:mm:ss') : ''}</Typography>
+                                                                        ))}
+                                                                    </Grid>
+                                                                </>
+                                                            )}
                                                             {/* SERVICE: distanceKm + workingMinutes */}
                                                             {jobType === 'Vận hành xe phục vụ' && (
                                                                 <>
@@ -902,6 +933,88 @@ export default function ShiftReport({
                             ))}
                         </Box>
                     )}
+                {[JobTypeEnum.MAINTENANCE].includes(
+                    jobType ?? '',
+                ) && <Box>
+                        <Typography variant="h5" sx={{ mt: 2 }}>
+                            Tình trạng sửa chữa:
+                        </Typography>
+                        {shiftReport?.vehicleRepair?.map((item: any, index: number) => (
+                            <Box key={index}>
+                                <Grid container spacing={2} mb={2} key={index}>
+                                    <Grid item xs={3}>
+                                        <Typography variant="h6">+ Phương tiện:</Typography>
+                                    </Grid>
+                                    <Grid item xs={9}>
+                                        <Typography>{item.device?.code}</Typography>
+                                    </Grid>
+
+                                    <Grid item xs={3}>
+                                        <Typography>Trạng thái sửa chữa:</Typography>
+                                    </Grid>
+                                    <Grid item xs={9}>
+                                        <TextField
+                                            fullWidth
+                                            select
+                                            name={`vehicleRepair[${index}].status`}
+                                            value={shiftReportFormik.values.vehicleRepair[index]?.status || ''}
+                                            onChange={shiftReportFormik.handleChange}
+                                        >
+                                            <MenuItem value="Đã sửa xong">Đã sửa xong</MenuItem>
+                                            <MenuItem value="Chưa sửa xong">Chưa sửa xong</MenuItem>
+                                        </TextField>
+                                        {shiftReportHistories
+                                            .filter((h: any) => h.changes.some((c: any) => c.field === 'status'))
+                                            .map((h: any, i: number) => {
+                                                const changesText = h.changes
+                                                    .filter((c: any) => c.field === 'status' && c.index === index)
+                                                    .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
+                                                    .join(', ');
+                                                return (
+                                                    <Typography key={i} variant="caption" color="secondary" display="block">
+                                                        Nội dung: Trạng thái sửa chữa: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
+                                                        {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
+                                                    </Typography>
+                                                );
+                                            })}
+                                    </Grid>
+                                </Grid>
+
+                                {shiftReportFormik.values.vehicleRepair[index]?.status === 'Chưa sửa xong' && (
+                                    <Grid container spacing={2} mb={2} key={`${index}-reason`}>
+                                        <Grid item xs={3}>
+                                            <Typography>Tình trạng sửa chữa*:</Typography>
+                                        </Grid>
+                                        <Grid item xs={9}>
+                                            <TextField
+                                                fullWidth
+                                                multiline
+                                                rows={2}
+                                                name={`vehicleRepair[${index}].noteRepair`}
+                                                value={shiftReportFormik.values.vehicleRepair[index]?.noteRepair || ''}
+                                                onChange={shiftReportFormik.handleChange}
+                                            />
+                                            {shiftReportHistories
+                                                .filter((h: any) => h.changes.some((c: any) => c.field === 'noteRepair'))
+                                                .map((h: any, i: number) => {
+                                                    const changesText = h.changes
+                                                        .filter((c: any) => c.field === 'noteRepair' && c.index === index)
+                                                        .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
+                                                        .join(', ');
+                                                    return (
+                                                        <Typography key={i} variant="caption" color="secondary" display="block">
+                                                            Nội dung: Tình trạng sửa chữa: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
+                                                            {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
+                                                        </Typography>
+                                                    );
+                                                })}
+                                        </Grid>
+                                    </Grid>
+                                )}
+
+                            </Box>
+                        ))}
+                    </Box>}
 
                 <Typography variant="h5">Khác:</Typography>
                 <Box>

@@ -5,6 +5,7 @@ import 'package:soft/screens/work_log/views/Camera/camera.dart';
 import 'package:soft/screens/work_log/views/QrCode/qr_code.dart';
 import 'package:soft/screens/work_log/views/ReportTask/DirectWork/direct_work_report.dart';
 import 'package:soft/screens/work_log/views/ReportTask/IndirectWork/indirect_work_report.dart';
+import 'package:soft/screens/work_log/views/ReportTask/MaintenceWork/maintence_work_report.dart';
 import 'package:soft/screens/work_log/views/TripList/Dozer/dozer_input_quantity.dart';
 import 'package:soft/screens/work_log/views/TripList/Dozer/dozer_product_list.dart';
 import 'package:soft/screens/work_log/views/TripList/Dozer/dozer_select_product.dart';
@@ -180,14 +181,19 @@ class WorkLogRoute extends StatelessWidget {
           case WorkLogRoutes.directWorkReport:
             final order = settings.arguments as OrderModel;
             return MaterialPageRoute(
-              builder:
-                  (_) => DirectWorkeport(order: order),
+              builder: (_) => DirectWorkeport(order: order),
             );
           case WorkLogRoutes.indirectWorkReport:
             final order = settings.arguments as OrderModel;
             return MaterialPageRoute(
               builder:
                   (_) => IndirectWorkReport(order: order),
+            );
+          case WorkLogRoutes.maintencetWorkReport:
+            final order = settings.arguments as OrderModel;
+            return MaterialPageRoute(
+              builder:
+                  (_) => MaintenceWorkReport(order: order),
             );
           default:
             return MaterialPageRoute(
@@ -268,4 +274,6 @@ class WorkLogRoutes {
       '/directWorkReport';
   static const String indirectWorkReport =
       '/indirectWorkReport';
+  static const String maintencetWorkReport =
+      '/maintencetWorkReport';
 }

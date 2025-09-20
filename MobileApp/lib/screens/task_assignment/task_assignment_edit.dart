@@ -5,6 +5,7 @@ import 'package:soft/models/task_model.dart';
 import 'package:soft/providers/user_provider.dart';
 import 'package:soft/screens/task_assignment/dispatcher/dispatcher_assignment_edit.dart';
 import 'package:soft/screens/task_assignment/task_assignment_type_edit/task_assignment_common_edit.dart';
+import 'package:soft/screens/task_assignment/task_assignment_type_edit/task_assignment_maintence_edit.dart';
 import 'package:soft/screens/task_assignment/task_assignment_type_edit/task_assignment_other_edit.dart';
 import 'package:soft/screens/task_assignment/task_assignment_type_edit/task_assignment_vehicle_edit.dart';
 
@@ -38,6 +39,11 @@ class _TaskAssignmentEdit
       case 'Vận hành gạt':
       case 'Vận hành xe phục vụ':
         return TaskAssignmentCommonEdit(
+          data: widget.data,
+          order: widget.order,
+        );
+      case 'Sửa chữa, bảo dưỡng':
+        return TaskAssignmentMaintenceEdit(
           data: widget.data,
           order: widget.order,
         );

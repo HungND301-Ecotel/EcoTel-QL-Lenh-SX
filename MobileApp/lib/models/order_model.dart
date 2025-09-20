@@ -6,6 +6,41 @@ import 'package:soft/models/shift_report_model.dart';
 import 'package:soft/models/task_model.dart';
 import 'package:soft/models/user_model.dart';
 
+class Device {
+  final String id;
+  final String code;
+
+  Device({required this.code, required this.id});
+
+  factory Device.fromJson(Map<String, dynamic>? json) {
+    return Device(
+      id: json?['_id'] ?? '',
+      code: json?['code'] ?? '',
+    );
+  }
+  Map<String, dynamic> toJson() {
+    return {'id': id, 'code': code};
+  }
+}
+
+class RepairVehicles {
+  Device? device;
+  String? note;
+
+  RepairVehicles({this.device, this.note});
+
+  factory RepairVehicles.fromJson(
+    Map<String, dynamic>? json,
+  ) {
+    return RepairVehicles(
+      device: Device.fromJson(json?['device']),
+      note: json?['note'] ?? '',
+    );
+  }
+  Map<String, dynamic> toJson() {
+    return {'device': device?.toJson(), 'note': note};
+  }
+}
 
 class OrderModel {
   final String id;
@@ -17,6 +52,7 @@ class OrderModel {
   DateTime? startTime;
   DateTime? endTime;
   DateTime? resumeTime;
+  List<RepairVehicles>? repairVehicles;
   final UserModel? createdBy;
   final List<DeviceModel>? device;
   final List<DeviceModel>? excavator;
@@ -43,6 +79,7 @@ class OrderModel {
     this.resumeTime,
     this.createdBy,
     this.device,
+    this.repairVehicles,
     this.excavator,
     this.location,
     this.material,
@@ -86,6 +123,11 @@ class OrderModel {
       device:
           (json?['device'] as List?)
               ?.map((e) => DeviceModel.fromJson(e))
+              .toList() ??
+          [],
+      repairVehicles:
+          (json?['repairVehicles'] as List?)
+              ?.map((e) => RepairVehicles.fromJson(e))
               .toList() ??
           [],
       excavator:
@@ -160,6 +202,8 @@ class OrderModel {
       'resumeTime': resumeTime?.toIso8601String(),
       'createdBy': createdBy?.toJson(),
       'device': device?.map((e) => e.toJson()).toList(),
+      'repairVehicles':
+          repairVehicles?.map((e) => e.toJson()).toList(),
       'excavator':
           excavator?.map((e) => e.toJson()).toList(),
       'location': location?.map((e) => e.toJson()).toList(),

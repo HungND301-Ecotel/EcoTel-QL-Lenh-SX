@@ -970,10 +970,10 @@ const Orders: React.FC = () => {
                                 </Grid>
                                 {[JobTypeEnum.EXCAVATOR, JobTypeEnum.DRILL, JobTypeEnum.DOZER, JobTypeEnum.VEHICLE, JobTypeEnum.MAINTENANCE].includes(selectedRow.job?.type) && <Grid container spacing={2}>
                                     {/* Người nhận lệnh */}
-                                    <Grid item xs={12} sm={3}>
+                                    <Grid item xs={12} sm={4}>
                                         <Typography fontWeight="bold">{selectedRow.job?.type === JobTypeEnum.VEHICLE ? 'Lái xe bổ túc' : selectedRow.job?.type === JobTypeEnum.MAINTENANCE ? 'Phụ sửa chữa' : 'Phụ máy'}:</Typography>
                                     </Grid>
-                                    <Grid item xs={12} sm={9}>
+                                    <Grid item xs={12} sm={8}>
                                         {selectedRow.assistants.map((i: any) => (
                                             <Typography>{i?.fullName || ''} {i?.salaryCode || ''}</Typography>
                                         ))}
@@ -981,6 +981,21 @@ const Orders: React.FC = () => {
                                 </Grid>}
                                 <Typography><strong>Công việc:</strong> {selectedRow.job?.name}</Typography>
                                 {selectedRow.device?.length > 0 && <Typography><strong>Thiết bị vận hành:</strong> {selectedRow.device?.map((dev: any) => dev.code).join(', ')}</Typography>}
+                                {[JobTypeEnum.MAINTENANCE].includes(selectedRow.job?.type) &&
+                                    <Box>
+                                        <Typography><strong>Thiết bị sửa chữa:</strong></Typography>
+                                        {selectedRow?.repairVehicles.map((v: any) => (
+                                            <Grid container spacing={2}>
+                                                <Grid item xs={12} sm={3}>
+                                                    <Typography fontWeight="bold">+ {v?.device?.code}</Typography>
+                                                </Grid>
+                                                <Grid item xs={12} sm={9}>
+                                                    <Typography>{v?.note || ''}</Typography>
+                                                </Grid>
+                                            </Grid>
+                                        ))}
+                                    </Box>
+                                }
                                 {selectedRow.excavator?.length > 0 && <Typography><strong>Máy xúc:</strong> {selectedRow.excavator?.map((dev: any) => dev.code).join(', ')}</Typography>}
                                 {selectedRow.material?.length > 0 && <Typography><strong>Vật liệu:</strong> {selectedRow.material?.map((dev: any) => dev.name).join(', ')}</Typography>}
                                 {selectedRow.location?.length > 0 && <Typography><strong>Điểm đổ:</strong> {selectedRow.location?.map((dev: any) => dev.name).join(', ')}</Typography>}

@@ -37,9 +37,16 @@ const STATUS_DEVICE = {
 };
 const STATUS_DEVICES = Object.values(STATUS_DEVICE);
 
+const STATUS_REPAIR = {
+    INPROGRESS: 'Chưa sửa xong',
+    COMPLETED: 'Đã sửa xong',
+};
+const STATUS_REPAIRS = Object.values(STATUS_REPAIR);
+
 module.exports = {
     JOB_TYPE, JOB_TYPES,
     STATUS_ORDER, STATUS_ORDERS,
     ROLE, ROLES,
-    STATUS_DEVICE, STATUS_DEVICES
+    STATUS_DEVICE, STATUS_DEVICES,
+    STATUS_REPAIR, STATUS_REPAIRS
 };
