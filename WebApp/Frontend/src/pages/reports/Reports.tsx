@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     AppBar,
     Toolbar,
@@ -150,6 +150,11 @@ function Reports() {
 
     const config = reportsMap[title as keyof typeof reportsMap];
     const PreviewComponent = config?.PreviewComponent;
+
+    useEffect(() => {
+        setPreview(false)
+        setData([])
+    }, [title, department, shift, startDate, endDate])
 
 
     const reportView = useMutation({

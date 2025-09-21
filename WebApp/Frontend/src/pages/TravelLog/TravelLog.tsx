@@ -267,15 +267,15 @@ const TravelLogs: React.FC = () => {
             if (selectedTravelLog) {
                 updateMutation.mutate({
                     ...values,
-                    startTime: dayjs.utc(dayjs(values.startTime).format('YYYY-MM-DD')).toDate(),
-                    endTime: dayjs.utc(dayjs(values.endTime).format('YYYY-MM-DD')).toDate(),
+                    startTime: dayjs(values.startTime).utc().toDate(),
+                    endTime: dayjs(values.endTime).utc().toDate(),
                     _id: selectedTravelLog._id
                 });
             } else {
                 createMutation.mutate({
                     ...values,
-                    startTime: dayjs.utc(dayjs(values.startTime).format('YYYY-MM-DD HH:mm')).toDate(),
-                    endTime: dayjs.utc(dayjs(values.endTime).format('YYYY-MM-DD HH:mm')).toDate(),
+                    startTime: dayjs(values.startTime).utc().toDate(),
+                    endTime: dayjs(values.endTime).utc().toDate(),
                 });
             }
         },
@@ -291,6 +291,8 @@ const TravelLogs: React.FC = () => {
                 location: travellog.location !== null && typeof travellog.location === 'object'
                     ? travellog.location._id
                     : travellog.location || '',
+                startTime: travellog.startTime ? dayjs(travellog.startTime).local().toDate() : null,
+                endTime: travellog.endTime ? dayjs(travellog.endTime).local().toDate() : null,
             });
             formik.setValues({
                 ...travellog,
@@ -300,6 +302,8 @@ const TravelLogs: React.FC = () => {
                 location: travellog.location !== null && typeof travellog.location === 'object'
                     ? travellog.location._id
                     : travellog.location || '',
+                startTime: travellog.startTime ? dayjs(travellog.startTime).local().toDate() : null,
+                endTime: travellog.endTime ? dayjs(travellog.endTime).local().toDate() : null,
             });
         } else {
             setSelectedTravelLog(null);
@@ -363,15 +367,11 @@ const TravelLogs: React.FC = () => {
         },
         {
             title: 'Bắt đầu', dataIndex: 'startTime', key: 'startTime', align: 'center',
-            render: (text, record) => record.startTime
-                ? dayjs.utc(record.startTime).format('DD-MM-YYYY HH:mm') // giữ nguyên UTC
-                : ''
+            render: (text, record) => record.startTime ? dayjs(record.startTime).local().format('DD-MM-YYYY HH:mm') : ''
         },
         {
             title: 'Kết thúc', dataIndex: 'endTime', key: 'endTime', align: 'center',
-            render: (text, record) => record.endTime
-                ? dayjs.utc(record.endTime).format('DD-MM-YYYY HH:mm') // giữ nguyên UTC
-                : ''
+            render: (text, record) => record.endTime ? dayjs(record.endTime).local().format('DD-MM-YYYY HH:mm') : ''
         },
         {
             title: 'Ghi chú', dataIndex: 'note', key: 'note', align: 'center', width: 300,

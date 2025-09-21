@@ -1,3 +1,4 @@
+const TravelLog = require('../models/TravelLog')
 // Ưu tiên fromLocation, nếu không có thì dùng excavator làm "điểm nhận tải"
 const pickFrom = (r) => r?.fromLocation || r?.excavator || null;
 
@@ -121,6 +122,57 @@ function groupTripsExcavator(trips) {
 
     return Object.values(groups);
 }
+async function groupTripsCar(trips) {
+    const groups = {};
+
+    for (const t of trips) {
+        const key = `${t.excavator}-${t.toLocation}`;
+        if (!groups[key]) {
+            groups[key] = {
+                excavator: t.excavator,
+                toLocation: t.toLocation,
+                trips: [],
+                summary: {},
+                totalTrips: 0,
+                totalDistance: 0
+            };
+        }
+        const times = Array.isArray(t.quantityUpdateTimes)
+            ? t.quantityUpdateTimes
+            : [t.quantityUpdateTimes];
+        for (const time of times) {
+            const travelLog = await TravelLog.findOne({
+                excavator: t.excavator,        // lọc theo máy xúc
+                location: t.toLocation,       // lọc theo điểm đổ tải
+                startTime: { $lte: time },    // bắt đầu <= time
+                endTime: { $gte: time }       // kết thúc >= time
+            }).lean();
+
+            const distance = travelLog ? travelLog.distance : 0
+            groups[key].trips.push({
+                material: t.material,
+                time,
+                distance
+            });
+            if (!groups[key].summary[t.material.name]) {
+                groups[key].summary[t.material.name] = { count: 0, distance: 0 }
+            }
+            groups[key].summary[t.material.name].count += 1;
+            groups[key].summary[t.material.name].distance += distance;
+
+
+            groups[key].totalTrips += 1;
+            groups[key].totalDistance += distance;
+        }
+
+    };
+
+    Object.values(groups).forEach((g) => {
+        g.trips.sort((a, b) => new Date(a.time) - new Date(b.time));
+    });
+
+    return Object.values(groups);
+}
 function getCombinedUsers(order) {
     const combined = [];
 
@@ -149,5 +201,6 @@ module.exports = {
     groupReportsForProduct,
     groupTripsVehicle,
     getCombinedUsers,
-    groupTripsExcavator
+    groupTripsExcavator,
+    groupTripsCar
 };
