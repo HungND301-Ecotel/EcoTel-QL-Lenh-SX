@@ -85,10 +85,69 @@ function groupTripsVehicle(trips) {
 
     return Object.values(groups);
 }
+function groupTripsExcavator(trips) {
+    const groups = {};
+
+    trips.forEach(t => {
+        const key = `${t.device}`;
+        if (!groups[key]) {
+            groups[key] = {
+                device: t.device,
+                trips: [],
+                summary: {},
+                totalTrips: 0
+            };
+        }
+        const times = Array.isArray(t.quantityUpdateTimes)
+            ? t.quantityUpdateTimes
+            : [t.quantityUpdateTimes];
+        times.forEach((time) => {
+            groups[key].trips.push({
+                material: t.material,
+                time: time
+            });
+        });
+        if (!groups[key].summary[t.material.name]) {
+            groups[key].summary[t.material.name] = 0;
+        }
+        groups[key].summary[t.material.name] += times.length;
+
+        groups[key].totalTrips += times.length;
+    });
+
+    Object.values(groups).forEach((g) => {
+        g.trips.sort((a, b) => new Date(a.time) - new Date(b.time));
+    });
+
+    return Object.values(groups);
+}
+function getCombinedUsers(order) {
+    const combined = [];
+
+    if (order.assignedTo) {
+        combined.push({
+            fullName: order.assignedTo.fullName,
+            salaryCode: order.assignedTo.salaryCode,
+        });
+    }
+
+    if (order.assistants && order.assistants.length > 0) {
+        order.assistants.forEach((ast) => {
+            combined.push({
+                fullName: `- ${ast.fullName}`,
+                salaryCode: ast.salaryCode,
+            });
+        });
+    }
+
+    return combined;
+}
 
 
 module.exports = {
     groupReportsByExcavator,
     groupReportsForProduct,
-    groupTripsVehicle
+    groupTripsVehicle,
+    getCombinedUsers,
+    groupTripsExcavator
 };

@@ -47,6 +47,8 @@ function Reports() {
     const [department, setDepartment] = useState<string>('');
     const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
     const [data, setData] = useState<any[]>([]);
+    const [maxTrip, setMaxTrip] = useState(1);
+    const [materials, setMaterials] = useState<any[]>([]);
     const [preview, setPreview] = useState(false);
     const [user] = useAtom(userAtom)
 
@@ -164,6 +166,8 @@ function Reports() {
                 department
             }).then(res => {
                 setData(res.data.data);
+                setMaxTrip(res.data.maxTrips)
+                setMaterials(res.data.materials)
             });
         },
         onSuccess: () => { },
@@ -349,7 +353,7 @@ function Reports() {
                         </Button>
                     </Grid>
                     <Grid item xs={12}>
-                        {preview && PreviewComponent ? <PreviewComponent data={data} signatureUrl={signatureUrl} /> : null}
+                        {preview && PreviewComponent ? <PreviewComponent data={data} signatureUrl={signatureUrl} maxTrip={maxTrip} materials={materials} /> : null}
                         {signatureUrl && !preview && (
                             <Box mt={2} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                                 <img src={signatureUrl} alt="Chữ ký" style={{ maxWidth: 200, maxHeight: 100 }} />
