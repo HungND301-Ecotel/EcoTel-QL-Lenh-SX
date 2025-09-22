@@ -11,7 +11,7 @@ const Department = require('../models/Department');
 
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 const mongoose = require('mongoose');
-const { groupReportsByExcavator, groupReportsForProduct, groupTripsVehicle, getCombinedUsers, groupTripsExcavator, groupTripsCar } = require('../utils/reportGrouping');
+const { groupReportsByExcavator, groupReportsForProduct, groupTripsVehicle, getCombinedUsers, groupTripsExcavator, groupTripsCar, groupExcavator } = require('../utils/reportGrouping');
 const { ROLE, STATUS_ORDER, JOB_TYPE } = require('../config/config');
 // lệnh sx
 router.post('/order/bulk', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
@@ -289,8 +289,13 @@ async function buildVehicle(order, workbook) {
             worksheet.getCell(`D${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
             worksheet.getCell(`E${rowIndexTrip}`).value = m?.quantity || '';
             worksheet.getCell(`E${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-            worksheet.getCell(`F${rowIndexTrip}`).value = (m.times || []).map(item => item.toLocaleTimeString('vi-VN')).join('\n');
+            const timesText = (m.times || [])
+                .map(item => item.toLocaleTimeString('vi-VN'))
+                .join('\n');
+
+            worksheet.getCell(`F${rowIndexTrip}`).value = timesText
             worksheet.getCell(`F${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            setAutoRowHeight(worksheet.getRow(rowIndexTrip), timesText);
             worksheet.getCell(`G${rowIndexTrip}`).value = "";
             worksheet.getCell(`G${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
             worksheet.getCell(`H${rowIndexTrip}`).value = '';
@@ -301,9 +306,9 @@ async function buildVehicle(order, workbook) {
             rowIndexTrip++;
         })
         if (rowIndexTrip - 1 > startRowTrip) {
-            ['A', 'B', 'C'].forEach(col => {
+            ['A', 'B'].forEach(col => {
                 worksheet.mergeCells(`${col}${startRowTrip}:${col}${rowIndexTrip - 1}`);
-                worksheet.getCell(`${col}${startRowTrip}`).alignment = { vertical: 'middle', horizontal: 'center' };
+                worksheet.getCell(`${col}${startRowTrip}`).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
             });
         }
     })
@@ -635,27 +640,43 @@ async function buildExcavator(order, workbook) {
         };
     }
 
+    const grouped = groupExcavator(reports)
+
     let rowIndexTrip = rowHeader1 + 2;
-    const data = reports.length > 0 ? reports : [{}];
-    data.forEach((report, i) => {
-        worksheet.getCell(`A${rowIndexTrip}`).value = i + 1;
-        worksheet.getCell(`A${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-        worksheet.getCell(`B${rowIndexTrip}`).value = report.device?.code || '';
-        worksheet.getCell(`B${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-        worksheet.getCell(`C${rowIndexTrip}`).value = report.material?.name || '';
-        worksheet.getCell(`C${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-        worksheet.getCell(`D${rowIndexTrip}`).value = report.quantity || '';
-        worksheet.getCell(`D${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-        worksheet.mergeCells(`E${rowIndexTrip}:F${rowIndexTrip}`)
-        worksheet.getCell(`E${rowIndexTrip}`).value = (report.quantityUpdateTimes || []).map(item => item.toLocaleTimeString('vi-VN')).join('\n') || '';
-        worksheet.getCell(`E${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-        worksheet.getCell(`G${rowIndexTrip}`).value = "";
-        worksheet.getCell(`G${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-        worksheet.getCell(`H${rowIndexTrip}`).value = '';
-        worksheet.getCell(`I${rowIndexTrip}`).value = "";
-        worksheet.getCell(`J${rowIndexTrip}`).value = "";
-        worksheet.getCell(`K${rowIndexTrip}`).value = "";
-        rowIndexTrip++
+    grouped.forEach((g, i) => {
+        const startRowTrip = rowIndexTrip;
+        g.materials.forEach(m => {
+            worksheet.getCell(`A${rowIndexTrip}`).value = i + 1;
+            worksheet.getCell(`A${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            worksheet.getCell(`B${rowIndexTrip}`).value = g.device?.code || '';
+            worksheet.getCell(`B${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            worksheet.getCell(`C${rowIndexTrip}`).value = m.material?.name || '';
+            worksheet.getCell(`C${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            worksheet.getCell(`D${rowIndexTrip}`).value = m.quantity || '';
+            worksheet.getCell(`D${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            worksheet.mergeCells(`E${rowIndexTrip}:F${rowIndexTrip}`)
+            const timesText = (m.times || [])
+                .map(item => item.toLocaleTimeString('vi-VN'))
+                .join('\n');
+
+            worksheet.getCell(`E${rowIndexTrip}`).value = timesText;
+            worksheet.getCell(`E${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            setAutoRowHeight(worksheet.getRow(rowIndexTrip), timesText);
+            worksheet.getCell(`G${rowIndexTrip}`).value = "";
+            worksheet.getCell(`G${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            worksheet.getCell(`H${rowIndexTrip}`).value = '';
+            worksheet.getCell(`I${rowIndexTrip}`).value = "";
+            worksheet.getCell(`J${rowIndexTrip}`).value = "";
+            worksheet.getCell(`K${rowIndexTrip}`).value = "";
+            rowIndexTrip++
+
+            if (rowIndexTrip - 1 > startRowTrip) {
+                ['A', 'B'].forEach(col => {
+                    worksheet.mergeCells(`${col}${startRowTrip}:${col}${rowIndexTrip - 1}`);
+                    worksheet.getCell(`${col}${startRowTrip}`).alignment = { vertical: 'middle', horizontal: 'center' };
+                });
+            }
+        })
     })
     const totalRow = rowIndexTrip;
 
@@ -3407,7 +3428,8 @@ router.post('/excavatorTripReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.A
                         row.eachCell((cell, cellNumber) => {
                             cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
                         });
-                        row.getCell(2).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+                        row.getCell(2).alignment = { horizontal: 'left', vertical: 'top', wrapText: true };
+                        row.getCell(3).alignment = { horizontal: 'center', vertical: 'top', wrapText: true };
 
                         currentRow++;
                     });
@@ -5093,5 +5115,10 @@ function getColumnLetter(col) {
         col = Math.floor((col - 1) / 26);
     }
     return letter;
+}
+function setAutoRowHeight(row, text, lineHeight = 25) {
+    if (!text) return;
+    const lines = text.split('\n').length;
+    row.height = lines * lineHeight;
 }
 module.exports = router; 

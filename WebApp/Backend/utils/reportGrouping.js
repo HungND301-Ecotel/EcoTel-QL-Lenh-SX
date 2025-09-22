@@ -86,6 +86,27 @@ function groupTripsVehicle(trips) {
 
     return Object.values(groups);
 }
+
+function groupExcavator(trips) {
+    const groups = {};
+
+    trips.forEach(t => {
+        const key = `${t.device}`;
+        if (!groups[key]) {
+            groups[key] = {
+                device: t.device,
+                materials: []
+            };
+        }
+        groups[key].materials.push({
+            material: t.material,
+            quantity: t.quantity,
+            times: t.quantityUpdateTimes
+        });
+    });
+
+    return Object.values(groups);
+}
 function groupTripsExcavator(trips) {
     const groups = {};
 
@@ -202,5 +223,6 @@ module.exports = {
     groupTripsVehicle,
     getCombinedUsers,
     groupTripsExcavator,
-    groupTripsCar
+    groupTripsCar,
+    groupExcavator
 };

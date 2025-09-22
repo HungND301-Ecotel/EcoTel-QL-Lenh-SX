@@ -148,13 +148,8 @@ function Reports() {
 
     };
 
-    const config = reportsMap[title as keyof typeof reportsMap];
+    const config = title ? reportsMap[title as keyof typeof reportsMap] : undefined;
     const PreviewComponent = config?.PreviewComponent;
-
-    useEffect(() => {
-        setPreview(false)
-        setData([])
-    }, [title, department, shift, startDate, endDate])
 
 
     const reportView = useMutation({
@@ -253,7 +248,11 @@ function Reports() {
                             SelectProps={{
                                 displayEmpty: true,
                             }}
-                            onChange={(e) => setTitle(e.target.value)}>
+                            onChange={(e) => {
+                                setTitle(e.target.value);
+                                setPreview(false);
+                                setData([]);
+                            }}>
                             {reportNames.map((report) => (
                                 <MenuItem key={report.name} value={report.name}>
                                     {report.name}

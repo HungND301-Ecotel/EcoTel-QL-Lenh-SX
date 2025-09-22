@@ -17,7 +17,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
             <Header />
             {/* Nội dung chính */}
-            <Box sx={{ flex: 1, mt: 8, p: 3 }}>
+            <Box sx={{ flex: 1, mt: 24, p: 3 }}>
                 {children || <Outlet />}
             </Box>
         </Box >
