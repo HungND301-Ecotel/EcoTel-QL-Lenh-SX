@@ -143,6 +143,8 @@ function groupTripsExcavator(trips) {
 
     return Object.values(groups);
 }
+
+// nhóm báo chuyến ô tô
 async function groupTripsCar(trips) {
     const groups = {};
 
@@ -194,6 +196,8 @@ async function groupTripsCar(trips) {
 
     return Object.values(groups);
 }
+
+// nhóm người nhận, phụ máy
 function getCombinedUsers(order) {
     const combined = [];
 
@@ -215,6 +219,8 @@ function getCombinedUsers(order) {
 
     return combined;
 }
+
+// nhóm theo máy gạt
 function groupDozer(trips) {
     const groups = {};
 
@@ -234,6 +240,27 @@ function groupDozer(trips) {
 
     return Object.values(groups);
 }
+// nhóm theo máy khoan
+function groupDrill(trips) {
+    const groups = {};
+
+    trips.forEach(t => {
+        const key = `${t.device}`;
+        if (!groups[key]) {
+            groups[key] = {
+                device: t.device,
+                materials: []
+            };
+        }
+        groups[key].materials.push({
+            material: t.material,
+            drillDepth: t.drillDepth,
+            hardnessF: t.hardnessF
+        });
+    });
+
+    return Object.values(groups);
+}
 
 
 module.exports = {
@@ -244,5 +271,6 @@ module.exports = {
     groupTripsExcavator,
     groupTripsCar,
     groupExcavator,
-    groupDozer
+    groupDozer,
+    groupDrill
 };

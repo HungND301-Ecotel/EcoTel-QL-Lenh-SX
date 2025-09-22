@@ -36,6 +36,7 @@ import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import ExcavatorReport from './ExcavatorReport';
 import DozerReport from './DozerReport';
+import DrillReport from './DrillReport';
 
 
 function Reports() {
@@ -90,7 +91,7 @@ function Reports() {
         // { name: 'Phiếu bồi dưỡng hiện vật', },
         // { name: 'Phiếu lĩnh dầu', },
         { name: 'Tổng hợp số liệu trong ca (Máy gạt)', },
-        // { name: 'Tổng hợp số liệu trong ca (Khoan)', },
+        { name: 'Tổng hợp số liệu trong ca (Máy khoan)', },
         { name: 'Tổng hợp số liệu trong ca (Máy xúc)', },
         { name: 'Tổng hợp số liệu trong ca (Ô tô)', },
         { name: 'Theo dõi sản lượng, nhiên liệu, dầu mỡ' }
@@ -140,6 +141,11 @@ function Reports() {
             viewUrl: '/exports/dozerReport/view',
             exportUrl: '/exports/dozerReport',
             PreviewComponent: DozerReport,
+        },
+        'Tổng hợp số liệu trong ca (Máy khoan)': {
+            viewUrl: '/exports/drillReport/view',
+            exportUrl: '/exports/drillReport',
+            PreviewComponent: DrillReport,
         },
         'Tổng hợp số liệu trong ca (Ô tô)': {
             viewUrl: '/exports/carReport/view',
