@@ -11,7 +11,7 @@ const Department = require('../models/Department');
 
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 const mongoose = require('mongoose');
-const { groupReportsByExcavator, groupReportsForProduct, groupTripsVehicle, getCombinedUsers, groupTripsExcavator, groupTripsCar, groupExcavator } = require('../utils/reportGrouping');
+const { groupReportsByExcavator, groupReportsForProduct, groupTripsVehicle, getCombinedUsers, groupTripsExcavator, groupTripsCar, groupExcavator, groupDozer } = require('../utils/reportGrouping');
 const { ROLE, STATUS_ORDER, JOB_TYPE } = require('../config/config');
 // lệnh sx
 router.post('/order/bulk', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
@@ -3054,6 +3054,449 @@ router.post('/excavatorReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
+// báo tổng hợp máy gạt
+router.post('/dozerReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
+    try {
+        const { shift, startDate, endDate, department } = req.body
+        const user = req.user
+        let query = {}
+        if (user?.role === ROLE.ADMIN) {
+            query.department = new mongoose.Types.ObjectId(department)
+        } else {
+            query.department = new mongoose.Types.ObjectId(user.department?._id)
+        }
+        if (Array.isArray(shift) && shift.length > 0) {
+            query.shift = { $in: shift };
+        }
+
+        if (startDate && endDate) {
+            query.workingDate = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate),
+            };
+        }
+        const orders = await Order.find(query)
+            .populate({
+                path: "shiftReport",
+                populate: [
+                    {
+                        path: "vehicleSummaries.vehicle",
+                        select: "code"
+                    },
+                ]
+            })
+            .populate({
+                path: "assignedTo",
+                select: "fullName salaryCode department",
+                populate: {
+                    path: 'department',
+                    select: 'name'
+                }
+            })
+            .populate({
+                path: "assistants",
+                select: "fullName salaryCode",
+            })
+            .populate('createdBy', 'fullName salaryCode')
+            .populate({
+                path: 'device',
+                select: 'code category',
+                populate: [{ path: 'category', select: 'name' }]
+            })
+            .populate({
+                path: 'job',
+                select: 'type',
+            })
+        const filteredOrders = orders.filter(order =>
+            order.device?.some(d =>
+                d.category?.name?.toLowerCase().includes("máy gạt")
+            ) &&
+            order.job?.type === JOB_TYPE.VAN_HANH_GAT
+        );
+
+        let result = []
+        for (const order of filteredOrders) {
+            const combined = getCombinedUsers(order);
+
+            let reports = await Report.find({ orderId: order._id })
+                .populate({
+                    path: 'device',
+                    select: 'code category',
+                    populate: {
+                        path: 'category',
+                        select: 'name'
+                    }
+                })
+                .populate('material', 'name')
+            if (!reports.length) continue;
+
+            const grouped = groupDozer(reports)
+
+            result.push({
+                _id: order._id,
+                assignedTo: combined,
+                reports: grouped.map(g => ({
+                    code: g.device?.code || '',
+                    materials: g.materials || [],
+                    fuelRemain: order?.shiftReport?.vehicleSummaries.find(i => i.vehicle?._id.toString() === g.device?._id.toString())?.fuelRemain || '',
+                    fuelReceived: order?.shiftReport?.vehicleSummaries.find(i => i.vehicle?._id.toString() === g.device?._id.toString())?.fuelReceived || '',
+                    fuelRemainEnd: order?.shiftReport?.vehicleSummaries.find(i => i.vehicle?._id.toString() === g.device?._id.toString())?.fuelRemainEnd || '',
+                    travelHours: order?.shiftReport?.vehicleSummaries.find(i => i.vehicle?._id.toString() === g.device?._id.toString())?.travelHours || '',
+                }))
+            });
+        }
+
+        res.status(200).send({ status: 'success', data: result })
+    } catch (err) {
+        req.logger.error("❌ Lỗi khi load", err);
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+})
+router.post('/dozerReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
+    try {
+        const { shift, startDate, endDate, title, signature, department } = req.body
+        const user = req.user
+        const shiftList = await Shift.find({ _id: { $in: shift } });
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        let dep;
+        if (department) {
+            dep = await Department.findById(department).select('code')
+        } else {
+            dep = user?.department
+        }
+
+        // Đảm bảo end không nhỏ hơn start
+        if (end < start) return res.status(400).json({ message: "Ngày kết thúc phải sau ngày bắt đầu" });
+
+        const workbook = new ExcelJS.Workbook();
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            for (const ca of shiftList) {
+                const orders = await Order.find({
+                    workingDate: d,
+                    shift: ca._id,
+                    department: new mongoose.Types.ObjectId(dep?._id)
+                })
+                    .populate({
+                        path: "shiftReport",
+                        populate: [
+                            {
+                                path: "vehicleSummaries.vehicle",
+                                select: "code"
+                            },
+                        ]
+                    })
+                    .populate({
+                        path: "assignedTo",
+                        select: "fullName salaryCode department",
+                        populate: {
+                            path: 'department',
+                            select: 'name'
+                        }
+                    })
+                    .populate({
+                        path: "assistants",
+                        select: "fullName salaryCode",
+                    })
+                    .populate('createdBy', 'fullName salaryCode')
+                    .populate({
+                        path: 'device',
+                        select: 'code category',
+                        populate: [{ path: 'category', select: 'name' }]
+                    })
+                    .populate({
+                        path: 'job',
+                        select: 'type',
+                    })
+                const filteredOrders = orders.filter(order =>
+                    order.device?.some(d =>
+                        d.category?.name?.toLowerCase().includes("máy gạt")
+                    ) &&
+                    order.job?.type === JOB_TYPE.VAN_HANH_GAT
+                );
+
+
+                const sheetName = `${formatDate(d)}_${ca.name}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
+
+                const worksheet = workbook.addWorksheet(sheetName);
+
+                worksheet.mergeCells(`B1:S1`);
+                const infoRow = worksheet.getCell('B1');
+                infoRow.value = "CÔNG TY CỔ PHẦN THAN CAO SƠN-TKV";
+                infoRow.font = { italic: true, size: 18 };
+                // Tiêu đề bảng
+                worksheet.mergeCells(`A3:S3`);
+                const header = worksheet.getCell('A3');
+                header.value = 'BÁO CÁO TỔNG HỢP SỐ LIỆU TRONG CA (MÁY GẠT)';
+                header.font = { bold: true, size: 16 };
+                header.alignment = { horizontal: 'center', vertical: 'middle' };
+
+                worksheet.getCell('B4').value = "Ngày";
+                worksheet.getCell('C4').value = formatDate(d);
+                worksheet.getCell('E4').value = "Ca";
+                worksheet.getCell('F4').value = ca?.name || '';
+
+                worksheet.getCell('B5').value = "Đơn vị";
+                worksheet.getCell('C5').value = dep?.code || '';
+                worksheet.getCell('E5').value = "Giờ hệ thống";
+                worksheet.getCell('F5').value = new Date().toLocaleTimeString('vi-VN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false,
+                });
+
+                worksheet.getCell('B6').value = "Người ra lệnh";
+                worksheet.mergeCells(`C6:D6`);
+                worksheet.getCell('C6').value = user?.fullName || '';
+                worksheet.getCell('E6').value = "Số thẻ";
+                worksheet.getCell('F6').value = user?.salaryCode || '';
+                worksheet.getCell('G6').value = "Chức vụ";
+                worksheet.getCell('H6').value = user?.position?.name || '';
+
+
+                // ==== HÀNG 1 ==== (STT, Người nhận lệnh, ... cố định 5-6 cột đầu)
+                setMergeCellHeader(worksheet, 'A8:A9', 'STT')
+                setMergeCellHeader(worksheet, 'B8:B9', "Người nhận lệnh")
+                setMergeCellHeader(worksheet, 'C8:C9', "Số thẻ")
+                setMergeCellHeader(worksheet, 'D8:D9', "Máy gạt")
+                setMergeCellHeader(worksheet, 'E8:E9', "Loại vật liệu")
+                setMergeCellHeader(worksheet, 'F8:G8', "Giờ sản phẩm (phút)")
+
+                // ==== HÀNG 2 ==== ( gio san pham)
+                setCellHeader(worksheet, 'F9', "Định mức")
+                setCellHeader(worksheet, 'G9', "Thực hiện")
+
+                // ==== HÀNG 1 ==== (Nhien lieu)
+                setMergeCellHeader(worksheet, 'H8:N8', "Nhiên liệu/Điện năng")
+
+                // ==== HÀNG 2 ==== ( Nhien lieu)
+                setCellHeader(worksheet, 'H9', "Tồn dầu")
+                setCellHeader(worksheet, 'I9', "Lĩnh")
+                setCellHeader(worksheet, 'J9', "Tồn cuối")
+                setCellHeader(worksheet, 'K9', "Tiêu thụ")
+                setCellHeader(worksheet, 'L9', "Định mức")
+                setCellHeader(worksheet, 'M9', "Tiết kiệm")
+                setCellHeader(worksheet, 'N9', "Vượt")
+
+                // ==== HÀNG 1 ==== (Su dung thiet bi)
+                setMergeCellHeader(worksheet, 'O8:Q8', "Sử dụng thiết bị (giờ)")
+
+                // ==== HÀNG 2 ==== ( Nhien lieu)
+                setCellHeader(worksheet, 'O9', "Giờ hoạt động")
+                setCellHeader(worksheet, 'P9', "Giờ ngừng")
+                setCellHeader(worksheet, 'Q9', "Giờ hoạt động lũy kế")
+
+                // ==== HÀNG 1 ==== 
+                setMergeCellHeader(worksheet, 'R8:R9', "Bồi dưỡng (đồng)")
+                setMergeCellHeader(worksheet, 'S8:S9', "Lương tạm tính")
+
+                let result = []
+                for (const order of filteredOrders) {
+                    const combined = getCombinedUsers(order);
+
+                    let reports = await Report.find({ orderId: order._id })
+                        .populate({
+                            path: 'device',
+                            select: 'code category',
+                            populate: {
+                                path: 'category',
+                                select: 'name'
+                            }
+                        })
+                        .populate('material', 'name')
+                    if (!reports.length) continue;
+
+                    const grouped = groupDozer(reports)
+
+                    result.push({
+                        _id: order._id,
+                        assignedTo: combined,
+                        reports: grouped.map(g => ({
+                            code: g.device?.code || '',
+                            materials: g.materials || [],
+                            fuelRemain: order?.shiftReport?.vehicleSummaries.find(i => i.vehicle?._id.toString() === g.device?._id.toString())?.fuelRemain || '',
+                            fuelReceived: order?.shiftReport?.vehicleSummaries.find(i => i.vehicle?._id.toString() === g.device?._id.toString())?.fuelReceived || '',
+                            fuelRemainEnd: order?.shiftReport?.vehicleSummaries.find(i => i.vehicle?._id.toString() === g.device?._id.toString())?.fuelRemainEnd || '',
+                            travelHours: order?.shiftReport?.vehicleSummaries.find(i => i.vehicle?._id.toString() === g.device?._id.toString())?.travelHours || '',
+                        }))
+                    });
+                }
+
+                let currentRow = 10;
+
+                result.forEach((item, idx) => {
+                    const reports = (item.reports && item.reports.length)
+                        ? item.reports
+                        : [{ code: '', materials: [{}] }];
+
+                    // tổng số dòng của người nhận lệnh = tổng số vật liệu trong tất cả reports
+                    const spanItem = reports.reduce((sum, r) => sum + (r.materials?.length || 1), 0);
+                    const startRowItem = currentRow;
+
+                    reports.forEach((r) => {
+                        const mats = r.materials?.length ? r.materials : [{}];
+                        const spanReport = mats.length;
+                        const startRowReport = currentRow;
+
+                        mats.forEach((m) => {
+                            const row = worksheet.getRow(currentRow);
+
+                            // chỉ gán STT / Người nhận lệnh / Số thẻ 1 lần (ở hàng đầu tiên của item)
+                            if (currentRow === startRowItem) {
+                                row.getCell(1).value = idx + 1;
+                                row.getCell(2).value = (item.assignedTo || []).map(u => u?.fullName).join('\n');
+                                row.getCell(3).value = (item.assignedTo || []).map(u => u?.salaryCode).join('\n');
+                            }
+
+                            // máy gạt (report code) – chỉ gán ở hàng đầu của report
+                            if (currentRow === startRowReport) {
+                                row.getCell(4).value = r.code || '';
+                            }
+
+                            // vật liệu
+                            row.getCell(5).value = m?.material?.name || '';
+                            row.getCell(7).value = m?.workingMinutes || '';
+
+                            if (currentRow === startRowReport) {
+                                row.getCell(8).value = r.fuelRemain || '';
+                                row.getCell(9).value = r.fuelReceived || '';
+                                row.getCell(10).value = r.fuelRemainEnd || '';
+                                row.getCell(11).value = (r.fuelRemain || 0) + (r.fuelReceived || 0) - (r.fuelRemainEnd || 0) || '';
+                                row.getCell(12).value = '';
+                                row.getCell(13).value = '';
+                                row.getCell(14).value = '';
+                                row.getCell(15).value = r?.travelHours || '';
+                                row.getCell(16).value = '';
+                                row.getCell(17).value = '';
+                                row.getCell(18).value = '';
+                                row.getCell(19).value = '';
+                            }
+
+                            // căn chỉnh
+                            row.eachCell((cell) => {
+                                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                            });
+                            row.getCell(2).alignment = { horizontal: 'left', vertical: 'top', wrapText: true };
+                            row.getCell(3).alignment = { horizontal: 'center', vertical: 'top', wrapText: true };
+
+                            currentRow++;
+                        });
+
+                        const reportCols = ['H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S'];
+                        // merge cột D (máy gạt) cho số dòng vật liệu của report
+                        if (spanReport > 1) {
+                            worksheet.mergeCells(`D${startRowReport}:D${currentRow - 1}`);
+                            reportCols.forEach(col => {
+                                worksheet.mergeCells(`${col}${startRowReport}:${col}${currentRow - 1}`)
+                            })
+                        }
+                    });
+
+                    // merge A–C (STT, Người nhận lệnh, Số thẻ) cho toàn bộ item
+                    if (spanItem > 1) {
+                        ['A', 'B', 'C'].forEach(col => {
+                            worksheet.mergeCells(`${col}${startRowItem}:${col}${currentRow - 1}`);
+                        });
+                    }
+                    const numUsers = (item.assignedTo?.length || 1);
+                    const numReports = reports.length;
+                    const maxLines = Math.max(numUsers, numReports);
+                    worksheet.getRow(startRowItem).height = maxLines * 15;
+                });
+
+
+
+                addTableBorders(worksheet, 8, 12, 1, 19);
+
+                worksheet.mergeCells(`O${currentRow + 1}:R${currentRow + 1}`)
+                worksheet.getCell(`O${currentRow + 1}`).value = 'Cán bộ CT kiểm tra trong ca';
+                worksheet.getCell(`O${currentRow + 1}`).font = { bold: true };
+                worksheet.getCell(`O${currentRow + 1}`).alignment = { horizontal: 'center', vertical: 'middle' };
+                worksheet.mergeCells(`O${currentRow + 2}:R${currentRow + 2}`)
+                worksheet.getCell(`O${currentRow + 2}`).value = '( Ký, ghi rõ họ tên)';
+                worksheet.getCell(`O${currentRow + 2}`).alignment = { horizontal: 'center', vertical: 'middle' };
+                if (signature) {
+                    const response = await axios.get(signature, { responseType: 'arraybuffer' });
+                    const extension = response.headers['content-type'].split('/')[1];
+                    const imageBuffer = Buffer.from(response.data, 'binary');
+
+                    const imageId = workbook.addImage({
+                        buffer: imageBuffer,
+                        extension
+                    });
+
+                    worksheet.mergeCells(`P${currentRow + 4}:Q${currentRow + 7}`);
+
+                    // gán ảnh trực tiếp vào range
+                    worksheet.addImage(imageId, `P${currentRow + 4}:Q${currentRow + 7}`);
+                }
+
+
+                worksheet.pageSetup = {
+                    paperSize: 9,                // A4
+                    orientation: 'landscape',    // ngang
+                    fitToPage: true,
+                    fitToWidth: 1,               // vừa 1 trang theo chiều ngang
+                    fitToHeight: 0,              // không ép theo chiều dọc
+                    margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } // inch
+                };
+
+
+                worksheet.getColumn(1).width = 6;
+                // worksheet.getColumn(1).alignment = { horizontal: 'center', vertical: 'middle', }
+                worksheet.getColumn(2).width = 25;
+                // worksheet.getColumn(2).alignment = { horizontal: 'center', vertical: 'middle', }
+                worksheet.getColumn(3).width = 10;
+                // worksheet.getColumn(3).alignment = { horizontal: 'center', vertical: 'middle', }
+                worksheet.getColumn(4).width = 15;
+                // worksheet.getColumn(4).alignment = { horizontal: 'center', vertical: 'middle', }
+                worksheet.getColumn(5).width = 20;
+                worksheet.getColumn(6).width = 15;
+                worksheet.getColumn(7).width = 15;
+                worksheet.getColumn(8).width = 15;
+                worksheet.getColumn(9).width = 15;
+                worksheet.getColumn(10).width = 15;
+                worksheet.getColumn(11).width = 15;
+                worksheet.getColumn(12).width = 15;
+                worksheet.getColumn(13).width = 15;
+                worksheet.getColumn(14).width = 15;
+                worksheet.getColumn(15).width = 15;
+                worksheet.getColumn(16).width = 15;
+                worksheet.getColumn(17).width = 15;
+                worksheet.getColumn(18).width = 15;
+                worksheet.getColumn(19).width = 15;
+
+
+                worksheet.eachRow((row, rowNumber) => {
+                    row.eachCell((cell) => {
+                        if (!cell.font) cell.font = {};
+                        cell.font = {
+                            ...cell.font,            // giữ lại các thuộc tính khác (bold, italic,…)
+                            name: 'Times New Roman', // đổi font chữ
+                            ...(rowNumber > 3 ? { size: 12 } : {})            // kích thước chữ
+                        };
+                    });
+                });
+            }
+        }
+
+        // Xuất file
+        const buffer = await workbook.xlsx.writeBuffer();
+
+        // Thiết lập header để tải file về
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader(
+            'Content-Disposition',
+            "attachment; filename*=UTF-8''*.xlsx"
+        );    // Gửi buffer về client
+        res.send(buffer);
+        req.logger.info(`✅ Export excel thành công`);
+
+    } catch (err) {
+        req.logger.error("❌ Lỗi khi export", err);
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+});
 
 // báo chuyến máy xúc
 
@@ -5080,6 +5523,19 @@ function setCell(ws, range, value) {
         bottom: { style: 'thin' },
         right: { style: 'thin' }
     };
+}
+function setMergeCellHeader(ws, range, value) {
+    ws.mergeCells(range);
+    const cell = ws.getCell(range.split(':')[0]);
+    cell.value = value;
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    cell.font = { bold: true }
+}
+function setCellHeader(ws, range, value) {
+    const cell = ws.getCell(range);
+    cell.value = value;
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    cell.font = { bold: true }
 }
 function formatDate(date) {
     return date.toLocaleDateString('vi-VN'); // dạng 10/07/2025

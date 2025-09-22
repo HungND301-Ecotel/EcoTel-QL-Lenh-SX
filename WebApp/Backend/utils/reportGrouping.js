@@ -215,6 +215,25 @@ function getCombinedUsers(order) {
 
     return combined;
 }
+function groupDozer(trips) {
+    const groups = {};
+
+    trips.forEach(t => {
+        const key = `${t.device}`;
+        if (!groups[key]) {
+            groups[key] = {
+                device: t.device,
+                materials: []
+            };
+        }
+        groups[key].materials.push({
+            material: t.material,
+            workingMinutes: t.workingMinutes,
+        });
+    });
+
+    return Object.values(groups);
+}
 
 
 module.exports = {
@@ -224,5 +243,6 @@ module.exports = {
     getCombinedUsers,
     groupTripsExcavator,
     groupTripsCar,
-    groupExcavator
+    groupExcavator,
+    groupDozer
 };

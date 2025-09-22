@@ -35,6 +35,7 @@ import { showErrorAlert } from '../../components/Alert';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import ExcavatorReport from './ExcavatorReport';
+import DozerReport from './DozerReport';
 
 
 function Reports() {
@@ -88,7 +89,7 @@ function Reports() {
         { name: 'Giao ca cán bộ', },
         // { name: 'Phiếu bồi dưỡng hiện vật', },
         // { name: 'Phiếu lĩnh dầu', },
-        // { name: 'Tổng hợp số liệu trong ca (Gạt)', },
+        { name: 'Tổng hợp số liệu trong ca (Máy gạt)', },
         // { name: 'Tổng hợp số liệu trong ca (Khoan)', },
         { name: 'Tổng hợp số liệu trong ca (Máy xúc)', },
         { name: 'Tổng hợp số liệu trong ca (Ô tô)', },
@@ -134,6 +135,11 @@ function Reports() {
             viewUrl: '/exports/productReport/view',
             exportUrl: '/exports/productReport',
             PreviewComponent: ProductionReport,
+        },
+        'Tổng hợp số liệu trong ca (Máy gạt)': {
+            viewUrl: '/exports/dozerReport/view',
+            exportUrl: '/exports/dozerReport',
+            PreviewComponent: DozerReport,
         },
         'Tổng hợp số liệu trong ca (Ô tô)': {
             viewUrl: '/exports/carReport/view',
