@@ -264,6 +264,7 @@ function Reports() {
                                 setTitle(e.target.value);
                                 setPreview(false);
                                 setData([]);
+                                setMaterials([])
                             }}>
                             {reportNames.map((report) => (
                                 <MenuItem key={report.name} value={report.name}>

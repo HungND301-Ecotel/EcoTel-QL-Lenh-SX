@@ -40,13 +40,13 @@ export default function ExcavatorTripReport({
                                 <TableCell align='center' rowSpan={2}>Máy xúc</TableCell>
                                 <TableCell align='center' rowSpan={2}>Xe nhận tải</TableCell>
                                 <TableCell align='center' colSpan={maxTrip > 0 ? maxTrip : 1}>Thời điểm xúc tải - Loại vật liệu</TableCell>
-                                <TableCell align='center' colSpan={materials.length > 0 ? materials.length + 1 : 1}>Tổng hợp</TableCell>
+                                <TableCell align='center' colSpan={materials?.length > 0 ? materials.length + 1 : 1}>Tổng hợp</TableCell>
                             </TableRow>
                             <TableRow>
                                 {Array.from({ length: maxTrip || 1 }).map((_, i) => (
                                     <TableCell align='center'>{i + 1}</TableCell>
                                 ))}
-                                {materials.map((m: any) => (
+                                {(materials || []).map((m: any) => (
                                     <TableCell align='center'>{m?.name}</TableCell>
                                 ))}
                                 <TableCell align='center'>Tổng chuyến</TableCell>
@@ -55,7 +55,7 @@ export default function ExcavatorTripReport({
                         </TableHead>
                         <TableBody>
                             {data.map((item: any, idx: number) => {
-                                const reps = (item.reports && item.reports.length)
+                                const reps = (item?.reports && item?.reports.length)
                                     ? item.reports
                                     : [{ code: '', trips: [], summary: {}, totalTrips: '' }]; // vẫn render 1 dòng nếu không có report
                                 const spanReps = reps.length;
