@@ -37,6 +37,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import RealTimeClock from '../../components/RealTimeClock';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
+import PieChartOrder from '../../components/PieChartOrder';
 
 // Custom component for a more visually appealing summary card
 const SummaryCard: React.FC<{
@@ -134,7 +135,7 @@ const ManagerDashboard: React.FC = () => {
         warning: { "ca1": 0, "ca2": 0, "ca3": 0, "day": 0, "month": 0 },
         completed: { "ca1": 0, "ca2": 0, "ca3": 0, "day": 0, "month": 0 },
         cancel: { "ca1": 0, "ca2": 0, "ca3": 0, "day": 0, "month": 0 }
-    }
+    }, refetch: refetchOrderCount, isLoading: isLoadingOrderCount
     } = useQuery({
         queryKey: ['orderCount', department, date],
         queryFn: () => api.get('/orders/count_status', {
@@ -274,6 +275,19 @@ const ManagerDashboard: React.FC = () => {
                                             mb: 2,
                                         }}
                                     >
+                                        <IconButton onClick={() => refetchOrderCount()} disabled={isLoadingOrderCount}>
+                                            {isLoadingOrderCount ? (
+                                                <CircularProgress size={24} />
+                                            ) : (
+                                                <RotateLeftIcon
+                                                    sx={{
+                                                        transition: "transform 0.3s ease",
+                                                        "&:hover": { transform: "rotate(-180deg)" }, // xoay khi hover
+                                                        color: "primary.main",
+                                                    }}
+                                                />
+                                            )}
+                                        </IconButton>
                                         <Box sx={{ display: 'flex', gap: 2 }}>
                                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                                 <DatePicker
@@ -286,36 +300,41 @@ const ManagerDashboard: React.FC = () => {
                                         </Box>
                                     </Box>
                                     <Paper variant="outlined" sx={{ mb: 4, borderRadius: 2 }}>
-                                        <TableContainer sx={{ maxHeight: 600 }}>
-                                            <Table stickyHeader sx={{ '& td, & th': { border: '1px solid #e0e0e0' } }}>
-                                                <TableHead>
-                                                    <TableRow>
-                                                        <TableCell colSpan={7} align="center" sx={{ bgcolor: '#dcf1d8', fontWeight: 'bold', fontSize: 18 }}>LỆNH SẢN XUẤT</TableCell>
-                                                    </TableRow>
-                                                    <TableRow>
-                                                        <TableCell align="center" colSpan={2} sx={{ fontWeight: 'bold', fontSize: 20, width: '20%' }}>Lệnh sản xuất</TableCell>
-                                                        <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '10%' }}>Ca 1</TableCell>
-                                                        <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '10%' }}>Ca 2</TableCell>
-                                                        <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '10%' }}>Ca 3</TableCell>
-                                                        <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '10%' }}>Ngày</TableCell>
-                                                        <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '10%' }}>Lũy kế tháng</TableCell>
-                                                    </TableRow>
-                                                </TableHead>
-                                                <TableBody>
-                                                    {orderStatus.map((item, index) => (
-                                                        <TableRow key={item.key} sx={{ '&:nth-of-type(odd)': { bgcolor: '#f9f9f9' } }}>
-                                                            <TableCell align="center" sx={{ width: '2%' }}>{index + 1}</TableCell>
-                                                            <TableCell sx={{ color: item.color, fontWeight: 'bold' }}>{item.name}</TableCell>
-                                                            <TableCell align="center">{orderCount[item.key]?.ca1 ?? 0}</TableCell>
-                                                            <TableCell align="center">{orderCount[item.key]?.ca2 ?? 0}</TableCell>
-                                                            <TableCell align="center">{orderCount[item.key]?.ca3 ?? 0}</TableCell>
-                                                            <TableCell align="center">{orderCount[item.key]?.day ?? 0}</TableCell>
-                                                            <TableCell align="center">{orderCount[item.key]?.month ?? 0}</TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                                </TableBody>
-                                            </Table>
-                                        </TableContainer>
+                                        <Grid container spacing={2}>
+                                            <Grid item xs={12} md={9}>
+                                                <TableContainer sx={{ maxHeight: 600 }}>
+                                                    <Table stickyHeader sx={{ '& td, & th': { border: '1px solid #e0e0e0' } }}>
+                                                        <TableHead>
+                                                            <TableRow>
+                                                                <TableCell colSpan={7} align="center" sx={{ bgcolor: '#dcf1d8', fontWeight: 'bold', fontSize: 18 }}>LỆNH SẢN XUẤT</TableCell>
+                                                            </TableRow>
+                                                            <TableRow>
+                                                                <TableCell align="center" colSpan={2} sx={{ fontWeight: 'bold', fontSize: 20, width: '20%' }}>Lệnh sản xuất</TableCell>
+                                                                <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '10%' }}>Ca 1</TableCell>
+                                                                <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '10%' }}>Ca 2</TableCell>
+                                                                <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '10%' }}>Ca 3</TableCell>
+                                                                <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '10%' }}>Ngày</TableCell>
+                                                            </TableRow>
+                                                        </TableHead>
+                                                        <TableBody>
+                                                            {orderStatus.map((item, index) => (
+                                                                <TableRow key={item.key} sx={{ '&:nth-of-type(odd)': { bgcolor: '#f9f9f9' } }}>
+                                                                    <TableCell align="center" sx={{ width: '2%' }}>{index + 1}</TableCell>
+                                                                    <TableCell sx={{ color: item.color, fontWeight: 'bold' }}>{item.name}</TableCell>
+                                                                    <TableCell align="center">{orderCount[item.key]?.ca1 ?? 0}</TableCell>
+                                                                    <TableCell align="center">{orderCount[item.key]?.ca2 ?? 0}</TableCell>
+                                                                    <TableCell align="center">{orderCount[item.key]?.ca3 ?? 0}</TableCell>
+                                                                    <TableCell align="center">{orderCount[item.key]?.day ?? 0}</TableCell>
+                                                                </TableRow>
+                                                            ))}
+                                                        </TableBody>
+                                                    </Table>
+                                                </TableContainer>
+                                            </Grid>
+                                            <Grid item xs={12} md={3}>
+                                                <PieChartOrder data={orderCount} />
+                                            </Grid>
+                                        </Grid>
                                     </Paper>
                                     <Paper variant="outlined" sx={{ mb: 4, borderRadius: 2 }}>
                                         <TableContainer sx={{ maxHeight: 600 }}>
