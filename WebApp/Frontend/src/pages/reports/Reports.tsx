@@ -94,7 +94,7 @@ function Reports() {
         { name: 'Tổng hợp số liệu trong ca (Máy khoan)', },
         { name: 'Tổng hợp số liệu trong ca (Máy xúc)', },
         { name: 'Tổng hợp số liệu trong ca (Ô tô)', },
-        { name: 'Theo dõi sản lượng, nhiên liệu, dầu mỡ' }
+        // { name: 'Theo dõi sản lượng, nhiên liệu, dầu mỡ' }
     ];
     const reportsMap = {
         'Xe không hoạt động': {
@@ -132,11 +132,11 @@ function Reports() {
             exportUrl: '/exports/assignmentManager',
             PreviewComponent: mealRequestReport,
         },
-        'Theo dõi sản lượng, nhiên liệu, dầu mỡ': {
-            viewUrl: '/exports/productReport/view',
-            exportUrl: '/exports/productReport',
-            PreviewComponent: ProductionReport,
-        },
+        // 'Theo dõi sản lượng, nhiên liệu, dầu mỡ': {
+        //     viewUrl: '/exports/productReport/view',
+        //     exportUrl: '/exports/productReport',
+        //     PreviewComponent: ProductionReport,
+        // },
         'Tổng hợp số liệu trong ca (Máy gạt)': {
             viewUrl: '/exports/dozerReport/view',
             exportUrl: '/exports/dozerReport',

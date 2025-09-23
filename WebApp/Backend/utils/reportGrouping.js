@@ -197,6 +197,74 @@ async function groupTripsCar(trips) {
     return Object.values(groups);
 }
 
+// nhóm tổng hợp ô tô
+async function groupCar(trips) {
+    const groups = {};
+
+    for (const t of trips) {
+        const key = `${t.excavator}-${t.toLocation}`;
+        if (!groups[key]) {
+            groups[key] = {
+                excavator: t.excavator,
+                toLocation: t.toLocation,
+                materials: {},   // thay vì trips
+            };
+        }
+
+        const times = Array.isArray(t.quantityUpdateTimes)
+            ? t.quantityUpdateTimes
+            : [t.quantityUpdateTimes];
+
+        for (const time of times) {
+            const travelLog = await TravelLog.findOne({
+                excavator: t.excavator,
+                location: t.toLocation,
+                startTime: { $lte: time },
+                endTime: { $gte: time }
+            }).lean();
+
+            const distance = travelLog ? travelLog.distance : 0;
+
+            if (!groups[key].materials[t.material.name]) {
+                groups[key].materials[t.material.name] = {
+                    material: t.material,
+                    times: [],        // danh sách thời gian
+                    distances: [],    // danh sách cung độ theo index
+                    count: 0,
+                    totalDistance: 0
+                };
+            }
+
+            groups[key].materials[t.material.name].times.push(time);
+            groups[key].materials[t.material.name].distances.push(distance);
+            groups[key].materials[t.material.name].count += 1;
+            groups[key].materials[t.material.name].totalDistance += distance;
+
+            groups[key].totalTrips += 1;
+            groups[key].totalDistance += distance;
+        }
+    }
+
+    // sort times cho từng material
+    Object.values(groups).forEach((g) => {
+        Object.values(g.materials).forEach((m) => {
+            const combined = m.times.map((time, i) => ({
+                time,
+                distance: m.distances[i]
+            }));
+            combined.sort((a, b) => new Date(a.time) - new Date(b.time));
+            m.times = combined.map(c => c.time);
+            m.distances = combined.map(c => c.distance);
+        });
+    });
+
+    return Object.values(groups).map(g => ({
+        ...g,
+        materials: Object.values(g.materials) // trả về mảng cho FE
+    }));
+}
+
+
 // nhóm người nhận, phụ máy
 function getCombinedUsers(order) {
     const combined = [];
@@ -272,5 +340,6 @@ module.exports = {
     groupTripsCar,
     groupExcavator,
     groupDozer,
-    groupDrill
+    groupDrill,
+    groupCar
 };
