@@ -5,91 +5,24 @@ import {
     Typography,
     Box,
     Card,
-    CardContent,
     Paper,
-    TableContainer,
-    Table,
-    TableRow,
-    TableHead,
-    TableCell,
-    TableBody,
-    Popover,
-    Snackbar,
-    Alert,
-    TextField,
-    Autocomplete,
-    IconButton,
-    CircularProgress,
-    Chip,
 } from '@mui/material';
 import {
+    Construction,
     Business as DepartmentIcon,
+    DirectionsCar,
     Person2 as PersonIcon,
     RotateLeft as RotateLeftIcon,
 } from '@mui/icons-material';
 import api from '../../config/api.config';
-import { Order, Device, Department, Location } from '../../types';
-import { showErrorAlert } from '../../components/Alert';
 import GoogleMap from './GoogleMap';
-import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
-import dayjs, { Dayjs } from 'dayjs';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import RealTimeClock from '../../components/RealTimeClock';
-import { useAtom } from 'jotai';
-import { userAtom } from '../../atoms/userAtoms';
-import PieChartOrder from '../../components/PieChartOrder';
+import OrderAnalysic from './OrderAnalysic';
 import DeviceAnalysic from './DeviceAnalysis';
 import ProductionAnalysic from './ProductionAnalysic';
-import OrderAnalysic from './OrderAnalysic';
+import SummaryCard from './SummaryCard';
+import SummaryCardDevice from './SummaryCardDevice';
 
-// Custom component for a more visually appealing summary card
-const SummaryCard: React.FC<{
-    title: string;
-    value: number;
-    icon: React.ReactNode;
-    color: string;
-}> = ({ title, value, icon, color }) => (
-    <Card
-        sx={{
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            p: 3,
-            borderRadius: 3,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
-            transition: 'transform 0.2s, box-shadow 0.2s',
-            '&:hover': {
-                transform: 'translateY(-5px)',
-                boxShadow: '0 8px 30px rgba(0,0,0,0.1)',
-            },
-        }}
-    >
-        <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="h4" sx={{ fontWeight: 'bold' }} gutterBottom>
-                {title}
-            </Typography>
-            <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                {value}
-            </Typography>
-        </Box>
-        <Box
-            sx={{
-                width: 60,
-                height: 60,
-                bgcolor: color,
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-            }}
-        >
-            {React.cloneElement(icon as React.ReactElement, { sx: { fontSize: 32 } })}
-        </Box>
-    </Card>
-);
-
-const ManagerDashboard: React.FC = () => {
+const DashBoard: React.FC = () => {
     const [tabIndex, setTabIndex] = useState(0);
 
     const queryClient = useQueryClient();
@@ -104,13 +37,39 @@ const ManagerDashboard: React.FC = () => {
         queryFn: () => api.get('/users/count').then(res => res.data.data),
     });
 
+    const { data: devices = [] } = useQuery({
+        queryKey: ['devices'],
+        queryFn: () => api.get('/devices').then(res => res.data.data),
+    });
+
+
 
     return (
         <Box sx={{ p: 4, bgcolor: '#f5f7fa', minHeight: '100vh' }}>
             <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#333' }}>
                 Tổng quan
             </Typography>
-            <Grid container spacing={4}>
+            <Grid container rowSpacing={8} spacing={2}>
+                <Grid item xs={12} sm={6}>
+                    <SummaryCardDevice
+                        title="Thông tin máy"
+                        value={devices.filter((d: any) => d.category?.group === "Máy").length}
+                        icon={<Construction />}
+                        color="#e4d52cff"
+                        data={devices.filter((d: any) => d.category?.group === "Máy")}
+                        type="Máy"
+                    />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                    <SummaryCardDevice
+                        title="Thông tin xe"
+                        value={devices.filter((d: any) => d.category?.group === "Xe").length}
+                        icon={<DirectionsCar />}
+                        color="#f34f21ff"
+                        data={devices.filter((d: any) => d.category?.group === "Xe")}
+                        type="Xe"
+                    />
+                </Grid>
                 <Grid item xs={12} sm={6}>
                     <SummaryCard
                         title="Đơn vị"
@@ -135,7 +94,15 @@ const ManagerDashboard: React.FC = () => {
                             <Grid item xs={12}>
                                 <Paper sx={{ borderRadius: 3, p: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
                                     <OrderAnalysic departments={departments} />
+                                </Paper>
+                            </Grid>
+                            <Grid item xs={12}>
+                                <Paper sx={{ borderRadius: 3, p: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
                                     <ProductionAnalysic />
+                                </Paper>
+                            </Grid>
+                            <Grid item xs={12}>
+                                <Paper sx={{ borderRadius: 3, p: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
                                     <DeviceAnalysic />
                                 </Paper>
                             </Grid>
@@ -148,4 +115,4 @@ const ManagerDashboard: React.FC = () => {
     );
 };
 
-export default ManagerDashboard;
+export default DashBoard;

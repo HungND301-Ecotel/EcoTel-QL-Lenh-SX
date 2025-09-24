@@ -20,6 +20,7 @@ import {
 import React, { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+    Devices as DeviceIcon,
     Business as DepartmentIcon,
     Person2 as PersonIcon,
     RotateLeft as RotateLeftIcon,
@@ -60,36 +61,10 @@ export default function DeviceAnalysic() {
     };
 
 
-    // const [anchorElSummary, setAnchorElSummary] = useState<HTMLElement | null>(null);
-    // const [selectedSummaryDevices, setSelectedSummaryDevices] = useState<any[]>([]);
-
     // Popover chi tiết (bảng dưới)
     const [anchorElDetail, setAnchorElDetail] = useState<HTMLElement | null>(null);
     const [selectedDetailDevices, setSelectedDetailDevices] = useState<any[]>([]);
 
-
-    // const getDevicesByStatusGrouped = (status: string) => {
-    //     const map = new Map<string, number>();
-
-    //     deviceCount.forEach((group: any) => {
-    //         group.deviceTypes.forEach((device: any) => {
-    //             const current = map.get(device.typeName) || 0;
-    //             map.set(device.typeName, current + (device.statusCounts?.[status] ?? 0));
-    //         });
-    //     });
-
-    //     return Array.from(map, ([typeName, total]) => ({ typeName, total }));
-    // };
-
-    // const handleSummaryClick = (event: React.MouseEvent<HTMLElement>, status: string) => {
-    //     setAnchorElSummary(event.currentTarget);
-    //     const grouped = getDevicesByStatusGrouped(status);
-    //     setSelectedSummaryDevices(grouped);
-    // };
-    // const handleSummaryClose = () => {
-    //     setAnchorElSummary(null);
-    //     setSelectedSummaryDevices([]);
-    // };
 
     // Mở/đóng popover chi tiết
     const [departmentPopup, setDepartmentPopup] = useState('')

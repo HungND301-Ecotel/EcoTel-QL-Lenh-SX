@@ -447,9 +447,13 @@ router.get('/count/status', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, RO
         }
 
         const departments = await Department.find(queryDept);
-        const devices = await Device.find(query)
+        let devices = await Device.find(query)
             .populate("department")
             .populate("category"); // populate category để lấy DeviceType trực tiếp
+
+        if (req.query.group) {
+            devices=devices.filter(d => d.category.group === req.query.group)
+        }
 
 
         let data = [];
