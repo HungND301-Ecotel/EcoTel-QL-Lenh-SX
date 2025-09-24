@@ -76,6 +76,7 @@ export default function OrderAnalysic({ departments }: { departments: any[] }) {
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     mb: 2,
+                    p: 2
                 }}
             >
                 <IconButton onClick={() => refetchOrderCount()} disabled={isLoadingOrderCount}>
@@ -107,6 +108,7 @@ export default function OrderAnalysic({ departments }: { departments: any[] }) {
                     />}
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
                         <DatePicker
+                            inputFormat="DD/MM/YYYY"
                             label="Ngày"
                             value={date}
                             onChange={(newValue) => setDate(newValue)}

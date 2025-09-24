@@ -28,6 +28,7 @@ import api from '../../config/api.config';
 import RealTimeClock from '../../components/RealTimeClock';
 import { showErrorAlert } from '../../components/Alert';
 import BlinkButton from '../../components/BlinkButton';
+import Deviceprocess from './DeviceProcess';
 
 export default function DeviceAnalysic() {
     const queryClient = useQueryClient();
@@ -159,7 +160,8 @@ export default function DeviceAnalysic() {
                             <TableCell colSpan={7} align="center" sx={{ bgcolor: '#d6e9f9', fontWeight: 'bold', fontSize: 18 }}>THIẾT BỊ</TableCell>
                         </TableRow>
                         <TableRow>
-                            <TableCell align="center" sx={{ fontWeight: 'bold', width: '20%' }}>Đơn vị</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', width: '2%' }}></TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', width: '18%' }}>Đơn vị</TableCell>
                             <TableCell align="center" sx={{ fontWeight: 'bold', width: '10%' }}>Thiết bị</TableCell>
                             <TableCell align="center" sx={{ fontWeight: 'bold', width: '10%', color: 'green' }}>Chờ điều động</TableCell>
                             <TableCell align="center" sx={{ fontWeight: 'bold', width: '10%', color: 'red' }}>Đang hoạt động</TableCell>
@@ -176,35 +178,54 @@ export default function DeviceAnalysic() {
                             </TableRow>
                         ) : (
                             deviceCount.map((group: any, groupIndex: number) => {
+                                const totalStatus = group.deviceTypes.reduce(
+                                    (acc: any, deviceType: any) => {
+                                        acc.maintenance += deviceType.statusCounts.maintenance || 0;
+                                        acc.in_use += deviceType.statusCounts.in_use || 0;
+                                        acc.available += deviceType.statusCounts.available || 0;
+                                        acc.retired += deviceType.statusCounts.retired || 0;
+                                        return acc;
+                                    },
+                                    { maintenance: 0, in_use: 0, available: 0, retired: 0 }
+                                );
                                 const reps = group.deviceTypes.length > 0 ? group.deviceTypes : [{ typeName: '', statusCounts: { available: 0, in_use: 0, maintenance: 0, retired: 0 } }];
                                 const span = reps.length;
-                                return reps.map((item: any, index: number) => (
-                                    <TableRow key={`${groupIndex}-${index}`} sx={{ '&:nth-of-type(odd)': { bgcolor: '#f9f9f9' } }}>
-                                        {/* {index === 0 && (
-                                            <TableCell rowSpan={span} align="center" sx={{ border: '1px solid #e0e0e0' }}>{groupIndex + 1}</TableCell>
-                                        )} */}
+                                return reps.map((item: any, index: number) => {
+                                    const total = Object.values(item.statusCounts)
+                                        .map(v => Number(v) || 0)
+                                        .reduce((sum, v) => sum + v, 0);
+
+                                    return (<TableRow key={`${groupIndex}-${index}`} sx={{ '&:nth-of-type(odd)': { bgcolor: '#f9f9f9' } }}>
+                                        {index === 0 && (
+                                            <TableCell rowSpan={span} align="center" sx={{ border: '1px solid #e0e0e0' }}>
+                                                <BlinkButton color={totalStatus.maintenance > 0
+                                                    ? 'orange'
+                                                    : totalStatus.in_use > 0
+                                                        ? 'red'
+                                                        : totalStatus.available > 0
+                                                            ? 'green'
+                                                            : 'grey'}
+                                                />
+                                            </TableCell>
+                                        )}
                                         {index === 0 && (
                                             <TableCell rowSpan={span} align="center" sx={{ border: '1px solid #e0e0e0' }}>{group.departmentName}</TableCell>
                                         )}
                                         <TableCell align="center" sx={{ border: '1px solid #e0e0e0' }}>{item.typeName}</TableCell>
                                         <TableCell align="center" sx={{ border: '1px solid #e0e0e0', cursor: 'pointer' }} onClick={(e) => handleDetailClick(e, "available", group.departmentName, item.typeName)}>
-                                            {item.statusCounts?.available}
-                                            {item.statusCounts?.available > 0 && <BlinkButton color="green" />}
+                                            {item.statusCounts?.available > 0 ? <Deviceprocess value={item.statusCounts?.available || 0} total={total} color="#4CAF50" /> : item.statusCounts?.available}
                                         </TableCell>
                                         <TableCell align="center" sx={{ border: '1px solid #e0e0e0', cursor: 'pointer' }} onClick={(e) => handleDetailClick(e, "in_use", group.departmentName, item.typeName)}>
-                                            {item.statusCounts?.in_use}
-                                            {item.statusCounts?.in_use > 0 && <BlinkButton color="red" />}
+                                            {item.statusCounts?.in_use > 0 ? <Deviceprocess value={item.statusCounts?.in_use || 0} total={total} color="#F44336" /> : item.statusCounts?.in_use}
                                         </TableCell>
                                         <TableCell align="center" sx={{ border: '1px solid #e0e0e0', cursor: 'pointer' }} onClick={(e) => handleDetailClick(e, "maintenance", group.departmentName, item.typeName)}>
-                                            {item.statusCounts?.maintenance}
-                                            {item.statusCounts?.maintenance > 0 && <BlinkButton color="orange" />}
+                                            {item.statusCounts?.maintenance > 0 ? <Deviceprocess value={item.statusCounts?.maintenance || 0} total={total} color="#FF9800" /> : item.statusCounts?.maintenance}
                                         </TableCell>
                                         <TableCell align="center" sx={{ border: '1px solid #e0e0e0', cursor: 'pointer' }} onClick={(e) => handleDetailClick(e, "retired", group.departmentName, item.typeName)}>
-                                            {item.statusCounts?.retired}
-                                            {item.statusCounts?.retired > 0 && <BlinkButton color="black" />}
+                                            {item.statusCounts?.retired > 0 ? <Deviceprocess value={item.statusCounts?.retired || 0} total={total} color="#E0E0E0" /> : item.statusCounts?.retired}
                                         </TableCell>
-                                    </TableRow>
-                                ));
+                                    </TableRow>)
+                                })
                             })
                         )}
                     </TableBody>

@@ -6,7 +6,9 @@ import {
     TableHead,
     TableCell,
     TableBody,
+    Grid,
 } from '@mui/material';
+import LineChartProduction from '../../components/LineChartProduction';
 
 export default function ProductionAnalysic() {
     const productions = [
@@ -21,36 +23,43 @@ export default function ProductionAnalysic() {
 
     return (
         <Paper variant="outlined" sx={{ mb: 4, borderRadius: 2 }}>
-            <TableContainer sx={{ maxHeight: 600 }}>
-                <Table stickyHeader sx={{ '& td, & th': { border: '1px solid #e0e0e0' } }}>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell colSpan={7} align="center" sx={{ bgcolor: '#ffe8d6', fontWeight: 'bold', fontSize: 18 }}>SẢN LƯỢNG</TableCell>
-                        </TableRow>
-                        <TableRow>
-                            <TableCell align="center" colSpan={2} sx={{ fontWeight: 'bold', fontSize: 20, width: '20%' }}>Sản lượng</TableCell>
-                            <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '10%' }}>Ca 1</TableCell>
-                            <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '10%' }}>Ca 2</TableCell>
-                            <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '10%' }}>Ca 3</TableCell>
-                            <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '10%' }}>Ngày</TableCell>
-                            <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '10%' }}>Lũy kế tháng</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {productions.map((item, index) => (
-                            <TableRow key={item.key} sx={{ '&:nth-of-type(odd)': { bgcolor: '#f9f9f9' } }}>
-                                <TableCell align="center" sx={{ width: '2%' }}>{index + 1}</TableCell>
-                                <TableCell>{item.name}</TableCell>
-                                <TableCell align="center">0</TableCell>
-                                <TableCell align="center">0</TableCell>
-                                <TableCell align="center">0</TableCell>
-                                <TableCell align="center">0</TableCell>
-                                <TableCell align="center">0</TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+            <Grid container spacing={2}>
+                <Grid item xs={12} md={8}>
+                    <TableContainer sx={{ maxHeight: 600 }}>
+                        <Table stickyHeader sx={{ '& td, & th': { border: '1px solid #e0e0e0' } }}>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell colSpan={7} align="center" sx={{ bgcolor: '#ffe8d6', fontWeight: 'bold', fontSize: 18 }}>SẢN LƯỢNG</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell align="center" colSpan={2} sx={{ fontWeight: 'bold', fontSize: 20, width: '20%' }}>Sản lượng</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '10%' }}>Ca 1</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '10%' }}>Ca 2</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '10%' }}>Ca 3</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '10%' }}>Ngày</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '10%' }}>Lũy kế tháng</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {productions.map((item, index) => (
+                                    <TableRow key={item.key} sx={{ '&:nth-of-type(odd)': { bgcolor: '#f9f9f9' } }}>
+                                        <TableCell align="center" sx={{ width: '2%' }}>{index + 1}</TableCell>
+                                        <TableCell>{item.name}</TableCell>
+                                        <TableCell align="center">0</TableCell>
+                                        <TableCell align="center">0</TableCell>
+                                        <TableCell align="center">0</TableCell>
+                                        <TableCell align="center">0</TableCell>
+                                        <TableCell align="center">0</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </Grid>
+                <Grid item xs={12} md={4}>
+                    <LineChartProduction />
+                </Grid>
+            </Grid>
         </Paper>
     )
 }
