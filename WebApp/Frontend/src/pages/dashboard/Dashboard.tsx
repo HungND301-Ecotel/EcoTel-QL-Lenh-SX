@@ -98,7 +98,7 @@ const DashBoard: React.FC = () => {
                             </Grid>
                             <Grid item xs={12}>
                                 <Paper sx={{ borderRadius: 3, p: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-                                    <ProductionAnalysic />
+                                    <ProductionAnalysic departments={departments} />
                                 </Paper>
                             </Grid>
                             <Grid item xs={12}>

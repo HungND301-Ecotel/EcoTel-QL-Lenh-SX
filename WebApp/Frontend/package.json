@@ -25,6 +25,8 @@
     "browser-image-compression": "^2.0.2",
     "date-fns": "^2.29.3",
     "dayjs": "^1.11.13",
+    "echarts": "^5.6.0",
+    "echarts-for-react": "^3.0.2",
     "formik": "^2.4.5",
     "install": "^0.13.0",
     "jotai": "^2.12.5",

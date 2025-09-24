@@ -7,10 +7,26 @@ import {
     TableCell,
     TableBody,
     Grid,
+    Box,
+    Autocomplete,
+    TextField,
+    IconButton,
 } from '@mui/material';
 import LineChartProduction from '../../components/LineChartProduction';
+import { useState } from 'react';
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { useAtom } from 'jotai';
+import { userAtom } from '../../atoms/userAtoms';
+import dayjs, { Dayjs } from 'dayjs';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { Analytics, BarChart } from '@mui/icons-material';
+import VehicleProductionChart from '../../components/VehicleProductionChart';
 
-export default function ProductionAnalysic() {
+export default function ProductionAnalysic({ departments }: { departments: any[] }) {
+    const [user] = useAtom(userAtom)
+    const [department, setDepartment] = useState('');
+    const [date, setDate] = useState<Dayjs | null>(dayjs());
+    const [open, setOpen] = useState(false)
     const productions = [
         { key: "SLD", name: "Sản lượng đất thực hiện (m3)" },
         { key: "SLT", name: "Sản lượng than nguyên khai (m3)" },
@@ -23,6 +39,43 @@ export default function ProductionAnalysic() {
 
     return (
         <Paper variant="outlined" sx={{ mb: 4, borderRadius: 2 }}>
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    alignItems: 'center',
+                    mb: 2,
+                    p: 2
+                }}
+            >
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                    {(user?.role === "admin" || user?.role === "dispatcher") && <Autocomplete
+                        size="small"
+                        options={departments}
+                        getOptionLabel={(option: any) =>
+                            option.code || ''
+                        }
+                        value={departments.find((p: any) => p._id === department) || null}
+                        onChange={(event, newValue) => {
+                            setDepartment(newValue?._id || '');
+                        }}
+                        sx={{ width: 200 }}
+                        renderInput={(params) => <TextField {...params} label="Đơn vị" />}
+                    />}
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                            inputFormat="DD/MM/YYYY"
+                            label="Ngày"
+                            value={date}
+                            onChange={(newValue) => setDate(newValue)}
+                            renderInput={(params) => <TextField {...params} size="small" sx={{ width: 200 }} />}
+                        />
+                    </LocalizationProvider>
+                    <IconButton onClick={() => setOpen(true)}>
+                        <BarChart color='primary' sx={{ fontSize: 30 }} />
+                    </IconButton>
+                </Box>
+            </Box>
             <Grid container spacing={2}>
                 <Grid item xs={12} md={8}>
                     <TableContainer sx={{ maxHeight: 600 }}>
@@ -60,6 +113,7 @@ export default function ProductionAnalysic() {
                     <LineChartProduction />
                 </Grid>
             </Grid>
+            <VehicleProductionChart open={open} setOpen={setOpen} departments={departments} />
         </Paper>
     )
 }
