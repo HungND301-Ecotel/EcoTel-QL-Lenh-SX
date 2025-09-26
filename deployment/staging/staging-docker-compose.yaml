@@ -181,7 +181,7 @@ networks:
   backnet:
   # monitoring:
 
-volumes:
+# volumes:
   # promtail-state:
   # loki-data:
   # grafana-storage:
