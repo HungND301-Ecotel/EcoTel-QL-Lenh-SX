@@ -66,8 +66,8 @@ const DeviceTypes: React.FC = () => {
         );
     };
     const defaultColumns = [
-        { id: 'name', label: 'Tên loại phương tiện' },
-        { id: 'group', label: 'Nhóm phương tiện' },
+        { id: 'name', label: 'Tên loại thiết bị' },
+        { id: 'group', label: 'Nhóm thiết bị' },
     ]
     const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
 
@@ -86,7 +86,7 @@ const DeviceTypes: React.FC = () => {
             api.post('/DeviceTypes', newDeviceType).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['DeviceTypes'] });
-            showSuccessAlert('Thêm loại phương tiện thành công');
+            showSuccessAlert('Thêm loại thiết bị thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -99,7 +99,7 @@ const DeviceTypes: React.FC = () => {
             api.put(`/DeviceTypes/${updatedDeviceType._id}`, updatedDeviceType).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['DeviceTypes'] });
-            showSuccessAlert('Cập nhật loại phương tiện thành công');
+            showSuccessAlert('Cập nhật loại thiết bị thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -188,10 +188,10 @@ const DeviceTypes: React.FC = () => {
         <Box>
             <Breadcrumbs aria-label="breadcrumb">
                 <Typography>Danh mục</Typography>
-                <Typography>Loại phương tiện</Typography>
+                <Typography>Loại thiết bị</Typography>
             </Breadcrumbs>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, mt: 3 }}>
-                <Typography variant="h3" color={'blue'}>Loại phương tiện</Typography>
+                <Typography variant="h3" color={'blue'}>Loại thiết bị</Typography>
             </Box>
             <Accordion expanded={expanded}>
                 <AccordionSummary
@@ -238,7 +238,7 @@ const DeviceTypes: React.FC = () => {
                         </Box>}
                         <Box sx={{ display: 'flex', flex: 1, width: '100%' }}>
                             <TextField fullWidth size="small" value={value}
-                                placeholder='Tìm kiếm theo tên loại phương tiện'
+                                placeholder='Tìm kiếm theo tên loại thiết bị'
                                 onChange={(e) => setValue(e.target.value)}
                                 InputProps={{
                                     endAdornment: (
@@ -252,7 +252,7 @@ const DeviceTypes: React.FC = () => {
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
-                    <DialogTitle>{selectedDeviceType ? 'Sửa loại phương tiện' : 'Thêm loại phương tiện'}</DialogTitle>
+                    <DialogTitle>{selectedDeviceType ? 'Sửa loại thiết bị' : 'Thêm loại thiết bị'}</DialogTitle>
                     <DialogContent>
                         <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -260,7 +260,7 @@ const DeviceTypes: React.FC = () => {
                                     fullWidth
                                     id="name"
                                     name="name"
-                                    label="Tên loại phương tiện"
+                                    label="Tên loại thiết bị"
                                     value={formik.values.name}
                                     onChange={formik.handleChange}
                                     error={formik.touched.name && Boolean(formik.errors.name)}
@@ -271,7 +271,7 @@ const DeviceTypes: React.FC = () => {
                                     id="group"
                                     select
                                     name="group"
-                                    label="Nhóm phương tiện"
+                                    label="Nhóm thiết bị"
                                     value={formik.values.group}
                                     onChange={formik.handleChange}
                                     error={formik.touched.group && Boolean(formik.errors.group)}
@@ -292,7 +292,7 @@ const DeviceTypes: React.FC = () => {
                 </AccordionDetails>
             </Accordion>
             <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
-                <Typography variant="h4">Bảng loại phương tiện</Typography>
+                <Typography variant="h4">Bảng loại thiết bị</Typography>
                 <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
                     <Settings sx={{ fontSize: 30 }} />
                 </IconButton>
@@ -330,8 +330,8 @@ const DeviceTypes: React.FC = () => {
                                     }}
                                 />
                             </TableCell>}
-                            {visibleColumns.includes('name') && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>Tên loại phương tiện</TableCell>}
-                            {visibleColumns.includes('group') && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 150 }}>Nhóm phương tiện</TableCell>}
+                            {visibleColumns.includes('name') && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>Tên loại thiết bị</TableCell>}
+                            {visibleColumns.includes('group') && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 150 }}>Nhóm thiết bị</TableCell>}
                             {user?.role === "admin" && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 100, minWidth: 100 }}>Sửa</TableCell>}
                         </TableRow>
                     </TableHead>

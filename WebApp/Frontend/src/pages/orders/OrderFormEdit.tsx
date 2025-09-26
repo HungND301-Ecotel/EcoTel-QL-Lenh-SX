@@ -5,6 +5,7 @@ import {
     Autocomplete,
     Box,
     Button,
+    Checkbox,
     Dialog,
     DialogContent,
     DialogTitle,
@@ -93,6 +94,10 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
         queryKey: ['excavators'],
         queryFn: () => api.get('/devices/excavators/all').then(res => res.data.data),
     });
+    const { data: cars = [] } = useQuery({
+        queryKey: ['cars'],
+        queryFn: () => api.get('/devices/car/all').then(res => res.data.data),
+    });
     const { data: materials = [] } = useQuery({
         queryKey: ['materials'],
         queryFn: () => api.get('/materials').then(res => res.data.data),
@@ -117,6 +122,11 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                 : initialValues.device
                     ? [typeof initialValues.device === 'object' ? initialValues.device._id : initialValues.device]
                     : [],
+            assignedVehicles: Array.isArray(initialValues.assignedVehicles)
+                ? initialValues.assignedVehicles.map((d: any) => typeof d === 'object' ? d._id : d)
+                : initialValues.assignedVehicles
+                    ? [typeof initialValues.assignedVehicles === 'object' ? initialValues.assignedVehicles._id : initialValues.assignedVehicles]
+                    : [],
             repairVehicles: (initialValues.repairVehicles || [{ device: undefined, note: '' }]).map((d: any) => (
                 {
                     device: d.device !== null && typeof d.device === 'object' ? d.device?._id : d._id,
@@ -135,11 +145,12 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
             shiftHour: initialValues.shiftHour || '',
             safetyMeasure: initialValues.safetyMeasure || '',
             safetyMeasureSpecific: initialValues.safetyMeasureSpecific || '',
-            excavator: Array.isArray(initialValues.excavator)
-                ? initialValues.excavator.map((d: any) => typeof d === 'object' ? d._id : d)
-                : initialValues.excavator
-                    ? [typeof initialValues.excavator === 'object' ? initialValues.excavator._id : initialValues.excavator]
-                    : [],
+            excavator: (initialValues.excavator || []).map((d: any) => (
+                {
+                    device: d.device !== null && typeof d.device === 'object' ? d.device?._id : d._id,
+                    status: d.status
+                }
+            )),
             location: Array.isArray(initialValues.location)
                 ? initialValues.location.map((d: any) => typeof d === 'object' ? d._id : d)
                 : initialValues.location
@@ -160,6 +171,7 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
             const order: Partial<Order> = {
                 assignedTo: values.assignedTo,
                 device: values.device,
+                assignedVehicles: values.assignedVehicles,
                 repairVehicles: values.repairVehicles,
                 job: values.job,
                 workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
@@ -178,6 +190,7 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
             onSubmit(order);
         },
     });
+    console.log(formik)
 
 
     return (
@@ -209,8 +222,66 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                         />
                     </Grid>
                     {selectedJob?.type === JobTypeEnum.VEHICLE && <Grid item xs={12}>
-                        <MultiSelectField title="Máy xúc" fieldName="excavator" options={excavators} formik={formik} initData={initialValues} labelKey="code" />
+                        <Box>
+                            <Autocomplete
+                                fullWidth
+                                multiple
+                                options={excavators}
+                                getOptionLabel={(option: Device) => option.code || ''}
+                                // Lấy value: lọc ra các object excavator hiện có
+                                value={excavators.filter((ex: any) =>
+                                    formik.values.excavator.some((e: any) => e.device === ex._id)
+                                )}
+                                onChange={(event, newValue) => {
+                                    // newValue là array object máy xúc => convert thành [{ device, note }]
+                                    const mapped = newValue.map((ex: any) => {
+                                        const old = formik.values.excavator.find((e: any) => e.device === ex._id);
+                                        return {
+                                            device: ex._id,
+                                            status: old.status || true,   // giữ lại note cũ nếu có
+                                        };
+                                    });
+                                    formik.setFieldValue('excavator', mapped);
+                                }}
+                                PopperComponent={StyledPopper}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        label="Máy xúc"
+                                        error={formik.touched.excavator && Boolean(formik.errors.excavator)}
+                                        helperText={
+                                            formik.touched.excavator &&
+                                                typeof formik.errors.excavator === 'string'
+                                                ? formik.errors.excavator
+                                                : ''
+                                        }
+                                    />
+                                )}
+                            />
+                            <FieldArray name="excavator">
+                                {({ remove, replace }) => (
+                                    <>
+                                        {formik.values.excavator.map((item: any, index: number) => (
+                                            <Box key={index} display="flex" alignItems="center" gap={1}>
+                                                <Checkbox
+                                                    checked={item.status}
+                                                    onChange={(e) =>
+                                                        replace(index, { ...item, status: e.target.checked })
+                                                    }
+                                                />
+                                                <span>{excavators.find((ex: any) => ex._id === item.device)?.code}</span>
+                                            </Box>
+                                        ))}
+                                    </>
+                                )}
+                            </FieldArray>
+                        </Box>
                     </Grid>}
+                    {selectedJob?.type === JobTypeEnum.EXCAVATOR &&
+                        <Grid item xs={12}>
+                            <MultiSelectField title="Thiết bị nhận tải" fieldName="assignedVehicles" options={cars} formik={formik} initData={initialValues} labelKey="code" />
+                        </Grid>
+                    }
                     <Grid item xs={6}>
                         <Autocomplete
                             fullWidth
@@ -236,7 +307,7 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
 
                     {selectedJob?.type && [JobTypeEnum.DOZER, JobTypeEnum.DRILL, JobTypeEnum.EXCAVATOR, JobTypeEnum.MAINTENANCE, JobTypeEnum.PUMP, JobTypeEnum.SERVICE_VEHICLE, JobTypeEnum.SIEVE, JobTypeEnum.VEHICLE].includes(selectedJob?.type) &&
                         <Grid item xs={6}>
-                            <MultiSelectField title="Phương tiện" fieldName="device" options={devices} formik={formik} initData={initialValues} labelKey="code" />
+                            <MultiSelectField title="Thiết bị" fieldName="device" options={devices} formik={formik} initData={initialValues} labelKey="code" />
                         </Grid>}
 
                     {selectedJob?.type === JobTypeEnum.MAINTENANCE && <Grid item xs={12}>
@@ -258,7 +329,7 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                                                     renderInput={(params) => (
                                                         <TextField
                                                             {...params}
-                                                            label="Phương tiện sửa chữa"
+                                                            label="Thiết bị sửa chữa"
                                                         />
                                                     )}
                                                 />

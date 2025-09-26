@@ -225,7 +225,7 @@ export default function DeviceAnalysic() {
                 <Box sx={{ p: 3 }}>
                     <Box display={'flex'} gap={3}>
                         <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
-                            Danh sách phương tiện
+                            Danh sách thiết bị
                         </Typography>
                         <Typography><strong>Đơn vị:</strong>{departmentPopup}</Typography>
                         <Typography><strong>Số lượng:</strong>{selectedDetailDevices.length || 0}</Typography>
@@ -233,7 +233,7 @@ export default function DeviceAnalysic() {
                     <Table size="small">
                         <TableHead>
                             <TableRow>
-                                <TableCell sx={{ fontWeight: 'bold' }}>Phương tiện</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Thiết bị</TableCell>
                                 <TableCell sx={{ fontWeight: 'bold' }}>Sản lượng</TableCell>
                                 <TableCell sx={{ fontWeight: 'bold' }}>Người vận hành</TableCell>
                                 <TableCell sx={{ fontWeight: 'bold' }}>Ghi chú</TableCell>
@@ -252,7 +252,7 @@ export default function DeviceAnalysic() {
                             ) : (
                                 <TableRow>
                                     <TableCell colSpan={3} align="center">
-                                        Không có phương tiện nào
+                                        Không có thiết bị nào
                                     </TableCell>
                                 </TableRow>
                             )}

@@ -10,53 +10,11 @@ import {
     AreaPlot,
 } from "@mui/x-charts";
 
-const rawData = [
-    { date: "2025-09-01", SLD: 100, SLT: 200, MKS: 50, KLD: 120, KLT: 300, TTK: 90, CD: 70 },
-    { date: "2025-09-02", SLD: 80, SLT: 220, MKS: 60, KLD: 110, KLT: 280, TTK: 100, CD: 60 },
-    { date: "2025-09-03", SLD: 120, SLT: 210, MKS: 55, KLD: 130, KLT: 320, TTK: 95, CD: 65 },
-];
 
-const productions = [
-    { key: "SLD", name: "Sản lượng đất thực hiện (m³)" },
-    { key: "SLT", name: "Sản lượng than nguyên khai (m³)" },
-    { key: "MKS", name: "Mét khoan sâu (m³)" },
-    { key: "KLD", name: "Khối lượng vận chuyển đất (Tkm)" },
-    { key: "KLT", name: "Khối lượng vận chuyển than" },
-    { key: "TTK", name: "Thể tích khối thực hiện" },
-    { key: "CD", name: "Cung độ thực hiện" },
-];
-
-function transformData(data: any[]) {
-    const keys = productions.map(p => p.key);
-    return data.map((row, idx) => {
-        const newRow: any = { ...row };
-        keys.forEach(k => {
-            const prev = idx > 0 ? data.slice(0, idx + 1).reduce((s, r) => s + (r[k] || 0), 0) : row[k];
-            newRow[`${k}_cum`] = prev;
-        });
-        return newRow;
-    });
-}
-
-const dataset = transformData(rawData);
-
-export default function ResponsiveLineChartProduction() {
-    const [selectedKey, setSelectedKey] = React.useState("SLD");
-    const selectedName = productions.find(p => p.key === selectedKey)?.name || selectedKey;
+export default function ResponsiveLineChartProduction({ dataset, selectedName, selectedKey }: { dataset: any, selectedName: string, selectedKey: string }) {
 
     return (
-        <Box sx={{ width: "100%", height: '100%' }}>
-            {/* Chọn loại sản lượng */}
-            <RadioGroup
-                row
-                value={selectedKey}
-                onChange={(e) => setSelectedKey(e.target.value)}
-                sx={{ mb: 2 }}
-            >
-                {productions.map((p) => (
-                    <FormControlLabel key={p.key} value={p.key} control={<Radio />} label={p.name} />
-                ))}
-            </RadioGroup>
+        <Box sx={{ width: "100%", height: '100%', display: 'flex', alignItems: 'center' }}>
 
             <ResponsiveChartContainer
                 height={350}
@@ -77,7 +35,7 @@ export default function ResponsiveLineChartProduction() {
                         },
                         {
                             dataKey: selectedKey,
-                            color: "rgba(196, 63, 63, 0.2", // Làm mờ màu xanh dương
+                            color: "rgba(196, 63, 63, 0.2)", // Làm mờ màu xanh dương
                         },
                     ]}
                 />

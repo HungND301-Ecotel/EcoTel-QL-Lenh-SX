@@ -34,7 +34,7 @@ router.post('/order/bulk', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
             })
             .populate('job', 'name type')
             .populate('device', 'code')
-            .populate('excavator', 'code')
+            .populate('excavator.device', 'code')
             .populate('location', 'name')
             .populate('material', 'name')
             .populate('shift')
@@ -5151,7 +5151,7 @@ router.post('/productReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.AD
             .populate('job', 'name')
             .populate('location', 'name')
             .populate('material', 'name')
-            .populate('excavator', 'code')
+            .populate('excavator.device', 'code')
             .populate({
                 path: 'device',
                 select: 'code category',
@@ -5221,7 +5221,7 @@ router.post('/productReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, 
                     .populate('job', 'name')
                     .populate('location', 'name')
                     .populate('material', 'name')
-                    .populate('excavator', 'code')
+                    .populate('excavator.device', 'code')
                     .populate({
                         path: 'device',
                         select: 'code category',
@@ -5578,7 +5578,7 @@ router.post('/meal_request/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADM
             .populate('job', 'name')
             .populate('location', 'name')
             .populate('material', 'name')
-            .populate('excavator', 'code')
+            .populate('excavator.device', 'code')
             .populate('device', 'code')
             .populate('shift')
         const formattedData = orders.flatMap((order, orderIndex) => {
@@ -5622,7 +5622,7 @@ router.post('/meal_request', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, R
                     .populate('job', 'name')
                     .populate('location', 'name')
                     .populate('material', 'name')
-                    .populate('excavator', 'code')
+                    .populate('excavator.device', 'code')
                     .populate('device', 'code')
                     .populate('shift')
 
@@ -5767,7 +5767,7 @@ router.post('/assignmentTo', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, R
                     .populate('job', 'name')
                     .populate('location', 'name')
                     .populate('material', 'name')
-                    .populate('excavator', 'code')
+                    .populate('excavator.device', 'code')
                     .populate('device', 'code')
                     .populate('shift')
                     .populate('createdBy', 'fullName salaryCode department')
@@ -5987,7 +5987,7 @@ router.post('/assignmentManager', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADM
                     .populate('job', 'name')
                     .populate('location', 'name')
                     .populate('material', 'name')
-                    .populate('excavator', 'code')
+                    .populate('excavator.device', 'code')
                     .populate('device', 'code')
                     .populate('shift')
                     .populate('createdBy', 'fullName salaryCode department')

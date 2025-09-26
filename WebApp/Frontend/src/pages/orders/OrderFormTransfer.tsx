@@ -5,6 +5,7 @@ import {
     Autocomplete,
     Box,
     Button,
+    Checkbox,
     Dialog,
     DialogContent,
     DialogTitle,
@@ -31,6 +32,7 @@ import { ContentCopy } from '@mui/icons-material';
 import { StyledPopper } from '../../ui/poppers';
 import { editAndTransferOrderValidationSchema } from '../../utils/validation';
 import { JobTypeEnum } from '../../types/enums';
+import { MultiSelectField } from '../../components/MultiSelectField';
 dayjs.extend(utc);
 
 
@@ -89,6 +91,10 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
         queryKey: ['excavators'],
         queryFn: () => api.get('/devices/excavators/all').then(res => res.data.data),
     });
+    const { data: cars = [] } = useQuery({
+        queryKey: ['cars'],
+        queryFn: () => api.get('/devices/car/all').then(res => res.data.data),
+    });
     const { data: materials = [] } = useQuery({
         queryKey: ['materials'],
         queryFn: () => api.get('/materials').then(res => res.data.data),
@@ -129,6 +135,11 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                     ? initialValues.device.at(-1)?._id
                     : initialValues.device.at(-1)]
                 : [],
+            assignedVehicles: Array.isArray(initialValues.assignedVehicles)
+                ? initialValues.assignedVehicles.map((d: any) => typeof d === 'object' ? d._id : d)
+                : initialValues.assignedVehicles
+                    ? [typeof initialValues.assignedVehicles === 'object' ? initialValues.assignedVehicles._id : initialValues.assignedVehicles]
+                    : [],
             repairVehicles: (initialValues.repairVehicles || [{ device: undefined, note: '' }]).map((d: any) => (
                 {
                     device: d.device !== null && typeof d.device === 'object' ? d.device?._id : d._id,
@@ -147,11 +158,12 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
             shiftHour: initialValues.shiftHour || '',
             safetyMeasure: initialValues.safetyMeasure || '',
             safetyMeasureSpecific: initialValues.safetyMeasureSpecific || '',
-            excavator: Array.isArray(initialValues?.excavator) && initialValues.excavator.length > 0
-                ? [typeof initialValues.excavator.at(-1) === 'object'
-                    ? initialValues.excavator.at(-1)?._id
-                    : initialValues.excavator.at(-1)]
-                : [],
+            excavator: (initialValues.excavator || []).map((d: any) => (
+                {
+                    device: d.device !== null && typeof d.device === 'object' ? d.device?._id : d._id,
+                    status: d.status
+                }
+            )),
             location: Array.isArray(initialValues?.location) && initialValues.location.length > 0
                 ? [typeof initialValues.location.at(-1) === 'object'
                     ? initialValues.location.at(-1)?._id
@@ -173,6 +185,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
             const order: Partial<Order> = {
                 assignedTo: values.assignedTo,
                 device: values.device,
+                assignedVehicles: values.assignedVehicles,
                 repairVehicles: values.repairVehicles,
                 job: values.job,
                 workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
@@ -236,28 +249,90 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                             )}
                         />
                     </Grid>
-                    {selectedJob?.type === JobTypeEnum.VEHICLE && <Grid item xs={12}>
-                        <Autocomplete
-                            fullWidth
-                            options={excavators}
-                            getOptionLabel={(option: Device) =>
-                                option?.code || ''
-                            }
-                            value={excavators.find((d: any) => d._id === formik.values.excavator[0]) || null}
-                            onChange={(event, newValue) => {
-                                formik.setFieldValue('excavator', newValue ? [newValue._id] : []);
-                            }}
-                            PopperComponent={StyledPopper}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    label="Máy xúc"
-                                    error={formik.touched.excavator && Boolean(formik.errors.excavator)}
-                                    helperText={formik.touched.excavator && typeof formik.errors.excavator === 'string' ? formik.errors.excavator : ''}
-                                />
-                            )}
-                        />
-                    </Grid>}
+                    {selectedJob?.type === JobTypeEnum.VEHICLE &&
+                        <Grid item xs={12}>
+                            <Autocomplete
+                                fullWidth
+                                multiple
+                                options={excavators}
+                                getOptionLabel={(option: Device) => option.code || ''}
+                                // Lấy value: lọc ra các object excavator hiện có
+                                value={excavators.filter((ex: any) =>
+                                    formik.values.excavator.some((e: any) => e.device === ex._id)
+                                )}
+                                onChange={(event, newValue) => {
+                                    const mapped = newValue.map((ex: any) => {
+                                        const old = formik.values.excavator.find((e: any) => e.device === ex._id);
+                                        return {
+                                            device: ex._id,
+                                            status: old.status || true,
+                                        };
+                                    });
+                                    formik.setFieldValue('excavator', mapped);
+                                }}
+                                PopperComponent={StyledPopper}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        label="Máy xúc"
+                                        error={formik.touched.excavator && Boolean(formik.errors.excavator)}
+                                        helperText={
+                                            formik.touched.excavator &&
+                                                typeof formik.errors.excavator === 'string'
+                                                ? formik.errors.excavator
+                                                : ''
+                                        }
+                                    />
+                                )}
+                            />
+                            <FieldArray name="excavator">
+                                {({ remove, replace }) => (
+                                    <>
+                                        {formik.values.excavator.map((item: any, index: number) => (
+                                            <Box key={index} display="flex" alignItems="center" gap={1}>
+                                                <Checkbox
+                                                    checked={item.status}
+                                                    onChange={(e) =>
+                                                        replace(index, { ...item, status: e.target.checked })
+                                                    }
+                                                />
+                                                <span>{excavators.find((ex: any) => ex._id === item.device)?.code}</span>
+                                            </Box>
+                                        ))}
+                                    </>
+                                )}
+                            </FieldArray>
+                        </Grid>
+                    }
+                    {selectedJob?.type === JobTypeEnum.EXCAVATOR &&
+                        <Grid item xs={12}>
+                            <Autocomplete
+                                fullWidth
+                                multiple
+                                options={cars}
+                                getOptionLabel={(option: Device) =>
+                                    option.code || ''
+                                }
+                                value={cars.filter((d: Device) =>
+                                    formik.values.assignedVehicles.includes(d._id)
+                                )}
+                                onChange={(event, newValue) => {
+                                    const selectedIds = newValue.map((item: any) => item._id);
+
+                                    formik.setFieldValue('assignedVehicles', selectedIds);
+                                }}
+                                PopperComponent={StyledPopper}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        label="Thiết bị nhận tải"
+                                        error={formik.touched.assignedVehicles && Boolean(formik.errors.assignedVehicles)}
+                                        helperText={formik.touched.assignedVehicles && typeof formik.errors.assignedVehicles === 'string' ? formik.errors.assignedVehicles : ''}
+                                    />
+                                )}
+                            />
+                        </Grid>
+                    }
                     <Grid item xs={6}>
                         <Autocomplete
                             fullWidth
@@ -296,7 +371,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                             renderInput={(params) => (
                                 <TextField
                                     {...params}
-                                    label="Phương tiện"
+                                    label="Thiết bị"
                                     error={formik.touched.device && Boolean(formik.errors.device)}
                                     helperText={formik.touched.device && typeof formik.errors.device === 'string' ? formik.errors.device : ''}
                                 />
@@ -323,7 +398,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                                                     renderInput={(params) => (
                                                         <TextField
                                                             {...params}
-                                                            label="Phương tiện sửa chữa"
+                                                            label="Thiết bị sửa chữa"
                                                         />
                                                     )}
                                                 />

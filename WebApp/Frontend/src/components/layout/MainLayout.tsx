@@ -14,10 +14,10 @@ interface MainLayoutProps {
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
     return (
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column'}}>
             <Header />
             {/* Nội dung chính */}
-            <Box sx={{ flex: 1, mt: 24, p: 3 }}>
+            <Box sx={{ flex: 1, p: 3 }}>
                 {children || <Outlet />}
             </Box>
         </Box >

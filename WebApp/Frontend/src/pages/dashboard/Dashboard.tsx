@@ -76,6 +76,7 @@ const DashBoard: React.FC = () => {
                         value={departments.length}
                         icon={<DepartmentIcon />}
                         color="#4caf50"
+                        type="department"
                     />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -84,6 +85,7 @@ const DashBoard: React.FC = () => {
                         value={userCount}
                         icon={<PersonIcon />}
                         color="#2196f3"
+                        type="user"
                     />
                 </Grid>
             </Grid>

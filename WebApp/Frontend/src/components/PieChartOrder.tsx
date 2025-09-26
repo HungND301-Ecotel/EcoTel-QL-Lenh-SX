@@ -16,7 +16,7 @@ export default function PieChartOrder({ data }: { data: any }) {
     const totalValue = chartData.reduce((sum, item) => sum + item.value, 0);
 
     return (
-        <div style={{ width: '100%', height: 400, position: 'relative', }}>
+        <div style={{ width: '100%', height: '100%', position: 'relative', }}>
             {totalValue === 0 && <Typography variant="h6" style={{
                 position: 'absolute',
                 zIndex: 10,

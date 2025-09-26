@@ -85,12 +85,16 @@ export interface Order {
     shiftHour?: string;
     startTime?: Date;
     endTime?: Date;
+    assignedVehicles?: string[];
     device?: string[];
     repairVehicles?: {
         device?: string,
         note?: string
     }[],
-    excavator?: string[];
+    excavator?: {
+        device?: string,
+        status: boolean
+    }[];
     location?: string[];
     material?: string[];
     workContent?: string;

@@ -134,7 +134,8 @@ router.get('/', verifyToken, async (req, res, next) => {
             })
             .populate('job', 'name type content')
             .populate('device', 'code')
-            .populate('excavator', 'code')
+            .populate('excavator.device', 'code')
+            .populate('assignedVehicles', 'code')
             .populate('location', 'name')
             .populate('material', 'name')
             .populate('shift')
@@ -354,6 +355,7 @@ router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCH
             job,
             workingDate,
             device,
+            assignedVehicles,
             repairVehicles,
             shift,
             shiftHour,
@@ -382,6 +384,7 @@ router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCH
             job,
             workingDate,
             device,
+            assignedVehicles,
             repairVehicles,
             shift,
             shiftHour,
@@ -582,7 +585,8 @@ router.put('/:id', verifyToken, async (req, res, next) => {
             })
             .populate('job', 'name type content')
             .populate('device', 'code')
-            .populate('excavator', 'code')
+            .populate('excavator.device', 'code')
+            .populate('assignedVehicles', 'code')
             .populate('location', 'name')
             .populate('material', 'name')
             .populate('shift')
@@ -948,7 +952,8 @@ router.post('/scanWork', verifyToken, async (req, res, next) => {
         })
             .populate('job', 'name type content')
             .populate('device', 'code')
-            .populate('excavator', 'code')
+            .populate('excavator.device', 'code')
+            .populate('assignedVehicles', 'code')
             .populate('location', 'name')
             .populate('material', 'name')
             .populate('shift')

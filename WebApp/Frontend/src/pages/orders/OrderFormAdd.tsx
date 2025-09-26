@@ -5,6 +5,7 @@ import {
     Autocomplete,
     Box,
     Button,
+    Checkbox,
     Dialog,
     DialogContent,
     DialogTitle,
@@ -28,6 +29,7 @@ import { ContentCopy } from '@mui/icons-material';
 import { StyledPopper } from '../../ui/poppers';
 import { addOrderValidationSchema } from '../../utils/validation';
 import { JobTypeEnum } from '../../types/enums';
+import { MultiSelectField } from '../../components/MultiSelectField';
 dayjs.extend(utc);
 
 
@@ -91,6 +93,10 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
         queryKey: ['excavators'],
         queryFn: () => api.get('/devices/excavators/all').then(res => res.data.data),
     });
+    const { data: cars = [] } = useQuery({
+        queryKey: ['cars'],
+        queryFn: () => api.get('/devices/car/all').then(res => res.data.data),
+    });
     const { data: materials = [] } = useQuery({
         queryKey: ['materials'],
         queryFn: () => api.get('/materials').then(res => res.data.data),
@@ -123,6 +129,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                     device: [],
                 },
             ],
+            assignedVehicles: [],
             repairVehicles: [
                 {
                     device: undefined,
@@ -146,6 +153,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
             const orders: Partial<Order>[] = values.usersAndDevices.map(item => ({
                 assignedTo: item.assignedTo,
                 device: item.device,
+                assignedVehicles: values.assignedVehicles,
                 repairVehicles: values.repairVehicles,
                 job: values.job,
                 workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
@@ -226,26 +234,62 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                 />
                 {selectedJob && <Box mt={2}>
                     {selectedJob?.type === JobTypeEnum.VEHICLE &&
-                        <Autocomplete
-                            fullWidth
-                            options={excavators}
-                            getOptionLabel={(option: Device) =>
-                                option.code || ''
-                            }
-                            value={excavators.find((p: any) => p._id === formik.values.excavator[0]) || null}
-                            onChange={(event, newValue) => {
-                                formik.setFieldValue('excavator', newValue?._id ? [newValue?._id] : []);
-                            }}
-                            PopperComponent={StyledPopper}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    label="Máy xúc"
-                                    error={formik.touched.excavator && Boolean(formik.errors.excavator)}
-                                    helperText={formik.touched.excavator && typeof formik.errors.excavator === 'string' ? formik.errors.excavator : ''}
-                                />
-                            )}
-                        />
+                        <Box>
+                            <Autocomplete
+                                fullWidth
+                                multiple
+                                options={excavators}
+                                getOptionLabel={(option: Device) => option.code || ''}
+                                // Lấy value: lọc ra các object excavator hiện có
+                                value={excavators.filter((ex: any) =>
+                                    formik.values.excavator.some((e: any) => e.device === ex._id)
+                                )}
+                                onChange={(event, newValue) => {
+                                    const mapped = newValue.map((ex: any) => {
+                                        const old = formik.values.excavator.find((e: any) => e.device === ex._id);
+                                        return {
+                                            device: ex._id,
+                                            status: true,
+                                        };
+                                    });
+                                    formik.setFieldValue('excavator', mapped);
+                                }}
+                                PopperComponent={StyledPopper}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        label="Máy xúc"
+                                        error={formik.touched.excavator && Boolean(formik.errors.excavator)}
+                                        helperText={
+                                            formik.touched.excavator &&
+                                                typeof formik.errors.excavator === 'string'
+                                                ? formik.errors.excavator
+                                                : ''
+                                        }
+                                    />
+                                )}
+                            />
+                            <FieldArray name="excavator">
+                                {({ remove, replace }) => (
+                                    <>
+                                        {formik.values.excavator.map((item: any, index: number) => (
+                                            <Box key={index} display="flex" alignItems="center" gap={1}>
+                                                <Checkbox
+                                                    checked={item.status}
+                                                    onChange={(e) =>
+                                                        replace(index, { ...item, status: e.target.checked })
+                                                    }
+                                                />
+                                                <span>{excavators.find((ex: any) => ex._id === item.device)?.code}</span>
+                                            </Box>
+                                        ))}
+                                    </>
+                                )}
+                            </FieldArray>
+                        </Box>
+                    }
+                    {selectedJob?.type === JobTypeEnum.EXCAVATOR &&
+                        <MultiSelectField title="Thiết bị nhận tải" fieldName="assignedVehicles" options={cars} formik={formik} initData={[]} labelKey="code" />
                     }
                     <FieldArray name="usersAndDevices">
                         {({ push, remove }) => (
@@ -312,7 +356,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                                                 renderInput={(params) => (
                                                     <TextField
                                                         {...params}
-                                                        label="Phương tiện"
+                                                        label="Thiết bị"
                                                         error={Boolean(
                                                             typeof formik.errors.usersAndDevices?.[index] === 'object' &&
                                                             (formik.errors.usersAndDevices?.[index] as any)?.device
@@ -357,7 +401,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                                                     renderInput={(params) => (
                                                         <TextField
                                                             {...params}
-                                                            label="Phương tiện sửa chữa"
+                                                            label="Thiết bị sửa chữa"
                                                         />
                                                     )}
                                                 />

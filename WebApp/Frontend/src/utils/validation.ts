@@ -14,7 +14,7 @@ export const trvelLogValidationSchema = yup.object({
 export const vehicleValidationSchema = yup.object({
     code: yup.string().required('Vui lòng nhập biển số'),
     name: yup.string(),
-    category: yup.string().required('Vui lòng chọn loại phương tiện'),
+    category: yup.string().required('Vui lòng chọn loại thiết bị'),
     coordinates: yup.object({
         lng: yup.number().required('Vui lòng chọn vĩ độ'),
         lat: yup.number().required('Vui lòng chọn kinh độ'),
@@ -95,8 +95,8 @@ export const jobValidationSchema = yup.object({
 });
 // loai phuong tien
 export const deviceTypeValidationSchema = yup.object({
-    name: yup.string().required('Vui lòng nhập tên loại phương tiện'),
-    group: yup.string().required('Vui lòng chọn nhóm phương tiện'),
+    name: yup.string().required('Vui lòng nhập tên loại thiết bị'),
+    group: yup.string().required('Vui lòng chọn nhóm thiết bị'),
 });
 // don vi
 export const departmentValidationSchema = yup.object({

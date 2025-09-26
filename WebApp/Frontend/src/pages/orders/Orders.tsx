@@ -463,12 +463,8 @@ const Orders: React.FC = () => {
         },
         {
             title: 'Máy xúc', dataIndex: 'excavator', key: 'excavator', width: 100,
-            render: (text, record) => record.excavator?.map((dev: any) => dev.code).join(', '),
-            filterSearch: true,
-            filters: excavators.map((d: any) => ({ text: d.code, value: d._id })),
-            onFilter: undefined,
+            render: (text, record) => record.excavator?.map((dev: any) => dev.device?.code).join(', '),
             ellipsis: true,
-            filteredValue: serverFilters.excavator ?? null,
         },
         {
             title: 'Vật liệu', dataIndex: 'material', key: 'material', width: 100,
@@ -996,7 +992,8 @@ const Orders: React.FC = () => {
                                         ))}
                                     </Box>
                                 }
-                                {selectedRow.excavator?.length > 0 && <Typography><strong>Máy xúc:</strong> {selectedRow.excavator?.map((dev: any) => dev.code).join(', ')}</Typography>}
+                                {selectedRow.assignedVehicles?.length > 0 && <Typography><strong>Thiết bị nhận tải:</strong> {selectedRow.assignedVehicles?.map((dev: any) => dev?.code).join(', ')}</Typography>}
+                                {selectedRow.excavator?.length > 0 && <Typography><strong>Máy xúc:</strong> {selectedRow.excavator?.map((dev: any) => dev.device?.code).join(', ')}</Typography>}
                                 {selectedRow.material?.length > 0 && <Typography><strong>Vật liệu:</strong> {selectedRow.material?.map((dev: any) => dev.name).join(', ')}</Typography>}
                                 {selectedRow.location?.length > 0 && <Typography><strong>Điểm đổ:</strong> {selectedRow.location?.map((dev: any) => dev.name).join(', ')}</Typography>}
                                 <Typography><strong>Nội dung lệnh:</strong> {selectedRow.workContent}</Typography>

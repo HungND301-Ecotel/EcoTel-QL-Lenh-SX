@@ -34,6 +34,10 @@ const orderSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Device',
     }],
+    assignedVehicles: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Device',
+    }],
     repairVehicles: [{
         device: {
             type: mongoose.Schema.Types.ObjectId,
@@ -42,8 +46,14 @@ const orderSchema = new mongoose.Schema({
         note: String
     }],
     excavator: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Device',
+        device: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Device',
+        },
+        status: {
+            type: Boolean,
+            default: true
+        }
     }],
     location: [{
         type: mongoose.Schema.Types.ObjectId,

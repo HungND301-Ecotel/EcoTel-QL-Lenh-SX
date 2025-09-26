@@ -1,5 +1,6 @@
 import { Box, Card, Typography } from '@mui/material';
 import React from 'react'
+import { useNavigate } from 'react-router-dom';
 
 export default function SummaryCard(
     {
@@ -7,13 +8,16 @@ export default function SummaryCard(
         value,
         icon,
         color,
+        type
     }: {
         title: string;
         value: number;
         icon: React.ReactNode;
         color: string;
+        type: string;
     }
 ) {
+    const navigate = useNavigate();
     return (
         <Card
             sx={{
@@ -31,7 +35,8 @@ export default function SummaryCard(
             }}
         >
             <Box sx={{ flexGrow: 1 }}>
-                <Typography variant="h4" sx={{ fontWeight: 'bold' }} gutterBottom>
+                <Typography variant="h4" sx={{ fontWeight: 'bold', cursor: 'pointer' }} gutterBottom
+                    onClick={() => { navigate(`${type === "department" ? '/departments' : '/users'}`) }}>
                     {title}
                 </Typography>
                 <Typography variant="h4" sx={{ fontWeight: 'bold' }}>

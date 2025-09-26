@@ -86,7 +86,7 @@ export default function Header() {
             text: 'Loại vật liệu', icon: <Category color='primary' />, path: '/materials'
         },
         ["admin", "manager"].includes(user?.role) && {
-            text: 'Loại phương tiện', icon: <LocalOffer color='primary' />, path: '/deviceTypes'
+            text: 'Loại thiết bị', icon: <LocalOffer color='primary' />, path: '/deviceTypes'
         },
         ["admin", "manager", "dispatcher"].includes(user?.role) && {
             text: 'Thông tin xe', icon: <LocalShipping color='primary' />, path: '/vehicles'
@@ -103,7 +103,7 @@ export default function Header() {
         ["admin", "manager"].includes(user?.role) && {
             text: 'Chức danh nghề nghiệp', icon: <AssignmentInd color='primary' />, path: '/positions'
         },
-        ["admin", "manager"].includes(user?.role) && {
+        ["admin", "manager", "dispatcher"].includes(user?.role) && {
             text: 'Đơn vị', icon: <Business color='primary' />, path: '/departments'
         },
         ["admin", "manager", "dispatcher"].includes(user?.role) && {
@@ -112,25 +112,25 @@ export default function Header() {
     ].filter(Boolean);
     return (
         <>
-            <AppBar position="fixed">
-                <Box
-                    sx={{
-                        background: "linear-gradient(to right, #0b109aff, #709727ff, #644921ff, #0b109aff)", // màu xanh giống ảnh
-                        color: "white",
-                        py: 2,
-                        px: 3,
-                    }}
-                >
-                    <Box display="flex" justifyContent='center' alignItems={'center'} gap={2}>
-                        <img src="/image/logo.png" style={{ width: 100, height: 100 }} />
-                        <Typography variant="h6" sx={{
-                            fontSize: {
-                                md: 30,
-                                xs: 18
-                            },
-                        }} textAlign={'center'}>HỆ THỐNG QUẢN LÝ ĐIỀU PHỐI VÀ SỬ DỤNG MÁY MÓC THIẾT BỊ</Typography>
-                    </Box>
+            <Box
+                sx={{
+                    background: "linear-gradient(to right, #0b109aff, #709727ff, #644921ff, #0b109aff)", // màu xanh giống ảnh
+                    color: "white",
+                    py: 2,
+                    px: 3,
+                }}
+            >
+                <Box display="flex" justifyContent='center' alignItems={'center'} gap={2}>
+                    <img src="/image/logo.png" style={{ width: 100, height: 100 }} />
+                    <Typography variant="h6" sx={{
+                        fontSize: {
+                            md: 30,
+                            xs: 18
+                        },
+                    }} textAlign={'center'}>HỆ THỐNG QUẢN LÝ ĐIỀU PHỐI VÀ SỬ DỤNG MÁY MÓC THIẾT BỊ</Typography>
                 </Box>
+            </Box>
+            <AppBar position="sticky">
                 <Toolbar sx={{ justifyContent: 'space-between', }}>
                     {/* Menu chính ngang / Drawer cho mobile */}
                     {isMobile ? (

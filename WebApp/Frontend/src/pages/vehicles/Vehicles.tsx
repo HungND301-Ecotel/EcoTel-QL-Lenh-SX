@@ -211,7 +211,7 @@ const Vehicles: React.FC = () => {
             api.post('/devices', newDevice).then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['vehicles'] });
-            showSuccessAlert('Thêm phương tiện thành công');
+            showSuccessAlert('Thêm thiết bị thành công');
             handleClose();
         },
         onError: (error: any) => {
@@ -225,7 +225,7 @@ const Vehicles: React.FC = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['vehicles'] });
-            showSuccessAlert('Cập nhật phương tiện thành công');
+            showSuccessAlert('Cập nhật thiết bị thành công');
             handleClose();
         },
         onError: (error: any) => {

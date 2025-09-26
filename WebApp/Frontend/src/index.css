@@ -65,3 +65,16 @@
      cursor: col-resize;
      z-index: 1;
  }
+
+ .ag-floating-filter-button {
+     display: none !important;
+ }
+
+ .ag-header-cell-resize {
+     width: 4px !important;
+     /* tăng độ dày vách ngăn */
+     background-color: #ccc;
+     /* thêm màu xám */
+     cursor: col-resize;
+     /* hiện con trỏ kéo */
+ }

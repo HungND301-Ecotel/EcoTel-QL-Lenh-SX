@@ -84,7 +84,7 @@ const OrderHistories: React.FC<{ open: boolean, setOpen: Dispatch<SetStateAction
                                                 : '---'},
                                             Ca: ${item?.snapshot?.shift?.name || '---'},
                                             Bởi: ${item?.changedBy?.fullName || '---'},
-                                            Phương tiện: ${(item?.snapshot?.device || [])
+                                            Thiết bị: ${(item?.snapshot?.device || [])
                                                 .map((d: any) => d?.code)
                                                 .join(', ')},
                                             Máy xúc: ${(item?.snapshot?.excavator || [])

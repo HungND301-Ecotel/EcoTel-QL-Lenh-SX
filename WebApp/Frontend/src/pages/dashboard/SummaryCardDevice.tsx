@@ -6,6 +6,7 @@ import {
 import { Device } from '../../types';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../config/api.config';
+import { useNavigate } from 'react-router-dom';
 export default function SummaryCardDevice(
     {
         title,
@@ -23,7 +24,7 @@ export default function SummaryCardDevice(
         type: string
     }
 ) {
-
+    const navigate = useNavigate();
     const [anchorElSummary, setAnchorElSummary] = useState<HTMLElement | null>(null);
     const [selectedSummaryDevices, setSelectedSummaryDevices] = useState<any[]>([]);
 
@@ -72,7 +73,8 @@ export default function SummaryCardDevice(
                 alignItems: 'center',
             }}>
                 <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="h4" sx={{ fontWeight: 'bold' }} gutterBottom>
+                    <Typography variant="h4" sx={{ fontWeight: 'bold', cursor: 'pointer' }} gutterBottom
+                        onClick={() => { navigate(`${type === "Máy" ? '/machines' : '/vehicles'}`) }}>
                         {title}
                     </Typography>
                     <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
@@ -136,7 +138,7 @@ export default function SummaryCardDevice(
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
             >
                 <Box sx={{ p: 2, maxHeight: 300, overflowY: 'auto' }}>
-                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', }}>Danh sách phương tiện</Typography>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', }}>Danh sách thiết bị</Typography>
 
                     {selectedSummaryDevices.length > 0 ? (
                         <Table size="small">
@@ -157,7 +159,7 @@ export default function SummaryCardDevice(
                             </TableBody>
                         </Table>
                     ) : (
-                        <Typography>Không có phương tiện nào</Typography>
+                        <Typography>Không có thiết bị nào</Typography>
                     )}
                 </Box>
             </Popover>
