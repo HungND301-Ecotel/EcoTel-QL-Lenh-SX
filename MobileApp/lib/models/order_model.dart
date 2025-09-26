@@ -42,6 +42,25 @@ class RepairVehicles {
   }
 }
 
+class Excavator {
+  DeviceModel? device;
+  bool? status;
+
+  Excavator({this.device, this.status});
+
+  factory Excavator.fromJson(
+    Map<String, dynamic>? json,
+  ) {
+    return Excavator(
+      device: DeviceModel.fromJson(json?['device']),
+      status: json?['status'] ?? true,
+    );
+  }
+  Map<String, dynamic> toJson() {
+    return {'device': device?.toJson(), 'status': status};
+  }
+}
+
 class OrderModel {
   final String id;
   final UserModel assignedTo;
@@ -53,9 +72,10 @@ class OrderModel {
   DateTime? endTime;
   DateTime? resumeTime;
   List<RepairVehicles>? repairVehicles;
+  List<DeviceModel>? assignedVehicles;
   final UserModel? createdBy;
   final List<DeviceModel>? device;
-  final List<DeviceModel>? excavator;
+  final List<Excavator>? excavator;
   final List<LocationModel>? location;
   final List<MaterialModel>? material;
   final String? workContent;
@@ -79,6 +99,7 @@ class OrderModel {
     this.resumeTime,
     this.createdBy,
     this.device,
+    this.assignedVehicles,
     this.repairVehicles,
     this.excavator,
     this.location,
@@ -100,61 +121,54 @@ class OrderModel {
       job: TaskModel.fromJson(json?['job']),
       workingDate:
           DateTime.parse(json?['workingDate']).toLocal(),
-      shift:
-          json?['shift'] != null
-              ? ShiftModel.fromJson(json?['shift'])
-              : null,
+      shift: json?['shift'] != null
+          ? ShiftModel.fromJson(json?['shift'])
+          : null,
       shiftHour: json?['shiftHour'] ?? '',
-      startTime:
-          json?['startTime'] != null
-              ? DateTime.parse(json?['startTime']).toLocal()
-              : null,
-      endTime:
-          json?['endTime'] != null
-              ? DateTime.parse(json?['endTime']).toLocal()
-              : null,
-      resumeTime:
-          json?['resumeTime'] != null
-              ? DateTime.parse(
-                json?['resumeTime'],
-              ).toLocal()
-              : null,
+      startTime: json?['startTime'] != null
+          ? DateTime.parse(json?['startTime']).toLocal()
+          : null,
+      endTime: json?['endTime'] != null
+          ? DateTime.parse(json?['endTime']).toLocal()
+          : null,
+      resumeTime: json?['resumeTime'] != null
+          ? DateTime.parse(
+              json?['resumeTime'],
+            ).toLocal()
+          : null,
       createdBy: UserModel.fromJson(json?['createdBy']),
-      device:
-          (json?['device'] as List?)
+      device: (json?['device'] as List?)
               ?.map((e) => DeviceModel.fromJson(e))
               .toList() ??
           [],
-      repairVehicles:
-          (json?['repairVehicles'] as List?)
+      assignedVehicles: (json?['assignedVehicles'] as List?)
+              ?.map((e) => DeviceModel.fromJson(e))
+              .toList() ??
+          [],
+      repairVehicles: (json?['repairVehicles'] as List?)
               ?.map((e) => RepairVehicles.fromJson(e))
               .toList() ??
           [],
-      excavator:
-          (json?['excavator'] as List?)
-              ?.map((e) => DeviceModel.fromJson(e))
+      excavator: (json?['excavator'] as List?)
+              ?.map((e) => Excavator.fromJson(e))
               .toList() ??
           [],
-      location:
-          (json?['location'] as List?)
+      location: (json?['location'] as List?)
               ?.map((e) => LocationModel.fromJson(e))
               .toList() ??
           [],
-      material:
-          (json?['material'] as List?)
+      material: (json?['material'] as List?)
               ?.map((e) => MaterialModel.fromJson(e))
               .toList() ??
           [],
-      shiftReport:
-          json?['shiftReport'] != null
-              ? ShiftReportModel.fromJson(
-                json?['shiftReport'],
-              )
-              : null,
+      shiftReport: json?['shiftReport'] != null
+          ? ShiftReportModel.fromJson(
+              json?['shiftReport'],
+            )
+          : null,
       workContent: json?['workContent'] ?? '',
       status: json?['status'] ?? '',
-      assistants:
-          (json?['assistants'] as List?)
+      assistants: (json?['assistants'] as List?)
               ?.map((e) => UserModel.fromJson(e))
               .toList() ??
           [],
@@ -181,8 +195,7 @@ class OrderModel {
     }
 
     if (json.containsKey('assistants')) {
-      assistants =
-          (json['assistants'] as List?)
+      assistants = (json['assistants'] as List?)
               ?.map((e) => UserModel.fromJson(e))
               .toList() ??
           [];
@@ -202,6 +215,8 @@ class OrderModel {
       'resumeTime': resumeTime?.toIso8601String(),
       'createdBy': createdBy?.toJson(),
       'device': device?.map((e) => e.toJson()).toList(),
+      'assignedVehicles':
+          assignedVehicles?.map((e) => e.toJson()).toList(),
       'repairVehicles':
           repairVehicles?.map((e) => e.toJson()).toList(),
       'excavator':

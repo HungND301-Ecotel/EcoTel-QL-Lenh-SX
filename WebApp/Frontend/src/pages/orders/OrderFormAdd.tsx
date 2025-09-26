@@ -154,7 +154,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                 assignedTo: item.assignedTo,
                 device: item.device,
                 assignedVehicles: values.assignedVehicles,
-                repairVehicles: values.repairVehicles,
+                repairVehicles: values.repairVehicles.filter(i => i.device != null && i.device !== ''),
                 job: values.job,
                 workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
                 excavator: values.excavator,

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:soft/models/device_model.dart';
 import 'package:soft/models/order_model.dart';
 import 'package:soft/models/shift_model.dart';
 import 'package:soft/models/task_model.dart';
@@ -9,19 +8,17 @@ import 'package:soft/routes/app_routes.dart';
 import 'package:soft/routes/task_assignment_route.dart';
 import 'package:soft/screens/work_log/widgets/shift_select.dart';
 import 'package:soft/services/order_service.dart';
+import 'package:soft/widgets/car_button.dart';
 import 'package:soft/widgets/date_picker_button.dart';
-import 'package:soft/widgets/excavator_button.dart';
-import 'package:soft/widgets/location_button.dart';
 import 'package:soft/widgets/pay_roll_input.dart';
 import 'package:soft/widgets/time_picker_button.dart';
 import 'package:soft/widgets/vehicle_button.dart';
-import 'package:soft/widgets/material_select_button.dart';
 
-class TaskAssignmentVehicleEdit extends StatefulWidget {
+class TaskAssignmentExcavatorEdit extends StatefulWidget {
   final TaskModel data;
   final OrderModel? order;
 
-  const TaskAssignmentVehicleEdit({
+  const TaskAssignmentExcavatorEdit({
     super.key,
     required this.data,
     this.order,
@@ -29,20 +26,16 @@ class TaskAssignmentVehicleEdit extends StatefulWidget {
 
   @override
   State<StatefulWidget> createState() =>
-      _TaskAssignmentVehicleEdit();
+      _TaskAssignmentExcavatorEdit();
 }
 
-class _TaskAssignmentVehicleEdit
-    extends State<TaskAssignmentVehicleEdit> {
+class _TaskAssignmentExcavatorEdit
+    extends State<TaskAssignmentExcavatorEdit> {
   DateTime? _selectedDateTime;
   List<String?> vehicle = [];
-  List<Excavator?> excavators = [];
-
-  List<String?> dump = [];
-  List<String?> material = [];
+  List<String?> assignedVehicles = [];
   UserModel? user;
   ShiftModel? _shift;
-  String? safetyMeasure;
   String? _shiftHour;
 
   @override
@@ -56,28 +49,10 @@ class _TaskAssignmentVehicleEdit
       if (order.device != null) {
         vehicle = order.device!.map((d) => d.id).toList();
       }
-      // Gán lại vehicle nếu có
-      if (order.excavator != null &&
-          order.excavator!.isNotEmpty) {
-        excavators = order.excavator!.map((ex) {
-          return Excavator(
-            device: ex.device,
-            status: ex.status ?? true,
-          );
-        }).toList();
-      } else {
-        excavators = [
-          Excavator(device: null, status: true)
-        ];
-      }
-      // Gán lại vehicle nếu có
-      if (order.material != null) {
-        material =
-            order.material!.map((d) => d.id).toList();
-      }
-      // Gán lại vehicle nếu có
-      if (order.location != null) {
-        dump = order.location!.map((d) => d.id).toList();
+      if (order.assignedVehicles != null) {
+        assignedVehicles = order.assignedVehicles!
+            .map((d) => d.id)
+            .toList();
       }
       _safetyController.text = order.safetyMeasure ?? '';
       _safetySpecificController.text =
@@ -87,9 +62,7 @@ class _TaskAssignmentVehicleEdit
       _selectedDateTime = order.workingDate;
       _shift = order.shift;
       _shiftHour = order.shiftHour ?? '';
-
       _descriptionController.text = order.workContent ?? '';
-      _noteController.text = order.note ?? '';
       _noteController.text = order.note ?? '';
     }
   }
@@ -155,21 +128,10 @@ class _TaskAssignmentVehicleEdit
     });
   }
 
-  // void _updateExcavator(int index, String selectedVehicle) {
-  //   setState(() {
-  //     excavators[index] = selectedVehicle;
-  //   });
-  // }
-
-  void _updateMaterial(int index, String selectedMaterial) {
+  void _updateAssignedVehicles(
+      int index, String selectedVehicle) {
     setState(() {
-      material[index] = selectedMaterial;
-    });
-  }
-
-  void _updateLocation(int index, String selectedLocation) {
-    setState(() {
-      dump[index] = selectedLocation;
+      assignedVehicles[index] = selectedVehicle;
     });
   }
 
@@ -200,14 +162,10 @@ class _TaskAssignmentVehicleEdit
         .where((v) => v != null && v.isNotEmpty)
         .cast<String>()
         .toList();
-    final validExcavator = excavators
-        .where((item) => item?.device != null)
-        .map((i) => ({
-              'device': i?.device!.id,
-              'status': i?.status ?? true
-            }))
+    List<String> assignedVehiclesIds = assignedVehicles
+        .where((v) => v != null && v.isNotEmpty)
+        .cast<String>()
         .toList();
-
     var result =
         await _orderService.update(widget.order!.id, {
       "job": widget.data.id,
@@ -220,9 +178,7 @@ class _TaskAssignmentVehicleEdit
       "shiftHour": _shiftHour,
       "assignedTo": user?.id,
       "device": vehicleIds,
-      "location": dump,
-      "excavator": validExcavator,
-      "material": material,
+      "assignedVehicles": assignedVehiclesIds,
       "status": "pending",
       "workContent": description,
       "temporaryError": null,
@@ -344,127 +300,19 @@ class _TaskAssignmentVehicleEdit
                           padding: const EdgeInsets.only(
                             bottom: 8.0,
                           ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: VehicleButton(
-                                  vehicle: vehicle[index],
-                                  onSelectVehicle: (
-                                    selected,
-                                  ) {
-                                    _updateVehicle(
-                                      index,
-                                      selected,
-                                    );
-                                  },
-                                ),
-                              ),
-                              if (index > 0)
-                                IconButton(
-                                  icon: Icon(
-                                    Icons.remove_circle,
-                                    color: Colors.red,
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      vehicle
-                                          .removeAt(index);
-                                    });
-                                  },
-                                ),
-                            ],
+                          child: VehicleButton(
+                            vehicle: vehicle[index],
+                            onSelectVehicle: (selected) {
+                              _updateVehicle(
+                                  index, selected);
+                            },
                           ),
                         );
                       })),
                 Row(
                   children: [
-                    Expanded(
-                        child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                      children: [
-                        TextButton.icon(
-                          icon: Icon(Icons.add_circle,
-                              color: Colors.blue),
-                          label: Text('Thêm máy xúc'),
-                          onPressed: () {
-                            setState(() {
-                              excavators.add(Excavator(
-                                  device: null,
-                                  status: true));
-                            });
-                          },
-                        ),
-                        for (int i = 0;
-                            i < excavators.length;
-                            i++)
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextButton(
-                                  onPressed: () async {
-                                    final selected =
-                                        await Navigator.of(
-                                      context,
-                                      rootNavigator: true,
-                                    ).pushNamed(AppRoute
-                                            .excavatorSelect);
-
-                                    if (selected
-                                        is DeviceModel) {
-                                      setState(() {
-                                        excavators[i]
-                                                ?.device =
-                                            selected;
-                                      });
-                                    }
-                                  },
-                                  style:
-                                      TextButton.styleFrom(
-                                    foregroundColor:
-                                        Colors.black,
-                                    backgroundColor: Colors
-                                        .grey.shade300,
-                                    alignment: Alignment
-                                        .centerLeft,
-                                  ),
-                                  child: Text(
-                                    excavators[i]
-                                            ?.device
-                                            ?.code ??
-                                        'Chọn máy xúc',
-                                  ),
-                                ),
-                              ),
-                              Checkbox(
-                                value: excavators[i]
-                                    ?.status, // ✅ vì status là bool (mặc định true)
-                                onChanged: (val) {
-                                  setState(() {
-                                    excavators[i]?.status =
-                                        val ?? true;
-                                  });
-                                },
-                              ),
-                              IconButton(
-                                icon: Icon(Icons.cancel,
-                                    color: Colors.red),
-                                onPressed: () {
-                                  setState(() {
-                                    excavators.removeAt(i);
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
-                      ],
-                    )),
-                  ],
-                ),
-                Row(
-                  children: [
                     Text(
-                      'Điểm đổ',
+                      'Phương tiện nhận tải',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                       ),
@@ -472,7 +320,7 @@ class _TaskAssignmentVehicleEdit
                     IconButton(
                       onPressed: () {
                         setState(() {
-                          dump.add("");
+                          assignedVehicles.add("");
                         });
                       },
                       icon: Icon(
@@ -482,17 +330,17 @@ class _TaskAssignmentVehicleEdit
                     ),
                   ],
                 ),
-                ...(dump.isEmpty
+                ...(assignedVehicles.isEmpty
                     ? <Widget>[
                         Padding(
                           padding: const EdgeInsets.only(
                             bottom: 8.0,
                           ),
-                          child: LocationButton(
-                            location: null,
-                            onSelectLocation: (selected) {
+                          child: CarButton(
+                            vehicle: null,
+                            onSelectVehicle: (selected) {
                               setState(() {
-                                dump = [
+                                assignedVehicles = [
                                   selected,
                                 ]; // Khởi tạo danh sách mới
                               });
@@ -500,118 +348,21 @@ class _TaskAssignmentVehicleEdit
                           ),
                         ),
                       ]
-                    : List.generate(dump.length, (index) {
-                        return Padding(
-                          padding: const EdgeInsets.only(
-                            bottom: 8.0,
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: LocationButton(
-                                  location: dump[index],
-                                  onSelectLocation: (
-                                    selected,
-                                  ) {
-                                    _updateLocation(
-                                      index,
-                                      selected,
-                                    );
-                                  },
-                                ),
-                              ),
-                              if (index > 0)
-                                IconButton(
-                                  icon: Icon(
-                                    Icons.remove_circle,
-                                    color: Colors.red,
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      dump.removeAt(index);
-                                    });
-                                  },
-                                ),
-                            ],
-                          ),
-                        );
-                      })),
-                Row(
-                  children: [
-                    Text(
-                      'Vật liệu',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        setState(() {
-                          material.add("");
-                        });
-                      },
-                      icon: Icon(
-                        Icons.add_circle,
-                        color: Colors.blue,
-                      ),
-                    ),
-                  ],
-                ),
-                ...(material.isEmpty
-                    ? <Widget>[
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            bottom: 8.0,
-                          ),
-                          child: MaterialSelectButton(
-                            material: null,
-                            onSelectMaterial: (selected) {
-                              setState(() {
-                                material = [
-                                  selected,
-                                ]; // Khởi tạo danh sách mới
-                              });
-                            },
-                          ),
-                        ),
-                      ]
-                    : List.generate(material.length, (
+                    : List.generate(assignedVehicles.length,
+                        (
                         index,
                       ) {
                         return Padding(
                           padding: const EdgeInsets.only(
                             bottom: 8.0,
                           ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: MaterialSelectButton(
-                                  material: material[index],
-                                  onSelectMaterial: (
-                                    selected,
-                                  ) {
-                                    _updateMaterial(
-                                      index,
-                                      selected,
-                                    );
-                                  },
-                                ),
-                              ),
-                              if (index > 0)
-                                IconButton(
-                                  icon: Icon(
-                                    Icons.remove_circle,
-                                    color: Colors.red,
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      material.removeAt(
-                                        index,
-                                      );
-                                    });
-                                  },
-                                ),
-                            ],
+                          child: CarButton(
+                            vehicle:
+                                assignedVehicles[index],
+                            onSelectVehicle: (selected) {
+                              _updateAssignedVehicles(
+                                  index, selected);
+                            },
                           ),
                         );
                       })),

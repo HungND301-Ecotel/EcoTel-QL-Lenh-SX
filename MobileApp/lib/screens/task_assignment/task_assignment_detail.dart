@@ -123,10 +123,11 @@ class _TaskAssignmentDetail
                           Text(
                             widget.data.workingDate != null
                                 ? DateFormat(
-                                  'dd/MM/yyyy',
-                                ).format(
-                                  widget.data.workingDate!,
-                                )
+                                    'dd/MM/yyyy',
+                                  ).format(
+                                    widget
+                                        .data.workingDate!,
+                                  )
                                 : '',
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
@@ -151,9 +152,7 @@ class _TaskAssignmentDetail
                             ),
                           ),
                           Text(
-                            widget
-                                    .data
-                                    .createdBy
+                            widget.data.createdBy
                                     ?.fullName ??
                                 '', // Điền sau nếu có
                             style: TextStyle(
@@ -163,17 +162,12 @@ class _TaskAssignmentDetail
                           ),
                           SizedBox(width: 6),
                           if (widget
-                                  .data
-                                  .createdBy
-                                  ?.phone !=
+                                  .data.createdBy?.phone !=
                               null)
                             IconButton(
                               onPressed: () {
-                                final phone =
-                                    widget
-                                        .data
-                                        .createdBy!
-                                        .phone!;
+                                final phone = widget
+                                    .data.createdBy!.phone!;
                                 _callPhone(phone);
                               },
                               icon: const Icon(Icons.phone),
@@ -203,79 +197,105 @@ class _TaskAssignmentDetail
                             ), // Điền sau nếu có
                           ],
                         ),
-                      if (widget.data.repairVehicles != null &&
-                          widget.data.repairVehicles!.isNotEmpty)
+                      if (widget.data.repairVehicles !=
+                              null &&
+                          widget.data.repairVehicles!
+                              .isNotEmpty)
                         Text(
                           'Phương tiện sửa chữa: ',
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                      if (widget.data.repairVehicles != null &&
-                          widget.data.repairVehicles!.isNotEmpty)
+                      if (widget.data.repairVehicles !=
+                              null &&
+                          widget.data.repairVehicles!
+                              .isNotEmpty)
                         Column(
-                          children:
-                              widget.data.repairVehicles!.map((
-                                repair,
-                              ) {
-                                return Column(
+                          children: widget
+                              .data.repairVehicles!
+                              .map((
+                            repair,
+                          ) {
+                            return Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [
+                                Column(
                                   crossAxisAlignment:
                                       CrossAxisAlignment
                                           .start,
                                   children: [
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment
-                                              .start,
+                                    Row(
                                       children: [
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              Icons.build,
-                                              color:
-                                                  Colors
-                                                      .orange,
-                                              size: 20,
-                                            ),
-                                            Text(
-                                              repair
-                                                      .device
-                                                      ?.code ??
-                                                  '',
-                                            ),
-                                          ],
+                                        Icon(
+                                          Icons.build,
+                                          color:
+                                              Colors.orange,
+                                          size: 20,
                                         ),
-                                        Row(
-                                          children: [
-                                            Text(
-                                              'Tình trạng:  ',
-                                              style: TextStyle(
-                                                fontWeight:
-                                                    FontWeight
-                                                        .w600,
-                                              ),
-                                            ),
-                                            Text(
-                                              '${repair.note}',
-                                            ),
-                                          ],
+                                        Text(
+                                          repair.device
+                                                  ?.code ??
+                                              '',
+                                        ),
+                                      ],
+                                    ),
+                                    Row(
+                                      children: [
+                                        Text(
+                                          'Tình trạng:  ',
+                                          style: TextStyle(
+                                            fontWeight:
+                                                FontWeight
+                                                    .w600,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${repair.note}',
                                         ),
                                       ],
                                     ),
                                   ],
-                                );
-                              }).toList(),
+                                ),
+                              ],
+                            );
+                          }).toList(),
                         ),
-                      if (widget
-                              .data
-                              .excavator
+                      if (widget.data.assignedVehicles
                               ?.isNotEmpty ==
                           true)
                         const SizedBox(height: 10),
-                      if (widget
-                              .data
-                              .excavator
+                      if (widget.data.assignedVehicles
                               ?.isNotEmpty ==
+                          true)
+                        Row(
+                          children: [
+                            Text(
+                              'Phương tiện nhận tải: ',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                (widget.data.assignedVehicles ??
+                                        [])
+                                    .map((e) => e.code)
+                                    .join(', '),
+                                softWrap: true,
+                                overflow:
+                                    TextOverflow.visible,
+                              ),
+                            ), // Điền sau nếu có
+                          ],
+                        ),
+                      if (widget
+                              .data.excavator?.isNotEmpty ==
+                          true)
+                        const SizedBox(height: 10),
+                      if (widget
+                              .data.excavator?.isNotEmpty ==
                           true)
                         Row(
                           children: [
@@ -287,7 +307,8 @@ class _TaskAssignmentDetail
                             ),
                             Text(
                               (widget.data.excavator ?? [])
-                                  .map((e) => e.code)
+                                  .map(
+                                      (e) => e.device?.code)
                                   .join(', '),
                               softWrap: true,
                               overflow:
@@ -296,15 +317,11 @@ class _TaskAssignmentDetail
                           ],
                         ),
                       if (widget
-                              .data
-                              .material
-                              ?.isNotEmpty ==
+                              .data.material?.isNotEmpty ==
                           true)
                         const SizedBox(height: 10),
                       if (widget
-                              .data
-                              .material
-                              ?.isNotEmpty ==
+                              .data.material?.isNotEmpty ==
                           true)
                         Row(
                           children: [
@@ -327,15 +344,11 @@ class _TaskAssignmentDetail
                           ],
                         ),
                       if (widget
-                              .data
-                              .location
-                              ?.isNotEmpty ==
+                              .data.location?.isNotEmpty ==
                           true)
                         const SizedBox(height: 10),
                       if (widget
-                              .data
-                              .location
-                              ?.isNotEmpty ==
+                              .data.location?.isNotEmpty ==
                           true)
                         Row(
                           children: [
@@ -370,18 +383,14 @@ class _TaskAssignmentDetail
                             "${widget.data.assignedTo.salaryCode} ${widget.data.assignedTo.fullName ?? ''}",
                           ),
                           SizedBox(width: 6),
-                          if ((widget
-                                      .data
-                                      .assignedTo
+                          if ((widget.data.assignedTo
                                       .phone ??
                                   '')
                               .isNotEmpty)
                             IconButton(
                               onPressed: () {
                                 _callPhone(
-                                  widget
-                                      .data
-                                      .assignedTo
+                                  widget.data.assignedTo
                                       .phone!,
                                 );
                               },
@@ -407,12 +416,11 @@ class _TaskAssignmentDetail
                                   widget.data.startTime !=
                                           null
                                       ? DateFormat(
-                                        'HH:mm:ss',
-                                      ).format(
-                                        widget
-                                            .data
-                                            .startTime!,
-                                      )
+                                          'HH:mm:ss',
+                                        ).format(
+                                          widget.data
+                                              .startTime!,
+                                        )
                                       : '',
                                 ),
                               ],
@@ -433,12 +441,11 @@ class _TaskAssignmentDetail
                                   widget.data.endTime !=
                                           null
                                       ? DateFormat(
-                                        'HH:mm:ss',
-                                      ).format(
-                                        widget
-                                            .data
-                                            .endTime!,
-                                      )
+                                          'HH:mm:ss',
+                                        ).format(
+                                          widget.data
+                                              .endTime!,
+                                        )
                                       : '',
                                 ),
                               ],
@@ -454,9 +461,7 @@ class _TaskAssignmentDetail
                         ),
                       ),
                       Text(widget.data.workContent ?? ''),
-                      if (widget
-                          .data
-                          .safetyMeasureSpecific!
+                      if (widget.data.safetyMeasureSpecific!
                           .isNotEmpty)
                         if (widget
                             .data
@@ -539,8 +544,8 @@ class _TaskAssignmentDetail
                           foregroundColor: Colors.white,
                           padding:
                               const EdgeInsets.symmetric(
-                                vertical: 15,
-                              ),
+                            vertical: 15,
+                          ),
                         ),
                         child: const Text(
                           'Copy',
@@ -560,8 +565,8 @@ class _TaskAssignmentDetail
                           foregroundColor: Colors.white,
                           padding:
                               const EdgeInsets.symmetric(
-                                vertical: 15,
-                              ),
+                            vertical: 15,
+                          ),
                         ),
                         child: const Text(
                           'Xóa',

@@ -43,6 +43,37 @@ class _ExcavatorSelectVehicle
               .toList(),
         );
       });
+      final order = Provider.of<ReportDraftProvider>(
+        context,
+        listen: false,
+      ).order;
+      if (order?.assignedVehicles != null &&
+          order!.assignedVehicles!.isNotEmpty) {
+        // Lấy danh sách id từ assignedVehicles
+        final selectedIds = order.assignedVehicles!
+            .map((m) => m.id)
+            .toSet();
+
+        Provider.of<ReportDraftProvider>(context,
+                listen: false)
+            .devices = selectedIds.toList();
+
+        setState(() {
+          _selectedDevices = selectedIds;
+
+          // Sắp xếp: xe đã chọn nằm lên trên
+          devices.sort((a, b) {
+            if (selectedIds.contains(a.id) &&
+                !selectedIds.contains(b.id)) {
+              return -1;
+            } else if (!selectedIds.contains(a.id) &&
+                selectedIds.contains(b.id)) {
+              return 1;
+            }
+            return 0;
+          });
+        });
+      }
     }
     setState(() {
       _isLoading = false;
@@ -88,14 +119,13 @@ class _ExcavatorSelectVehicle
   String _searchText = '';
   @override
   Widget build(BuildContext context) {
-    List<DeviceModel> filteredItems =
-        devices
-            .where(
-              (item) => item.code.toLowerCase().contains(
+    List<DeviceModel> filteredItems = devices
+        .where(
+          (item) => item.code.toLowerCase().contains(
                 _searchText.toLowerCase(),
               ),
-            )
-            .toList();
+        )
+        .toList();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
@@ -139,47 +169,41 @@ class _ExcavatorSelectVehicle
           ),
           Divider(height: 1),
           Expanded(
-            child:
-                _isLoading
-                    ? Center(
-                      child: CircularProgressIndicator(),
-                    )
-                    : SingleChildScrollView(
-                      child: Column(
-                        children:
-                            filteredItems
-                                .map(
-                                  (item) => ExcavatorItem(
-                                    data: item,
-                                    selected:
-                                        _selectedDevices
-                                            .contains(
-                                              item.id,
-                                            ),
-                                    onTap:
-                                        () =>
-                                            _onToggleDevice(
-                                              item.id,
-                                            ),
-                                  ),
-                                )
-                                .toList(),
-                      ),
+            child: _isLoading
+                ? Center(
+                    child: CircularProgressIndicator(),
+                  )
+                : SingleChildScrollView(
+                    child: Column(
+                      children: filteredItems
+                          .map(
+                            (item) => ExcavatorItem(
+                              data: item,
+                              selected:
+                                  _selectedDevices.contains(
+                                item.id,
+                              ),
+                              onTap: () => _onToggleDevice(
+                                item.id,
+                              ),
+                            ),
+                          )
+                          .toList(),
                     ),
+                  ),
           ),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed:
-                  _selectedDevices.isEmpty
-                      ? null
-                      : () {
-                        Navigator.pushNamed(
-                          context,
-                          WorkLogRoutes
-                              .excavatorSelectMaterial,
-                        );
-                      },
+              onPressed: _selectedDevices.isEmpty
+                  ? null
+                  : () {
+                      Navigator.pushNamed(
+                        context,
+                        WorkLogRoutes
+                            .excavatorSelectMaterial,
+                      );
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,

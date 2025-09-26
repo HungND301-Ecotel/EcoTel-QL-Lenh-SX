@@ -75,18 +75,18 @@ class _ExcavatorSelectMaterial
 
     provider.setMaterial(_selectedMaterial!);
 
+    print(provider.devices);
+
     try {
       // Tạo danh sách các Future (gọi API cho từng device)
-      final futures =
-          provider.devices.map((device) {
-            return _reportService.createReport({
-              "orderId": provider.orderId,
-              "material": provider.material,
-              "device": device,
-              "quantity": 0,
-            });
-          }).toList();
-
+      final futures = provider.devices.map((device) {
+        return _reportService.createReport({
+          "orderId": provider.orderId,
+          "material": provider.material,
+          "device": device,
+          "quantity": 0,
+        });
+      }).toList();
       // Đợi tất cả request hoàn thành
       final results = await Future.wait(futures);
 
@@ -126,14 +126,13 @@ class _ExcavatorSelectMaterial
   String _searchText = '';
   @override
   Widget build(BuildContext context) {
-    List<MaterialModel> filteredItems =
-        materials
-            .where(
-              (item) => item.name.toLowerCase().contains(
+    List<MaterialModel> filteredItems = materials
+        .where(
+          (item) => item.name.toLowerCase().contains(
                 _searchText.toLowerCase(),
               ),
-            )
-            .toList();
+        )
+        .toList();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
@@ -177,31 +176,28 @@ class _ExcavatorSelectMaterial
           ),
           Divider(height: 1),
           Expanded(
-            child:
-                _isLoading
-                    ? Center(
-                      child: CircularProgressIndicator(),
-                    )
-                    : SingleChildScrollView(
-                      child: Column(
-                        children:
-                            filteredItems
-                                .map(
-                                  (item) => MaterialItem(
-                                    data: item,
-                                    selected:
-                                        _selectedMaterial ==
-                                        item.id,
-                                    onTap: () {
-                                      _onSelectedMaterial(
-                                        item.id,
-                                      );
-                                    },
-                                  ),
-                                )
-                                .toList(),
-                      ),
+            child: _isLoading
+                ? Center(
+                    child: CircularProgressIndicator(),
+                  )
+                : SingleChildScrollView(
+                    child: Column(
+                      children: filteredItems
+                          .map(
+                            (item) => MaterialItem(
+                              data: item,
+                              selected: _selectedMaterial ==
+                                  item.id,
+                              onTap: () {
+                                _onSelectedMaterial(
+                                  item.id,
+                                );
+                              },
+                            ),
+                          )
+                          .toList(),
                     ),
+                  ),
           ),
           Container(
             padding: const EdgeInsets.all(8.0),
@@ -224,57 +220,57 @@ class _ExcavatorSelectMaterial
                 SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed:
-                        _selectedMaterial == null
-                            ? null
-                            : () {
-                              showDialog(
-                                context: context,
-                                builder:
-                                    (
-                                      BuildContext
-                                      dialogContext,
-                                    ) => AlertDialog(
-                                      title: Text(
-                                        "Xác nhận",
-                                      ),
-                                      content: Text(
-                                        "Bạn muốn lưu chuyến vào hệ thống",
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () {
-                                            Navigator.of(
-                                              dialogContext,
-                                            ).pop();
-                                          },
-                                          style: TextButton.styleFrom(
-                                            foregroundColor:
-                                                Colors.blue,
-                                          ),
-                                          child: Text(
-                                            "Bỏ qua",
-                                          ),
-                                        ),
-                                        TextButton(
-                                          onPressed: () {
-                                            Navigator.of(
-                                              dialogContext,
-                                            ).pop();
-                                            create();
-                                          },
-                                          style: TextButton.styleFrom(
-                                            foregroundColor:
-                                                Colors.blue,
-                                          ),
-                                          child: Text(
-                                            "Lưu lại",
-                                          ),
-                                        ),
-                                      ],
+                    onPressed: _selectedMaterial == null
+                        ? null
+                        : () {
+                            showDialog(
+                              context: context,
+                              builder: (
+                                BuildContext dialogContext,
+                              ) =>
+                                  AlertDialog(
+                                title: Text(
+                                  "Xác nhận",
+                                ),
+                                content: Text(
+                                  "Bạn muốn lưu chuyến vào hệ thống",
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(
+                                        dialogContext,
+                                      ).pop();
+                                    },
+                                    style: TextButton
+                                        .styleFrom(
+                                      foregroundColor:
+                                          Colors.blue,
                                     ),
-                              );
-                            },
+                                    child: Text(
+                                      "Bỏ qua",
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(
+                                        dialogContext,
+                                      ).pop();
+                                      create();
+                                    },
+                                    style: TextButton
+                                        .styleFrom(
+                                      foregroundColor:
+                                          Colors.blue,
+                                    ),
+                                    child: Text(
+                                      "Lưu lại",
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,

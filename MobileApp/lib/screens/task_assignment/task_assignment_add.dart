@@ -5,6 +5,7 @@ import 'package:soft/models/task_model.dart';
 import 'package:soft/providers/user_provider.dart';
 import 'package:soft/screens/task_assignment/dispatcher/dispatcher_assignment_add.dart';
 import 'package:soft/screens/task_assignment/task_assignment_type_add/task_assignment_common_add.dart';
+import 'package:soft/screens/task_assignment/task_assignment_type_add/task_assignment_excavator_add.dart';
 import 'package:soft/screens/task_assignment/task_assignment_type_add/task_assignment_maintence_add.dart';
 import 'package:soft/screens/task_assignment/task_assignment_type_add/task_assignment_other_add.dart';
 import 'package:soft/screens/task_assignment/task_assignment_type_add/task_assignment_vehicle_add.dart';
@@ -39,6 +40,10 @@ class _TaskAssignmentAdd extends State<TaskAssignmentAdd> {
           order: widget.order,
         );
       case 'Vận hành xúc':
+        return TaskAssignmentExcavatorAdd(
+          data: widget.data,
+          order: widget.order,
+        );
       case 'Vận hành khoan':
       case 'Vận hành gạt':
       case 'Vận hành xe phục vụ':
@@ -61,11 +66,10 @@ class _TaskAssignmentAdd extends State<TaskAssignmentAdd> {
 
   @override
   Widget build(BuildContext context) {
-    final user =
-        Provider.of<UserProvider>(
-          context,
-          listen: false,
-        ).user;
+    final user = Provider.of<UserProvider>(
+      context,
+      listen: false,
+    ).user;
     final role = user?.role;
     return Scaffold(
       appBar: AppBar(
@@ -83,13 +87,12 @@ class _TaskAssignmentAdd extends State<TaskAssignmentAdd> {
           color: Colors.white, // Màu icon trên AppBar
         ),
       ),
-      body:
-          role == "dispatcher"
-              ? DispatcherAssignmentAdd(
-                data: widget.data,
-                order: widget.order,
-              )
-              : _getBody(),
+      body: role == "dispatcher"
+          ? DispatcherAssignmentAdd(
+              data: widget.data,
+              order: widget.order,
+            )
+          : _getBody(),
     );
   }
 }
