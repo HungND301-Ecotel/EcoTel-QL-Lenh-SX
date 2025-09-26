@@ -47,7 +47,7 @@ import {
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import api from '../../config/api.config';
-import { Department, Device, DeviceType } from '../../types';
+import { Department, Device, DeviceModel, DeviceType } from '../../types';
 // import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import LocationSelector from '../../fixLeafletIcon';
@@ -129,6 +129,10 @@ const Machines: React.FC = () => {
     const { data: departments = [] } = useQuery({
         queryKey: ['departments'],
         queryFn: () => api.get('/departments').then(res => res.data.data),
+    });
+    const { data: devicemodels = [] } = useQuery({
+        queryKey: ['devicemodels'],
+        queryFn: () => api.get('/devicemodels').then(res => res.data.data),
     });
 
     const [progress, setProgress] = useState(0)
@@ -250,7 +254,7 @@ const Machines: React.FC = () => {
             code: '',
             vehicleNumber: '',
             category: '',
-            material: '',
+            material: undefined,
             fuelType: '',
             note: '',
             power: undefined as number | undefined,
@@ -288,6 +292,9 @@ const Machines: React.FC = () => {
                 ...device, coordinates: {
                     lat, lng
                 },
+                material: device.material !== null && typeof device.material === 'object'
+                    ? device.material._id
+                    : device.material || undefined,
                 department: device.department !== null && typeof device.department === 'object'
                     ? device.department._id
                     : device.department || undefined,
@@ -554,15 +561,25 @@ const Machines: React.FC = () => {
                                         />
                                     )}
                                 />
-                                <TextField
+                                <Autocomplete
                                     fullWidth
-                                    id="material"
-                                    name="material"
-                                    label="Chủng loại"
-                                    value={formik.values.material}
-                                    onChange={formik.handleChange}
-                                    error={formik.touched.material && Boolean(formik.errors.material)}
-                                    helperText={formik.touched.material && formik.errors.material}
+                                    options={devicemodels}
+                                    getOptionLabel={(option: DeviceModel) =>
+                                        option.name || ''
+                                    }
+                                    value={devicemodels.find((p: DeviceModel) => p._id === formik.values.material) || null}
+                                    onChange={(event, newValue) => {
+                                        formik.setFieldValue('material', newValue?._id || '');
+                                    }}
+                                    PopperComponent={StyledPopper}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Chủng loại"
+                                            error={formik.touched.material && Boolean(formik.errors.material)}
+                                            helperText={formik.touched.material && typeof formik.errors.material === 'string' ? formik.errors.material : ''}
+                                        />
+                                    )}
                                 />
                                 <TextField
                                     fullWidth
@@ -816,7 +833,7 @@ const Machines: React.FC = () => {
                                         {visibleColumns.includes('name') && <TableCell sx={{ minWidth: 100, }}>{device.name}</TableCell>}
                                         {visibleColumns.includes('vehicleNumber') && <TableCell align='center' sx={{ minWidth: 70, }}>{device.vehicleNumber}</TableCell>}
                                         {visibleColumns.includes('category') && <TableCell align="center" sx={{ minWidth: 100, }}>{device.category?.name}</TableCell>}
-                                        {visibleColumns.includes('material') && <TableCell align="center" sx={{ minWidth: 100, }}>{device.material}</TableCell>}
+                                        {visibleColumns.includes('material') && <TableCell align="center" sx={{ minWidth: 100, }}>{device.material?.name}</TableCell>}
                                         {visibleColumns.includes('fuelType') && <TableCell align="center" sx={{ minWidth: 100, }}>{device.fuelType}</TableCell>}
                                         {visibleColumns.includes('power') && <TableCell align="center" sx={{ minWidth: 100, }}>{device.power}</TableCell>}
                                         {visibleColumns.includes('coordinates') && <TableCell sx={{ minWidth: 130, }}>{coordsDisplay}</TableCell>}

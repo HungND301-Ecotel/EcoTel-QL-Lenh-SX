@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Box,
@@ -18,6 +18,7 @@ import {
     Typography,
     TextField,
     MenuItem,
+    Alert,
     Menu,
     Switch,
     ListItemText,
@@ -37,101 +38,56 @@ import {
     Settings,
     ExpandMore,
     Search,
-    UploadFile,
     Download,
+    UploadFile,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import api from '../../config/api.config';
-import { Material } from '../../types';
-import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
+import { DeviceModel } from '../../types';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
-import { materialValidationSchema } from '../../utils/validation';
+import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
+import { deviceModelValidationSchema } from '../../utils/validation';
 
 
-const Materials: React.FC = () => {
+const DeviceModels: React.FC = () => {
     const [open, setOpen] = useState(false);
-    const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
-    const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
-    const [value, setValue] = useState("")
+    const [selectedDeviceModel, setSelectedDeviceModel] = useState<DeviceModel | null>(null);
+    const [selectedDeviceModels, setSelectedDeviceModels] = useState<string[]>([]);
     const queryClient = useQueryClient();
+    const [user, setUser] = useAtom(userAtom)
+    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
     const [expanded, setExpanded] = useState(false);
-    const [user] = useAtom(userAtom)
+    const [value, setValue] = useState("")
 
-    const formRef = useRef<HTMLDivElement>(null);
-    const handleSelected = (materialId: string) => {
-        setSelectedMaterials(prev =>
-            prev.includes(materialId)
-                ? prev.filter(id => id !== materialId)
-                : [...prev, materialId]
+    const handleSelected = (deviceModelId: string) => {
+        setSelectedDeviceModels(prev =>
+            prev.includes(deviceModelId)
+                ? prev.filter(id => id !== deviceModelId)
+                : [...prev, deviceModelId]
         );
     };
     const defaultColumns = [
-        { id: 'name', label: 'Tên vật liệu' },
-        { id: 'density', label: 'Tỷ trọng' },
-        { id: 'acceptedProduct', label: 'Sản phẩm nghiệm thu' },
+        { id: 'name', label: 'Tên chủng loại' },
     ]
-
     const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
-    const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null)
 
     const handleToggleColumn = (id: string) => {
         setVisibleColumns(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
     }
 
-    const { data: materials = [], isLoading } = useQuery({
-        queryKey: ['materials', value],
-        queryFn: () => api.get(`/materials?name=${value}`).then(res => res.data.data),
+    const { data: devicemodels = [], isLoading } = useQuery({
+        queryKey: ['devicemodels', value],
+        queryFn: () => api.get(`/devicemodels?q=${value}`).then(res => res.data.data),
     });
 
-
-    const createMutation = useMutation({
-        mutationFn: (newMaterial: Partial<Material>) =>
-            api.post('/materials', newMaterial).then(res => res.data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['materials'] });
-            showSuccessAlert('Thêm vật liệu thành công');
-            handleClose();
-        },
-        onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
-        }
-    });
-
-    const updateMutation = useMutation({
-        mutationFn: (updatedMaterial: Partial<Material>) => {
-            return api.put(`/materials/${updatedMaterial._id}`, updatedMaterial).then(res => res.data);
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['materials'] });
-            showSuccessAlert('Cập nhật vật liệu thành công');
-            handleClose();
-        },
-        onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
-        }
-    });
-
-    const deleteMutation = useMutation({
-        mutationFn: (ids: string[]) => api.delete(`/materials`, { data: { ids } }).then(res => res.data.message),
-        onSuccess: (message) => {
-            queryClient.invalidateQueries({ queryKey: ['materials'] });
-            setSelectedMaterials([]);
-            showSuccessAlert(message || 'Xóa thành công');
-            handleClose()
-        },
-        onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
-        }
-
-    });
 
     const [progress, setProgress] = useState(0)
     const [isUploading, setIsUploading] = useState(false);
     const importFile = useMutation({
         mutationFn: (formData: FormData) =>
-            api.post('/materials/importFile', formData, {
+            api.post('/devicemodels/importFile', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
                 onUploadProgress: (progressEvent) => {
 
@@ -146,9 +102,10 @@ const Materials: React.FC = () => {
             setProgress(0); // Reset tiến trình khi bắt đầu
         },
         onSuccess: (message) => {
-            queryClient.invalidateQueries({ queryKey: ['materials'] });
+            queryClient.invalidateQueries({ queryKey: ['departments'] });
             setIsUploading(false);
-            showSuccessAlert(message || 'Import thành công');
+            showSuccessAlert(message || "Import thành công!");
+            handleClose();
         },
         onError: (error: any) => {
             setIsUploading(false);
@@ -158,7 +115,7 @@ const Materials: React.FC = () => {
 
     const exportExcel = useMutation({
         mutationFn: () => {
-            return api.post('/materials/exportFile', {}, {
+            return api.post('/devicemodels/exportFile', {}, {
                 responseType: 'blob',
             }).then(res => {
                 const blob = new Blob([res.data], {
@@ -183,65 +140,91 @@ const Materials: React.FC = () => {
     });
 
 
+    const createMutation = useMutation({
+        mutationFn: (newDeviceModel: Partial<DeviceModel>) =>
+            api.post('/devicemodels', newDeviceModel).then(res => res.data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['devicemodels'] });
+            showSuccessAlert('Thêm chủng loại thành công');
+            handleClose();
+        },
+        onError: (error: any) => {
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
+        }
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: (updatedDeviceModel: Partial<DeviceModel>) =>
+            api.put(`/devicemodels/${updatedDeviceModel._id}`, updatedDeviceModel).then(res => res.data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['devicemodels'] });
+            showSuccessAlert('Cập nhật chủng loại thành công');
+            handleClose();
+        },
+        onError: (error: any) => {
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
+        }
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: (ids: string[]) => api.delete(`/devicemodels`, { data: { ids } }).then(res => res.data.message),
+        onSuccess: (message) => {
+            queryClient.invalidateQueries({ queryKey: ['devicemodels'] });
+            setSelectedDeviceModels([]);
+            showSuccessAlert(message || 'Xóa thành công');
+            handleClose()
+        },
+        onError: (error: any) => {
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
+        }
+    });
+
     const formik = useFormik({
         initialValues: {
             name: '',
-            density: undefined as number | undefined,
-            acceptedProduct: ''
         },
-        enableReinitialize: true,
-        validationSchema: materialValidationSchema,
+        validationSchema: deviceModelValidationSchema,
         onSubmit: (values) => {
-            if (selectedMaterial) {
-                updateMutation.mutate({ ...values, _id: selectedMaterial._id });
+            if (selectedDeviceModel) {
+                updateMutation.mutate({ ...values, _id: selectedDeviceModel._id });
             } else {
                 createMutation.mutate({ ...values });
             }
         },
     });
 
-    const handleOpen = (material?: Material) => {
-        if (material) {
-            setSelectedMaterial(material);
-            formik.setValues({
-                name: material.name,
-                density: material.density,
-                acceptedProduct: material.acceptedProduct ?? '',
-            });
+    const handleOpen = (DeviceModel?: DeviceModel) => {
+        if (DeviceModel) {
+            setSelectedDeviceModel(DeviceModel);
+            formik.setValues(DeviceModel);
         } else {
-            setSelectedMaterial(null);
+            setSelectedDeviceModel(null);
             formik.resetForm();
         }
-        setExpanded(true)
+        setExpanded(true);
         setOpen(true);
-        setTimeout(() => {
-            if (formRef.current) {
-                formRef.current.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            }
-        }, 500);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleClose = () => {
         setOpen(false);
-        setSelectedMaterial(null);
-        setExpanded(false)
+        setSelectedDeviceModel(null);
+        setExpanded(false);
         formik.resetForm();
     };
 
     const handleDelete = () => {
-        if (selectedMaterials.length === 0) {
+        if (selectedDeviceModels.length === 0) {
             showErrorAlert('Không tìm thấy bản ghi cần xóa');
             return;
         }
-        showConfirmAlert(`Bạn có muốn xóa ${selectedMaterials.length} bản ghi?`).then((result) => {
+        showConfirmAlert(`Bạn có muốn xóa ${selectedDeviceModels.length} bản ghi?`).then((result) => {
             if (result.isConfirmed) {
-                deleteMutation.mutate(selectedMaterials);
+                deleteMutation.mutate(selectedDeviceModels);
             }
         });
     };
+
     const [page, setPage] = React.useState(0);
     const [pageSize, setPageSize] = React.useState(10);
 
@@ -249,26 +232,26 @@ const Materials: React.FC = () => {
         setPage(page);
     };
 
-    const pageData = (materials: Material[], page: number, pageSize: number) => {
+    const pageData = (devicemodels: any[], page: number, pageSize: number) => {
         let data;
         if (!page && !pageSize) {
-            data = materials
+            data = devicemodels
         } else {
-            data = materials.slice(page * pageSize, (page + 1) * pageSize)
+            data = devicemodels.slice(page * pageSize, (page + 1) * pageSize)
         }
         return data
     }
-    const paginatedData = pageData(materials, page, pageSize);
+    const paginatedData = pageData(devicemodels, page, pageSize);
     return (
         <Box>
             <Breadcrumbs aria-label="breadcrumb">
                 <Typography>Danh mục</Typography>
-                <Typography>Vật liệu</Typography>
+                <Typography>Chủng loại</Typography>
             </Breadcrumbs>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, mt: 3 }}>
-                <Typography variant="h3" color={'blue'}>Vật liệu</Typography>
+                <Typography variant="h3" color={'blue'}>Chủng loại</Typography>
             </Box>
-            <Accordion expanded={expanded} ref={formRef}>
+            <Accordion expanded={expanded}>
                 <AccordionSummary
                     expandIcon={<></>}
                     aria-controls="panel1-content"
@@ -280,21 +263,30 @@ const Materials: React.FC = () => {
                     }}
                 >
                     <Box sx={{
-                        display: 'flex', gap: 2, alignItems: 'center', width: '100%', flexDirection: {
+                        display: 'flex', gap: 2, alignItems: 'center', width: '100%',
+                        flexDirection: {
                             xs: 'column',
                             md: 'row',
                         },
+                        justifyContent: {
+                            xs: 'flex-start',
+                            md: 'space-between',
+                        },
                     }}>
-                        {user?.role === "admin" && <Box display={'flex'} gap={2} sx={{
-                            flexDirection: {
-                                xs: 'column',
-                                md: 'row',
-                            },
-                            width: {
-                                xs: '100%', // Group này chiếm 100% khi xếp dọc
-                                md: 'auto',
-                            },
-                        }}>
+                        {user?.role === "admin" && <Box
+                            sx={{
+                                display: 'flex',
+                                gap: 1, // Khoảng cách nhỏ hơn giữa các nút
+                                flexDirection: {
+                                    xs: 'column',
+                                    md: 'row',
+                                },
+                                width: {
+                                    xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                    md: 'auto',
+                                },
+                            }}
+                        >
                             <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
                                 Thêm
                             </Button>
@@ -302,18 +294,9 @@ const Materials: React.FC = () => {
                                 Xóa
                             </Button>
                         </Box>}
-                        <Box flex={2} sx={{
-                            flexDirection: {
-                                xs: 'column',
-                                md: 'row',
-                            },
-                            width: {
-                                xs: '100%', // Group này chiếm 100% khi xếp dọc
-                                md: 'auto',
-                            },
-                        }}>
+                        <Box sx={{ display: 'flex', flex: 1, width: '100%' }}>
                             <TextField fullWidth size="small" value={value}
-                                placeholder='Tìm kiếm theo tên loại vật liệu'
+                                placeholder='Tìm kiếm theo tên chủng loại'
                                 onChange={(e) => setValue(e.target.value)}
                                 InputProps={{
                                     endAdornment: (
@@ -372,7 +355,7 @@ const Materials: React.FC = () => {
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
-                    <DialogTitle>{selectedMaterial ? 'Sửa vật liệu' : 'Thêm vật liệu'}</DialogTitle>
+                    <DialogTitle>{selectedDeviceModel ? 'Sửa chủng loại' : 'Thêm chủng loại'}</DialogTitle>
                     <DialogContent>
                         <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -380,45 +363,19 @@ const Materials: React.FC = () => {
                                     fullWidth
                                     id="name"
                                     name="name"
-                                    label="Tên vật liệu"
+                                    label="Tên chủng loại"
                                     value={formik.values.name}
                                     onChange={formik.handleChange}
                                     error={formik.touched.name && Boolean(formik.errors.name)}
                                     helperText={formik.touched.name && formik.errors.name}
                                 />
-                                <TextField
-                                    type="number"
-                                    fullWidth
-                                    id="density"
-                                    name="density"
-                                    label="Tỷ trọng"
-                                    value={formik.values.density?.toString() ?? ''}
-                                    onChange={formik.handleChange}
-                                    error={formik.touched.density && Boolean(formik.errors.density)}
-                                    helperText={formik.touched.density && formik.errors.density}
-                                    inputProps={{ shrink: true }}
-                                />
-                                <TextField
-                                    fullWidth
-                                    select
-                                    id="acceptedProduct"
-                                    name="acceptedProduct"
-                                    label="Sản phẩm nghiệm thu"
-                                    value={formik.values.acceptedProduct ?? ''}
-                                    onChange={formik.handleChange}
-                                    error={formik.touched.acceptedProduct && Boolean(formik.errors.acceptedProduct)}
-                                    helperText={formik.touched.acceptedProduct && formik.errors.acceptedProduct}
-                                >
-                                    <MenuItem value="Đất">Đất</MenuItem>
-                                    <MenuItem value="Than">Than</MenuItem>
-                                </TextField>
                             </Box>
                         </Box>
                     </DialogContent>
                     <DialogActions>
                         <Button onClick={handleClose}>Hủy</Button>
                         <Button onClick={() => formik.submitForm()} variant="contained">
-                            {selectedMaterial ? 'Cập nhật' : 'Thêm mới'}
+                            {selectedDeviceModel ? 'Cập nhật' : 'Thêm mới'}
                         </Button>
                     </DialogActions>
                 </AccordionDetails>
@@ -443,14 +400,14 @@ const Materials: React.FC = () => {
                 </Box>
             )}
             <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
-                <Typography variant="h4">Bảng vật liệu</Typography>
-                <IconButton onClick={(e) => setMenuAnchorEl(e.currentTarget)}>
+                <Typography variant="h4">Bảng chủng loại</Typography>
+                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
                     <Settings sx={{ fontSize: 30 }} />
                 </IconButton>
                 <Menu
-                    anchorEl={menuAnchorEl}
-                    open={Boolean(menuAnchorEl)}
-                    onClose={() => setMenuAnchorEl(null)}
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={() => setAnchorEl(null)}
                     sx={{ maxHeight: 400 }}
                 >
                     {defaultColumns.map((col) => (
@@ -467,62 +424,53 @@ const Materials: React.FC = () => {
                 }}>
                     <TableHead>
                         <TableRow>
-                            {user?.role === "admin" && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', width: 50 }}>
+                            {user?.role === "admin" && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 50 }}>
                                 <Checkbox
                                     color="primary"
-                                    checked={materials.length > 0 && selectedMaterials.length === materials.length}
-                                    indeterminate={selectedMaterials.length > 0 && selectedMaterials.length < materials.length}
+                                    checked={devicemodels.length > 0 && selectedDeviceModels.length === devicemodels.length}
+                                    indeterminate={selectedDeviceModels.length > 0 && selectedDeviceModels.length < DeviceModels.length}
                                     onChange={() => {
-                                        if (selectedMaterials.length === materials.length) {
-                                            setSelectedMaterials([]);
+                                        if (selectedDeviceModels.length === devicemodels.length) {
+                                            setSelectedDeviceModels([]);
                                         } else {
-                                            setSelectedMaterials(materials.map((item: Material) => item._id));
+                                            setSelectedDeviceModels(devicemodels.map((item: DeviceModel) => item._id));
                                         }
                                     }}
                                 />
                             </TableCell>}
-                            {defaultColumns.map((col) =>
-                                visibleColumns.includes(col.id) &&
-                                <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>{col.label}</TableCell>
-                            )}
-                            {user?.role === "admin" && <TableCell align="center" sx={{
-                                backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 50
-                            }}>
-                                Sửa
-                            </TableCell>}
+                            {visibleColumns.includes('name') && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>Tên chủng loại </TableCell>}
+                            {user?.role === "admin" && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 100, minWidth: 100 }}>Sửa</TableCell>}
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {!isLoading ? paginatedData.map((material: Material, index: number) => (
-                            <TableRow key={material._id} sx={{
+                        {!isLoading ? paginatedData.map((DeviceModel: any, index: number) => (
+                            <TableRow key={DeviceModel._id} sx={{
                                 // Dùng chỉ mục index để tạo màu xen kẽ
                                 backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
                             }}>
-                                {user?.role === "admin" && <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(material._id)} checked={selectedMaterials.includes(material._id)} /></TableCell>}
-                                {visibleColumns.includes('name') && <TableCell sx={{}}>{material.name}</TableCell>}
-                                {visibleColumns.includes('density') && <TableCell align='center' sx={{}}>{material.density}</TableCell>}
-                                {visibleColumns.includes("acceptedProduct") && <TableCell align='center' sx={{}}>{material.acceptedProduct}</TableCell>}
-                                {user?.role === "admin" && <TableCell align='center' sx={{}}>
+                                {user?.role === "admin" && <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(DeviceModel._id)} checked={selectedDeviceModels.includes(DeviceModel._id)} /></TableCell>}
+                                {visibleColumns.includes('name') && <TableCell sx={{}}>{DeviceModel.name}</TableCell>}
+                                {user?.role === "admin" && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{}}>
                                     <IconButton color="primary" onClick={async () => {
                                         if (open) {
                                             const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
                                             if (result.isConfirmed) {
-                                                handleOpen(material);
+                                                handleOpen(DeviceModel);
                                             }
                                         } else {
-                                            handleOpen(material);
+                                            handleOpen(DeviceModel);
                                         }
                                     }}>
                                         <EditIcon />
                                     </IconButton>
-                                </TableCell>}
+                                </TableCell>)}
                             </TableRow>
                         )) : <Typography>Loading...</Typography>}
                     </TableBody>
                 </Table>
                 <TablePagination
                     component="div"
-                    count={materials.length}
+                    count={DeviceModels.length}
                     page={page}
                     onPageChange={handleChangePage}
                     rowsPerPage={pageSize}
@@ -537,4 +485,4 @@ const Materials: React.FC = () => {
     );
 };
 
-export default Materials;
+export default DeviceModels;

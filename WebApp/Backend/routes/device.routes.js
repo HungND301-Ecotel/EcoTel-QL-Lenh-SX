@@ -5,6 +5,7 @@ const Device = require('../models/Device');
 const { JOB_TYPE, ROLE, STATUS_ORDER, STATUS_DEVICE, STATUS_DEVICES, STATUS_REPAIR } = require('../config/config');
 const DeviceType = require('../models/DeviceType');
 const Department = require('../models/Department');
+const DeviceModel = require('../models/DeviceModel');
 const ExcelJS = require('exceljs')
 const xlsx = require('xlsx')
 
@@ -47,6 +48,7 @@ router.get('/', verifyToken, async (req, res, next) => {
         const devices = await Device.find(query)
             .populate('department', 'name code')
             .populate('category')
+            .populate('material')
             .collation({ locale: "vi", strength: 1 })
             .sort({ code: 1 });
 
@@ -97,7 +99,7 @@ router.get('/excavators/all', verifyToken, async (req, res, next) => {
             query.category = { $in: targetTypes };
         }
 
-        const devices = await Device.find(query).populate('category').populate('department', 'name code')
+        const devices = await Device.find(query).populate('category').populate('material').populate('department', 'name code')
 
         req.logger.info(`🔥  Load phương tiện thành công`);
         res.status(200).json({
@@ -125,7 +127,7 @@ router.get('/car/all', verifyToken, async (req, res, next) => {
             query.category = { $in: targetTypes };
         }
 
-        const devices = await Device.find(query).populate('category').populate('department', 'name code')
+        const devices = await Device.find(query).populate('category').populate('material').populate('department', 'name code')
 
         req.logger.info(`🔥  Load phương tiện vận tải thành công`);
         res.status(200).json({
@@ -154,7 +156,7 @@ router.get('/vehicle/all', verifyToken, async (req, res, next) => {
             query.category = { $in: targetTypes };
         }
 
-        const devices = await Device.find(query).populate('category').populate('department', 'name code')
+        const devices = await Device.find(query).populate('category').populate('material').populate('department', 'name code')
 
         req.logger.info(`🔥  Load phương tiện xe thành công`);
         res.status(200).json({
@@ -452,7 +454,7 @@ router.get('/count/status', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, RO
             .populate("category"); // populate category để lấy DeviceType trực tiếp
 
         if (req.query.group) {
-            devices=devices.filter(d => d.category.group === req.query.group)
+            devices = devices.filter(d => d.category.group === req.query.group)
         }
 
 
@@ -546,20 +548,24 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
 
         const uniqueDepartments = [...new Set(devicesToProcess.map(d => d.department).filter(Boolean))];
         const uniqueCategories = [...new Set(devicesToProcess.map(d => d.category).filter(Boolean))];
+        const uniqueDeviceModels = [...new Set(devicesToProcess.map(d => d.material).filter(Boolean))];
 
-        const [existingDepartments, existingCategories] = await Promise.all([
+
+        const [existingDepartments, existingCategories, existingDeviceModels] = await Promise.all([
             Department.find({ code: { $in: uniqueDepartments } }).lean(),
             DeviceType.find({ name: { $in: uniqueCategories } }).lean(),
+            DeviceModel.find({ name: { $in: uniqueDeviceModels } }).lean(),
         ]);
 
         const departmentMap = new Map(existingDepartments.map(d => [d.code, d._id]));
         const categoryMap = new Map(existingCategories.map(c => [c.name, c._id]));
+        const deviceModelMap = new Map(existingDeviceModels.map(c => [c.name, c._id]));
 
         const operations = [];
         const invalidRows = [];
 
         for (const row of devicesToProcess) {
-            const { department, category, ...updateData } = row;
+            const { department, category, material, ...updateData } = row;
 
             // Kiểm tra các trường bắt buộc
             if (!updateData.code) {
@@ -591,6 +597,19 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
             }
             if (categoryId) {
                 updateData.category = categoryId;
+            }
+
+            // Gán ID cho category
+            let materialId = null;
+            if (material) {
+                materialId = deviceModelMap.get(material);
+                if (!categoryId) {
+                    invalidRows.push({ row: row, error: `Chủng loại không hợp lệ: ${material}` });
+                    continue;
+                }
+            }
+            if (materialId) {
+                updateData.material = materialId;
             }
 
             // Thêm thao tác updateOne với upsert
@@ -640,6 +659,8 @@ router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
 
         const departments = await Department.find();
         const deviceTypes = await DeviceType.find();
+        const deviceModels = await DeviceModel.find();
+
 
         const workbook = new ExcelJS.Workbook();
 
@@ -666,7 +687,7 @@ router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
             name: device?.name || '',
             vehicleNumber: device?.vehicleNumber || '',
             category: device?.category?.name || '',
-            material: device?.material || '',
+            material: device?.material?.name || '',
             fuelType: device?.fuelType || '',
             capacity: device?.capacity || '',
             power: device?.power || '',
@@ -685,11 +706,15 @@ router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
 
         const typeList = [...new Set(deviceTypes.map(p => p.name).filter(Boolean))];
         const deptList = [...new Set(departments.map(d => d.code).filter(Boolean))];
+        const modelList = [...new Set(deviceModels.map(d => d.name).filter(Boolean))];
+        
 
         worksheet.getColumn('X').values = ['devicetypes', ...typeList];
         worksheet.getColumn('Y').values = ['departments', ...deptList];
+        worksheet.getColumn('Z').values = ['devicemodels', ...modelList];
         worksheet.getColumn('X').hidden = true;
         worksheet.getColumn('Y').hidden = true;
+        worksheet.getColumn('Z').hidden = true;
 
         // Áp dụng Data Validation
         const MAX = Math.max(worksheet.rowCount + 100, 1000); // dư dòng để người dùng thêm
@@ -704,6 +729,13 @@ router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
             type: 'list',
             allowBlank: true,
             formulae: [`=$Y$2:$Y$${deptList.length + 1}`], // nguồn department
+            showErrorMessage: true,
+            errorTitle: 'Giá trị không hợp lệ',
+        });
+        worksheet.dataValidations.add(`E2:E${MAX}`, {
+            type: 'list',
+            allowBlank: true,
+            formulae: [`=$Z$2:$Z$${modelList.length + 1}`], // nguồn department
             showErrorMessage: true,
             errorTitle: 'Giá trị không hợp lệ',
         });

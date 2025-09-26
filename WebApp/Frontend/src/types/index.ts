@@ -117,7 +117,13 @@ export interface Material {
     _id: string;
     name: string;
     density?: number;
-    mass?: number;
+    acceptedProduct?: string;
+    createdAt?: string;
+    updatedAt?: string;
+}
+export interface DeviceModel {
+    _id: string;
+    name: string;
     createdAt?: string;
     updatedAt?: string;
 }

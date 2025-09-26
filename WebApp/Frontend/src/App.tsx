@@ -28,6 +28,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy/PrivacyPolicy';
 import TravelLogs from './pages/TravelLog/TravelLog';
 import MainLayout from './components/layout/MainLayout';
 import DashBoard from './pages/dashboard/Dashboard';
+import DeviceModels from './pages/deviceModels/DeviceModels';
 
 
 interface PrivateRouteProps {
@@ -216,6 +217,14 @@ const App = () => {
                     element={
                         <PrivateRoute>
                             <TravelLogs />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/deviceModels"
+                    element={
+                        <PrivateRoute>
+                            <DeviceModels />
                         </PrivateRoute>
                     }
                 />

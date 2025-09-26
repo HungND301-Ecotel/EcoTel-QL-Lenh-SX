@@ -22,7 +22,8 @@ const deviceSchema = new mongoose.Schema({
         ref: 'DeviceType',
     },
     material: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'DeviceModel',
     },
     fuelType: {
         type: String,
@@ -49,7 +50,7 @@ const deviceSchema = new mongoose.Schema({
             default: [0, 0]
         }
     },
-    note:{
+    note: {
         type: String,
     },
     createdBy: {

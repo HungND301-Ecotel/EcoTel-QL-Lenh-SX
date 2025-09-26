@@ -58,6 +58,9 @@ export const shiftValidationSchema = yup.object({
     endTime: yup.string().required('Vui lòng nhập thời gian kết thúc'),
 
 });
+export const deviceModelValidationSchema = yup.object({
+    name: yup.string().required('Vui lòng nhập chủng loại'),
+});
 
 // bien phap an toan
 export const safetyMeasureValidationSchema = yup.object({

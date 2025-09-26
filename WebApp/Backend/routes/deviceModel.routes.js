@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { AppError } = require('../utils/errorHandler');
-const Material = require('../models/material');
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
-const Order = require('../models/Order');
+const DeviceModel = require('../models/DeviceModel');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 const ExcelJS = require('exceljs');
@@ -13,19 +12,17 @@ const { ROLE } = require('../config/config');
 
 router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
-        const { name, density, acceptedProduct } = req.body
-        const existingMaterial = await Material.findOne({ name });
-        if (existingMaterial) {
-            req.logger.error("❌ Tên vật liệu đã tồn tại");
-            return res.status(400).send({ status: 'error', message: 'Tên hàng hóa đã tồn tại' });
+        const { name} = req.body
+        const existingDeviceModel = await DeviceModel.findOne({ name });
+        if (existingDeviceModel) {
+            req.logger.error("❌ Tên chủng loại đã tồn tại");
+            return res.status(400).send({ status: 'error', message: 'Tên chủng loại đã tồn tại' });
         }
-        const newMaterial = new Material({
+        const newDeviceModel = new DeviceModel({
             name: name,
-            density: density,
-            acceptedProduct: acceptedProduct,
 
         });
-        await newMaterial.save();
+        await newDeviceModel.save();
         req.logger.info(`🔥 Tạo thành công`);
 
         res.status(200).send({ status: 'success', message: "Tạo thành công" });
@@ -44,7 +41,7 @@ router.delete('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req
             return res.status(400).send({ status: 'error', message: 'Vui lòng chọn bản ghi cần xóa' });
         }
 
-        const result = await Material.deleteMany({ _id: { $in: ids } });
+        const result = await DeviceModel.deleteMany({ _id: { $in: ids } });
         if (result.deletedCount === 0) {
             req.logger.error("❌ không tìm thấy bản ghi cần xóa");
 
@@ -65,14 +62,14 @@ router.delete('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req
 router.put('/:id', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
         const user = req.user
-        const material = await Material.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const deviceModel = await DeviceModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
 
-        if (!material) {
+        if (!deviceModel) {
             req.logger.error("❌ Sửa thất bại");
 
             return res.status(404).send({ status: 'error', message: 'Sửa thất bại ' });
         }
-        req.logger.info(`🔥 ${user?.username} Sửa vật liệu thành công`);
+        req.logger.info(`🔥 ${user?.username} Sửa chủng loại thành công`);
 
         res.status(200).json({
             status: 'success',
@@ -88,15 +85,15 @@ router.get('/', verifyToken, async (req, res) => {
     try {
         const query = {}
 
-        if (req.query.name) {
-            const regex = new RegExp(req.query.name, 'i');
+        if (req.query.q) {
+            const regex = new RegExp(req.query.q, 'i');
             query.name = regex;
         }
 
-        const materials = await Material.find(query).collation({ locale: "vi", strength: 1 })
+        const deviceModels = await DeviceModel.find(query).collation({ locale: "vi", strength: 1 })
             .sort({ name: 1 });
         req.logger.info(`🔥 Load thành công`);
-        res.status(200).send({ status: 'success', data: materials });
+        res.status(200).send({ status: 'success', data: deviceModels });
     } catch (err) {
         req.logger.error("❌ Lỗi", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
@@ -104,17 +101,17 @@ router.get('/', verifyToken, async (req, res) => {
 });
 router.get('/:id', verifyToken, async (req, res, next) => {
     try {
-        const material = await Material.findById(req.params.id)
-        if (!material) {
+        const deviceModel = await DeviceModel.findById(req.params.id)
+        if (!deviceModel) {
             req.logger.error("❌ không tìm thấy bản ghi ");
 
-            return res.status(200).send({ status: 'error', message: 'No material found with that ID' });
+            return res.status(200).send({ status: 'error', message: 'No deviceModel found with that ID' });
         }
         req.logger.info(`🔥 Load thành công`);
 
         res.status(200).json({
             status: 'success',
-            data: material
+            data: deviceModel
         });
     } catch (err) {
         req.logger.error("❌ Lỗi", err);
@@ -123,9 +120,7 @@ router.get('/:id', verifyToken, async (req, res, next) => {
 });
 
 const columnMapping = {
-    'Tên vật liệu': 'name',
-    'Tỷ trọng': 'density',
-    'Sản phẩm nghệm thu': 'acceptedProduct',
+    'Tên chủng loại': 'name',
 };
 router.post('/importFile', upload.single('file'), verifyToken, async (req, res) => {
     try {
@@ -169,7 +164,7 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
             }
         });
 
-        await Material.bulkWrite(operations);
+        await DeviceModel.bulkWrite(operations);
         req.logger.info(`✅ ${user?.username}  Import file thành công. Đã xử lý ${dataImport.length} bản ghi.`);
         res.status(200).json({
             status: 'success',
@@ -187,21 +182,17 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
 
 router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
-        const data = await Material.find();
+        const data = await DeviceModel.find();
 
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('DS.vat_lieu');
 
         worksheet.columns = [
-            { header: 'Tên vật liệu', key: 'name', width: 20 },
-            { header: 'Tỷ trọng', key: 'density', width: 20 },
-            { header: 'Sản phẩm nghiệm thu', key: 'acceptedProduct', width: 20 },
+            { header: 'Tên chủng loại', key: 'name', width: 20 },
         ];
 
         const formattedDevices = (data || []).map(item => ({
             name: item?.name || '',
-            density: item?.density || '',
-            acceptedProduct: item?.acceptedProduct || '',
         }));
         worksheet.addRows(formattedDevices);
 

@@ -15,7 +15,8 @@ import {
     FormControl,
     InputLabel,
     Paper,
-    Autocomplete
+    Autocomplete,
+    LinearProgress
 } from '@mui/material';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import api from '../../config/api.config';
@@ -187,6 +188,9 @@ function Reports() {
             showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
         }
     });
+
+    const [progress, setProgress] = useState(0)
+    const [isUploading, setIsUploading] = useState(false);
     const reportExcel = useMutation({
         mutationFn: () => {
             if (!config) throw new Error('Chưa chọn loại báo cáo');
@@ -201,6 +205,12 @@ function Reports() {
                 department
             }, {
                 responseType: 'blob',
+                onUploadProgress: (progressEvent) => {
+                    const percent = Math.round(
+                        (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
+                    );
+                    setProgress(percent);
+                }
             }).then(res => {
                 const blob = new Blob([res.data], {
                     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -217,8 +227,13 @@ function Reports() {
                 window.URL.revokeObjectURL(url);
             });
         },
-        onSuccess: () => { },
+        onMutate: () => {
+            setIsUploading(true);
+            setProgress(0); // Reset tiến trình khi bắt đầu
+        },
+        onSuccess: () => { setIsUploading(false); },
         onError: (error: any) => {
+            setIsUploading(false)
             showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
         }
     });
@@ -369,6 +384,25 @@ function Reports() {
                             Tải xuống
                         </Button>
                     </Grid>
+                    {isUploading && (
+                        <Grid item xs={12}>
+                            {progress < 100 ? (
+                                <>
+                                    <Typography variant="body2" align="center">
+                                        Đang tải lên... {progress}%
+                                    </Typography>
+                                    <LinearProgress variant="determinate" value={progress} />
+                                </>
+                            ) : (
+                                <>
+                                    <Typography variant="body2" align="center">
+                                        Đang xử lý dữ liệu...
+                                    </Typography>
+                                    <LinearProgress />
+                                </>
+                            )}
+                        </Grid>
+                    )}
                     <Grid item xs={12}>
                         {preview && PreviewComponent ? <PreviewComponent data={data} signatureUrl={signatureUrl} maxTrip={maxTrip} materials={materials} /> : null}
                         {signatureUrl && !preview && (

@@ -88,6 +88,9 @@ export default function Header() {
         ["admin", "manager"].includes(user?.role) && {
             text: 'Loại thiết bị', icon: <LocalOffer color='primary' />, path: '/deviceTypes'
         },
+        ["admin", "manager"].includes(user?.role) && {
+            text: 'Chủng loại', icon: <LocalOffer color='primary' />, path: '/deviceModels'
+        },
         ["admin", "manager", "dispatcher"].includes(user?.role) && {
             text: 'Thông tin xe', icon: <LocalShipping color='primary' />, path: '/vehicles'
         },
