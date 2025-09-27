@@ -346,29 +346,30 @@ const Users: React.FC = () => {
     );
 
     const userColumns: GridColDef[] = [
-        { field: 'fullName', headerName: 'Họ tên', minWidth: 250, flex: 1, headerAlign: 'center', },
+        { field: 'fullName', headerName: 'Họ tên', flex: 1, minWidth: 150, headerAlign: 'center', },
         {
             field: 'salaryCode',
             headerName: 'Thẻ lương',
             align: 'center',
-            width: 120,
+            minWidth: 150,
+            resizable: true,
             headerAlign: 'center'
         },
-        { field: 'gender', headerName: 'Giới tính', width: 120, headerAlign: 'center', align: 'center' },
-        { field: 'phone', headerName: 'Số điện thoại', width: 150, headerAlign: 'center', align: 'center' },
-        { field: 'email', headerName: 'Email', width: 150, headerAlign: 'center', align: 'center' },
+        { field: 'gender', headerName: 'Giới tính', minWidth: 120, headerAlign: 'center', align: 'center' },
+        { field: 'phone', headerName: 'Số điện thoại', minWidth: 150, headerAlign: 'center', align: 'center' },
+        { field: 'email', headerName: 'Email', minWidth: 150, headerAlign: 'center', align: 'center' },
         {
             field: 'position',
             headerName: 'Chức danh, nghề nghiệp',
-            valueGetter: (params) => params.row.position?.name || '',
-            width: 250,
+            renderCell: (params: any) => params?.row?.position?.name || '',
+            minWidth: 250,
             headerAlign: 'center'
         },
         {
             field: 'department',
             headerName: 'Đơn vị',
-            valueGetter: (params) => {
-                const dept = params.row.department;
+            renderCell: (params: any) => {
+                const dept = params?.row?.department;
                 return typeof dept === 'object' && dept !== null
                     ? dept.name
                     : 'Chưa có';
@@ -388,7 +389,7 @@ const Users: React.FC = () => {
         {
             field: 'active', headerName: 'Trạng thái', width: 100, headerAlign: 'center', align: 'center',
             renderCell: (params) => (
-                <Checkbox checked={params.row.active} onChange={(e) => updateMutation.mutate({ _id: params.row._id, active: e.target.checked })} />
+                <Checkbox checked={params.row?.active} onChange={(e) => updateMutation.mutate({ _id: params.row?._id, active: e.target.checked })} />
             )
         },
         {
@@ -461,7 +462,7 @@ const Users: React.FC = () => {
         ? userColumns
         : userColumns.filter((col: GridColDef) => col.field !== 'resetpass' && col.field !== 'active' && col.field !== 'edit');
 
-    
+
     return (
         <Box>
             <Breadcrumbs aria-label="breadcrumb">
@@ -814,23 +815,23 @@ const Users: React.FC = () => {
                     rows={filteredOrders}
                     columns={visibleColumns}
                     getRowId={(row) => row._id}
-                    rowsPerPageOptions={[10, 20, 50]}
+                    pageSizeOptions={[10, 20, 50]}
                     autoHeight
-                    disableSelectionOnClick
+                    disableRowSelectionOnClick
                     checkboxSelection={user?.role === "admin"}
                     isRowSelectable={(params) => params.row.role !== 'admin'}
-                    onSelectionModelChange={(newSelection) => {
+                    onRowSelectionModelChange={(newSelection) => {
                         setSelectedUsers(newSelection as string[]);
                     }}
                     initialState={{
                         pagination: {
-                            pageSize: 10,
+                            paginationModel: { pageSize: 10, page: 0 },
                         },
                     }}
                     loading={isLoading}
                     sx={{
                         '& .MuiDataGrid-columnHeaderTitle': {
-                            width: '100%',
+                            // width: '100%',
                             textAlign: 'center',
                             fontWeight: 'bold',
                             fontSize: 18,

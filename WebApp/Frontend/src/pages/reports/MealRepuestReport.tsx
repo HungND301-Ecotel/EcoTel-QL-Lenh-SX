@@ -1,13 +1,19 @@
 import { Typography, IconButton, Paper, Grid, Box } from '@mui/material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRenderCellParams, useGridApiRef } from '@mui/x-data-grid';
 import React, { useEffect, useState } from 'react'
 
-export default function mealRequestReport({ data, signatureUrl }: { data: any[], signatureUrl: string | null }) {
 
+export default function MealRequestReport({ data, signatureUrl }: { data: any[], signatureUrl: string | null }) {
+
+    const apiRef = useGridApiRef()
     const reportColumns: GridColDef[] = [
         {
             field: 'STT', headerName: 'STT', width: 50, headerAlign: 'center', align: 'center',
-            renderCell: (params) => params.api.getRowIndex(params.id) + 1,
+            renderCell: (params: GridRenderCellParams) => {
+                const sortedIds = params.api.getSortedRowIds();
+                const index = sortedIds.indexOf(params.id);
+                return index >= 0 ? index + 1 : '';
+            },
         },
         {
             field: 'fullName', headerName: 'Họ và tên', flex: 1, headerAlign: 'center',
@@ -35,6 +41,7 @@ export default function mealRequestReport({ data, signatureUrl }: { data: any[],
             <Paper sx={{ minHeight: "80vh", overflowX: 'auto', padding: 1, width: '100%', }}>
                 <DataGrid
                     rows={data}
+                    apiRef={apiRef}
                     columns={reportColumns}
                     getRowId={(row) => row._id}
                     autoHeight

@@ -8,6 +8,7 @@ const Notification = require('../models/Notification');
 const History = require('../models/History');
 const User = require('../models/User')
 const Job = require('../models/Job')
+const Shift = require('../models/Shift')
 const mongoose = require('mongoose')
 const { ROLE, JOB_TYPE, STATUS_DEVICE, STATUS_DEVICES, STATUS_ORDERS, STATUS_ORDER, STATUS_REPAIR } = require('../config/config');
 
@@ -52,15 +53,67 @@ router.get('/', verifyToken, async (req, res, next) => {
                 query._id = null;
             }
         }
-        if (req.query.assignedTo) query.assignedTo = { $in: Array.isArray(req.query.assignedTo) ? req.query.assignedTo.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.assignedTo)] };
-        if (req.query.job) query.job = { $in: Array.isArray(req.query.job) ? req.query.job.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.job)] };
-        if (req.query.device) query.device = { $in: Array.isArray(req.query.device) ? req.query.device.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.device)] };
-        if (req.query.excavator) query.excavator = { $in: Array.isArray(req.query.excavator) ? req.query.excavator.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.excavator)] };
-        if (req.query.material) query.material = { $in: Array.isArray(req.query.material) ? req.query.material.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.material)] };
-        if (req.query.location) query.location = { $in: Array.isArray(req.query.location) ? req.query.location.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.location)] };
-        if (req.query.createdBy) query.createdBy = { $in: Array.isArray(req.query.createdBy) ? req.query.createdBy.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.createdBy)] };
-        if (req.query.job) query.job = { $in: Array.isArray(req.query.job) ? req.query.job.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.job)] };
-        if (req.query.shift) query.shift = { $in: Array.isArray(req.query.shift) ? req.query.shift.map(id => new mongoose.Types.ObjectId(id)) : [new mongoose.Types.ObjectId(req.query.shift)] };
+        if (req.query.assignedTo) {
+            const regex = new RegExp(req.query.assignedTo, 'i');
+
+            // tìm user theo salaryCode
+            const matchedUsers = await User.find(
+                { fullName: regex },
+                { _id: 1 }
+            ).lean();
+            const userIds = matchedUsers.map(u => u._id);
+            query.assignedTo = { $in: userIds.map(id => new mongoose.Types.ObjectId(id)) };
+        }
+        if (req.query.createdBy) {
+            const regex = new RegExp(req.query.createdBy, 'i');
+
+            // tìm user theo salaryCode
+            const matchedUsers = await User.find(
+                { fullName: regex },
+                { _id: 1 }
+            ).lean();
+            const userIds = matchedUsers.map(u => u._id);
+            query.createdBy = { $in: userIds.map(id => new mongoose.Types.ObjectId(id)) };
+        }
+        if (req.query.salaryCode) {
+            // tìm user theo salaryCode
+            const matchedUsers = await User.find(
+                { salaryCode: req.query.salaryCode },
+                { _id: 1 }
+            ).lean();
+            const userIds = matchedUsers.map(u => u._id);
+            query.assignedTo = { $in: userIds.map(id => new mongoose.Types.ObjectId(id)) };
+        }
+        if (req.query.job) {
+            const regex = new RegExp(req.query.job, 'i');
+
+            // tìm user theo salaryCode
+            const matchedJobs = await Job.find(
+                { name: regex },
+                { _id: 1 }
+            ).lean();
+            const jobIds = matchedJobs.map(u => u._id);
+            query.job = { $in: jobIds.map(id => new mongoose.Types.ObjectId(id)) };
+        }
+        if (req.query.device) {
+            const regex = new RegExp(req.query.device, 'i');
+
+            // tìm user theo salaryCode
+            const matchedDevices = await Device.find(
+                { code: regex },
+                { _id: 1 }
+            ).lean();
+            const deviceIds = matchedDevices.map(u => u._id);
+            query.device = { $in: deviceIds.map(id => new mongoose.Types.ObjectId(id)) };
+        }
+        if (req.query.shift) {
+            const matchedShifts = await Shift.find(
+                { name: req.query.shift },
+                { _id: 1 }
+            ).lean();
+            const shiftIds = matchedShifts.map(u => u._id);
+            query.shift = { $in: shiftIds.map(id => new mongoose.Types.ObjectId(id)) };
+        }
 
         if (req.query.startTime && req.query.endTime) {
             const endTime = new Date(req.query.endTime);

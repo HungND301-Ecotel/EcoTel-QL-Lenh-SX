@@ -1,13 +1,18 @@
 import { Typography, IconButton, Paper, Grid, Box } from '@mui/material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRenderCellParams, useGridApiRef } from '@mui/x-data-grid';
 import React, { useEffect, useState } from 'react'
 
 export default function WorkLogReport({ data, signatureUrl }: { data: any[], signatureUrl: string | null }) {
+    const apiRef = useGridApiRef()
 
     const reportColumns: GridColDef[] = [
         {
             field: 'STT', headerName: 'STT', width: 50, align: 'center', headerAlign: 'center',
-            renderCell: (params) => params.api.getRowIndex(params.id) + 1,
+            renderCell: (params: GridRenderCellParams) => {
+                const sortedIds = params.api.getSortedRowIds();
+                const index = sortedIds.indexOf(params.id);
+                return index >= 0 ? index + 1 : '';
+            },
         },
         {
             field: 'fullName', headerName: 'Họ và tên', flex: 1, headerAlign: 'center',
@@ -40,6 +45,7 @@ export default function WorkLogReport({ data, signatureUrl }: { data: any[], sig
                 <Typography textAlign={'center'} mb={2} variant='h3'>Danh sách báo công</Typography>
                 <DataGrid
                     rows={data}
+                    apiRef={apiRef}
                     columns={reportColumns}
                     getRowId={(row) => row._id}
                     autoHeight
