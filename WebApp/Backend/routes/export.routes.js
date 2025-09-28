@@ -106,7 +106,11 @@ router.post('/order/bulk', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
 
 async function buildVehicle(order, workbook) {
     const reports = await Report.find({ orderId: order._id })
-        .populate("device", "code")
+        .populate({
+            path: "device",
+            select: 'code material',
+            populate: { path: 'material', selcct: 'name value' }
+        })
         .populate("material", "name")
         .populate("excavator", "code")
         .populate("fromLocation", "name")
@@ -121,8 +125,6 @@ async function buildVehicle(order, workbook) {
     header.value = `LỆNH SẢN XUẤT`;
     header.font = { bold: true, size: 16 };
     header.alignment = { horizontal: 'center', vertical: 'middle' };
-
-
 
 
     worksheet.getCell('B4').value = 'Đơn vị';

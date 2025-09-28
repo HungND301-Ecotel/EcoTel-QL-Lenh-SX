@@ -847,9 +847,19 @@ const Orders: React.FC = () => {
                         disableVirtualization={true}
                         filterMode="server"
                         slots={{ toolbar: GridToolbar }}
+                        localeText={{
+                            toolbarColumns: 'Cột',
+                            toolbarFilters: 'Bộ lọc',
+                            toolbarDensity: 'Mật độ',
+                            toolbarExport: 'Xuất dữ liệu',
+                        }}
                         slotProps={{
                             filterPanel: {
                                 disableAddFilterButton: false,
+                            },
+                            toolbar: {
+                                csvOptions: { disableToolbarButton: true },
+                                printOptions: { disableToolbarButton: true },
                             }
                         }}
                         onFilterModelChange={(model) => {

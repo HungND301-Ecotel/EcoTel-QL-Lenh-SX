@@ -59,6 +59,9 @@ export default function Header() {
     const [openProfile, setOpenProfile] = useState(false);
     const [openChangePassword, setOpenChangePassword] = useState(false);
 
+    const [submenuAnchorEl, setSubmenuAnchorEl] = useState<null | HTMLElement>(null);
+    const [submenuItems, setSubmenuItems] = useState<any[]>([]);
+
     const location = useLocation()
 
     const { data: notificationCount = 0 } = useQuery({
@@ -89,17 +92,21 @@ export default function Header() {
             text: 'Loại thiết bị', icon: <LocalOffer color='primary' />, path: '/deviceTypes'
         },
         ["admin", "manager"].includes(user?.role) && {
-            text: 'Chủng loại', icon: <LocalOffer color='primary' />, path: '/deviceModels'
+            text: 'Chủng loại thiết bị', icon: <LocalOffer color='primary' />, path: '/deviceModels'
         },
         ["admin", "manager", "dispatcher"].includes(user?.role) && {
-            text: 'Thông tin xe', icon: <LocalShipping color='primary' />, path: '/vehicles'
+            text: 'Thông tin xe', icon: <LocalShipping color='primary' />, path: '#',
+            submenu: [
+                { text: 'Thông tin xe', path: '/vehicles' },
+                { text: 'Mô hình xe', path: '/models' }
+            ]
         },
         ["admin", "manager", "dispatcher"].includes(user?.role) && {
             text: 'Thông tin máy', icon: <PrecisionManufacturing color='primary' />, path: '/machines'
         },
-        ["admin", "manager", "dispatcher"].includes(user?.role) && {
-            text: 'Mô hình xe', icon: <PrecisionManufacturing color='primary' />, path: '/models'
-        },
+        // ["admin", "manager", "dispatcher"].includes(user?.role) && {
+        //     text: 'Mô hình xe', icon: <PrecisionManufacturing color='primary' />, path: '/models'
+        // },
         ["admin", "manager"].includes(user?.role) && {
             text: 'Điểm đổ tải', icon: <LocationCity color='primary' />, path: '/locations'
         },
@@ -163,11 +170,26 @@ export default function Header() {
                                     )}
                                     {menuItems.map((item) => {
                                         if (!item) return null;
-                                        return (
-                                            <ListItem key={item!.text} button onClick={() => { navigate(item!.path!); setDrawerOpen(false); }}>
-                                                <ListItemText primary={item!.text} />
-                                            </ListItem>
+                                        if (item.submenu) {
+                                            return (
+                                                <ListItem
+                                                    key={item.text}
+                                                    button
+                                                    onClick={(e) => {
+                                                        setSubmenuAnchorEl(e.currentTarget);
+                                                        setSubmenuItems(item.submenu!);
+                                                    }}
+                                                >
+                                                    <ListItemText primary={item.text} />
+                                                </ListItem>
+                                            )
+                                        }
 
+                                        // item bình thường
+                                        return (
+                                            <ListItem key={item.text} button onClick={() => navigate(item.path!)}>
+                                                <ListItemText primary={item.text} />
+                                            </ListItem>
                                         )
                                     }
 
@@ -204,6 +226,20 @@ export default function Header() {
                                     >
                                         {menuItems.map((item) => {
                                             if (!item) return null;
+                                            if (item.submenu) {
+                                                return (
+                                                    <ListItem
+                                                        key={item.text}
+                                                        button
+                                                        onClick={(e) => {
+                                                            setSubmenuAnchorEl(e.currentTarget);
+                                                            setSubmenuItems(item.submenu!);
+                                                        }}
+                                                    >
+                                                        <ListItemText primary={item.text} />
+                                                    </ListItem>
+                                                )
+                                            }
                                             return (
                                                 <MenuItem key={item!.text} sx={{ borderBottom: location.pathname === item.path ? '5px solid red' : '' }} onClick={() => {
                                                     navigate(item!.path!);
@@ -268,12 +304,35 @@ export default function Header() {
                                 </MenuItem>
                             </Box>
                         </Popover>
+                        <Popover
+                            open={Boolean(submenuAnchorEl)}
+                            anchorEl={submenuAnchorEl}
+                            onClose={() => setSubmenuAnchorEl(null)}
+                            anchorOrigin={{ vertical: 'center', horizontal: 'right' }}
+                            transformOrigin={{ vertical: 'center', horizontal: 'left' }}
+                        >
+                            <MenuList>
+                                {submenuItems.map((sub) => (
+                                    <MenuItem
+                                        key={sub.text}
+                                        onClick={() => {
+                                            navigate(sub?.path);
+                                            setSubmenuAnchorEl(null);
+                                            setDrawerOpen(false)
+                                            setMenuAnchorEl(null)
+                                        }}
+                                    >
+                                        {sub.text}
+                                    </MenuItem>
+                                ))}
+                            </MenuList>
+                        </Popover>
                     </Box>
                 </Toolbar>
                 {/* Modal: Profile + Đổi mật khẩu */}
                 <ChangePassword open={openChangePassword} setOpen={setOpenChangePassword} />
                 <Profile open={openProfile} setOpen={setOpenProfile} />
-            </AppBar>
+            </AppBar >
         </>
     )
 }

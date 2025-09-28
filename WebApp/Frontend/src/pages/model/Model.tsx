@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Box,
@@ -106,7 +106,11 @@ const Models: React.FC = () => {
         return row;
     });
 
-    const [tableRows, setTableRows] = useState(rows);
+    const [tableRows, setTableRows] = useState<any[]>([]);
+
+    useEffect(() => {
+        setTableRows(rows);
+    }, [rows]);
 
     const processRowUpdate = (newRow: GridRowModel, oldRow: GridRowModel) => {
         setTableRows((prev: any) =>
