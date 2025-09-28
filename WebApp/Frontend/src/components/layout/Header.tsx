@@ -97,6 +97,9 @@ export default function Header() {
         ["admin", "manager", "dispatcher"].includes(user?.role) && {
             text: 'Thông tin máy', icon: <PrecisionManufacturing color='primary' />, path: '/machines'
         },
+        ["admin", "manager", "dispatcher"].includes(user?.role) && {
+            text: 'Mô hình xe', icon: <PrecisionManufacturing color='primary' />, path: '/models'
+        },
         ["admin", "manager"].includes(user?.role) && {
             text: 'Điểm đổ tải', icon: <LocationCity color='primary' />, path: '/locations'
         },

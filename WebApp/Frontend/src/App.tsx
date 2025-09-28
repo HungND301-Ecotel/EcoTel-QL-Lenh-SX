@@ -29,6 +29,7 @@ import TravelLogs from './pages/TravelLog/TravelLog';
 import MainLayout from './components/layout/MainLayout';
 import DashBoard from './pages/dashboard/Dashboard';
 import DeviceModels from './pages/deviceModels/DeviceModels';
+import Models from './pages/model/Model';
 
 
 interface PrivateRouteProps {
@@ -145,6 +146,14 @@ const App = () => {
                     element={
                         <PrivateRoute>
                             <Machines />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/models"
+                    element={
+                        <PrivateRoute>
+                            <Models />
                         </PrivateRoute>
                     }
                 />
