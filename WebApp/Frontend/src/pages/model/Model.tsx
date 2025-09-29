@@ -108,8 +108,13 @@ const Models: React.FC = () => {
         });
     }, [materials, devicemodels, models]);
 
-    const [tableRows, setTableRows] = useState<any[]>(rows);
+    const [tableRows, setTableRows] = useState<any[]>([]);
 
+    useEffect(() => {
+        if (tableRows.length === 0 && rows.length > 0) {
+            setTableRows(rows);
+        }
+    }, [rows]);
 
     const processRowUpdate = (newRow: GridRowModel, oldRow: GridRowModel) => {
         setTableRows((prev: any) =>

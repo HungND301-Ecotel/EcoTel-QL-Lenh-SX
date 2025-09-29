@@ -104,8 +104,8 @@ export default function ExcavatorReport({
                                             <TableCell sx={{ minWidth: 80 }} align='center'>{m.material?.name || ''}</TableCell>
                                             <TableCell sx={{ minWidth: 80 }} align='center'></TableCell>
                                             <TableCell sx={{ minWidth: 80 }} align='center'>{m.quantity || ''}</TableCell>
-                                            <TableCell sx={{ minWidth: 80 }} align='center'></TableCell>
-                                            <TableCell sx={{ minWidth: 80 }} align='center'></TableCell>
+                                            <TableCell sx={{ minWidth: 80 }} align='center'>{m.ton || ''}</TableCell>
+                                            <TableCell sx={{ minWidth: 80 }} align='center'>{m.cubicMeter || ''}</TableCell>
                                             {i === 0 && mIdx === 0 && (
                                                 <React.Fragment>
                                                     <TableCell rowSpan={totalMaterials} align='center' sx={{ minWidth: 80, whiteSpace: "pre-line", }}>{(item?.fuelRemain || []).map((i: any) => i).join('\n')}</TableCell>
@@ -126,7 +126,18 @@ export default function ExcavatorReport({
                                     ));
                                 });
                             })}
-
+                            <TableRow>
+                                <TableCell colSpan={8} sx={{ fontWeight: 'bold' }}>Tổng</TableCell>
+                                <TableCell align='center' sx={{ fontWeight: 'bold' }}>{data
+                                    .flatMap(d => d.reports)
+                                    .reduce((sum, r) => sum + (r.totalTon || 0), 0)
+                                }</TableCell>
+                                <TableCell align='center' sx={{ fontWeight: 'bold' }}>{data
+                                    .flatMap(d => d.reports)
+                                    .reduce((sum, r) => sum + (r.totalCubicMeter || 0), 0)
+                                }</TableCell>
+                                <TableCell colSpan={12}></TableCell>
+                            </TableRow>
                         </TableBody>
                     </Table>
                 </TableContainer>

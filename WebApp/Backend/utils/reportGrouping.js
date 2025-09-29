@@ -348,7 +348,6 @@ async function caculatorWeight(material, deviceModel, quantity) {
     let ton = 0
     const data = await Model.findOne({ material: material, deviceModel: deviceModel })
         .populate('material', 'density acceptedProduct');
-    console.log(data)
     if (data && data.material?.acceptedProduct === ACCEPTED_PRODUCT.COAL) {
         ton = (data.value || 0) * (quantity || 0) * (data.material?.density || 0)
     } else if (data && data.material?.acceptedProduct === ACCEPTED_PRODUCT.LAND) {

@@ -2860,16 +2860,16 @@ router.post('/excavatorReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.
             let reports = await Report.find({ orderId: order._id })
                 .populate({
                     path: 'device',
-                    select: 'code category',
+                    select: 'code material category',
                     populate: {
                         path: 'category',
                         select: 'name'
                     }
                 })
-                .populate('material', 'name')
+                .populate('material', 'name density')
             if (!reports.length) continue;
 
-            const grouped = groupExcavator(reports)
+            const grouped = await groupExcavator(reports)
 
             result.push({
                 _id: order._id,
@@ -2878,6 +2878,9 @@ router.post('/excavatorReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.
                 reports: grouped.map(g => ({
                     code: g.device?.code || '',
                     materials: g.materials || [],
+                    totalCubicMeter: g.totalCubicMeter || 0,
+                    totalTon: g.totalTon || 0
+
                 })),
                 fuelRemain: (order?.shiftReport?.vehicleSummaries || []).map(i => i?.fuelRemain),
                 fuelReceived: (order?.shiftReport?.vehicleSummaries || []).map(i => i?.fuelReceived),
@@ -3041,7 +3044,7 @@ router.post('/excavatorReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN
                     let reports = await Report.find({ orderId: order._id })
                         .populate({
                             path: 'device',
-                            select: 'code category',
+                            select: 'code material category',
                             populate: {
                                 path: 'category',
                                 select: 'name'
@@ -3050,7 +3053,7 @@ router.post('/excavatorReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN
                         .populate('material', 'name')
                     if (!reports.length) continue;
 
-                    const grouped = groupExcavator(reports)
+                    const grouped = await groupExcavator(reports)
 
                     result.push({
                         _id: order._id,
@@ -3059,6 +3062,8 @@ router.post('/excavatorReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN
                         reports: grouped.map(g => ({
                             code: g.device?.code || '',
                             materials: g.materials || [],
+                            totalCubicMeter: g.totalCubicMeter || 0,
+                            totalTon: g.totalTon || 0
                         })),
                         fuelRemain: (order?.shiftReport?.vehicleSummaries || []).map(i => i?.fuelRemain),
                         fuelReceived: (order?.shiftReport?.vehicleSummaries || []).map(i => i?.fuelReceived),
@@ -3103,6 +3108,8 @@ router.post('/excavatorReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN
                             // vật liệu
                             row.getCell(6).value = m?.material?.name || '';
                             row.getCell(8).value = m?.quantity || '';
+                            row.getCell(9).value = m?.ton || '';
+                            row.getCell(10).value = m?.cubicMeter || '';
 
                             if (currentRow === startRowReport) {
                                 row.getCell(11).value = (item.fuelRemain || []).map(u => u).join('\n');
@@ -3151,7 +3158,15 @@ router.post('/excavatorReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN
                     worksheet.getRow(startRowItem).height = maxLines * 15;
                 });
 
-
+                worksheet.getCell(`B${currentRow}`).value = 'Tổng';
+                worksheet.getCell(`B${currentRow}`).font = { bold: true };
+                worksheet.getCell(`B${currentRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+                worksheet.getCell(`I${currentRow}`).value = result.flatMap(d => d.reports).reduce((sum, r) => sum + (r.totalTon || 0), 0);
+                worksheet.getCell(`I${currentRow}`).font = { bold: true };
+                worksheet.getCell(`I${currentRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+                worksheet.getCell(`J${currentRow}`).value = result.flatMap(d => d.reports).reduce((sum, r) => sum + (r.totalCubicMeter || 0), 0);
+                worksheet.getCell(`J${currentRow}`).font = { bold: true };
+                worksheet.getCell(`J${currentRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
 
                 addTableBorders(worksheet, 8, currentRow, 1, 22);
 
