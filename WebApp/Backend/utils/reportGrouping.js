@@ -1,4 +1,7 @@
 const TravelLog = require('../models/TravelLog')
+const Model = require('../models/Model');
+const { ACCEPTED_PRODUCTS, ACCEPTED_PRODUCT } = require('../config/config');
+
 // Ưu tiên fromLocation, nếu không có thì dùng excavator làm "điểm nhận tải"
 const pickFrom = (r) => r?.fromLocation || r?.excavator || null;
 
@@ -87,23 +90,31 @@ function groupTripsVehicle(trips) {
     return Object.values(groups);
 }
 
-function groupExcavator(trips) {
+async function groupExcavator(trips) {
     const groups = {};
 
-    trips.forEach(t => {
+    for (const t of trips) {
         const key = `${t.device}`;
         if (!groups[key]) {
             groups[key] = {
                 device: t.device,
-                materials: []
+                materials: [],
+                totalCubicMeter: 0,
+                totalTon: 0
             };
         }
+        const value = await caculatorWeight(t.material?._id, t.device?.material, t.quantity)
+        groups[key].totalCubicMeter += value.cubicMeter;
+        groups[key].totalTon += value.ton;
+        
         groups[key].materials.push({
             material: t.material,
             quantity: t.quantity,
+            cubicMeter: value.cubicMeter,
+            ton: value.ton,
             times: t.quantityUpdateTimes
         });
-    });
+    };
 
     return Object.values(groups);
 }
@@ -328,6 +339,22 @@ function groupDrill(trips) {
     });
 
     return Object.values(groups);
+}
+
+// khoi luong, trong luong tam tinh
+
+async function caculatorWeight(material, deviceModel, quantity) {
+    let cubicMeter = 0
+    let ton = 0
+    const data = await Model.findOne({ material: material, deviceModel: deviceModel })
+        .populate('material', 'density acceptedProduct');
+    console.log(data)
+    if (data && data.material?.acceptedProduct === ACCEPTED_PRODUCT.COAL) {
+        ton = (data.value || 0) * (quantity || 0) * (data.material?.density || 0)
+    } else if (data && data.material?.acceptedProduct === ACCEPTED_PRODUCT.LAND) {
+        cubicMeter = (data.value || 0) * (quantity || 0)
+    }
+    return { cubicMeter, ton }
 }
 
 

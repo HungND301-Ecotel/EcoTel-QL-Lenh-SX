@@ -476,8 +476,8 @@ async function buildVehicle(order, workbook) {
 };
 async function buildExcavator(order, workbook) {
     const reports = await Report.find({ orderId: order._id })
-        .populate("device", "code")
-        .populate("material", "name")
+        .populate("device", "code material")
+        .populate("material", "name density")
         .populate("excavator", "code")
         .populate("fromLocation", "name")
         .populate("toLocation", "name")
@@ -642,7 +642,7 @@ async function buildExcavator(order, workbook) {
         };
     }
 
-    const grouped = groupExcavator(reports)
+    const grouped = await groupExcavator(reports)
 
     let rowIndexTrip = rowHeader1 + 2;
     grouped.forEach((g, i) => {
@@ -664,9 +664,10 @@ async function buildExcavator(order, workbook) {
             worksheet.getCell(`E${rowIndexTrip}`).value = timesText;
             worksheet.getCell(`E${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
             setAutoRowHeight(worksheet.getRow(rowIndexTrip), timesText);
-            worksheet.getCell(`G${rowIndexTrip}`).value = "";
+            worksheet.getCell(`G${rowIndexTrip}`).value = m.cubicMeter || 0;
             worksheet.getCell(`G${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-            worksheet.getCell(`H${rowIndexTrip}`).value = '';
+            worksheet.getCell(`H${rowIndexTrip}`).value = m.ton || 0;
+            worksheet.getCell(`H${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
             worksheet.getCell(`I${rowIndexTrip}`).value = "";
             worksheet.getCell(`J${rowIndexTrip}`).value = "";
             worksheet.getCell(`K${rowIndexTrip}`).value = "";
@@ -691,8 +692,10 @@ async function buildExcavator(order, workbook) {
     worksheet.getCell(`C${totalRow}`).value = reports.reduce((sum, report) => { return sum + report.quantity }, 0) || '';
     worksheet.getCell(`C${totalRow}`).font = { bold: true };
     worksheet.mergeCells(`E${totalRow}:F${totalRow}`);
-    worksheet.getCell(`G${totalRow}`).value = '';
-    worksheet.getCell(`H${totalRow}`).value = '';
+    worksheet.getCell(`G${totalRow}`).value = grouped.reduce((sum, report) => { return sum + report.totalCubicMeter }, 0) || '';
+    worksheet.getCell(`G${totalRow}`).font = { bold: true };
+    worksheet.getCell(`H${totalRow}`).value = grouped.reduce((sum, report) => { return sum + report.totalTon }, 0) || '';
+    worksheet.getCell(`H${totalRow}`).font = { bold: true };
     worksheet.getCell(`I${totalRow}`).value = '';
     worksheet.getCell(`J${totalRow}`).value = '';
     worksheet.getCell(`K${totalRow}`).value = '';

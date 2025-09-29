@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Box,
@@ -95,22 +95,21 @@ const Models: React.FC = () => {
         }))
     ];
 
-    const rows = materials.map((m: any) => {
-        const row: any = { id: m._id, material: m.name, acceptedProduct: m.acceptedProduct, };
-        devicemodels.forEach((d: any) => {
-            const record = models.find(
-                (mdl: any) => mdl.material === m._id && mdl.deviceModel === d._id
-            );
-            row[d._id] = record ? record.value : '';
+    const rows = useMemo(() => {
+        return materials.map((m: any) => {
+            const row: any = { id: m._id, material: m.name, acceptedProduct: m.acceptedProduct };
+            devicemodels.forEach((d: any) => {
+                const record = models.find(
+                    (mdl: any) => mdl.material === m._id && mdl.deviceModel === d._id
+                );
+                row[d._id] = record ? record.value : '';
+            });
+            return row;
         });
-        return row;
-    });
+    }, [materials, devicemodels, models]);
 
-    const [tableRows, setTableRows] = useState<any[]>([]);
+    const [tableRows, setTableRows] = useState<any[]>(rows);
 
-    useEffect(() => {
-        setTableRows(rows);
-    }, [rows]);
 
     const processRowUpdate = (newRow: GridRowModel, oldRow: GridRowModel) => {
         setTableRows((prev: any) =>
