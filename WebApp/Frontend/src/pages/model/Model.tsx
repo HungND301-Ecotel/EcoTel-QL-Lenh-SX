@@ -71,7 +71,7 @@ const Models: React.FC = () => {
         queryFn: () => api.get(`/models`).then(res => res.data.data),
     });
 
-    const columns = [
+    const columns = useMemo(() => [
         {
             field: 'material', headerName: 'Vật liệu', width: 150, resizable: false,
             headerAlign: 'center',
@@ -93,9 +93,10 @@ const Models: React.FC = () => {
             type: 'number',
             filterable: false
         }))
-    ];
+    ], [devicemodels]);
 
     const rows = useMemo(() => {
+        if (!materials.length || !devicemodels.length || !models.length) return [];
         return materials.map((m: any) => {
             const row: any = { id: m._id, material: m.name, acceptedProduct: m.acceptedProduct };
             devicemodels.forEach((d: any) => {

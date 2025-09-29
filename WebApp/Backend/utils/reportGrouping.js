@@ -68,26 +68,58 @@ function groupReportsByExcavator(reports = []) {
     return Array.from(map.values());
 }
 
-function groupTripsVehicle(trips) {
-    const groups = {};
+// lenh sx vh xe
+async function groupTripsVehicle(trips) {
+    // Sử dụng Promise.all với map để xử lý bất đồng bộ song song (tăng tốc độ)
+    const formattedTrips = await Promise.all(trips.map(async (t) => {
 
-    trips.forEach(t => {
-        const key = `${t.excavator}-${t.toLocation}`;
-        if (!groups[key]) {
-            groups[key] = {
+        // Chuyển quantityUpdateTimes thành mảng để lặp
+        const timesArray = Array.isArray(t.quantityUpdateTimes)
+            ? t.quantityUpdateTimes
+            : [t.quantityUpdateTimes];
+
+        // 1. TÍNH TOÁN VÀ GOM timeLogs
+        // Sử dụng Promise.all để tìm TravelLog song song cho mỗi mốc thời gian
+        let totalDistance = 0;
+        const timeLogPromises = timesArray.map(async (time) => {
+            const travelLog = await TravelLog.findOne({
                 excavator: t.excavator,
                 location: t.toLocation,
-                materials: []
+                startTime: { $lte: time },
+                endTime: { $gte: time }
+            }).lean();
+
+            const distance = travelLog ? (travelLog.distance || 0) : 0;
+
+            return {
+                time: time,
+                distance: distance
             };
-        }
-        groups[key].materials.push({
+        });
+
+        const timeLogs = await Promise.all(timeLogPromises);
+
+        totalDistance = timeLogs.reduce((sum, log) => sum + log.distance, 0);
+
+        // 2. TÍNH TOÁN KHỐI LƯỢNG VÀ TẤN
+        const value = await caculatorWeight(t.material?._id, t.device?.material, t.quantity, totalDistance);
+
+        // 3. TRẢ VỀ ĐỐI TƯỢNG CHUYẾN ĐI MỚI (PHẲNG)
+        return {
+            device: t.device,
+            excavator: t.excavator,
+            location: t.toLocation,
             material: t.material,
             quantity: t.quantity,
-            times: t.quantityUpdateTimes
-        });
-    });
+            // Thông tin đã tính toán
+            totalCubicMeter: value.cubicMeter, // Đổi tên thành totalCubicMeter để nhất quán, nhưng nó là của chuyến đi này
+            totalTon: value.ton,
+            production: value.production,
+            timeLogs: timeLogs                 // Mảng chứa {time, distance}
+        };
+    }));
 
-    return Object.values(groups);
+    return formattedTrips;
 }
 
 async function groupExcavator(trips) {
@@ -103,10 +135,10 @@ async function groupExcavator(trips) {
                 totalTon: 0
             };
         }
-        const value = await caculatorWeight(t.material?._id, t.device?.material, t.quantity)
+        const value = await caculatorWeight(t.material?._id, t.device?.material, t.quantity, 0)
         groups[key].totalCubicMeter += value.cubicMeter;
         groups[key].totalTon += value.ton;
-        
+
         groups[key].materials.push({
             material: t.material,
             quantity: t.quantity,
@@ -160,9 +192,10 @@ async function groupTripsCar(trips) {
     const groups = {};
 
     for (const t of trips) {
-        const key = `${t.excavator}-${t.toLocation}`;
+        const key = `${t.device}-${t.excavator}-${t.toLocation}`;
         if (!groups[key]) {
             groups[key] = {
+                device: t.device,
                 excavator: t.excavator,
                 toLocation: t.toLocation,
                 trips: [],
@@ -343,17 +376,20 @@ function groupDrill(trips) {
 
 // khoi luong, trong luong tam tinh
 
-async function caculatorWeight(material, deviceModel, quantity) {
+async function caculatorWeight(material, deviceModel, quantity, totalDistance) {
     let cubicMeter = 0
     let ton = 0
+    let production = 0
     const data = await Model.findOne({ material: material, deviceModel: deviceModel })
         .populate('material', 'density acceptedProduct');
     if (data && data.material?.acceptedProduct === ACCEPTED_PRODUCT.COAL) {
         ton = (data.value || 0) * (quantity || 0) * (data.material?.density || 0)
+        production = (ton || 0) * (totalDistance || 0)
     } else if (data && data.material?.acceptedProduct === ACCEPTED_PRODUCT.LAND) {
         cubicMeter = (data.value || 0) * (quantity || 0)
+        production = (totalDistance || 0) * (cubicMeter || 0)
     }
-    return { cubicMeter, ton }
+    return { cubicMeter, ton, production }
 }
 
 
