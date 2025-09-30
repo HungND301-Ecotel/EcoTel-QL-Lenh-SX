@@ -59,6 +59,7 @@ export default function SummaryCardDevice(
             sx={{
                 height: '100%',
                 p: 3,
+                padding: '4px 16px',
                 borderRadius: 3,
                 boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
                 transition: 'transform 0.2s, box-shadow 0.2s',

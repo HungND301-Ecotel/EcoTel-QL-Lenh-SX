@@ -77,38 +77,31 @@ export default function Header() {
 
     const menuItems = [
         ["admin", "manager"].includes(user?.role) && {
-            text: 'Cung độ', icon: <Timelapse color='primary' />, path: '/travelLog'
-        },
-        ["admin", "manager"].includes(user?.role) && {
-            text: 'Ca làm việc', icon: <Timelapse color='primary' />, path: '/shifts'
-        },
-        ["admin", "manager"].includes(user?.role) && {
             text: 'Biện pháp an toàn', icon: <SafetyCheck color='primary' />, path: '/safetyMeasures'
         },
-        ["admin", "manager"].includes(user?.role) && {
-            text: 'Loại vật liệu', icon: <Category color='primary' />, path: '/materials'
-        },
-        ["admin", "manager"].includes(user?.role) && {
-            text: 'Loại thiết bị', icon: <LocalOffer color='primary' />, path: '/deviceTypes'
-        },
-        ["admin", "manager"].includes(user?.role) && {
-            text: 'Chủng loại thiết bị', icon: <LocalOffer color='primary' />, path: '/deviceModels'
-        },
         ["admin", "manager", "dispatcher"].includes(user?.role) && {
-            text: 'Thông tin xe', icon: <LocalShipping color='primary' />, path: '#',
+            text: 'Thiết bị', icon: <LocalShipping color='primary' />, path: '#',
             submenu: [
+                { text: 'Phân loại thiết bị', path: '/deviceTypes' },
+                { text: 'Chủng loại thiết bị', path: '/deviceModels' },
                 { text: 'Thông tin xe', path: '/vehicles' },
-                { text: 'Mô hình xe', path: '/models' }
+                { text: 'Thông tin máy', path: '/machines' },
             ]
         },
-        ["admin", "manager", "dispatcher"].includes(user?.role) && {
-            text: 'Thông tin máy', icon: <PrecisionManufacturing color='primary' />, path: '/machines'
+        ["admin", "manager"].includes(user?.role) && {
+            text: 'Cung độ', icon: <Timelapse color='primary' />, path: '/travelLog'
         },
-        // ["admin", "manager", "dispatcher"].includes(user?.role) && {
-        //     text: 'Mô hình xe', icon: <PrecisionManufacturing color='primary' />, path: '/models'
-        // },
+        ["admin", "manager", "dispatcher"].includes(user?.role) && {
+            text: 'Mô hình xe', icon: <PrecisionManufacturing color='primary' />, path: '/models'
+        },
+        ["admin", "manager"].includes(user?.role) && {
+            text: 'Vật liệu', icon: <Category color='primary' />, path: '/materials'
+        },
         ["admin", "manager"].includes(user?.role) && {
             text: 'Điểm đổ tải', icon: <LocationCity color='primary' />, path: '/locations'
+        },
+        ["admin", "manager", "dispatcher"].includes(user?.role) && {
+            text: 'Cán bộ nhân viên', icon: <People color='primary' />, path: '/users'
         },
         ["admin", "manager"].includes(user?.role) && {
             text: 'Công việc', icon: <Work color='primary' />, path: '/jobs'
@@ -119,9 +112,9 @@ export default function Header() {
         ["admin", "manager", "dispatcher"].includes(user?.role) && {
             text: 'Đơn vị', icon: <Business color='primary' />, path: '/departments'
         },
-        ["admin", "manager", "dispatcher"].includes(user?.role) && {
-            text: 'Cán bộ nhân viên', icon: <People color='primary' />, path: '/users'
-        }
+        ["admin", "manager"].includes(user?.role) && {
+            text: 'Ca làm việc', icon: <Timelapse color='primary' />, path: '/shifts'
+        },
     ].filter(Boolean);
     return (
         <>
@@ -308,7 +301,7 @@ export default function Header() {
                             open={Boolean(submenuAnchorEl)}
                             anchorEl={submenuAnchorEl}
                             onClose={() => setSubmenuAnchorEl(null)}
-                            anchorOrigin={{ vertical: 'center', horizontal: 'right' }}
+                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                             transformOrigin={{ vertical: 'center', horizontal: 'left' }}
                         >
                             <MenuList>

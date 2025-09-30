@@ -39,6 +39,7 @@ import { Department } from '../../types';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import { departmentValidationSchema } from '../../utils/validation';
+import DepartmentService from '../../services/departmentService';
 
 
 const Departments = () => {
@@ -73,12 +74,12 @@ const Departments = () => {
 
     const { data: departments = [], isLoading } = useQuery({
         queryKey: ['departments', value],
-        queryFn: () => api.get(`/departments?code=${value}`).then(res => res.data.data),
+        queryFn: () => DepartmentService.getAll({ code: value }),
     });
 
 
     const createMutation = useMutation({
-        mutationFn: (data: any) => api.post('/departments', data).then(res => res.data),
+        mutationFn: DepartmentService.create,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['departments'] });
             showSuccessAlert('Thêm đơn vị thành công');
@@ -90,7 +91,7 @@ const Departments = () => {
     });
 
     const updateMutation = useMutation({
-        mutationFn: (data: any) => api.put(`/departments/${selectedDepartment?._id}`, data).then(res => res.data),
+        mutationFn: DepartmentService.update,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['departments'] });
             showSuccessAlert('Cập nhật đơn vị thành công');
@@ -102,7 +103,7 @@ const Departments = () => {
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (ids: string[]) => api.delete(`/departments`, { data: { ids } }).then(res => res.data.message),
+        mutationFn: DepartmentService.delete,
         onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['departments'] });
             setSelectedDepartments([]);
@@ -175,10 +176,10 @@ const Departments = () => {
             code: '',
             description: '',
         },
-        validationSchema:departmentValidationSchema,
+        validationSchema: departmentValidationSchema,
         onSubmit: (values) => {
             if (selectedDepartment) {
-                updateMutation.mutate(values);
+                updateMutation.mutate({ ...values, _id: selectedDepartment?._id });
             } else {
                 createMutation.mutate(values);
             }

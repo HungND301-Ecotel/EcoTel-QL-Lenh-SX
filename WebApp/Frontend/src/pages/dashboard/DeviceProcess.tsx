@@ -8,8 +8,8 @@ export default function Deviceprocess({ value, total, color }: { value: number; 
                 variant="determinate"
                 value={percent}
                 sx={{
-                    height: 28,
-                    width: 100,
+                    height: 24,
+                    width: 80,
                     borderRadius: 1,
                     border: `1px solid ${color}`,
                     backgroundColor: 'white',

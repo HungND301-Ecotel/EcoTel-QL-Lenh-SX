@@ -188,10 +188,10 @@ const DeviceTypes: React.FC = () => {
         <Box>
             <Breadcrumbs aria-label="breadcrumb">
                 <Typography>Danh mục</Typography>
-                <Typography>Loại thiết bị</Typography>
+                <Typography>Phân loại thiết bị</Typography>
             </Breadcrumbs>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, mt: 3 }}>
-                <Typography variant="h3" color={'blue'}>Loại thiết bị</Typography>
+                <Typography variant="h3" color={'blue'}>Phân loại thiết bị</Typography>
             </Box>
             <Accordion expanded={expanded}>
                 <AccordionSummary
@@ -292,7 +292,7 @@ const DeviceTypes: React.FC = () => {
                 </AccordionDetails>
             </Accordion>
             <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
-                <Typography variant="h4">Bảng loại thiết bị</Typography>
+                <Typography variant="h4">Bảng phân loại thiết bị</Typography>
                 <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
                     <Settings sx={{ fontSize: 30 }} />
                 </IconButton>

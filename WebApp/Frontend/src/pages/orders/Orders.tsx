@@ -35,6 +35,7 @@ import {
     Pagination,
     TablePagination,
     InputAdornment,
+    CircularProgress,
 } from '@mui/material';
 import { format } from 'date-fns';
 import {
@@ -52,11 +53,12 @@ import {
     Settings,
     ExpandMore,
     FilterTiltShiftSharp,
+    RotateLeft,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import api from '../../config/api.config';
-import { Order, Shift } from '../../types';
+import { Department, Order, Shift } from '../../types';
 import OrderFormAdd from './OrderFormAdd';
 import OrderFormEdit from './OrderFormEdit';
 import OrderFormTransfer from './OrderFormTransfer';
@@ -72,6 +74,7 @@ import { StyledPopper } from '../../ui/poppers';
 import { JobTypeEnum } from '../../types/enums';
 import OrderHistories from '../../components/Modal/OrderHistories';
 import ShiftReport from '../../components/Modal/ShiftReport';
+import DepartmentService from '../../services/departmentService';
 
 
 const Orders: React.FC = () => {
@@ -149,10 +152,10 @@ const Orders: React.FC = () => {
 
     const { data: departments = [] } = useQuery({
         queryKey: ['departments'],
-        queryFn: () => api.get('/departments').then(res => res.data.data),
+        queryFn: () => DepartmentService.getAll(),
     });
 
-    const { data, isLoading } = useQuery({
+    const { data, refetch: refetchOrder, isLoading } = useQuery({
         queryKey: ['orders', paginationModel, value, status, department, device, startTime, endTime, serverFilters],
         queryFn: () => api.get(`/orders`, {
             params: {
@@ -780,8 +783,18 @@ const Orders: React.FC = () => {
             </Box>
             <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
                 <Typography variant="h4">Bảng lệnh sản xuất</Typography>
-                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                    <Settings sx={{ fontSize: 30 }} />
+                <IconButton onClick={() => refetchOrder()} disabled={isLoading}>
+                    {isLoading ? (
+                        <CircularProgress size={24} />
+                    ) : (
+                        <RotateLeft
+                            sx={{
+                                transition: "transform 0.3s ease",
+                                "&:hover": { transform: "rotate(-180deg)" }, // xoay khi hover
+                                color: "primary.main",
+                            }}
+                        />
+                    )}
                 </IconButton>
                 <Menu
                     anchorEl={anchorEl}

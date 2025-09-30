@@ -46,10 +46,7 @@ const DashBoard: React.FC = () => {
 
     return (
         <Box sx={{ p: 4, bgcolor: '#f5f7fa', minHeight: '100vh' }}>
-            <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#333' }}>
-                Tổng quan
-            </Typography>
-            <Grid container rowSpacing={8} spacing={2}>
+            <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                     <SummaryCardDevice
                         title="Thông tin máy"
@@ -89,7 +86,7 @@ const DashBoard: React.FC = () => {
                     />
                 </Grid>
             </Grid>
-            <Box mt={10}>
+            <Box mt={6}>
                 {tabIndex === 0 && (
                     <Box>
                         <Grid container spacing={4}>

@@ -129,7 +129,7 @@ export default function DeviceAnalysic() {
                 <RealTimeClock />
             </Box>
             <TableContainer sx={{ maxHeight: 600 }}>
-                <Table stickyHeader sx={{ '& td, & th': { border: '1px solid #e0e0e0' } }}>
+                <Table stickyHeader sx={{ '& td, & th': { border: '1px solid #e0e0e0', padding: '0 4px' } }}>
                     <TableHead>
                         <TableRow>
                             <TableCell colSpan={7} align="center" sx={{ bgcolor: '#d6e9f9', fontWeight: 'bold', fontSize: 18 }}>THIẾT BỊ</TableCell>

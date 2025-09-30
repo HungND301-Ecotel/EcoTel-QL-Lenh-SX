@@ -6243,4 +6243,5 @@ function setAutoRowHeight(row, text, lineHeight = 25) {
     const lines = text.split('\n').length;
     row.height = lines * lineHeight;
 }
+
 module.exports = router; 

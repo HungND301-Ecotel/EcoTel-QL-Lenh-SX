@@ -246,10 +246,10 @@ const DeviceModels: React.FC = () => {
         <Box>
             <Breadcrumbs aria-label="breadcrumb">
                 <Typography>Danh mục</Typography>
-                <Typography>Chủng loại</Typography>
+                <Typography>Chủng loại thiết bị</Typography>
             </Breadcrumbs>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, mt: 3 }}>
-                <Typography variant="h3" color={'blue'}>Chủng loại</Typography>
+                <Typography variant="h3" color={'blue'}>Chủng loại thiết bị</Typography>
             </Box>
             <Accordion expanded={expanded}>
                 <AccordionSummary
@@ -400,7 +400,7 @@ const DeviceModels: React.FC = () => {
                 </Box>
             )}
             <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
-                <Typography variant="h4">Bảng chủng loại</Typography>
+                <Typography variant="h4">Bảng chủng loại thiết bị</Typography>
                 <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
                     <Settings sx={{ fontSize: 30 }} />
                 </IconButton>

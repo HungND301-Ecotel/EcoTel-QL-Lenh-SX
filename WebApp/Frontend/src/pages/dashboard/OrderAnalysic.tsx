@@ -119,18 +119,18 @@ export default function OrderAnalysic({ departments }: { departments: any[] }) {
             </Box>
             <Grid container spacing={2}>
                 <Grid item xs={12} md={8}>
-                    <TableContainer sx={{ maxHeight: 600 }}>
-                        <Table stickyHeader sx={{ '& td, & th': { border: '1px solid #e0e0e0', } }}>
+                    <TableContainer sx={{ maxHeight: 300 }}>
+                        <Table stickyHeader sx={{ '& td, & th': { border: '1px solid #e0e0e0', padding: '4px', } }}>
                             <TableHead>
                                 <TableRow>
                                     <TableCell colSpan={7} align="center" sx={{ bgcolor: '#dcf1d8', fontWeight: 'bold', fontSize: 18 }}>LỆNH SẢN XUẤT</TableCell>
                                 </TableRow>
                                 <TableRow>
-                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '20%' }}>Lệnh sản xuất</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '10%' }}>Ca 1</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '10%' }}>Ca 2</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '10%' }}>Ca 3</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 20, width: '10%' }}>Ngày</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 18, width: '20%' }}>Lệnh sản xuất</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 18, width: '10%' }}>Ca 1</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 18, width: '10%' }}>Ca 2</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 18, width: '10%' }}>Ca 3</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 18, width: '10%' }}>Ngày</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -147,7 +147,7 @@ export default function OrderAnalysic({ departments }: { departments: any[] }) {
                         </Table>
                     </TableContainer>
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} md={4} sx={{ maxHeight: 300 }}>
                     <PieChartOrder data={orderCount} />
                 </Grid>
             </Grid>

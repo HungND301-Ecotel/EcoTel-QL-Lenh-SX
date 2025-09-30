@@ -27,13 +27,22 @@ export default function PieChartOrder({ data }: { data: any }) {
             }}>Không có dữ liệu</Typography>}
             <ResponsiveChartContainer
                 series={[{
-                    type: 'pie', innerRadius: 50, outerRadius: 100,
+                    type: 'pie',
+                    innerRadius: 30,
+                    outerRadius: 60,
                     data: chartData
                 }]}
             >
                 <PiePlot />
                 <ChartsTooltip trigger="item" />
-                <ChartsLegend position={{ vertical: 'bottom', horizontal: 'middle' }} />
+                <ChartsLegend position={{ vertical: 'bottom', horizontal: 'middle' }}
+                slotProps={{
+                    legend:{
+                        labelStyle:{
+                            fontSize:12,
+                        }
+                    }
+                }} />
             </ResponsiveChartContainer>
         </div>
     )
