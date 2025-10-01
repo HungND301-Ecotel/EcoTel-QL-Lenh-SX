@@ -27,6 +27,7 @@ import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../compon
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import { locationValidationSchema } from '../../utils/validation';
+import LocationService from '../../services/locationService';
 
 const containerStyle = {
     width: '100%',
@@ -72,11 +73,11 @@ const Locations: React.FC = () => {
 
     const { data: locations = [], isLoading } = useQuery({
         queryKey: ['locations', value],
-        queryFn: () => api.get(`/locations?name=${value}`).then(res => res.data.data),
+        queryFn: () => LocationService.getAll({ name: value }),
     });
 
     const createMutation = useMutation({
-        mutationFn: (newLoc: Partial<Location>) => api.post('/locations', newLoc).then(res => res.data),
+        mutationFn: LocationService.create,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['locations'] });
             showSuccessAlert('Thêm điểm đổ tải thành công');
@@ -88,8 +89,7 @@ const Locations: React.FC = () => {
     });
 
     const updateMutation = useMutation({
-        mutationFn: (updatedLoc: Partial<Location>) =>
-            api.put(`/locations/${updatedLoc._id}`, updatedLoc).then(res => res.data),
+        mutationFn: LocationService.update,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['locations'] });
             showSuccessAlert('Cập nhật điểm đổ tải thành công');
@@ -101,7 +101,7 @@ const Locations: React.FC = () => {
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (ids: string[]) => api.delete(`/locations`, { data: { ids } }).then(res => res.data.message),
+        mutationFn: LocationService.delete,
         onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['locations'] });
             setSelectedLocations([]);
@@ -115,16 +115,7 @@ const Locations: React.FC = () => {
     const [progress, setProgress] = useState(0)
     const [isUploading, setIsUploading] = useState(false);
     const importFile = useMutation({
-        mutationFn: (formData: FormData) =>
-            api.post('/locations/importFile', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-                onUploadProgress: (progressEvent) => {
-                    const percent = Math.round(
-                        (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
-                    );
-                    setProgress(percent);
-                }
-            }).then(res => res.data.message),
+        mutationFn: (fd: FormData) => LocationService.importFile(fd, setProgress),
         onMutate: () => {
             setIsUploading(true);
             setProgress(0); // Reset tiến trình khi bắt đầu
@@ -142,25 +133,7 @@ const Locations: React.FC = () => {
     });
 
     const exportExcel = useMutation({
-        mutationFn: () => {
-            return api.post('/locations/exportFile', {}, {
-                responseType: 'blob',
-            }).then(res => {
-                const blob = new Blob([res.data], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                });
-
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', `*.xlsx`);
-
-                document.body.appendChild(link);
-                link.click();
-                link.parentNode?.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            });
-        },
+        mutationFn: LocationService.exportFile,
         onSuccess: () => { },
         onError: (error: any) => {
             showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');

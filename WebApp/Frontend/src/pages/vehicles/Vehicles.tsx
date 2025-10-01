@@ -56,6 +56,8 @@ import { userAtom } from '../../atoms/userAtoms';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { StyledPopper } from '../../ui/poppers';
 import { vehicleValidationSchema } from '../../utils/validation';
+import DeviceService from '../../services/deviceService';
+import DepartmentService from '../../services/departmentService';
 
 const containerStyle = {
     width: '100%',
@@ -114,11 +116,11 @@ const Vehicles: React.FC = () => {
 
     const { data: vehicles = [], isLoading } = useQuery({
         queryKey: ['vehicles', q, department, status],
-        queryFn: () => api.get(`/devices?q=${q}&department=${department}&status=${status}`).then(res => res.data.data?.filter((item: any) => item?.category?.group.toLowerCase() === "xe".toLowerCase())),
+        queryFn: () => DeviceService.getVehicles({ q: q, department: department, status: status }),
     });
     const { data: allVehicles = [] } = useQuery({
         queryKey: ['allVehicles', q, department],
-        queryFn: () => api.get(`/devices?q=${q}&department=${department}`).then(res => res.data.data?.filter((item: any) => item?.category?.group.toLowerCase() === "xe".toLowerCase())),
+        queryFn: () => DeviceService.getVehicles({ q: q, department: department }),
     });
     const { data: DeviceTypes = [] } = useQuery({
         queryKey: ['DeviceTypes'],
@@ -128,7 +130,7 @@ const Vehicles: React.FC = () => {
 
     const { data: departments = [] } = useQuery({
         queryKey: ['departments'],
-        queryFn: () => api.get('/departments').then(res => res.data.data),
+        queryFn: () => DepartmentService.getAll(),
     });
     const { data: devicemodels = [] } = useQuery({
         queryKey: ['devicemodels'],
@@ -138,20 +140,8 @@ const Vehicles: React.FC = () => {
     const [progress, setProgress] = useState(0)
     const [isUploading, setIsUploading] = useState(false);
     const importFile = useMutation({
-        mutationFn: (formData: FormData) =>
-            api.post('/devices/importFile', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-                onUploadProgress: (progressEvent) => {
-                    const percent = Math.round(
-                        (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
-                    );
-                    setProgress(percent);
-                }
-            }).then(res => res.data),
-        onMutate: () => {
-            setIsUploading(true);
-            setProgress(0); // Reset tiến trình khi bắt đầu
-        },
+        mutationFn: (fd: FormData) => DeviceService.importDevicesFile(fd, setProgress),
+        onMutate: () => { setIsUploading(true); setProgress(0); },
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['vehicles'] });
             setIsUploading(false);
@@ -185,25 +175,7 @@ const Vehicles: React.FC = () => {
 
 
     const exportExcel = useMutation({
-        mutationFn: () => {
-            return api.post('/devices/exportFile', { data: vehicles }, {
-                responseType: 'blob',
-            }).then(res => {
-                const blob = new Blob([res.data], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                });
-
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', `*.xlsx`);
-
-                document.body.appendChild(link);
-                link.click();
-                link.parentNode?.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            });
-        },
+        mutationFn: () => DeviceService.exportDevicesFile(vehicles),
         onSuccess: () => { },
         onError: (error: any) => {
             showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');

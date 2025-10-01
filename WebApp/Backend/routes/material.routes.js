@@ -125,7 +125,7 @@ router.get('/:id', verifyToken, async (req, res, next) => {
 const columnMapping = {
     'Tên vật liệu': 'name',
     'Tỷ trọng': 'density',
-    'Sản phẩm nghệm thu': 'acceptedProduct',
+    'Sản phẩm nghiệm thu': 'acceptedProduct',
 };
 router.post('/importFile', upload.single('file'), verifyToken, async (req, res) => {
     try {
@@ -148,6 +148,8 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
             req.logger.warn("⚠️ Import file thất bại - Không tìm thấy dữ liệu hợp lệ.");
             return res.status(400).json({ status: 'error', message: 'Không tìm thấy dữ liệu hợp lệ trong file.' });
         }
+
+        console.log(dataImport)
 
         const operations = dataImport.map(item => {
             const { name, ...updateData } = item;
@@ -210,6 +212,16 @@ router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
                 cell.font = { size: 9, bold: (rowNumber === 1) };
                 cell.alignment = { vertical: 'middle', wrapText: true, };
             });
+        });
+
+        const MAX = Math.max(worksheet.rowCount + 100, 1000);
+        worksheet.dataValidations.add(`C2:C${MAX}`, {
+            type: 'list',
+            allowBlank: true,
+            formulae: ['"Than,Đất"'],
+            showErrorMessage: true,
+            errorTitle: 'Giá trị không hợp lệ',
+            error: 'Chỉ được chọn Than hoặc Đất.',
         });
 
         const buffer = await workbook.xlsx.writeBuffer();

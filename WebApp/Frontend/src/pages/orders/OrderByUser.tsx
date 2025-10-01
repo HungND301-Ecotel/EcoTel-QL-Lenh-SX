@@ -51,6 +51,7 @@ import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { useSocket } from '../../hooks/useSocket';
 import { DataGrid, GridColDef, GridRenderCellParams, GridToolbar } from '@mui/x-data-grid';
+import OrderService from '../../services/orderService';
 
 const OrderByUsers: React.FC = () => {
 
@@ -103,8 +104,8 @@ const OrderByUsers: React.FC = () => {
     });
     const { data, isLoading } = useQuery({
         queryKey: ['orderByUser', paginationModel, status, startTime, endTime, serverFilters],
-        queryFn: () => api.get(`/orders/user`, {
-            params: {
+        queryFn: () => OrderService.getByUser(
+            {
                 page: paginationModel.page + 1,
                 limit: paginationModel.pageSize,
                 status: status || undefined,
@@ -113,7 +114,7 @@ const OrderByUsers: React.FC = () => {
 
                 shift: serverFilters.shift || undefined,
             }
-        }).then(res => res.data)
+        )
     })
     useEffect(() => {
         if (data) {
@@ -336,7 +337,7 @@ const OrderByUsers: React.FC = () => {
                             toolbar: {
                                 csvOptions: { disableToolbarButton: true },
                                 printOptions: { disableToolbarButton: true },
-                            
+
                             }
                         }}
                         disableVirtualization={true}

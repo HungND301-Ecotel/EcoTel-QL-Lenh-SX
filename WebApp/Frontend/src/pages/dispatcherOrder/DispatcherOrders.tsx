@@ -66,6 +66,9 @@ import { useSocket } from '../../hooks/useSocket';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { StyledPopper } from '../../ui/poppers';
 import OrderHistories from '../../components/Modal/OrderHistories';
+import UserService from '../../services/userService';
+import DepartmentService from '../../services/departmentService';
+import OrderService from '../../services/orderService';
 
 const DispatcherOrders: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -122,16 +125,23 @@ const DispatcherOrders: React.FC = () => {
 
     const { data: departments = [] } = useQuery({
         queryKey: ['departments'],
-        queryFn: () => api.get('/departments').then(res => res.data.data),
+        queryFn: DepartmentService.getAll,
     });
     const { data: users = [] } = useQuery({
         queryKey: ['users'],
-        queryFn: () => api.get('/users').then(res => res.data.data),
+        queryFn: UserService.getAll,
     });
 
     const { data: orders = [], isLoading } = useQuery({
         queryKey: ['orders', employee, department, startTime, endTime],
-        queryFn: () => api.get(`/orders?employee=${employee}&&department=${department}&startTime=${startTime ? startTime.toISOString() : ''}&endTime=${endTime ? endTime.toISOString() : ''}`).then(res => res.data.data),
+        queryFn: () => OrderService.getAllDispatcher(
+            {
+                employee: employee,
+                department: department,
+                startTime: startTime ? startTime.toISOString() : '',
+                endTime: endTime ? endTime.toISOString() : ''
+            }
+        ),
 
     });
 
@@ -146,8 +156,7 @@ const DispatcherOrders: React.FC = () => {
     };
 
     const createMutation = useMutation({
-        mutationFn: (newOrder: Partial<Order>) =>
-            api.post('/orders', newOrder).then(res => res.data),
+        mutationFn: OrderService.create,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
             showSuccessAlert('Thêm lệnh sản xuất thành công');
@@ -159,28 +168,7 @@ const DispatcherOrders: React.FC = () => {
     });
 
     const reportExcel = useMutation({
-        mutationFn: () =>
-            api.post(`/exports/order/bulk`, { ids: selectedOrders.map(o => o._id) }, {
-                responseType: 'blob',
-            }).then(res => {
-                const blob = new Blob([res.data], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                });
-
-                // Tạo một URL tạm từ Blob
-                const url = window.URL.createObjectURL(blob);
-                // Tạo thẻ <a> động và kích hoạt tải file
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', `*.xlsx`);
-
-                document.body.appendChild(link);
-                link.click();
-
-                // Dọn dẹp URL Blob và xóa thẻ <a>
-                link.parentNode?.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            }),
+        mutationFn: () => OrderService.exportFile(selectedOrders),
         onSuccess: () => {
             setSelectedOrders([])
             showSuccessAlert('Xuất file thành công');
@@ -191,8 +179,7 @@ const DispatcherOrders: React.FC = () => {
     });
 
     const updateMutation = useMutation({
-        mutationFn: (updatedOrder: Partial<Order>) =>
-            api.put(`/orders/${updatedOrder._id}`, updatedOrder).then(res => res.data),
+        mutationFn: OrderService.update,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
             // showSuccessAlert('Cập nhật lệnh sản xuất thành công');
@@ -238,7 +225,7 @@ const DispatcherOrders: React.FC = () => {
     };
 
     const deleteMutation = useMutation({
-        mutationFn: (ids: string[]) => api.delete(`/orders`, { data: { ids } }).then(res => res.data.message),
+        mutationFn: OrderService.delete,
         onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
             setSelectedOrders([]);

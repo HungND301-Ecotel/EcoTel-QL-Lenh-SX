@@ -50,6 +50,7 @@ import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import { jobValidationSchema } from '../../utils/validation';
 import { JOB_TYPE_OPTIONS } from '../../utils/const';
+import JobService from '../../services/locationService copy';
 
 
 const Jobs: React.FC = () => {
@@ -84,13 +85,12 @@ const Jobs: React.FC = () => {
 
     const { data: jobs = [], isLoading } = useQuery({
         queryKey: ['jobs', value],
-        queryFn: () => api.get(`/jobs?name=${value}`).then(res => res.data.data),
+        queryFn: () => JobService.getAll({ name: value }),
     });
 
 
     const createMutation = useMutation({
-        mutationFn: (newJob: Partial<Job>) =>
-            api.post('/jobs', newJob).then(res => res.data),
+        mutationFn: JobService.create,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['jobs'] });
             showSuccessAlert('Thêm công việc thành công');
@@ -102,8 +102,7 @@ const Jobs: React.FC = () => {
     });
 
     const updateMutation = useMutation({
-        mutationFn: (updatedJob: Partial<Job>) =>
-            api.put(`/jobs/${updatedJob._id}`, updatedJob).then(res => res.data),
+        mutationFn: JobService.update,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['jobs'] });
             showSuccessAlert('Cập nhật công việc thành công');
@@ -115,7 +114,7 @@ const Jobs: React.FC = () => {
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (ids: string[]) => api.delete(`/jobs`, { data: { ids } }).then(res => res.data.message),
+        mutationFn: JobService.delete,
         onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['jobs'] });
             setSelectedJobs([]);
@@ -130,16 +129,7 @@ const Jobs: React.FC = () => {
     const [progress, setProgress] = useState(0)
     const [isUploading, setIsUploading] = useState(false);
     const importFile = useMutation({
-        mutationFn: (formData: FormData) =>
-            api.post('/jobs/importFile', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-                onUploadProgress: (progressEvent) => {
-                    const percent = Math.round(
-                        (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
-                    );
-                    setProgress(percent);
-                }
-            }).then(res => res.data.message),
+        mutationFn: (formData: FormData) => JobService.importFile(formData, setProgress),
         onMutate: () => {
             setIsUploading(true);
             setProgress(0); // Reset tiến trình khi bắt đầu
@@ -156,25 +146,7 @@ const Jobs: React.FC = () => {
         }
     });
     const exportExcel = useMutation({
-        mutationFn: () => {
-            return api.post('/jobs/exportFile', {}, {
-                responseType: 'blob',
-            }).then(res => {
-                const blob = new Blob([res.data], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                });
-
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', `*.xlsx`);
-
-                document.body.appendChild(link);
-                link.click();
-                link.parentNode?.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            });
-        },
+        mutationFn: JobService.exportFile,
         onSuccess: () => { },
         onError: (error: any) => {
             showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');

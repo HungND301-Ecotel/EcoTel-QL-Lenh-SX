@@ -75,6 +75,7 @@ import { JobTypeEnum } from '../../types/enums';
 import OrderHistories from '../../components/Modal/OrderHistories';
 import ShiftReport from '../../components/Modal/ShiftReport';
 import DepartmentService from '../../services/departmentService';
+import OrderService from '../../services/orderService';
 
 
 const Orders: React.FC = () => {
@@ -157,11 +158,11 @@ const Orders: React.FC = () => {
 
     const { data, refetch: refetchOrder, isLoading } = useQuery({
         queryKey: ['orders', paginationModel, value, status, department, device, startTime, endTime, serverFilters],
-        queryFn: () => api.get(`/orders`, {
-            params: {
+        queryFn: () => OrderService.getAll(
+            {
                 page: paginationModel.page + 1,
                 limit: paginationModel.pageSize,
-                department,
+                department: department,
                 status: status || undefined,
                 startTime: startTime ? startTime.toISOString() : '',
                 endTime: endTime ? endTime.toISOString() : '',
@@ -175,7 +176,7 @@ const Orders: React.FC = () => {
                 job: serverFilters.job || undefined,
                 device: serverFilters.device || undefined,
             }
-        }).then(res => res.data)
+        )
     })
     useEffect(() => {
         if (data) {
@@ -193,8 +194,7 @@ const Orders: React.FC = () => {
     }, [data]);
 
     const createMutation = useMutation({
-        mutationFn: (newOrder: Partial<Order>) =>
-            api.post('/orders', newOrder).then(res => res.data),
+        mutationFn: OrderService.create,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
             handleClose();
@@ -205,28 +205,7 @@ const Orders: React.FC = () => {
     });
 
     const reportExcel = useMutation({
-        mutationFn: () =>
-            api.post(`/exports/order/bulk`, { ids: selectedOrders.map(o => o._id) }, {
-                responseType: 'blob',
-            }).then(res => {
-                const blob = new Blob([res.data], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                });
-
-                // Tạo một URL tạm từ Blob
-                const url = window.URL.createObjectURL(blob);
-                // Tạo thẻ <a> động và kích hoạt tải file
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', '*.xlsx');
-
-                document.body.appendChild(link);
-                link.click();
-
-                // Dọn dẹp URL Blob và xóa thẻ <a>
-                link.parentNode?.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            }),
+        mutationFn: () => OrderService.exportFile(selectedOrders),
         onSuccess: () => {
             showSuccessAlert('Xuất file thành công');
             setSelectedOrders([])
@@ -237,8 +216,7 @@ const Orders: React.FC = () => {
     });
 
     const updateMutation = useMutation({
-        mutationFn: (updatedOrder: Partial<Order>) =>
-            api.put(`/orders/${updatedOrder._id}`, updatedOrder).then(res => res.data),
+        mutationFn: OrderService.update,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
             showSuccessAlert('Cập nhật lệnh sản xuất thành công');
@@ -250,7 +228,7 @@ const Orders: React.FC = () => {
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (ids: string[]) => api.delete(`/orders`, { data: { ids } }).then(res => res.data.message),
+        mutationFn: OrderService.delete,
         onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
             setSelectedOrders([]);

@@ -60,6 +60,9 @@ import UserHistories from '../../components/Modal/UserHistories';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { StyledPopper } from '../../ui/poppers';
 import { userValidationSchema } from '../../utils/validation';
+import UserService from '../../services/userService';
+import PositionService from '../../services/positionService';
+import DepartmentService from '../../services/departmentService';
 
 
 const Users: React.FC = () => {
@@ -87,7 +90,10 @@ const Users: React.FC = () => {
 
     const { data: users = [], isLoading } = useQuery({
         queryKey: ['users', value, department, active],
-        queryFn: () => api.get(`/users?q=${value}&&department=${department}`).then(res => res.data.data),
+        queryFn: () => UserService.getAll({
+            q: value,
+            department: department,
+        }),
 
     });
     const filteredOrders = React.useMemo(() => {
@@ -97,16 +103,15 @@ const Users: React.FC = () => {
 
     const { data: positions = [] } = useQuery({
         queryKey: ['positions'],
-        queryFn: () => api.get('/positions').then(res => res.data.data),
+        queryFn: PositionService.getAll,
     });
     const { data: departments = [] } = useQuery({
         queryKey: ['departments'],
-        queryFn: () => api.get('/departments').then(res => res.data.data),
+        queryFn: DepartmentService.getAll,
     });
 
     const createMutation = useMutation({
-        mutationFn: (newUser: Partial<User>) =>
-            api.post('/auth/register', newUser).then(res => res.data),
+        mutationFn: UserService.create,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
             showSuccessAlert('Thêm người dùng thành công');
@@ -119,16 +124,7 @@ const Users: React.FC = () => {
     const [progress, setProgress] = useState(0)
     const [isUploading, setIsUploading] = useState(false);
     const importFile = useMutation({
-        mutationFn: (formData: FormData) =>
-            api.post('/users/importFile', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-                onUploadProgress: (progressEvent) => {
-                    const percent = Math.round(
-                        (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
-                    );
-                    setProgress(percent);
-                }
-            }).then(res => res.data),
+        mutationFn: (formData: FormData) => UserService.importFile(formData, setProgress),
         onMutate: () => {
             setIsUploading(true);
             setProgress(0); // Reset tiến trình khi bắt đầu
@@ -165,25 +161,7 @@ const Users: React.FC = () => {
     });
 
     const exportExcel = useMutation({
-        mutationFn: () => {
-            return api.post('/users/exportFile', {}, {
-                responseType: 'blob',
-            }).then(res => {
-                const blob = new Blob([res.data], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                });
-
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', `*.xlsx`);
-
-                document.body.appendChild(link);
-                link.click();
-                link.parentNode?.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            });
-        },
+        mutationFn: UserService.exportFile,
         onSuccess: () => { },
         onError: (error: any) => {
             showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
@@ -192,8 +170,7 @@ const Users: React.FC = () => {
 
 
     const updateMutation = useMutation({
-        mutationFn: (updatedUser: Partial<User>) =>
-            api.put(`/users/update/${updatedUser._id}`, updatedUser).then(res => res.data),
+        mutationFn: UserService.update,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
             showSuccessAlert('Cập nhật người dùng thành công');
@@ -204,8 +181,7 @@ const Users: React.FC = () => {
         }
     });
     const resetMutation = useMutation({
-        mutationFn: (id: string) =>
-            api.get(`/users/resetpass/${id}`).then(res => res.data),
+        mutationFn: UserService.resetPass,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
             showSuccessAlert('Reset mật khẩu thành công. Mật khẩu là:"123456"');
@@ -216,7 +192,7 @@ const Users: React.FC = () => {
         }
     });
     const deleteMutation = useMutation({
-        mutationFn: (ids: string[]) => api.delete(`/users`, { data: { ids } }).then(res => res.data.message),
+        mutationFn: UserService.delete,
         onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
             setSelectedUsers([]);

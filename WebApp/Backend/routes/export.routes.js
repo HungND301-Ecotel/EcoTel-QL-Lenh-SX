@@ -251,7 +251,7 @@ async function buildVehicle(order, workbook) {
     worksheet.getRow(rowHeader1).height = 30;
 
     worksheet.getCell(`A${rowHeader1 + 1}`).value = 'STT';
-    worksheet.getCell(`B${rowHeader1 + 1}`).value = 'Phương tiện';
+    worksheet.getCell(`B${rowHeader1 + 1}`).value = 'Thiết bị vận hành';
     worksheet.getCell(`C${rowHeader1 + 1}`).value = 'Máy xúc';
     worksheet.getCell(`D${rowHeader1 + 1}`).value = 'Điểm đổ tải';
     worksheet.getCell(`E${rowHeader1 + 1}`).value = 'Vật liệu';
@@ -2532,7 +2532,7 @@ router.post('/carReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE
                 setMergeCellHeader(worksheet, 'A8:A9', 'STT')
                 setMergeCellHeader(worksheet, 'B8:B9', "Người nhận lệnh")
                 setMergeCellHeader(worksheet, 'C8:C9', "Số thẻ")
-                setMergeCellHeader(worksheet, 'D8:D9', "Phương tiện")
+                setMergeCellHeader(worksheet, 'D8:D9', "Thiết bị vận hành")
                 setMergeCellHeader(worksheet, 'E8:E9', "Máy xúc")
                 setMergeCellHeader(worksheet, 'F8:F9', "Điểm đổ tải")
                 setMergeCellHeader(worksheet, 'G8:G9', "Loại vật liệu")

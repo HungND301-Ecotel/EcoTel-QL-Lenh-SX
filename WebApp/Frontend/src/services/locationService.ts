@@ -1,29 +1,29 @@
 import { useQuery } from "@tanstack/react-query";
 import api from "../config/api.config";
-import { Department } from "../types";
+import { Device, Location } from "../types";
 
-const DepartmentService = {
-    getAll: async (params?: Record<string, any>): Promise<Department[]> => {
-        const res = await api.get('/departments', { params });
-        return res.data.data;
+const LocationService = {
+    getAll: async (params?: Record<string, any>): Promise<Location[]> => {
+        const res = await api.get('/locations', { params });
+        return res.data.data
     },
-    create: async (data: Partial<Department>): Promise<any> => {
-        const res = await api.post('/departments', data);
+    create: async (data: Partial<Location>): Promise<any> => {
+        const res = await api.post('/locations', data);
         return res.data
     },
-    update: async (data: Partial<Department>): Promise<any> => {
-        const res = await api.put(`/departments/${data?._id}`, data);
+    update: async (data: Partial<Location>): Promise<any> => {
+        const res = await api.put(`/locations/${data?._id}`, data);
         return res.data
     },
     delete: async (ids: string[]): Promise<any> => {
-        const res = await api.delete(`/departments`, { data: { ids } });
+        const res = await api.delete(`/locations`, { data: { ids } });
         return res.data.message
     },
     importFile: async (
         formData: FormData,
         onProgress?: (percent: number) => void
     ) => {
-        const res = await api.post("/departments/importFile", formData, {
+        const res = await api.post("/locations/importFile", formData, {
             headers: { "Content-Type": "multipart/form-data" },
             onUploadProgress: (e) => {
                 if (!onProgress) return;
@@ -36,7 +36,7 @@ const DepartmentService = {
     },
     exportFile: async (
     ) => {
-        const res = await api.post('/departments/exportFile', {}, {
+        const res = await api.post('/locations/exportFile', {}, {
             responseType: 'blob',
         });
         const blob = new Blob([res.data], {
@@ -55,4 +55,4 @@ const DepartmentService = {
     }
 };
 
-export default DepartmentService;
+export default LocationService;

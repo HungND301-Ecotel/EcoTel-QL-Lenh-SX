@@ -48,6 +48,7 @@ import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../compon
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import { positionValidationSchema } from '../../utils/validation';
+import PositionService from '../../services/positionService';
 
 
 const Positions: React.FC = () => {
@@ -81,13 +82,12 @@ const Positions: React.FC = () => {
 
     const { data: positions = [], isLoading } = useQuery({
         queryKey: ['positions', value],
-        queryFn: () => api.get(`/positions?name=${value}`).then(res => res.data.data),
+        queryFn: () => PositionService.getAll({ name: value }),
     });
 
 
     const createMutation = useMutation({
-        mutationFn: (newJob: Partial<Position>) =>
-            api.post('/positions', newJob).then(res => res.data),
+        mutationFn: PositionService.create,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['positions'] });
             showSuccessAlert('Thêm chức danh thành công');
@@ -99,8 +99,7 @@ const Positions: React.FC = () => {
     });
 
     const updateMutation = useMutation({
-        mutationFn: (updatedPosition: Partial<Position>) =>
-            api.put(`/positions/${updatedPosition._id}`, updatedPosition).then(res => res.data),
+        mutationFn: PositionService.update,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['positions'] });
             showSuccessAlert('Cập nhật chức danh thành công');
@@ -112,7 +111,7 @@ const Positions: React.FC = () => {
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (ids: string[]) => api.delete(`/positions`, { data: { ids } }).then(res => res.data.message),
+        mutationFn: PositionService.delete,
         onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['positions'] });
             setSelectedPositions([]);
@@ -126,16 +125,7 @@ const Positions: React.FC = () => {
     const [progress, setProgress] = useState(0)
     const [isUploading, setIsUploading] = useState(false);
     const importFile = useMutation({
-        mutationFn: (formData: FormData) =>
-            api.post('/positions/importFile', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-                onUploadProgress: (progressEvent) => {
-                    const percent = Math.round(
-                        (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
-                    );
-                    setProgress(percent);
-                }
-            }).then(res => res.data),
+        mutationFn: (formData: FormData) => PositionService.importFile(formData, setProgress),
         onMutate: () => {
             setIsUploading(true);
             setProgress(0); // Reset tiến trình khi bắt đầu
@@ -153,25 +143,7 @@ const Positions: React.FC = () => {
     });
 
     const exportExcel = useMutation({
-        mutationFn: () => {
-            return api.post('/positions/exportFile', {}, {
-                responseType: 'blob',
-            }).then(res => {
-                const blob = new Blob([res.data], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                });
-
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', `*.xlsx`);
-
-                document.body.appendChild(link);
-                link.click();
-                link.parentNode?.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            });
-        },
+        mutationFn: PositionService.exportFile,
         onSuccess: () => { },
         onError: (error: any) => {
             showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');

@@ -1,29 +1,33 @@
 import { useQuery } from "@tanstack/react-query";
 import api from "../config/api.config";
-import { Department } from "../types";
+import { Device, User } from "../types";
 
-const DepartmentService = {
-    getAll: async (params?: Record<string, any>): Promise<Department[]> => {
-        const res = await api.get('/departments', { params });
+const UserService = {
+    getAll: async (params?: Record<string, any>): Promise<any[]> => {
+        const res = await api.get('/users', { params });
         return res.data.data;
     },
-    create: async (data: Partial<Department>): Promise<any> => {
-        const res = await api.post('/departments', data);
+    create: async (data: Partial<User>): Promise<any> => {
+        const res = await api.post('/auth/register', data);
         return res.data
     },
-    update: async (data: Partial<Department>): Promise<any> => {
-        const res = await api.put(`/departments/${data?._id}`, data);
+    update: async (data: Partial<User>): Promise<any> => {
+        const res = await api.put(`/users/${data?._id}`, data);
         return res.data
     },
     delete: async (ids: string[]): Promise<any> => {
-        const res = await api.delete(`/departments`, { data: { ids } });
+        const res = await api.delete(`/users`, { data: { ids } });
         return res.data.message
+    },
+    resetPass: async (id: string): Promise<any> => {
+        const res = await api.get(`/users/resetpass/${id}`);
+        return res.data
     },
     importFile: async (
         formData: FormData,
         onProgress?: (percent: number) => void
     ) => {
-        const res = await api.post("/departments/importFile", formData, {
+        const res = await api.post("/users/importFile", formData, {
             headers: { "Content-Type": "multipart/form-data" },
             onUploadProgress: (e) => {
                 if (!onProgress) return;
@@ -32,11 +36,18 @@ const DepartmentService = {
                 onProgress(percent);
             },
         });
-        return res.data.message
+        return res.data as {
+            summary: {
+                totalProcessed: number;
+                insertedCount: number;
+                updatedCount: number;
+            };
+            invalidRows?: { row?: number; error: string }[];
+        };
     },
     exportFile: async (
     ) => {
-        const res = await api.post('/departments/exportFile', {}, {
+        const res = await api.post('/users/exportFile', {}, {
             responseType: 'blob',
         });
         const blob = new Blob([res.data], {
@@ -55,4 +66,4 @@ const DepartmentService = {
     }
 };
 
-export default DepartmentService;
+export default UserService;

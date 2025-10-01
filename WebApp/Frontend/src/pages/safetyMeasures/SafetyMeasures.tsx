@@ -53,6 +53,8 @@ import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import { StyledPopper } from '../../ui/poppers';
 import { safetyMeasureValidationSchema } from '../../utils/validation';
+import PositionService from '../../services/positionService';
+import SafetyService from '../../services/SafetyService';
 
 
 const SafetyMeasures: React.FC = () => {
@@ -92,19 +94,18 @@ const SafetyMeasures: React.FC = () => {
 
     const { data: safetyMeasures = [], isLoading } = useQuery({
         queryKey: ['safetyMeasures', value],
-        queryFn: () => api.get(`/safetyMeasures?q=${value}`).then(res => res.data.data),
+        queryFn: () => SafetyService.getAll({ q: value }),
     });
     const { data: positions = [] } = useQuery({
         queryKey: ['positions'],
-        queryFn: () => api.get(`/positions`).then(res => res.data.data),
+        queryFn: () => PositionService.getAll({}),
     });
     const { data: jobs = [] } = useQuery({
         queryKey: ['jobs'],
         queryFn: () => api.get(`/jobs`).then(res => res.data.data),
     });
     const createMutation = useMutation({
-        mutationFn: (newsafetyMeasure: Partial<SafetyMeasure>) =>
-            api.post('/safetyMeasures', newsafetyMeasure).then(res => res.data),
+        mutationFn: SafetyService.create,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['safetyMeasures'] });
             showSuccessAlert('Thêm biện pháp an toàn thành công');
@@ -117,16 +118,7 @@ const SafetyMeasures: React.FC = () => {
     const [progress, setProgress] = useState(0)
     const [isUploading, setIsUploading] = useState(false);
     const importFile = useMutation({
-        mutationFn: (formData: FormData) =>
-            api.post('/safetyMeasures/importFile', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-                onUploadProgress: (progressEvent) => {
-                    const percent = Math.round(
-                        (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
-                    );
-                    setProgress(percent);
-                }
-            }).then(res => res.data),
+        mutationFn: (formData: FormData) => SafetyService.importFile(formData, setProgress),
         onMutate: () => {
             setIsUploading(true);
             setProgress(0); // Reset tiến trình khi bắt đầu
@@ -164,25 +156,7 @@ const SafetyMeasures: React.FC = () => {
     });
 
     const exportExcel = useMutation({
-        mutationFn: () => {
-            return api.post('/safetyMeasures/exportFile', {}, {
-                responseType: 'blob',
-            }).then(res => {
-                const blob = new Blob([res.data], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                });
-
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', `*.xlsx`);
-
-                document.body.appendChild(link);
-                link.click();
-                link.parentNode?.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            });
-        },
+        mutationFn: SafetyService.exportFile,
         onSuccess: () => { },
         onError: (error: any) => {
             showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');

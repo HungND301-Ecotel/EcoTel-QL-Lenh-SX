@@ -48,6 +48,7 @@ import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../compon
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import { materialValidationSchema } from '../../utils/validation';
+import MaterialService from '../../services/materialService';
 
 
 const Materials: React.FC = () => {
@@ -82,13 +83,12 @@ const Materials: React.FC = () => {
 
     const { data: materials = [], isLoading } = useQuery({
         queryKey: ['materials', value],
-        queryFn: () => api.get(`/materials?name=${value}`).then(res => res.data.data),
+        queryFn: () => MaterialService.getAll({ name: value }),
     });
 
 
     const createMutation = useMutation({
-        mutationFn: (newMaterial: Partial<Material>) =>
-            api.post('/materials', newMaterial).then(res => res.data),
+        mutationFn: MaterialService.create,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['materials'] });
             showSuccessAlert('Thêm vật liệu thành công');
@@ -100,9 +100,7 @@ const Materials: React.FC = () => {
     });
 
     const updateMutation = useMutation({
-        mutationFn: (updatedMaterial: Partial<Material>) => {
-            return api.put(`/materials/${updatedMaterial._id}`, updatedMaterial).then(res => res.data);
-        },
+        mutationFn: MaterialService.update,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['materials'] });
             showSuccessAlert('Cập nhật vật liệu thành công');
@@ -114,7 +112,7 @@ const Materials: React.FC = () => {
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (ids: string[]) => api.delete(`/materials`, { data: { ids } }).then(res => res.data.message),
+        mutationFn: MaterialService.delete,
         onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['materials'] });
             setSelectedMaterials([]);
@@ -130,17 +128,7 @@ const Materials: React.FC = () => {
     const [progress, setProgress] = useState(0)
     const [isUploading, setIsUploading] = useState(false);
     const importFile = useMutation({
-        mutationFn: (formData: FormData) =>
-            api.post('/materials/importFile', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-                onUploadProgress: (progressEvent) => {
-
-                    const percent = Math.round(
-                        (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
-                    );
-                    setProgress(percent);
-                }
-            }).then(res => res.data.message),
+        mutationFn: (formData: FormData) => MaterialService.importFile(formData, setProgress),
         onMutate: () => {
             setIsUploading(true);
             setProgress(0); // Reset tiến trình khi bắt đầu
@@ -157,25 +145,7 @@ const Materials: React.FC = () => {
     });
 
     const exportExcel = useMutation({
-        mutationFn: () => {
-            return api.post('/materials/exportFile', {}, {
-                responseType: 'blob',
-            }).then(res => {
-                const blob = new Blob([res.data], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                });
-
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', `*.xlsx`);
-
-                document.body.appendChild(link);
-                link.click();
-                link.parentNode?.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            });
-        },
+        mutationFn: MaterialService.exportFile,
         onSuccess: () => { },
         onError: (error: any) => {
             showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');

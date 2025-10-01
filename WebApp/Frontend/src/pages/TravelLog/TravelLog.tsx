@@ -70,6 +70,7 @@ import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { Table, TableColumnsType, TableProps } from 'antd';
 import { TableRowSelection } from 'antd/es/table/interface';
 import { trvelLogValidationSchema } from '../../utils/validation';
+import TravelLogService from '../../services/travelLogService';
 const StyledPopper = styled(Popper)({
     '& .MuiAutocomplete-listbox': {
         maxHeight: '300px',
@@ -123,14 +124,12 @@ const TravelLogs: React.FC = () => {
     });
     const { data, isLoading } = useQuery({
         queryKey: ['travellogs', page, pageSize, startTime, endTime],
-        queryFn: () => api.get(`/travellogs`, {
-            params: {
-                page,
-                limit: pageSize,
-                startTime: startTime ? startTime.toISOString() : '',
-                endTime: endTime ? endTime.toISOString() : '',
-            }
-        }).then(res => res.data)
+        queryFn: () => TravelLogService.getAll({
+            page: page,
+            limit: pageSize,
+            startTime: startTime ? startTime.toISOString() : '',
+            endTime: endTime ? endTime.toISOString() : '',
+        })
     })
     useEffect(() => {
         if (data) {
@@ -140,8 +139,7 @@ const TravelLogs: React.FC = () => {
     }, [data]);
 
     const createMutation = useMutation({
-        mutationFn: (newTravelLog: Partial<TravelLog>) =>
-            api.post('/travellogs', newTravelLog).then(res => res.data),
+        mutationFn: TravelLogService.create,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['travellogs'] });
             handleClose();
@@ -154,16 +152,7 @@ const TravelLogs: React.FC = () => {
     const [progress, setProgress] = useState(0)
     const [isUploading, setIsUploading] = useState(false);
     const importFile = useMutation({
-        mutationFn: (formData: FormData) =>
-            api.post('/travellogs/importFile', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-                onUploadProgress: (progressEvent) => {
-                    const percent = Math.round(
-                        (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
-                    );
-                    setProgress(percent);
-                }
-            }).then(res => res.data),
+        mutationFn: (formData: FormData) => TravelLogService.importFile(formData, setProgress),
         onMutate: () => {
             setIsUploading(true);
             setProgress(0); // Reset tiến trình khi bắt đầu
@@ -201,25 +190,7 @@ const TravelLogs: React.FC = () => {
     });
 
     const exportExcel = useMutation({
-        mutationFn: () => {
-            return api.post('/travellogs/exportFile', {}, {
-                responseType: 'blob',
-            }).then(res => {
-                const blob = new Blob([res.data], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                });
-
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', `*.xlsx`);
-
-                document.body.appendChild(link);
-                link.click();
-                link.parentNode?.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            });
-        },
+        mutationFn: TravelLogService.exportFile,
         onSuccess: () => { },
         onError: (error: any) => {
             showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');

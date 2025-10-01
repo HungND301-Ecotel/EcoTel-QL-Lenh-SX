@@ -46,6 +46,7 @@ import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { deviceTypeValidationSchema } from '../../utils/validation';
+import DeviceTypeService from '../../services/deviceTypeService';
 
 
 const DeviceTypes: React.FC = () => {
@@ -77,13 +78,12 @@ const DeviceTypes: React.FC = () => {
 
     const { data: DeviceTypes = [], isLoading } = useQuery({
         queryKey: ['DeviceTypes', value],
-        queryFn: () => api.get(`/DeviceTypes?q=${value}`).then(res => res.data.data),
+        queryFn: () => DeviceTypeService.getAll({ q: value }),
     });
 
 
     const createMutation = useMutation({
-        mutationFn: (newDeviceType: Partial<DeviceType>) =>
-            api.post('/DeviceTypes', newDeviceType).then(res => res.data),
+        mutationFn: DeviceTypeService.create,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['DeviceTypes'] });
             showSuccessAlert('Thêm loại thiết bị thành công');
@@ -95,8 +95,7 @@ const DeviceTypes: React.FC = () => {
     });
 
     const updateMutation = useMutation({
-        mutationFn: (updatedDeviceType: Partial<DeviceType>) =>
-            api.put(`/DeviceTypes/${updatedDeviceType._id}`, updatedDeviceType).then(res => res.data),
+        mutationFn: DeviceTypeService.update,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['DeviceTypes'] });
             showSuccessAlert('Cập nhật loại thiết bị thành công');
@@ -108,7 +107,7 @@ const DeviceTypes: React.FC = () => {
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (ids: string[]) => api.delete(`/DeviceTypes`, { data: { ids } }).then(res => res.data.message),
+        mutationFn: DeviceTypeService.delete,
         onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['DeviceTypes'] });
             setSelectedDeviceTypes([]);

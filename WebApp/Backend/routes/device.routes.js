@@ -20,13 +20,17 @@ router.get('/', verifyToken, async (req, res, next) => {
 
         if (req.query.q) {
             const regex = new RegExp(req.query.q, 'i');
+
+            const matchedModels = await DeviceModel.find(
+                { name: regex },
+                { _id: 1 }
+            ).lean();
+            const modelIds = matchedModels.map(j => j._id);
             query.$or = [
                 { code: regex },
                 { name: regex },
                 { vehicleNumber: regex },
-                { material: regex },
-                { vehicleNumber: regex },
-                { vehicleNumber: regex }
+                { material: { $in: modelIds } },
             ];
         }
         if (req.query.department) {
@@ -707,7 +711,7 @@ router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
         const typeList = [...new Set(deviceTypes.map(p => p.name).filter(Boolean))];
         const deptList = [...new Set(departments.map(d => d.code).filter(Boolean))];
         const modelList = [...new Set(deviceModels.map(d => d.name).filter(Boolean))];
-        
+
 
         worksheet.getColumn('X').values = ['devicetypes', ...typeList];
         worksheet.getColumn('Y').values = ['departments', ...deptList];
