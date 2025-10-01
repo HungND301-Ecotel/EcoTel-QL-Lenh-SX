@@ -42,6 +42,8 @@ import {
     Person,
     Notifications,
     Logout,
+    ArrowRight,
+    KeyboardArrowRight,
 } from '@mui/icons-material';
 import { userAtom } from '../../atoms/userAtoms';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -77,10 +79,10 @@ export default function Header() {
 
     const menuItems = [
         ["admin", "manager"].includes(user?.role) && {
-            text: 'Biện pháp an toàn', icon: <SafetyCheck color='primary' />, path: '/safetyMeasures'
+            text: 'Biện pháp an toàn', path: '/safetyMeasures'
         },
         ["admin", "manager", "dispatcher"].includes(user?.role) && {
-            text: 'Thiết bị', icon: <LocalShipping color='primary' />, path: '#',
+            text: 'Thiết bị', icon: <ArrowRight color='primary' />, path: '#',
             submenu: [
                 { text: 'Phân loại thiết bị', path: '/deviceTypes' },
                 { text: 'Chủng loại thiết bị', path: '/deviceModels' },
@@ -89,16 +91,16 @@ export default function Header() {
             ]
         },
         ["admin", "manager"].includes(user?.role) && {
-            text: 'Cung độ', icon: <Timelapse color='primary' />, path: '/travelLog'
+            text: 'Cung độ', path: '/travelLog'
         },
         ["admin", "manager", "dispatcher"].includes(user?.role) && {
-            text: 'Mô hình xe', icon: <PrecisionManufacturing color='primary' />, path: '/models'
+            text: 'Mô hình xe', path: '/models'
         },
         ["admin", "manager"].includes(user?.role) && {
-            text: 'Vật liệu', icon: <Category color='primary' />, path: '/materials'
+            text: 'Vật liệu', path: '/materials'
         },
         ["admin", "manager"].includes(user?.role) && {
-            text: 'Điểm đổ tải', icon: <LocationCity color='primary' />, path: '/locations'
+            text: 'Điểm đổ tải', path: '/locations'
         },
         ["admin", "manager", "dispatcher"].includes(user?.role) && {
             text: 'Cán bộ nhân viên', icon: <People color='primary' />, path: '/users'
@@ -107,13 +109,13 @@ export default function Header() {
             text: 'Công việc', icon: <Work color='primary' />, path: '/jobs'
         },
         ["admin", "manager"].includes(user?.role) && {
-            text: 'Chức danh nghề nghiệp', icon: <AssignmentInd color='primary' />, path: '/positions'
+            text: 'Chức danh nghề nghiệp', path: '/positions'
         },
         ["admin", "manager", "dispatcher"].includes(user?.role) && {
-            text: 'Đơn vị', icon: <Business color='primary' />, path: '/departments'
+            text: 'Đơn vị', path: '/departments'
         },
         ["admin", "manager"].includes(user?.role) && {
-            text: 'Ca làm việc', icon: <Timelapse color='primary' />, path: '/shifts'
+            text: 'Ca làm việc', path: '/shifts'
         },
     ].filter(Boolean);
     return (
@@ -167,6 +169,7 @@ export default function Header() {
                                             return (
                                                 <ListItem
                                                     key={item.text}
+                                                    secondaryAction={<KeyboardArrowRight />}
                                                     button
                                                     onClick={(e) => {
                                                         setSubmenuAnchorEl(e.currentTarget);
@@ -223,6 +226,7 @@ export default function Header() {
                                                 return (
                                                     <ListItem
                                                         key={item.text}
+                                                        secondaryAction={<KeyboardArrowRight />}
                                                         button
                                                         onClick={(e) => {
                                                             setSubmenuAnchorEl(e.currentTarget);

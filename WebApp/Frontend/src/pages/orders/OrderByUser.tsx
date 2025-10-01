@@ -50,7 +50,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { useSocket } from '../../hooks/useSocket';
-import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRenderCellParams, GridToolbar } from '@mui/x-data-grid';
 
 const OrderByUsers: React.FC = () => {
 
@@ -320,6 +320,24 @@ const OrderByUsers: React.FC = () => {
 
                             // So sánh ID để xác định hàng được chọn
                             return `${base} ${selectedRow?._id === record._id ? 'row-selected' : ''}`;
+                        }}
+                        slots={{ toolbar: GridToolbar }}
+                        localeText={{
+                            toolbarColumns: 'Cột',
+                            toolbarFilters: 'Bộ lọc',
+                            toolbarDensity: 'Mật độ',
+                            toolbarExport: 'Xuất dữ liệu',
+                        }}
+                        disableColumnFilter
+                        slotProps={{
+                            filterPanel: {
+                                disableAddFilterButton: false,
+                            },
+                            toolbar: {
+                                csvOptions: { disableToolbarButton: true },
+                                printOptions: { disableToolbarButton: true },
+                            
+                            }
                         }}
                         disableVirtualization={true}
                         sx={{
