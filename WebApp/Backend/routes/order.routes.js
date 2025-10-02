@@ -32,7 +32,12 @@ router.get('/', verifyToken, async (req, res, next) => {
 
             // tìm user theo salaryCode
             const matchedUsers = await User.find(
-                { salaryCode: req.query.q },
+                {
+                    $or: [
+                        { salaryCode: req.query.q },
+                        { fullName: regex }
+                    ]
+                },
                 { _id: 1 }
             ).lean();
             const userIds = matchedUsers.map(u => u._id);
