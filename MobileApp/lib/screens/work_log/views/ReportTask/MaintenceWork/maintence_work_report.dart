@@ -23,7 +23,9 @@ class _MaintenceWorkReport
   UserModel? user;
 
   final Map<String, VehicleRepairControllers>
-  _devicleRepairControllers = {};
+      _devicleRepairControllers = {};
+  final Map<String, VehicleSummariesControllers>
+      _deviceSummaryControllers = {};
 
   void _updateUser(UserModel? selectedUser) {
     setState(() {
@@ -36,9 +38,30 @@ class _MaintenceWorkReport
   final TextEditingController _risksController =
       TextEditingController();
 
+  void _calculateFuelUsedFor(String id) {
+    final controller = _deviceSummaryControllers[id];
+    if (controller == null) return;
+
+    final int remain =
+        int.tryParse(controller.fuelRemain.text) ?? 0;
+    final int received =
+        int.tryParse(controller.fuelReceived.text) ?? 0;
+    final int remainEnd =
+        int.tryParse(controller.fuelRemainEnd.text) ?? 0;
+
+    final int used = remain + received - remainEnd;
+
+    controller.fuelUsedController.text = used.toString();
+  }
+
   @override
   void initState() {
     super.initState();
+    for (var device in widget.order.device ?? []) {
+      _deviceSummaryControllers[device.id] =
+          VehicleSummariesControllers();
+    }
+
     for (var item in widget.order.repairVehicles ?? []) {
       _devicleRepairControllers[item.device.id] =
           VehicleRepairControllers();
@@ -59,6 +82,26 @@ class _MaintenceWorkReport
               item.noteRepair?.toString() ?? '';
         }
       }
+      for (var item in report.vehicleSummaries ?? []) {
+        final controller =
+            _deviceSummaryControllers[item.vehicle.id];
+        if (controller != null) {
+          controller.fuelRemain.text =
+              item.fuelRemain?.toString() ?? '';
+          controller.fuelReceived.text =
+              item.fuelReceived?.toString() ?? '';
+          controller.fuelRemainEnd.text =
+              item.fuelRemainEnd?.toString() ?? '';
+          controller.status = item.status?.toString() ?? '';
+          controller.note.text =
+              item.note?.toString() ?? '';
+          controller.gpsStatus =
+              item.gpsStatus?.toString() ?? '';
+          controller.sealStatus =
+              item.sealStatus?.toString() ?? '';
+          _calculateFuelUsedFor(item.vehicle.id);
+        }
+      }
     }
   }
 
@@ -66,6 +109,7 @@ class _MaintenceWorkReport
       ShiftReportService();
   void create() async {
     final List<Map<String, dynamic>> vehicleRepairs = [];
+    final List<Map<String, dynamic>> vehicleSummaries = [];
 
     for (var entry in _devicleRepairControllers.entries) {
       final id = entry.key;
@@ -75,6 +119,28 @@ class _MaintenceWorkReport
         "device": id,
         "status": controller.status,
         "noteRepair": controller.noteRepair.text,
+      });
+    }
+
+    for (var entry in _deviceSummaryControllers.entries) {
+      final id = entry.key;
+      final controller = entry.value;
+
+      vehicleSummaries.add({
+        "vehicle": id,
+        "fuelRemain": int.tryParse(
+          controller.fuelRemain.text,
+        ),
+        "fuelReceived": int.tryParse(
+          controller.fuelReceived.text,
+        ),
+        "fuelRemainEnd": int.tryParse(
+          controller.fuelRemainEnd.text,
+        ),
+        "status": controller.status,
+        "note": controller.note.text,
+        "gpsStatus": controller.gpsStatus,
+        "sealStatus": controller.sealStatus,
       });
     }
     final handoverNotes =
@@ -93,6 +159,7 @@ class _MaintenceWorkReport
     var result = await _shiftReportService.create({
       "orderId": widget.order.id,
       "assignedTo": user?.id,
+      "vehicleSummaries": vehicleSummaries,
       'vehicleRepair': vehicleRepairs,
       "handoverNotes": handoverNotes,
       "risks": risks,
@@ -116,6 +183,7 @@ class _MaintenceWorkReport
 
   void update(String shiftReportId) async {
     final List<Map<String, dynamic>> vehicleRepairs = [];
+    final List<Map<String, dynamic>> vehicleSummaries = [];
 
     for (var entry in _devicleRepairControllers.entries) {
       final id = entry.key;
@@ -125,6 +193,27 @@ class _MaintenceWorkReport
         "device": id,
         "status": controller.status,
         "noteRepair": controller.noteRepair.text,
+      });
+    }
+    for (var entry in _deviceSummaryControllers.entries) {
+      final id = entry.key;
+      final controller = entry.value;
+
+      vehicleSummaries.add({
+        "vehicle": id,
+        "fuelRemain": int.tryParse(
+          controller.fuelRemain.text,
+        ),
+        "fuelReceived": int.tryParse(
+          controller.fuelReceived.text,
+        ),
+        "fuelRemainEnd": int.tryParse(
+          controller.fuelRemainEnd.text,
+        ),
+        "status": controller.status,
+        "note": controller.note.text,
+        "gpsStatus": controller.gpsStatus,
+        "sealStatus": controller.sealStatus,
       });
     }
 
@@ -141,14 +230,15 @@ class _MaintenceWorkReport
       );
       return;
     }
-    var result = await _shiftReportService
-        .update(shiftReportId, {
-          "orderId": widget.order.id,
-          "assignedTo": user?.id,
-          "vehicleRepair": vehicleRepairs,
-          "handoverNotes": handoverNotes,
-          "risks": risks,
-        });
+    var result =
+        await _shiftReportService.update(shiftReportId, {
+      "orderId": widget.order.id,
+      "assignedTo": user?.id,
+      "vehicleSummaries": vehicleSummaries,
+      "vehicleRepair": vehicleRepairs,
+      "handoverNotes": handoverNotes,
+      "risks": risks,
+    });
     if (!mounted) return;
     if (result['status'] == 'error') {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -190,102 +280,316 @@ class _MaintenceWorkReport
                   children: [
                     PayRollInput(
                       title: 'Số thẻ lương',
-                      onSelectUser:
-                          (user) => _updateUser(user),
-                      initialPayroll:
-                          widget
-                              .order
-                              .assignedTo
-                              .salaryCode,
+                      onSelectUser: (user) =>
+                          _updateUser(user),
+                      initialPayroll: widget
+                          .order.assignedTo.salaryCode,
                     ),
                     Column(
                       crossAxisAlignment:
                           CrossAxisAlignment.start,
                       children:
-                          ((widget.order.repairVehicles) ?? []).map((
-                            item,
-                          ) {
-                            final repairController =
-                                _devicleRepairControllers[item
-                                    .device
-                                    ?.id]!;
-                            return Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(height: 16),
-                                Text(
-                                  "+ Thiết bị: ${item.device?.code}",
-                                  style: TextStyle(
-                                    fontWeight:
-                                        FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 16),
-                                Text(
-                                  'Trạng thái sửa chữa',
-                                  style: TextStyle(
-                                    fontWeight:
-                                        FontWeight.w600,
-                                  ),
-                                ),
-                                DropdownButtonFormField<
-                                  String
-                                >(
-                                  value:
-                                      repairController
-                                          .status,
-                                  decoration:
-                                      const InputDecoration(
-                                        border:
-                                            OutlineInputBorder(),
-                                      ),
-                                  items: [
-                                    DropdownMenuItem(
-                                      value: 'Đã sửa xong',
-                                      child: Text(
-                                        'Đã sửa xong',
-                                      ),
-                                    ),
-                                    DropdownMenuItem(
-                                      value:
-                                          'Chưa sửa xong',
-                                      child: Text(
-                                        'Chưa sửa xong',
-                                      ),
-                                    ),
-                                  ],
-                                  onChanged: (value) {
-                                    setState(() {
-                                      repairController
-                                          .status = value ??
-                                          'Đã sửa xong';
-                                    });
-                                  },
-                                ),
-                                if (repairController
-                                        .status ==
-                                    "Chưa sửa xong")
-                                  Text(
-                                    'Tình trạng thiết bị *',
-                                    style: TextStyle(
-                                      fontWeight:
-                                          FontWeight.w600,
-                                    ),
-                                  ),
-                                if (repairController
-                                        .status ==
-                                    "Chưa sửa xong")
-                                  TextField(
-                                    controller:
-                                        repairController
-                                            .noteRepair,
-                                    minLines: 3,
-                                    maxLines: null,
-                                  ),
+                          ((widget.order.device) ?? [])
+                              .map((
+                        item,
+                      ) {
+                        final summaryController =
+                            _deviceSummaryControllers[
+                                item.id]!;
+                        return Column(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(height: 16),
+                            Text(
+                              "+ Thiết bị vận hành: ${item.code}",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Nhiên liệu',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Tồn dầu',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            TextField(
+                              controller: summaryController
+                                  .fuelRemain,
+                              onChanged: (_) =>
+                                  _calculateFuelUsedFor(
+                                item.id,
+                              ),
+                              keyboardType:
+                                  TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter
+                                    .digitsOnly,
                               ],
-                            );
-                          }).toList(),
+                            ),
+                            Text(
+                              'Lĩnh trong ca',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            TextField(
+                              controller: summaryController
+                                  .fuelReceived,
+                              onChanged: (_) =>
+                                  _calculateFuelUsedFor(
+                                item.id,
+                              ),
+                              keyboardType:
+                                  TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter
+                                    .digitsOnly,
+                              ],
+                            ),
+                            Text(
+                              'Tồn cuối ca',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            TextField(
+                              controller: summaryController
+                                  .fuelRemainEnd,
+                              onChanged: (_) =>
+                                  _calculateFuelUsedFor(
+                                item.id,
+                              ),
+                              keyboardType:
+                                  TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter
+                                    .digitsOnly,
+                              ],
+                            ),
+                            Text(
+                              'Tiêu thụ',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            TextField(
+                              controller: summaryController
+                                  .fuelUsedController,
+                              readOnly: true,
+                            ),
+                            Text(
+                              'Tình trạng phương tiện',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            DropdownButtonFormField<String>(
+                              value:
+                                  summaryController.status,
+                              decoration:
+                                  const InputDecoration(
+                                border:
+                                    OutlineInputBorder(),
+                              ),
+                              items: [
+                                DropdownMenuItem(
+                                  value: 'good',
+                                  child: Text('Tốt'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'fail',
+                                  child: Text('Hỏng'),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  summaryController.status =
+                                      value ?? 'good';
+                                });
+                              },
+                            ),
+                            if (summaryController.status ==
+                                "fail")
+                              Text(
+                                'Lí do hỏng *',
+                                style: TextStyle(
+                                  fontWeight:
+                                      FontWeight.w600,
+                                ),
+                              ),
+                            if (summaryController.status ==
+                                "fail")
+                              TextField(
+                                controller:
+                                    summaryController.note,
+                                minLines: 3,
+                                maxLines: null,
+                              ),
+                            Text(
+                              'GPS',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            DropdownButtonFormField<String>(
+                              value: summaryController
+                                  .gpsStatus,
+                              decoration:
+                                  const InputDecoration(
+                                border:
+                                    OutlineInputBorder(),
+                              ),
+                              items: [
+                                DropdownMenuItem(
+                                  value:
+                                      'Hoạt động bình thường',
+                                  child: Text(
+                                    'Hoạt động bình thường',
+                                  ),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Mất tín hiệu',
+                                  child: Text(
+                                    'Mất tín hiệu',
+                                  ),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  summaryController
+                                          .gpsStatus =
+                                      value ??
+                                          'Hoạt động bình thường';
+                                });
+                              },
+                            ),
+                            Text(
+                              'Kẹp chì/ Niêm phong',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            DropdownButtonFormField<String>(
+                              value: summaryController
+                                  .sealStatus,
+                              decoration:
+                                  const InputDecoration(
+                                border:
+                                    OutlineInputBorder(),
+                              ),
+                              items: [
+                                DropdownMenuItem(
+                                  value: 'Tốt',
+                                  child: Text('Tốt'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Hỏng',
+                                  child: Text('Hỏng'),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  summaryController
+                                          .sealStatus =
+                                      value ?? 'Tốt';
+                                });
+                              },
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                    Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                      children:
+                          ((widget.order.repairVehicles) ??
+                                  [])
+                              .map((
+                        item,
+                      ) {
+                        final repairController =
+                            _devicleRepairControllers[
+                                item.device?.id]!;
+                        return Column(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(height: 16),
+                            Text(
+                              "+ Thiết bị sửa chữa: ${item.device?.code}",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'Trạng thái sửa chữa',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            DropdownButtonFormField<String>(
+                              value:
+                                  repairController.status,
+                              decoration:
+                                  const InputDecoration(
+                                border:
+                                    OutlineInputBorder(),
+                              ),
+                              items: [
+                                DropdownMenuItem(
+                                  value: 'Đã sửa xong',
+                                  child: Text(
+                                    'Đã sửa xong',
+                                  ),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Chưa sửa xong',
+                                  child: Text(
+                                    'Chưa sửa xong',
+                                  ),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  repairController.status =
+                                      value ??
+                                          'Đã sửa xong';
+                                  repairController
+                                      .noteRepair.text = "";
+                                });
+                              },
+                            ),
+                            if (repairController.status ==
+                                "Chưa sửa xong")
+                              Text(
+                                'Tình trạng sửa chữa thiết bị *',
+                                style: TextStyle(
+                                  fontWeight:
+                                      FontWeight.w600,
+                                ),
+                              ),
+                            if (repairController.status ==
+                                "Chưa sửa xong")
+                              TextField(
+                                controller: repairController
+                                    .noteRepair,
+                                minLines: 3,
+                                maxLines: null,
+                              ),
+                          ],
+                        );
+                      }).toList(),
                     ),
                     SizedBox(height: 16),
                     Text(
@@ -294,7 +598,6 @@ class _MaintenceWorkReport
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-
                     TextField(
                       controller: _handoverNotesController,
                       minLines: 5,

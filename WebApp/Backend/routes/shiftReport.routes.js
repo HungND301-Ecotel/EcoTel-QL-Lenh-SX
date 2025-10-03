@@ -19,19 +19,15 @@ router.post('/', verifyToken, async (req, res, next) => {
         }
         if (vehicleSummaries) {
             for (var item of vehicleSummaries) {
-                const device = await Device.findById(item.vehicle);
-                device.note = item.note || "";
-                await device.save();
+                await Device.findByIdAndUpdate(item.vehicle, { note: item.note }, { new: true });
             }
         }
         if (vehicleRepair) {
             for (var item of vehicleRepair) {
-                const device = await Device.findById(item.device);
-                if (item.status === STATUS_REPAIR.COMPLETED) {
-                    device.status = STATUS_DEVICE.AVAILABLE
-                }
-                device.note = item.noteRepair || "";
-                await device.save();
+                await Device.findByIdAndUpdate(item.device, {
+                    status: item.status === STATUS_REPAIR.COMPLETED ? STATUS_DEVICE.AVAILABLE : device.status,
+                    note: item.noteRepair
+                }, { new: true });
             }
         }
         const newShiftReport = new ShiftReport({
@@ -147,9 +143,10 @@ router.put('/:id', verifyToken, async (req, res) => {
             for (const item of updates.vehicleSummaries) {
                 const device = await Device.findById(item.vehicle);
                 if (device) {
-                    device.status = item.status === "good" ? STATUS_DEVICE.AVAILABLE : STATUS_DEVICE.MAINTENANCE;
-                    device.note = item.note || '';
-                    await device.save();
+                    await Device.findByIdAndUpdate(item.vehicle, {
+                        status: item.status === "good" ? STATUS_DEVICE.AVAILABLE : STATUS_DEVICE.MAINTENANCE,
+                        note: item.note
+                    }, { new: true });
                 }
             }
         }
@@ -157,9 +154,10 @@ router.put('/:id', verifyToken, async (req, res) => {
             for (const item of updates.vehicleRepair) {
                 const device = await Device.findById(item.device);
                 if (device) {
-                    device.status = item.status === STATUS_REPAIR.COMPLETED ? STATUS_DEVICE.AVAILABLE : STATUS_DEVICE.MAINTENANCE;
-                    device.note = item.noteRepair || '';
-                    await device.save();
+                    await Device.findByIdAndUpdate(item.device, {
+                        status: item.status === STATUS_REPAIR.COMPLETED ? STATUS_DEVICE.AVAILABLE : STATUS_DEVICE.MAINTENANCE,
+                        note: item.noteRepair
+                    }, { new: true });
                 }
             }
         }
