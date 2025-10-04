@@ -100,6 +100,7 @@ class _TaskAssignmentExcavatorAdd
         _jobSafetyContent =
             matchedJobs.map((m) => m.content).join('\n');
       }
+      _updateCombinedSafetyMeasures();
     }
   }
 
