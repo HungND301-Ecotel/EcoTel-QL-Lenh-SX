@@ -17,6 +17,8 @@ import dayjs, { Dayjs } from "dayjs";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { useAtom } from "jotai";
 import { userAtom } from "../atoms/userAtoms";
+import DeviceService from "../services/deviceService";
+import { useQuery } from "@tanstack/react-query";
 
 echarts.use([BarChart, GridComponent, TooltipComponent, CanvasRenderer]);
 
@@ -25,16 +27,7 @@ type ECOption = echarts.ComposeOption<
 >;
 
 type Row = { vehicle: string; actual: number; target: number };
-
-const data: Row[] = [
-    { vehicle: "Xe 01", actual: 300, target: 200 },
-    { vehicle: "Xe 02", actual: 700, target: 770 },
-    { vehicle: "Xe 03", actual: 150, target: 140 },
-    { vehicle: "Xe 04", actual: 400, target: 320 },
-    { vehicle: "Xe 05", actual: 650, target: 720 },
-    { vehicle: "Xe 06", actual: 450, target: 520 },
-
-];
+const DUMMY_TARGET_MAX = 800;
 
 const niceMax = (n: number) => {
     if (n <= 10) return 10;
@@ -56,19 +49,42 @@ export default function VehicleBulletVariance({
     const [department, setDepartment] = useState('');
     const [date, setDate] = useState<Dayjs | null>(dayjs());
 
-    const cats = data.map(d => d.vehicle);
-    const targets = data.map(d => d.target);
-    const actuals = data.map(d => d.actual);
+    const { data: allDevices = [] } = useQuery({
+        queryKey: ['allDevices', department],
+        queryFn: () => DeviceService.getAll({ department: department }),
+    });
+
+    const mapDeviceData = (devices: any[]): Row[] => {
+        // Nếu không có thiết bị, trả về mảng rỗng
+        if (devices.length === 0) return [];
+
+        // Tạo dữ liệu giả định cho biểu đồ
+        return devices.map((device, index) => {
+            // Định mức (Target): Ngẫu nhiên trong khoảng 100-800
+            const target = Math.floor(Math.random() * 700) + 100;
+            // Sản lượng thực tế (Actual): Ngẫu nhiên gần target (± 20%)
+            const actual = Math.floor(target * (1 + (Math.random() * 0.4 - 0.2)));
+
+            return {
+                // Sử dụng tên thiết bị hoặc code thiết bị thực tế
+                vehicle: device.code || `Thiết bị ${index + 1}`,
+                actual: actual,
+                target: target,
+            };
+        });
+    }
+
+    const chartData: Row[] = mapDeviceData(allDevices);
+
+    const cats = chartData.map(d => d.vehicle);
+    const targets = chartData.map(d => d.target);
+    const actuals = chartData.map(d => d.actual);
 
     const maxV = Math.max(...targets, ...actuals);
     const XMAX = niceMax(maxV);
 
-    // Precompute delta & %
-    const deltas = data.map(d => d.actual - d.target);
-    const pcts = data.map(d => (d.target ? (d.actual - d.target) / d.target * 100 : 0));
 
     const fmt = (v: number) => (Number.isFinite(v) ? v.toLocaleString("vi-VN") : "");
-    const fmtPct = (v: number) => (Number.isFinite(v) ? `${v >= 0 ? "+" : ""}${v.toFixed(1)}%` : "");
 
     const option: ECOption = {
         grid: { left: 110, right: 20, top: 16, bottom: 16 },
@@ -127,7 +143,7 @@ export default function VehicleBulletVariance({
                     },
                     formatter: (p: any) => {
                         const i = p.dataIndex;
-                        const act = data[i].actual, tar = data[i].target;
+                        const act = chartData[i].actual, tar = chartData[i].target;
                         const delta = act - tar;
                         const pct = tar ? (delta / tar) * 100 : 0;
                         const sign = delta > 0 ? "+" : delta < 0 ? "−" : "";
@@ -184,7 +200,7 @@ export default function VehicleBulletVariance({
                 <Typography align="center">Thống kê sản lượng & định mức theo thiết bị</Typography>
             </DialogTitle>
             <DialogContent>
-                <ReactECharts echarts={echarts} option={option} style={{ height: 52 * data.length + 40, width: "100%" }} />;
+                <ReactECharts echarts={echarts} option={option} style={{ height: 52 * chartData.length + 40, width: "100%" }} />;
             </DialogContent>
         </Dialog>
     )
