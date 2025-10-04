@@ -3,6 +3,10 @@ import api from "../config/api.config";
 import { Device } from "../types";
 
 const DeviceService = {
+    getAll: async (params?: Record<string, any>): Promise<any[]> => {
+        const res = await api.get('/devices', { params });
+        return res.data.data;
+    },
     getVehicles: async (params?: Record<string, any>): Promise<any[]> => {
         const res = await api.get('/devices', { params });
         return res.data.data?.filter((item: any) => item?.category?.group.toLowerCase() === "xe".toLowerCase());

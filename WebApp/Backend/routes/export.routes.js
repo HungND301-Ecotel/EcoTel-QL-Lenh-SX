@@ -160,6 +160,7 @@ async function buildVehicle(order, workbook) {
 
     worksheet.getCell('I5').value = 'Chức vụ';
     worksheet.getCell('I5').font = { bold: true };
+    worksheet.mergeCells('J5:N5')
     worksheet.getCell('J5').value = order.createdBy?.position?.name || '';
 
     // 4. Người nhận lệnh
@@ -174,6 +175,7 @@ async function buildVehicle(order, workbook) {
 
     worksheet.getCell('I6').value = 'Chức vụ';
     worksheet.getCell('I6').font = { bold: true };
+    worksheet.mergeCells('J6:N6')
     worksheet.getCell('J6').value = order.assignedTo?.position?.name || '';
 
     // Dòng 6 lx bo tuc
@@ -191,6 +193,7 @@ async function buildVehicle(order, workbook) {
 
         worksheet.getCell(`I${row}`).value = 'Chức vụ';
         worksheet.getCell(`I${row}`).font = { bold: true };
+        worksheet.mergeCells(`J${row}:N${row}`)
         worksheet.getCell(`J${row}`).value = driver.position?.name || '';
     });
 
@@ -540,6 +543,7 @@ async function buildExcavator(order, workbook) {
 
     worksheet.getCell('I5').value = 'Chức vụ';
     worksheet.getCell('I5').font = { bold: true };
+    worksheet.mergeCells('J5:K5')
     worksheet.getCell('J5').value = order.createdBy?.position?.name || '';
 
     // 4. Người nhận lệnh
@@ -554,6 +558,7 @@ async function buildExcavator(order, workbook) {
 
     worksheet.getCell('I6').value = 'Chức vụ';
     worksheet.getCell('I6').font = { bold: true };
+    worksheet.mergeCells('J6:K6')
     worksheet.getCell('J6').value = order.assignedTo?.position?.name || '';
 
     // Dòng 6 lx bo tuc
@@ -571,6 +576,7 @@ async function buildExcavator(order, workbook) {
 
         worksheet.getCell(`I${row}`).value = 'Chức vụ';
         worksheet.getCell(`I${row}`).font = { bold: true };
+        worksheet.mergeCells(`J${row}:K${row}`)
         worksheet.getCell(`J${row}`).value = driver.position?.name || '';
     });
 
@@ -899,6 +905,7 @@ async function buildOther(order, workbook) {
 
     worksheet.getCell('I5').value = 'Chức vụ';
     worksheet.getCell('I5').font = { bold: true };
+    worksheet.mergeCells('J5:L5')
     worksheet.getCell('J5').value = order.createdBy?.position?.name || '';
 
     // 4. Người nhận lệnh
@@ -913,6 +920,7 @@ async function buildOther(order, workbook) {
 
     worksheet.getCell('I6').value = 'Chức vụ';
     worksheet.getCell('I6').font = { bold: true };
+    worksheet.mergeCells('J6:L6')
     worksheet.getCell('J6').value = order.assignedTo?.position?.name || '';
 
     // Dòng 7
@@ -1091,6 +1099,7 @@ async function buildMaintence(order, workbook) {
 
     worksheet.getCell('H5').value = 'Chức vụ';
     worksheet.getCell('H5').font = { bold: true };
+    worksheet.mergeCells('I5:J5')
     worksheet.getCell('I5').value = order.createdBy?.position?.name || '';
 
     // 4. Người nhận lệnh
@@ -1105,6 +1114,7 @@ async function buildMaintence(order, workbook) {
 
     worksheet.getCell('H6').value = 'Chức vụ';
     worksheet.getCell('H6').font = { bold: true };
+    worksheet.mergeCells('I6:J6')
     worksheet.getCell('I6').value = order.assignedTo?.position?.name || '';
 
     // Dòng 6 lx bo tuc
@@ -1122,6 +1132,7 @@ async function buildMaintence(order, workbook) {
 
         worksheet.getCell(`H${row}`).value = 'Chức vụ';
         worksheet.getCell(`H${row}`).font = { bold: true };
+        worksheet.mergeCells(`I${row}:J${row}`)
         worksheet.getCell(`I${row}`).value = driver.position?.name || '';
     });
 
@@ -1407,6 +1418,7 @@ async function buildDrill(order, workbook) {
 
     worksheet.getCell('I5').value = 'Chức vụ';
     worksheet.getCell('I5').font = { bold: true };
+    worksheet.mergeCells('J5:L5')
     worksheet.getCell('J5').value = order.createdBy?.position?.name || '';
 
     // 4. Người nhận lệnh
@@ -1421,6 +1433,7 @@ async function buildDrill(order, workbook) {
 
     worksheet.getCell('I6').value = 'Chức vụ';
     worksheet.getCell('I6').font = { bold: true };
+    worksheet.mergeCells('J6:L6')
     worksheet.getCell('J6').value = order.assignedTo?.position?.name || '';
 
     // Dòng 6 lx bo tuc
@@ -1438,6 +1451,7 @@ async function buildDrill(order, workbook) {
 
         worksheet.getCell(`I${row}`).value = 'Chức vụ';
         worksheet.getCell(`I${row}`).font = { bold: true };
+        worksheet.mergeCells(`J${row}:L${row}`)
         worksheet.getCell(`J${row}`).value = driver.position?.name || '';
     });
 
@@ -1750,6 +1764,7 @@ async function buildDozer(order, workbook) {
 
     worksheet.getCell('I5').value = 'Chức vụ';
     worksheet.getCell('I5').font = { bold: true };
+    worksheet.mergeCells('J5:L5')
     worksheet.getCell('J5').value = order.createdBy?.position?.name || '';
 
     // 4. Người nhận lệnh
@@ -1764,6 +1779,7 @@ async function buildDozer(order, workbook) {
 
     worksheet.getCell('I6').value = 'Chức vụ';
     worksheet.getCell('I6').font = { bold: true };
+    worksheet.mergeCells('J6:L6')
     worksheet.getCell('J6').value = order.assignedTo?.position?.name || '';
 
     // Dòng 6 lx bo tuc
@@ -1781,6 +1797,7 @@ async function buildDozer(order, workbook) {
 
         worksheet.getCell(`I${row}`).value = 'Chức vụ';
         worksheet.getCell(`I${row}`).font = { bold: true };
+        worksheet.mergeCells(`J${row}:L${row}`)
         worksheet.getCell(`J${row}`).value = driver.position?.name || '';
     });
 
@@ -2078,6 +2095,7 @@ async function buildDispatcher(order, workbook) {
 
     worksheet.getCell('G5').value = 'Chức vụ';
     worksheet.getCell('G5').font = { bold: true };
+    worksheet.mergeCells('H5:L5')
     worksheet.getCell('H5').value = order.createdBy?.position?.name || '';
 
     // 4. Người nhận lệnh
@@ -2092,6 +2110,7 @@ async function buildDispatcher(order, workbook) {
 
     worksheet.getCell('G6').value = 'Chức vụ';
     worksheet.getCell('G6').font = { bold: true };
+    worksheet.mergeCells('H6:L6')
     worksheet.getCell('H6').value = order.assignedTo?.position?.name || '';
 
     worksheet.getCell('J6').value = 'Đơn vị';
@@ -2499,7 +2518,7 @@ router.post('/carReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE
         const user = req.user
         let dep;
         if (department) {
-            dep = await Department.findById(department).select('name')
+            dep = await Department.findById(department).select('code')
         } else {
             dep = user?.department
         }
@@ -2588,6 +2607,7 @@ router.post('/carReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE
                 worksheet.getCell('E6').value = "Số thẻ";
                 worksheet.getCell('F6').value = user?.salaryCode || '';
                 worksheet.getCell('G6').value = "Chức vụ";
+                worksheet.mergeCells('H6:X6')
                 worksheet.getCell('H6').value = user?.position?.name || '';
 
 
@@ -3067,11 +3087,8 @@ router.post('/excavatorReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN
                 worksheet.getCell('E6').value = "Số thẻ";
                 worksheet.getCell('F6').value = user?.salaryCode || '';
                 worksheet.getCell('G6').value = "Chức vụ";
+                worksheet.mergeCells('H6:V6')
                 worksheet.getCell('H6').value = user?.position?.name || '';
-
-                worksheet.getCell('G5').value = 'Chức vụ';
-                worksheet.getCell('G5').font = { bold: true };
-                worksheet.getCell('H5').value = req.user?.position?.name || '';
 
                 // ==== HÀNG 1 ==== (STT, Người nhận lệnh, ... cố định 5-6 cột đầu)
                 setMergeCellHeader(worksheet, 'A8:A9', 'STT')
@@ -3547,6 +3564,7 @@ router.post('/dozerReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, RO
                 worksheet.getCell('E6').value = "Số thẻ";
                 worksheet.getCell('F6').value = user?.salaryCode || '';
                 worksheet.getCell('G6').value = "Chức vụ";
+                worksheet.mergeCells('H6:S6')
                 worksheet.getCell('H6').value = user?.position?.name || '';
 
 
@@ -3991,6 +4009,7 @@ router.post('/drillReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, RO
                 worksheet.getCell('E6').value = "Số thẻ";
                 worksheet.getCell('F6').value = user?.salaryCode || '';
                 worksheet.getCell('G6').value = "Chức vụ";
+                worksheet.mergeCells('H6:S6')
                 worksheet.getCell('H6').value = user?.position?.name || '';
 
 
@@ -4497,6 +4516,7 @@ router.post('/excavatorTripReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.A
                 worksheet.getCell('E6').value = "Số thẻ";
                 worksheet.getCell('F6').value = user?.salaryCode || '';
                 worksheet.getCell('G6').value = "Chức vụ";
+                worksheet.mergeCells(`H6:${colLetter}5`)
                 worksheet.getCell('H6').value = user?.position?.name || '';
 
                 const headerRow = 8;
@@ -4836,7 +4856,7 @@ router.post('/carTripReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, 
         const user = req.user
         let dep;
         if (department) {
-            dep = await Department.findById(department).select('name')
+            dep = await Department.findById(department).select('code')
         } else {
             dep = user?.department
         }
@@ -4974,6 +4994,7 @@ router.post('/carTripReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, 
                 worksheet.getCell('E6').value = "Số thẻ";
                 worksheet.getCell('F6').value = user?.salaryCode || '';
                 worksheet.getCell('G6').value = "Chức vụ";
+                worksheet.mergeCells(`H6:${colLetter}6`)
                 worksheet.getCell('H6').value = user?.position?.name || '';
 
                 const headerRow = 8;
@@ -5153,31 +5174,31 @@ router.post('/carTripReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, 
 
                 addTableBorders(worksheet, 8, currentRow, 1, totalColumn);
 
-                // const startSignature = getColumnLetter(totalColumn - 3);
-                // const endSignature = getColumnLetter(totalColumn - 1);
+                const startSignature = getColumnLetter(totalColumn - 3);
+                const endSignature = getColumnLetter(totalColumn - 1);
 
-                // worksheet.mergeCells(`${startSignature}${currentRow + 1}:${endSignature}${currentRow + 1}`)
-                // worksheet.getCell(`${startSignature}${currentRow + 1}`).value = 'Cán bộ CT kiểm tra trong ca';
-                // worksheet.getCell(`${startSignature}${currentRow + 1}`).font = { bold: true };
-                // worksheet.getCell(`${startSignature}${currentRow + 1}`).alignment = { horizontal: 'center', vertical: 'middle' };
-                // worksheet.mergeCells(`${startSignature}${currentRow + 2}:${endSignature}${currentRow + 2}`)
-                // worksheet.getCell(`${startSignature}${currentRow + 2}`).value = '( Ký, ghi rõ họ tên)';
-                // worksheet.getCell(`${startSignature}${currentRow + 2}`).alignment = { horizontal: 'center', vertical: 'middle' };
-                // if (signature) {
-                //     const response = await axios.get(signature, { responseType: 'arraybuffer' });
-                //     const extension = response.headers['content-type'].split('/')[1];
-                //     const imageBuffer = Buffer.from(response.data, 'binary');
+                worksheet.mergeCells(`${startSignature}${currentRow + 1}:${endSignature}${currentRow + 1}`)
+                worksheet.getCell(`${startSignature}${currentRow + 1}`).value = 'Cán bộ CT kiểm tra trong ca';
+                worksheet.getCell(`${startSignature}${currentRow + 1}`).font = { bold: true };
+                worksheet.getCell(`${startSignature}${currentRow + 1}`).alignment = { horizontal: 'center', vertical: 'middle' };
+                worksheet.mergeCells(`${startSignature}${currentRow + 2}:${endSignature}${currentRow + 2}`)
+                worksheet.getCell(`${startSignature}${currentRow + 2}`).value = '( Ký, ghi rõ họ tên)';
+                worksheet.getCell(`${startSignature}${currentRow + 2}`).alignment = { horizontal: 'center', vertical: 'middle' };
+                if (signature) {
+                    const response = await axios.get(signature, { responseType: 'arraybuffer' });
+                    const extension = response.headers['content-type'].split('/')[1];
+                    const imageBuffer = Buffer.from(response.data, 'binary');
 
-                //     const imageId = workbook.addImage({
-                //         buffer: imageBuffer,
-                //         extension
-                //     });
+                    const imageId = workbook.addImage({
+                        buffer: imageBuffer,
+                        extension
+                    });
 
-                //     worksheet.mergeCells(`${startSignature}${currentRow + 4}:${endSignature}${currentRow + 7}`);
+                    worksheet.mergeCells(`${startSignature}${currentRow + 4}:${endSignature}${currentRow + 7}`);
 
-                //     // gán ảnh trực tiếp vào range
-                //     worksheet.addImage(imageId, `${startSignature}${currentRow + 4}:${endSignature}${currentRow + 7}`);
-                // }
+                    // gán ảnh trực tiếp vào range
+                    worksheet.addImage(imageId, `${startSignature}${currentRow + 4}:${endSignature}${currentRow + 7}`);
+                }
 
                 worksheet.pageSetup = {
                     paperSize: 9,                // A4

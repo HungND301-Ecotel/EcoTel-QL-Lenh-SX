@@ -1,8 +1,28 @@
-import { Typography } from '@mui/material';
+import { Typography, useMediaQuery, useTheme } from '@mui/material';
 import { ChartsLegend, ChartsTooltip, PieChart, PiePlot, ResponsiveChartContainer } from '@mui/x-charts'
 import React from 'react'
 
 export default function PieChartOrder({ data }: { data: any }) {
+
+    const theme = useTheme();
+
+    const isLargeScreen = useMediaQuery(theme.breakpoints.up('lg'));
+
+    // 2. Kiểm tra màn hình nhỏ (< md, tức là < 900px)
+    const isSmallToMediumScreen = useMediaQuery(theme.breakpoints.down('md'));
+
+    let responsiveMarkerSize;
+
+    if (isLargeScreen) {
+        // >= lg (1200px): size 12
+        responsiveMarkerSize = 12;
+    } else if (isSmallToMediumScreen) {
+        // < md (dưới 900px): size 12
+        responsiveMarkerSize = 12;
+    } else {
+        // Trường hợp còn lại: md (900px) đến < lg (1200px): size 8
+        responsiveMarkerSize = 8;
+    }
 
     const chartData = [
         { label: 'Chưa nhận lệnh', value: data['pending']?.day || 0, color: 'grey' },
@@ -36,13 +56,15 @@ export default function PieChartOrder({ data }: { data: any }) {
                 <PiePlot />
                 <ChartsTooltip trigger="item" />
                 <ChartsLegend position={{ vertical: 'bottom', horizontal: 'middle' }}
-                slotProps={{
-                    legend:{
-                        labelStyle:{
-                            fontSize:12,
+                    slotProps={{
+                        legend: {
+                            labelStyle: {
+                                fontSize: responsiveMarkerSize,
+                            },
+                            itemMarkHeight: responsiveMarkerSize,
+                            itemMarkWidth: responsiveMarkerSize,
                         }
-                    }
-                }} />
+                    }} />
             </ResponsiveChartContainer>
         </div>
     )
