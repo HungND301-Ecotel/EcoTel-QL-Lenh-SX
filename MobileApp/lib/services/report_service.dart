@@ -17,4 +17,21 @@ class ReportService {
   Future<Map<String, dynamic>> delete(String id) async {
     return await _apiService.delete('/reports/$id');
   }
+
+  Future<Map<String, dynamic>> addTrip(String id) async {
+    return await _apiService.put(
+      '/reports/$id/add-trip-time',
+      {},
+    );
+  }
+
+  Future<Map<String, dynamic>> removeTrip(
+    String id,
+    int index,
+  ) async {
+    return await _apiService.put(
+      '/reports/$id/remove-trip-time/$index',
+      {},
+    );
+  }
 }

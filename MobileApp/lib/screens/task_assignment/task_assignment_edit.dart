@@ -5,6 +5,8 @@ import 'package:soft/models/task_model.dart';
 import 'package:soft/providers/user_provider.dart';
 import 'package:soft/screens/task_assignment/dispatcher/dispatcher_assignment_edit.dart';
 import 'package:soft/screens/task_assignment/task_assignment_type_edit/task_assignment_common_edit.dart';
+import 'package:soft/screens/task_assignment/task_assignment_type_edit/task_assignment_excavator_edit.dart';
+import 'package:soft/screens/task_assignment/task_assignment_type_edit/task_assignment_maintence_edit.dart';
 import 'package:soft/screens/task_assignment/task_assignment_type_edit/task_assignment_other_edit.dart';
 import 'package:soft/screens/task_assignment/task_assignment_type_edit/task_assignment_vehicle_edit.dart';
 
@@ -34,10 +36,19 @@ class _TaskAssignmentEdit
           order: widget.order,
         );
       case 'Vận hành xúc':
+        return TaskAssignmentExcavatorEdit(
+          data: widget.data,
+          order: widget.order,
+        );
       case 'Vận hành khoan':
       case 'Vận hành gạt':
       case 'Vận hành xe phục vụ':
         return TaskAssignmentCommonEdit(
+          data: widget.data,
+          order: widget.order,
+        );
+      case 'Sửa chữa, bảo dưỡng':
+        return TaskAssignmentMaintenceEdit(
           data: widget.data,
           order: widget.order,
         );
@@ -51,11 +62,10 @@ class _TaskAssignmentEdit
 
   @override
   Widget build(BuildContext context) {
-    final user =
-        Provider.of<UserProvider>(
-          context,
-          listen: false,
-        ).user;
+    final user = Provider.of<UserProvider>(
+      context,
+      listen: false,
+    ).user;
     final role = user?.role;
     return Scaffold(
       appBar: AppBar(
@@ -73,13 +83,12 @@ class _TaskAssignmentEdit
           color: Colors.white, // Màu icon trên AppBar
         ),
       ),
-      body:
-          role == "dispatcher"
-              ? DispatcherAssignmentEdit(
-                data: widget.data,
-                order: widget.order,
-              )
-              : _getBody(),
+      body: role == "dispatcher"
+          ? DispatcherAssignmentEdit(
+              data: widget.data,
+              order: widget.order,
+            )
+          : _getBody(),
     );
   }
 }

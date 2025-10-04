@@ -27,9 +27,9 @@ class MyHomePageState extends State<MyPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      UpdateVersionService.checkForUpdate(context);
-    });
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   UpdateVersionService.checkForUpdate(context);
+    // });
     Future.microtask(() async {
       if (!mounted) return;
 

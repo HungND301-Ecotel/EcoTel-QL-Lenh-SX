@@ -22,19 +22,9 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { StyledPopper } from '../../ui/poppers';
+import { dispatcherOrderValidationSchema } from '../../utils/validation';
 
 
-
-const validationSchema = yup.object({
-    usersAndDepartments: yup.array().of(
-        yup.object().shape({
-            assignedTo: yup.string().required('Vui lòng chọn thẻ lương'),
-            department: yup.string(),
-        })
-    ),
-    workingDate: yup.string().required('Vui lòng chọn ngày làm việc'),
-    workContent: yup.string().required('Vui lòng nhập nội dung'),
-});
 interface OrderFormProps {
     initialValues: any[];
     onSubmit: (values: Partial<Order>) => void;
@@ -101,7 +91,7 @@ const DispatcherOrderFormEdit: React.FC<OrderFormProps> = ({
             workContent: initialValues[0].workContent || '',
             status: initialValues[0].status,
         },
-        validationSchema,
+        validationSchema:dispatcherOrderValidationSchema,
         enableReinitialize: true, // Để cập nhật lại giá trị khi initialValues thay đổi
         onSubmit: async (values) => {
             const currentIds = values.usersAndDepartments

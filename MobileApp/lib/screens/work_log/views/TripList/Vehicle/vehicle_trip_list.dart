@@ -1,8 +1,9 @@
+// Danh sách chuyến của máy xúc
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:soft/models/report_model.dart';
 import 'package:soft/providers/report_provider.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
-import 'package:soft/screens/work_log/widgets/vehicle_trip_item.dart';
 import 'package:soft/services/report_service.dart';
 import 'package:provider/provider.dart';
 
@@ -18,7 +19,7 @@ class _VehicleTripList extends State<VehicleTripList> {
   @override
   void initState() {
     super.initState();
-    getOrderByUser();
+    getReportByOrder();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = Provider.of<ReportDraftProvider>(
         context,
@@ -31,7 +32,7 @@ class _VehicleTripList extends State<VehicleTripList> {
   bool _isLoading = true;
   final ReportService _reportService = ReportService();
   final List<ReportModel> _allData = [];
-  void getOrderByUser() async {
+  void getReportByOrder() async {
     var result = await _reportService.getByOrder(
       widget.orderId,
     );
@@ -60,13 +61,35 @@ class _VehicleTripList extends State<VehicleTripList> {
     });
   }
 
+  void addTripTime(int index) async {
+    final report = _allData[index];
+    var result = await _reportService.addTrip(report.id);
+
+    if (result['status'] == 'success') {
+      getReportByOrder();
+    }
+  }
+
+  void removeTripTime(int index, int timeIndex) async {
+    final report = _allData[index];
+
+    var result = await _reportService.removeTrip(
+      report.id,
+      timeIndex,
+    );
+
+    if (result['status'] == 'success') {
+      getReportByOrder();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
         title: Text(
-          'Báo chuyến',
+          'Báo chuyến cho ô tô',
           style: TextStyle(
             color: Colors.white,
             fontSize: 18,
@@ -98,18 +121,192 @@ class _VehicleTripList extends State<VehicleTripList> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children:
-              _allData
-                  .map(
-                    (item) => VehicleTripItem(
-                      data: item,
-                      getReportByOrder: getOrderByUser,
+      body: Column(
+        children: [
+          // HEADER
+          Container(
+            color: Colors.grey[300],
+            padding: const EdgeInsets.symmetric(
+              vertical: 8,
+              horizontal: 16,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    "Phương tiện",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
                     ),
-                  )
-                  .toList(),
-        ),
+                  ),
+                ),
+                SizedBox(width: 6),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    "Máy xúc",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 6),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    "Điểm đổ",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 6),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    "Vật liệu",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 6),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    "Số chuyến",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          // DANH SÁCH
+          Expanded(
+            child: ListView.builder(
+              itemCount: _allData.length,
+              itemBuilder: (context, index) {
+                final item = _allData[index];
+                final times =
+                    item.quantityUpdateTimes ?? [];
+
+                return Card(
+                  child: ExpansionTile(
+                    trailing: SizedBox.shrink(),
+                    showTrailingIcon: false,
+                    tilePadding:
+                        EdgeInsets
+                            .zero, // Xoá padding trái/phải
+                    childrenPadding: EdgeInsets.zero,
+                    title: Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            item.device?.code ?? "",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 6),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            item.excavator?.code ?? "",
+                            style: const TextStyle(
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 6),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            item.toLocation?.name ?? "",
+                            style: const TextStyle(
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 6),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            item.material?.name ?? "",
+                            style: const TextStyle(
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 6),
+                        Expanded(
+                          flex: 2,
+                          child: Row(
+                            children: [
+                              Text(
+                                "${times.length}",
+                                style: const TextStyle(
+                                  fontWeight:
+                                      FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.add,
+                                  color: Colors.green,
+                                ),
+                                onPressed:
+                                    () =>
+                                        addTripTime(index),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    children: [
+                      ...times.asMap().entries.map((entry) {
+                        final timeIndex = entry.key;
+                        final timeValue = entry.value;
+                        return ListTile(
+                          dense: true,
+                          title: Text(
+                            DateFormat(
+                              'dd/MM/yyyy HH:mm:ss',
+                            ).format(timeValue),
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(
+                              Icons.close,
+                              color: Colors.red,
+                            ),
+                            onPressed:
+                                () => removeTripTime(
+                                  index,
+                                  timeIndex,
+                                ),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

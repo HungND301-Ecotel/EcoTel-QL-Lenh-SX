@@ -1,39 +1,9 @@
 import { Typography, IconButton, Paper, Grid, TableContainer, TableHead, Table, TableCell, TableRow, TableBody, Box } from '@mui/material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import React, { useEffect, useState } from 'react'
 import { Device } from '../../types';
 
 export default function ProductionReport({ data, signatureUrl }: { data: any[], signatureUrl: string | null }) {
-
-    const reportColumns: GridColDef[] = [
-        {
-            field: 'STT', headerName: 'STT', flex: 0.4,
-            renderCell: (params) => params.api.getRowIndex(params.id) + 1,
-        },
-        {
-            field: 'fullName', headerName: 'Họ và tên', flex: 1,
-        },
-        {
-            field: 'salaryCode',
-            headerName: 'Số thẻ',
-            flex: 0.6,
-        },
-        {
-            field: 'department',
-            headerName: 'Đơn vị',
-            flex: 1,
-        },
-        {
-            field: 'code', headerName: 'Máy vận hành', flex: 0.6,
-        },
-        {
-            field: 'material', headerName: 'Vật liệu', flex: 0.6,
-        },
-        {
-            field: 'tripCount', headerName: 'Số chuyến', flex: 0.6,
-
-        },
-    ];
 
     return (
         <Grid item xs={12}>

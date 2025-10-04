@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     AppBar,
     Toolbar,
@@ -15,7 +15,8 @@ import {
     FormControl,
     InputLabel,
     Paper,
-    Autocomplete
+    Autocomplete,
+    LinearProgress
 } from '@mui/material';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import api from '../../config/api.config';
@@ -35,6 +36,8 @@ import { showErrorAlert } from '../../components/Alert';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import ExcavatorReport from './ExcavatorReport';
+import DozerReport from './DozerReport';
+import DrillReport from './DrillReport';
 
 
 function Reports() {
@@ -47,6 +50,8 @@ function Reports() {
     const [department, setDepartment] = useState<string>('');
     const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
     const [data, setData] = useState<any[]>([]);
+    const [maxTrip, setMaxTrip] = useState(1);
+    const [materials, setMaterials] = useState<any[]>([]);
     const [preview, setPreview] = useState(false);
     const [user] = useAtom(userAtom)
 
@@ -86,11 +91,11 @@ function Reports() {
         { name: 'Giao ca cán bộ', },
         // { name: 'Phiếu bồi dưỡng hiện vật', },
         // { name: 'Phiếu lĩnh dầu', },
-        // { name: 'Tổng hợp số liệu trong ca (Gạt)', },
-        // { name: 'Tổng hợp số liệu trong ca (Khoan)', },
+        { name: 'Tổng hợp số liệu trong ca (Máy gạt)', },
+        { name: 'Tổng hợp số liệu trong ca (Máy khoan)', },
         { name: 'Tổng hợp số liệu trong ca (Máy xúc)', },
         { name: 'Tổng hợp số liệu trong ca (Ô tô)', },
-        { name: 'Theo dõi sản lượng, nhiên liệu, dầu mỡ' }
+        // { name: 'Theo dõi sản lượng, nhiên liệu, dầu mỡ' }
     ];
     const reportsMap = {
         'Xe không hoạt động': {
@@ -128,10 +133,20 @@ function Reports() {
             exportUrl: '/exports/assignmentManager',
             PreviewComponent: mealRequestReport,
         },
-        'Theo dõi sản lượng, nhiên liệu, dầu mỡ': {
-            viewUrl: '/exports/productReport/view',
-            exportUrl: '/exports/productReport',
-            PreviewComponent: ProductionReport,
+        // 'Theo dõi sản lượng, nhiên liệu, dầu mỡ': {
+        //     viewUrl: '/exports/productReport/view',
+        //     exportUrl: '/exports/productReport',
+        //     PreviewComponent: ProductionReport,
+        // },
+        'Tổng hợp số liệu trong ca (Máy gạt)': {
+            viewUrl: '/exports/dozerReport/view',
+            exportUrl: '/exports/dozerReport',
+            PreviewComponent: DozerReport,
+        },
+        'Tổng hợp số liệu trong ca (Máy khoan)': {
+            viewUrl: '/exports/drillReport/view',
+            exportUrl: '/exports/drillReport',
+            PreviewComponent: DrillReport,
         },
         'Tổng hợp số liệu trong ca (Ô tô)': {
             viewUrl: '/exports/carReport/view',
@@ -146,7 +161,7 @@ function Reports() {
 
     };
 
-    const config = reportsMap[title as keyof typeof reportsMap];
+    const config = title ? reportsMap[title as keyof typeof reportsMap] : undefined;
     const PreviewComponent = config?.PreviewComponent;
 
 
@@ -164,6 +179,8 @@ function Reports() {
                 department
             }).then(res => {
                 setData(res.data.data);
+                setMaxTrip(res.data.maxTrips)
+                setMaterials(res.data.materials)
             });
         },
         onSuccess: () => { },
@@ -171,6 +188,9 @@ function Reports() {
             showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
         }
     });
+
+    const [progress, setProgress] = useState(0)
+    const [isUploading, setIsUploading] = useState(false);
     const reportExcel = useMutation({
         mutationFn: () => {
             if (!config) throw new Error('Chưa chọn loại báo cáo');
@@ -185,6 +205,12 @@ function Reports() {
                 department
             }, {
                 responseType: 'blob',
+                onUploadProgress: (progressEvent) => {
+                    const percent = Math.round(
+                        (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
+                    );
+                    setProgress(percent);
+                }
             }).then(res => {
                 const blob = new Blob([res.data], {
                     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -201,8 +227,13 @@ function Reports() {
                 window.URL.revokeObjectURL(url);
             });
         },
-        onSuccess: () => { },
+        onMutate: () => {
+            setIsUploading(true);
+            setProgress(0); // Reset tiến trình khi bắt đầu
+        },
+        onSuccess: () => { setIsUploading(false); },
         onError: (error: any) => {
+            setIsUploading(false)
             showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
         }
     });
@@ -244,7 +275,12 @@ function Reports() {
                             SelectProps={{
                                 displayEmpty: true,
                             }}
-                            onChange={(e) => setTitle(e.target.value)}>
+                            onChange={(e) => {
+                                setTitle(e.target.value);
+                                setPreview(false);
+                                setData([]);
+                                setMaterials([])
+                            }}>
                             {reportNames.map((report) => (
                                 <MenuItem key={report.name} value={report.name}>
                                     {report.name}
@@ -348,8 +384,27 @@ function Reports() {
                             Tải xuống
                         </Button>
                     </Grid>
+                    {isUploading && (
+                        <Grid item xs={12}>
+                            {progress < 100 ? (
+                                <>
+                                    <Typography variant="body2" align="center">
+                                        Đang tải lên... {progress}%
+                                    </Typography>
+                                    <LinearProgress variant="determinate" value={progress} />
+                                </>
+                            ) : (
+                                <>
+                                    <Typography variant="body2" align="center">
+                                        Đang xử lý dữ liệu...
+                                    </Typography>
+                                    <LinearProgress />
+                                </>
+                            )}
+                        </Grid>
+                    )}
                     <Grid item xs={12}>
-                        {preview && PreviewComponent ? <PreviewComponent data={data} signatureUrl={signatureUrl} /> : null}
+                        {preview && PreviewComponent ? <PreviewComponent data={data} signatureUrl={signatureUrl} maxTrip={maxTrip} materials={materials} /> : null}
                         {signatureUrl && !preview && (
                             <Box mt={2} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                                 <img src={signatureUrl} alt="Chữ ký" style={{ maxWidth: 200, maxHeight: 100 }} />

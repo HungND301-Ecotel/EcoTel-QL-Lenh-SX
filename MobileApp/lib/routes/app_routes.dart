@@ -6,6 +6,8 @@ import 'package:soft/screens/main.dart';
 import 'package:soft/screens/register/register.dart';
 import 'package:soft/screens/setting/changepass.dart';
 import 'package:soft/screens/signin/signin.dart';
+import 'package:soft/screens/task_assignment/task_assignment_all_device_select.dart';
+import 'package:soft/screens/task_assignment/task_assignment_car_select.dart';
 import 'package:soft/screens/task_assignment/task_assignment_device_type_select.dart';
 import 'package:soft/screens/task_assignment/task_assignment_dump_site_select.dart';
 import 'package:soft/screens/task_assignment/task_assignment_excavator_select.dart';
@@ -21,7 +23,10 @@ class AppRoute {
   static const String addPhone = '/addphone';
   static const String contact = '/contact';
   static const String vehicleSelect = '/vehicle_select';
+  static const String allDeviceSelect =
+      '/all_device_select';
   static const String locationSelect = '/location_select';
+  static const String carSelect = '/car_select';
   static const String homeVehicleSelect =
       '/home_vehicle_select';
   static const String deviceTypeSelect =
@@ -38,7 +43,9 @@ class AppRoute {
       case signin:
         return MaterialPageRoute(builder: (_) => SignIn());
       case register:
-        return MaterialPageRoute(builder: (_) => Register());
+        return MaterialPageRoute(
+          builder: (_) => Register(),
+        );
       case main:
         return MaterialPageRoute(builder: (_) => MyPage());
       case changePass:
@@ -56,6 +63,10 @@ class AppRoute {
       case vehicleSelect:
         return MaterialPageRoute(
           builder: (_) => TaskAssignmentVehicleSelect(),
+        );
+      case carSelect:
+        return MaterialPageRoute(
+          builder: (_) => TaskAssignmentCarSelect(),
         );
       case locationSelect:
         return MaterialPageRoute(
@@ -77,17 +88,20 @@ class AppRoute {
         return MaterialPageRoute(
           builder: (_) => TaskAssignmentExcavatorSelect(),
         );
+      case allDeviceSelect:
+        return MaterialPageRoute(
+          builder: (_) => TaskAssignmentAllDeviceSelect(),
+        );
       case safetyMeastureSelect:
         return MaterialPageRoute(
-          builder:
-              (_) => TaskAssignmentSafetyMeasureSelect(),
+          builder: (_) =>
+              TaskAssignmentSafetyMeasureSelect(),
         );
       default:
         return MaterialPageRoute(
-          builder:
-              (_) => Scaffold(
-                body: Center(child: Text('NOT FOUND')),
-              ),
+          builder: (_) => Scaffold(
+            body: Center(child: Text('NOT FOUND')),
+          ),
         );
     }
   }

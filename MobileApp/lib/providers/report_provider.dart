@@ -15,14 +15,18 @@ class ReportDraftProvider with ChangeNotifier {
   num? distanceKm;
   int? quantity;
 
+  List<String> devices = [];
+
   void setOrderId(String id) {
     orderId = id;
     notifyListeners();
   }
-void setOrder(OrderModel data) {
+
+  void setOrder(OrderModel data) {
     order = data;
     notifyListeners();
   }
+
   void setMaterial(String value) {
     material = value;
     notifyListeners();
@@ -32,7 +36,8 @@ void setOrder(OrderModel data) {
     device = value;
     notifyListeners();
   }
-   void setExcavator(String value) {
+
+  void setExcavator(String value) {
     excavator = value;
     notifyListeners();
   }
@@ -75,6 +80,13 @@ void setOrder(OrderModel data) {
     notifyListeners();
   }
 
+  void addDevice(String id) {
+    if (!devices.contains(id)) {
+      devices.add(id);
+      notifyListeners();
+    }
+  }
+
   void reset() {
     material = null;
     drillDepth = null;
@@ -86,5 +98,6 @@ void setOrder(OrderModel data) {
     workingMinutes = null;
     distanceKm = null;
     quantity = null;
+    devices.clear();
   }
 }

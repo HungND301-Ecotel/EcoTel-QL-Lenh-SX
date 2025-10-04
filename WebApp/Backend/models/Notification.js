@@ -10,16 +10,6 @@ const notificationSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Notification message is required']
     },
-    type: {
-        type: String,
-        required: [true, 'Notification type is required'],
-        enum: ['order', 'device', 'report', 'system', 'maintenance', 'shift']
-    },
-    priority: {
-        type: String,
-        enum: ['low', 'medium', 'high', 'urgent'],
-        default: 'medium'
-    },
     recipient: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -29,25 +19,11 @@ const notificationSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
-    relatedTo: {
-        model: {
-            type: String,
-            enum: ['Order', 'Device', 'Report']
-        },
-        id: {
-            type: mongoose.Schema.Types.ObjectId
-        }
-    },
     read: {
         type: Boolean,
         default: false
     },
     readAt: Date,
-    actionUrl: String,
-    metadata: {
-        type: Map,
-        of: mongoose.Schema.Types.Mixed
-    }
 }, {
     timestamps: true
 });

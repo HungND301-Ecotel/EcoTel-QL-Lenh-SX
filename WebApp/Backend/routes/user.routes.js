@@ -10,6 +10,7 @@ const ExcelJS = require('exceljs');
 const Position = require('../models/Position');
 const Department = require('../models/Department');
 const mongoose = require('mongoose')
+const { ROLE } = require('../config/config');
 // Get all users
 function parseBool(v) {
     if (v === undefined || v === null) return undefined;       // không lọc
@@ -30,7 +31,7 @@ router.get('/', verifyToken, async (req, res) => {
         }
 
 
-        if (user?.role === "manager") {
+        if (user?.role === ROLE.MANAGER) {
             query.department = user?.department?._id;
         }
 
@@ -38,12 +39,12 @@ router.get('/', verifyToken, async (req, res) => {
             const departmentId = req.query.department.toString();
             query.department = departmentId;
         }
-        else if (user?.role === "dispatcher") {
+        else if (user?.role === ROLE.DISPATCHER) {
             if (req.query.type === "order") {
                 const userDeptId = user?.department?._id;
                 query.$or = [
                     { department: userDeptId }, // All users in their own department
-                    { role: "manager" } // All managers from other departments
+                    { role: ROLE.MANAGER } // All managers from other departments
                 ];
             } else {
                 query.department = user?.department?._id;
@@ -86,7 +87,7 @@ router.get('/count', verifyToken, async (req, res) => {
         const query = {};
 
 
-        if (user?.role === "manager" || user?.role === "dispatcher") {
+        if (user?.role === ROLE.MANAGER || user?.role === ROLE.DISPATCHER) {
             query.department = user?.department?._id;
         }
 
@@ -155,15 +156,15 @@ router.get('/getOne/salaryCodeOrName', verifyToken, async (req, res) => {
 
             // Điều kiện theo role
             let roleCondition = {};
-            if (currentUser?.role === "manager" || currentUser?.role === "employee") {
+            if (currentUser?.role === ROLE.MANAGER || currentUser?.role === "employee") {
                 roleCondition = { department: currentUser?.department?._id };
             }
-            if (currentUser?.role === "dispatcher") {
+            if (currentUser?.role === ROLE.DISPATCHER) {
                 const userDeptId = currentUser?.department?._id;
                 roleCondition = {
                     $or: [
                         { department: userDeptId },
-                        { role: "manager" }
+                        { role: ROLE.MANAGER }
                     ]
                 };
             }
@@ -575,12 +576,12 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
     }
 });
 
-router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const user = req.user;
         const query = {};
 
-        if (user?.role === "manager") {
+        if (user?.role === ROLE.MANAGER) {
             query.department = user?.department?._id;
         }
 

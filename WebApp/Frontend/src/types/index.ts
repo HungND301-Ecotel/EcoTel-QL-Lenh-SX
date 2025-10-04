@@ -1,3 +1,5 @@
+import { JobTypeEnum } from "./enums";
+
 export interface User {
     _id: string;
     username: string;
@@ -81,18 +83,20 @@ export interface Order {
     workingDate: Date;
     shift?: string;
     shiftHour?: string;
-    devicesToProduce?: {
-        deviceType: string,
-        quantity: number,
-    }[],
     startTime?: Date;
     endTime?: Date;
+    assignedVehicles?: string[];
     device?: string[];
-    excavator?: string[];
+    repairVehicles?: {
+        device?: string,
+        note?: string
+    }[],
+    excavator?: {
+        device?: string,
+        status: boolean
+    }[];
     location?: string[];
     material?: string[];
-    distance?: number;
-    liftHeight?: number;
     workContent?: string;
     assistants?: string[];
     status: 'pending' | 'in_progress' | 'completed' | 'warning' | 'cancel';
@@ -113,14 +117,31 @@ export interface Material {
     _id: string;
     name: string;
     density?: number;
-    mass?: number;
+    acceptedProduct?: string;
+    createdAt?: string;
+    updatedAt?: string;
+}
+export interface DeviceModel {
+    _id: string;
+    name: string;
+    createdAt?: string;
+    updatedAt?: string;
+}
+export interface TravelLog {
+    _id: string;
+    excavator?: string;
+    location?: string;
+    distance?: number;
+    startTime?: Date;
+    endTime?: Date;
+    note?: string;
     createdAt?: string;
     updatedAt?: string;
 }
 export interface Job {
     _id: string;
     name: string;
-    type: 'Vận hành xe' | 'Vận hành khoan' | 'Vận hành xe phục vụ' | 'Vận hành gạt' | 'Vận hành xúc' | 'Vận hành sàng' | 'Sửa chữa, bảo dưỡng' | 'Vận hành bơm' | 'Khác',
+    type: JobTypeEnum,
     createdAt?: string;
     updatedAt?: string;
 }
@@ -150,7 +171,6 @@ export interface ShiftReportType {
         sealStatus?: string,
     }[],
     handoverHours?: number,
-    otherHours?: number,
     handoverNotes?: string,
     risks?: string,
     createdAt?: string;
@@ -169,6 +189,7 @@ export interface Report {
     hardnessF?: number,
     workingMinutes?: number,
     quantity?: number,
+    quantityUpdateTimes?: Date[]
 }
 export interface Location {
     _id: string;

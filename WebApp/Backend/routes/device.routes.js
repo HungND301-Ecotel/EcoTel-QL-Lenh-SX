@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const { AppError } = require('../utils/errorHandler');
 const Device = require('../models/Device');
-const { JobConfig } = require('../config/config');
+const { JOB_TYPE, ROLE, STATUS_ORDER, STATUS_DEVICE, STATUS_DEVICES, STATUS_REPAIR } = require('../config/config');
 const DeviceType = require('../models/DeviceType');
 const Department = require('../models/Department');
+const DeviceModel = require('../models/DeviceModel');
 const ExcelJS = require('exceljs')
 const xlsx = require('xlsx')
 
@@ -19,13 +20,17 @@ router.get('/', verifyToken, async (req, res, next) => {
 
         if (req.query.q) {
             const regex = new RegExp(req.query.q, 'i');
+
+            const matchedModels = await DeviceModel.find(
+                { name: regex },
+                { _id: 1 }
+            ).lean();
+            const modelIds = matchedModels.map(j => j._id);
             query.$or = [
                 { code: regex },
                 { name: regex },
                 { vehicleNumber: regex },
-                { material: regex },
-                { vehicleNumber: regex },
-                { vehicleNumber: regex }
+                { material: { $in: modelIds } },
             ];
         }
         if (req.query.department) {
@@ -36,17 +41,18 @@ router.get('/', verifyToken, async (req, res, next) => {
         }
 
 
-        if (user.role === "manager") {
+        if (user.role === ROLE.MANAGER) {
             query.department = user.department._id;
         }
 
         const endOfToday = new Date();
         endOfToday.setHours(23, 59, 59, 999);
         let lte = endOfToday;
-        const orders = await Order.find({ workingDate: { $lte: lte }, status: "in_progress" }).populate("assignedTo", "fullName salaryCode")
+        const orders = await Order.find({ workingDate: { $lte: lte }, status: STATUS_ORDER.INPROGRESS }).populate("assignedTo", "fullName salaryCode")
         const devices = await Device.find(query)
             .populate('department', 'name code')
             .populate('category')
+            .populate('material')
             .collation({ locale: "vi", strength: 1 })
             .sort({ code: 1 });
 
@@ -97,7 +103,7 @@ router.get('/excavators/all', verifyToken, async (req, res, next) => {
             query.category = { $in: targetTypes };
         }
 
-        const devices = await Device.find(query).populate('category').populate('department', 'name code')
+        const devices = await Device.find(query).populate('category').populate('material').populate('department', 'name code')
 
         req.logger.info(`🔥  Load phương tiện thành công`);
         res.status(200).json({
@@ -125,7 +131,7 @@ router.get('/car/all', verifyToken, async (req, res, next) => {
             query.category = { $in: targetTypes };
         }
 
-        const devices = await Device.find(query).populate('category').populate('department', 'name code')
+        const devices = await Device.find(query).populate('category').populate('material').populate('department', 'name code')
 
         req.logger.info(`🔥  Load phương tiện vận tải thành công`);
         res.status(200).json({
@@ -154,7 +160,7 @@ router.get('/vehicle/all', verifyToken, async (req, res, next) => {
             query.category = { $in: targetTypes };
         }
 
-        const devices = await Device.find(query).populate('category').populate('department', 'name code')
+        const devices = await Device.find(query).populate('category').populate('material').populate('department', 'name code')
 
         req.logger.info(`🔥  Load phương tiện xe thành công`);
         res.status(200).json({
@@ -168,7 +174,24 @@ router.get('/vehicle/all', verifyToken, async (req, res, next) => {
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
-router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
+
+router.get('/all', verifyToken, async (req, res, next) => {
+    try {
+        const devices = await Device.find()
+
+        req.logger.info(`🔥  Load phương tiện thành công`);
+        res.status(200).json({
+            status: 'success',
+            results: devices.length,
+            data:
+                devices
+        });
+    } catch (err) {
+        req.logger.error("❌ Lỗi", err);
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+});
+router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
         const { name, code, vehicleNumber, category, material, note, fuelType, capacity, power, coordinates, department, status } = req.body;
         const existingDevice = await Device.findOne({ code });
@@ -230,7 +253,7 @@ router.get('/:id', verifyToken, async (req, res, next) => {
     }
 });
 
-router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
+router.put('/:id', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
         const user = req.user;
         const device = await Device.findByIdAndUpdate(
@@ -274,7 +297,7 @@ router.post('/update_status', verifyToken, async (req, res, next) => {
         startOfToday.setHours(0, 0, 0, 0);
         const endOfToday = new Date();
         endOfToday.setHours(23, 59, 59, 999);
-        const orders = await Order.find({ workingDate: { $gte: startOfToday, $lte: endOfToday } }).populate("device").populate("job").populate("shift")
+        const orders = await Order.find({ workingDate: { $gte: startOfToday, $lte: endOfToday } }).populate("device").populate("shiftReport").populate("job").populate("shift")
 
         const updateDeviceStatus = async (deviceId, newStatus) => {
             if (!deviceId || !newStatus) return;
@@ -302,48 +325,75 @@ router.post('/update_status', verifyToken, async (req, res, next) => {
             const lastDevice = order.device?.length ? order.device[order.device.length - 1] : null;
             if (!lastDevice) continue;
 
-            let newStatus = null;
-
             switch (order.status) {
-                case "in_progress":
+                case STATUS_ORDER.INPROGRESS:
                     if (order.job?.type) {
                         const type = order.job.type.toLowerCase();
 
-                        if (type.includes(JobConfig.REPAIR.toLowerCase())) {
-                            newStatus = "maintenance";
+                        if (type.includes(JOB_TYPE.SUA_CHUA_BAO_DUONG.toLowerCase())) {
+                            await updateDeviceStatus(lastDevice._id, STATUS_DEVICE.IN_USE);
+                            if (!order.shiftReport) {
+                                for (const rv of order.repairVehicles || []) {
+                                    await updateDeviceStatus(rv.device, STATUS_DEVICE.MAINTENANCE);
+                                }
+                            } else {
+                                if (order.shiftReport?.vehicleRepair && order.shiftReport?.vehicleRepair.length > 0) {
+                                    for (const item of order.shiftReport?.vehicleRepair) {
+                                        if (item.status === STATUS_REPAIR.COMPLETED) {
+                                            await updateDeviceStatus(item.device, STATUS_DEVICE.AVAILABLE);
+                                            req.logger.info(`✅ Device ${item.device} cập nhật sang ${STATUS_DEVICE.AVAILABLE}`);
+                                        } else {
+                                            await updateDeviceStatus(item.device, STATUS_DEVICE.MAINTENANCE);
+                                            req.logger.info(`✅ Device ${item.device} cập nhật sang ${STATUS_DEVICE.MAINTENANCE}`);
+                                        }
+                                    }
+                                }
+                            }
                         } else if (
                             [
-                                JobConfig.VEHICLE,
-                                JobConfig.EXCAVATOR,
-                                JobConfig.SERVICE_VEHICLE,
-                                JobConfig.DRILLING,
-                                JobConfig.DOZER,
-                                JobConfig.SIEVE,
-                                JobConfig.PUMP,
+                                JOB_TYPE.VAN_HANH_XE,
+                                JOB_TYPE.VAN_HANH_XUC,
+                                JOB_TYPE.VAN_HANH_XE_PHUC_VU,
+                                JOB_TYPE.VAN_HANH_KHOAN,
+                                JOB_TYPE.VAN_HANH_GAT,
+                                JOB_TYPE.VAN_HANH_BOM,
+                                JOB_TYPE.VAN_HANH_SANG,
                             ].map(j => j.toLowerCase()).includes(type)
                         ) {
-                            newStatus = "in_use";
+                            await updateDeviceStatus(lastDevice._id, STATUS_DEVICE.IN_USE);
                         }
                     }
                     break;
 
-                case "completed":
-                case "warning":
-                case "cancel":
+                case STATUS_ORDER.COMPLETED:
+                case STATUS_ORDER.WARNING:
+                case STATUS_ORDER.CANCEL:
                     if (order.job?.type) {
                         const type = order.job.type.toLowerCase();
                         if (
                             [
-                                JobConfig.VEHICLE,
-                                JobConfig.EXCAVATOR,
-                                JobConfig.SERVICE_VEHICLE,
-                                JobConfig.DRILLING,
-                                JobConfig.DOZER,
-                                JobConfig.SIEVE,
-                                JobConfig.PUMP,
+                                JOB_TYPE.VAN_HANH_XE,
+                                JOB_TYPE.VAN_HANH_XUC,
+                                JOB_TYPE.VAN_HANH_XE_PHUC_VU,
+                                JOB_TYPE.VAN_HANH_KHOAN,
+                                JOB_TYPE.VAN_HANH_GAT,
+                                JOB_TYPE.VAN_HANH_BOM,
+                                JOB_TYPE.VAN_HANH_SANG,
+                                JOB_TYPE.SUA_CHUA_BAO_DUONG,
                             ].map(j => j.toLowerCase()).includes(type)
                         ) {
-                            newStatus = "available";
+                            await updateDeviceStatus(lastDevice._id, STATUS_DEVICE.AVAILABLE);
+                        }
+                    }
+                    if (order.shiftReport?.vehicleRepair && order.shiftReport?.vehicleRepair.length > 0) {
+                        for (const item of order.shiftReport?.vehicleRepair) {
+                            if (item.status === STATUS_REPAIR.COMPLETED) {
+                                await updateDeviceStatus(item.device, STATUS_DEVICE.AVAILABLE);
+                                req.logger.info(`✅ Device ${item.device} cập nhật sang ${STATUS_DEVICE.AVAILABLE}`);
+                            } else {
+                                await updateDeviceStatus(item.device, STATUS_DEVICE.MAINTENANCE);
+                                req.logger.info(`✅ Device ${item.device} cập nhật sang ${STATUS_DEVICE.MAINTENANCE}`);
+                            }
                         }
                     }
                     break;
@@ -352,9 +402,6 @@ router.post('/update_status', verifyToken, async (req, res, next) => {
                     break;
             }
 
-            if (newStatus) {
-                await updateDeviceStatus(lastDevice._id, newStatus);
-            }
         }
 
         req.logger.info(`🔥${user?.username}  cập nhật trạng thái phương tiện thành công`);
@@ -369,7 +416,7 @@ router.post('/update_status', verifyToken, async (req, res, next) => {
 });
 
 
-router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
+router.delete('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
         const user = req.user
         const { ids } = req.body;
@@ -394,71 +441,76 @@ router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res,
     }
 });
 
-router.get('/count/status', verifyToken, restrictTo('admin', 'manager', 'dispatcher'), async (req, res, next) => {
+router.get('/count/status', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const user = req.user
         const query = {}
-        const query2 = {}
+        const queryDept = {}
 
-        if (user.role === "manager") {
+        if (user.role === ROLE.MANAGER) {
             query.department = user?.department._id
-            query2._id = user?.department._id
+            queryDept._id = user?.department._id
         }
-        const departments = await Department.find(query2);
-        const devices = await Device.find(query).populate("department")
-        const deviceTypes = await DeviceType.find()
 
-        const statusList = ['available', 'in_use', 'maintenance', 'retired']
+        const departments = await Department.find(queryDept);
+        let devices = await Device.find(query)
+            .populate("department")
+            .populate("category"); // populate category để lấy DeviceType trực tiếp
+
+        if (req.query.group) {
+            devices = devices.filter(d => d.category.group === req.query.group)
+        }
+
 
         let data = [];
 
-        for (let type of deviceTypes) {
-            // Lọc thiết bị theo loại
-            const devicesByType = devices.filter(d => d?.category?.toString() === type._id.toString());
+        for (let dept of departments) {
+            const deptId = dept._id.toString();
 
-            const organizations = [];
+            // Lọc thiết bị theo phân xưởng
+            const devicesInDept = devices.filter(d => d.department?._id?.toString() === deptId);
 
-            for (let dept of departments) {
-                const deptId = dept._id.toString();
+            // Nhóm theo loại phương tiện
+            const typesMap = new Map();
 
-                // Lọc các thiết bị thuộc đơn vị này
-                const devicesInDept = devicesByType.filter(d => d.department?._id?.toString() === deptId);
+            for (let device of devicesInDept) {
+                const typeId = device.category?._id?.toString();
+                const typeName = device.category?.name || "Unknown";
 
-                // Tính số lượng theo trạng thái
-                const statusCounts = {
-                    available: 0,
-                    in_use: 0,
-                    maintenance: 0,
-                    retired: 0
-                };
-
-                for (let device of devicesInDept) {
-                    if (statusList.includes(device.status)) {
-                        statusCounts[device.status]++;
-                    }
+                if (!typesMap.has(typeId)) {
+                    typesMap.set(typeId, {
+                        typeId,
+                        typeName,
+                        statusCounts: {
+                            available: 0,
+                            in_use: 0,
+                            maintenance: 0,
+                            retired: 0
+                        }
+                    });
                 }
 
-                organizations.push({
-                    departmentId: dept._id,
-                    departmentName: dept.code,
-                    statusCounts
-                });
+                const typeGroup = typesMap.get(typeId);
+                if (STATUS_DEVICES.includes(device.status)) {
+                    typeGroup.statusCounts[device.status]++;
+                }
             }
 
             data.push({
-                typeName: type.name,
-                organizations
+                departmentId: dept._id,
+                departmentName: dept.code,
+                deviceTypes: Array.from(typesMap.values())
             });
         }
-        req.logger.info(`🔥  Load thành công`);
-        res.status(200).json({ status: 'success', data: data })
 
+        req.logger.info(`🔥 Load thành công`);
+        res.status(200).json({ status: 'success', data });
 
     } catch (err) {
         req.logger.error("❌ Lỗi", err);
         res.status(500).json({ status: 'error', message: err.message })
     }
-})
+});
 
 
 
@@ -500,20 +552,24 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
 
         const uniqueDepartments = [...new Set(devicesToProcess.map(d => d.department).filter(Boolean))];
         const uniqueCategories = [...new Set(devicesToProcess.map(d => d.category).filter(Boolean))];
+        const uniqueDeviceModels = [...new Set(devicesToProcess.map(d => d.material).filter(Boolean))];
 
-        const [existingDepartments, existingCategories] = await Promise.all([
+
+        const [existingDepartments, existingCategories, existingDeviceModels] = await Promise.all([
             Department.find({ code: { $in: uniqueDepartments } }).lean(),
             DeviceType.find({ name: { $in: uniqueCategories } }).lean(),
+            DeviceModel.find({ name: { $in: uniqueDeviceModels } }).lean(),
         ]);
 
         const departmentMap = new Map(existingDepartments.map(d => [d.code, d._id]));
         const categoryMap = new Map(existingCategories.map(c => [c.name, c._id]));
+        const deviceModelMap = new Map(existingDeviceModels.map(c => [c.name, c._id]));
 
         const operations = [];
         const invalidRows = [];
 
         for (const row of devicesToProcess) {
-            const { department, category, ...updateData } = row;
+            const { department, category, material, ...updateData } = row;
 
             // Kiểm tra các trường bắt buộc
             if (!updateData.code) {
@@ -545,6 +601,19 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
             }
             if (categoryId) {
                 updateData.category = categoryId;
+            }
+
+            // Gán ID cho category
+            let materialId = null;
+            if (material) {
+                materialId = deviceModelMap.get(material);
+                if (!categoryId) {
+                    invalidRows.push({ row: row, error: `Chủng loại không hợp lệ: ${material}` });
+                    continue;
+                }
+            }
+            if (materialId) {
+                updateData.material = materialId;
             }
 
             // Thêm thao tác updateOne với upsert
@@ -583,17 +652,19 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         });
     }
 });
-router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const data = req.body.data
         const user = req.user
         const query = {}
-        if (user.role === "manager") {
+        if (user.role === ROLE.MANAGER) {
             query.department = user.department._id;
         }
 
         const departments = await Department.find();
         const deviceTypes = await DeviceType.find();
+        const deviceModels = await DeviceModel.find();
+
 
         const workbook = new ExcelJS.Workbook();
 
@@ -620,7 +691,7 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
             name: device?.name || '',
             vehicleNumber: device?.vehicleNumber || '',
             category: device?.category?.name || '',
-            material: device?.material || '',
+            material: device?.material?.name || '',
             fuelType: device?.fuelType || '',
             capacity: device?.capacity || '',
             power: device?.power || '',
@@ -639,11 +710,15 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
 
         const typeList = [...new Set(deviceTypes.map(p => p.name).filter(Boolean))];
         const deptList = [...new Set(departments.map(d => d.code).filter(Boolean))];
+        const modelList = [...new Set(deviceModels.map(d => d.name).filter(Boolean))];
+
 
         worksheet.getColumn('X').values = ['devicetypes', ...typeList];
         worksheet.getColumn('Y').values = ['departments', ...deptList];
+        worksheet.getColumn('Z').values = ['devicemodels', ...modelList];
         worksheet.getColumn('X').hidden = true;
         worksheet.getColumn('Y').hidden = true;
+        worksheet.getColumn('Z').hidden = true;
 
         // Áp dụng Data Validation
         const MAX = Math.max(worksheet.rowCount + 100, 1000); // dư dòng để người dùng thêm
@@ -658,6 +733,13 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
             type: 'list',
             allowBlank: true,
             formulae: [`=$Y$2:$Y$${deptList.length + 1}`], // nguồn department
+            showErrorMessage: true,
+            errorTitle: 'Giá trị không hợp lệ',
+        });
+        worksheet.dataValidations.add(`E2:E${MAX}`, {
+            type: 'list',
+            allowBlank: true,
+            formulae: [`=$Z$2:$Z$${modelList.length + 1}`], // nguồn department
             showErrorMessage: true,
             errorTitle: 'Giá trị không hợp lệ',
         });

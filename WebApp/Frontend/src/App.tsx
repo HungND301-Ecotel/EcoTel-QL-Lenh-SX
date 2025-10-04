@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
-import MainLayout from './components/MainLayout';
 import Login from './pages/auth/Login';
 import Orders from './pages/orders/Orders';
 import Devices from './pages/vehicles/Vehicles';
@@ -18,8 +17,6 @@ import api from './config/api.config';
 import { userAtom } from './atoms/userAtoms';
 import { useAtom } from 'jotai'
 import DeviceTypes from './pages/deviceTypes/DeviceTypes';
-import AdminDashboard from './pages/dashboard/AdminDashboard';
-import ManagerDashboard from './pages/dashboard/ManagerDashboard';
 import DispatcherOrders from './pages/dispatcherOrder/DispatcherOrders';
 import SafetyMeasures from './pages/safetyMeasures/SafetyMeasures';
 import Machines from './pages/machine/Machine';
@@ -28,6 +25,11 @@ import OrderByUsers from './pages/orders/OrderByUser';
 import './index.css'
 import { useSocket } from './hooks/useSocket';
 import PrivacyPolicy from './pages/PrivacyPolicy/PrivacyPolicy';
+import TravelLogs from './pages/TravelLog/TravelLog';
+import MainLayout from './components/layout/MainLayout';
+import DashBoard from './pages/dashboard/Dashboard';
+import DeviceModels from './pages/deviceModels/DeviceModels';
+import Models from './pages/model/Model';
 
 
 interface PrivateRouteProps {
@@ -87,7 +89,7 @@ const App = () => {
                     path="/"
                     element={
                         <PrivateRoute>
-                            {user?.role === "admin" ? <AdminDashboard /> : <ManagerDashboard />}
+                            <DashBoard />
                         </PrivateRoute>
                     }
                 />
@@ -144,6 +146,14 @@ const App = () => {
                     element={
                         <PrivateRoute>
                             <Machines />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/models"
+                    element={
+                        <PrivateRoute>
+                            <Models />
                         </PrivateRoute>
                     }
                 />
@@ -208,6 +218,22 @@ const App = () => {
                     element={
                         <PrivateRoute>
                             <Users />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/travelLog"
+                    element={
+                        <PrivateRoute>
+                            <TravelLogs />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/deviceModels"
+                    element={
+                        <PrivateRoute>
+                            <DeviceModels />
                         </PrivateRoute>
                     }
                 />

@@ -5,6 +5,7 @@ import 'package:soft/screens/work_log/views/Camera/camera.dart';
 import 'package:soft/screens/work_log/views/QrCode/qr_code.dart';
 import 'package:soft/screens/work_log/views/ReportTask/DirectWork/direct_work_report.dart';
 import 'package:soft/screens/work_log/views/ReportTask/IndirectWork/indirect_work_report.dart';
+import 'package:soft/screens/work_log/views/ReportTask/MaintenceWork/maintence_work_report.dart';
 import 'package:soft/screens/work_log/views/TripList/Dozer/dozer_input_quantity.dart';
 import 'package:soft/screens/work_log/views/TripList/Dozer/dozer_product_list.dart';
 import 'package:soft/screens/work_log/views/TripList/Dozer/dozer_select_product.dart';
@@ -14,7 +15,6 @@ import 'package:soft/screens/work_log/views/TripList/Drilling/drilling_product_l
 import 'package:soft/screens/work_log/views/TripList/Drilling/drilling_select_product.dart';
 import 'package:soft/screens/work_log/views/TripList/Drilling/drilling_select_vehicle.dart';
 import 'package:soft/screens/work_log/views/TripList/Excavator/excavator_select_material.dart';
-import 'package:soft/screens/work_log/views/TripList/Excavator/excavator_trip_count.dart';
 import 'package:soft/screens/work_log/views/TripList/Excavator/excavator_trip_list.dart';
 import 'package:soft/screens/work_log/views/TripList/Excavator/excavator_select_vehicle.dart';
 import 'package:soft/screens/work_log/views/TripList/ServiceVehicle/service_vehicle_select_end_point.dart';
@@ -26,7 +26,6 @@ import 'package:soft/screens/work_log/views/TripList/ServiceVehicle/service_vehi
 import 'package:soft/screens/work_log/views/TripList/Vehicle/vehicle_select_destination.dart';
 import 'package:soft/screens/work_log/views/TripList/Vehicle/vehicle_select_excavator.dart';
 import 'package:soft/screens/work_log/views/TripList/Vehicle/vehicle_select_vehicle.dart';
-import 'package:soft/screens/work_log/views/TripList/Vehicle/vehicle_trip_count.dart';
 import 'package:soft/screens/work_log/views/TripList/Vehicle/vehicle_select_material.dart';
 import 'package:soft/screens/work_log/views/task_detail_page.dart';
 import 'package:soft/screens/work_log/views/task_list_page.dart';
@@ -91,10 +90,6 @@ class WorkLogRoute extends StatelessWidget {
             return MaterialPageRoute(
               builder: (_) => VehicleSelectMaterial(),
             );
-          case WorkLogRoutes.vehicleTripCount:
-            return MaterialPageRoute(
-              builder: (_) => VehicleTripCount(),
-            );
           //Excavator
           case WorkLogRoutes.excavatorTripList:
             final orderId = settings.arguments as String;
@@ -110,10 +105,6 @@ class WorkLogRoute extends StatelessWidget {
           case WorkLogRoutes.excavatorSelectMaterial:
             return MaterialPageRoute(
               builder: (_) => ExcavatorSelectMaterial(),
-            );
-          case WorkLogRoutes.excavatorTripCount:
-            return MaterialPageRoute(
-              builder: (_) => ExcavatorTripCount(),
             );
           //Drilling
           case WorkLogRoutes.drillingProductList:
@@ -190,14 +181,19 @@ class WorkLogRoute extends StatelessWidget {
           case WorkLogRoutes.directWorkReport:
             final order = settings.arguments as OrderModel;
             return MaterialPageRoute(
-              builder:
-                  (_) => DirectWorkeport(order: order),
+              builder: (_) => DirectWorkeport(order: order),
             );
           case WorkLogRoutes.indirectWorkReport:
             final order = settings.arguments as OrderModel;
             return MaterialPageRoute(
               builder:
                   (_) => IndirectWorkReport(order: order),
+            );
+          case WorkLogRoutes.maintencetWorkReport:
+            final order = settings.arguments as OrderModel;
+            return MaterialPageRoute(
+              builder:
+                  (_) => MaintenceWorkReport(order: order),
             );
           default:
             return MaterialPageRoute(
@@ -278,4 +274,6 @@ class WorkLogRoutes {
       '/directWorkReport';
   static const String indirectWorkReport =
       '/indirectWorkReport';
+  static const String maintencetWorkReport =
+      '/maintencetWorkReport';
 }

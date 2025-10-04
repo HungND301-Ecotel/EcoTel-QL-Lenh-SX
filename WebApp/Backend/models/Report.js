@@ -40,7 +40,8 @@ const Report = new mongoose.Schema({
     },
     distanceKm: {
         type: Number,
-    }
+    },
+    quantityUpdateTimes: [{ type: Date }],
 }, {
     timestamps: true
 })

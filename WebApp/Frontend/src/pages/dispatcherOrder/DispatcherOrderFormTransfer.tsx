@@ -24,18 +24,9 @@ import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../compon
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import { StyledPopper } from '../../ui/poppers';
+import { dispatcherOrderValidationSchema } from '../../utils/validation';
 
 
-const validationSchema = yup.object({
-    usersAndDepartments: yup.array().of(
-        yup.object().shape({
-            assignedTo: yup.string().required('Vui lòng chọn thẻ lương'),
-            department: yup.string(),
-        })
-    ),
-    workingDate: yup.string().required('Vui lòng chọn ngày làm việc'),
-    workContent: yup.string().required('Vui lòng nhập nội dung'),
-});
 interface OrderFormProps {
     initialValues: any[];
     onCancel: () => void;
@@ -85,7 +76,7 @@ const DispatcherOrderFormTransfer: React.FC<OrderFormProps> = ({
             status: initialValues[0].status,
         },
         enableReinitialize: true, // Để cập nhật lại giá trị khi initialValues thay đổi
-        validationSchema,
+        validationSchema:dispatcherOrderValidationSchema,
         onSubmit: async (values) => {
 
             const orders: Partial<Order>[] = values.usersAndDepartments.map((item) => (

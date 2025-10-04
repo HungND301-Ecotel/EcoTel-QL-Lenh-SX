@@ -5,6 +5,8 @@ import 'package:soft/models/task_model.dart';
 import 'package:soft/providers/user_provider.dart';
 import 'package:soft/screens/task_assignment/task_assignment_type_transfer/dispatcher_assignment_transfer.dart';
 import 'package:soft/screens/task_assignment/task_assignment_type_transfer/task_assignment_common_transfer.dart';
+import 'package:soft/screens/task_assignment/task_assignment_type_transfer/task_assignment_excavator_transfer.dart';
+import 'package:soft/screens/task_assignment/task_assignment_type_transfer/task_assignment_maintence_transfer.dart';
 import 'package:soft/screens/task_assignment/task_assignment_type_transfer/task_assignment_other_transfer.dart';
 import 'package:soft/screens/task_assignment/task_assignment_type_transfer/task_assignment_vehicle_transfer.dart';
 
@@ -22,7 +24,8 @@ class TaskAssignmentTransfer extends StatefulWidget {
       _TaskAssignmentTransfer();
 }
 
-class _TaskAssignmentTransfer extends State<TaskAssignmentTransfer> {
+class _TaskAssignmentTransfer
+    extends State<TaskAssignmentTransfer> {
   Widget _getBody() {
     final type = widget.data.type;
 
@@ -33,10 +36,19 @@ class _TaskAssignmentTransfer extends State<TaskAssignmentTransfer> {
           order: widget.order,
         );
       case 'Vận hành xúc':
+        return TaskAssignmentExcavatorTransfer(
+          data: widget.data,
+          order: widget.order,
+        );
       case 'Vận hành khoan':
       case 'Vận hành gạt':
       case 'Vận hành xe phục vụ':
         return TaskAssignmentCommonAddTransfer(
+          data: widget.data,
+          order: widget.order,
+        );
+      case 'Sửa chữa, bảo dưỡng':
+        return TaskAssignmentMaintenceTransfer(
           data: widget.data,
           order: widget.order,
         );
@@ -50,11 +62,10 @@ class _TaskAssignmentTransfer extends State<TaskAssignmentTransfer> {
 
   @override
   Widget build(BuildContext context) {
-    final user =
-        Provider.of<UserProvider>(
-          context,
-          listen: false,
-        ).user;
+    final user = Provider.of<UserProvider>(
+      context,
+      listen: false,
+    ).user;
     final role = user?.role;
     return Scaffold(
       appBar: AppBar(
@@ -72,13 +83,12 @@ class _TaskAssignmentTransfer extends State<TaskAssignmentTransfer> {
           color: Colors.white, // Màu icon trên AppBar
         ),
       ),
-      body:
-          role == "dispatcher"
-              ? DispatcherAssignmentTransfer(
-                data: widget.data,
-                order: widget.order,
-              )
-              : _getBody(),
+      body: role == "dispatcher"
+          ? DispatcherAssignmentTransfer(
+              data: widget.data,
+              order: widget.order,
+            )
+          : _getBody(),
     );
   }
 }
