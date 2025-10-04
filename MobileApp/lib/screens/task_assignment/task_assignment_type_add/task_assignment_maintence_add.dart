@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:soft/models/order_model.dart';
+import 'package:soft/models/safety_measure_model.dart';
 import 'package:soft/models/shift_model.dart';
 import 'package:soft/models/task_model.dart';
 import 'package:soft/models/user_model.dart';
@@ -8,6 +9,7 @@ import 'package:soft/routes/app_routes.dart';
 import 'package:soft/routes/task_assignment_route.dart';
 import 'package:soft/screens/work_log/widgets/shift_select.dart';
 import 'package:soft/services/order_service.dart';
+import 'package:soft/services/safety_measure_service.dart';
 import 'package:soft/widgets/all_device_button.dart';
 import 'package:soft/widgets/date_picker_button.dart';
 import 'package:soft/widgets/pay_roll_input.dart';
@@ -38,32 +40,139 @@ class _TaskAssignmentMaintenceAdd
   ShiftModel? _shift;
   String? _shiftHour;
 
+  List<SafetyMeasureModel> _allSafetyMeasures = [];
+  String _jobSafetyContent = "";
+  String _userSafetyContent = "";
+
+  void _updateCombinedSafetyMeasures() {
+    // Tách các dòng thành danh sách và loại bỏ khoảng trắng, dòng trống
+    final jobMeasures = _jobSafetyContent
+        .split('\n')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+    final userMeasures = _userSafetyContent
+        .split('\n')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    // Sử dụng Set để có các biện pháp an toàn duy nhất
+    final allMeasures = <String>{
+      ...jobMeasures,
+      ...userMeasures,
+    };
+
+    // Nối các biện pháp an toàn thành một chuỗi và cập nhật controller
+    _safetyController.text = allMeasures.join('\n');
+  }
+
+  final SafetyMeasureService _safetyMeasureService =
+      SafetyMeasureService();
+  void getAllSafetyMeasure() async {
+    var result =
+        await _safetyMeasureService.getAllSafetyMeasure();
+
+    if (!mounted) return;
+    if (result['status'] == 'error') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      final data = (result['data'] as List)
+          .map((e) => SafetyMeasureModel.fromJson(e))
+          .toList();
+      setState(() {
+        _allSafetyMeasures = data;
+      });
+
+      // lúc đầu check theo job như cũ
+      final matchedJobs = _allSafetyMeasures.where(
+        (m) =>
+            m.job?.any((j) => j.id == widget.data.id) ??
+            false,
+      );
+
+      if (matchedJobs.isNotEmpty) {
+        _jobSafetyContent =
+            matchedJobs.map((m) => m.content).join('\n');
+      }
+      _updateCombinedSafetyMeasures();
+    }
+  }
+
+  void _updateSafetyByFirstUser() {
+    if (_allSafetyMeasures.isEmpty) return;
+
+    if (user == null) {
+      // Nếu người dùng không có, xóa nội dung cũ và cập nhật
+      setState(() {
+        _userSafetyContent = "";
+        _updateCombinedSafetyMeasures();
+      });
+      return;
+    }
+
+    final userPositionId = user?.position?.id;
+    if (userPositionId == null) {
+      // Nếu không có vị trí, xóa nội dung người dùng cũ
+      setState(() {
+        _userSafetyContent = "";
+        _updateCombinedSafetyMeasures();
+      });
+      return;
+    }
+
+    // Tìm kiếm TẤT CẢ biện pháp an toàn theo vị trí của người dùng
+    final matchedUserMeasures = _allSafetyMeasures.where((
+      m,
+    ) {
+      return m.position?.any(
+            (p) => p.id == userPositionId,
+          ) ??
+          false;
+    });
+
+    setState(() {
+      if (matchedUserMeasures.isNotEmpty) {
+        // Gộp nội dung của tất cả các biện pháp an toàn của người dùng
+        _userSafetyContent = matchedUserMeasures
+            .map((m) => m.content)
+            .join('\n');
+      } else {
+        _userSafetyContent = "";
+      }
+      // Cuối cùng, cập nhật TextField
+      _updateCombinedSafetyMeasures();
+    });
+  }
+
   @override
   void initState() {
     super.initState();
+    getAllSafetyMeasure();
     _selectedDateTime = DateTime.now();
     if (widget.order != null) {
       final order = widget.order!;
       if (order.repairVehicles != null &&
           order.repairVehicles!.isNotEmpty) {
-        deviceAndNote =
-            order.repairVehicles!.map((repair) {
-              return {
-                "device":
-                    repair
-                        .device
-                        ?.id, // hoặc repair.device nếu bạn cần object
-                "note": repair.note ?? '',
-              };
-            }).toList();
-        _noteControllers =
-            order.repairVehicles!
-                .map(
-                  (e) => TextEditingController(
-                    text: e.note ?? "",
-                  ),
-                )
-                .toList();
+        deviceAndNote = order.repairVehicles!.map((repair) {
+          return {
+            "device": repair.device
+                ?.id, // hoặc repair.device nếu bạn cần object
+            "note": repair.note ?? '',
+          };
+        }).toList();
+        _noteControllers = order.repairVehicles!
+            .map(
+              (e) => TextEditingController(
+                text: e.note ?? "",
+              ),
+            )
+            .toList();
       } else {
         deviceAndNote = [
           {"device": null, "note": ''},
@@ -134,7 +243,7 @@ class _TaskAssignmentMaintenceAdd
       final hour = int.tryParse(parts[0]) ?? 0;
       final minute =
           int.tryParse(parts.length > 1 ? parts[1] : '0') ??
-          0;
+              0;
       initialTime = TimeOfDay(hour: hour, minute: minute);
     } else {
       initialTime = TimeOfDay.now();
@@ -170,6 +279,7 @@ class _TaskAssignmentMaintenceAdd
     setState(() {
       user = selectedUser;
     });
+    _updateSafetyByFirstUser();
   }
 
   final TextEditingController _descriptionController =
@@ -190,11 +300,10 @@ class _TaskAssignmentMaintenceAdd
     String safetyMeasureSpecific =
         _safetySpecificController.text.trim();
 
-    List<String> vehicleIds =
-        vehicle
-            .where((v) => v != null && v.isNotEmpty)
-            .cast<String>()
-            .toList();
+    List<String> vehicleIds = vehicle
+        .where((v) => v != null && v.isNotEmpty)
+        .cast<String>()
+        .toList();
     List<Map<String, dynamic>> repairVehicles =
         deviceAndNote
             .where(
@@ -209,12 +318,11 @@ class _TaskAssignmentMaintenceAdd
             .toList();
     var result = await _orderService.createOrder({
       "job": widget.data.id,
-      "workingDate":
-          DateTime.utc(
-            _selectedDateTime!.year,
-            _selectedDateTime!.month,
-            _selectedDateTime!.day,
-          ).toIso8601String(),
+      "workingDate": DateTime.utc(
+        _selectedDateTime!.year,
+        _selectedDateTime!.month,
+        _selectedDateTime!.day,
+      ).toIso8601String(),
       "shift": _shift?.id,
       "shiftHour": _shiftHour,
       "assignedTo": user?.id,
@@ -305,37 +413,38 @@ class _TaskAssignmentMaintenceAdd
                 ),
                 ...(vehicle.isEmpty
                     ? <Widget>[
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          bottom: 8.0,
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: 8.0,
+                          ),
+                          child: VehicleButton(
+                            vehicle: null,
+                            onSelectVehicle: (selected) {
+                              setState(() {
+                                vehicle = [
+                                  selected,
+                                ]; // Khởi tạo danh sách mới
+                              });
+                            },
+                          ),
                         ),
-                        child: VehicleButton(
-                          vehicle: null,
-                          onSelectVehicle: (selected) {
-                            setState(() {
-                              vehicle = [
-                                selected,
-                              ]; // Khởi tạo danh sách mới
-                            });
-                          },
-                        ),
-                      ),
-                    ]
+                      ]
                     : List.generate(vehicle.length, (
-                      index,
-                    ) {
-                      return Padding(
-                        padding: const EdgeInsets.only(
-                          bottom: 8.0,
-                        ),
-                        child: VehicleButton(
-                          vehicle: vehicle[index],
-                          onSelectVehicle: (selected) {
-                            _updateVehicle(index, selected);
-                          },
-                        ),
-                      );
-                    })),
+                        index,
+                      ) {
+                        return Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: 8.0,
+                          ),
+                          child: VehicleButton(
+                            vehicle: vehicle[index],
+                            onSelectVehicle: (selected) {
+                              _updateVehicle(
+                                  index, selected);
+                            },
+                          ),
+                        );
+                      })),
                 Column(
                   crossAxisAlignment:
                       CrossAxisAlignment.start,
@@ -382,7 +491,8 @@ class _TaskAssignmentMaintenceAdd
                                 Expanded(
                                   child: AllDeviceButton(
                                     vehicle:
-                                        deviceAndNote[index]["device"],
+                                        deviceAndNote[index]
+                                            ["device"],
                                     onSelectVehicle: (
                                       selected,
                                     ) {
@@ -399,12 +509,12 @@ class _TaskAssignmentMaintenceAdd
                                       setState(() {
                                         deviceAndNote
                                             .removeAt(
-                                              index,
-                                            );
+                                          index,
+                                        );
                                         _noteControllers
                                             .removeAt(
-                                              index,
-                                            );
+                                          index,
+                                        );
                                       });
                                     },
                                     icon: Icon(
@@ -425,12 +535,11 @@ class _TaskAssignmentMaintenceAdd
                                 border:
                                     OutlineInputBorder(),
                               ),
-                              onChanged:
-                                  (val) =>
-                                      _updateRepairNote(
-                                        index,
-                                        val,
-                                      ),
+                              onChanged: (val) =>
+                                  _updateRepairNote(
+                                index,
+                                val,
+                              ),
                             ),
                           ],
                         ),
@@ -438,7 +547,6 @@ class _TaskAssignmentMaintenceAdd
                     }),
                   ],
                 ),
-
                 Text(
                   'Nội dung công việc',
                   style: TextStyle(
@@ -490,8 +598,7 @@ class _TaskAssignmentMaintenceAdd
                           setState(() {
                             // Kiểm tra nếu TextField không rỗng, thêm dấu xuống dòng
                             if (_safetyController
-                                .text
-                                .isNotEmpty) {
+                                .text.isNotEmpty) {
                               _safetyController.text +=
                                   '\n';
                             }

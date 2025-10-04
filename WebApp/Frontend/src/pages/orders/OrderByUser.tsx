@@ -41,6 +41,8 @@ import {
     InfoOutlined,
     SyncAlt,
     Settings,
+    Visibility,
+    VisibilityOff,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -59,6 +61,7 @@ const OrderByUsers: React.FC = () => {
     const [endTime, setEndTime] = useState<Dayjs | null>(null);
     const [status, setStatus] = useState('')
     const [selectedRow, setSelectedRow] = useState<any | null>(null);
+    const [info, setInfo] = useState(false);
 
     const queryClient = useQueryClient();
     const [paginationModel, setPaginationModel] = useState({
@@ -266,11 +269,27 @@ const OrderByUsers: React.FC = () => {
                     <ListItemText primary={`Đã kết thúc (${statusCounts.completed})`} sx={{ color: 'red' }} />
                 </Box>
             </Box>
-            <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
-                <Typography variant="h4">Bảng lệnh sản xuất</Typography>
-                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                    <Settings sx={{ fontSize: 30 }} />
-                </IconButton>
+            <Box display="flex" justifyContent="space-between" sx={{ mb: 2, mt: 2 }}>
+                <Box display="flex" alignItems='center'>
+                    <Typography variant="h4">Bảng lệnh sản xuất</Typography>
+                    <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                        <Settings sx={{ fontSize: 30 }} />
+                    </IconButton>
+                </Box>
+                <Button
+                    variant="outlined"
+                    color="info"
+                    startIcon={info ? <VisibilityOff /> : <Visibility />}
+                    onClick={() => setInfo(!info)}
+                    sx={{
+                        textTransform: 'none',
+                        borderRadius: 2,
+                        px: 1.5,
+                        py: 0.75,
+                    }}
+                >
+                    {info ? 'Mở rộng' : 'Thu gọn'}
+                </Button>
                 <Menu
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}
@@ -285,7 +304,7 @@ const OrderByUsers: React.FC = () => {
                 </Menu>
             </Box>
             <Grid container spacing={2} sx={{ mb: 2 }}>
-                <Grid item xs={12} sm={8}>
+                <Grid item xs={12} sm={info ? 8 : 12}>
                     <DataGrid
                         columns={orderColumns.filter((col: GridColDef) => col.field && visibleColumns.includes(col.field.toString()))}
                         rows={orderByUser}
@@ -374,10 +393,23 @@ const OrderByUsers: React.FC = () => {
                             },
                         }} />
                 </Grid>
-                <Grid item xs={12} sm={4}>
-                    <Box sx={{ position: 'sticky', top: 0, maxHeight: '80vh', overflowY: 'auto', border: '1px solid #ccc', borderRadius: 2, p: 2 }}>
-                        <Typography variant="h6" sx={{ mb: 2 }}>Thông tin lệnh sản xuất</Typography>
-                        {selectedRow ? (
+                {info && <Grid item xs={12} sm={4}>
+                    <Box
+                        sx={{
+                            position: 'sticky',
+                            top: 0,
+                            maxHeight: '80vh',
+                            overflowY: 'auto',
+                            border: '1px solid #ccc',
+                            borderRadius: 2,
+                            p: 1.5, // Giảm padding một chút để phù hợp với cột nhỏ hơn
+                            transition: 'width 0.3s ease-in-out, background-color 0.3s ease-in-out', // Thêm hiệu ứng chuyển đổi
+                        }}
+                    >
+                        <Box display="flex" justifyContent={info ? 'space-between' : 'center'} alignItems="flex-start" flexDirection={info ? 'row' : 'column'}>
+                            {info && <Typography variant="h6" sx={{ mb: 2, fontSize: '1.2rem' }}>Thông tin lệnh sản xuất</Typography>}
+                        </Box>
+                        {info && selectedRow ? (
                             <Box>
                                 <Typography sx={{ display: 'flex', gap: 3 }}>
                                     <Typography><strong>Đơn vị: </strong>{selectedRow.assignedTo?.department?.code}</Typography>
@@ -427,11 +459,9 @@ const OrderByUsers: React.FC = () => {
                                             selectedRow.status === 'completed' ? 'Đã hoàn thành' :
                                                 selectedRow.status === 'warning' ? 'Lỗi' : "Đã hủy"}</Typography>
                             </Box>
-                        ) : (
-                            <Typography>Chọn một lệnh sản xuất để xem chi tiết</Typography>
-                        )}
+                        ) : null}
                     </Box>
-                </Grid>
+                </Grid>}
             </Grid >
         </Box >
     );

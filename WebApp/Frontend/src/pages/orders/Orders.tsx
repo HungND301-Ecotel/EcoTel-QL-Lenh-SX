@@ -54,6 +54,7 @@ import {
     ExpandMore,
     FilterTiltShiftSharp,
     RotateLeft,
+    VisibilityOff,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -95,6 +96,8 @@ const Orders: React.FC = () => {
     const [user] = useAtom(userAtom)
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
+    const [info, setInfo] = useState(false);
+
     const formRef = useRef<HTMLDivElement>(null);
 
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
@@ -759,21 +762,37 @@ const Orders: React.FC = () => {
                     <ListItemText primary={`Đã hủy (${statusCounts.cancel})`} sx={{ color: 'purple' }} />
                 </Box>
             </Box>
-            <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
-                <Typography variant="h4">Bảng lệnh sản xuất</Typography>
-                <IconButton onClick={() => refetchOrder()} disabled={isLoading}>
-                    {isLoading ? (
-                        <CircularProgress size={24} />
-                    ) : (
-                        <RotateLeft
-                            sx={{
-                                transition: "transform 0.3s ease",
-                                "&:hover": { transform: "rotate(-180deg)" }, // xoay khi hover
-                                color: "primary.main",
-                            }}
-                        />
-                    )}
-                </IconButton>
+            <Box display="flex" justifyContent="space-between" sx={{ mb: 2, mt: 2 }}>
+                <Box display="flex" alignItems='center'>
+                    <Typography variant="h4">Bảng lệnh sản xuất</Typography>
+                    <IconButton onClick={() => refetchOrder()} disabled={isLoading}>
+                        {isLoading ? (
+                            <CircularProgress size={24} />
+                        ) : (
+                            <RotateLeft
+                                sx={{
+                                    transition: "transform 0.3s ease",
+                                    "&:hover": { transform: "rotate(-180deg)" }, // xoay khi hover
+                                    color: "primary.main",
+                                }}
+                            />
+                        )}
+                    </IconButton>
+                </Box>
+                <Button
+                    variant="outlined"
+                    color="info"
+                    startIcon={info ? <VisibilityOff /> : <Visibility />}
+                    onClick={() => setInfo(!info)}
+                    sx={{
+                        textTransform: 'none',
+                        borderRadius: 2,
+                        px: 1.5,
+                        py: 0.75,
+                    }}
+                >
+                    {info ? 'Mở rộng' : 'Thu gọn'}
+                </Button>
                 <Menu
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}
@@ -789,7 +808,7 @@ const Orders: React.FC = () => {
                 </Menu>
             </Box>
             <Grid container spacing={2} sx={{ mb: 2, }}>
-                <Grid item xs={12} sm={8} maxHeight='60vh'>
+                <Grid item xs={12} sm={info ? 8 : 12} maxHeight='60vh'>
                     <DataGrid
                         // rowSelection={rowSelection}
                         pageSizeOptions={[50, 100, 200, 500]}
@@ -901,10 +920,23 @@ const Orders: React.FC = () => {
                             },
                         }} />
                 </Grid>
-                <Grid item xs={12} sm={4}>
-                    <Box sx={{ position: 'sticky', top: 0, maxHeight: '80vh', overflowY: 'auto', border: '1px solid #ccc', borderRadius: 2, p: 2 }}>
-                        <Typography variant="h6" sx={{ mb: 2 }}>Thông tin lệnh sản xuất</Typography>
-                        {selectedRow ? (
+                {info && <Grid item xs={12} sm={4}>
+                    <Box
+                        sx={{
+                            position: 'sticky',
+                            top: 0,
+                            maxHeight: '80vh',
+                            overflowY: 'auto',
+                            border: '1px solid #ccc',
+                            borderRadius: 2,
+                            p: 1.5, // Giảm padding một chút để phù hợp với cột nhỏ hơn
+                            transition: 'width 0.3s ease-in-out, background-color 0.3s ease-in-out', // Thêm hiệu ứng chuyển đổi
+                        }}
+                    >
+                        <Box display="flex" justifyContent={info ? 'space-between' : 'center'} alignItems="flex-start" flexDirection={info ? 'row' : 'column'}>
+                            {info && <Typography variant="h6" sx={{ mb: 2, fontSize: '1.2rem' }}>Thông tin lệnh sản xuất</Typography>}
+                        </Box>
+                        {info && selectedRow ? (
                             <Box>
                                 <Typography sx={{ display: 'flex', gap: 3 }}>
                                     <Typography><strong>Đơn vị: </strong>{selectedRow.assignedTo?.department?.code}</Typography>
@@ -987,11 +1019,9 @@ const Orders: React.FC = () => {
                                                 selectedRow.status === 'warning' ? 'Lỗi' : "Đã hủy"}</Typography>
                                 <Typography><strong>Nội dung bàn giao ca:</strong> {selectedRow?.note}</Typography>
                             </Box>
-                        ) : (
-                            <Typography>Chọn một lệnh sản xuất để xem chi tiết</Typography>
-                        )}
+                        ) : null}
                     </Box>
-                </Grid>
+                </Grid>}
             </Grid>
             <OrderHistories open={history} setOpen={setHistory} selectedOrders={selectedOrders} setSelectedOrders={setSelectedOrders} />
             <ShiftReport open={shiftReport} setOpen={setShiftReport} initialValues={selectedOrder} />
