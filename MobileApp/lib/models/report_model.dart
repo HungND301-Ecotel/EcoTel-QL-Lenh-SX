@@ -15,6 +15,7 @@ class ReportModel {
   final num? hardnessF;
   final int? workingMinutes;
   final num? distanceKm;
+  final List<DateTime>? quantityUpdateTimes;
 
   ReportModel({
     required this.id,
@@ -29,6 +30,7 @@ class ReportModel {
     this.hardnessF,
     this.workingMinutes,
     this.distanceKm,
+    this.quantityUpdateTimes,
   });
   factory ReportModel.fromJson(Map<String, dynamic>? json) {
     return ReportModel(
@@ -48,6 +50,11 @@ class ReportModel {
       hardnessF: json?['hardnessF'],
       workingMinutes: json?['workingMinutes'],
       distanceKm: json?['distanceKm'],
+      quantityUpdateTimes:
+          (json?['quantityUpdateTimes'] as List?)
+              ?.map((e) => DateTime.parse(e).toLocal())
+              .toList() ??
+          [],
     );
   }
 }

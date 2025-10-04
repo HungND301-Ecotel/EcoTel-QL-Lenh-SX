@@ -32,6 +32,12 @@ const UploadRoutes = require('./routes/upload.routes');
 const ExportRoutes = require('./routes/export.routes');
 const ShiftRoutes = require('./routes/shift.routes');
 const ReportHistoryRoutes = require('./routes/reportHistory.routes');
+const TravelLogRoutes = require('./routes/travelLog.routes');
+const DeviceModelRoutes = require('./routes/deviceModel.routes');
+const ModelRoutes = require('./routes/model.routes');
+
+
+
 
 
 
@@ -151,6 +157,12 @@ app.use('/api/uploads', UploadRoutes);
 app.use('/api/exports', ExportRoutes);
 app.use('/api/shifts', ShiftRoutes);
 app.use('/api/reporthistories', ReportHistoryRoutes);
+app.use('/api/travellogs', TravelLogRoutes);
+app.use('/api/devicemodels', DeviceModelRoutes);
+app.use('/api/models', ModelRoutes);
+
+
+
 
 
 

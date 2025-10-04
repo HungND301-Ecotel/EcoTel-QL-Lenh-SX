@@ -38,12 +38,9 @@ import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../compon
 import { Department } from '../../types';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
+import { departmentValidationSchema } from '../../utils/validation';
+import DepartmentService from '../../services/departmentService';
 
-const validationSchema = yup.object({
-    name: yup.string().required('Vui lòng nhập tên đơn vị'),
-    code: yup.string().required('Vui lòng nhập mã đơn vị'),
-    description: yup.string(),
-});
 
 const Departments = () => {
     const [open, setOpen] = useState(false);
@@ -77,12 +74,12 @@ const Departments = () => {
 
     const { data: departments = [], isLoading } = useQuery({
         queryKey: ['departments', value],
-        queryFn: () => api.get(`/departments?code=${value}`).then(res => res.data.data),
+        queryFn: () => DepartmentService.getAll({ code: value }),
     });
 
 
     const createMutation = useMutation({
-        mutationFn: (data: any) => api.post('/departments', data).then(res => res.data),
+        mutationFn: DepartmentService.create,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['departments'] });
             showSuccessAlert('Thêm đơn vị thành công');
@@ -94,7 +91,7 @@ const Departments = () => {
     });
 
     const updateMutation = useMutation({
-        mutationFn: (data: any) => api.put(`/departments/${selectedDepartment?._id}`, data).then(res => res.data),
+        mutationFn: DepartmentService.update,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['departments'] });
             showSuccessAlert('Cập nhật đơn vị thành công');
@@ -106,7 +103,7 @@ const Departments = () => {
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (ids: string[]) => api.delete(`/departments`, { data: { ids } }).then(res => res.data.message),
+        mutationFn: DepartmentService.delete,
         onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['departments'] });
             setSelectedDepartments([]);
@@ -120,17 +117,7 @@ const Departments = () => {
     const [progress, setProgress] = useState(0)
     const [isUploading, setIsUploading] = useState(false);
     const importFile = useMutation({
-        mutationFn: (formData: FormData) =>
-            api.post('/departments/importFile', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-                onUploadProgress: (progressEvent) => {
-
-                    const percent = Math.round(
-                        (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
-                    );
-                    setProgress(percent);
-                }
-            }).then(res => res.data.message),
+        mutationFn: (formData: FormData) => DepartmentService.importFile(formData, setProgress),
         onMutate: () => {
             setIsUploading(true);
             setProgress(0); // Reset tiến trình khi bắt đầu
@@ -148,25 +135,7 @@ const Departments = () => {
     });
 
     const exportExcel = useMutation({
-        mutationFn: () => {
-            return api.post('/departments/exportFile', {}, {
-                responseType: 'blob',
-            }).then(res => {
-                const blob = new Blob([res.data], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                });
-
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', `*.xlsx`);
-
-                document.body.appendChild(link);
-                link.click();
-                link.parentNode?.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            });
-        },
+        mutationFn: DepartmentService.exportFile,
         onSuccess: () => { },
         onError: (error: any) => {
             showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
@@ -179,10 +148,10 @@ const Departments = () => {
             code: '',
             description: '',
         },
-        validationSchema,
+        validationSchema: departmentValidationSchema,
         onSubmit: (values) => {
             if (selectedDepartment) {
-                updateMutation.mutate(values);
+                updateMutation.mutate({ ...values, _id: selectedDepartment?._id });
             } else {
                 createMutation.mutate(values);
             }

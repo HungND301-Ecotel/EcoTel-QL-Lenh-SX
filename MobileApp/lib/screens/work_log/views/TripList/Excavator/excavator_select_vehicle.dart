@@ -20,6 +20,7 @@ class _ExcavatorSelectVehicle
   bool _isLoading = true;
   final List<DeviceModel> devices = [];
   final DeviceService _deviceService = DeviceService();
+  Set<String> _selectedDevices = {};
 
   void getAllDevice() async {
     var result = await _deviceService.getAllCar();
@@ -42,6 +43,37 @@ class _ExcavatorSelectVehicle
               .toList(),
         );
       });
+      final order = Provider.of<ReportDraftProvider>(
+        context,
+        listen: false,
+      ).order;
+      if (order?.assignedVehicles != null &&
+          order!.assignedVehicles!.isNotEmpty) {
+        // Lấy danh sách id từ assignedVehicles
+        final selectedIds = order.assignedVehicles!
+            .map((m) => m.id)
+            .toSet();
+
+        Provider.of<ReportDraftProvider>(context,
+                listen: false)
+            .devices = selectedIds.toList();
+
+        setState(() {
+          _selectedDevices = selectedIds;
+
+          // Sắp xếp: xe đã chọn nằm lên trên
+          devices.sort((a, b) {
+            if (selectedIds.contains(a.id) &&
+                !selectedIds.contains(b.id)) {
+              return -1;
+            } else if (!selectedIds.contains(a.id) &&
+                selectedIds.contains(b.id)) {
+              return 1;
+            }
+            return 0;
+          });
+        });
+      }
     }
     setState(() {
       _isLoading = false;
@@ -70,34 +102,35 @@ class _ExcavatorSelectVehicle
     // });
   }
 
-  String? _selectedDevice;
-  void _onSelectDevice(String selectedDevice) {
+  void _onToggleDevice(String id) {
     setState(() {
-      _selectedDevice = selectedDevice;
+      if (_selectedDevices.contains(id)) {
+        _selectedDevices.remove(id); // bỏ chọn
+      } else {
+        _selectedDevices.add(id); // chọn thêm
+      }
     });
 
-    Provider.of<ReportDraftProvider>(
-      context,
-      listen: false,
-    ).setDevice(selectedDevice);
+    // cập nhật provider (nhiều phương tiện)
+    Provider.of<ReportDraftProvider>(context, listen: false)
+        .devices = _selectedDevices.toList();
   }
 
   String _searchText = '';
   @override
   Widget build(BuildContext context) {
-    List<DeviceModel> filteredItems =
-        devices
-            .where(
-              (item) => item.code.toLowerCase().contains(
+    List<DeviceModel> filteredItems = devices
+        .where(
+          (item) => item.code.toLowerCase().contains(
                 _searchText.toLowerCase(),
               ),
-            )
-            .toList();
+        )
+        .toList();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
         title: Text(
-          'Phương tiện',
+          'Xe nhận tải',
           style: TextStyle(
             color: Colors.white,
             fontSize: 18,
@@ -136,45 +169,41 @@ class _ExcavatorSelectVehicle
           ),
           Divider(height: 1),
           Expanded(
-            child:
-                _isLoading
-                    ? Center(
-                      child: CircularProgressIndicator(),
-                    )
-                    : SingleChildScrollView(
-                      child: Column(
-                        children:
-                            filteredItems
-                                .map(
-                                  (item) => ExcavatorItem(
-                                    data: item,
-                                    selected:
-                                        _selectedDevice ==
-                                        item.id,
-                                    onTap: () {
-                                      _onSelectDevice(
-                                        item.id,
-                                      );
-                                    },
-                                  ),
-                                )
-                                .toList(),
-                      ),
+            child: _isLoading
+                ? Center(
+                    child: CircularProgressIndicator(),
+                  )
+                : SingleChildScrollView(
+                    child: Column(
+                      children: filteredItems
+                          .map(
+                            (item) => ExcavatorItem(
+                              data: item,
+                              selected:
+                                  _selectedDevices.contains(
+                                item.id,
+                              ),
+                              onTap: () => _onToggleDevice(
+                                item.id,
+                              ),
+                            ),
+                          )
+                          .toList(),
                     ),
+                  ),
           ),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed:
-                  _selectedDevice == null
-                      ? null
-                      : () {
-                        Navigator.pushNamed(
-                          context,
-                          WorkLogRoutes
-                              .excavatorSelectMaterial,
-                        );
-                      },
+              onPressed: _selectedDevices.isEmpty
+                  ? null
+                  : () {
+                      Navigator.pushNamed(
+                        context,
+                        WorkLogRoutes
+                            .excavatorSelectMaterial,
+                      );
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,

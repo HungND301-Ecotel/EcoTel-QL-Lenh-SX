@@ -120,7 +120,7 @@ class _VehicleSelectVehicle
       appBar: AppBar(
         backgroundColor: Colors.blue,
         title: Text(
-          'Phương tiện',
+          'Xe nhận tải',
           style: TextStyle(
             color: Colors.white,
             fontSize: 18,

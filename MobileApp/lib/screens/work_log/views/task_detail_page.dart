@@ -55,7 +55,6 @@ class _TaskDetailPage extends State<TaskDetailPage> {
     final cachedOrderString = prefs.getString(
       'cached_order',
     );
-    print('Cached Order: $cachedOrderString');
     if (cachedOrderString != null) {
       final Map<String, dynamic> jsonMap = jsonDecode(
         cachedOrderString,
@@ -158,8 +157,8 @@ class _TaskDetailPage extends State<TaskDetailPage> {
             status == 'start'
                 ? 'Công việc đã bắt đầu'
                 : status == 'end'
-                ? 'Công việc đã kết thúc'
-                : 'Báo lỗi thành công',
+                    ? 'Công việc đã kết thúc'
+                    : 'Báo lỗi thành công',
           ),
           backgroundColor: Colors.green,
         ),
@@ -198,537 +197,635 @@ class _TaskDetailPage extends State<TaskDetailPage> {
   Widget build(BuildContext context) {
     return _isLoading
         ? Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        )
+            body:
+                Center(child: CircularProgressIndicator()),
+          )
         : Scaffold(
-          appBar: AppBar(
-            backgroundColor: Colors.blue,
-            automaticallyImplyLeading: false,
-            leading: IconButton(
-              icon: const Icon(
-                Icons.filter_list_rounded,
-                color: Colors.white,
+            appBar: AppBar(
+              backgroundColor: Colors.blue,
+              automaticallyImplyLeading: false,
+              leading: IconButton(
+                icon: const Icon(
+                  Icons.filter_list_rounded,
+                  color: Colors.white,
+                ),
+                onPressed: () {
+                  Navigator.pushNamed(
+                    context,
+                    WorkLogRoutes.taskListPage,
+                  );
+                },
               ),
-              onPressed: () {
-                Navigator.pushNamed(
-                  context,
-                  WorkLogRoutes.taskListPage,
-                );
-              },
+              actions: [
+                if (![
+                  'pending',
+                  'warning',
+                ].contains(data?.status))
+                  IconButton(
+                    onPressed: () {
+                      Navigator.pushNamed(
+                        context,
+                        WorkLogRoutes.qrCode,
+                        arguments: data,
+                      );
+                    },
+                    icon: Icon(
+                      Icons.qr_code_scanner_outlined,
+                      color: Colors.white,
+                      size: 30,
+                    ),
+                  ),
+                // if (![
+                //   'pending',
+                //   'warning',
+                // ].contains(data?.status))
+                //   IconButton(
+                //     onPressed: () {
+                //       Navigator.pushNamed(
+                //         context,
+                //         WorkLogRoutes.camera,
+                //         arguments: data,
+                //       );
+                //     },
+                //     icon: Icon(
+                //       Icons.photo_camera,
+                //       color: Colors.white,
+                //       size: 30,
+                //     ),
+                //   ),
+              ],
+              title: Text(
+                data!.job?.name ?? '',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              centerTitle: true,
             ),
-            actions: [
-              if (![
-                'pending',
-                'warning',
-              ].contains(data?.status))
-                IconButton(
-                  onPressed: () {
-                    Navigator.pushNamed(
-                      context,
-                      WorkLogRoutes.qrCode,
-                      arguments: data,
-                    );
-                  },
-                  icon: Icon(
-                    Icons.qr_code_scanner_outlined,
-                    color: Colors.white,
-                    size: 30,
+            body: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Text(
+                              'Ngày: ',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              data?.workingDate != null
+                                  ? DateFormat(
+                                      'dd/MM/yyyy',
+                                    ).format(
+                                      data!.workingDate!)
+                                  : '',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          "Ca: ${data?.shift?.name ?? ''} (${(data?.shiftHour != '' ? data?.shiftHour : data?.shift?.startTime) ?? ''})",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Text(
+                              'Người giao: ',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              data?.createdBy?.fullName ??
+                                  '', // Điền sau nếu có
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            SizedBox(width: 6),
+                            if ((data?.createdBy?.phone ??
+                                    '')
+                                .isNotEmpty)
+                              IconButton(
+                                onPressed: () {
+                                  _callPhone(
+                                    data!.createdBy!.phone!,
+                                  );
+                                },
+                                icon: Icon(Icons.phone),
+                              ),
+                          ],
+                        ),
+                        if (data?.device != null &&
+                            data!.device!.isNotEmpty)
+                          const SizedBox(height: 10),
+                        if (data?.device != null &&
+                            data!.device!.isNotEmpty)
+                          Row(
+                            children: [
+                              Text(
+                                'Phương tiện: ',
+                                style: TextStyle(
+                                  fontWeight:
+                                      FontWeight.w600,
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  (data!.device ?? [])
+                                      .map((e) => e.code)
+                                      .join(', '),
+                                  softWrap: true,
+                                  overflow:
+                                      TextOverflow.visible,
+                                ),
+                              ), // Điền sau nếu có
+                            ],
+                          ),
+                        if (data?.repairVehicles != null &&
+                            data!
+                                .repairVehicles!.isNotEmpty)
+                          Text(
+                            'Phương tiện sửa chữa: ',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        if (data?.repairVehicles != null &&
+                            data!
+                                .repairVehicles!.isNotEmpty)
+                          Column(
+                            children:
+                                data!.repairVehicles!.map((
+                              repair,
+                            ) {
+                              return Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment
+                                        .start,
+                                children: [
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment
+                                            .start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.build,
+                                            color: Colors
+                                                .orange,
+                                            size: 20,
+                                          ),
+                                          Text(
+                                            repair.device
+                                                    ?.code ??
+                                                '',
+                                          ),
+                                        ],
+                                      ),
+                                      Row(
+                                        children: [
+                                          Text(
+                                            'Tình trạng:  ',
+                                            style:
+                                                TextStyle(
+                                              fontWeight:
+                                                  FontWeight
+                                                      .w600,
+                                            ),
+                                          ),
+                                          Text(
+                                            '${repair.note}',
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              );
+                            }).toList(),
+                          ),
+                        if (data?.assignedVehicles
+                                ?.isNotEmpty ==
+                            true)
+                          const SizedBox(height: 10),
+                        if (data?.assignedVehicles
+                                ?.isNotEmpty ==
+                            true)
+                          Row(
+                            children: [
+                              Text(
+                                'Phương tiện nhận tải: ',
+                                style: TextStyle(
+                                  fontWeight:
+                                      FontWeight.w600,
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  (data!.assignedVehicles ??
+                                          [])
+                                      .map((e) => e.code)
+                                      .join(', '),
+                                  softWrap: true,
+                                  overflow:
+                                      TextOverflow.visible,
+                                ),
+                              ), // Điền sau nếu có
+                            ],
+                          ),
+                        if (data?.excavator?.isNotEmpty ==
+                            true)
+                          const SizedBox(height: 10),
+                        if (data?.excavator?.isNotEmpty ==
+                            true)
+                          Row(
+                            children: [
+                              Text(
+                                'Máy xúc: ',
+                                style: TextStyle(
+                                  fontWeight:
+                                      FontWeight.w600,
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  (data!.excavator ?? [])
+                                      .where((i) =>
+                                          i.status == true)
+                                      .map((e) =>
+                                          e.device?.code)
+                                      .join(', '),
+                                  softWrap: true,
+                                  overflow:
+                                      TextOverflow.visible,
+                                ),
+                              ), // Điền sau nếu có
+                            ],
+                          ),
+                        if (data?.material?.isNotEmpty ==
+                            true)
+                          const SizedBox(height: 10),
+                        if (data?.material?.isNotEmpty ==
+                            true)
+                          Row(
+                            children: [
+                              Text(
+                                'Vật liệu: ',
+                                style: TextStyle(
+                                  fontWeight:
+                                      FontWeight.w600,
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  (data!.material ?? [])
+                                      .map((e) => e.name)
+                                      .join(', '),
+                                  softWrap: true,
+                                  overflow:
+                                      TextOverflow.visible,
+                                ),
+                              ), // Điền sau nếu có
+                            ],
+                          ),
+                        if (data?.location?.isNotEmpty ==
+                            true)
+                          const SizedBox(height: 10),
+                        if (data?.location?.isNotEmpty ==
+                            true)
+                          Row(
+                            children: [
+                              Text(
+                                'Điểm đổ: ',
+                                style: TextStyle(
+                                  fontWeight:
+                                      FontWeight.w600,
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  (data!.location ?? [])
+                                      .map((e) => e.name)
+                                      .join(', '),
+                                  softWrap: true,
+                                  overflow:
+                                      TextOverflow.visible,
+                                ),
+                              ), // Điền sau nếu có
+                            ],
+                          ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'Nội dung công việc',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(data?.workContent ?? ''),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'Biện pháp an toàn cụ thể',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          data?.safetyMeasureSpecific ?? '',
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'Biện pháp an toàn chung',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(data?.safetyMeasure ?? ''),
+                        const SizedBox(height: 10),
+                        if (data?.note != null &&
+                            data!.note!.isNotEmpty)
+                          const Text(
+                            'Nội dung bàn giao ca',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        Text(data?.note ?? ''),
+                      ],
+                    ),
                   ),
                 ),
-              // if (![
-              //   'pending',
-              //   'warning',
-              // ].contains(data?.status))
-              //   IconButton(
-              //     onPressed: () {
-              //       Navigator.pushNamed(
-              //         context,
-              //         WorkLogRoutes.camera,
-              //         arguments: data,
-              //       );
-              //     },
-              //     icon: Icon(
-              //       Icons.photo_camera,
-              //       color: Colors.white,
-              //       size: 30,
-              //     ),
-              //   ),
-            ],
-            title: Text(
-              data?.job.name ?? '',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            centerTitle: true,
-          ),
-          body: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
+                Container(
                   padding: const EdgeInsets.all(8.0),
+                  width: double.infinity,
+                  color: Colors.white,
                   child: Column(
                     crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                        CrossAxisAlignment.stretch,
                     children: [
-                      Row(
-                        children: [
-                          const Text(
-                            'Ngày: ',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
+                      // Nếu chưa nhận lệnh
+                      if (['pending']
+                          .contains(data?.status))
+                        ElevatedButton(
+                          onPressed: () {
+                            update("start");
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                            padding:
+                                const EdgeInsets.symmetric(
+                              vertical: 15,
                             ),
                           ),
-                          Text(
-                            data?.workingDate != null
-                                ? DateFormat(
-                                  'dd/MM/yyyy',
-                                ).format(data!.workingDate)
-                                : '',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        "Ca: ${data?.shift?.name ?? ''} (${(data?.shiftHour != '' ? data?.shiftHour : data?.shift?.startTime) ?? ''})",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Text(
-                            'Người giao: ',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            data?.createdBy.fullName ??
-                                '', // Điền sau nếu có
+                          child: const Text(
+                            'Nhận lệnh',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
+                        ),
 
-                          SizedBox(width: 6),
-                          if ((data?.createdBy.phone ?? '')
-                              .isNotEmpty)
-                            IconButton(
-                              onPressed: () {
-                                _callPhone(
-                                  data!.createdBy.phone!,
-                                );
-                              },
-                              icon: Icon(Icons.phone),
+                      // Nếu chưa hoàn thành hoặc lỗi => hiển thị các nút hành động
+                      if (![
+                        'pending',
+                        'completed',
+                        'warning',
+                      ].contains(data?.status)) ...[
+                        const SizedBox(height: 8),
+                        if ([
+                          'Vận hành xúc',
+                          'Vận hành khoan',
+                          'Vận hành gạt',
+                          'Vận hành xe',
+                          'Sửa chữa, bảo dưỡng',
+                        ].contains(data!.job?.type))
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pushNamed(
+                                context,
+                                WorkLogRoutes
+                                    .addMachineAssistantPage,
+                                arguments: data,
+                              );
+                            },
+                            child: Text(
+                              data!.job?.type ==
+                                      "Vận hành xe"
+                                  ? "Lái xe bổ túc"
+                                  : data!.job?.type ==
+                                          "Sửa chữa, bảo dưỡng"
+                                      ? 'Phụ sửa chữa'
+                                      : 'Phụ máy',
                             ),
-                        ],
-                      ),
-                      if (data
-                              ?.devicesToProduce
-                              ?.isNotEmpty ??
-                          false)
-                        const SizedBox(height: 10),
-                      if (data
-                              ?.devicesToProduce
-                              ?.isNotEmpty ??
-                          false)
-                        Row(
-                          children: [
-                            Text(
-                              'Loại phương tiện: ',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
+                          ),
+                        const SizedBox(height: 8),
+                        if (typeToRoute.containsKey(
+                          data!.job?.type,
+                        ))
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pushNamed(
+                                context,
+                                typeToRoute[
+                                    data!.job?.type]!,
+                                arguments: data?.id,
+                              );
+                            },
+                            child: Text(
+                              getActionLabel(
+                                  data!.job!.type),
                             ),
-                            Text(
-                              (data?.devicesToProduce ?? [])
-                                  .map(
-                                    (e) =>
-                                        '${e.deviceType.name} - Sl:${e.quantity}',
-                                  )
-                                  .join(', '),
-                              softWrap: true,
-                              overflow:
-                                  TextOverflow.visible,
-                            ), // Điền sau nếu có
-                          ],
+                          ),
+                        const SizedBox(height: 8),
+                        ElevatedButton(
+                          onPressed: () {
+                            if ([
+                              'vận hành khoan'
+                                  .toLowerCase(),
+                              'vận hành gạt'.toLowerCase(),
+                              'vận hành xe'.toLowerCase(),
+                              'vận hành xúc'.toLowerCase(),
+                              'vận hành xe phục vụ'
+                                  .toLowerCase(),
+                            ].contains(
+                              data!.job?.type.toLowerCase(),
+                            )) {
+                              Navigator.pushNamed(
+                                context,
+                                WorkLogRoutes
+                                    .directWorkReport,
+                                arguments: data,
+                              );
+                            } else if ([
+                              'sửa chữa, bảo dưỡng'
+                                  .toLowerCase(),
+                            ].contains(
+                              data!.job?.type.toLowerCase(),
+                            )) {
+                              Navigator.pushNamed(
+                                context,
+                                WorkLogRoutes
+                                    .maintencetWorkReport,
+                                arguments: data,
+                              );
+                            } else {
+                              Navigator.pushNamed(
+                                context,
+                                WorkLogRoutes
+                                    .indirectWorkReport,
+                                arguments: data,
+                              );
+                            }
+                          },
+                          child: const Text('Báo công'),
                         ),
-                      if (data?.device != null &&
-                          data!.device!.isNotEmpty)
-                        const SizedBox(height: 10),
-                      if (data?.device != null &&
-                          data!.device!.isNotEmpty)
-                        Row(
-                          children: [
-                            Text(
-                              'Phương tiện: ',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
+                        const SizedBox(height: 8),
+                        ElevatedButton(
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (
+                                dialogContext,
+                              ) =>
+                                  AlertDialog(
+                                title: const Text(
+                                  "Xác nhận",
+                                ),
+                                content: Form(
+                                  key: _formKey,
+                                  child: Column(
+                                    mainAxisSize:
+                                        MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        data?.shiftReport !=
+                                                null
+                                            ? "Bạn muốn kết thúc công việc"
+                                            : "Bạn chưa báo công, bạn có muốn kết thúc không?",
+                                      ),
+                                      if (data?.shiftReport ==
+                                          null) ...[
+                                        const SizedBox(
+                                          height: 8,
+                                        ),
+                                        const Text(
+                                          'Nêu lí do (bắt buộc)*',
+                                          style: TextStyle(
+                                            color:
+                                                Colors.red,
+                                          ),
+                                        ),
+                                        TextFormField(
+                                          controller:
+                                              _noteController,
+                                          validator: (
+                                            value,
+                                          ) {
+                                            if (value ==
+                                                    null ||
+                                                value
+                                                    .isEmpty) {
+                                              return 'Vui lòng nhập lí do';
+                                            }
+                                            return null;
+                                          },
+                                          minLines: 3,
+                                          maxLines: null,
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(
+                                      dialogContext,
+                                    ),
+                                    child: const Text(
+                                      "Bỏ qua",
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      if (_formKey
+                                          .currentState!
+                                          .validate()) {
+                                        update(
+                                          data?.shiftReport !=
+                                                  null
+                                              ? "end"
+                                              : "warning",
+                                        );
+                                        Navigator.pop(
+                                          dialogContext,
+                                        );
+                                      }
+                                    },
+                                    child: const Text(
+                                      "Kết thúc lệnh",
+                                    ),
+                                  ),
+                                ],
                               ),
+                            );
+                          },
+                          child:
+                              const Text('Kết thúc lệnh'),
+                        ),
+                      ],
+
+                      // Nếu đã hoàn thành hoặc lỗi
+                      if ([
+                        "completed",
+                        "warning",
+                      ].contains(data?.status)) ...[
+                        const SizedBox(height: 8),
+                        ElevatedButton(
+                          onPressed: null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                            padding:
+                                const EdgeInsets.symmetric(
+                              vertical: 15,
                             ),
-                            Expanded(
-                              child: Text(
-                                (data!.device ?? [])
-                                    .map((e) => e.code)
-                                    .join(', '),
-                                softWrap: true,
-                                overflow:
-                                    TextOverflow.visible,
-                              ),
-                            ), // Điền sau nếu có
-                          ],
-                        ),
-                      if (data?.excavator?.isNotEmpty ==
-                          true)
-                        const SizedBox(height: 10),
-                      if (data?.excavator?.isNotEmpty ==
-                          true)
-                        Row(
-                          children: [
-                            Text(
-                              'Máy xúc: ',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
+                          ),
+                          child: Text(
+                            data?.status == "warning"
+                                ? "Lỗi"
+                                : "Đã kết thúc",
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
                             ),
-                            Expanded(
-                              child: Text(
-                                (data!.excavator ?? [])
-                                    .map((e) => e.code)
-                                    .join(', '),
-                                softWrap: true,
-                                overflow:
-                                    TextOverflow.visible,
-                              ),
-                            ), // Điền sau nếu có
-                          ],
-                        ),
-                      if (data?.material?.isNotEmpty ==
-                          true)
-                        const SizedBox(height: 10),
-                      if (data?.material?.isNotEmpty ==
-                          true)
-                        Row(
-                          children: [
-                            Text(
-                              'Vật liệu: ',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                (data!.material ?? [])
-                                    .map((e) => e.name)
-                                    .join(', '),
-                                softWrap: true,
-                                overflow:
-                                    TextOverflow.visible,
-                              ),
-                            ), // Điền sau nếu có
-                          ],
-                        ),
-                      if (data?.location?.isNotEmpty ==
-                          true)
-                        const SizedBox(height: 10),
-                      if (data?.location?.isNotEmpty ==
-                          true)
-                        Row(
-                          children: [
-                            Text(
-                              'Điểm đổ: ',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                (data!.location ?? [])
-                                    .map((e) => e.name)
-                                    .join(', '),
-                                softWrap: true,
-                                overflow:
-                                    TextOverflow.visible,
-                              ),
-                            ), // Điền sau nếu có
-                          ],
-                        ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Nội dung công việc',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(data?.workContent ?? ''),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Biện pháp an toàn cụ thể',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        data?.safetyMeasureSpecific ?? '',
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Biện pháp an toàn chung',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(data?.safetyMeasure ?? ''),
-                      const SizedBox(height: 10),
-                      if (data?.note != null &&
-                          data!.note!.isNotEmpty)
-                        const Text(
-                          'Nội dung bàn giao ca',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      Text(data?.note ?? ''),
+                      ],
                     ],
                   ),
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(8.0),
-                width: double.infinity,
-                color: Colors.white,
-                child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.stretch,
-                  children: [
-                    // Nếu chưa nhận lệnh
-                    if (['pending'].contains(data?.status))
-                      ElevatedButton(
-                        onPressed: () {
-                          update("start");
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                          padding:
-                              const EdgeInsets.symmetric(
-                                vertical: 15,
-                              ),
-                        ),
-                        child: const Text(
-                          'Nhận lệnh',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-
-                    // Nếu chưa hoàn thành hoặc lỗi => hiển thị các nút hành động
-                    if (![
-                      'pending',
-                      'completed',
-                      'warning',
-                    ].contains(data?.status)) ...[
-                      const SizedBox(height: 8),
-                      if ([
-                        'Vận hành xúc',
-                        'Vận hành khoan',
-                        'Vận hành gạt',
-                      ].contains(data?.job.type))
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.pushNamed(
-                              context,
-                              WorkLogRoutes
-                                  .addMachineAssistantPage,
-                              arguments: data,
-                            );
-                          },
-                          child: const Text('Phụ máy'),
-                        ),
-                      const SizedBox(height: 8),
-                      if (typeToRoute.containsKey(
-                        data?.job.type,
-                      ))
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.pushNamed(
-                              context,
-                              typeToRoute[data!.job.type]!,
-                              arguments: data?.id,
-                            );
-                          },
-                          child: Text(
-                            getActionLabel(data!.job.type),
-                          ),
-                        ),
-                      const SizedBox(height: 8),
-                      ElevatedButton(
-                        onPressed: () {
-                          if ([
-                            'vận hành khoan'.toLowerCase(),
-                            'vận hành gạt'.toLowerCase(),
-                            'vận hành xe'.toLowerCase(),
-                            'vận hành xúc'.toLowerCase(),
-                            'vận hành xe phục vụ'
-                                .toLowerCase(),
-                          ].contains(
-                            data?.job.type.toLowerCase(),
-                          )) {
-                            Navigator.pushNamed(
-                              context,
-                              WorkLogRoutes
-                                  .directWorkReport,
-                              arguments: data,
-                            );
-                          } else {
-                            Navigator.pushNamed(
-                              context,
-                              WorkLogRoutes
-                                  .indirectWorkReport,
-                              arguments: data,
-                            );
-                          }
-                        },
-                        child: const Text('Báo công'),
-                      ),
-                      const SizedBox(height: 8),
-                      ElevatedButton(
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder:
-                                (
-                                  dialogContext,
-                                ) => AlertDialog(
-                                  title: const Text(
-                                    "Xác nhận",
-                                  ),
-                                  content: Form(
-                                    key: _formKey,
-                                    child: Column(
-                                      mainAxisSize:
-                                          MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          data?.shiftReport !=
-                                                  null
-                                              ? "Bạn muốn kết thúc công việc"
-                                              : "Bạn chưa báo công, bạn có muốn kết thúc không?",
-                                        ),
-                                        if (data?.shiftReport ==
-                                            null) ...[
-                                          const SizedBox(
-                                            height: 8,
-                                          ),
-                                          const Text(
-                                            'Nêu lí do (bắt buộc)*',
-                                            style: TextStyle(
-                                              color:
-                                                  Colors
-                                                      .red,
-                                            ),
-                                          ),
-                                          TextFormField(
-                                            controller:
-                                                _noteController,
-                                            validator: (
-                                              value,
-                                            ) {
-                                              if (value ==
-                                                      null ||
-                                                  value
-                                                      .isEmpty) {
-                                                return 'Vui lòng nhập lí do';
-                                              }
-                                              return null;
-                                            },
-                                            minLines: 3,
-                                            maxLines: null,
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed:
-                                          () => Navigator.pop(
-                                            dialogContext,
-                                          ),
-                                      child: const Text(
-                                        "Bỏ qua",
-                                      ),
-                                    ),
-                                    TextButton(
-                                      onPressed: () {
-                                        if (_formKey
-                                            .currentState!
-                                            .validate()) {
-                                          update(
-                                            data?.shiftReport !=
-                                                    null
-                                                ? "end"
-                                                : "warning",
-                                          );
-                                          Navigator.pop(
-                                            dialogContext,
-                                          );
-                                        }
-                                      },
-                                      child: const Text(
-                                        "Kết thúc lệnh",
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                          );
-                        },
-                        child: const Text('Kết thúc lệnh'),
-                      ),
-                    ],
-
-                    // Nếu đã hoàn thành hoặc lỗi
-                    if ([
-                      "completed",
-                      "warning",
-                    ].contains(data?.status)) ...[
-                      const SizedBox(height: 8),
-                      ElevatedButton(
-                        onPressed: null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                          padding:
-                              const EdgeInsets.symmetric(
-                                vertical: 15,
-                              ),
-                        ),
-                        child: Text(
-                          data?.status == "warning"
-                              ? "Lỗi"
-                              : "Đã kết thúc",
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
+              ],
+            ),
+          );
   }
 }

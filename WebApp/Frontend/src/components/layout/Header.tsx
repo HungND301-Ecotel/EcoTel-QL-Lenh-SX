@@ -1,5 +1,7 @@
-// 👇 Bạn giữ nguyên các import (bỏ Drawer liên quan nếu không còn dùng)
-import React, { useState } from 'react';
+import React, { useState } from 'react'
+import api from '../../config/api.config';
+import { useAtom } from 'jotai';
+import { useQuery } from '@tanstack/react-query';
 import {
     AppBar,
     Toolbar,
@@ -23,21 +25,6 @@ import {
     MenuList,
 } from '@mui/material';
 import {
-    Notifications as NotificationsIcon,
-    VpnKeyOutlined,
-    Logout as LogoutIcon,
-    Person as PersonIcon,
-    ExpandMore,
-    MenuOpen,
-} from '@mui/icons-material';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useAtom } from 'jotai';
-import { userAtom } from '../atoms/userAtoms';
-import ChangePassword from './ChangePassword/ChangePassword';
-import Profile from './Profile/Profile';
-import { useQuery } from '@tanstack/react-query';
-import api from '../config/api.config';
-import {
     Category,
     LocationCity,
     Work,
@@ -49,23 +36,33 @@ import {
     People,
     LocalShipping,
     AssignmentInd,
+    MenuOpen,
+    ExpandMore,
+    VpnKeyOutlined,
+    Person,
+    Notifications,
+    Logout,
+    ArrowRight,
+    KeyboardArrowRight,
 } from '@mui/icons-material';
+import { userAtom } from '../../atoms/userAtoms';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import ChangePassword from '../Modal/ChangePassword';
+import Profile from '../Modal/Profile';
 
-interface MainLayoutProps {
-    children?: React.ReactNode;
-}
-
-const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
+export default function Header() {
     const navigate = useNavigate();
     const [user, setUser] = useAtom(userAtom);
     const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
     const [avatarAnchorEl, setAvatarAnchorEl] = useState<null | HTMLElement>(null);
-    const [openProfile, setOpenProfile] = useState(false);
-    const [openChangePassword, setOpenChangePassword] = useState(false);
-
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("lg"));
     const [drawerOpen, setDrawerOpen] = useState(false);
+    const [openProfile, setOpenProfile] = useState(false);
+    const [openChangePassword, setOpenChangePassword] = useState(false);
+
+    const [submenuAnchorEl, setSubmenuAnchorEl] = useState<null | HTMLElement>(null);
+    const [submenuItems, setSubmenuItems] = useState<any[]>([]);
 
     const location = useLocation()
 
@@ -82,44 +79,67 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
     const menuItems = [
         ["admin", "manager"].includes(user?.role) && {
-            text: 'Ca làm việc', icon: <Timelapse color='primary' />, path: '/shifts'
-        },
-        ["admin", "manager"].includes(user?.role) && {
-            text: 'Biện pháp an toàn', icon: <SafetyCheck color='primary' />, path: '/safetyMeasures'
-        },
-        ["admin", "manager"].includes(user?.role) && {
-            text: 'Loại vật liệu', icon: <Category color='primary' />, path: '/materials'
-        },
-        ["admin", "manager"].includes(user?.role) && {
-            text: 'Loại phương tiện', icon: <LocalOffer color='primary' />, path: '/deviceTypes'
+            text: 'Biện pháp an toàn', path: '/safetyMeasures'
         },
         ["admin", "manager", "dispatcher"].includes(user?.role) && {
-            text: 'Thông tin xe', icon: <LocalShipping color='primary' />, path: '/vehicles'
-        },
-        ["admin", "manager", "dispatcher"].includes(user?.role) && {
-            text: 'Thông tin máy', icon: <PrecisionManufacturing color='primary' />, path: '/machines'
+            text: 'Thiết bị', icon: <ArrowRight color='primary' />, path: '#',
+            submenu: [
+                { text: 'Phân loại thiết bị', path: '/deviceTypes' },
+                { text: 'Chủng loại thiết bị', path: '/deviceModels' },
+                { text: 'Thông tin xe', path: '/vehicles' },
+                { text: 'Thông tin máy', path: '/machines' },
+            ]
         },
         ["admin", "manager"].includes(user?.role) && {
-            text: 'Điểm đổ tải', icon: <LocationCity color='primary' />, path: '/locations'
+            text: 'Cung độ', path: '/travelLog'
+        },
+        ["admin", "manager", "dispatcher"].includes(user?.role) && {
+            text: 'Mô hình xe', path: '/models'
+        },
+        ["admin", "manager"].includes(user?.role) && {
+            text: 'Vật liệu', path: '/materials'
+        },
+        ["admin", "manager"].includes(user?.role) && {
+            text: 'Điểm đổ tải', path: '/locations'
+        },
+        ["admin", "manager", "dispatcher"].includes(user?.role) && {
+            text: 'Cán bộ nhân viên', icon: <People color='primary' />, path: '/users'
         },
         ["admin", "manager"].includes(user?.role) && {
             text: 'Công việc', icon: <Work color='primary' />, path: '/jobs'
         },
         ["admin", "manager"].includes(user?.role) && {
-            text: 'Chức danh nghề nghiệp', icon: <AssignmentInd color='primary' />, path: '/positions'
-        },
-        ["admin", "manager"].includes(user?.role) && {
-            text: 'Đơn vị', icon: <Business color='primary' />, path: '/departments'
+            text: 'Chức danh nghề nghiệp', path: '/positions'
         },
         ["admin", "manager", "dispatcher"].includes(user?.role) && {
-            text: 'Cán bộ nhân viên', icon: <People color='primary' />, path: '/users'
-        }
+            text: 'Đơn vị', path: '/departments'
+        },
+        ["admin", "manager"].includes(user?.role) && {
+            text: 'Ca làm việc', path: '/shifts'
+        },
     ].filter(Boolean);
-
     return (
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-            <AppBar position="fixed">
-                <Toolbar sx={{ justifyContent: 'space-between' }}>
+        <>
+            <Box
+                sx={{
+                    background: "linear-gradient(to right, #0b109aff, #709727ff, #644921ff, #0b109aff)", // màu xanh giống ảnh
+                    color: "white",
+                    py: 2,
+                    px: 3,
+                }}
+            >
+                <Box display="flex" justifyContent='center' alignItems={'center'} gap={2}>
+                    <img src="/image/logo.png" style={{ width: 100, height: 100 }} />
+                    <Typography variant="h6" sx={{
+                        fontSize: {
+                            md: 30,
+                            xs: 18
+                        },
+                    }} textAlign={'center'}>HỆ THỐNG QUẢN LÝ ĐIỀU PHỐI VÀ SỬ DỤNG MÁY MÓC THIẾT BỊ</Typography>
+                </Box>
+            </Box>
+            <AppBar position="sticky">
+                <Toolbar sx={{ justifyContent: 'space-between', }}>
                     {/* Menu chính ngang / Drawer cho mobile */}
                     {isMobile ? (
                         <>
@@ -132,10 +152,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                                 onClose={() => setDrawerOpen(false)}
                             >
                                 <List sx={{ width: 250 }}>
-                                    <Box display="flex" flexDirection={'column'} alignItems={'center'} gap={2}>
-                                        <img src="/image/logo.png" style={{ width: 60, height: 60 }} />
-                                        <Typography variant="h6" sx={{ fontSize: 12 }} textAlign={'center'}>HỆ THỐNG QUẢN LÝ ĐIỀU PHỐI VÀ SỬ DỤNG MÁY MÓC THIẾT BỊ</Typography>
-                                    </Box>
                                     <ListItem button onClick={() => { navigate('/'); setDrawerOpen(false); }}>
                                         <ListItemText primary="Tổng quan" />
                                     </ListItem>
@@ -149,11 +165,27 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                                     )}
                                     {menuItems.map((item) => {
                                         if (!item) return null;
-                                        return (
-                                            <ListItem key={item!.text} button onClick={() => { navigate(item!.path!); setDrawerOpen(false); }}>
-                                                <ListItemText primary={item!.text} />
-                                            </ListItem>
+                                        if (item.submenu) {
+                                            return (
+                                                <ListItem
+                                                    key={item.text}
+                                                    secondaryAction={<KeyboardArrowRight />}
+                                                    button
+                                                    onClick={(e) => {
+                                                        setSubmenuAnchorEl(e.currentTarget);
+                                                        setSubmenuItems(item.submenu!);
+                                                    }}
+                                                >
+                                                    <ListItemText primary={item.text} />
+                                                </ListItem>
+                                            )
+                                        }
 
+                                        // item bình thường
+                                        return (
+                                            <ListItem key={item.text} button onClick={() => navigate(item.path!)}>
+                                                <ListItemText primary={item.text} />
+                                            </ListItem>
                                         )
                                     }
 
@@ -167,11 +199,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                             </Drawer>
                         </>
                     ) : (
-                        <Box display="flex" gap={2} alignItems={'center'}>
-                            <Box display="flex" alignItems="center" gap={2}>
-                                <img src="/image/logo.png" style={{ width: 60, height: 60 }} />
-                                <Typography variant="h6">HỆ THỐNG QUẢN LÝ ĐIỀU PHỐI VÀ SỬ DỤNG MÁY MÓC THIẾT BỊ</Typography>
-                            </Box>
+                        <Box display="flex" gap={2} maxWidth='xl' justifyContent='center'>
                             <Button color="inherit" sx={{ fontSize: 20, borderBottom: location.pathname === '/' ? '5px solid red' : '' }} onClick={() => navigate('/')}>Tổng quan</Button>
                             <Button color="inherit" sx={{ fontSize: 20, borderBottom: location.pathname === '/orders' ? '5px solid red' : '' }} onClick={() => navigate('/orders')}>Lệnh sản xuất</Button>
                             {["manager"].includes(user?.role) && (
@@ -194,6 +222,21 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                                     >
                                         {menuItems.map((item) => {
                                             if (!item) return null;
+                                            if (item.submenu) {
+                                                return (
+                                                    <ListItem
+                                                        key={item.text}
+                                                        secondaryAction={<KeyboardArrowRight />}
+                                                        button
+                                                        onClick={(e) => {
+                                                            setSubmenuAnchorEl(e.currentTarget);
+                                                            setSubmenuItems(item.submenu!);
+                                                        }}
+                                                    >
+                                                        <ListItemText primary={item.text} />
+                                                    </ListItem>
+                                                )
+                                            }
                                             return (
                                                 <MenuItem key={item!.text} sx={{ borderBottom: location.pathname === item.path ? '5px solid red' : '' }} onClick={() => {
                                                     navigate(item!.path!);
@@ -219,7 +262,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                         <Tooltip title="Thông báo">
                             <IconButton color="inherit" onClick={() => navigate('/notifications')}>
                                 <Badge badgeContent={notificationCount} color="error">
-                                    <NotificationsIcon />
+                                    <Notifications />
                                 </Badge>
                             </IconButton>
                         </Tooltip>
@@ -242,7 +285,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                                     setOpenProfile(true);
                                     setAvatarAnchorEl(null);
                                 }}>
-                                    <PersonIcon sx={{ marginRight: 1 }} color="primary" fontSize="small" />
+                                    <Person sx={{ marginRight: 1 }} color="primary" fontSize="small" />
                                     Thông tin cá nhân
                                 </MenuItem>
                                 <MenuItem onClick={() => {
@@ -253,25 +296,40 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                                     Đổi mật khẩu
                                 </MenuItem>
                                 <MenuItem onClick={handleLogout}>
-                                    <LogoutIcon sx={{ marginRight: 1 }} color="primary" fontSize="small" />
+                                    <Logout sx={{ marginRight: 1 }} color="primary" fontSize="small" />
                                     Đăng xuất
                                 </MenuItem>
                             </Box>
                         </Popover>
+                        <Popover
+                            open={Boolean(submenuAnchorEl)}
+                            anchorEl={submenuAnchorEl}
+                            onClose={() => setSubmenuAnchorEl(null)}
+                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                            transformOrigin={{ vertical: 'center', horizontal: 'left' }}
+                        >
+                            <MenuList>
+                                {submenuItems.map((sub) => (
+                                    <MenuItem
+                                        key={sub.text}
+                                        onClick={() => {
+                                            navigate(sub?.path);
+                                            setSubmenuAnchorEl(null);
+                                            setDrawerOpen(false)
+                                            setMenuAnchorEl(null)
+                                        }}
+                                    >
+                                        {sub.text}
+                                    </MenuItem>
+                                ))}
+                            </MenuList>
+                        </Popover>
                     </Box>
                 </Toolbar>
-            </AppBar>
-
-            {/* Nội dung chính */}
-            <Box sx={{ flex: 1, mt: 8, p: 3 }}>
-                {children || <Outlet />}
-            </Box>
-
-            {/* Modal: Profile + Đổi mật khẩu */}
-            <ChangePassword open={openChangePassword} setOpen={setOpenChangePassword} />
-            <Profile open={openProfile} setOpen={setOpenProfile} />
-        </Box >
-    );
-};
-
-export default MainLayout;
+                {/* Modal: Profile + Đổi mật khẩu */}
+                <ChangePassword open={openChangePassword} setOpen={setOpenChangePassword} />
+                <Profile open={openProfile} setOpen={setOpenProfile} />
+            </AppBar >
+        </>
+    )
+}

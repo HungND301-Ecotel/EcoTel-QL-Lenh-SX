@@ -1,0 +1,718 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+    Box,
+    Button,
+    Card,
+    CardContent,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Grid,
+    IconButton,
+    Paper,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Typography,
+    Chip,
+    Checkbox,
+    TextField,
+    MenuItem,
+    Tooltip,
+    Autocomplete,
+    styled,
+    Popper,
+    Menu,
+    Switch,
+    ListItemText,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
+    Pagination,
+    TablePagination,
+} from '@mui/material';
+import { format } from 'date-fns';
+import {
+    Add as AddIcon,
+    Edit as EditIcon,
+    Delete as DeleteIcon,
+    Search,
+    MoreVert,
+    MoreHoriz,
+    FileDownload,
+    InfoOutlined,
+    SyncAlt,
+    Visibility,
+    CancelOutlined,
+    Settings,
+    ExpandMore,
+    FilterTiltShiftSharp,
+    Download,
+    UploadFile,
+} from '@mui/icons-material';
+import { useFormik } from 'formik';
+import * as yup from 'yup';
+import api from '../../config/api.config';
+import { Device, Location, TravelLog } from '../../types';
+import { DatePicker, DateTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs, { Dayjs } from 'dayjs';
+import { useSocket } from '../../hooks/useSocket';
+import ShiftReport from '../../components/Modal/ShiftReport';
+import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
+import { useAtom } from 'jotai';
+import { userAtom } from '../../atoms/userAtoms';
+import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { Table, TableColumnsType, TableProps } from 'antd';
+import { TableRowSelection } from 'antd/es/table/interface';
+import { trvelLogValidationSchema } from '../../utils/validation';
+import TravelLogService from '../../services/travelLogService';
+const StyledPopper = styled(Popper)({
+    '& .MuiAutocomplete-listbox': {
+        maxHeight: '300px',
+        overflowY: 'auto',
+    },
+});
+
+const TravelLogs: React.FC = () => {
+    const [open, setOpen] = useState(false);
+    const [startTime, setStartTime] = useState<Dayjs | null>(null);
+    const [endTime, setEndTime] = useState<Dayjs | null>(null);
+    const [selectedTravelLog, setSelectedTravelLog] = useState<any | null>(null);
+    const [selectedTravelLogs, setSelectedTravelLogs] = useState<any[]>([]);
+    const [user] = useAtom(userAtom)
+    const queryClient = useQueryClient();
+    const [expanded, setExpanded] = useState(false);
+    const formRef = useRef<HTMLDivElement>(null);
+
+    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
+
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(50);
+    const [total, setTotal] = useState(0);
+    const [travelLogs, setTravelLogs] = useState<any[]>([]);
+
+    const defaultColumns = [
+        { id: 'number', label: 'STT' },
+        { id: 'excavator', label: 'Máy xúc' },
+        { id: 'location', label: 'Điểm đổ tải' },
+        { id: 'distance', label: 'Cung độ (km)' },
+        { id: 'startTime', label: 'Bắt đầu' },
+        { id: 'endTime', label: 'Kết thúc' },
+        { id: 'note', label: 'Ghi chú' },
+        { id: 'edit', label: 'Sửa' },
+    ]
+    const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
+
+    const handleToggleColumn = (id: string) => {
+        setVisibleColumns(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
+    }
+
+
+    const [serverFilters, setServerFilters] = useState<any>({});
+    const { data: excavators = [] } = useQuery({
+        queryKey: ['excavators'],
+        queryFn: () => api.get('/devices/excavators/all').then(res => res.data.data),
+    });
+    const { data: locations = [] } = useQuery({
+        queryKey: ['locations'],
+        queryFn: () => api.get('/locations').then(res => res.data.data),
+    });
+    const { data, isLoading } = useQuery({
+        queryKey: ['travellogs', page, pageSize, startTime, endTime],
+        queryFn: () => TravelLogService.getAll({
+            page: page,
+            limit: pageSize,
+            startTime: startTime ? startTime.toISOString() : '',
+            endTime: endTime ? endTime.toISOString() : '',
+        })
+    })
+    useEffect(() => {
+        if (data) {
+            setTravelLogs(data.data);
+            setTotal(data.totalDocs);
+        }
+    }, [data]);
+
+    const createMutation = useMutation({
+        mutationFn: TravelLogService.create,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['travellogs'] });
+            handleClose();
+        },
+        onError: (error: any) => {
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
+        }
+    });
+
+    const [progress, setProgress] = useState(0)
+    const [isUploading, setIsUploading] = useState(false);
+    const importFile = useMutation({
+        mutationFn: (formData: FormData) => TravelLogService.importFile(formData, setProgress),
+        onMutate: () => {
+            setIsUploading(true);
+            setProgress(0); // Reset tiến trình khi bắt đầu
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['safetyMeasures'] });
+            setIsUploading(false);
+            let combinedMessage = `Import dữ liệu hoàn tất. Đã xử lý ${data.summary.totalProcessed} bản ghi.`;
+            combinedMessage += `\nĐã thêm mới: ${data.summary.insertedCount}`;
+            combinedMessage += `\nĐã cập nhật: ${data.summary.updatedCount}`;
+
+            // Thêm chi tiết lỗi nếu có
+            if (data.invalidRows && data.invalidRows.length > 0) {
+                combinedMessage += `\n\n--- CÓ LỖI XẢY RA TRONG QUÁ TRÌNH IMPORT ---`;
+                combinedMessage += `\n${data.invalidRows.length} bản ghi không hợp lệ:`;
+
+                // Liệt kê chi tiết một vài lỗi đầu tiên
+                data.invalidRows.slice(0, 5).forEach((item: any, index: number) => {
+                    combinedMessage += `\n- Dòng ${index + 1}: Lỗi "${item.error}"`;
+                });
+
+                // Thông báo nếu còn nhiều lỗi hơn
+                if (data.invalidRows.length > 5) {
+                    combinedMessage += `\n... và ${data.invalidRows.length - 5} lỗi khác.`;
+                }
+            }
+
+            showSuccessAlert(combinedMessage);
+            handleClose()
+        },
+        onError: (error: any) => {
+            setIsUploading(false);
+            showErrorAlert(error.response?.data?.message || 'Lỗi khi import');
+        }
+    });
+
+    const exportExcel = useMutation({
+        mutationFn: TravelLogService.exportFile,
+        onSuccess: () => { },
+        onError: (error: any) => {
+            showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
+        }
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: (updatedTravelLog: Partial<TravelLog>) =>
+            api.put(`/travellogs/${updatedTravelLog._id}`, updatedTravelLog).then(res => res.data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['travellogs'] });
+            showSuccessAlert('Cập nhật lệnh sản xuất thành công');
+            handleClose();
+        },
+        onError: (error: any) => {
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
+        }
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: (ids: string[]) => api.delete(`/travellogs`, { data: { ids } }).then(res => res.data.message),
+        onSuccess: (message) => {
+            queryClient.invalidateQueries({ queryKey: ['travellogs'] });
+            setSelectedTravelLogs([]);
+            showSuccessAlert(message || 'Xóa thành công');
+            handleClose()
+        },
+        onError: (error: any) => {
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
+        }
+    });
+
+    const formik = useFormik({
+        initialValues: {
+            excavator: '',
+            location: '',
+            distance: undefined as number | undefined,
+            startTime: new Date(),
+            endTime: new Date(),
+            note: ''
+        },
+        // enableReinitialize: true,
+        validationSchema: trvelLogValidationSchema,
+        onSubmit: (values) => {
+            if (selectedTravelLog) {
+                updateMutation.mutate({
+                    ...values,
+                    startTime: dayjs(values.startTime).utc().toDate(),
+                    endTime: dayjs(values.endTime).utc().toDate(),
+                    _id: selectedTravelLog._id
+                });
+            } else {
+                createMutation.mutate({
+                    ...values,
+                    startTime: dayjs(values.startTime).utc().toDate(),
+                    endTime: dayjs(values.endTime).utc().toDate(),
+                });
+            }
+        },
+    });
+
+    const handleOpen = (travellog?: any) => {
+        if (travellog) {
+            setSelectedTravelLog({
+                ...travellog,
+                excavator: travellog.excavator !== null && typeof travellog.excavator === 'object'
+                    ? travellog.excavator._id
+                    : travellog.excavator || undefined,
+                location: travellog.location !== null && typeof travellog.location === 'object'
+                    ? travellog.location._id
+                    : travellog.location || '',
+                startTime: travellog.startTime ? dayjs(travellog.startTime).local().toDate() : null,
+                endTime: travellog.endTime ? dayjs(travellog.endTime).local().toDate() : null,
+            });
+            formik.setValues({
+                ...travellog,
+                excavator: travellog.excavator !== null && typeof travellog.excavator === 'object'
+                    ? travellog.excavator._id
+                    : travellog.excavator || undefined,
+                location: travellog.location !== null && typeof travellog.location === 'object'
+                    ? travellog.location._id
+                    : travellog.location || '',
+                startTime: travellog.startTime ? dayjs(travellog.startTime).local().toDate() : null,
+                endTime: travellog.endTime ? dayjs(travellog.endTime).local().toDate() : null,
+            });
+        } else {
+            setSelectedTravelLog(null);
+        }
+        setExpanded(true)
+        setOpen(true);
+        setTimeout(() => {
+            if (formRef.current) {
+                formRef.current.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        }, 500);
+    };
+
+    const handleClose = () => {
+        setOpen(false);
+        setSelectedTravelLog(null);
+        setExpanded(false)
+    };
+
+    const handleDelete = () => {
+        if (selectedTravelLogs.length === 0) {
+            return showErrorAlert('Không tìm thấy bản ghi cần xóa');
+        }
+        showConfirmAlert('Bạn có muốn xóa?. Bạn sẽ không thể hoàn tác.').then((result) => {
+            if (result.isConfirmed) {
+                deleteMutation.mutate(selectedTravelLogs.map(o => o._id));
+            }
+        });
+    };
+
+
+    const trvelLogColumns: TableProps<any>['columns'] = [
+        {
+            title: 'STT', dataIndex: 'number', key: 'number', width: 50, align: 'center',
+            render: (text, record, index) => index + 1,
+            fixed: 'left'
+        },
+        {
+            title: 'Máy xúc', dataIndex: 'excavator', key: 'excavator', align: 'center',
+            render: (text, record) => record.excavator?.code || '',
+            fixed: 'left',
+            filterSearch: true,
+            filters: excavators.map((d: any) => ({ text: `${d.code}`, value: d._id })),
+            onFilter: undefined,
+            filteredValue: serverFilters.excavator ?? null,
+        },
+        {
+            title: 'Điểm đổ tải', dataIndex: 'location', key: 'location',
+            render: (text, record) => record.location?.name || '',
+            filterSearch: true,
+            filters: locations.map((d: any) => ({ text: d.name, value: d._id })),
+            onFilter: undefined,
+            filteredValue: serverFilters.location ?? null,
+        },
+        {
+            title: 'Cung độ (km)', dataIndex: 'distance', key: 'distance', align: 'center',
+            render: (text, record) => record.distance ?? ''
+        },
+        {
+            title: 'Bắt đầu', dataIndex: 'startTime', key: 'startTime', align: 'center',
+            render: (text, record) => record.startTime ? dayjs(record.startTime).local().format('DD-MM-YYYY HH:mm') : ''
+        },
+        {
+            title: 'Kết thúc', dataIndex: 'endTime', key: 'endTime', align: 'center',
+            render: (text, record) => record.endTime ? dayjs(record.endTime).local().format('DD-MM-YYYY HH:mm') : ''
+        },
+        {
+            title: 'Ghi chú', dataIndex: 'note', key: 'note', align: 'center', width: 300,
+            ellipsis: true,
+        },
+        {
+            title: 'Sửa', dataIndex: 'edit', key: 'edit', align: 'center', width: 50,
+            render: (text, record) => (
+                <>
+                    <IconButton color="primary" onClick={async () => {
+                        if (open) {
+                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
+                            if (result.isConfirmed) {
+                                handleOpen(record);
+                            }
+                        } else {
+                            handleOpen(record);
+                        }
+                    }}>
+                        <EditIcon />
+                    </IconButton>
+                </>
+            ),
+        },
+    ];
+
+    const rowSelection: TableRowSelection<any> = {
+        // AntD yêu cầu selectedRowKeys phải là mảng id
+        selectedRowKeys: selectedTravelLogs.map(o => o._id),
+        onChange: (newKeys: React.Key[], newRows: any[]) => {
+            setSelectedTravelLogs(newRows);   // lưu luôn object đầy đủ
+        },
+    };
+
+    return (
+        <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+                <Typography variant="h3" color={'blue'}>Cung độ</Typography>
+            </Box>
+            <Accordion expanded={expanded} ref={formRef}>
+                <AccordionSummary
+                    expandIcon={
+                        <></>}
+                    aria-controls="panel1-content"
+                    id="panel1-header"
+                    sx={{
+                        backgroundColor: 'white', '&.Mui-focusVisible': {
+                            backgroundColor: 'white',
+                        },
+                    }}
+                >
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            gap: 2,
+                            alignItems: 'center',
+                            width: '100%',
+                            flexWrap: 'wrap', // Tự động xuống dòng khi không đủ không gian
+                            flexDirection: {
+                                xs: 'column', // Màn hình nhỏ: các items xếp dọc
+                                md: 'row',    // Màn hình lớn: các items xếp ngang
+                            },
+                            // Thêm các thuộc tính căn chỉnh để bố cục đẹp hơn
+                            justifyContent: {
+                                xs: 'flex-start', // Màn hình nhỏ: căn trái
+                                md: 'space-between', // Màn hình lớn: giãn đều các items
+                            },
+                        }}
+                    >
+                        {/* Nhóm các nút lại với nhau */}
+                        {user?.role === "admin" && <Box
+                            sx={{
+                                display: 'flex',
+                                gap: 1, // Khoảng cách nhỏ hơn giữa các nút
+                                flexDirection: {
+                                    xs: 'column',
+                                    md: 'row',
+                                },
+                                width: {
+                                    xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                    md: 'auto',
+                                },
+                            }}
+                        >
+                            <Button
+                                variant="contained"
+                                startIcon={<AddIcon />}
+                                onClick={() => handleOpen()}
+                            >
+                                Thêm
+                            </Button>
+                            <Button variant="contained" startIcon={<DeleteIcon />} color="error" onClick={handleDelete}>
+                                Xóa
+                            </Button>
+                        </Box>}
+
+                        {/* Nhóm các Autocomplete và DatePicker lại với nhau */}
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                flexGrow: 1, // Chiếm hết phần còn lại của không gian
+                                gap: 2,
+                                alignItems: 'center',
+                                flexDirection: {
+                                    xs: 'column',
+                                    md: 'row',
+                                },
+                                width: {
+                                    xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                    md: 'auto',
+                                },
+                            }}
+                        >
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                <DatePicker
+                                    label="Từ ngày"
+                                    inputFormat="DD/MM/YYYY"
+                                    value={startTime ? dayjs(startTime) : null}
+                                    onChange={(value) => setStartTime(value)}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            fullWidth
+                                            size="small"
+                                        />
+                                    )}
+                                />
+                            </LocalizationProvider>
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                <DatePicker
+                                    label="Đến ngày"
+                                    inputFormat="DD/MM/YYYY"
+                                    value={endTime ? dayjs(endTime) : null}
+                                    onChange={(value) => setEndTime(value)}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            fullWidth
+                                            size="small"
+                                        />
+                                    )}
+                                />
+                            </LocalizationProvider>
+                        </Box>
+
+                        {user?.role === "admin" && <Box display="flex" gap={2} sx={{
+                            display: 'flex',
+                            gap: 1, // Khoảng cách nhỏ hơn giữa các nút
+                            flexDirection: {
+                                xs: 'column',
+                                md: 'row',
+                            },
+                            width: {
+                                xs: '100%', // Group này chiếm 100% khi xếp dọc
+                                md: 'auto',
+                            },
+                        }}>
+                            <input
+                                id="upload-excel"
+                                type="file"
+                                accept=".xlsx, .xls"
+                                style={{ display: 'none' }}
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        const formData = new FormData();
+                                        formData.append('file', file);
+                                        importFile.mutate(formData);
+                                    }
+                                    e.target.value = "";
+                                }}
+                            />
+
+                            <label htmlFor="upload-excel">
+                                <Button
+                                    fullWidth
+                                    component="span"
+                                    variant="contained"
+                                    startIcon={<UploadFile />}
+                                >
+                                    Tải lên excel
+                                </Button>
+                            </label>
+                            <Button
+                                component="span"
+                                variant="contained"
+                                startIcon={<Download />}
+                                onClick={() => exportExcel.mutate()}
+                            >
+                                Tải xuống
+                            </Button>
+                        </Box>}
+                    </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                    <AccordionDetails>
+                        <DialogTitle>{selectedTravelLog ? 'Sửa cung độ' : 'Thêm cung độ'}</DialogTitle>
+                        <DialogContent>
+                            <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                    <Autocomplete
+                                        fullWidth
+                                        options={excavators}
+                                        getOptionLabel={(option: Device) =>
+                                            option.code || ''
+                                        }
+                                        value={excavators.find((p: any) => p._id === formik.values.excavator) || null}
+                                        onChange={(event, newValue) => {
+                                            formik.setFieldValue('excavator', newValue?._id || '');
+                                        }}
+                                        PopperComponent={StyledPopper}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                label="Máy xúc"
+                                                error={formik.touched.excavator && Boolean(formik.errors.excavator)}
+                                                helperText={formik.touched.excavator && typeof formik.errors.excavator === 'string' ? formik.errors.excavator : ''}
+                                            />
+                                        )}
+                                    />
+                                    <Autocomplete
+                                        fullWidth
+                                        options={locations}
+                                        getOptionLabel={(option: Location) =>
+                                            option.name || ''
+                                        }
+                                        value={locations.find((p: any) => p._id === formik.values.location) || null}
+                                        onChange={(event, newValue) => {
+                                            formik.setFieldValue('location', newValue?._id || '');
+                                        }}
+                                        PopperComponent={StyledPopper}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                label="Điểm đổ tải"
+                                                error={formik.touched.location && Boolean(formik.errors.location)}
+                                                helperText={formik.touched.location && typeof formik.errors.location === 'string' ? formik.errors.location : ''}
+                                            />
+                                        )}
+                                    />
+                                    <TextField
+                                        type="number"
+                                        fullWidth
+                                        id="distance"
+                                        name="distance"
+                                        label="Cung độ (km)"
+                                        value={formik.values.distance ?? ''}
+                                        onChange={formik.handleChange}
+                                        error={formik.touched.distance && Boolean(formik.errors.distance)}
+                                        helperText={formik.touched.distance && formik.errors.distance}
+                                    />
+                                    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="vi">
+                                        <DateTimePicker
+                                            label="Bắt đầu"
+                                            inputFormat="DD/MM/YYYY HH:mm" // v5 vẫn hỗ trợ
+                                            value={formik.values.startTime ? dayjs(formik.values.startTime) : null}
+                                            onChange={(value) => {
+                                                formik.setFieldValue('startTime', value ? value : '');
+                                            }}
+                                            renderInput={(params) => (
+                                                <TextField
+                                                    {...params}
+                                                    fullWidth
+                                                    error={formik.touched.startTime && Boolean(formik.errors.startTime)}
+                                                    helperText={
+                                                        formik.touched.startTime && typeof formik.errors.startTime === 'string'
+                                                            ? formik.errors.startTime
+                                                            : ''
+                                                    }
+                                                />
+                                            )}
+                                        />
+                                    </LocalizationProvider>
+                                    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="vi">
+                                        <DateTimePicker
+                                            label="Kết thúc"
+                                            inputFormat="DD/MM/YYYY HH:mm" // v5 vẫn hỗ trợ
+                                            value={formik.values.endTime ? dayjs(formik.values.endTime) : null}
+                                            onChange={(value) => {
+                                                formik.setFieldValue('endTime', value ? value : '');
+                                            }}
+                                            renderInput={(params) => (
+                                                <TextField
+                                                    {...params}
+                                                    fullWidth
+                                                    error={formik.touched.endTime && Boolean(formik.errors.endTime)}
+                                                    helperText={
+                                                        formik.touched.endTime && typeof formik.errors.endTime === 'string'
+                                                            ? formik.errors.endTime
+                                                            : ''
+                                                    }
+                                                />
+                                            )}
+                                        />
+                                    </LocalizationProvider>
+                                    <TextField
+                                        fullWidth
+                                        id="note"
+                                        name="note"
+                                        label="Ghi chú"
+                                        multiline
+                                        rows={5}
+                                        value={formik.values.note ?? ''}
+                                        onChange={formik.handleChange}
+                                        error={formik.touched.note && Boolean(formik.errors.note)}
+                                        helperText={formik.touched.note && formik.errors.note}
+                                    />
+                                </Box>
+                            </Box>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={handleClose}>Hủy</Button>
+                            <Button onClick={() => formik.submitForm()} variant="contained">
+                                {selectedTravelLog ? 'Sửa' : 'Thêm mới'}
+                            </Button>
+                        </DialogActions>
+                    </AccordionDetails>
+                </AccordionDetails>
+            </Accordion>
+            <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
+                <Typography variant="h4">Bảng cung độ</Typography>
+                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                    <Settings sx={{ fontSize: 30 }} />
+                </IconButton>
+                <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={() => setAnchorEl(null)}
+                    sx={{ maxHeight: 400 }}
+                >
+                    {defaultColumns.map((col) => (
+                        <MenuItem key={col.id} onClick={() => handleToggleColumn(col.id)}>
+                            <Switch checked={visibleColumns.includes(col.id)} />
+                            <ListItemText primary={col.label} />
+                        </MenuItem>
+                    ))}
+                </Menu>
+            </Box>
+            <Table<any>
+                size="small"
+                rowKey="_id" rowSelection={rowSelection}
+                pagination={{
+                    current: page,
+                    pageSize,
+                    total,
+                    showSizeChanger: true,
+                    pageSizeOptions: ['50', '100', '150', '200', '500'],
+                    showTotal: (total, range) => (
+                        <div style={{ flex: 1, textAlign: 'left' }}>
+                            Hiển thị {range[0]}-{range[1]}/ {total}
+                        </div>
+                    ),
+                }}
+                columns={trvelLogColumns.filter(col => col.key && visibleColumns.includes(col.key.toString()))}
+                dataSource={travelLogs}
+                onChange={(pagination, filters) => {
+                    setPage(pagination.current!);      // 👈 cập nhật page
+                    setPageSize(pagination.pageSize!); // 👈 cập nhật pageSize
+                    setServerFilters(filters);         // 👈 cập nhật filters
+                }}
+                loading={{
+                    spinning: isLoading,
+                    tip: 'Đang tải dữ liệu...',
+                }}
+                scroll={{ x: 'max-content', y: '60vh' }}
+                tableLayout="fixed"
+            />
+
+        </Box >
+    );
+};
+
+export default TravelLogs;

@@ -9,8 +9,8 @@ const Material = new mongoose.Schema({
     density: {
         type: Number
     },
-    mass: {
-        type: Number
+    acceptedProduct: {
+        type: String
     },
 
 },

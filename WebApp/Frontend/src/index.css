@@ -11,57 +11,27 @@
      --ant-font-family: 'Times New Roman', Times, serif;
  }
 
- /* Pending */
- .row-pending td,
- .row-pending .ant-table-cell-fix-left,
- .row-pending .ant-table-cell-fix-right {
-     background-color: #ffffff !important;
+ .row-selected {
+     background-color: #e0f7fa !important
  }
 
- /* In Progress */
- .row-in-progress td,
- .row-in-progress .ant-table-cell-fix-left,
- .row-in-progress .ant-table-cell-fix-right {
-     background-color: #e8f5e9 !important;
+ .row-pending {
+     background-color: #ffffff !important
  }
 
- /* Completed */
- .row-completed td,
- .row-completed .ant-table-cell-fix-left,
- .row-completed .ant-table-cell-fix-right {
-     background-color: #ffebee !important;
+ .row-in-progress {
+     background-color:#e8f5e9 !important
  }
 
- /* Warning */
- .row-warning td,
- .row-warning .ant-table-cell-fix-left,
- .row-warning .ant-table-cell-fix-right {
-     background-color: #fff8e1 !important;
+ .row-completed {
+     background-color: #ffebee !important
  }
 
- /* Cancel */
- .row-cancel td,
- .row-cancel .ant-table-cell-fix-left,
- .row-cancel .ant-table-cell-fix-right {
-     background-color: #ede7f6 !important;
+ .row-warning {
+     background-color: #fff8e1 !important
  }
 
- .ant-table-thead>tr>th {
-     font-weight: bold !important;
-     font-size: 16px !important;
-     text-align: center;
+ .row-cancel {
+     background-color: #ede7f6 !important
  }
-
- .react-resizable {
-     position: relative;
- }
-
- .react-resizable-handle {
-     position: absolute;
-     right: -5px;
-     bottom: 0;
-     width: 10px;
-     height: 100%;
-     cursor: col-resize;
-     z-index: 1;
- }
+ 

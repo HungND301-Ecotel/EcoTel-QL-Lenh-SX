@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:soft/models/order_model.dart';
-import 'package:soft/models/shift_model.dart';
 import 'package:soft/models/task_model.dart';
 import 'package:soft/models/user_model.dart';
+import 'package:soft/providers/user_provider.dart';
 import 'package:soft/routes/task_assignment_route.dart';
-import 'package:soft/screens/work_log/widgets/shift_select.dart';
 import 'package:soft/services/order_service.dart';
+import 'package:soft/utils/batchId_utils.dart';
 import 'package:soft/widgets/date_picker_button.dart';
-import 'package:soft/widgets/device_type_button.dart';
 import 'package:soft/widgets/pay_roll_input.dart';
-import 'package:soft/widgets/time_picker_button.dart';
 
 class DispatcherAssignmentTransfer extends StatefulWidget {
   final TaskModel data;
@@ -30,10 +28,9 @@ class DispatcherAssignmentTransfer extends StatefulWidget {
 class _DispatcherAssignmentTransfer
     extends State<DispatcherAssignmentTransfer> {
   DateTime? _selectedDateTime;
-  List<Map<String, dynamic>?> deviceToProduce = [];
   UserModel? user;
-  ShiftModel? _shift;
-  String? _shiftHour;
+  List<Map<String, dynamic>?> userAndDepartment = [];
+  List<TextEditingController> _departmentControllers = [];
 
   @override
   void initState() {
@@ -41,43 +38,38 @@ class _DispatcherAssignmentTransfer
     _selectedDateTime = DateTime.now();
     if (widget.order != null) {
       final order = widget.order!;
-
-      // Gán lại vehicle nếu có
-      if (order.devicesToProduce != null) {
-        for (var item in order.devicesToProduce!) {
-          deviceToProduce.add({
-            "deviceType": item.deviceType.id,
-            "quantity": item.quantity,
-          });
-          _quantityControllers.add(
-            TextEditingController(
-              text: item.quantity.toString(),
-            ),
-          );
-        }
-      }
+      userAndDepartment.add({
+        "user": order.assignedTo,
+        "department": order.assignedTo.department?.code,
+      });
+      _departmentControllers.add(
+        TextEditingController(
+          text: order.assignedTo.department?.code ?? '',
+        ),
+      );
       // Gán lại ngày làm việc nếu có
       _selectedDateTime = order.workingDate;
-      _shift = order.shift;
-      _shiftHour = (order.shiftHour ?? '').trim();
 
       _descriptionController.text = order.workContent ?? '';
       _noteController.text =
           order.shiftReport?.handoverNotes ?? '';
     } else {
-      deviceToProduce.add({
-        "deviceType": null,
-        "quantity": null,
+      userAndDepartment.add({
+        "user": null,
+        "department": null,
       });
-      _quantityControllers.add(TextEditingController());
+      _departmentControllers.add(TextEditingController());
     }
   }
 
-  void _updateShift(ShiftModel? selectedShift) {
-    setState(() {
-      _shift = selectedShift;
-      _shiftHour = (selectedShift?.startTime ?? '').trim();
-    });
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    _noteController.dispose();
+    for (var controller in _departmentControllers) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 
   Future<void> _pickDateTime() async {
@@ -95,105 +87,75 @@ class _DispatcherAssignmentTransfer
     });
   }
 
-  Future<void> _pickTime() async {
-    TimeOfDay initialTime;
-    if (_shiftHour != null && _shiftHour!.isNotEmpty) {
-      final parts = _shiftHour!.split(':');
-      final hour = int.tryParse(parts[0]) ?? 0;
-      final minute =
-          int.tryParse(parts.length > 1 ? parts[1] : '0') ??
-          0;
-      initialTime = TimeOfDay(hour: hour, minute: minute);
-    } else {
-      initialTime = TimeOfDay.now();
-    }
-    TimeOfDay? time = await showTimePicker(
-      context: context,
-      initialTime: initialTime,
-    );
 
-    if (time == null) return;
-
-    // Chuyển về chuỗi 24h
-    final now = DateTime.now();
-    final dt = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      time.hour,
-      time.minute,
-    );
-    setState(() {
-      _shiftHour = DateFormat('HH:mm').format(dt);
-    });
-  }
-
-  void _updateUser(UserModel? selectedUser) {
-    setState(() {
-      user = selectedUser;
-    });
-  }
 
   final TextEditingController _descriptionController =
       TextEditingController();
   final TextEditingController _noteController =
       TextEditingController();
-  List<TextEditingController> _quantityControllers = [];
   final OrderService _orderService = OrderService();
 
   void createOrders() async {
     String description = _descriptionController.text.trim();
     String note = _noteController.text.trim();
 
-    List<Map<String, dynamic>> validDevices =
-        deviceToProduce
+    final userProvider = Provider.of<UserProvider>(
+      context,
+      listen: false,
+    );
+
+    final batchId = generateBatchId(
+      userProvider.user?.fullName,
+    );
+
+    final validItems =
+        userAndDepartment
             .where(
               (item) =>
-                  item?['deviceType'] != null &&
-                  item?['quantity'] != null,
+                  item?["user"] != null &&
+                  item?["department"] != null,
             )
-            .cast<Map<String, dynamic>>()
             .toList();
 
-    if (validDevices.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "Vui lòng nhập ít nhất một phương tiện và số lượng.",
+    bool hasError = false;
+    for (var item in validItems) {
+      var result = await _orderService.createOrder({
+        "job": widget.data.id,
+        "workingDate":
+            DateTime.utc(
+              _selectedDateTime!.year,
+              _selectedDateTime!.month,
+              _selectedDateTime!.day,
+            ).toIso8601String(),
+        "assignedTo": item?["user"].id,
+        "workContent": description,
+        "batchId": batchId,
+        "note": note,
+      });
+      if (!mounted) return;
+
+      if (result['status'] == 'error') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message']),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
           ),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
+        );
+      } else {
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(
+        //     content: Text("Tạo thành công"),
+        //     backgroundColor: Colors.green,
+        //   ),
+        // );
+        // Navigator.pushNamed(
+        //   context,
+        //   TaskAssignmentRoutes.taskAssignmentList,
+        // );
+      }
     }
-
-    var result = await _orderService.createOrder({
-      "job": widget.data.id,
-      "workingDate":
-          DateTime.utc(
-            _selectedDateTime!.year,
-            _selectedDateTime!.month,
-            _selectedDateTime!.day,
-          ).toIso8601String(),
-      "shift": _shift?.id,
-      "shiftHour": _shiftHour,
-      "devicesToProduce": validDevices,
-      "assignedTo": user?.id,
-      "workContent": description,
-      "note": note,
-    });
-
-    if (!mounted) return;
-
-    if (result['status'] == 'error') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message']),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-    } else {
+    if (!hasError) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Tạo thành công"),
@@ -217,20 +179,14 @@ class _DispatcherAssignmentTransfer
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                PayRollInput(
-                  title: 'Số thẻ lương',
-                  onSelectUser: _updateUser,
-                  initialPayroll:
-                      widget.order?.assignedTo.salaryCode,
-                ),
                 IconButton(
                   onPressed: () {
                     setState(() {
-                      deviceToProduce.add({
-                        "deviceType": null,
-                        "quantity": null,
+                      userAndDepartment.add({
+                        "user": null,
+                        "department": null,
                       });
-                      _quantityControllers.add(
+                      _departmentControllers.add(
                         TextEditingController(),
                       );
                     });
@@ -242,62 +198,66 @@ class _DispatcherAssignmentTransfer
                 ),
                 for (
                   int i = 0;
-                  i < deviceToProduce.length;
+                  i < userAndDepartment.length;
                   i++
                 )
                   Row(
                     children: [
                       Expanded(
-                        child: Column(
-                          children: [
-                            Text(
-                              'Loại phương tiện',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            DeviceTypeButton(
-                              deviceType:
-                                  deviceToProduce[i]?["deviceType"],
-                              onSelectDeviceType: (
-                                selected,
-                              ) {
-                                setState(() {
-                                  deviceToProduce[i]?["deviceType"] =
-                                      selected;
-                                });
-                              },
-                            ),
-                          ],
+                        child: PayRollInput(
+                          title: 'Số thẻ lương',
+                          onSelectUser: (selectedUser) {
+                            setState(() {
+                              userAndDepartment[i]?["user"] =
+                                  selectedUser;
+                              userAndDepartment[i]?["department"] =
+                                  selectedUser
+                                      ?.department
+                                      ?.code;
+                              _departmentControllers[i]
+                                  .text = selectedUser
+                                      ?.department
+                                      ?.code ??
+                                  '';
+                            });
+                          },
+                          initialPayroll:
+                              userAndDepartment[i]?["user"]
+                                  ?.salaryCode,
                         ),
                       ),
                       Expanded(
                         child: Column(
                           children: [
                             Text(
-                              'Số lượng',
+                              'Đơn vị',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             TextField(
                               controller:
-                                  _quantityControllers[i],
-                              keyboardType:
-                                  TextInputType.number,
-                              onChanged:
-                                  (value) => {
-                                    setState(() {
-                                      deviceToProduce[i]?["quantity"] =
-                                          int.tryParse(
-                                            value,
-                                          );
-                                    }),
-                                  },
+                                  _departmentControllers[i],
+                              readOnly: true,
                             ),
                           ],
                         ),
                       ),
+                      if (i > 0)
+                        IconButton(
+                          onPressed: () {
+                            setState(() {
+                              _departmentControllers
+                                  .removeAt(i)
+                                  .dispose();
+                              userAndDepartment.removeAt(i);
+                            });
+                          },
+                          icon: Icon(
+                            Icons.cancel,
+                            color: Colors.red,
+                          ),
+                        ),
                     ],
                   ),
                 Text(
@@ -309,26 +269,6 @@ class _DispatcherAssignmentTransfer
                 DatePickerButton(
                   selectedDateTime: _selectedDateTime,
                   onPressed: _pickDateTime,
-                ),
-                Text(
-                  'Ca làm việc',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                ShiftSelect(
-                  initialShift: _shift,
-                  onSelected: _updateShift,
-                ),
-                Text(
-                  'Giờ làm việc',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                TimePickerButton(
-                  selectedDateTime: _shiftHour,
-                  onPressed: _pickTime,
                 ),
                 Text(
                   'Nội dung công việc',

@@ -47,10 +47,9 @@ import { Material } from '../../types';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
+import { materialValidationSchema } from '../../utils/validation';
+import MaterialService from '../../services/materialService';
 
-const validationSchema = yup.object({
-    name: yup.string().required('Vui lòng nhập tên vật liệu'),
-});
 
 const Materials: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -71,8 +70,8 @@ const Materials: React.FC = () => {
     };
     const defaultColumns = [
         { id: 'name', label: 'Tên vật liệu' },
-        { id: 'density', label: 'Tỉ trọng' },
-        { id: 'mass', label: 'Khối lượng' },
+        { id: 'density', label: 'Tỷ trọng' },
+        { id: 'acceptedProduct', label: 'Sản phẩm nghiệm thu' },
     ]
 
     const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
@@ -84,13 +83,12 @@ const Materials: React.FC = () => {
 
     const { data: materials = [], isLoading } = useQuery({
         queryKey: ['materials', value],
-        queryFn: () => api.get(`/materials?name=${value}`).then(res => res.data.data),
+        queryFn: () => MaterialService.getAll({ name: value }),
     });
 
 
     const createMutation = useMutation({
-        mutationFn: (newMaterial: Partial<Material>) =>
-            api.post('/materials', newMaterial).then(res => res.data),
+        mutationFn: MaterialService.create,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['materials'] });
             showSuccessAlert('Thêm vật liệu thành công');
@@ -102,9 +100,7 @@ const Materials: React.FC = () => {
     });
 
     const updateMutation = useMutation({
-        mutationFn: (updatedMaterial: Partial<Material>) => {
-            return api.put(`/materials/${updatedMaterial._id}`, updatedMaterial).then(res => res.data);
-        },
+        mutationFn: MaterialService.update,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['materials'] });
             showSuccessAlert('Cập nhật vật liệu thành công');
@@ -116,7 +112,7 @@ const Materials: React.FC = () => {
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (ids: string[]) => api.delete(`/materials`, { data: { ids } }).then(res => res.data.message),
+        mutationFn: MaterialService.delete,
         onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['materials'] });
             setSelectedMaterials([]);
@@ -132,17 +128,7 @@ const Materials: React.FC = () => {
     const [progress, setProgress] = useState(0)
     const [isUploading, setIsUploading] = useState(false);
     const importFile = useMutation({
-        mutationFn: (formData: FormData) =>
-            api.post('/materials/importFile', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-                onUploadProgress: (progressEvent) => {
-
-                    const percent = Math.round(
-                        (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
-                    );
-                    setProgress(percent);
-                }
-            }).then(res => res.data.message),
+        mutationFn: (formData: FormData) => MaterialService.importFile(formData, setProgress),
         onMutate: () => {
             setIsUploading(true);
             setProgress(0); // Reset tiến trình khi bắt đầu
@@ -159,25 +145,7 @@ const Materials: React.FC = () => {
     });
 
     const exportExcel = useMutation({
-        mutationFn: () => {
-            return api.post('/materials/exportFile', {}, {
-                responseType: 'blob',
-            }).then(res => {
-                const blob = new Blob([res.data], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                });
-
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', `*.xlsx`);
-
-                document.body.appendChild(link);
-                link.click();
-                link.parentNode?.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            });
-        },
+        mutationFn: MaterialService.exportFile,
         onSuccess: () => { },
         onError: (error: any) => {
             showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
@@ -189,10 +157,10 @@ const Materials: React.FC = () => {
         initialValues: {
             name: '',
             density: undefined as number | undefined,
-            mass: undefined as number | undefined
+            acceptedProduct: ''
         },
         enableReinitialize: true,
-        validationSchema: validationSchema,
+        validationSchema: materialValidationSchema,
         onSubmit: (values) => {
             if (selectedMaterial) {
                 updateMutation.mutate({ ...values, _id: selectedMaterial._id });
@@ -208,7 +176,7 @@ const Materials: React.FC = () => {
             formik.setValues({
                 name: material.name,
                 density: material.density,
-                mass: material.mass,
+                acceptedProduct: material.acceptedProduct ?? '',
             });
         } else {
             setSelectedMaterial(null);
@@ -393,7 +361,7 @@ const Materials: React.FC = () => {
                                     fullWidth
                                     id="density"
                                     name="density"
-                                    label="Tỉ trọng"
+                                    label="Tỷ trọng"
                                     value={formik.values.density?.toString() ?? ''}
                                     onChange={formik.handleChange}
                                     error={formik.touched.density && Boolean(formik.errors.density)}
@@ -401,16 +369,19 @@ const Materials: React.FC = () => {
                                     inputProps={{ shrink: true }}
                                 />
                                 <TextField
-                                    type="number"
                                     fullWidth
-                                    id="mass"
-                                    name="mass"
-                                    label="Khối lượng"
-                                    value={formik.values.mass?.toString() ?? ''}
+                                    select
+                                    id="acceptedProduct"
+                                    name="acceptedProduct"
+                                    label="Sản phẩm nghiệm thu"
+                                    value={formik.values.acceptedProduct ?? ''}
                                     onChange={formik.handleChange}
-                                    error={formik.touched.mass && Boolean(formik.errors.mass)}
-                                    helperText={formik.touched.mass && formik.errors.mass}
-                                />
+                                    error={formik.touched.acceptedProduct && Boolean(formik.errors.acceptedProduct)}
+                                    helperText={formik.touched.acceptedProduct && formik.errors.acceptedProduct}
+                                >
+                                    <MenuItem value="Đất">Đất</MenuItem>
+                                    <MenuItem value="Than">Than</MenuItem>
+                                </TextField>
                             </Box>
                         </Box>
                     </DialogContent>
@@ -500,7 +471,7 @@ const Materials: React.FC = () => {
                                 {user?.role === "admin" && <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(material._id)} checked={selectedMaterials.includes(material._id)} /></TableCell>}
                                 {visibleColumns.includes('name') && <TableCell sx={{}}>{material.name}</TableCell>}
                                 {visibleColumns.includes('density') && <TableCell align='center' sx={{}}>{material.density}</TableCell>}
-                                {visibleColumns.includes("mass") && <TableCell align='center' sx={{}}>{material.mass}</TableCell>}
+                                {visibleColumns.includes("acceptedProduct") && <TableCell align='center' sx={{}}>{material.acceptedProduct}</TableCell>}
                                 {user?.role === "admin" && <TableCell align='center' sx={{}}>
                                     <IconButton color="primary" onClick={async () => {
                                         if (open) {

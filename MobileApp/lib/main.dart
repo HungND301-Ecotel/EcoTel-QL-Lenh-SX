@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -21,12 +22,29 @@ final GlobalKey<NavigatorState> navigatorKey =
     GlobalKey<NavigatorState>();
 
 Future<void> _firebaseMessagingBackgroundHandler(
-  RemoteMessage message,
-) async {
-  await Firebase.initializeApp();
+    RemoteMessage message) async {
+  // Chỉ đăng ký handler này khi Firebase iOS đã cấu hình; tạm thời BỎ với iOS
+  try {
+    await Firebase.initializeApp();
+  } catch (_) {}
   print(
-    "Handling a background message: ${message.messageId}",
-  );
+      "Handling a background message: ${message.messageId}");
+}
+
+Future<void> _initFirebaseSafely() async {
+  if (Platform.isAndroid) {
+    // Android đã có google-services.json → ok
+    await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(
+        _firebaseMessagingBackgroundHandler);
+  } else if (Platform.isIOS) {
+    // CHƯA cấu hình iOS → KHÔNG initialize để tránh crash
+    // Khi bạn đã có cấu hình iOS, thay thế bằng:
+    // await Firebase.initializeApp(
+    //   options: DefaultFirebaseOptions.ios, // nếu dùng flutterfire
+    // );
+    // FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  }
 }
 
 Future<void> main() async {
@@ -38,16 +56,14 @@ Future<void> main() async {
   }
   print('api: ${dotenv.env['BASE_API']}');
 
-  await Firebase.initializeApp();
+  await _initFirebaseSafely();
 
-  // Đăng ký background handler
-  FirebaseMessaging.onBackgroundMessage(
-    _firebaseMessagingBackgroundHandler,
-  );
-  // Init Notification Service
-  await NotificationService.init();
-  // Lắng nghe FCM
-  NotificationService.listenFCM();
+  // Init notification service CHỈ khi Android, hoặc khi iOS đã init Firebase
+  if (Platform.isAndroid ||
+      (Platform.isIOS && Firebase.apps.isNotEmpty)) {
+    await NotificationService.init();
+    NotificationService.listenFCM();
+  }
 
   runApp(
     MultiProvider(
@@ -91,22 +107,23 @@ class _MyAppState extends State<MyApp> {
         token,
       ); // phục hồi lại trạng thái
 
-      String? fcmToken =
-          await NotificationService.getToken();
-      if (fcmToken != null) {
-        await AuthService().saveToken(fcmToken);
-        userProvider.saveTokenLocal(fcmToken);
-      }
-
-      // lắng nghe refresh
-      NotificationService.listenTokenRefresh((
-        newToken,
-      ) async {
-        if (userProvider.user != null) {
-          await AuthService().saveToken(newToken);
-          userProvider.saveTokenLocal(newToken);
+      // Chỉ đụng FCM khi Firebase đã init (Android hoặc iOS đã cấu hình)
+      if (Platform.isAndroid ||
+          (Platform.isIOS && Firebase.apps.isNotEmpty)) {
+        final fcmToken =
+            await NotificationService.getToken();
+        if (fcmToken != null) {
+          await AuthService().saveToken(fcmToken);
+          userProvider.saveTokenLocal(fcmToken);
         }
-      });
+        NotificationService.listenTokenRefresh(
+            (newToken) async {
+          if (userProvider.user != null) {
+            await AuthService().saveToken(newToken);
+            userProvider.saveTokenLocal(newToken);
+          }
+        });
+      }
 
       final socketService = SocketService();
       socketService.connect(user.id);

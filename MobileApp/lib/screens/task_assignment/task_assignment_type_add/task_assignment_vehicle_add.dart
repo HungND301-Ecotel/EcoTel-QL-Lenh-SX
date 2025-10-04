@@ -37,7 +37,7 @@ class _TaskAssignmentVehicleAdd
     extends State<TaskAssignmentVehicleAdd> {
   DateTime? _selectedDateTime;
   List<Map<String, dynamic>?> userAndDevice = [];
-  DeviceModel? excavator;
+  List<Excavator?> excavators = [];
   LocationModel? dump;
   MaterialModel? material;
   UserModel? user;
@@ -52,18 +52,16 @@ class _TaskAssignmentVehicleAdd
 
   void _updateCombinedSafetyMeasures() {
     // Tách các dòng thành danh sách và loại bỏ khoảng trắng, dòng trống
-    final jobMeasures =
-        _jobSafetyContent
-            .split('\n')
-            .map((s) => s.trim())
-            .where((s) => s.isNotEmpty)
-            .toList();
-    final userMeasures =
-        _userSafetyContent
-            .split('\n')
-            .map((s) => s.trim())
-            .where((s) => s.isNotEmpty)
-            .toList();
+    final jobMeasures = _jobSafetyContent
+        .split('\n')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+    final userMeasures = _userSafetyContent
+        .split('\n')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
     print('jobMeasures $jobMeasures');
 
     // Sử dụng Set để có các biện pháp an toàn duy nhất
@@ -89,10 +87,9 @@ class _TaskAssignmentVehicleAdd
         ),
       );
     } else {
-      final data =
-          (result['data'] as List)
-              .map((e) => SafetyMeasureModel.fromJson(e))
-              .toList();
+      final data = (result['data'] as List)
+          .map((e) => SafetyMeasureModel.fromJson(e))
+          .toList();
       setState(() {
         _allSafetyMeasures = data;
       });
@@ -105,9 +102,8 @@ class _TaskAssignmentVehicleAdd
       );
 
       if (matchedJobs.isNotEmpty) {
-        _jobSafetyContent = matchedJobs
-            .map((m) => m.content)
-            .join('\n');
+        _jobSafetyContent =
+            matchedJobs.map((m) => m.content).join('\n');
       }
       _updateCombinedSafetyMeasures();
     }
@@ -179,8 +175,14 @@ class _TaskAssignmentVehicleAdd
         });
       }
       // Gán lại vehicle nếu có
-      if (order.excavator != null) {
-        excavator = order.excavator!.last;
+      if (order.excavator != null &&
+          order.excavator!.isNotEmpty) {
+        excavators = order.excavator!.map((ex) {
+          return Excavator(
+            device: ex.device,
+            status: ex.status ?? true,
+          );
+        }).toList();
       }
       // Gán lại vehicle nếu có
       if (order.material != null) {
@@ -196,14 +198,12 @@ class _TaskAssignmentVehicleAdd
       _shiftHour = order.shiftHour ?? '';
       _descriptionController.text = order.workContent ?? '';
       _noteController.text = order.note ?? '';
-      _distanceController.text = order.distance.toString();
-      _liftHeightController.text =
-          order.liftHeight.toString();
       _safetyController.text = order.safetyMeasure ?? '';
       _safetySpecificController.text =
           order.safetyMeasureSpecific ?? '';
     } else {
       userAndDevice.add({"user": null, "device": null});
+      excavators = [Excavator(device: null, status: true)];
     }
   }
 
@@ -229,7 +229,7 @@ class _TaskAssignmentVehicleAdd
       final hour = int.tryParse(parts[0]) ?? 0;
       final minute =
           int.tryParse(parts.length > 1 ? parts[1] : '0') ??
-          0;
+              0;
       initialTime = TimeOfDay(hour: hour, minute: minute);
     } else {
       initialTime = TimeOfDay.now();
@@ -264,10 +264,6 @@ class _TaskAssignmentVehicleAdd
 
   final TextEditingController _descriptionController =
       TextEditingController();
-  final TextEditingController _distanceController =
-      TextEditingController();
-  final TextEditingController _liftHeightController =
-      TextEditingController();
   final TextEditingController _noteController =
       TextEditingController();
   final TextEditingController _safetyController =
@@ -283,10 +279,6 @@ class _TaskAssignmentVehicleAdd
     String safetyMeasureSpecific =
         _safetySpecificController.text.trim();
 
-    final distace = num.tryParse(_distanceController.text);
-    final liftheight = num.tryParse(
-      _liftHeightController.text,
-    );
     for (var item in userAndDevice) {
       if (item?['user'] == null ||
           item?['device'] == null) {
@@ -302,33 +294,37 @@ class _TaskAssignmentVehicleAdd
         return;
       }
     }
-    final validItems =
-        userAndDevice
-            .where(
-              (item) =>
-                  item?["user"] != null &&
-                  item?["device"] != null,
-            )
-            .toList();
+    final validItems = userAndDevice
+        .where(
+          (item) =>
+              item?["user"] != null &&
+              item?["device"] != null,
+        )
+        .toList();
+
+    final validExcavator = excavators
+        .where((item) => item?.device != null)
+        .map((i) => ({
+              'device': i?.device!.id,
+              'status': i?.status ?? true
+            }))
+        .toList();
 
     bool hasError = false;
     for (var item in validItems) {
       var result = await _orderService.createOrder({
         "job": widget.data.id,
-        "workingDate":
-            DateTime.utc(
-              _selectedDateTime!.year,
-              _selectedDateTime!.month,
-              _selectedDateTime!.day,
-            ).toIso8601String(),
+        "workingDate": DateTime.utc(
+          _selectedDateTime!.year,
+          _selectedDateTime!.month,
+          _selectedDateTime!.day,
+        ).toIso8601String(),
         "shift": _shift?.id,
         "shiftHour": _shiftHour,
         "assignedTo": item?["user"].id,
         "device": item?["device"],
         "location": dump?.id,
-        "excavator": excavator?.id,
-        "distance": distace,
-        "liftHeight": liftheight,
+        "excavator": validExcavator,
         "material": material?.id,
         "workContent": description,
         "note": note,
@@ -396,11 +392,9 @@ class _TaskAssignmentVehicleAdd
                     color: Colors.blue,
                   ),
                 ),
-                for (
-                  int i = 0;
-                  i < userAndDevice.length;
-                  i++
-                )
+                for (int i = 0;
+                    i < userAndDevice.length;
+                    i++)
                   Row(
                     children: [
                       Expanded(
@@ -416,9 +410,9 @@ class _TaskAssignmentVehicleAdd
                               _updateSafetyByFirstUser();
                             }
                           },
-                          initialPayroll:
-                              userAndDevice[i]?["user"]
-                                  ?.salaryCode,
+                          initialPayroll: userAndDevice[i]
+                                  ?["user"]
+                              ?.salaryCode,
                         ),
                       ),
                       Expanded(
@@ -431,11 +425,12 @@ class _TaskAssignmentVehicleAdd
                               ),
                             ),
                             VehicleButton(
-                              vehicle:
-                                  userAndDevice[i]?["device"],
+                              vehicle: userAndDevice[i]
+                                  ?["device"],
                               onSelectVehicle: (selected) {
                                 setState(() {
-                                  userAndDevice[i]?["device"] =
+                                  userAndDevice[i]
+                                          ?["device"] =
                                       selected;
                                 });
                               },
@@ -487,67 +482,91 @@ class _TaskAssignmentVehicleAdd
                   selectedDateTime: _shiftHour,
                   onPressed: _pickTime,
                 ),
-                Text(
-                  'Máy xúc',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton.icon(
-                    icon: Icon(Icons.pin),
-                    onPressed: () async {
-                      final selectedExcavator =
-                          await Navigator.of(
-                            context,
-                            rootNavigator: true,
-                          ).pushNamed(
-                            AppRoute.excavatorSelect,
-                          );
-                      if (selectedExcavator != null &&
-                          selectedExcavator
-                              is DeviceModel) {
-                        setState(() {
-                          excavator = selectedExcavator;
-                        });
-                      }
-                    },
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.black,
-                      backgroundColor: Colors.grey.shade300,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          0,
+                Row(
+                  children: [
+                    Expanded(
+                        child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                      children: [
+                        TextButton.icon(
+                          icon: Icon(Icons.add_circle,
+                              color: Colors.blue),
+                          label: Text('Thêm máy xúc'),
+                          onPressed: () {
+                            setState(() {
+                              excavators.add(Excavator(
+                                  device: null,
+                                  status: true));
+                            });
+                          },
                         ),
-                      ),
-                      alignment: Alignment.centerLeft,
-                    ),
-                    label: Text(
-                      excavator?.code ?? 'Máy xúc',
-                    ),
-                  ),
+                        for (int i = 0;
+                            i < excavators.length;
+                            i++)
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextButton(
+                                  onPressed: () async {
+                                    final selected =
+                                        await Navigator.of(
+                                      context,
+                                      rootNavigator: true,
+                                    ).pushNamed(AppRoute
+                                            .excavatorSelect);
+
+                                    if (selected
+                                        is DeviceModel) {
+                                      setState(() {
+                                        excavators[i]
+                                                ?.device =
+                                            selected;
+                                      });
+                                    }
+                                  },
+                                  style:
+                                      TextButton.styleFrom(
+                                    foregroundColor:
+                                        Colors.black,
+                                    backgroundColor: Colors
+                                        .grey.shade300,
+                                    alignment: Alignment
+                                        .centerLeft,
+                                  ),
+                                  child: Text(
+                                    excavators[i]
+                                            ?.device
+                                            ?.code ??
+                                        'Chọn máy xúc',
+                                  ),
+                                ),
+                              ),
+                              Checkbox(
+                                value: excavators[i]
+                                    ?.status, // ✅ vì status là bool (mặc định true)
+                                onChanged: (val) {
+                                  setState(() {
+                                    excavators[i]?.status =
+                                        val ?? true;
+                                  });
+                                },
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.cancel,
+                                    color: Colors.red),
+                                onPressed: () {
+                                  setState(() {
+                                    excavators.removeAt(i);
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                      ],
+                    )),
+                  ],
                 ),
-                // Text(
-                //   'Cung độ',
-                //   style: TextStyle(
-                //     fontWeight: FontWeight.bold,
-                //   ),
-                // ),
-                // TextField(
-                //   controller: _distanceController,
-                //   keyboardType: TextInputType.number,
-                // ),
-                // Text(
-                //   'Độ cao nâng tải',
-                //   style: TextStyle(
-                //     fontWeight: FontWeight.bold,
-                //   ),
-                // ),
-                // TextField(
-                //   controller: _liftHeightController,
-                //   keyboardType: TextInputType.number,
-                // ),
                 Text(
                   'Điểm đổ',
                   style: TextStyle(
@@ -561,11 +580,11 @@ class _TaskAssignmentVehicleAdd
                     onPressed: () async {
                       final selectedDump =
                           await Navigator.of(
-                            context,
-                            rootNavigator: true,
-                          ).pushNamed(
-                            AppRoute.locationSelect,
-                          );
+                        context,
+                        rootNavigator: true,
+                      ).pushNamed(
+                        AppRoute.locationSelect,
+                      );
                       if (selectedDump != null &&
                           selectedDump is LocationModel) {
                         setState(() {
@@ -599,10 +618,10 @@ class _TaskAssignmentVehicleAdd
                     onPressed: () async {
                       final selectedMaterial =
                           await Navigator.pushNamed(
-                            context,
-                            TaskAssignmentRoutes
-                                .taskAssignmentMaterialSelect,
-                          );
+                        context,
+                        TaskAssignmentRoutes
+                            .taskAssignmentMaterialSelect,
+                      );
                       if (selectedMaterial != null &&
                           selectedMaterial
                               is MaterialModel) {
@@ -677,8 +696,7 @@ class _TaskAssignmentVehicleAdd
                           setState(() {
                             // Kiểm tra nếu TextField không rỗng, thêm dấu xuống dòng
                             if (_safetyController
-                                .text
-                                .isNotEmpty) {
+                                .text.isNotEmpty) {
                               _safetyController.text +=
                                   '\n';
                             }

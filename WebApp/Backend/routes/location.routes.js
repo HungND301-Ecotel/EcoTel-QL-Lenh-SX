@@ -8,8 +8,9 @@ const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 const ExcelJS = require('exceljs');
 const xlsx = require('xlsx');
+const { ROLE } = require('../config/config');
 
-router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
+router.post('/', verifyToken, restrictTo(ROLE.MANAGER,ROLE.ADMIN), async (req, res, next) => {
     try {
         const { name, coordinates, distance } = req.body
         const newLocation = new Location({
@@ -29,7 +30,7 @@ router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, n
     }
 });
 
-router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
+router.delete('/', verifyToken, restrictTo(ROLE.MANAGER,ROLE.ADMIN), async (req, res, next) => {
     try {
         const user = req.user
         const { ids } = req.body;
@@ -52,7 +53,7 @@ router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res,
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
-router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
+router.put('/:id', verifyToken, restrictTo(ROLE.MANAGER,ROLE.ADMIN), async (req, res, next) => {
     try {
         const user = req.user
         const location = await Location.findByIdAndUpdate(req.params.id, {
@@ -175,7 +176,7 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
     }
 });
 
-router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER,ROLE.ADMIN,ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const data = await Location.find();
 

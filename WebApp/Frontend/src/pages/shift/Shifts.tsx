@@ -46,13 +46,8 @@ import dayjs from 'dayjs';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
-
-const validationSchema = yup.object({
-    name: yup.number().required('Vui lòng nhập ca làm việc'),
-    startTime: yup.string().required('Vui lòng nhập thời gian bắt đầu'),
-    endTime: yup.string().required('Vui lòng nhập thời gian kết thúc'),
-
-});
+import { shiftValidationSchema } from '../../utils/validation';
+import ShiftService from '../../services/shiftService';
 
 const Shifts: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -89,13 +84,12 @@ const Shifts: React.FC = () => {
 
     const { data: shifts = [], isLoading } = useQuery({
         queryKey: ['shifts', value],
-        queryFn: () => api.get(`/shifts?name=${value}`).then(res => res.data.data),
+        queryFn: () => ShiftService.getAll({}),
     });
 
 
     const createMutation = useMutation({
-        mutationFn: (newShift: Partial<Shift>) =>
-            api.post('/shifts', newShift).then(res => res.data),
+        mutationFn: ShiftService.create,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['shifts'] });
             showSuccessAlert('Thêm ca làm việc thành công');
@@ -107,8 +101,7 @@ const Shifts: React.FC = () => {
     });
 
     const updateMutation = useMutation({
-        mutationFn: (updatedShift: Partial<Shift>) =>
-            api.put(`/shifts/${updatedShift._id}`, updatedShift).then(res => res.data),
+        mutationFn: ShiftService.update,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['shifts'] });
             showSuccessAlert('Cập nhật ca làm việc thành công');
@@ -120,7 +113,7 @@ const Shifts: React.FC = () => {
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (ids: string[]) => api.delete(`/shifts`, { data: { ids } }).then(res => res.data.message),
+        mutationFn: ShiftService.delete,
         onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['shifts'] });
             setSelectedShifts([]);
@@ -138,7 +131,7 @@ const Shifts: React.FC = () => {
             startTime: '',
             endTime: '',
         },
-        validationSchema: validationSchema,
+        validationSchema: shiftValidationSchema,
         onSubmit: (values) => {
             if (selectedShift) {
                 updateMutation.mutate({ ...values, _id: selectedShift._id });

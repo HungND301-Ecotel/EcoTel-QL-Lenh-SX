@@ -25,8 +25,6 @@ class _TaskAssignmentDetail
   void initState() {
     // TODO: implement initState
     super.initState();
-    print(widget.data.createdBy.phone);
-    print(widget.data.assignedTo.phone);
   }
 
   void deleteOrder() async {
@@ -96,7 +94,7 @@ class _TaskAssignmentDetail
               },
             ),
             title: Text(
-              widget.data.job.name,
+              widget.data.job?.name ?? '',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
@@ -123,9 +121,14 @@ class _TaskAssignmentDetail
                             ),
                           ),
                           Text(
-                            DateFormat('dd/MM/yyyy').format(
-                              widget.data.workingDate,
-                            ),
+                            widget.data.workingDate != null
+                                ? DateFormat(
+                                    'dd/MM/yyyy',
+                                  ).format(
+                                    widget
+                                        .data.workingDate!,
+                                  )
+                                : '',
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
                             ),
@@ -149,10 +152,8 @@ class _TaskAssignmentDetail
                             ),
                           ),
                           Text(
-                            widget
-                                    .data
-                                    .createdBy
-                                    .fullName ??
+                            widget.data.createdBy
+                                    ?.fullName ??
                                 '', // Điền sau nếu có
                             style: TextStyle(
                               fontSize: 16,
@@ -160,60 +161,19 @@ class _TaskAssignmentDetail
                             ),
                           ),
                           SizedBox(width: 6),
-                          if ((widget
-                                      .data
-                                      .createdBy
-                                      .phone ??
-                                  '')
-                              .isNotEmpty)
+                          if (widget
+                                  .data.createdBy?.phone !=
+                              null)
                             IconButton(
                               onPressed: () {
-                                _callPhone(
-                                  widget
-                                      .data
-                                      .createdBy
-                                      .phone!,
-                                );
+                                final phone = widget
+                                    .data.createdBy!.phone!;
+                                _callPhone(phone);
                               },
-                              icon: Icon(Icons.phone),
+                              icon: const Icon(Icons.phone),
                             ),
                         ],
                       ),
-                      if (widget.data.devicesToProduce !=
-                              null &&
-                          widget
-                              .data
-                              .devicesToProduce!
-                              .isNotEmpty)
-                        const SizedBox(height: 10),
-                      if (widget.data.devicesToProduce !=
-                              null &&
-                          widget
-                              .data
-                              .devicesToProduce!
-                              .isNotEmpty)
-                        Row(
-                          children: [
-                            Text(
-                              'Loại phương tiện: ',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              (widget.data.devicesToProduce ??
-                                      [])
-                                  .map(
-                                    (e) =>
-                                        '${e.deviceType.name} - Sl:${e.quantity}',
-                                  )
-                                  .join(', '),
-                              softWrap: true,
-                              overflow:
-                                  TextOverflow.visible,
-                            ), // Điền sau nếu có
-                          ],
-                        ),
                       if (widget.data.device != null &&
                           widget.data.device!.isNotEmpty)
                         const SizedBox(height: 10),
@@ -237,16 +197,105 @@ class _TaskAssignmentDetail
                             ), // Điền sau nếu có
                           ],
                         ),
-                      if (widget
-                              .data
-                              .excavator
+                      if (widget.data.repairVehicles !=
+                              null &&
+                          widget.data.repairVehicles!
+                              .isNotEmpty)
+                        Text(
+                          'Phương tiện sửa chữa: ',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      if (widget.data.repairVehicles !=
+                              null &&
+                          widget.data.repairVehicles!
+                              .isNotEmpty)
+                        Column(
+                          children: widget
+                              .data.repairVehicles!
+                              .map((
+                            repair,
+                          ) {
+                            return Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [
+                                Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment
+                                          .start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.build,
+                                          color:
+                                              Colors.orange,
+                                          size: 20,
+                                        ),
+                                        Text(
+                                          repair.device
+                                                  ?.code ??
+                                              '',
+                                        ),
+                                      ],
+                                    ),
+                                    Row(
+                                      children: [
+                                        Text(
+                                          'Tình trạng:  ',
+                                          style: TextStyle(
+                                            fontWeight:
+                                                FontWeight
+                                                    .w600,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${repair.note}',
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                        ),
+                      if (widget.data.assignedVehicles
                               ?.isNotEmpty ==
                           true)
                         const SizedBox(height: 10),
-                      if (widget
-                              .data
-                              .excavator
+                      if (widget.data.assignedVehicles
                               ?.isNotEmpty ==
+                          true)
+                        Row(
+                          children: [
+                            Text(
+                              'Phương tiện nhận tải: ',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                (widget.data.assignedVehicles ??
+                                        [])
+                                    .map((e) => e.code)
+                                    .join(', '),
+                                softWrap: true,
+                                overflow:
+                                    TextOverflow.visible,
+                              ),
+                            ), // Điền sau nếu có
+                          ],
+                        ),
+                      if (widget
+                              .data.excavator?.isNotEmpty ==
+                          true)
+                        const SizedBox(height: 10),
+                      if (widget
+                              .data.excavator?.isNotEmpty ==
                           true)
                         Row(
                           children: [
@@ -258,7 +307,8 @@ class _TaskAssignmentDetail
                             ),
                             Text(
                               (widget.data.excavator ?? [])
-                                  .map((e) => e.code)
+                                  .map(
+                                      (e) => e.device?.code)
                                   .join(', '),
                               softWrap: true,
                               overflow:
@@ -266,10 +316,12 @@ class _TaskAssignmentDetail
                             ), // Điền sau nếu có
                           ],
                         ),
-                      if (widget.data.material?.isNotEmpty ==
+                      if (widget
+                              .data.material?.isNotEmpty ==
                           true)
                         const SizedBox(height: 10),
-                      if (widget.data.material?.isNotEmpty ==
+                      if (widget
+                              .data.material?.isNotEmpty ==
                           true)
                         Row(
                           children: [
@@ -291,10 +343,12 @@ class _TaskAssignmentDetail
                             ), // Điền sau nếu có
                           ],
                         ),
-                      if (widget.data.location?.isNotEmpty ==
+                      if (widget
+                              .data.location?.isNotEmpty ==
                           true)
                         const SizedBox(height: 10),
-                      if (widget.data.location?.isNotEmpty ==
+                      if (widget
+                              .data.location?.isNotEmpty ==
                           true)
                         Row(
                           children: [
@@ -329,18 +383,14 @@ class _TaskAssignmentDetail
                             "${widget.data.assignedTo.salaryCode} ${widget.data.assignedTo.fullName ?? ''}",
                           ),
                           SizedBox(width: 6),
-                          if ((widget
-                                      .data
-                                      .assignedTo
+                          if ((widget.data.assignedTo
                                       .phone ??
                                   '')
                               .isNotEmpty)
                             IconButton(
                               onPressed: () {
                                 _callPhone(
-                                  widget
-                                      .data
-                                      .assignedTo
+                                  widget.data.assignedTo
                                       .phone!,
                                 );
                               },
@@ -366,12 +416,11 @@ class _TaskAssignmentDetail
                                   widget.data.startTime !=
                                           null
                                       ? DateFormat(
-                                        'HH:mm:ss',
-                                      ).format(
-                                        widget
-                                            .data
-                                            .startTime!,
-                                      )
+                                          'HH:mm:ss',
+                                        ).format(
+                                          widget.data
+                                              .startTime!,
+                                        )
                                       : '',
                                 ),
                               ],
@@ -392,12 +441,11 @@ class _TaskAssignmentDetail
                                   widget.data.endTime !=
                                           null
                                       ? DateFormat(
-                                        'HH:mm:ss',
-                                      ).format(
-                                        widget
-                                            .data
-                                            .endTime!,
-                                      )
+                                          'HH:mm:ss',
+                                        ).format(
+                                          widget.data
+                                              .endTime!,
+                                        )
                                       : '',
                                 ),
                               ],
@@ -413,9 +461,7 @@ class _TaskAssignmentDetail
                         ),
                       ),
                       Text(widget.data.workContent ?? ''),
-                      if (widget
-                          .data
-                          .safetyMeasureSpecific!
+                      if (widget.data.safetyMeasureSpecific!
                           .isNotEmpty)
                         if (widget
                             .data
@@ -498,8 +544,8 @@ class _TaskAssignmentDetail
                           foregroundColor: Colors.white,
                           padding:
                               const EdgeInsets.symmetric(
-                                vertical: 15,
-                              ),
+                            vertical: 15,
+                          ),
                         ),
                         child: const Text(
                           'Copy',
@@ -519,8 +565,8 @@ class _TaskAssignmentDetail
                           foregroundColor: Colors.white,
                           padding:
                               const EdgeInsets.symmetric(
-                                vertical: 15,
-                              ),
+                            vertical: 15,
+                          ),
                         ),
                         child: const Text(
                           'Xóa',

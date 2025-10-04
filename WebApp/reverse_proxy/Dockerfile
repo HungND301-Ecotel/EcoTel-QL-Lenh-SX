@@ -7,4 +7,5 @@
 # 1: https://hub.docker.com/_/nginx
 
 FROM nginx
-COPY nginx.conf /etc/nginx/nginx.conf
+ARG NGINX_CONF=nginx_staging.conf
+COPY ${NGINX_CONF} /etc/nginx/nginx.conf

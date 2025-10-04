@@ -8,8 +8,6 @@ class DeviceModel {
   final String? name;
   final String? vehicleNumber;
   final DeviceTypeModel? category;
-  final String? material;
-  final String? fuelType;
   final DepartmentModel? department;
   final Coordinates? coordinates;
   final String? status;
@@ -18,8 +16,6 @@ class DeviceModel {
     required this.code,
     this.vehicleNumber,
     this.category,
-    this.material,
-    this.fuelType,
     this.department,
     required this.id,
     required this.name,
@@ -36,8 +32,6 @@ class DeviceModel {
           json?['category'] != null
               ? DeviceTypeModel.fromJson(json?['category'])
               : null,
-      material: json?['material'],
-      fuelType: json?['fuelType'],
       department:
           json?['department'] != null
               ? DepartmentModel.fromJson(
@@ -58,8 +52,6 @@ class DeviceModel {
       'name': name,
       'vehicleNumber': vehicleNumber,
       'category': category?.toJson(),
-      'material': material,
-      'fuelType': fuelType,
       'department': department?.toJson(),
       'status': status,
       'coordinates': coordinates?.toJson(),

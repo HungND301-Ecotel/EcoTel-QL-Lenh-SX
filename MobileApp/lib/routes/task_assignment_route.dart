@@ -130,6 +130,8 @@ class TaskAssignmentRoutes {
       '/taskAssignmentEdit';
   static const String taskAssignmentVehicleSelect =
       '/taskAssignmentVehicleSelect';
+  static const String taskAssignmentAllDeviceSelect =
+      '/taskAssignmentAllDeviceSelect';
   static const String taskAssignmentDumpSiteSelect =
       '/taskAssignmentDumpSiteSelect';
   static const String taskAssignmentMaterialSelect =

@@ -31,7 +31,9 @@ build:
 staging:
 	@echo "REGISTRY=${REGISTRY}\nVERSION=${STAGING_VERSION}-${TAG_VERSION}-${commit_id}" > .env
 	@echo "Docker compose build from a file..."
-	docker compose -f docker-compose-build.yaml build --parallel
+	docker compose -f docker-compose-build.yaml build \
+		--parallel \
+		--build-arg NGINX_CONF=nginx_staging.conf
 	@echo "Docker login with github secrets"
 	echo "$$DOCKER_HUB_ACCESS_TOKEN" | docker login -u "$$DOCKER_HUB_USERNAME" --password-stdin
 	@echo "Docker compose push to a DockerHub image repository for staging"
@@ -41,7 +43,9 @@ staging:
 release:
 	@echo "REGISTRY=${REGISTRY}\nVERSION=${RELEASE_VERSION}-${TAG_VERSION}-${commit_id}" > .env
 	@echo "Docker compose build from a file..."
-	docker compose -f docker-compose-build.yaml build --parallel
+	docker compose -f docker-compose-build.yaml build \
+		--parallel \
+		--build-arg NGINX_CONF=nginx_release.conf
 	@echo "Docker login with github secrets"
 	echo "$$DOCKER_HUB_ACCESS_TOKEN" | docker login -u "$$DOCKER_HUB_USERNAME" --password-stdin
 	@echo "Docker compose push to a DockerHub image repository for release"

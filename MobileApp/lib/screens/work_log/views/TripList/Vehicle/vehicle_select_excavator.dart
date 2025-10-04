@@ -40,29 +40,29 @@ class _VehicleSelectExcavator
               .toList(),
         );
       });
-      final order =
-          Provider.of<ReportDraftProvider>(
-            context,
-            listen: false,
-          ).order;
+      final order = Provider.of<ReportDraftProvider>(
+        context,
+        listen: false,
+      ).order;
       if (order?.excavator != null &&
           order!.excavator!.isNotEmpty) {
-        final selectedIds =
-            order.excavator!.map((m) => m.id).toList();
+        final selectedIds = order.excavator!
+            .where((i) => i.status == true)
+            .map((m) => m.device?.id)
+            .toList();
         _selectedDevice = selectedIds.last;
-        setState(() {
-          _onSelectDevice(order.excavator!.last.id);
-          devices.sort((a, b) {
-            if (selectedIds.contains(a.id) &&
-                !selectedIds.contains(b.id)) {
-              return -1;
-            } else if (!selectedIds.contains(a.id) &&
-                selectedIds.contains(b.id)) {
-              return 1;
-            }
-            return 0;
+        if (selectedIds.isNotEmpty) {
+          final lastId = selectedIds.last;
+          _selectedDevice = lastId;
+          _onSelectDevice(lastId!); // chỉ gọi 1 lần
+          setState(() {
+            devices.sort((a, b) {
+              if (a.id == lastId) return -1;
+              if (b.id == lastId) return 1;
+              return 0;
+            });
           });
-        });
+        }
       }
     }
     setState(() {
@@ -104,14 +104,13 @@ class _VehicleSelectExcavator
   String _searchText = '';
   @override
   Widget build(BuildContext context) {
-    List<DeviceModel> filteredItems =
-        devices
-            .where(
-              (item) => item.code.toLowerCase().contains(
+    List<DeviceModel> filteredItems = devices
+        .where(
+          (item) => item.code.toLowerCase().contains(
                 _searchText.toLowerCase(),
               ),
-            )
-            .toList();
+        )
+        .toList();
     if (_selectedDevice != null) {
       filteredItems.sort((a, b) {
         if (a.id == _selectedDevice) return -1;
@@ -162,31 +161,28 @@ class _VehicleSelectExcavator
           ),
           Divider(height: 1),
           Expanded(
-            child:
-                _isLoading
-                    ? Center(
-                      child: CircularProgressIndicator(),
-                    )
-                    : SingleChildScrollView(
-                      child: Column(
-                        children:
-                            filteredItems
-                                .map(
-                                  (item) => ExcavatorItem(
-                                    data: item,
-                                    selected:
-                                        _selectedDevice ==
-                                        item.id,
-                                    onTap: () {
-                                      _onSelectDevice(
-                                        item.id,
-                                      );
-                                    },
-                                  ),
-                                )
-                                .toList(),
-                      ),
+            child: _isLoading
+                ? Center(
+                    child: CircularProgressIndicator(),
+                  )
+                : SingleChildScrollView(
+                    child: Column(
+                      children: filteredItems
+                          .map(
+                            (item) => ExcavatorItem(
+                              data: item,
+                              selected: _selectedDevice ==
+                                  item.id,
+                              onTap: () {
+                                _onSelectDevice(
+                                  item.id,
+                                );
+                              },
+                            ),
+                          )
+                          .toList(),
                     ),
+                  ),
           ),
           Container(
             padding: const EdgeInsets.all(8.0),
@@ -209,16 +205,15 @@ class _VehicleSelectExcavator
                 SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed:
-                        _selectedDevice == null
-                            ? null
-                            : () {
-                              Navigator.pushNamed(
-                                context,
-                                WorkLogRoutes
-                                    .vehicleSelectDestination,
-                              );
-                            },
+                    onPressed: _selectedDevice == null
+                        ? null
+                        : () {
+                            Navigator.pushNamed(
+                              context,
+                              WorkLogRoutes
+                                  .vehicleSelectDestination,
+                            );
+                          },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,

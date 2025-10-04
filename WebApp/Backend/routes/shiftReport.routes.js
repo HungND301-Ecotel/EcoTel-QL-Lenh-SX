@@ -7,24 +7,31 @@ const ReportHistory = require('../models/ReportHistory');
 
 
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
+const { STATUS_DEVICE, STATUS_REPAIR } = require('../config/config');
 
 
 router.post('/', verifyToken, async (req, res, next) => {
     try {
-        const { orderId, assignedTo, vehicleSummaries, handoverHours, otherHours, handoverNotes, risks } = req.body;
+        const { orderId, assignedTo, vehicleSummaries, vehicleRepair, handoverHours, handoverNotes, risks } = req.body;
         if (!handoverNotes) {
             req.logger.error(`❌ Tình trạng công việc là bắt buộc: ${orderId}`);
             return res.status(400).send({ status: 'error', message: "Tình trạng công việc là bắt buộc" });
         }
         if (vehicleSummaries) {
             for (var item of vehicleSummaries) {
-                const device = await Device.findById(item.vehicle);
-                device.note = item.note || "";
-                await device.save();
+                await Device.findByIdAndUpdate(item.vehicle, { note: item.note }, { new: true });
+            }
+        }
+        if (vehicleRepair) {
+            for (var item of vehicleRepair) {
+                await Device.findByIdAndUpdate(item.device, {
+                    status: item.status === STATUS_REPAIR.COMPLETED ? STATUS_DEVICE.AVAILABLE : device.status,
+                    note: item.noteRepair
+                }, { new: true });
             }
         }
         const newShiftReport = new ShiftReport({
-            orderId, assignedTo, vehicleSummaries, handoverHours, otherHours, handoverNotes, risks
+            orderId, assignedTo, vehicleSummaries, vehicleRepair, handoverHours, handoverNotes, risks
         });
         await newShiftReport.save();
         req.logger.info(`✅ Tạo báo cáo ca thành công với Order ID: ${orderId}`);
@@ -51,7 +58,6 @@ router.get('/:id', verifyToken, async (req, res) => {
 });
 const trackedFieldsWork = [
     'handoverHours',
-    'otherHours',
     'handoverNotes',
     'risks'
 ];
@@ -86,9 +92,29 @@ router.put('/:id', verifyToken, async (req, res) => {
                 if (!originalItem) return;
 
                 for (let field of [
-                    'repairHours', 'travelHours', 'fuelRemain',
+                    'repairHours', 'fuelRemain',
                     'fuelReceived', 'fuelRemainEnd', 'status', 'note',
                     'gpsStatus', 'sealStatus'
+                ]) {
+                    if (updatedItem[field] !== undefined && updatedItem[field] !== originalItem[field]) {
+                        changes.push({
+                            field,
+                            index,
+                            oldValue: originalItem[field],
+                            newValue: updatedItem[field]
+                        });
+                    }
+                }
+            });
+        }
+        // 🔹 So sánh trong mảng vehicleSummaries
+        if (Array.isArray(updates.vehicleRepair)) {
+            updates.vehicleRepair.forEach((updatedItem, index) => {
+                const originalItem = shiftReport.vehicleRepair[index];
+                if (!originalItem) return;
+
+                for (let field of [
+                    'status', 'noteRepair',
                 ]) {
                     if (updatedItem[field] !== undefined && updatedItem[field] !== originalItem[field]) {
                         changes.push({
@@ -117,9 +143,21 @@ router.put('/:id', verifyToken, async (req, res) => {
             for (const item of updates.vehicleSummaries) {
                 const device = await Device.findById(item.vehicle);
                 if (device) {
-                    device.status = item.status === "good" ? "available" : "maintenance";
-                    device.note = item.note || '';
-                    await device.save();
+                    await Device.findByIdAndUpdate(item.vehicle, {
+                        status: item.status === "good" ? STATUS_DEVICE.AVAILABLE : STATUS_DEVICE.MAINTENANCE,
+                        note: item.note
+                    }, { new: true });
+                }
+            }
+        }
+        if (updates.vehicleRepair) {
+            for (const item of updates.vehicleRepair) {
+                const device = await Device.findById(item.device);
+                if (device) {
+                    await Device.findByIdAndUpdate(item.device, {
+                        status: item.status === STATUS_REPAIR.COMPLETED ? STATUS_DEVICE.AVAILABLE : STATUS_DEVICE.MAINTENANCE,
+                        note: item.noteRepair
+                    }, { new: true });
                 }
             }
         }

@@ -1,23 +1,28 @@
 import { Typography, IconButton, Paper, Grid, Box } from '@mui/material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRenderCellParams, useGridApiRef } from '@mui/x-data-grid';
 import React, { useEffect, useState } from 'react'
 
 export default function VehicleShiftReport({ data, signatureUrl }: { data: any[], signatureUrl: string | null }) {
+    const apiRef = useGridApiRef()
 
     const reportColumns: GridColDef[] = [
         {
             field: 'STT', headerName: 'STT', flex: 0.4,
-            renderCell: (params) => params.api.getRowIndex(params.id) + 1,
+            renderCell: (params: GridRenderCellParams) => {
+                const sortedIds = params.api.getSortedRowIds();
+                const index = sortedIds.indexOf(params.id);
+                return index >= 0 ? index + 1 : '';
+            },
         },
         {
             field: 'vehicleNumber', headerName: 'Số xe', flex: 0.4,
-            valueGetter: (params) => params.row.vehicleNumber || '',
+            renderCell: (params: any) => params.row.vehicleNumber || '',
         },
         {
             field: 'note',
             headerName: 'Tình trạng hư/ hỏng',
             flex: 1,
-            valueGetter: (params) => params.row.note || '',
+            renderCell: (params: any) => params.row.note || '',
         },
         { field: 'repairResult', headerName: 'Kết quả sửa chữa trong ca', flex: 1 },
         { field: 'generalNote', headerName: 'Ghi chú', flex: 1 },
@@ -29,6 +34,7 @@ export default function VehicleShiftReport({ data, signatureUrl }: { data: any[]
                 <Typography textAlign={'center'} mb={2} variant='h3'>Xe không hoạt động</Typography>
                 <DataGrid
                     rows={data}
+                    apiRef={apiRef}
                     columns={reportColumns}
                     getRowId={(row) => row._id}
                     autoHeight

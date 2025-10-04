@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:soft/models/device_model.dart';
 import 'package:soft/models/order_model.dart';
 import 'package:soft/models/shift_model.dart';
 import 'package:soft/models/task_model.dart';
@@ -35,7 +36,8 @@ class _TaskAssignmentVehicleEdit
     extends State<TaskAssignmentVehicleEdit> {
   DateTime? _selectedDateTime;
   List<String?> vehicle = [];
-  List<String?> excavator = [];
+  List<Excavator?> excavators = [];
+
   List<String?> dump = [];
   List<String?> material = [];
   UserModel? user;
@@ -55,9 +57,18 @@ class _TaskAssignmentVehicleEdit
         vehicle = order.device!.map((d) => d.id).toList();
       }
       // Gán lại vehicle nếu có
-      if (order.excavator != null) {
-        excavator =
-            order.excavator!.map((d) => d.id).toList();
+      if (order.excavator != null &&
+          order.excavator!.isNotEmpty) {
+        excavators = order.excavator!.map((ex) {
+          return Excavator(
+            device: ex.device,
+            status: ex.status ?? true,
+          );
+        }).toList();
+      } else {
+        excavators = [
+          Excavator(device: null, status: true)
+        ];
       }
       // Gán lại vehicle nếu có
       if (order.material != null) {
@@ -79,9 +90,6 @@ class _TaskAssignmentVehicleEdit
 
       _descriptionController.text = order.workContent ?? '';
       _noteController.text = order.note ?? '';
-      _distanceController.text = order.distance.toString();
-      _liftHeightController.text =
-          order.liftHeight.toString();
       _noteController.text = order.note ?? '';
     }
   }
@@ -115,7 +123,7 @@ class _TaskAssignmentVehicleEdit
       final hour = int.tryParse(parts[0]) ?? 0;
       final minute =
           int.tryParse(parts.length > 1 ? parts[1] : '0') ??
-          0;
+              0;
       initialTime = TimeOfDay(hour: hour, minute: minute);
     } else {
       initialTime = TimeOfDay.now();
@@ -147,11 +155,11 @@ class _TaskAssignmentVehicleEdit
     });
   }
 
-  void _updateExcavator(int index, String selectedVehicle) {
-    setState(() {
-      excavator[index] = selectedVehicle;
-    });
-  }
+  // void _updateExcavator(int index, String selectedVehicle) {
+  //   setState(() {
+  //     excavators[index] = selectedVehicle;
+  //   });
+  // }
 
   void _updateMaterial(int index, String selectedMaterial) {
     setState(() {
@@ -173,10 +181,6 @@ class _TaskAssignmentVehicleEdit
 
   final TextEditingController _descriptionController =
       TextEditingController();
-  final TextEditingController _distanceController =
-      TextEditingController();
-  final TextEditingController _liftHeightController =
-      TextEditingController();
   final TextEditingController _noteController =
       TextEditingController();
   final TextEditingController _safetyController =
@@ -192,47 +196,40 @@ class _TaskAssignmentVehicleEdit
     String safetyMeasureSpecific =
         _safetySpecificController.text.trim();
 
-    final distace = num.tryParse(_distanceController.text);
-    final liftheight = num.tryParse(
-      _liftHeightController.text,
-    );
+    List<String> vehicleIds = vehicle
+        .where((v) => v != null && v.isNotEmpty)
+        .cast<String>()
+        .toList();
+    final validExcavator = excavators
+        .where((item) => item?.device != null)
+        .map((i) => ({
+              'device': i?.device!.id,
+              'status': i?.status ?? true
+            }))
+        .toList();
 
-    List<String> vehicleIds =
-        vehicle
-            .where((v) => v != null && v.isNotEmpty)
-            .cast<String>()
-            .toList();
-    List<String> excavatorIds =
-        excavator
-            .where((v) => v != null && v.isNotEmpty)
-            .cast<String>()
-            .toList();
-
-    var result = await _orderService
-        .update(widget.order!.id, {
-          "job": widget.data.id,
-          "workingDate":
-              DateTime.utc(
-                _selectedDateTime!.year,
-                _selectedDateTime!.month,
-                _selectedDateTime!.day,
-              ).toIso8601String(),
-          "shift": _shift?.id,
-          "shiftHour": _shiftHour,
-          "assignedTo": user?.id,
-          "device": vehicleIds,
-          "location": dump,
-          "excavator": excavatorIds,
-          "distance": distace,
-          "liftHeight": liftheight,
-          "material": material,
-          "status": "pending",
-          "workContent": description,
-          "temporaryError": null,
-          "note": note,
-          "safetyMeasure": safetyMeasure,
-          "safetyMeasureSpecific": safetyMeasureSpecific,
-        });
+    var result =
+        await _orderService.update(widget.order!.id, {
+      "job": widget.data.id,
+      "workingDate": DateTime.utc(
+        _selectedDateTime!.year,
+        _selectedDateTime!.month,
+        _selectedDateTime!.day,
+      ).toIso8601String(),
+      "shift": _shift?.id,
+      "shiftHour": _shiftHour,
+      "assignedTo": user?.id,
+      "device": vehicleIds,
+      "location": dump,
+      "excavator": validExcavator,
+      "material": material,
+      "status": "pending",
+      "workContent": description,
+      "temporaryError": null,
+      "note": note,
+      "safetyMeasure": safetyMeasure,
+      "safetyMeasureSpecific": safetyMeasureSpecific,
+    });
     if (!mounted) return;
     if (result['status'] == 'error') {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -324,159 +321,146 @@ class _TaskAssignmentVehicleEdit
                 ),
                 ...(vehicle.isEmpty
                     ? <Widget>[
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          bottom: 8.0,
-                        ),
-                        child: VehicleButton(
-                          vehicle: null,
-                          onSelectVehicle: (selected) {
-                            setState(() {
-                              vehicle = [
-                                selected,
-                              ]; // Khởi tạo danh sách mới
-                            });
-                          },
-                        ),
-                      ),
-                    ]
-                    : List.generate(vehicle.length, (
-                      index,
-                    ) {
-                      return Padding(
-                        padding: const EdgeInsets.only(
-                          bottom: 8.0,
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: VehicleButton(
-                                vehicle: vehicle[index],
-                                onSelectVehicle: (
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: 8.0,
+                          ),
+                          child: VehicleButton(
+                            vehicle: null,
+                            onSelectVehicle: (selected) {
+                              setState(() {
+                                vehicle = [
                                   selected,
-                                ) {
-                                  _updateVehicle(
-                                    index,
-                                    selected,
-                                  );
-                                },
-                              ),
-                            ),
-                            if (index > 0)
-                              IconButton(
-                                icon: Icon(
-                                  Icons.remove_circle,
-                                  color: Colors.red,
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    vehicle.removeAt(index);
-                                  });
-                                },
-                              ),
-                          ],
+                                ]; // Khởi tạo danh sách mới
+                              });
+                            },
+                          ),
                         ),
-                      );
-                    })),
+                      ]
+                    : List.generate(vehicle.length, (
+                        index,
+                      ) {
+                        return Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: 8.0,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: VehicleButton(
+                                  vehicle: vehicle[index],
+                                  onSelectVehicle: (
+                                    selected,
+                                  ) {
+                                    _updateVehicle(
+                                      index,
+                                      selected,
+                                    );
+                                  },
+                                ),
+                              ),
+                              if (index > 0)
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.remove_circle,
+                                    color: Colors.red,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      vehicle
+                                          .removeAt(index);
+                                    });
+                                  },
+                                ),
+                            ],
+                          ),
+                        );
+                      })),
                 Row(
                   children: [
-                    Text(
-                      'Máy xúc',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        setState(() {
-                          excavator.add("");
-                        });
-                      },
-                      icon: Icon(
-                        Icons.add_circle,
-                        color: Colors.blue,
-                      ),
-                    ),
-                  ],
-                ),
-                ...(excavator.isEmpty
-                    ? <Widget>[
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          bottom: 8.0,
-                        ),
-                        child: ExcavatorButton(
-                          vehicle: null,
-                          onSelectVehicle: (selected) {
+                    Expanded(
+                        child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                      children: [
+                        TextButton.icon(
+                          icon: Icon(Icons.add_circle,
+                              color: Colors.blue),
+                          label: Text('Thêm máy xúc'),
+                          onPressed: () {
                             setState(() {
-                              excavator = [
-                                selected,
-                              ]; // Khởi tạo danh sách mới
+                              excavators.add(Excavator(
+                                  device: null,
+                                  status: true));
                             });
                           },
                         ),
-                      ),
-                    ]
-                    : List.generate(excavator.length, (
-                      index,
-                    ) {
-                      return Padding(
-                        padding: const EdgeInsets.only(
-                          bottom: 8.0,
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: ExcavatorButton(
-                                vehicle: excavator[index],
-                                onSelectVehicle: (
-                                  selected,
-                                ) {
-                                  _updateExcavator(
-                                    index,
-                                    selected,
-                                  );
-                                },
-                              ),
-                            ),
-                            if (index > 0)
-                              IconButton(
-                                icon: Icon(
-                                  Icons.remove_circle,
-                                  color: Colors.red,
+                        for (int i = 0;
+                            i < excavators.length;
+                            i++)
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextButton(
+                                  onPressed: () async {
+                                    final selected =
+                                        await Navigator.of(
+                                      context,
+                                      rootNavigator: true,
+                                    ).pushNamed(AppRoute
+                                            .excavatorSelect);
+
+                                    if (selected
+                                        is DeviceModel) {
+                                      setState(() {
+                                        excavators[i]
+                                                ?.device =
+                                            selected;
+                                      });
+                                    }
+                                  },
+                                  style:
+                                      TextButton.styleFrom(
+                                    foregroundColor:
+                                        Colors.black,
+                                    backgroundColor: Colors
+                                        .grey.shade300,
+                                    alignment: Alignment
+                                        .centerLeft,
+                                  ),
+                                  child: Text(
+                                    excavators[i]
+                                            ?.device
+                                            ?.code ??
+                                        'Chọn máy xúc',
+                                  ),
                                 ),
-                                onPressed: () {
+                              ),
+                              Checkbox(
+                                value: excavators[i]
+                                    ?.status, // ✅ vì status là bool (mặc định true)
+                                onChanged: (val) {
                                   setState(() {
-                                    excavator.removeAt(
-                                      index,
-                                    );
+                                    excavators[i]?.status =
+                                        val ?? true;
                                   });
                                 },
                               ),
-                          ],
-                        ),
-                      );
-                    })),
-                // Text(
-                //   'Cung độ',
-                //   style: TextStyle(
-                //     fontWeight: FontWeight.bold,
-                //   ),
-                // ),
-                // TextField(
-                //   controller: _distanceController,
-                //   keyboardType: TextInputType.number,
-                // ),
-                // Text(
-                //   'Độ cao nâng tải',
-                //   style: TextStyle(
-                //     fontWeight: FontWeight.bold,
-                //   ),
-                // ),
-                // TextField(
-                //   controller: _liftHeightController,
-                //   keyboardType: TextInputType.number,
-                // ),
+                              IconButton(
+                                icon: Icon(Icons.cancel,
+                                    color: Colors.red),
+                                onPressed: () {
+                                  setState(() {
+                                    excavators.removeAt(i);
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                      ],
+                    )),
+                  ],
+                ),
                 Row(
                   children: [
                     Text(
@@ -500,58 +484,58 @@ class _TaskAssignmentVehicleEdit
                 ),
                 ...(dump.isEmpty
                     ? <Widget>[
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          bottom: 8.0,
-                        ),
-                        child: LocationButton(
-                          location: null,
-                          onSelectLocation: (selected) {
-                            setState(() {
-                              dump = [
-                                selected,
-                              ]; // Khởi tạo danh sách mới
-                            });
-                          },
-                        ),
-                      ),
-                    ]
-                    : List.generate(dump.length, (index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(
-                          bottom: 8.0,
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: LocationButton(
-                                location: dump[index],
-                                onSelectLocation: (
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: 8.0,
+                          ),
+                          child: LocationButton(
+                            location: null,
+                            onSelectLocation: (selected) {
+                              setState(() {
+                                dump = [
                                   selected,
-                                ) {
-                                  _updateLocation(
-                                    index,
-                                    selected,
-                                  );
-                                },
-                              ),
-                            ),
-                            if (index > 0)
-                              IconButton(
-                                icon: Icon(
-                                  Icons.remove_circle,
-                                  color: Colors.red,
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    dump.removeAt(index);
-                                  });
-                                },
-                              ),
-                          ],
+                                ]; // Khởi tạo danh sách mới
+                              });
+                            },
+                          ),
                         ),
-                      );
-                    })),
+                      ]
+                    : List.generate(dump.length, (index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: 8.0,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: LocationButton(
+                                  location: dump[index],
+                                  onSelectLocation: (
+                                    selected,
+                                  ) {
+                                    _updateLocation(
+                                      index,
+                                      selected,
+                                    );
+                                  },
+                                ),
+                              ),
+                              if (index > 0)
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.remove_circle,
+                                    color: Colors.red,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      dump.removeAt(index);
+                                    });
+                                  },
+                                ),
+                            ],
+                          ),
+                        );
+                      })),
                 Row(
                   children: [
                     Text(
@@ -575,62 +559,62 @@ class _TaskAssignmentVehicleEdit
                 ),
                 ...(material.isEmpty
                     ? <Widget>[
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          bottom: 8.0,
-                        ),
-                        child: MaterialSelectButton(
-                          material: null,
-                          onSelectMaterial: (selected) {
-                            setState(() {
-                              material = [
-                                selected,
-                              ]; // Khởi tạo danh sách mới
-                            });
-                          },
-                        ),
-                      ),
-                    ]
-                    : List.generate(material.length, (
-                      index,
-                    ) {
-                      return Padding(
-                        padding: const EdgeInsets.only(
-                          bottom: 8.0,
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: MaterialSelectButton(
-                                material: material[index],
-                                onSelectMaterial: (
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: 8.0,
+                          ),
+                          child: MaterialSelectButton(
+                            material: null,
+                            onSelectMaterial: (selected) {
+                              setState(() {
+                                material = [
                                   selected,
-                                ) {
-                                  _updateMaterial(
-                                    index,
-                                    selected,
-                                  );
-                                },
-                              ),
-                            ),
-                            if (index > 0)
-                              IconButton(
-                                icon: Icon(
-                                  Icons.remove_circle,
-                                  color: Colors.red,
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    material.removeAt(
-                                      index,
-                                    );
-                                  });
-                                },
-                              ),
-                          ],
+                                ]; // Khởi tạo danh sách mới
+                              });
+                            },
+                          ),
                         ),
-                      );
-                    })),
+                      ]
+                    : List.generate(material.length, (
+                        index,
+                      ) {
+                        return Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: 8.0,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: MaterialSelectButton(
+                                  material: material[index],
+                                  onSelectMaterial: (
+                                    selected,
+                                  ) {
+                                    _updateMaterial(
+                                      index,
+                                      selected,
+                                    );
+                                  },
+                                ),
+                              ),
+                              if (index > 0)
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.remove_circle,
+                                    color: Colors.red,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      material.removeAt(
+                                        index,
+                                      );
+                                    });
+                                  },
+                                ),
+                            ],
+                          ),
+                        );
+                      })),
                 Text(
                   'Nội dung công việc',
                   style: TextStyle(
@@ -682,8 +666,7 @@ class _TaskAssignmentVehicleEdit
                           setState(() {
                             // Kiểm tra nếu TextField không rỗng, thêm dấu xuống dòng
                             if (_safetyController
-                                .text
-                                .isNotEmpty) {
+                                .text.isNotEmpty) {
                               _safetyController.text +=
                                   '\n';
                             }

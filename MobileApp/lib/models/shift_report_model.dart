@@ -82,6 +82,33 @@ class VehicleSummariesModel {
   }
 }
 
+class VehicleRepairModel {
+  final Device? device;
+  final String? status;
+  final String? noteRepair;
+
+  VehicleRepairModel({this.device, this.status, this.noteRepair});
+
+  factory VehicleRepairModel.fromJson(
+    Map<String, dynamic>? json,
+  ) {
+    return VehicleRepairModel(
+      device:
+          json?['device'] != null
+              ? Device.fromJson(json?['device'])
+              : null,
+      status: json?['status'],
+      noteRepair: json?['noteRepair'],
+    );
+  }
+  Map<String, dynamic> toJson() {
+    return {
+      'device': device?.toJson(),
+      'status': status,
+      'noteRepair': noteRepair,
+    };
+  }
+}
 // shiftReport Model
 
 class ShiftReportModel {
@@ -89,8 +116,8 @@ class ShiftReportModel {
   final String orderId;
   final String? assignedTo;
   final List<VehicleSummariesModel>? vehicleSummaries;
+  final List<VehicleRepairModel>? vehicleRepair;
   final num? handoverHours;
-  final num? otherHours;
   final String? handoverNotes;
   final String? risks;
 
@@ -99,8 +126,8 @@ class ShiftReportModel {
     required this.orderId,
     this.assignedTo,
     this.vehicleSummaries,
+    this.vehicleRepair,
     this.handoverHours,
-    this.otherHours,
     this.handoverNotes,
     this.risks,
   });
@@ -119,8 +146,12 @@ class ShiftReportModel {
               )
               .toList() ??
           [],
+      vehicleRepair:
+          (json?['vehicleRepair'] as List?)
+              ?.map((e) => VehicleRepairModel.fromJson(e))
+              .toList() ??
+          [],
       handoverHours: json?['handoverHours'],
-      otherHours: json?['otherHours'],
       handoverNotes: json?['handoverNotes'],
       risks: json?['risks'],
     );
@@ -132,8 +163,9 @@ class ShiftReportModel {
       'assignedTo': assignedTo,
       'vehicleSummaries':
           vehicleSummaries?.map((e) => e.toJson()).toList(),
+      'vehicleRepair':
+          vehicleRepair?.map((e) => e.toJson()).toList(),
       'handoverHours': handoverHours,
-      'otherHours': otherHours,
       'handoverNotes': handoverNotes,
       'risks': risks,
     };

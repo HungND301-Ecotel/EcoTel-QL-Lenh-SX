@@ -182,7 +182,7 @@ class _DispatcherAssignmentAdd
                     setState(() {
                       userAndDepartment.add({
                         "user": null,
-                        "device": null,
+                        "department": null,
                       });
                       _departmentControllers.add(
                         TextEditingController(),

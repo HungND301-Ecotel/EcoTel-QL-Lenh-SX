@@ -26,6 +26,8 @@ import LocationSelector from '../../fixLeafletIcon';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
+import { locationValidationSchema } from '../../utils/validation';
+import LocationService from '../../services/locationService';
 
 const containerStyle = {
     width: '100%',
@@ -37,14 +39,6 @@ const defaultCenter = {
     lng: 105.8437303,
 };
 
-const validationSchema = yup.object({
-    name: yup.string().required('Vui lòng nhập tên điểm đổ tải'),
-    coordinates: yup.object({
-        lat: yup.number().required('Vui lòng chọn vĩ độ'),
-        lng: yup.number().required('Vui lòng chọn kinh độ'),
-    }).required('Vui lòng chọn tọa độ'),
-    distance: yup.number().min(0, 'Khoảng cách phải lớn hơn hoặc bằng 0').required('Vui lòng nhập khoảng cách'),
-});
 
 const Locations: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -79,11 +73,11 @@ const Locations: React.FC = () => {
 
     const { data: locations = [], isLoading } = useQuery({
         queryKey: ['locations', value],
-        queryFn: () => api.get(`/locations?name=${value}`).then(res => res.data.data),
+        queryFn: () => LocationService.getAll({ name: value }),
     });
 
     const createMutation = useMutation({
-        mutationFn: (newLoc: Partial<Location>) => api.post('/locations', newLoc).then(res => res.data),
+        mutationFn: LocationService.create,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['locations'] });
             showSuccessAlert('Thêm điểm đổ tải thành công');
@@ -95,8 +89,7 @@ const Locations: React.FC = () => {
     });
 
     const updateMutation = useMutation({
-        mutationFn: (updatedLoc: Partial<Location>) =>
-            api.put(`/locations/${updatedLoc._id}`, updatedLoc).then(res => res.data),
+        mutationFn: LocationService.update,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['locations'] });
             showSuccessAlert('Cập nhật điểm đổ tải thành công');
@@ -108,7 +101,7 @@ const Locations: React.FC = () => {
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (ids: string[]) => api.delete(`/locations`, { data: { ids } }).then(res => res.data.message),
+        mutationFn: LocationService.delete,
         onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['locations'] });
             setSelectedLocations([]);
@@ -122,16 +115,7 @@ const Locations: React.FC = () => {
     const [progress, setProgress] = useState(0)
     const [isUploading, setIsUploading] = useState(false);
     const importFile = useMutation({
-        mutationFn: (formData: FormData) =>
-            api.post('/locations/importFile', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-                onUploadProgress: (progressEvent) => {
-                    const percent = Math.round(
-                        (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
-                    );
-                    setProgress(percent);
-                }
-            }).then(res => res.data.message),
+        mutationFn: (fd: FormData) => LocationService.importFile(fd, setProgress),
         onMutate: () => {
             setIsUploading(true);
             setProgress(0); // Reset tiến trình khi bắt đầu
@@ -149,25 +133,7 @@ const Locations: React.FC = () => {
     });
 
     const exportExcel = useMutation({
-        mutationFn: () => {
-            return api.post('/locations/exportFile', {}, {
-                responseType: 'blob',
-            }).then(res => {
-                const blob = new Blob([res.data], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                });
-
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', `*.xlsx`);
-
-                document.body.appendChild(link);
-                link.click();
-                link.parentNode?.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            });
-        },
+        mutationFn: LocationService.exportFile,
         onSuccess: () => { },
         onError: (error: any) => {
             showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
@@ -179,7 +145,7 @@ const Locations: React.FC = () => {
             distance: 0,
             coordinates: { lat: 0, lng: 0 },
         },
-        validationSchema,
+        validationSchema: locationValidationSchema,
         onSubmit: values => {
             const payload = {
                 ...values,
@@ -345,7 +311,7 @@ const Locations: React.FC = () => {
                                 }}>
                             </TextField>
                         </Box>
-                        {user?.role==="admin" &&<Box display="flex" gap={2} sx={{
+                        {user?.role === "admin" && <Box display="flex" gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -511,7 +477,7 @@ const Locations: React.FC = () => {
                 }}>
                     <TableHead>
                         <TableRow>
-                            {user?.role === "admin" &&<TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>
+                            {user?.role === "admin" && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>
                                 <Checkbox
                                     color="primary"
                                     checked={locations.length > 0 && selectedLocations.length === locations.length}
@@ -559,7 +525,7 @@ const Locations: React.FC = () => {
                                     // Dùng chỉ mục index để tạo màu xen kẽ
                                     backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
                                 }}>
-                                    {user?.role === "admin" &&<TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(loc._id)} checked={selectedLocations.includes(loc._id)} /></TableCell>}
+                                    {user?.role === "admin" && <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(loc._id)} checked={selectedLocations.includes(loc._id)} /></TableCell>}
                                     {visibleColumns.includes('name') && <TableCell sx={{}}>{loc.name}</TableCell>}
                                     {visibleColumns.includes('coordinates') && <TableCell sx={{}}>{coordsDisplay}</TableCell>}
                                     {user?.role === "admin" && <TableCell sx={{}}>

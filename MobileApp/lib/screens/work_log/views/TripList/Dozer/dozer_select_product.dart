@@ -81,7 +81,7 @@ class _DozerSelectProduct
       appBar: AppBar(
         backgroundColor: Colors.blue,
         title: Text(
-          'Nhập loại hàng',
+          'Vật liệu',
           style: TextStyle(
             color: Colors.white,
             fontSize: 18,

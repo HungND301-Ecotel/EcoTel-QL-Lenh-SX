@@ -8,11 +8,12 @@ const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 const ExcelJS = require('exceljs');
 const xlsx = require('xlsx');
+const { ROLE } = require('../config/config');
 
 
-router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
+router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
-        const { name, density, mass } = req.body
+        const { name, density, acceptedProduct } = req.body
         const existingMaterial = await Material.findOne({ name });
         if (existingMaterial) {
             req.logger.error("❌ Tên vật liệu đã tồn tại");
@@ -21,7 +22,7 @@ router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, n
         const newMaterial = new Material({
             name: name,
             density: density,
-            mass: mass,
+            acceptedProduct: acceptedProduct,
 
         });
         await newMaterial.save();
@@ -34,7 +35,7 @@ router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, n
     }
 });
 
-router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
+router.delete('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
         const user = req.user
         const { ids } = req.body;
@@ -61,7 +62,7 @@ router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res,
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
-router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
+router.put('/:id', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
         const user = req.user
         const material = await Material.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -123,8 +124,8 @@ router.get('/:id', verifyToken, async (req, res, next) => {
 
 const columnMapping = {
     'Tên vật liệu': 'name',
-    'Tỉ trọng': 'density',
-    'Khối lượng': 'mass',
+    'Tỷ trọng': 'density',
+    'Sản phẩm nghiệm thu': 'acceptedProduct',
 };
 router.post('/importFile', upload.single('file'), verifyToken, async (req, res) => {
     try {
@@ -147,6 +148,8 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
             req.logger.warn("⚠️ Import file thất bại - Không tìm thấy dữ liệu hợp lệ.");
             return res.status(400).json({ status: 'error', message: 'Không tìm thấy dữ liệu hợp lệ trong file.' });
         }
+
+        console.log(dataImport)
 
         const operations = dataImport.map(item => {
             const { name, ...updateData } = item;
@@ -184,7 +187,7 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
     }
 });
 
-router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manager'), async (req, res, next) => {
+router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const data = await Material.find();
 
@@ -193,14 +196,14 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
 
         worksheet.columns = [
             { header: 'Tên vật liệu', key: 'name', width: 20 },
-            { header: 'Tỉ trọng', key: 'density', width: 20 },
-            { header: 'Khối lượng', key: 'mass', width: 20 },
+            { header: 'Tỷ trọng', key: 'density', width: 20 },
+            { header: 'Sản phẩm nghiệm thu', key: 'acceptedProduct', width: 20 },
         ];
 
         const formattedDevices = (data || []).map(item => ({
             name: item?.name || '',
             density: item?.density || '',
-            mass: item?.mass || '',
+            acceptedProduct: item?.acceptedProduct || '',
         }));
         worksheet.addRows(formattedDevices);
 
@@ -209,6 +212,16 @@ router.post('/exportFile', verifyToken, restrictTo('admin', 'dispatcher', 'manag
                 cell.font = { size: 9, bold: (rowNumber === 1) };
                 cell.alignment = { vertical: 'middle', wrapText: true, };
             });
+        });
+
+        const MAX = Math.max(worksheet.rowCount + 100, 1000);
+        worksheet.dataValidations.add(`C2:C${MAX}`, {
+            type: 'list',
+            allowBlank: true,
+            formulae: ['"Than,Đất"'],
+            showErrorMessage: true,
+            errorTitle: 'Giá trị không hợp lệ',
+            error: 'Chỉ được chọn Than hoặc Đất.',
         });
 
         const buffer = await workbook.xlsx.writeBuffer();

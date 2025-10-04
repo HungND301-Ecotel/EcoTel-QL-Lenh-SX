@@ -3,8 +3,9 @@ const router = express.Router();
 const { AppError } = require('../utils/errorHandler');
 const Shift = require('../models/Shift');
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
+const { ROLE } = require('../config/config');
 
-router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
+router.post('/', verifyToken, restrictTo(ROLE.MANAGER,ROLE.ADMIN), async (req, res, next) => {
     try {
         const { name, startTime, endTime } = req.body;
         const existingShift = await Shift.findOne({ name });
@@ -26,7 +27,7 @@ router.post('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, n
     }
 });
 
-router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
+router.delete('/', verifyToken, restrictTo(ROLE.MANAGER,ROLE.ADMIN), async (req, res, next) => {
     try {
         const user = req.user;
         const { ids } = req.body;
@@ -52,7 +53,7 @@ router.delete('/', verifyToken, restrictTo('admin', 'manager'), async (req, res,
     }
 });
 
-router.put('/:id', verifyToken, restrictTo('admin', 'manager'), async (req, res, next) => {
+router.put('/:id', verifyToken, restrictTo(ROLE.MANAGER,ROLE.ADMIN), async (req, res, next) => {
     try {
         const user = req.user;
         const shift = await Shift.findByIdAndUpdate(req.params.id, req.body, { new: true });

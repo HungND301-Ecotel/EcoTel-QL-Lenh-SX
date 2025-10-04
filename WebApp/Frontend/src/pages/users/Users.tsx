@@ -56,23 +56,14 @@ import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import imageCompression from 'browser-image-compression';
-import UserHistories from '../../components/UserHistory/UserHistories';
+import UserHistories from '../../components/Modal/UserHistories';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { StyledPopper } from '../../ui/poppers';
+import { userValidationSchema } from '../../utils/validation';
+import UserService from '../../services/userService';
+import PositionService from '../../services/positionService';
+import DepartmentService from '../../services/departmentService';
 
-const validationSchema = yup.object({
-    username: yup.string().required('Vui lòng nhập tên đăng nhập'),
-    password: yup.string().when('_id', {
-        is: (id: string) => !id,
-        then: () => yup.string().required('Vui lòng nhập mật khẩu'),
-        otherwise: () => yup.string(),
-    }),
-    fullName: yup.string().required('Vui lòng nhập họ tên'),
-    salaryCode: yup.string().required('Vui lòng nhập mã thẻ lương'),
-    position: yup.string().required('Vui lòng chọn chức vụ'),
-    department: yup.string().required('Vui lòng chọn đơn vị'),
-    role: yup.string().required('Vui lòng chọn quyền hạn'),
-});
 
 const Users: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -99,7 +90,10 @@ const Users: React.FC = () => {
 
     const { data: users = [], isLoading } = useQuery({
         queryKey: ['users', value, department, active],
-        queryFn: () => api.get(`/users?q=${value}&&department=${department}`).then(res => res.data.data),
+        queryFn: () => UserService.getAll({
+            q: value,
+            department: department,
+        }),
 
     });
     const filteredOrders = React.useMemo(() => {
@@ -109,16 +103,15 @@ const Users: React.FC = () => {
 
     const { data: positions = [] } = useQuery({
         queryKey: ['positions'],
-        queryFn: () => api.get('/positions').then(res => res.data.data),
+        queryFn: PositionService.getAll,
     });
     const { data: departments = [] } = useQuery({
         queryKey: ['departments'],
-        queryFn: () => api.get('/departments').then(res => res.data.data),
+        queryFn: DepartmentService.getAll,
     });
 
     const createMutation = useMutation({
-        mutationFn: (newUser: Partial<User>) =>
-            api.post('/auth/register', newUser).then(res => res.data),
+        mutationFn: UserService.create,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
             showSuccessAlert('Thêm người dùng thành công');
@@ -131,16 +124,7 @@ const Users: React.FC = () => {
     const [progress, setProgress] = useState(0)
     const [isUploading, setIsUploading] = useState(false);
     const importFile = useMutation({
-        mutationFn: (formData: FormData) =>
-            api.post('/users/importFile', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-                onUploadProgress: (progressEvent) => {
-                    const percent = Math.round(
-                        (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
-                    );
-                    setProgress(percent);
-                }
-            }).then(res => res.data),
+        mutationFn: (formData: FormData) => UserService.importFile(formData, setProgress),
         onMutate: () => {
             setIsUploading(true);
             setProgress(0); // Reset tiến trình khi bắt đầu
@@ -177,25 +161,7 @@ const Users: React.FC = () => {
     });
 
     const exportExcel = useMutation({
-        mutationFn: () => {
-            return api.post('/users/exportFile', {}, {
-                responseType: 'blob',
-            }).then(res => {
-                const blob = new Blob([res.data], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                });
-
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', `*.xlsx`);
-
-                document.body.appendChild(link);
-                link.click();
-                link.parentNode?.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            });
-        },
+        mutationFn: UserService.exportFile,
         onSuccess: () => { },
         onError: (error: any) => {
             showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
@@ -204,8 +170,7 @@ const Users: React.FC = () => {
 
 
     const updateMutation = useMutation({
-        mutationFn: (updatedUser: Partial<User>) =>
-            api.put(`/users/update/${updatedUser._id}`, updatedUser).then(res => res.data),
+        mutationFn: UserService.update,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
             showSuccessAlert('Cập nhật người dùng thành công');
@@ -216,8 +181,7 @@ const Users: React.FC = () => {
         }
     });
     const resetMutation = useMutation({
-        mutationFn: (id: string) =>
-            api.get(`/users/resetpass/${id}`).then(res => res.data),
+        mutationFn: UserService.resetPass,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
             showSuccessAlert('Reset mật khẩu thành công. Mật khẩu là:"123456"');
@@ -228,7 +192,7 @@ const Users: React.FC = () => {
         }
     });
     const deleteMutation = useMutation({
-        mutationFn: (ids: string[]) => api.delete(`/users`, { data: { ids } }).then(res => res.data.message),
+        mutationFn: UserService.delete,
         onSuccess: (message) => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
             setSelectedUsers([]);
@@ -255,7 +219,7 @@ const Users: React.FC = () => {
             role: '',
             ...selectedUser,
         },
-        validationSchema: validationSchema,
+        validationSchema: userValidationSchema,
         onSubmit: (values) => {
             const submitValues: Partial<User> = {
                 ...values,
@@ -358,29 +322,30 @@ const Users: React.FC = () => {
     );
 
     const userColumns: GridColDef[] = [
-        { field: 'fullName', headerName: 'Họ tên', minWidth: 250, flex: 1, headerAlign: 'center', },
+        { field: 'fullName', headerName: 'Họ tên', flex: 1, minWidth: 150, headerAlign: 'center', },
         {
             field: 'salaryCode',
             headerName: 'Thẻ lương',
             align: 'center',
-            width: 120,
+            minWidth: 150,
+            resizable: true,
             headerAlign: 'center'
         },
-        { field: 'gender', headerName: 'Giới tính', width: 120, headerAlign: 'center', align: 'center' },
-        { field: 'phone', headerName: 'Số điện thoại', width: 150, headerAlign: 'center', align: 'center' },
-        { field: 'email', headerName: 'Email', width: 150, headerAlign: 'center', align: 'center' },
+        { field: 'gender', headerName: 'Giới tính', minWidth: 120, headerAlign: 'center', align: 'center' },
+        { field: 'phone', headerName: 'Số điện thoại', minWidth: 150, headerAlign: 'center', align: 'center' },
+        { field: 'email', headerName: 'Email', minWidth: 150, headerAlign: 'center', align: 'center' },
         {
             field: 'position',
             headerName: 'Chức danh, nghề nghiệp',
-            valueGetter: (params) => params.row.position?.name || '',
-            width: 250,
+            renderCell: (params: any) => params?.row?.position?.name || '',
+            minWidth: 250,
             headerAlign: 'center'
         },
         {
             field: 'department',
             headerName: 'Đơn vị',
-            valueGetter: (params) => {
-                const dept = params.row.department;
+            renderCell: (params: any) => {
+                const dept = params?.row?.department;
                 return typeof dept === 'object' && dept !== null
                     ? dept.name
                     : 'Chưa có';
@@ -400,7 +365,7 @@ const Users: React.FC = () => {
         {
             field: 'active', headerName: 'Trạng thái', width: 100, headerAlign: 'center', align: 'center',
             renderCell: (params) => (
-                <Checkbox checked={params.row.active} onChange={(e) => updateMutation.mutate({ _id: params.row._id, active: e.target.checked })} />
+                <Checkbox checked={params.row?.active} onChange={(e) => updateMutation.mutate({ _id: params.row?._id, active: e.target.checked })} />
             )
         },
         {
@@ -826,23 +791,23 @@ const Users: React.FC = () => {
                     rows={filteredOrders}
                     columns={visibleColumns}
                     getRowId={(row) => row._id}
-                    rowsPerPageOptions={[10, 20, 50]}
+                    pageSizeOptions={[10, 20, 50]}
                     autoHeight
-                    disableSelectionOnClick
+                    disableRowSelectionOnClick
                     checkboxSelection={user?.role === "admin"}
                     isRowSelectable={(params) => params.row.role !== 'admin'}
-                    onSelectionModelChange={(newSelection) => {
+                    onRowSelectionModelChange={(newSelection) => {
                         setSelectedUsers(newSelection as string[]);
                     }}
                     initialState={{
                         pagination: {
-                            pageSize: 10,
+                            paginationModel: { pageSize: 10, page: 0 },
                         },
                     }}
                     loading={isLoading}
                     sx={{
                         '& .MuiDataGrid-columnHeaderTitle': {
-                            width: '100%',
+                            // width: '100%',
                             textAlign: 'center',
                             fontWeight: 'bold',
                             fontSize: 18,

@@ -46,15 +46,12 @@ import { useFormik } from 'formik';
 import * as yup from 'yup';
 import api from '../../config/api.config';
 import { Order } from '../../types';
-import OrderFormAdd from './OrderFormAdd';
-import OrderFormEdit from './OrderFormEdit';
-import OrderHistories from '../../components/OrderHistory/OrderHistories';
-import OrderFormTransfer from './OrderFormTransfer';
 import dayjs, { Dayjs } from 'dayjs';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { useSocket } from '../../hooks/useSocket';
-import { Table, TableProps } from 'antd';
+import { DataGrid, GridColDef, GridRenderCellParams, GridToolbar } from '@mui/x-data-grid';
+import OrderService from '../../services/orderService';
 
 const OrderByUsers: React.FC = () => {
 
@@ -64,8 +61,10 @@ const OrderByUsers: React.FC = () => {
     const [selectedRow, setSelectedRow] = useState<any | null>(null);
 
     const queryClient = useQueryClient();
-    const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(50);
+    const [paginationModel, setPaginationModel] = useState({
+        pageSize: 50,
+        page: 0,
+    });
     const [total, setTotal] = useState(0);
     const [orderByUser, setOrderByUser] = useState<any[]>([]);
 
@@ -78,7 +77,7 @@ const OrderByUsers: React.FC = () => {
         { id: 'salaryCode', label: 'Số thẻ' },
         { id: 'workingDate', label: 'Ngày làm việc' },
         { id: 'job', label: 'Công việc' },
-        { id: 'content', label: 'Nội dung lệnh' },
+        { id: 'workContent', label: 'Nội dung lệnh' },
         { id: 'createdBy', label: 'Người ra lệnh' },
         { id: 'createdAt', label: 'Thời gian tạo lệnh' },
         { id: 'startTime', label: 'Bắt đầu' },
@@ -104,18 +103,18 @@ const OrderByUsers: React.FC = () => {
         cancel: 0,
     });
     const { data, isLoading } = useQuery({
-        queryKey: ['orderByUser', page, pageSize, status, startTime, endTime, serverFilters],
-        queryFn: () => api.get(`/orders/user`, {
-            params: {
-                page,
-                limit: pageSize,
+        queryKey: ['orderByUser', paginationModel, status, startTime, endTime, serverFilters],
+        queryFn: () => OrderService.getByUser(
+            {
+                page: paginationModel.page + 1,
+                limit: paginationModel.pageSize,
                 status: status || undefined,
                 startTime: startTime ? startTime.toISOString() : '',
                 endTime: endTime ? endTime.toISOString() : '',
 
                 shift: serverFilters.shift || undefined,
             }
-        }).then(res => res.data)
+        )
     })
     useEffect(() => {
         if (data) {
@@ -132,76 +131,71 @@ const OrderByUsers: React.FC = () => {
         }
     }, [data]);
 
-    const orderColumns: TableProps<any>['columns'] = [
+    const orderColumns: GridColDef[] = [
         {
-            title: 'STT', dataIndex: 'number', key: 'number', width: 50, align: 'center',
-            render: (text, record, index) => index + 1,
-            fixed: 'left'
+            headerName: 'STT', field: 'number', width: 50, headerAlign: 'center', align: 'center',
+            renderCell: (params: GridRenderCellParams) => {
+                const sortedIds = params.api.getSortedRowIds();
+                const index = sortedIds.indexOf(params.id);
+                return index >= 0 ? index + 1 : '';
+            },
         },
         {
-            title: 'Người nhận lệnh', dataIndex: 'assignedTo', key: 'assignedTo', width: 150,
-            render: (text, record) => record.assignedTo?.fullName || '',
-            fixed: 'left',
-            ellipsis: true,
+            headerName: 'Người nhận lệnh', field: 'assignedTo', width: 100, minWidth: 50, headerAlign: 'center',
+            renderCell: (params: any) => params?.row?.assignedTo?.fullName || '',
         },
         {
-            title: 'Số thẻ', dataIndex: 'salaryCode', key: 'salaryCode', width: 70, align: 'center',
-            render: (text, record) => record.assignedTo?.salaryCode || '',
+            headerName: 'Số thẻ', field: 'salaryCode', width: 50, minWidth: 50, align: 'center', headerAlign: 'center',
+            renderCell: (params: any) => params?.row?.assignedTo?.salaryCode || '',
         },
         {
-            title: 'Ngày làm việc', dataIndex: 'workingDate', key: 'workingDate', width: 100, align: 'center',
-            ellipsis: true,
-            render: (text, record) => record.workingDate ? format(new Date(record.workingDate), 'dd-MM-yyyy') : ''
+            headerName: 'Ngày làm việc', field: 'workingDate', width: 100, minWidth: 50, align: 'center', headerAlign: 'center',
+            renderCell: (params: any) => params?.row?.workingDate ? format(new Date(params?.row?.workingDate), 'dd-MM-yyyy') : ''
         },
         {
-            title: 'Công việc',
-            dataIndex: 'job',
-            key: 'job',
-            width: 100,
-            ellipsis: true,
-            render: (text, record) => record.job?.name || '',
+            headerName: 'Công việc',
+            field: 'job',
+            width: 100, minWidth: 50,
+            headerAlign: 'center',
+            renderCell: (params: any) => params?.row?.job?.name || '',
         },
         {
-            title: 'Nội dung lệnh',
-            dataIndex: 'workContent',
-            key: 'content',
-            width: 100,           // width khởi tạo, sẽ được update khi resize
-            ellipsis: true,       // để AntD tự xử lý cắt ...
+            headerName: 'Nội dung lệnh',
+            field: 'workContent',
+            headerAlign: 'center',
+            width: 100, minWidth: 50,
         },
         {
-            title: 'Người ra lệnh', dataIndex: 'createdBy', key: 'createdBy', width: 150,
-            ellipsis: true,
-            filterSearch: true,
-            render: (text, record) => record.createdBy?.fullName || '',
+            headerName: 'Người ra lệnh', field: 'createdBy', width: 100, minWidth: 50, headerAlign: 'center',
+            renderCell: (params: any) => params?.row?.createdBy?.fullName || '',
         },
         {
-            title: 'Thời gian tạo lệnh', dataIndex: 'createdAt', key: 'createdAt', width: 150, align: 'center',
-            ellipsis: true,
-            render: (text, record) => record.createdAt ? format(new Date(record.createdAt), 'dd-MM-yyyy HH:mm') : ''
+            headerName: 'Thời gian tạo lệnh', field: 'createdAt', width: 100, minWidth: 50, align: 'center', headerAlign: 'center',
+            renderCell: (params: any) => params?.row?.createdAt ? format(new Date(params?.row?.createdAt), 'dd-MM-yyyy HH:mm') : ''
         },
         {
-            title: 'Bắt đầu', dataIndex: 'startTime', key: 'startTime', width: 80, align: 'center',
-            render: (text, record) => record.startTime ? format(new Date(record.startTime), 'HH:mm:ss') : ''
+            headerName: 'Bắt đầu', field: 'startTime', width: 100, minWidth: 50, align: 'center', headerAlign: 'center',
+            renderCell: (params: any) => params?.row?.startTime ? format(new Date(params?.row?.startTime), 'HH:mm:ss') : ''
         },
         {
-            title: 'Kết thúc', dataIndex: 'endTime', key: 'endTime', width: 80, align: 'center',
-            render: (text, record) => record.endTime ? format(new Date(record.endTime), 'HH:mm:ss') : ''
+            headerName: 'Kết thúc', field: 'endTime', width: 100, minWidth: 50, align: 'center', headerAlign: 'center',
+            renderCell: (params: any) => params?.row?.endTime ? format(new Date(params?.row?.endTime), 'HH:mm:ss') : ''
         },
         {
-            title: 'Trạng thái lệnh', dataIndex: 'status', key: 'status', width: 150, align: 'center',
-            render: (text, record) => (
+            headerName: 'Trạng thái lệnh', field: 'status', width: 150, minWidth: 50, align: 'center', headerAlign: 'center',
+            renderCell: (params: any) => (
                 <Chip
-                    sx={{ width: '120px' }}
-                    label={record.status === 'pending' ? 'Chưa nhận lệnh' :
-                        record.status === 'in_progress' ? 'Đã nhận lệnh' :
-                            record.status === 'completed' ? 'Đã hoàn thành' :
-                                record.status === 'warning' ? 'Lỗi' : "Đã hủy"
+                    sx={{ width: 120, minWidth: 50, }}
+                    label={params?.row?.status === 'pending' ? 'Chưa nhận lệnh' :
+                        params?.row?.status === 'in_progress' ? 'Đã nhận lệnh' :
+                            params?.row?.status === 'completed' ? 'Đã hoàn thành' :
+                                params?.row?.status === 'warning' ? 'Lỗi' : "Đã hủy"
                     }
                     color={
-                        record.status === 'pending' ? 'default' :
-                            record.status === 'completed' ? 'error' :
-                                record.status === 'in_progress' ? 'success' :
-                                    record.status === 'warning' ? 'warning' : 'secondary'}
+                        params?.row?.status === 'pending' ? 'default' :
+                            params?.row?.status === 'completed' ? 'error' :
+                                params?.row?.status === 'in_progress' ? 'success' :
+                                    params?.row?.status === 'warning' ? 'warning' : 'secondary'}
                 />
             ),
         },
@@ -292,47 +286,92 @@ const OrderByUsers: React.FC = () => {
             </Box>
             <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={12} sm={8}>
-                    <Table<any>
-                        size="small"
-                        rowKey="_id"
-                        pagination={{
-                            current: page,
-                            pageSize,
-                            total,
-                            showSizeChanger: true,
-                            pageSizeOptions: ['50', '100', '150', '200', '500'],
-                            showTotal: (total, range) => (
-                                <div style={{ flex: 1, textAlign: 'left' }}>
-                                    Hiển thị {range[0]}-{range[1]}/ {total}
-                                </div>
-                            ),
-                        }}
-                        columns={orderColumns.filter(col => col.key && visibleColumns.includes(col.key.toString()))}
-                        dataSource={orderByUser}
-                        onChange={(pagination, filters) => {
-                            setPage(pagination.current!);      // 👈 cập nhật page
-                            setPageSize(pagination.pageSize!); // 👈 cập nhật pageSize
-                            setServerFilters(filters);         // 👈 cập nhật filters
-                        }}
-                        loading={{
-                            spinning: isLoading,
-                            tip: 'Đang tải dữ liệu...',
-                        }}
-                        scroll={{ x: 'max-content', y: 500 }}
-                        tableLayout="fixed"
-                        onRow={(record) => ({
-                            onClick: () => setSelectedRow(record),
-                        })}
-                        rowClassName={(record) => {
+                    <DataGrid
+                        columns={orderColumns.filter((col: GridColDef) => col.field && visibleColumns.includes(col.field.toString()))}
+                        rows={orderByUser}
+                        pageSizeOptions={[50, 100, 200, 500]}
+                        paginationModel={paginationModel}
+                        onPaginationModelChange={setPaginationModel}
+                        paginationMode="server"
+                        rowCount={total}
+                        loading={isLoading}
+                        onRowClick={(params) => setSelectedRow(params.row)}
+                        getRowClassName={(params) => {
+                            // Lấy dữ liệu hàng từ params.row
+                            const record = params.row;
                             let base = '';
+
                             switch (record.status) {
-                                case 'pending': base = 'row-pending'; break;
-                                case 'in_progress': base = 'row-in-progress'; break;
-                                case 'completed': base = 'row-completed'; break;
-                                case 'warning': base = 'row-warning'; break;
-                                case 'cancel': base = 'row-cancel'; break;
+                                case 'pending':
+                                    base = 'row-pending';
+                                    break;
+                                case 'in_progress':
+                                    base = 'row-in-progress';
+                                    break;
+                                case 'completed':
+                                    base = 'row-completed';
+                                    break;
+                                case 'warning':
+                                    base = 'row-warning';
+                                    break;
+                                case 'cancel':
+                                    base = 'row-cancel';
+                                    break;
                             }
+
+                            // So sánh ID để xác định hàng được chọn
                             return `${base} ${selectedRow?._id === record._id ? 'row-selected' : ''}`;
+                        }}
+                        slots={{ toolbar: GridToolbar }}
+                        localeText={{
+                            toolbarColumns: 'Cột',
+                            toolbarFilters: 'Bộ lọc',
+                            toolbarDensity: 'Mật độ',
+                            toolbarExport: 'Xuất dữ liệu',
+                        }}
+                        disableColumnFilter
+                        slotProps={{
+                            filterPanel: {
+                                disableAddFilterButton: false,
+                            },
+                            toolbar: {
+                                csvOptions: { disableToolbarButton: true },
+                                printOptions: { disableToolbarButton: true },
+
+                            }
+                        }}
+                        disableVirtualization={true}
+                        sx={{
+                            '& .MuiDataGrid-columnHeader[data-field="number"]': {
+                                position: 'sticky',
+                                left: 0,
+                                zIndex: 11,
+                                backgroundColor: 'inherit !important',
+                            },
+                            '& .MuiDataGrid-cell[data-field="number"]': {
+                                position: 'sticky',
+                                left: 0,
+                                zIndex: 10,
+                                backgroundColor: 'inherit !important',
+                            },
+
+                            '& .MuiDataGrid-columnHeader[data-field="assignedTo"]': {
+                                position: 'sticky',
+                                left: 50, // 👈 phải đúng bằng width cột number
+                                zIndex: 11,
+                                backgroundColor: 'inherit !important',
+                                boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
+                            },
+                            '& .MuiDataGrid-cell[data-field="assignedTo"]': {
+                                position: 'sticky',
+                                left: 50,
+                                zIndex: 10,
+                                backgroundColor: 'inherit !important',
+                                boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
+                            },
+                            '& .MuiDataGrid-virtualScroller': {
+                                overflowX: 'auto',
+                            },
                         }} />
                 </Grid>
                 <Grid item xs={12} sm={4}>

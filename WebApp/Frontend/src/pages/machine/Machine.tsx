@@ -47,7 +47,7 @@ import {
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import api from '../../config/api.config';
-import { Department, Device, DeviceType } from '../../types';
+import { Department, Device, DeviceModel, DeviceType } from '../../types';
 // import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import LocationSelector from '../../fixLeafletIcon';
@@ -55,6 +55,9 @@ import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { StyledPopper } from '../../ui/poppers';
+import { machineValidationSchema } from '../../utils/validation';
+import DeviceService from '../../services/deviceService';
+import DepartmentService from '../../services/departmentService';
 
 const containerStyle = {
     width: '100%',
@@ -66,18 +69,6 @@ const defaultCenter = {
     lng: 105.8437303,
 };
 
-
-const validationSchema = yup.object({
-    code: yup.string().required('Vui lòng nhập biển số'),
-    name: yup.string(),
-    coordinates: yup.object({
-        lng: yup.number().required('Vui lòng chọn vĩ độ'),
-        lat: yup.number().required('Vui lòng chọn kinh độ'),
-    }).required('Vui lòng chọn tọa độ'),
-    department: yup.string().required('Vui lòng chọn đơn vị'),
-    category: yup.string().required('Vui lòng chọn loại máy'),
-    status: yup.string().oneOf(['available', 'in_use', 'maintenance', 'retired']).required('Vui lòng chọn trạng thái'),
-});
 
 const Machines: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -125,11 +116,11 @@ const Machines: React.FC = () => {
 
     const { data: machines = [], isLoading } = useQuery({
         queryKey: ['machines', q, department, status],
-        queryFn: () => api.get(`/devices?q=${q}&department=${department}&status=${status}`).then(res => res.data.data?.filter((item: any) => item?.category?.group.toLowerCase() === "máy".toLowerCase())),
+        queryFn: () => DeviceService.getMachines({ q: q, department: department, status: status }),
     });
     const { data: allMachines = [] } = useQuery({
         queryKey: ['allMachines', q, department],
-        queryFn: () => api.get(`/devices?q=${q}&department=${department}`).then(res => res.data.data?.filter((item: any) => item?.category?.group.toLowerCase() === "máy".toLowerCase())),
+        queryFn: () => DeviceService.getMachines({ q: q, department: department }),
     });
     const { data: DeviceTypes = [] } = useQuery({
         queryKey: ['DeviceTypes'],
@@ -139,28 +130,20 @@ const Machines: React.FC = () => {
 
     const { data: departments = [] } = useQuery({
         queryKey: ['departments'],
-        queryFn: () => api.get('/departments').then(res => res.data.data),
+        queryFn: () => DepartmentService.getAll(),
+    });
+    const { data: devicemodels = [] } = useQuery({
+        queryKey: ['devicemodels'],
+        queryFn: () => api.get('/devicemodels').then(res => res.data.data),
     });
 
     const [progress, setProgress] = useState(0)
     const [isUploading, setIsUploading] = useState(false);
     const importFile = useMutation({
-        mutationFn: (formData: FormData) =>
-            api.post('/devices/importFile', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-                onUploadProgress: (progressEvent) => {
-                    const percent = Math.round(
-                        (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
-                    );
-                    setProgress(percent);
-                }
-            }).then(res => res.data),
-        onMutate: () => {
-            setIsUploading(true);
-            setProgress(0); // Reset tiến trình khi bắt đầu
-        },
+        mutationFn: (fd: FormData) => DeviceService.importDevicesFile(fd, setProgress),
+        onMutate: () => { setIsUploading(true); setProgress(0); },
         onSuccess: (data) => {
-            queryClient.invalidateQueries({ queryKey: ['machines'] });
+            queryClient.invalidateQueries({ queryKey: ['vehicles'] });
             setIsUploading(false);
             let combinedMessage = `Import dữ liệu hoàn tất. Đã xử lý ${data.summary.totalProcessed} bản ghi.`;
             combinedMessage += `\nĐã thêm mới: ${data.summary.insertedCount}`;
@@ -190,26 +173,9 @@ const Machines: React.FC = () => {
         }
     });
 
+
     const exportExcel = useMutation({
-        mutationFn: () => {
-            return api.post('/devices/exportFile', { data: machines }, {
-                responseType: 'blob',
-            }).then(res => {
-                const blob = new Blob([res.data], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                });
-
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', `*.xlsx`);
-
-                document.body.appendChild(link);
-                link.click();
-                link.parentNode?.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            });
-        },
+        mutationFn: () => DeviceService.exportDevicesFile(machines),
         onSuccess: () => { },
         onError: (error: any) => {
             showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
@@ -261,7 +227,7 @@ const Machines: React.FC = () => {
             code: '',
             vehicleNumber: '',
             category: '',
-            material: '',
+            material: undefined,
             fuelType: '',
             note: '',
             power: undefined as number | undefined,
@@ -270,7 +236,7 @@ const Machines: React.FC = () => {
             coordinates: { lat: 0, lng: 0 },
             ...selectedDevice,
         },
-        validationSchema: validationSchema,
+        validationSchema: machineValidationSchema,
         onSubmit: (values) => {
             const submitValues = {
                 ...values,
@@ -299,6 +265,9 @@ const Machines: React.FC = () => {
                 ...device, coordinates: {
                     lat, lng
                 },
+                material: device.material !== null && typeof device.material === 'object'
+                    ? device.material._id
+                    : device.material || undefined,
                 department: device.department !== null && typeof device.department === 'object'
                     ? device.department._id
                     : device.department || undefined,
@@ -565,15 +534,25 @@ const Machines: React.FC = () => {
                                         />
                                     )}
                                 />
-                                <TextField
+                                <Autocomplete
                                     fullWidth
-                                    id="material"
-                                    name="material"
-                                    label="Chủng loại"
-                                    value={formik.values.material}
-                                    onChange={formik.handleChange}
-                                    error={formik.touched.material && Boolean(formik.errors.material)}
-                                    helperText={formik.touched.material && formik.errors.material}
+                                    options={devicemodels}
+                                    getOptionLabel={(option: DeviceModel) =>
+                                        option.name || ''
+                                    }
+                                    value={devicemodels.find((p: DeviceModel) => p._id === formik.values.material) || null}
+                                    onChange={(event, newValue) => {
+                                        formik.setFieldValue('material', newValue?._id || '');
+                                    }}
+                                    PopperComponent={StyledPopper}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Chủng loại"
+                                            error={formik.touched.material && Boolean(formik.errors.material)}
+                                            helperText={formik.touched.material && typeof formik.errors.material === 'string' ? formik.errors.material : ''}
+                                        />
+                                    )}
                                 />
                                 <TextField
                                     fullWidth
@@ -827,7 +806,7 @@ const Machines: React.FC = () => {
                                         {visibleColumns.includes('name') && <TableCell sx={{ minWidth: 100, }}>{device.name}</TableCell>}
                                         {visibleColumns.includes('vehicleNumber') && <TableCell align='center' sx={{ minWidth: 70, }}>{device.vehicleNumber}</TableCell>}
                                         {visibleColumns.includes('category') && <TableCell align="center" sx={{ minWidth: 100, }}>{device.category?.name}</TableCell>}
-                                        {visibleColumns.includes('material') && <TableCell align="center" sx={{ minWidth: 100, }}>{device.material}</TableCell>}
+                                        {visibleColumns.includes('material') && <TableCell align="center" sx={{ minWidth: 100, }}>{device.material?.name}</TableCell>}
                                         {visibleColumns.includes('fuelType') && <TableCell align="center" sx={{ minWidth: 100, }}>{device.fuelType}</TableCell>}
                                         {visibleColumns.includes('power') && <TableCell align="center" sx={{ minWidth: 100, }}>{device.power}</TableCell>}
                                         {visibleColumns.includes('coordinates') && <TableCell sx={{ minWidth: 130, }}>{coordsDisplay}</TableCell>}

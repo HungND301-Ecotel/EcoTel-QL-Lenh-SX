@@ -28,8 +28,6 @@ class _DirectWorkeport extends State<DirectWorkeport> {
 
   final TextEditingController _handoverHoursController =
       TextEditingController();
-  final TextEditingController _otherHoursController =
-      TextEditingController();
   final TextEditingController _handoverNotesController =
       TextEditingController();
   final TextEditingController _risksController =
@@ -63,8 +61,6 @@ class _DirectWorkeport extends State<DirectWorkeport> {
     if (report != null) {
       _handoverHoursController.text =
           report.handoverHours?.toString() ?? '';
-      _otherHoursController.text =
-          report.otherHours?.toString() ?? '';
       _handoverNotesController.text =
           report.handoverNotes ?? '';
       _risksController.text = report.risks ?? '';
@@ -136,9 +132,6 @@ class _DirectWorkeport extends State<DirectWorkeport> {
     final handoverHours = int.tryParse(
       _handoverHoursController.text.trim(),
     );
-    final otherHours = int.tryParse(
-      _otherHoursController.text.trim(),
-    );
     final handoverNotes =
         _handoverNotesController.text.trim();
     final risks = _risksController.text.trim();
@@ -157,7 +150,6 @@ class _DirectWorkeport extends State<DirectWorkeport> {
       "assignedTo": user?.id,
       "vehicleSummaries": vehicleSummaries,
       "handoverHours": handoverHours,
-      "otherHours": otherHours,
       "handoverNotes": handoverNotes,
       "risks": risks,
     });
@@ -211,9 +203,6 @@ class _DirectWorkeport extends State<DirectWorkeport> {
     final handoverHours = int.tryParse(
       _handoverHoursController.text.trim(),
     );
-    final otherHours = int.tryParse(
-      _otherHoursController.text.trim(),
-    );
     final handoverNotes =
         _handoverNotesController.text.trim();
     final risks = _risksController.text.trim();
@@ -233,7 +222,6 @@ class _DirectWorkeport extends State<DirectWorkeport> {
           "assignedTo": user?.id,
           "vehicleSummaries": vehicleSummaries,
           "handoverHours": handoverHours,
-          "otherHours": otherHours,
           "handoverNotes": handoverNotes,
           "risks": risks,
         });
@@ -329,7 +317,7 @@ class _DirectWorkeport extends State<DirectWorkeport> {
                                 ),
                                 SizedBox(height: 16),
                                 Text(
-                                  'Giờ dhoạt động trên đồng hồ',
+                                  'Giờ hoạt động trên đồng hồ',
                                   style: TextStyle(
                                     fontWeight:
                                         FontWeight.w600,
