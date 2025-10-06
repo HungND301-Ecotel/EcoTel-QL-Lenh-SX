@@ -131,17 +131,25 @@ export default function DeviceAnalysic() {
             <TableContainer sx={{ maxHeight: 600 }}>
                 <Table stickyHeader sx={{ '& td, & th': { border: '1px solid #e0e0e0', padding: '0 4px' } }}>
                     <TableHead>
-                        <TableRow>
-                            <TableCell colSpan={7} align="center" sx={{ bgcolor: '#d6e9f9', fontWeight: 'bold', fontSize: 18 }}>THIẾT BỊ</TableCell>
+                        <TableRow >
+                            <TableCell colSpan={7} align="center" sx={{
+                                bgcolor: '#d6e9f9',
+                                fontWeight: 'bold',
+                                fontSize: 18,
+                                // === THÊM THUỘC TÍNH DÍNH VÀ TOP: 0 ===
+                                position: 'sticky',
+                                top: 0,
+                                zIndex: 11, // Đảm bảo nó nằm trên các nội dung khác
+                            }}>THIẾT BỊ</TableCell>
                         </TableRow>
                         <TableRow>
-                            <TableCell align="center" sx={{ fontWeight: 'bold', width: '2%' }}></TableCell>
-                            <TableCell align="center" sx={{ fontWeight: 'bold', width: '18%' }}>Đơn vị</TableCell>
-                            <TableCell align="center" sx={{ fontWeight: 'bold', width: '10%' }}>Thiết bị</TableCell>
-                            <TableCell align="center" sx={{ fontWeight: 'bold', width: '10%', color: 'green' }}>Chờ điều động</TableCell>
-                            <TableCell align="center" sx={{ fontWeight: 'bold', width: '10%', color: 'red' }}>Đang hoạt động</TableCell>
-                            <TableCell align="center" sx={{ fontWeight: 'bold', width: '10%', color: 'orange' }}>SC; BD</TableCell>
-                            <TableCell align="center" sx={{ fontWeight: 'bold', width: '10%' }}>Niêm cất</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', width: '2%', top: '26px', zIndex: 10, position: 'sticky', }}> </TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', width: '18%', top: '26px', zIndex: 10, position: 'sticky', }}>Đơn vị</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', width: '10%', top: '26px', zIndex: 10, position: 'sticky', }}>Thiết bị</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', width: '10%', color: 'green', top: '26px', zIndex: 10, position: 'sticky', }}>Chờ điều động</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', width: '10%', color: 'red', top: '26px', zIndex: 10, position: 'sticky', }}>Đang hoạt động</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', width: '10%', color: 'orange', top: '26px', zIndex: 10, position: 'sticky', }}>SC; BD</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', width: '10%', top: '26px', zIndex: 10, position: 'sticky', }}>Niêm cất</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
