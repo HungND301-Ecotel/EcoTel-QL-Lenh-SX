@@ -7,46 +7,53 @@ import 'package:soft/main.dart';
 import 'package:soft/providers/user_provider.dart';
 import 'package:soft/routes/app_routes.dart';
 
+class NetworkFailure {
+  final String code; // 'timeout' | 'network'
+  final String message;
+  final String? url;
+  const NetworkFailure(
+      {required this.code,
+      required this.message,
+      this.url});
+}
+
 class ApiService {
   static final ApiService _instance =
       ApiService._internal();
   factory ApiService() => _instance;
 
+  static final ValueNotifier<String?> lastRequestUrl =
+      ValueNotifier(null);
+  static final ValueNotifier<NetworkFailure?>
+      networkFailure = ValueNotifier(null);
+
   final Dio _dio;
   String? _token;
 
   ApiService._internal()
-    : _dio = Dio(
-        BaseOptions(
-          baseUrl:
-              dotenv.env['BASE_API'] ??
-              "http://192.168.100.248:8080/api",
-          headers: {'Content-Type': 'application/json'},
-          connectTimeout: const Duration(
-            seconds: 15,
-          ), // ⬅️ tăng timeout lên 10s
-          receiveTimeout: const Duration(
-            seconds: 15,
-          ), // ⬅️ nếu nhận dữ liệu chậm
-          sendTimeout: const Duration(seconds: 15),
-        ),
-      ) {
+      : _dio = Dio(
+          BaseOptions(
+            baseUrl: dotenv.env[
+                'BASE_API']!, // đảm bảo đã set prod https
+            headers: {'Content-Type': 'application/json'},
+            connectTimeout: const Duration(seconds: 12),
+            receiveTimeout: const Duration(seconds: 12),
+            sendTimeout: const Duration(seconds: 12),
+            responseType: ResponseType.json,
+            validateStatus: (s) =>
+                s != null && s >= 200 && s < 600,
+          ),
+        ) {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
-          // Gắn lại base URL nếu cần
-          print(options.path.startsWith('http'));
-          if (!options.path.startsWith('http')) {
-            options.path =
-                _dio.options.baseUrl + options.path;
-          }
-
           // Thêm token nếu có
           if (_token != null && _token!.isNotEmpty) {
             options.headers['Authorization'] =
                 'Bearer $_token';
           }
 
+          lastRequestUrl.value = options.uri.toString();
           return handler.next(options);
         },
         onResponse: (response, handler) {
@@ -68,9 +75,9 @@ class ApiService {
               if (context != null) {
                 final userProvider =
                     Provider.of<UserProvider>(
-                      context,
-                      listen: false,
-                    );
+                  context,
+                  listen: false,
+                );
                 await userProvider.clearUser();
 
                 // Điều hướng về login (chỉ khi đang ở trang khác)
@@ -99,34 +106,56 @@ class ApiService {
     _token = newToken;
   }
 
+  Map<String, dynamic> _err(DioException e) {
+    // Phân loại lỗi để UI hiển thị đúng
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.sendTimeout ||
+        e.type == DioExceptionType.receiveTimeout) {
+      networkFailure.value = NetworkFailure(
+          code: 'timeout',
+          message: 'Kết nối quá hạn. Vui lòng thử lại.',
+          url: ApiService.lastRequestUrl.value);
+      return {
+        'status': 'error',
+        'code': 'timeout',
+        'message': 'Kết nối quá hạn. Vui lòng thử lại.',
+      };
+    }
+    if (e.type == DioExceptionType.connectionError) {
+      networkFailure.value = NetworkFailure(
+          code: 'timeout',
+          message:
+              'Không thể kết nối mạng hoặc máy chủ đang không phản hồi. Thử lại sau.',
+          url: ApiService.lastRequestUrl.value);
+      return {
+        'status': 'error',
+        'code': 'network',
+        'message':
+            'Không thể kết nối mạng hoặc máy chủ đang không phản hồi. Thử lại sau.',
+      };
+    }
+    if (e.response != null && e.response?.data is Map) {
+      return Map<String, dynamic>.from(e.response!.data);
+    }
+    return {
+      'status': 'error',
+      'code': 'server',
+      'message': e.message ?? 'Lỗi không xác định',
+    };
+  }
+
   // GET
-  Future<dynamic> get(String endpoint) async {
+  Future<dynamic> get(String endpoint,
+      {Options? options}) async {
     try {
-      final response = await _dio.get(endpoint);
+      final response =
+          await _dio.get(endpoint, options: options);
       if (response.data['status'] != 'success') {
         throw Exception(response.data['message']);
       }
       return response.data;
     } on DioException catch (e) {
-      // Nếu có response từ server thì trả response.data, còn không thì trả message
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.connectionError) {
-        return {
-          'status': 'error',
-          'message':
-              'Kết nối tới server thất bại, vui lòng kiểm tra kết nối mạng của bạn.',
-        };
-      }
-      if (e.response != null && e.response?.data != null) {
-        return e.response?.data;
-      } else {
-        return {
-          'status': 'error',
-          'message': e.message ?? 'Lỗi không xác định',
-        };
-      }
+      return _err(e);
     } catch (e) {
       // Trường hợp lỗi không phải Dio
       return {'status': 'error', 'message': e.toString()};
@@ -147,25 +176,7 @@ class ApiService {
       );
       return response.data;
     } on DioException catch (e) {
-      // Nếu có response từ server thì trả response.data, còn không thì trả message
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.connectionError) {
-        return {
-          'status': 'error',
-          'message':
-              'Kết nối tới server thất bại, vui lòng kiểm tra kết nối mạng của bạn.',
-        };
-      }
-      if (e.response != null && e.response?.data != null) {
-        return e.response?.data;
-      } else {
-        return {
-          'status': 'error',
-          'message': e.message ?? 'Lỗi không xác định',
-        };
-      }
+      return _err(e);
     } catch (e) {
       return {'status': 'error', 'message': e.toString()};
     }
@@ -180,25 +191,7 @@ class ApiService {
       }
       return response.data;
     } on DioException catch (e) {
-      // Nếu có response từ server thì trả response.data, còn không thì trả message
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.connectionError) {
-        return {
-          'status': 'error',
-          'message':
-              'Kết nối tới server thất bại, vui lòng kiểm tra kết nối mạng của bạn.',
-        };
-      }
-      if (e.response != null && e.response?.data != null) {
-        return e.response?.data;
-      } else {
-        return {
-          'status': 'error',
-          'message': e.message ?? 'Lỗi không xác định',
-        };
-      }
+      return _err(e);
     } catch (e) {
       // Trường hợp lỗi không phải Dio
       return {'status': 'error', 'message': e.toString()};
@@ -214,25 +207,7 @@ class ApiService {
       }
       return response.data;
     } on DioException catch (e) {
-      // Nếu có response từ server thì trả response.data, còn không thì trả message
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.connectionError) {
-        return {
-          'status': 'error',
-          'message':
-              'Kết nối tới server thất bại, vui lòng kiểm tra kết nối mạng của bạn.',
-        };
-      }
-      if (e.response != null && e.response?.data != null) {
-        return e.response?.data;
-      } else {
-        return {
-          'status': 'error',
-          'message': e.message ?? 'Lỗi không xác định',
-        };
-      }
+      return _err(e);
     } catch (e) {
       // Trường hợp lỗi không phải Dio
       return {'status': 'error', 'message': e.toString()};

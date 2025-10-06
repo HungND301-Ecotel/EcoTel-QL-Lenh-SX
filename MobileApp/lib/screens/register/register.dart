@@ -19,6 +19,8 @@ class _RegisterState extends State<Register> {
       TextEditingController();
   final TextEditingController _fullNameController =
       TextEditingController();
+  final TextEditingController _salaryCodeController =
+      TextEditingController();
 
   final AuthService _authService = AuthService();
   bool _submitting = false;
@@ -32,11 +34,13 @@ class _RegisterState extends State<Register> {
       final username = _usernameController.text.trim();
       final password = _passwordController.text.trim();
       final fullName = _fullNameController.text.trim();
+      final salaryCode = _salaryCodeController.text.trim();
 
       final result = await _authService.register(
         username,
         password,
         fullName,
+        salaryCode,
       );
       if (!mounted) return;
 
@@ -50,17 +54,16 @@ class _RegisterState extends State<Register> {
       } else {
         showDialog(
           context: context,
-          builder:
-              (_) => AlertDialog(
-                title: const Text('Đăng ký thành công'),
-                actions: [
-                  TextButton(
-                    onPressed:
-                        () => Navigator.of(context).pop(),
-                    child: const Text('Đóng'),
-                  ),
-                ],
+          builder: (_) => AlertDialog(
+            title: const Text('Đăng ký thành công'),
+            actions: [
+              TextButton(
+                onPressed: () =>
+                    Navigator.of(context).pop(),
+                child: const Text('Đóng'),
               ),
+            ],
+          ),
         );
       }
     } finally {
@@ -73,6 +76,7 @@ class _RegisterState extends State<Register> {
     _usernameController.dispose();
     _passwordController.dispose();
     _fullNameController.dispose();
+    _salaryCodeController.dispose();
     super.dispose();
   }
 
@@ -185,9 +189,8 @@ class _RegisterState extends State<Register> {
                               TextInputAction.next,
                           decoration: _inputDecoration(
                             label: 'Tên truy cập',
-                            icon:
-                                Icons
-                                    .account_circle_outlined,
+                            icon: Icons
+                                .account_circle_outlined,
                           ),
                           validator: (v) {
                             if (v == null ||
@@ -204,8 +207,8 @@ class _RegisterState extends State<Register> {
                           obscuringCharacter: '•',
                           textInputAction:
                               TextInputAction.done,
-                          onFieldSubmitted:
-                              (_) => register(),
+                          onFieldSubmitted: (_) =>
+                              register(),
                           decoration: _inputDecoration(
                             label: 'Mật khẩu',
                             icon: Icons.lock_outline,
@@ -215,16 +218,32 @@ class _RegisterState extends State<Register> {
                                     ? Icons.visibility_off
                                     : Icons.visibility,
                               ),
-                              onPressed:
-                                  () => setState(() {
-                                    _obscurePassword =
-                                        !_obscurePassword;
-                                  }),
+                              onPressed: () => setState(() {
+                                _obscurePassword =
+                                    !_obscurePassword;
+                              }),
                             ),
                           ),
                           validator: (v) {
                             if (v == null || v.isEmpty) {
                               return 'Vui lòng nhập mật khẩu';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _salaryCodeController,
+                          textInputAction:
+                              TextInputAction.next,
+                          decoration: _inputDecoration(
+                            label: 'Mã thẻ lương',
+                            icon: Icons.badge_outlined,
+                          ),
+                          validator: (v) {
+                            if (v == null ||
+                                v.trim().isEmpty) {
+                              return 'Vui lòng nhập mã thẻ lương';
                             }
                             return null;
                           },
@@ -255,20 +274,19 @@ class _RegisterState extends State<Register> {
                       ),
                       elevation: 2,
                     ),
-                    icon:
-                        _submitting
-                            ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child:
-                                  CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                            )
-                            : const Icon(
-                              Icons.person_add_alt_1,
+                    icon: _submitting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child:
+                                CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
                             ),
+                          )
+                        : const Icon(
+                            Icons.person_add_alt_1,
+                          ),
                     label: Text(
                       _submitting
                           ? 'Đang đăng ký...'
@@ -283,11 +301,10 @@ class _RegisterState extends State<Register> {
 
                 const SizedBox(height: 8),
                 TextButton(
-                  onPressed:
-                      () => Navigator.pushNamed(
-                        context,
-                        AppRoute.signin,
-                      ),
+                  onPressed: () => Navigator.pushNamed(
+                    context,
+                    AppRoute.signin,
+                  ),
                   child: const Text(
                     'Quay lại đăng nhập',
                     style: TextStyle(

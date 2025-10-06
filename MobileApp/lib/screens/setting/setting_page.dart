@@ -126,6 +126,48 @@ class _SettingPageState extends State<SettingPage> {
                   onPressed: () {
                     Navigator.pushNamed(
                       context,
+                      AppRoute.addPhone,
+                    );
+                  },
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.symmetric(
+                      vertical: 16,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment:
+                        MainAxisAlignment.spaceBetween,
+                    children: [
+                      SizedBox(
+                        width: 60,
+                        child: Icon(
+                          Icons.phone,
+                          size: 25,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          "Cập nhật số điện thoại",
+                          style: TextStyle(
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        width: 30,
+                        child: Icon(
+                          Icons.arrow_forward_ios,
+                          size: 15,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushNamed(
+                      context,
                       AppRoute.changePass,
                     );
                   },
@@ -255,7 +297,7 @@ class _SettingPageState extends State<SettingPage> {
                         child: Icon(
                           Icons.logout,
                           size: 25,
-                          color: Colors.yellow,
+                          color: Colors.blue,
                         ),
                       ),
                       Expanded(

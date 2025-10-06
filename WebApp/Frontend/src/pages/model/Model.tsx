@@ -96,7 +96,7 @@ const Models: React.FC = () => {
     ], [devicemodels]);
 
     const rows = useMemo(() => {
-        if (!materials.length || !devicemodels.length || !models.length) return [];
+        if (!materials.length || !devicemodels.length) return [];
         return materials.map((m: any) => {
             const row: any = { id: m._id, material: m.name, acceptedProduct: m.acceptedProduct };
             devicemodels.forEach((d: any) => {
