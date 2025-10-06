@@ -5,14 +5,14 @@
 
 variable "customer_it_group_name" {
   description = "Group name of the customer"
-  type    = string
-  default = "IT-Users"
+  type        = string
+  default     = "IT-Users"
 }
 
 variable "customer_it_user_names" {
   description = "name list of the customer "
-  type    = list(string)
-  default = ["it-user1", "it-user2"]
+  type        = list(string)
+  default     = ["it-user1", "it-user2"]
 }
 
 
@@ -72,3 +72,13 @@ variable "enable_bucket_encryption" {
   default     = true
 }
 
+
+# List of email recipients for backup alerts
+variable "backup_alert_emails" {
+  description = "Email addresses that will receive backup failure/missing alerts"
+  type        = list(string)
+  default = [
+    "admin@example.com",
+    "it@example.com"
+  ]
+}
