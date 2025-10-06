@@ -193,7 +193,7 @@ router.get('/all', verifyToken, async (req, res, next) => {
 });
 router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
-        const { name, code, vehicleNumber, category, material, note, fuelType, capacity, power, coordinates, department, status } = req.body;
+        const { name, code, vehicleNumber, category, material, note, fuelType, capacity, coordinates, department, status } = req.body;
         const existingDevice = await Device.findOne({ code });
         if (existingDevice) {
             return res.status(400).send({ status: 'error', message: 'Mã thiết bị đã tồn tại' });
@@ -206,7 +206,7 @@ router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, 
             category,
             material,
             fuelType,
-            capacity, power,
+            capacity,
             status,
             note,
             coordinates: {
@@ -450,7 +450,9 @@ router.get('/count/status', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, RO
             queryDept._id = user?.department._id
         }
 
-        const departments = await Department.find(queryDept);
+        const departments = await Department.find(queryDept)
+            .collation({ locale: "vi", strength: 1 })
+            .sort({ code: 1 });
         let devices = await Device.find(query)
             .populate("department")
             .populate({
@@ -526,7 +528,6 @@ const columnMapping = {
     'Chủng loại': 'material',
     'Nhiên liệu': 'fuelType',
     'Trọng tải': 'capacity',
-    'Công suất máy': 'power',
     'Đơn vị': 'department',
 };
 router.post('/importFile', upload.single('file'), verifyToken, async (req, res) => {
@@ -682,7 +683,6 @@ router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
             { header: 'Chủng loại', key: 'material', width: 15 },
             { header: 'Nhiên liệu', key: 'fuelType', width: 30 },
             { header: 'Trọng tải', key: 'capacity', width: 20 },
-            { header: 'Công suất máy', key: 'power', width: 20 },
             { header: 'Đơn vị', key: 'department', width: 15 },
         ];
 
@@ -696,7 +696,6 @@ router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
             material: device?.material?.name || '',
             fuelType: device?.fuelType || '',
             capacity: device?.capacity || '',
-            power: device?.power || '',
             department: device?.department?.code || '',
         }));
         worksheet.addRows(formattedDevices);

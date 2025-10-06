@@ -18,11 +18,13 @@ class AuthService {
     String username,
     String password,
     String fullName,
+    String salaryCode,
   ) async {
     return await _apiService.post('/auth/register', {
       'username': username,
       'password': password,
       'fullName': fullName,
+      'salaryCode': salaryCode,
     });
   }
 

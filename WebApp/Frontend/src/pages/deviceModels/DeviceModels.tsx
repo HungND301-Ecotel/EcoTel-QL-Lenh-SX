@@ -470,7 +470,7 @@ const DeviceModels: React.FC = () => {
                 </Table>
                 <TablePagination
                     component="div"
-                    count={DeviceModels.length}
+                    count={devicemodels.length}
                     page={page}
                     onPageChange={handleChangePage}
                     rowsPerPage={pageSize}
