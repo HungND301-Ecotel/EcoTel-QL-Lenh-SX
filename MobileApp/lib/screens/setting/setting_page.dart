@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:soft/providers/user_provider.dart';
 import 'package:soft/routes/app_routes.dart';
 import 'package:provider/provider.dart';
@@ -13,6 +14,18 @@ class SettingPage extends StatefulWidget {
 
 class _SettingPageState extends State<SettingPage> {
   final AuthService _authService = AuthService();
+  Future<String>? _versionFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _versionFuture = _loadVersion();
+  }
+
+  Future<String> _loadVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    return '${info.version} (${info.buildNumber})';
+  }
 
   void deleteUser() async {
     var result = await _authService.deleteUser();
@@ -71,6 +84,47 @@ class _SettingPageState extends State<SettingPage> {
                 TextButton(
                   onPressed: () {
                     Navigator.pushNamed(
+                        context, AppRoute.versionInfo);
+                  },
+                  style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 16)),
+                  child: Row(
+                    mainAxisAlignment:
+                        MainAxisAlignment.spaceBetween,
+                    children: [
+                      const SizedBox(
+                        width: 60,
+                        child: Icon(Icons.info,
+                            size: 25, color: Colors.teal),
+                      ),
+                      Expanded(
+                        child: FutureBuilder<String>(
+                          future: _versionFuture,
+                          builder: (context, snapshot) {
+                            final ver = snapshot.data ??
+                                'Đang lấy...';
+                            return Text(
+                              "Phiên bản: $ver",
+                              style: const TextStyle(
+                                  color: Colors.black),
+                              overflow:
+                                  TextOverflow.ellipsis,
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(
+                        width: 30,
+                        child: Icon(Icons.arrow_forward_ios,
+                            size: 15, color: Colors.black),
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushNamed(
                       context,
                       AppRoute.changePass,
                     );
@@ -115,27 +169,26 @@ class _SettingPageState extends State<SettingPage> {
                   onPressed: () {
                     showDialog(
                       context: context,
-                      builder:
-                          (_) => AlertDialog(
-                            title: Text('Xóa người dùng.'),
-                            content: Text(
-                              'Dữ liệu người dùng của bạn sẽ bị xóa vĩnh viễn. Bạn có chắc chắn muốn xóa?',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                },
-                                child: const Text('Hủy'),
-                              ),
-                              TextButton(
-                                onPressed: deleteUser,
-                                child: const Text(
-                                  'Xác nhận',
-                                ),
-                              ),
-                            ],
+                      builder: (_) => AlertDialog(
+                        title: Text('Xóa người dùng.'),
+                        content: Text(
+                          'Dữ liệu người dùng của bạn sẽ bị xóa vĩnh viễn. Bạn có chắc chắn muốn xóa?',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            child: const Text('Hủy'),
                           ),
+                          TextButton(
+                            onPressed: deleteUser,
+                            child: const Text(
+                              'Xác nhận',
+                            ),
+                          ),
+                        ],
+                      ),
                     );
                   },
                   style: TextButton.styleFrom(

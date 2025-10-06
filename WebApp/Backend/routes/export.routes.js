@@ -284,7 +284,6 @@ async function buildVehicle(order, workbook) {
 
     let rowIndexTrip = rowHeader1 + 2;
     grouped.forEach((g, i) => {
-        console.log(g.production)
         worksheet.getCell(`A${rowIndexTrip}`).value = i + 1;
         worksheet.getCell(`A${rowIndexTrip}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
         worksheet.getCell(`B${rowIndexTrip}`).value = g?.device?.code || '';
@@ -4102,7 +4101,6 @@ router.post('/drillReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, RO
                         mats.forEach((m) => {
                             const row = worksheet.getRow(currentRow);
 
-                            console.log(m)
 
                             // chỉ gán STT / Người nhận lệnh / Số thẻ 1 lần (ở hàng đầu tiên của item)
                             if (currentRow === startRowItem) {
