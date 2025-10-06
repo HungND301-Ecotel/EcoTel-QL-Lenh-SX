@@ -315,8 +315,6 @@ router.post('/update_status', verifyToken, async (req, res, next) => {
             const shiftEnd = new Date(now);
             shiftEnd.setHours(eh, em, 0, 0);
 
-            console.log(shiftStart, shiftEnd, now);
-
             return now >= shiftStart && now <= shiftEnd;
         };
         for (const order of orders) {
@@ -455,10 +453,14 @@ router.get('/count/status', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, RO
         const departments = await Department.find(queryDept);
         let devices = await Device.find(query)
             .populate("department")
-            .populate("category"); // populate category để lấy DeviceType trực tiếp
+            .populate({
+                path: 'category',
+                select: 'name group',
+                match: req.query.group ? { group: req.query.group } : {}
+            });
 
         if (req.query.group) {
-            devices = devices.filter(d => d.category.group === req.query.group)
+            devices = devices = devices.filter(d => d.category);
         }
 
 

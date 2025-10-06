@@ -347,7 +347,6 @@ router.put('/addphone', verifyToken, async (req, res) => {
 router.post("/save-token", verifyToken, async (req, res) => {
     try {
         const { token } = req.body;
-        console.log('token', token)
         const userId = req.user._id;
         if (!userId) {
             return res.status(401).json({ message: "Unauthorized: User ID not found." });

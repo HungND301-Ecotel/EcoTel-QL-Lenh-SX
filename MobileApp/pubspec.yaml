@@ -61,6 +61,7 @@ dependencies:
   firebase_core: ^4.1.0
   flutter_local_notifications: ^19.4.1
   new_version_plus: ^0.1.0
+  package_info_plus: ^8.3.1
   # flutter_map: ^8.2.1
   # latlong2: ^0.9.1
   # geolocator: ^14.0.2
