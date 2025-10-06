@@ -149,8 +149,6 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
             return res.status(400).json({ status: 'error', message: 'Không tìm thấy dữ liệu hợp lệ trong file.' });
         }
 
-        console.log(dataImport)
-
         const operations = dataImport.map(item => {
             const { name, ...updateData } = item;
 

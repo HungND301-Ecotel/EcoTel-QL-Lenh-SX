@@ -5,6 +5,7 @@ import 'package:soft/screens/home/home_vehicle_select.dart';
 import 'package:soft/screens/main.dart';
 import 'package:soft/screens/register/register.dart';
 import 'package:soft/screens/setting/changepass.dart';
+import 'package:soft/screens/setting/version_info.dart';
 import 'package:soft/screens/signin/signin.dart';
 import 'package:soft/screens/task_assignment/task_assignment_all_device_select.dart';
 import 'package:soft/screens/task_assignment/task_assignment_car_select.dart';
@@ -20,6 +21,7 @@ class AppRoute {
   static const String register = '/register';
   static const String main = '/main';
   static const String changePass = '/changepass';
+  static const String versionInfo = '/version_info';
   static const String addPhone = '/addphone';
   static const String contact = '/contact';
   static const String vehicleSelect = '/vehicle_select';
@@ -51,6 +53,10 @@ class AppRoute {
       case changePass:
         return MaterialPageRoute(
           builder: (_) => Changepass(),
+        );
+      case versionInfo:
+        return MaterialPageRoute(
+          builder: (_) => VersionInfo(),
         );
       case addPhone:
         return MaterialPageRoute(
