@@ -98,7 +98,7 @@ const Machines: React.FC = () => {
         { id: 'category', label: 'Loại máy' },
         { id: 'material', label: 'Chủng loại' },
         { id: 'fuelType', label: 'Nhiên liệu' },
-        { id: 'power', label: 'Công suất' },
+        // { id: 'power', label: 'Công suất' },
         { id: 'coordinates', label: 'Vị trí' },
         { id: 'department', label: 'Đơn vị' },
         { id: 'status', label: 'Trạng thái' },
@@ -230,7 +230,7 @@ const Machines: React.FC = () => {
             material: undefined,
             fuelType: '',
             note: '',
-            power: undefined as number | undefined,
+            // power: undefined as number | undefined,
             department: user?.role === "manager" ? user?.department?._id : '',
             status: 'available' as 'available' | 'in_use' | 'maintenance' | 'retired',
             coordinates: { lat: 0, lng: 0 },
@@ -564,7 +564,7 @@ const Machines: React.FC = () => {
                                     error={formik.touched.fuelType && Boolean(formik.errors.fuelType)}
                                     helperText={formik.touched.fuelType && formik.errors.fuelType}
                                 />
-                                <TextField
+                                {/* <TextField
                                     fullWidth
                                     type="number"
                                     id="power"
@@ -574,7 +574,7 @@ const Machines: React.FC = () => {
                                     onChange={formik.handleChange}
                                     error={formik.touched.power && Boolean(formik.errors.power)}
                                     helperText={formik.touched.power && formik.errors.power}
-                                />
+                                /> */}
                                 <TextField
                                     fullWidth
                                     select
@@ -770,7 +770,7 @@ const Machines: React.FC = () => {
                                 {visibleColumns.includes('category') && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Loại máy</TableCell>}
                                 {visibleColumns.includes('material') && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Chủng loại</TableCell>}
                                 {visibleColumns.includes('fuelType') && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Nhiên liệu</TableCell>}
-                                {visibleColumns.includes('power') && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Công suất</TableCell>}
+                                {/* {visibleColumns.includes('power') && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Công suất</TableCell>} */}
                                 {visibleColumns.includes('coordinates') && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Vị trí</TableCell>}
                                 {visibleColumns.includes('department') && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Đơn vị</TableCell>}
                                 {visibleColumns.includes('status') && <TableCell align='center' sx={{ fontWeight: 'bold', fontSize: 18 }}>Trạng thái</TableCell>}
@@ -808,7 +808,7 @@ const Machines: React.FC = () => {
                                         {visibleColumns.includes('category') && <TableCell align="center" sx={{ minWidth: 100, }}>{device.category?.name}</TableCell>}
                                         {visibleColumns.includes('material') && <TableCell align="center" sx={{ minWidth: 100, }}>{device.material?.name}</TableCell>}
                                         {visibleColumns.includes('fuelType') && <TableCell align="center" sx={{ minWidth: 100, }}>{device.fuelType}</TableCell>}
-                                        {visibleColumns.includes('power') && <TableCell align="center" sx={{ minWidth: 100, }}>{device.power}</TableCell>}
+                                        {/* {visibleColumns.includes('power') && <TableCell align="center" sx={{ minWidth: 100, }}>{device.power}</TableCell>} */}
                                         {visibleColumns.includes('coordinates') && <TableCell sx={{ minWidth: 130, }}>{coordsDisplay}</TableCell>}
                                         {visibleColumns.includes('department') && <TableCell sx={{ minWidth: 140, }}>
                                             {typeof device.department === 'object' && device.department !== null

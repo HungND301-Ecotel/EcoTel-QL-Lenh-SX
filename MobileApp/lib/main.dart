@@ -17,6 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soft/services/notification_service.dart';
 import 'package:soft/services/socket_service.dart';
 import 'package:soft/services/user_service.dart';
+import 'package:soft/widgets/network_gate.dart';
 
 final GlobalKey<NavigatorState> navigatorKey =
     GlobalKey<NavigatorState>();
@@ -185,8 +186,13 @@ class _MyAppState extends State<MyApp> {
             ),
           );
         } else {
+          final Widget screen = snapshot.data ?? SignIn();
+
+          final Widget home = (screen is MyPage)
+              ? NetworkGate(child: screen)
+              : screen;
           return MaterialApp(
-            home: snapshot.data,
+            home: home,
             onGenerateRoute: AppRoute.generateRoute,
             debugShowCheckedModeBanner: false,
             navigatorKey: navigatorKey,
