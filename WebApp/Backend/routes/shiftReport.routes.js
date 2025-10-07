@@ -25,7 +25,7 @@ router.post('/', verifyToken, async (req, res, next) => {
         if (vehicleRepair) {
             for (var item of vehicleRepair) {
                 await Device.findByIdAndUpdate(item.device, {
-                    status: item.status === STATUS_REPAIR.COMPLETED ? STATUS_DEVICE.AVAILABLE : device.status,
+                    status: item.status === STATUS_REPAIR.COMPLETED ? STATUS_DEVICE.AVAILABLE : STATUS_DEVICE.MAINTENANCE,
                     note: item.noteRepair
                 }, { new: true });
             }
