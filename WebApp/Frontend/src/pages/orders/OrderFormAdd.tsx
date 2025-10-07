@@ -13,9 +13,12 @@ import {
     IconButton,
     Menu,
     MenuItem,
+    Paper,
     Popper,
+    Stack,
     styled,
     TextField,
+    Typography,
 } from '@mui/material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/api.config';
@@ -25,7 +28,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { showConfirmAlert, showSuccessAlert } from '../../components/Alert';
-import { ContentCopy } from '@mui/icons-material';
+import { Add, ContentCopy, Delete } from '@mui/icons-material';
 import { StyledPopper } from '../../ui/poppers';
 import { addOrderValidationSchema } from '../../utils/validation';
 import { JobTypeEnum } from '../../types/enums';
@@ -127,15 +130,15 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                 {
                     assignedTo: "",
                     device: [],
+                    repairVehicles: [
+                        {
+                            device: undefined,
+                            note: '',
+                        },
+                    ],
                 },
             ],
             assignedVehicles: [],
-            repairVehicles: [
-                {
-                    device: undefined,
-                    note: '',
-                },
-            ],
             job: '',
             workingDate: new Date(),
             shift: '',
@@ -154,7 +157,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                 assignedTo: item.assignedTo,
                 device: item.device,
                 assignedVehicles: values.assignedVehicles,
-                repairVehicles: values.repairVehicles.filter(i => i.device != null && i.device !== ''),
+                repairVehicles: item.repairVehicles.filter(i => i.device != null && i.device !== ''),
                 job: values.job,
                 workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
                 excavator: values.excavator,
@@ -291,163 +294,254 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                     {selectedJob?.type === JobTypeEnum.EXCAVATOR &&
                         <MultiSelectField title="Thiết bị nhận tải" fieldName="assignedVehicles" options={cars} formik={formik} initData={[]} labelKey="code" />
                     }
+
                     <FieldArray name="usersAndDevices">
                         {({ push, remove }) => (
-                            <>
-                                {formik.values.usersAndDevices.map((item, index) => (
-                                    <Grid container spacing={2} key={index} alignItems="center" sx={{ mb: 2, mt: 2 }}>
-                                        <Grid item xs={5}>
-                                            <Autocomplete
-                                                fullWidth
-                                                options={users}
-                                                getOptionLabel={(option: any) =>
-                                                    `${option.fullName || ''} - ${option.salaryCode || ''}`
-                                                }
-                                                value={users.find((p: any) => p._id === item.assignedTo) || null}
-                                                onChange={(event, newValue) => {
-                                                    formik.setFieldValue(`usersAndDevices[${index}].assignedTo`, newValue?._id || '');
-                                                    if (index === 0 && newValue?.position) {
-                                                        const userPositionId = typeof newValue.position === "object"
-                                                            ? newValue.position._id
-                                                            : newValue.position;
+                            <Stack spacing={2} sx={{ mt: 2, mb: 2 }}>
+                                {formik.values.usersAndDevices.map((item, index) => {
+                                    const path = `usersAndDevices.${index}`;
+                                    const isMaintenance = selectedJob?.type === JobTypeEnum.MAINTENANCE;
 
-                                                        const matchedMeasures = safetyMeasures.filter((sm: SafetyMeasure) => {
-                                                            const posIds = (sm.position || []).map((p: any) =>
-                                                                typeof p === "string" ? p : p._id
-                                                            );
-                                                            return posIds.includes(userPositionId);
-                                                        });
-
-                                                        const userSafetyTexts = matchedMeasures.map((m: SafetyMeasure) => m.content).join("\n");
-
-                                                        // Gọi hàm cập nhật chung
-                                                        updateSafetyMeasure(jobSafetyText, userSafetyTexts);
-                                                    }
-                                                }}
-                                                PopperComponent={StyledPopper}
-                                                renderInput={(params) => (
-                                                    <TextField
-                                                        {...params}
-                                                        label="Thẻ lương"
-                                                        error={Boolean(
-                                                            typeof formik.errors.usersAndDevices?.[index] === 'object' &&
-                                                            (formik.errors.usersAndDevices?.[index] as any)?.assignedTo
-                                                        )}
-                                                        helperText={
-                                                            typeof formik.errors.usersAndDevices?.[index] === 'object'
-                                                                ? (formik.errors.usersAndDevices?.[index] as any)?.assignedTo
-                                                                : ''
-                                                        }
-                                                    />
-                                                )}
-                                            />
-                                        </Grid>
-
-                                        {[JobTypeEnum.DOZER, JobTypeEnum.DRILL, JobTypeEnum.EXCAVATOR, JobTypeEnum.MAINTENANCE, JobTypeEnum.PUMP, JobTypeEnum.SERVICE_VEHICLE, JobTypeEnum.SIEVE, JobTypeEnum.VEHICLE].includes(selectedJob?.type ?? "") && <Grid item xs={5}>
-                                            < Autocomplete
-                                                fullWidth
-                                                options={devices}
-                                                getOptionLabel={(option: Device) => option.code || ''}
-                                                value={devices.find((d: Device) => d._id === item.device[0]) || null}
-                                                onChange={(event, newValue) => {
-                                                    formik.setFieldValue(`usersAndDevices[${index}].device`, newValue?._id ? [newValue?._id] : []);
-                                                }}
-                                                PopperComponent={StyledPopper}
-                                                renderInput={(params) => (
-                                                    <TextField
-                                                        {...params}
-                                                        label="Thiết bị"
-                                                        error={Boolean(
-                                                            typeof formik.errors.usersAndDevices?.[index] === 'object' &&
-                                                            (formik.errors.usersAndDevices?.[index] as any)?.device
-                                                        )}
-                                                        helperText={
-                                                            typeof formik.errors.usersAndDevices?.[index] === 'object'
-                                                                ? (formik.errors.usersAndDevices?.[index] as any)?.device
-                                                                : ''
-                                                        }
-                                                    />
-                                                )}
-                                            />
-                                        </Grid>}
-
-                                        {index > 0 && <Grid item xs={2}>
-                                            <Button color="error" onClick={() => remove(index)}>Xóa</Button>
-                                        </Grid>}
-                                    </Grid>
-                                ))}
-                                {selectedJob.type !== JobTypeEnum.MAINTENANCE && <Button variant="outlined" sx={{ mb: 2 }} onClick={() => push({ assignedTo: '', device: [] })}>
-                                    + Thêm
-                                </Button>}
-                            </>
-                        )}
-                    </FieldArray>
-                    {selectedJob.type === JobTypeEnum.MAINTENANCE &&
-                        <FieldArray name="repairVehicles">
-                            {({ push, remove }) => (
-                                <>
-                                    {formik.values.repairVehicles.map((item, index) => (
-                                        <Grid container spacing={2} key={index} alignItems="center" sx={{ mb: 2 }}>
-                                            {/* Cột 1: Autocomplete */}
-                                            <Grid item xs={4}>
-                                                <Autocomplete
-                                                    fullWidth
-                                                    options={allDevices}
-                                                    getOptionLabel={(option: any) => option.code || ''}
-                                                    value={allDevices.find((p: any) => p._id === item.device) || null}
-                                                    onChange={(event, newValue) => {
-                                                        formik.setFieldValue(`repairVehicles[${index}].device`, newValue?._id || '');
+                                    return (
+                                        <Box
+                                            sx={{
+                                                position: 'relative',
+                                                border: 1,
+                                                borderColor: 'divider',
+                                                borderRadius: 2,
+                                                p: 2,
+                                            }}
+                                        >
+                                            {index > 0 && (
+                                                <IconButton
+                                                    onClick={() => remove(index)}
+                                                    color="error"
+                                                    sx={{
+                                                        position: 'absolute',
+                                                        top: -16,             // nổi lên trên viền 1 chút
+                                                        left: 12,
+                                                        bgcolor: 'background.paper',
                                                     }}
-                                                    renderInput={(params) => (
-                                                        <TextField
-                                                            {...params}
-                                                            label="Thiết bị sửa chữa"
-                                                        />
+                                                >
+                                                    <Delete fontSize='small' />
+                                                    <Typography variant="caption" sx={{ userSelect: 'none' }}>Xóa thẻ lương</Typography>
+                                                </IconButton>
+                                            )}
+                                            <Grid container spacing={2} alignItems="center">
+                                                {/* Thẻ lương */}
+                                                <Grid item xs={12} md={6}>
+                                                    <Autocomplete
+                                                        fullWidth
+                                                        options={users}
+                                                        getOptionLabel={(option: any) =>
+                                                            `${option.fullName || ''} - ${option.salaryCode || ''}`
+                                                        }
+                                                        value={users.find((p: any) => p._id === item.assignedTo) || null}
+                                                        onChange={(event, newValue) => {
+                                                            formik.setFieldValue(`${path}.assignedTo`, newValue?._id || '');
+                                                            if (index === 0 && newValue?.position) {
+                                                                const userPositionId = typeof newValue.position === 'object'
+                                                                    ? newValue.position._id
+                                                                    : newValue.position;
+
+                                                                const matchedMeasures = safetyMeasures.filter((sm: SafetyMeasure) => {
+                                                                    const posIds = (sm.position || []).map((p: any) =>
+                                                                        typeof p === 'string' ? p : p._id
+                                                                    );
+                                                                    return posIds.includes(userPositionId);
+                                                                });
+
+                                                                const userSafetyTexts = matchedMeasures
+                                                                    .map((m: SafetyMeasure) => m.content)
+                                                                    .join('\n');
+
+                                                                updateSafetyMeasure(jobSafetyText, userSafetyTexts);
+                                                            }
+                                                        }}
+                                                        PopperComponent={StyledPopper}
+                                                        renderInput={(params) => (
+                                                            <TextField
+                                                                {...params}
+                                                                label="Thẻ lương"
+                                                                error={Boolean(
+                                                                    typeof formik.errors.usersAndDevices?.[index] === 'object' &&
+                                                                    (formik.errors.usersAndDevices?.[index] as any)?.assignedTo
+                                                                )}
+                                                                helperText={
+                                                                    typeof formik.errors.usersAndDevices?.[index] === 'object'
+                                                                        ? (formik.errors.usersAndDevices?.[index] as any)?.assignedTo
+                                                                        : ''
+                                                                }
+                                                            />
+                                                        )}
+                                                    />
+                                                </Grid>
+
+                                                {/* Thiết bị (cho các job có thiết bị chính) */}
+                                                {[
+                                                    JobTypeEnum.DOZER,
+                                                    JobTypeEnum.DRILL,
+                                                    JobTypeEnum.EXCAVATOR,
+                                                    JobTypeEnum.PUMP,
+                                                    JobTypeEnum.SERVICE_VEHICLE,
+                                                    JobTypeEnum.SIEVE,
+                                                    JobTypeEnum.VEHICLE,
+                                                ].includes(selectedJob?.type ?? '') && (
+                                                        <Grid item xs={12} md={6}>
+                                                            <Autocomplete
+                                                                fullWidth
+                                                                options={devices}
+                                                                getOptionLabel={(option: Device) => option.code || ''}
+                                                                value={
+                                                                    devices.find((d: Device) => d._id === item.device?.[0]) || null
+                                                                }
+                                                                onChange={(event, newValue) => {
+                                                                    formik.setFieldValue(
+                                                                        `${path}.device`,
+                                                                        newValue?._id ? [newValue._id] : []
+                                                                    );
+                                                                }}
+                                                                PopperComponent={StyledPopper}
+                                                                renderInput={(params) => (
+                                                                    <TextField
+                                                                        {...params}
+                                                                        label="Thiết bị"
+                                                                        error={Boolean(
+                                                                            typeof formik.errors.usersAndDevices?.[index] === 'object' &&
+                                                                            (formik.errors.usersAndDevices?.[index] as any)?.device
+                                                                        )}
+                                                                        helperText={
+                                                                            typeof formik.errors.usersAndDevices?.[index] === 'object'
+                                                                                ? (formik.errors.usersAndDevices?.[index] as any)?.device
+                                                                                : ''
+                                                                        }
+                                                                    />
+                                                                )}
+                                                            />
+                                                        </Grid>
                                                     )}
-                                                />
+
                                             </Grid>
 
-                                            {/* Cột 2: Note */}
-                                            <Grid item xs={7}>
-                                                <TextField
-                                                    fullWidth
-                                                    label="Tình trạng hư hỏng"
-                                                    multiline
-                                                    rows={2}
-                                                    value={item.note ?? ''}
-                                                    onChange={(e) =>
-                                                        formik.setFieldValue(`repairVehicles[${index}].note`, e.target.value)
-                                                    }
-                                                />
-                                            </Grid>
+                                            {/* BỌC NHỎ: repairVehicles */}
+                                            {isMaintenance && (
+                                                <Box sx={{ mt: 2 }}>
 
-                                            {/* Cột 3: Nút Xóa */}
-                                            <Grid item xs={1} sx={{ display: 'flex', justifyContent: 'center' }}>
-                                                {index > 0 && (
-                                                    <Button
-                                                        color="error"
-                                                        variant="outlined"
-                                                        size="small"
-                                                        onClick={() => remove(index)}
-                                                    >
-                                                        Xóa
-                                                    </Button>
-                                                )}
-                                            </Grid>
-                                        </Grid>
-                                    ))}
+                                                    <FieldArray name={`${path}.repairVehicles`}>
+                                                        {({ push: pushRepair, remove: removeRepair }) => (
+                                                            <Stack spacing={1.5}>
+                                                                {(item.repairVehicles ?? []).map((rv: any, rvIndex: number) => {
+                                                                    const rvPath = `${path}.repairVehicles.${rvIndex}`;
 
+                                                                    return (
+                                                                        <Box
+                                                                            sx={{
+                                                                                position: 'relative',
+                                                                                border: 1,
+                                                                                borderColor: 'divider',
+                                                                                borderRadius: 2,
+                                                                                p: 2,
+                                                                            }}
+                                                                        >
+                                                                            {rvIndex > 0 && (
+                                                                                <IconButton
+                                                                                    onClick={() => removeRepair(rvIndex)}
+                                                                                    color="error"
+                                                                                    sx={{
+                                                                                        position: 'absolute',
+                                                                                        top: -16,             // nổi lên trên viền 1 chút
+                                                                                        left: 12,
+                                                                                        bgcolor: 'background.paper',
+                                                                                    }}
+                                                                                >
+                                                                                    <Delete fontSize='small' />
+                                                                                    <Typography variant="caption" sx={{ userSelect: 'none' }}>Xóa thiết bị sửa chữa</Typography>
+                                                                                </IconButton>
+                                                                            )}
+                                                                            <Grid container spacing={1.5} alignItems="center">
+                                                                                <Grid item xs={12} md={5}>
+                                                                                    <Autocomplete
+                                                                                        fullWidth
+                                                                                        options={allDevices}
+                                                                                        getOptionLabel={(option: any) => option.code || ''}
+                                                                                        value={
+                                                                                            allDevices.find((p: any) => p._id === rv.device) ||
+                                                                                            null
+                                                                                        }
+                                                                                        onChange={(event, newValue) => {
+                                                                                            formik.setFieldValue(
+                                                                                                `${rvPath}.device`,
+                                                                                                newValue?._id || ''
+                                                                                            );
+                                                                                        }}
+                                                                                        renderInput={(params) => (
+                                                                                            <TextField {...params} label="Thiết bị sửa chữa" />
+                                                                                        )}
+                                                                                    />
+                                                                                </Grid>
+
+                                                                                <Grid item xs={12} md={7}>
+                                                                                    <TextField
+                                                                                        fullWidth
+                                                                                        label="Tình trạng hư hỏng"
+                                                                                        multiline
+                                                                                        rows={2}
+                                                                                        value={rv.note ?? ''}
+                                                                                        onChange={(e) =>
+                                                                                            formik.setFieldValue(
+                                                                                                `${rvPath}.note`,
+                                                                                                e.target.value
+                                                                                            )
+                                                                                        }
+                                                                                    />
+                                                                                </Grid>
+
+                                                                            </Grid>
+                                                                        </Box>
+                                                                    );
+                                                                })}
+
+                                                                {/* Nút thêm bọc nhỏ */}
+                                                                <Box>
+                                                                    <Button
+                                                                        variant="outlined"
+                                                                        startIcon={<Add />}
+                                                                        onClick={() =>
+                                                                            pushRepair({ device: undefined, note: '' })
+                                                                        }
+                                                                    >
+                                                                        Thêm thiết bị sửa chữa
+                                                                    </Button>
+                                                                </Box>
+                                                            </Stack>
+                                                        )}
+                                                    </FieldArray>
+                                                </Box>
+                                            )}
+                                        </Box>
+                                    );
+                                })}
+
+                                {/* Nút thêm bọc to */}
+                                <Box>
                                     <Button
                                         variant="outlined"
-                                        sx={{ mb: 2 }}
-                                        onClick={() => push({ device: '', note: '' })}
+                                        startIcon={<Add />}
+                                        onClick={() =>
+                                            push({
+                                                assignedTo: '',
+                                                device: [],
+                                                repairVehicles: [{ device: undefined, note: '' }],
+                                            })
+                                        }
                                     >
-                                        + Thêm
+                                        Thêm thẻ lương
                                     </Button>
-                                </>
-                            )}
-                        </FieldArray>
-                    }
+                                </Box>
+                            </Stack>
+                        )}
+                    </FieldArray>
+
                     <Grid container spacing={2}>
                         <Grid item xs={12} sm={6}>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>

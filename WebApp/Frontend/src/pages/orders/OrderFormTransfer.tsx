@@ -14,8 +14,10 @@ import {
     Menu,
     MenuItem,
     Popper,
+    Stack,
     styled,
     TextField,
+    Typography,
 } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/api.config';
@@ -28,7 +30,7 @@ import 'dayjs/locale/en-gb';
 import utc from 'dayjs/plugin/utc';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { DesktopTimePicker } from '@mui/x-date-pickers';
-import { ContentCopy } from '@mui/icons-material';
+import { Add, ContentCopy, Delete } from '@mui/icons-material';
 import { StyledPopper } from '../../ui/poppers';
 import { editAndTransferOrderValidationSchema } from '../../utils/validation';
 import { JobTypeEnum } from '../../types/enums';
@@ -356,7 +358,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                         />
                     </Grid>
 
-                    {selectedJob?.type && [JobTypeEnum.DOZER, JobTypeEnum.DRILL, JobTypeEnum.EXCAVATOR, JobTypeEnum.MAINTENANCE, JobTypeEnum.PUMP, JobTypeEnum.SERVICE_VEHICLE, JobTypeEnum.SIEVE, JobTypeEnum.VEHICLE].includes(selectedJob?.type ?? "") && <Grid item xs={6}>
+                    {selectedJob?.type && [JobTypeEnum.DOZER, JobTypeEnum.DRILL, JobTypeEnum.EXCAVATOR, JobTypeEnum.PUMP, JobTypeEnum.SERVICE_VEHICLE, JobTypeEnum.SIEVE, JobTypeEnum.VEHICLE].includes(selectedJob?.type ?? "") && <Grid item xs={6}>
                         <Autocomplete
                             fullWidth
                             options={devices}
@@ -382,66 +384,81 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                     {selectedJob?.type === JobTypeEnum.MAINTENANCE && <Grid item xs={12}>
                         <FieldArray name="repairVehicles">
                             {({ push, remove }) => (
-                                <>
+                                <Stack spacing={2}>
                                     {formik.values.repairVehicles.map((item: any, index: number) => (
-                                        <Grid container spacing={2} key={index} alignItems="center" sx={{ mb: 2 }}>
-                                            {/* Cột 1: Autocomplete */}
-                                            <Grid item xs={4}>
-                                                <Autocomplete
-                                                    fullWidth
-                                                    options={allDevices}
-                                                    getOptionLabel={(option: any) => option.code || ''}
-                                                    value={allDevices.find((p: any) => p._id === item.device) || null}
-                                                    onChange={(event, newValue) => {
-                                                        formik.setFieldValue(`repairVehicles[${index}].device`, newValue?._id || '');
+                                        <Box
+                                            sx={{
+                                                position: 'relative',
+                                                border: 1,
+                                                borderColor: 'divider',
+                                                borderRadius: 2,
+                                                p: 2,
+                                            }}
+                                        >
+                                            {index > 0 && (
+                                                <IconButton
+                                                    onClick={() => remove(index)}
+                                                    color="error"
+                                                    sx={{
+                                                        position: 'absolute',
+                                                        top: -16,             // nổi lên trên viền 1 chút
+                                                        left: 12,
+                                                        bgcolor: 'background.paper',
                                                     }}
-                                                    renderInput={(params) => (
-                                                        <TextField
-                                                            {...params}
-                                                            label="Thiết bị sửa chữa"
-                                                        />
-                                                    )}
-                                                />
-                                            </Grid>
+                                                >
+                                                    <Delete fontSize='small' />
+                                                    <Typography variant="caption" sx={{ userSelect: 'none' }}>Xóa thiết bị sửa chữa</Typography>
+                                                </IconButton>
+                                            )}
+                                            <Grid container spacing={2} key={index} alignItems="center" sx={{ mb: 2 }}>
+                                                {/* Cột 1: Autocomplete */}
+                                                <Grid item xs={5}>
+                                                    <Autocomplete
+                                                        fullWidth
+                                                        options={allDevices}
+                                                        getOptionLabel={(option: any) => option.code || ''}
+                                                        value={allDevices.find((p: any) => p._id === item.device) || null}
+                                                        onChange={(event, newValue) => {
+                                                            formik.setFieldValue(`repairVehicles[${index}].device`, newValue?._id || '');
+                                                        }}
+                                                        renderInput={(params) => (
+                                                            <TextField
+                                                                {...params}
+                                                                label="Thiết bị sửa chữa"
+                                                            />
+                                                        )}
+                                                    />
+                                                </Grid>
 
-                                            {/* Cột 2: Note */}
-                                            <Grid item xs={7}>
-                                                <TextField
-                                                    fullWidth
-                                                    label="Tình trạng hư hỏng"
-                                                    multiline
-                                                    rows={2}
-                                                    value={item.note ?? ''}
-                                                    onChange={(e) =>
-                                                        formik.setFieldValue(`repairVehicles[${index}].note`, e.target.value)
-                                                    }
-                                                />
+                                                {/* Cột 2: Note */}
+                                                <Grid item xs={7}>
+                                                    <TextField
+                                                        fullWidth
+                                                        label="Tình trạng hư hỏng"
+                                                        multiline
+                                                        rows={2}
+                                                        value={item.note ?? ''}
+                                                        onChange={(e) =>
+                                                            formik.setFieldValue(`repairVehicles[${index}].note`, e.target.value)
+                                                        }
+                                                    />
+                                                </Grid>
                                             </Grid>
-
-                                            {/* Cột 3: Nút Xóa */}
-                                            <Grid item xs={1} sx={{ display: 'flex', justifyContent: 'center' }}>
-                                                {index > 0 && (
-                                                    <Button
-                                                        color="error"
-                                                        variant="outlined"
-                                                        size="small"
-                                                        onClick={() => remove(index)}
-                                                    >
-                                                        Xóa
-                                                    </Button>
-                                                )}
-                                            </Grid>
-                                        </Grid>
+                                        </Box>
                                     ))}
 
-                                    <Button
-                                        variant="outlined"
-                                        sx={{ mb: 2 }}
-                                        onClick={() => push({ device: '', note: '' })}
-                                    >
-                                        + Thêm
-                                    </Button>
-                                </>
+                                    <Box>
+                                        <Button
+                                            variant="outlined"
+                                            startIcon={<Add />}
+                                            onClick={() =>
+                                                push({ device: undefined, note: '' })
+                                            }
+                                        >
+                                            Thêm thiết bị sửa chữa
+                                        </Button>
+                                    </Box>
+                                </Stack>
                             )}
                         </FieldArray>
                     </Grid>}
