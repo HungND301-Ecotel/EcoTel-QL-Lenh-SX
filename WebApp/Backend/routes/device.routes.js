@@ -8,6 +8,7 @@ const Department = require('../models/Department');
 const DeviceModel = require('../models/DeviceModel');
 const ExcelJS = require('exceljs')
 const xlsx = require('xlsx')
+const mongoose = require('mongoose');
 
 
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
@@ -448,6 +449,10 @@ router.get('/count/status', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, RO
         if (user.role === ROLE.MANAGER) {
             query.department = user?.department._id
             queryDept._id = user?.department._id
+        }
+        if (req.query.department) {
+            query.department = new mongoose.Types.ObjectId(req.query.department)
+            queryDept._id = new mongoose.Types.ObjectId(req.query.department)
         }
 
         const departments = await Department.find(queryDept)

@@ -21,6 +21,7 @@ import {
     Chip,
     useTheme,
     useMediaQuery,
+    AlertColor,
 } from '@mui/material';
 import React, { useState } from 'react'
 import PieChartOrder from '../../components/PieChartOrder'
@@ -36,6 +37,7 @@ import api from '../../config/api.config';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
+import { AlertSnackbar } from '../../components/Alert';
 
 export default function OrderAnalysic({ departments }: { departments: any[] }) {
     const [user] = useAtom(userAtom)
@@ -50,7 +52,11 @@ export default function OrderAnalysic({ departments }: { departments: any[] }) {
         { key: "cancel", name: "Đã hủy", color: 'purple' },
     ];
 
-
+    const [alert, setAlert] = useState<{ open: boolean; message: string; severity?: AlertColor }>({
+        open: false,
+        message: '',
+        severity: 'success',
+    });
     const { data: orderCount = {
         pending: { "ca1": 0, "ca2": 0, "ca3": 0, "day": 0, "month": 0 },
         in_progress: { "ca1": 0, "ca2": 0, "ca3": 0, "day": 0, "month": 0 },
@@ -72,6 +78,7 @@ export default function OrderAnalysic({ departments }: { departments: any[] }) {
 
     return (
         <Paper variant="outlined" sx={{ mb: 4, borderRadius: 2 }}>
+            <AlertSnackbar alert={alert} setAlert={setAlert} />
             <Box
                 sx={{
                     display: 'flex',
@@ -81,7 +88,17 @@ export default function OrderAnalysic({ departments }: { departments: any[] }) {
                     p: 2
                 }}
             >
-                <IconButton onClick={() => refetchOrderCount()} disabled={isLoadingOrderCount}>
+                <IconButton
+                    onClick={async () => {
+                        try {
+                            await refetchOrderCount(); // đợi xong refetch
+                            setAlert({ open: true, message: 'Cập nhật thành công', severity: 'success' });
+                        } catch (e) {
+                            setAlert({ open: true, message: 'Cập nhật thất bại', severity: 'error' });
+                        }
+                    }}
+                    disabled={isLoadingOrderCount}
+                >
                     {isLoadingOrderCount ? (
                         <CircularProgress size={24} />
                     ) : (
@@ -122,7 +139,7 @@ export default function OrderAnalysic({ departments }: { departments: any[] }) {
             <Grid container spacing={2}>
                 <Grid item xs={12} md={8}>
                     <TableContainer sx={{ maxHeight: 300 }}>
-                        <Table stickyHeader sx={{ '& td, & th': { border: '1px solid #e0e0e0', padding: '4px', } }}>
+                        <Table stickyHeader sx={{ p: 2, '& td, & th': { border: '1px solid #e0e0e0', padding: '4px', } }}>
                             <TableHead>
                                 <TableRow>
                                     <TableCell colSpan={7} align="center" sx={{ bgcolor: '#dcf1d8', fontWeight: 'bold', fontSize: 18 }}>LỆNH SẢN XUẤT</TableCell>

@@ -1,3 +1,4 @@
+import { Alert, AlertColor, Snackbar } from '@mui/material';
 import Swal from 'sweetalert2';
 
 export const showSuccessAlert = (message = 'Bạn đã lưu thành công.') => {
@@ -34,3 +35,29 @@ export const showConfirmAlert = (message = 'Bạn có chắc chắn không?') =>
         cancelButtonText: 'Hủy'
     });
 };
+
+export const AlertSnackbar = ({
+    alert,
+    setAlert,
+}: {
+    alert: { open: boolean; message: string; severity?: AlertColor };
+    setAlert: React.Dispatch<React.SetStateAction<{ open: boolean; message: string; severity?: AlertColor }>>;
+}) => {
+    const handleClose = (_: any, reason?: string) => {
+        if (reason === 'clickaway') return;
+        setAlert((a) => ({ ...a, open: false }));
+    };
+
+    return (
+        <Snackbar
+            open={alert.open}
+            onClose={handleClose}
+            autoHideDuration={4000}
+            anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        >
+            <Alert severity={alert.severity ?? 'success'} variant="filled" onClose={handleClose}>
+                {alert.message}
+            </Alert>
+        </Snackbar>
+    );
+}

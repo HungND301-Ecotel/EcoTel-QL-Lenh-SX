@@ -35,6 +35,8 @@ import { MultiSelectField } from '../../components/MultiSelectField';
 import { StyledPopper } from '../../ui/poppers';
 import { editAndTransferOrderValidationSchema } from '../../utils/validation';
 import { JobTypeEnum } from '../../types/enums';
+import DepartmentService from '../../services/departmentService';
+import { AutocompleteSelect } from '../../components/AutocompleteSelect';
 dayjs.extend(utc);
 
 interface OrderFormProps {
@@ -96,6 +98,10 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
         queryKey: ['excavators'],
         queryFn: () => api.get('/devices/excavators/all').then(res => res.data.data),
     });
+    const { data: departments = [] } = useQuery({
+        queryKey: ['departments'],
+        queryFn: DepartmentService.getAll,
+    });
     const { data: cars = [] } = useQuery({
         queryKey: ['cars'],
         queryFn: () => api.get('/devices/car/all').then(res => res.data.data),
@@ -129,6 +135,9 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                 : initialValues.assignedVehicles
                     ? [typeof initialValues.assignedVehicles === 'object' ? initialValues.assignedVehicles._id : initialValues.assignedVehicles]
                     : [],
+            repairDepartment: typeof initialValues.repairDepartment === 'object'
+                ? initialValues.repairDepartment._id
+                : initialValues.repairDepartment || undefined,
             repairVehicles: (initialValues.repairVehicles || [{ device: undefined, note: '' }]).map((d: any) => (
                 {
                     device: d.device !== null && typeof d.device === 'object' ? d.device?._id : d._id,
@@ -174,6 +183,7 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                 assignedTo: values.assignedTo,
                 device: values.device,
                 assignedVehicles: values.assignedVehicles,
+                repairDepartment: values.repairDepartment || undefined,
                 repairVehicles: values.repairVehicles.filter((i: any) => i.device != null && i.device !== ''),
                 job: values.job,
                 workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
@@ -311,7 +321,11 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                         <Grid item xs={6}>
                             <MultiSelectField title="Thiết bị" fieldName="device" options={devices} formik={formik} initData={initialValues} labelKey="code" />
                         </Grid>}
-
+                    {selectedJob?.type === JobTypeEnum.MAINTENANCE &&
+                        <Grid item xs={6}>
+                            <AutocompleteSelect title="Đơn vị sửa chữa" fieldName="repairDepartment" options={departments} formik={formik} initData={initialValues} labelKey="code" />
+                        </Grid>
+                    }
                     {selectedJob?.type === JobTypeEnum.MAINTENANCE && <Grid item xs={12}>
                         <FieldArray name="repairVehicles">
                             {({ push, remove }) => (
@@ -337,7 +351,7 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                                                         bgcolor: 'background.paper',
                                                     }}
                                                 >
-                                                    <Delete fontSize='small'/>
+                                                    <Delete fontSize='small' />
                                                     <Typography variant="caption" sx={{ userSelect: 'none' }}>Xóa thiết bị sửa chữa</Typography>
                                                 </IconButton>
                                             )}
@@ -479,7 +493,7 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                     </Grid>}
 
                     {selectedJob?.type === JobTypeEnum.VEHICLE && <Grid item xs={12} sm={6}>
-                        <MultiSelectField title="Loại vật liệu" fieldName="material" options={materials} formik={formik} initData={initialValues} labelKey="name" />
+                        <MultiSelectField title="Vật liệu" fieldName="material" options={materials} formik={formik} initData={initialValues} labelKey="name" />
                     </Grid>}
 
                     <Grid item xs={12}>
