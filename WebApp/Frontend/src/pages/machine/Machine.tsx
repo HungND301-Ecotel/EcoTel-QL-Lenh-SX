@@ -757,6 +757,10 @@ const Machines: React.FC = () => {
                                         }}
                                     />
                                 </TableCell>}
+                                <TableCell align='center' sx={{
+                                    width: 50,
+                                    fontWeight: 'bold', fontSize: 18
+                                }}>STT</TableCell>
                                 {visibleColumns.includes('code') && <TableCell align='center' sx={{
                                     position: 'sticky',
                                     left: 0,
@@ -796,6 +800,9 @@ const Machines: React.FC = () => {
                                         backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
                                     }}>
                                         {user?.role === "admin" && <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(device._id)} checked={selectedDevices.includes(device._id)} /></TableCell>}
+                                        <TableCell align='center' sx={{
+                                            width: 50,
+                                        }}>{page * pageSize + index + 1}</TableCell>
                                         {visibleColumns.includes('code') && <TableCell align='center' sx={{
                                             position: 'sticky',
                                             left: 0,

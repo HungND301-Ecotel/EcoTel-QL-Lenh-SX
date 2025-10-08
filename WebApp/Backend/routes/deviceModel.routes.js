@@ -15,8 +15,8 @@ router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, 
         const { name} = req.body
         const existingDeviceModel = await DeviceModel.findOne({ name });
         if (existingDeviceModel) {
-            req.logger.error("❌ Tên chủng loại đã tồn tại");
-            return res.status(400).send({ status: 'error', message: 'Tên chủng loại đã tồn tại' });
+            req.logger.error("❌ Vật liệu đã tồn tại");
+            return res.status(400).send({ status: 'error', message: 'Vật liệu đã tồn tại' });
         }
         const newDeviceModel = new DeviceModel({
             name: name,
@@ -69,7 +69,7 @@ router.put('/:id', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req
 
             return res.status(404).send({ status: 'error', message: 'Sửa thất bại ' });
         }
-        req.logger.info(`🔥 ${user?.username} Sửa chủng loại thành công`);
+        req.logger.info(`🔥 ${user?.username} Sửa vật liệu thành công`);
 
         res.status(200).json({
             status: 'success',
@@ -120,7 +120,7 @@ router.get('/:id', verifyToken, async (req, res, next) => {
 });
 
 const columnMapping = {
-    'Tên chủng loại': 'name',
+    'Vật liệu': 'name',
 };
 router.post('/importFile', upload.single('file'), verifyToken, async (req, res) => {
     try {
@@ -188,7 +188,7 @@ router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
         const worksheet = workbook.addWorksheet('DS.vat_lieu');
 
         worksheet.columns = [
-            { header: 'Tên chủng loại', key: 'name', width: 20 },
+            { header: 'Vật liệu', key: 'name', width: 20 },
         ];
 
         const formattedDevices = (data || []).map(item => ({

@@ -9,6 +9,7 @@ import 'package:soft/screens/setting/version_info.dart';
 import 'package:soft/screens/signin/signin.dart';
 import 'package:soft/screens/task_assignment/task_assignment_all_device_select.dart';
 import 'package:soft/screens/task_assignment/task_assignment_car_select.dart';
+import 'package:soft/screens/task_assignment/task_assignment_department_select.dart';
 import 'package:soft/screens/task_assignment/task_assignment_device_type_select.dart';
 import 'package:soft/screens/task_assignment/task_assignment_dump_site_select.dart';
 import 'package:soft/screens/task_assignment/task_assignment_excavator_select.dart';
@@ -29,6 +30,8 @@ class AppRoute {
       '/all_device_select';
   static const String locationSelect = '/location_select';
   static const String carSelect = '/car_select';
+  static const String departmentSelect =
+      '/department_select';
   static const String homeVehicleSelect =
       '/home_vehicle_select';
   static const String deviceTypeSelect =
@@ -73,6 +76,10 @@ class AppRoute {
       case carSelect:
         return MaterialPageRoute(
           builder: (_) => TaskAssignmentCarSelect(),
+        );
+      case departmentSelect:
+        return MaterialPageRoute(
+          builder: (_) => TaskAssignmentDepartmentSelect(),
         );
       case locationSelect:
         return MaterialPageRoute(

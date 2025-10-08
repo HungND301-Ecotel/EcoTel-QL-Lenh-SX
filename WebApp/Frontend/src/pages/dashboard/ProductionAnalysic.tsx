@@ -35,7 +35,7 @@ const rawData = [
 const productions = [
     { key: "SLD", name: "Sản lượng đất thực hiện (m3)" },
     { key: "SLT", name: "Sản lượng than nguyên khai (m3)" },
-    { key: "MKS", name: "Mét khoan sâu (m3)" },
+    { key: "MKS", name: "Mét khoan sâu (mks)" },
     { key: "KLD", name: "Khối lượng vận chuyển đất (Tkm)" },
     { key: "KLT", name: "Khối lượng vận chuyển than" },
     { key: "TTK", name: "Thể tích khối thực hiện" },
@@ -108,7 +108,7 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
             <Grid container spacing={2}>
                 <Grid item xs={12} md={8}>
                     <TableContainer sx={{ maxHeight: 600 }}>
-                        <Table stickyHeader sx={{ '& td, & th': { border: '1px solid #e0e0e0', padding: '0 4px' } }}>
+                        <Table stickyHeader sx={{ p: 2, '& td, & th': { border: '1px solid #e0e0e0', padding: '0 4px' } }}>
                             <TableHead>
                                 <TableRow>
                                     <TableCell colSpan={7} align="center" sx={{ bgcolor: '#ffe8d6', fontWeight: 'bold', fontSize: 18 }}>SẢN LƯỢNG</TableCell>

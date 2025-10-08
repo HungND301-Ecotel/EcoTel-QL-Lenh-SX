@@ -12,9 +12,9 @@ import 'package:soft/services/order_service.dart';
 import 'package:soft/services/safety_measure_service.dart';
 import 'package:soft/widgets/all_device_button.dart';
 import 'package:soft/widgets/date_picker_button.dart';
+import 'package:soft/widgets/department_button.dart';
 import 'package:soft/widgets/pay_roll_input.dart';
 import 'package:soft/widgets/time_picker_button.dart';
-import 'package:soft/widgets/vehicle_button.dart';
 
 class TaskAssignmentMaintenceAdd extends StatefulWidget {
   final TaskModel data;
@@ -34,8 +34,13 @@ class TaskAssignmentMaintenceAdd extends StatefulWidget {
 class _TaskAssignmentMaintenceAdd
     extends State<TaskAssignmentMaintenceAdd> {
   DateTime? _selectedDateTime;
-  List<String?> vehicle = [];
-  List<Map<String, String?>> deviceAndNote = [];
+  List<Map<String, dynamic>?> userAndDevice = [
+    {
+      "user": null,
+      "repairDepartment": null,
+      "deviceAndNote": []
+    },
+  ];
   UserModel? user;
   ShiftModel? _shift;
   String? _shiftHour;
@@ -107,7 +112,11 @@ class _TaskAssignmentMaintenceAdd
   void _updateSafetyByFirstUser() {
     if (_allSafetyMeasures.isEmpty) return;
 
-    if (user == null) {
+    final firstItem = userAndDevice.first;
+    if (firstItem == null) return;
+
+    final UserModel? firstUser = firstItem["user"];
+    if (firstUser == null) {
       // Nếu người dùng không có, xóa nội dung cũ và cập nhật
       setState(() {
         _userSafetyContent = "";
@@ -116,7 +125,7 @@ class _TaskAssignmentMaintenceAdd
       return;
     }
 
-    final userPositionId = user?.position?.id;
+    final userPositionId = firstUser.position?.id;
     if (userPositionId == null) {
       // Nếu không có vị trí, xóa nội dung người dùng cũ
       setState(() {
@@ -157,32 +166,35 @@ class _TaskAssignmentMaintenceAdd
     _selectedDateTime = DateTime.now();
     if (widget.order != null) {
       final order = widget.order!;
-      if (order.repairVehicles != null &&
-          order.repairVehicles!.isNotEmpty) {
-        deviceAndNote = order.repairVehicles!.map((repair) {
-          return {
-            "device": repair.device
-                ?.id, // hoặc repair.device nếu bạn cần object
-            "note": repair.note ?? '',
-          };
-        }).toList();
-        _noteControllers = order.repairVehicles!
-            .map(
-              (e) => TextEditingController(
-                text: e.note ?? "",
-              ),
-            )
-            .toList();
-      } else {
-        deviceAndNote = [
-          {"device": null, "note": ''},
+      final rvList = (order.repairVehicles
+              ?.map((rv) => {
+                    "device": rv.device
+                        ?.id, // nếu BE trả object thì lấy id
+                    "note": rv.note ?? '',
+                  })
+              .toList()) ??
+          [
+            {"device": null, "note": ''},
+          ];
+
+      setState(() {
+        // chỉ 1 thẻ lương duy nhất
+        userAndDevice = [
+          {
+            "user": order.assignedTo, // UserModel?
+            "repairDepartment": order.repairDepartment
+                ?.id /* hoặc o.repairDepartment?.id nếu bạn lưu id */,
+            "deviceAndNote":
+                rvList, // mảng thiết bị sửa chữa
+          },
         ];
-        _noteControllers.add(TextEditingController());
-      }
-      // Gán lại vehicle nếu có
-      if (order.device != null) {
-        vehicle = order.device!.map((d) => d.id).toList();
-      }
+      });
+
+      // controllers ghi chú cho từng thiết bị sửa chữa
+      _noteControllers = rvList
+          .map((e) =>
+              TextEditingController(text: e["note"] ?? ''))
+          .toList();
       _safetyController.text = order.safetyMeasure ?? '';
       _safetySpecificController.text =
           order.safetyMeasureSpecific ?? '';
@@ -194,8 +206,18 @@ class _TaskAssignmentMaintenceAdd
       _descriptionController.text = order.workContent ?? '';
       _noteController.text = order.note ?? '';
     } else {
-      deviceAndNote.add({"device": null, "note": ''});
-      _noteControllers.add(TextEditingController());
+      setState(() {
+        userAndDevice = [
+          {
+            "user": null,
+            "repairDepartment": null,
+            "deviceAndNote": [
+              {"device": null, "note": ''},
+            ],
+          },
+        ];
+        _noteControllers = [TextEditingController()];
+      });
     }
   }
 
@@ -204,13 +226,15 @@ class _TaskAssignmentMaintenceAdd
     String selectedDevice,
   ) {
     setState(() {
-      deviceAndNote[index]["device"] = selectedDevice;
+      userAndDevice[index]?["deviceAndNote"][0]["device"] =
+          selectedDevice;
     });
   }
 
   void _updateRepairNote(int index, String note) {
     setState(() {
-      deviceAndNote[index]["note"] = note;
+      userAndDevice[index]?["deviceAndNote"][0]["note"] =
+          note;
     });
   }
 
@@ -269,17 +293,37 @@ class _TaskAssignmentMaintenceAdd
     });
   }
 
-  void _updateVehicle(int index, String selectedVehicle) {
+  void _addPayrollCard() {
     setState(() {
-      vehicle[index] = selectedVehicle;
+      userAndDevice.add({
+        "user": null,
+        "repairDepartment": null,
+        "deviceAndNote": [
+          {"device": null, "note": ''},
+        ],
+      });
     });
   }
 
-  void _updateUser(UserModel? selectedUser) {
+  void _removePayrollCard(int i) {
     setState(() {
-      user = selectedUser;
+      userAndDevice.removeAt(i);
     });
-    _updateSafetyByFirstUser();
+  }
+
+  void _addRepairItem(int i) {
+    setState(() {
+      (userAndDevice[i]?["deviceAndNote"] as List)
+          .add({"device": null, "note": ''});
+    });
+  }
+
+  void _removeRepairItem(int i, int idx) {
+    setState(() {
+      final list =
+          (userAndDevice[i]?["deviceAndNote"] as List);
+      if (idx >= 0 && idx < list.length) list.removeAt(idx);
+    });
   }
 
   final TextEditingController _descriptionController =
@@ -300,57 +344,72 @@ class _TaskAssignmentMaintenceAdd
     String safetyMeasureSpecific =
         _safetySpecificController.text.trim();
 
-    List<String> vehicleIds = vehicle
-        .where((v) => v != null && v.isNotEmpty)
-        .cast<String>()
+    final validItems = userAndDevice
+        .where(
+          (v) => (v?["user"] != null),
+        )
         .toList();
-    List<Map<String, dynamic>> repairVehicles =
-        deviceAndNote
-            .where(
-              (v) => (v["device"] != null),
-            )
-            .map(
-              (v) => {
-                "device": v["device"],
-                "note": v["note"] ?? '',
-              },
-            )
-            .toList();
-    var result = await _orderService.createOrder({
-      "job": widget.data.id,
-      "workingDate": DateTime.utc(
-        _selectedDateTime!.year,
-        _selectedDateTime!.month,
-        _selectedDateTime!.day,
-      ).toIso8601String(),
-      "shift": _shift?.id,
-      "shiftHour": _shiftHour,
-      "assignedTo": user?.id,
-      "device": vehicleIds,
-      "repairVehicles": repairVehicles,
-      "workContent": description,
-      "note": note,
-      "safetyMeasure": safetyMeasure,
-      "safetyMeasureSpecific": safetyMeasureSpecific,
-    });
-    if (!mounted) return;
-    if (result['status'] == 'error') {
+    bool hasError = false;
+
+    for (var item in validItems) {
+      var result = await _orderService.createOrder({
+        "job": widget.data.id,
+        "workingDate": DateTime.utc(
+          _selectedDateTime!.year,
+          _selectedDateTime!.month,
+          _selectedDateTime!.day,
+        ).toIso8601String(),
+        "shift": _shift?.id,
+        "shiftHour": _shiftHour,
+        "assignedTo": item?["user"].id,
+        "repairDepartment": item?["repairDepartment"],
+        "repairVehicles": item?["deviceAndNote"]
+            ?.map((rv) => {
+                  "device": rv["device"],
+                  "note": rv["note"],
+                })
+            .toList(),
+        "workContent": description,
+        "note": note,
+        "safetyMeasure": safetyMeasure,
+        "safetyMeasureSpecific": safetyMeasureSpecific,
+      });
+      if (!mounted) return;
+
+      if (result['status'] == 'error') {
+        hasError = true;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Lỗi tạo lệnh cho User ${item?["user"]}: ${result['message']}",
+            ),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } else {
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(
+        //     content: Text(
+        //       "Tạo đơn thành công cho User ${item?["user"]}, Device ${item?["device"]}",
+        //     ),
+        //     backgroundColor: Colors.green,
+        //   ),
+        // );
+      }
+    }
+
+    // Chỉ chuyển trang nếu tất cả đều thành công
+    if (!hasError) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result['message']),
-          backgroundColor: Colors.red,
+          content: Text("Tạo thành công"),
+          backgroundColor: Colors.green,
         ),
       );
-    } else {
       Navigator.pushNamed(
         context,
         TaskAssignmentRoutes.taskAssignmentList,
-      );
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message']),
-          backgroundColor: Colors.green,
-        ),
       );
     }
   }
@@ -365,12 +424,205 @@ class _TaskAssignmentMaintenceAdd
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                PayRollInput(
-                  title: 'Số thẻ lương',
-                  onSelectUser: _updateUser,
-                  initialPayroll:
-                      widget.order?.assignedTo.salaryCode,
+                // Thanh tiêu đề + nút Thêm thẻ lương
+                Row(
+                  children: [
+                    const Text('Thẻ lương',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: _addPayrollCard,
+                      icon: const Icon(Icons.add_circle,
+                          color: Colors.blue),
+                      tooltip: 'Thêm thẻ lương',
+                    ),
+                  ],
                 ),
+
+// Danh sách thẻ lương
+                for (int i = 0;
+                    i < userAndDevice.length;
+                    i++)
+                  Padding(
+                    padding:
+                        const EdgeInsets.only(bottom: 12.0),
+                    child: Card(
+                      elevation: 0.5,
+                      shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(8)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Column(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                          children: [
+                            // Header thẻ + nút xoá thẻ
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment
+                                      .spaceBetween,
+                              children: [
+                                if (i > 0)
+                                  IconButton(
+                                    onPressed: () =>
+                                        _removePayrollCard(
+                                            i),
+                                    icon: const Icon(
+                                        Icons.delete,
+                                        color: Colors.red),
+                                    tooltip: 'Xóa thẻ này',
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+
+                            // Hàng: Số thẻ lương + Đơn vị (thay Phương tiện)
+                            Column(
+                              children: [
+                                PayRollInput(
+                                  title: 'Số thẻ lương',
+                                  onSelectUser:
+                                      (selectedUser) {
+                                    setState(() {
+                                      userAndDevice[i]
+                                              ?["user"] =
+                                          selectedUser;
+                                    });
+                                    if (i == 0) {
+                                      _updateSafetyByFirstUser();
+                                    }
+                                  },
+                                  initialPayroll:
+                                      userAndDevice[i]
+                                              ?["user"]
+                                          ?.salaryCode,
+                                ),
+                                const SizedBox(width: 12),
+                                DepartmentButton(
+                                  department: userAndDevice[
+                                          i]
+                                      ?["repairDepartment"],
+                                  onSelectDepartment:
+                                      (selected) {
+                                    setState(() {
+                                      userAndDevice[i]?[
+                                              "repairDepartment"] =
+                                          selected;
+                                    });
+                                  },
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 12),
+
+                            // Khu vực Thiết bị sửa chữa (nằm BÊN TRONG thẻ)
+                            Row(
+                              children: [
+                                const Text(
+                                    'Thiết bị sửa chữa',
+                                    style: TextStyle(
+                                        fontWeight:
+                                            FontWeight
+                                                .bold)),
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  onPressed: () =>
+                                      _addRepairItem(i),
+                                  icon: const Icon(
+                                      Icons.add_circle,
+                                      color: Colors.blue),
+                                  tooltip:
+                                      'Thêm thiết bị sửa chữa',
+                                ),
+                              ],
+                            ),
+
+                            ...List.generate(
+                              (userAndDevice[i]
+                                          ?["deviceAndNote"]
+                                      as List)
+                                  .length,
+                              (idx) {
+                                final item = (userAndDevice[
+                                        i]?["deviceAndNote"]
+                                    as List<
+                                        Map<String,
+                                            dynamic>>)[idx];
+                                return Padding(
+                                  padding:
+                                      const EdgeInsets.only(
+                                          bottom: 8.0),
+                                  child: Column(
+                                    children: [
+                                      Row(
+                                        children: [
+                                          // nút chọn thiết bị có sẵn (AllDeviceButton)
+                                          Expanded(
+                                            child:
+                                                AllDeviceButton(
+                                              vehicle: item[
+                                                  "device"],
+                                              onSelectVehicle:
+                                                  (selected) {
+                                                setState(
+                                                    () {
+                                                  item["device"] =
+                                                      selected;
+                                                });
+                                              },
+                                            ),
+                                          ),
+                                          const SizedBox(
+                                              width: 8),
+                                          if (idx > 0)
+                                            IconButton(
+                                              onPressed: () =>
+                                                  _removeRepairItem(
+                                                      i,
+                                                      idx),
+                                              icon: const Icon(
+                                                  Icons
+                                                      .remove_circle,
+                                                  color: Colors
+                                                      .red),
+                                              tooltip:
+                                                  'Xóa thiết bị này',
+                                            ),
+                                        ],
+                                      ),
+                                      const SizedBox(
+                                          height: 8),
+                                      TextField(
+                                        decoration:
+                                            const InputDecoration(
+                                          hintText:
+                                              "Tình trạng thiết bị...",
+                                          border:
+                                              OutlineInputBorder(),
+                                        ),
+                                        controller:
+                                            TextEditingController(
+                                                text: item[
+                                                        "note"] ??
+                                                    ''),
+                                        onChanged: (val) =>
+                                            item["note"] =
+                                                val,
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
                 Text(
                   'Ngày',
                   style: TextStyle(
@@ -400,152 +652,6 @@ class _TaskAssignmentMaintenceAdd
                 TimePickerButton(
                   selectedDateTime: _shiftHour,
                   onPressed: _pickTime,
-                ),
-                Row(
-                  children: [
-                    Text(
-                      'Phương tiện',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                ...(vehicle.isEmpty
-                    ? <Widget>[
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            bottom: 8.0,
-                          ),
-                          child: VehicleButton(
-                            vehicle: null,
-                            onSelectVehicle: (selected) {
-                              setState(() {
-                                vehicle = [
-                                  selected,
-                                ]; // Khởi tạo danh sách mới
-                              });
-                            },
-                          ),
-                        ),
-                      ]
-                    : List.generate(vehicle.length, (
-                        index,
-                      ) {
-                        return Padding(
-                          padding: const EdgeInsets.only(
-                            bottom: 8.0,
-                          ),
-                          child: VehicleButton(
-                            vehicle: vehicle[index],
-                            onSelectVehicle: (selected) {
-                              _updateVehicle(
-                                  index, selected);
-                            },
-                          ),
-                        );
-                      })),
-                Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          'Thiết bị sửa chữa',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () {
-                            setState(() {
-                              deviceAndNote.add({
-                                "device": null,
-                                "note": "",
-                              });
-                              _noteControllers.add(
-                                TextEditingController(),
-                              );
-                            });
-                          },
-                          icon: Icon(
-                            Icons.add_circle,
-                            color: Colors.blue,
-                          ),
-                        ),
-                      ],
-                    ),
-                    ...List.generate(deviceAndNote.length, (
-                      index,
-                    ) {
-                      return Padding(
-                        padding: const EdgeInsets.only(
-                          bottom: 8.0,
-                        ),
-                        child: Column(
-                          children: [
-                            // chọn thiết bị
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: AllDeviceButton(
-                                    vehicle:
-                                        deviceAndNote[index]
-                                            ["device"],
-                                    onSelectVehicle: (
-                                      selected,
-                                    ) {
-                                      _updateRepairDevice(
-                                        index,
-                                        selected,
-                                      );
-                                    },
-                                  ),
-                                ),
-                                if (index > 0)
-                                  IconButton(
-                                    onPressed: () {
-                                      setState(() {
-                                        deviceAndNote
-                                            .removeAt(
-                                          index,
-                                        );
-                                        _noteControllers
-                                            .removeAt(
-                                          index,
-                                        );
-                                      });
-                                    },
-                                    icon: Icon(
-                                      Icons.remove_circle,
-                                      color: Colors.red,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            SizedBox(width: 8),
-                            // nhập ghi chú
-                            TextField(
-                              controller:
-                                  _noteControllers[index],
-                              decoration: InputDecoration(
-                                hintText:
-                                    "Tình trạng thiết bị...",
-                                border:
-                                    OutlineInputBorder(),
-                              ),
-                              onChanged: (val) =>
-                                  _updateRepairNote(
-                                index,
-                                val,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                  ],
                 ),
                 Text(
                   'Nội dung công việc',
