@@ -22,7 +22,7 @@ import {
 } from '@mui/material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/api.config';
-import { Order, Device, Job, Location, Material, SafetyMeasure, Shift } from '../../types';
+import { Order, Device, Job, Location, Material, SafetyMeasure, Shift, Department } from '../../types';
 import { DatePicker, DesktopTimePicker, LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
@@ -33,6 +33,7 @@ import { StyledPopper } from '../../ui/poppers';
 import { addOrderValidationSchema } from '../../utils/validation';
 import { JobTypeEnum } from '../../types/enums';
 import { MultiSelectField } from '../../components/MultiSelectField';
+import DepartmentService from '../../services/departmentService';
 dayjs.extend(utc);
 
 
@@ -88,6 +89,10 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
         queryKey: ['devices'],
         queryFn: () => api.get('/devices').then(res => res.data.data),
     });
+    const { data: departments = [] } = useQuery({
+        queryKey: ['departments'],
+        queryFn: DepartmentService.getAll,
+    });
     const { data: allDevices = [] } = useQuery({
         queryKey: ['allDevices'],
         queryFn: () => api.get('/devices/all').then(res => res.data.data),
@@ -130,6 +135,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                 {
                     assignedTo: "",
                     device: [],
+                    repairDepartment: undefined,
                     repairVehicles: [
                         {
                             device: undefined,
@@ -156,6 +162,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
             const orders: Partial<Order>[] = values.usersAndDevices.map(item => ({
                 assignedTo: item.assignedTo,
                 device: item.device,
+                repairDepartment: item.repairDepartment || undefined,
                 assignedVehicles: values.assignedVehicles,
                 repairVehicles: item.repairVehicles.filter(i => i.device != null && i.device !== ''),
                 job: values.job,
@@ -405,7 +412,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                                                                 renderInput={(params) => (
                                                                     <TextField
                                                                         {...params}
-                                                                        label="Thiết bị"
+                                                                        label="Thiết bị vận hành"
                                                                         error={Boolean(
                                                                             typeof formik.errors.usersAndDevices?.[index] === 'object' &&
                                                                             (formik.errors.usersAndDevices?.[index] as any)?.device
@@ -420,6 +427,36 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                                                             />
                                                         </Grid>
                                                     )}
+                                                {isMaintenance && (
+                                                    <Grid item xs={12} md={6}>
+                                                        <Autocomplete
+                                                            fullWidth
+                                                            options={departments}
+                                                            getOptionLabel={(option: Department) => option.code || ''}
+                                                            value={departments.find((d: Department) => d._id === item.repairDepartment) || null}
+                                                            onChange={(event, newValue) => {
+                                                                formik.setFieldValue(`${path}.repairDepartment`, newValue?._id);
+                                                            }}
+                                                            PopperComponent={StyledPopper}
+                                                            renderInput={(params) => (
+                                                                <TextField
+                                                                    {...params}
+                                                                    label="Đơn vị sửa chữa"
+                                                                    error={Boolean(
+                                                                        typeof formik.errors.usersAndDevices?.[index] === 'object' &&
+                                                                        (formik.errors.usersAndDevices?.[index] as any)?.repairDepartment
+                                                                    )}
+                                                                    helperText={
+                                                                        typeof formik.errors.usersAndDevices?.[index] === 'object'
+                                                                            ? (formik.errors.usersAndDevices?.[index] as any)?.repairDepartment
+                                                                            : ''
+                                                                    }
+                                                                />
+                                                            )}
+                                                        />
+                                                    </Grid>
+                                                )}
+
 
                                             </Grid>
 
@@ -459,7 +496,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                                                                                 </IconButton>
                                                                             )}
                                                                             <Grid container spacing={1.5} alignItems="center">
-                                                                                <Grid item xs={12} md={5}>
+                                                                                <Grid item xs={12} md={6}>
                                                                                     <Autocomplete
                                                                                         fullWidth
                                                                                         options={allDevices}
@@ -480,12 +517,11 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                                                                                     />
                                                                                 </Grid>
 
-                                                                                <Grid item xs={12} md={7}>
+                                                                                <Grid item xs={12} md={6}>
                                                                                     <TextField
                                                                                         fullWidth
                                                                                         label="Tình trạng hư hỏng"
                                                                                         multiline
-                                                                                        rows={2}
                                                                                         value={rv.note ?? ''}
                                                                                         onChange={(e) =>
                                                                                             formik.setFieldValue(
@@ -660,7 +696,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                                 renderInput={(params) => (
                                     <TextField
                                         {...params}
-                                        label="Loại vật liệu"
+                                        label="Vật liệu"
                                         error={formik.touched.material && Boolean(formik.errors.material)}
                                         helperText={formik.touched.material && typeof formik.errors.material === 'string' ? formik.errors.material : ''}
                                     />

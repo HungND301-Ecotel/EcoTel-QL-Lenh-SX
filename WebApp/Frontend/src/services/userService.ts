@@ -12,7 +12,7 @@ const UserService = {
         return res.data
     },
     update: async (data: Partial<User>): Promise<any> => {
-        const res = await api.put(`/users/${data?._id}`, data);
+        const res = await api.put(`/users/update/${data?._id}`, data);
         return res.data
     },
     delete: async (ids: string[]): Promise<any> => {

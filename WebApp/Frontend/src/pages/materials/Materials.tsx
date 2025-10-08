@@ -283,7 +283,7 @@ const Materials: React.FC = () => {
                             },
                         }}>
                             <TextField fullWidth size="small" value={value}
-                                placeholder='Tìm kiếm theo tên loại vật liệu'
+                                placeholder='Tìm kiếm theo tên vật liệu'
                                 onChange={(e) => setValue(e.target.value)}
                                 InputProps={{
                                     endAdornment: (

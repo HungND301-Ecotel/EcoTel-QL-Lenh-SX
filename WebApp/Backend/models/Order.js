@@ -45,6 +45,10 @@ const orderSchema = new mongoose.Schema({
         },
         note: String
     }],
+    repairDepartment: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Department',
+    },
     excavator: [{
         device: {
             type: mongoose.Schema.Types.ObjectId,

@@ -24,8 +24,8 @@ class _TaskDetailPage extends State<TaskDetailPage> {
     "Vận hành xúc": WorkLogRoutes.excavatorTripList,
     "Vận hành khoan": WorkLogRoutes.drillingProductList,
     "Vận hành gạt": WorkLogRoutes.dozerProductList,
-    "Vận hành xe phục vụ":
-        WorkLogRoutes.serviceVehicleTripList,
+    // "Vận hành xe phục vụ":
+    //     WorkLogRoutes.serviceVehicleTripList,
   };
   String getActionLabel(String type) {
     switch (type) {
@@ -37,8 +37,8 @@ class _TaskDetailPage extends State<TaskDetailPage> {
         return "DS chuyến";
       case "Vận hành xúc":
         return "DS chuyến";
-      case "Vận hành xe phục vụ":
-        return "DS chuyến";
+      // case "Vận hành xe phục vụ":
+      //   return "DS chuyến";
       default:
         return "";
     }

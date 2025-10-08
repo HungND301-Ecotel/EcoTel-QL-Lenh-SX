@@ -10,9 +10,9 @@ import 'package:soft/screens/work_log/widgets/shift_select.dart';
 import 'package:soft/services/order_service.dart';
 import 'package:soft/widgets/all_device_button.dart';
 import 'package:soft/widgets/date_picker_button.dart';
+import 'package:soft/widgets/department_button.dart';
 import 'package:soft/widgets/pay_roll_input.dart';
 import 'package:soft/widgets/time_picker_button.dart';
-import 'package:soft/widgets/vehicle_button.dart';
 
 class TaskAssignmentMaintenceTransfer
     extends StatefulWidget {
@@ -38,6 +38,7 @@ class _TaskAssignmentMaintenceTransfer
   UserModel? user;
   ShiftModel? _shift;
   String? _shiftHour;
+  String? _repairDepartment;
 
   @override
   void initState() {
@@ -47,24 +48,20 @@ class _TaskAssignmentMaintenceTransfer
       final order = widget.order!;
       if (order.repairVehicles != null &&
           order.repairVehicles!.isNotEmpty) {
-        deviceAndNote =
-            order.repairVehicles!.map((repair) {
-              return {
-                "device":
-                    repair
-                        .device
-                        ?.id, // hoặc repair.device nếu bạn cần object
-                "note": repair.note ?? '',
-              };
-            }).toList();
-        _noteControllers =
-            order.repairVehicles!
-                .map(
-                  (e) => TextEditingController(
-                    text: e.note ?? "",
-                  ),
-                )
-                .toList();
+        deviceAndNote = order.repairVehicles!.map((repair) {
+          return {
+            "device": repair.device
+                ?.id, // hoặc repair.device nếu bạn cần object
+            "note": repair.note ?? '',
+          };
+        }).toList();
+        _noteControllers = order.repairVehicles!
+            .map(
+              (e) => TextEditingController(
+                text: e.note ?? "",
+              ),
+            )
+            .toList();
       } else {
         deviceAndNote = [
           {"device": null, "note": ''},
@@ -78,14 +75,15 @@ class _TaskAssignmentMaintenceTransfer
       _safetyController.text = order.safetyMeasure ?? '';
       _safetySpecificController.text =
           order.safetyMeasureSpecific ?? '';
+      _repairDepartment = order.repairDepartment?.id;
 
       // Gán lại ngày làm việc nếu có
       _selectedDateTime = order.workingDate;
       _shift = order.shift;
       _shiftHour = order.shiftHour ?? '';
       _descriptionController.text = order.workContent ?? '';
-      _noteController.text =
-          order.shiftReport?.vehicleSummaries
+      _noteController
+          .text = order.shiftReport?.vehicleSummaries
               ?.where(
                 (e) => (e.note?.trim().isNotEmpty ?? false),
               ) // lọc trước
@@ -142,7 +140,7 @@ class _TaskAssignmentMaintenceTransfer
       final hour = int.tryParse(parts[0]) ?? 0;
       final minute =
           int.tryParse(parts.length > 1 ? parts[1] : '0') ??
-          0;
+              0;
       initialTime = TimeOfDay(hour: hour, minute: minute);
     } else {
       initialTime = TimeOfDay.now();
@@ -198,11 +196,6 @@ class _TaskAssignmentMaintenceTransfer
     String safetyMeasureSpecific =
         _safetySpecificController.text.trim();
 
-    List<String> vehicleIds =
-        vehicle
-            .where((v) => v != null && v.isNotEmpty)
-            .cast<String>()
-            .toList();
     List<Map<String, dynamic>> repairVehicles =
         deviceAndNote
             .where((v) => (v["device"] != null))
@@ -215,16 +208,15 @@ class _TaskAssignmentMaintenceTransfer
             .toList();
     var result = await _orderService.createOrder({
       "job": widget.data.id,
-      "workingDate":
-          DateTime.utc(
-            _selectedDateTime!.year,
-            _selectedDateTime!.month,
-            _selectedDateTime!.day,
-          ).toIso8601String(),
+      "workingDate": DateTime.utc(
+        _selectedDateTime!.year,
+        _selectedDateTime!.month,
+        _selectedDateTime!.day,
+      ).toIso8601String(),
       "shift": _shift?.id,
       "shiftHour": _shiftHour,
       "assignedTo": user?.id,
-      "device": vehicleIds,
+      "repairDepartment": _repairDepartment,
       "repairVehicles": repairVehicles,
       "workContent": description,
       "note": note,
@@ -270,78 +262,19 @@ class _TaskAssignmentMaintenceTransfer
                       widget.order?.assignedTo.salaryCode,
                 ),
                 Text(
-                  'Ngày',
+                  'Đơn vị sửa chữa',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                DatePickerButton(
-                  selectedDateTime: _selectedDateTime,
-                  onPressed: _pickDateTime,
+                DepartmentButton(
+                  department: _repairDepartment,
+                  onSelectDepartment: (selected) {
+                    setState(() {
+                      _repairDepartment = selected;
+                    });
+                  },
                 ),
-                Text(
-                  'Ca làm việc',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                ShiftSelect(
-                  initialShift: _shift,
-                  onSelected: _updateShift,
-                ),
-                Text(
-                  'Giờ làm việc',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                TimePickerButton(
-                  selectedDateTime: _shiftHour,
-                  onPressed: _pickTime,
-                ),
-                Row(
-                  children: [
-                    Text(
-                      'Phương tiện',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                ...(vehicle.isEmpty
-                    ? <Widget>[
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          bottom: 8.0,
-                        ),
-                        child: VehicleButton(
-                          vehicle: null,
-                          onSelectVehicle: (selected) {
-                            setState(() {
-                              vehicle = [
-                                selected,
-                              ]; // Khởi tạo danh sách mới
-                            });
-                          },
-                        ),
-                      ),
-                    ]
-                    : List.generate(vehicle.length, (
-                      index,
-                    ) {
-                      return Padding(
-                        padding: const EdgeInsets.only(
-                          bottom: 8.0,
-                        ),
-                        child: VehicleButton(
-                          vehicle: vehicle[index],
-                          onSelectVehicle: (selected) {
-                            _updateVehicle(index, selected);
-                          },
-                        ),
-                      );
-                    })),
                 Column(
                   crossAxisAlignment:
                       CrossAxisAlignment.start,
@@ -388,7 +321,8 @@ class _TaskAssignmentMaintenceTransfer
                                 Expanded(
                                   child: AllDeviceButton(
                                     vehicle:
-                                        deviceAndNote[index]["device"],
+                                        deviceAndNote[index]
+                                            ["device"],
                                     onSelectVehicle: (
                                       selected,
                                     ) {
@@ -405,12 +339,12 @@ class _TaskAssignmentMaintenceTransfer
                                       setState(() {
                                         deviceAndNote
                                             .removeAt(
-                                              index,
-                                            );
+                                          index,
+                                        );
                                         _noteControllers
                                             .removeAt(
-                                              index,
-                                            );
+                                          index,
+                                        );
                                       });
                                     },
                                     icon: Icon(
@@ -431,12 +365,11 @@ class _TaskAssignmentMaintenceTransfer
                                 border:
                                     OutlineInputBorder(),
                               ),
-                              onChanged:
-                                  (val) =>
-                                      _updateRepairNote(
-                                        index,
-                                        val,
-                                      ),
+                              onChanged: (val) =>
+                                  _updateRepairNote(
+                                index,
+                                val,
+                              ),
                             ),
                           ],
                         ),
@@ -444,7 +377,36 @@ class _TaskAssignmentMaintenceTransfer
                     }),
                   ],
                 ),
-
+                Text(
+                  'Ngày',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                DatePickerButton(
+                  selectedDateTime: _selectedDateTime,
+                  onPressed: _pickDateTime,
+                ),
+                Text(
+                  'Ca làm việc',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                ShiftSelect(
+                  initialShift: _shift,
+                  onSelected: _updateShift,
+                ),
+                Text(
+                  'Giờ làm việc',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TimePickerButton(
+                  selectedDateTime: _shiftHour,
+                  onPressed: _pickTime,
+                ),
                 Text(
                   'Nội dung công việc',
                   style: TextStyle(
@@ -496,8 +458,7 @@ class _TaskAssignmentMaintenceTransfer
                           setState(() {
                             // Kiểm tra nếu TextField không rỗng, thêm dấu xuống dòng
                             if (_safetyController
-                                .text
-                                .isNotEmpty) {
+                                .text.isNotEmpty) {
                               _safetyController.text +=
                                   '\n';
                             }
