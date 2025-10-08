@@ -81,7 +81,7 @@ class _DrillingSelectProduct
       appBar: AppBar(
         backgroundColor: Colors.blue,
         title: Text(
-          'Nhập loại hàng',
+          'Nhập vật liệu',
           style: TextStyle(
             color: Colors.white,
             fontSize: 18,

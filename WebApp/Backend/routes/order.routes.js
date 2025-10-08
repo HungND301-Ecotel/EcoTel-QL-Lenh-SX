@@ -192,6 +192,7 @@ router.get('/', verifyToken, async (req, res, next) => {
             })
             .populate('job', 'name type content')
             .populate('device', 'code')
+            .populate('repairDepartment', 'code')
             .populate('excavator.device', 'code')
             .populate('assignedVehicles', 'code')
             .populate('location', 'name')
@@ -415,6 +416,7 @@ router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCH
             device,
             assignedVehicles,
             repairVehicles,
+            repairDepartment,
             shift,
             shiftHour,
             excavator, location, material, workContent,
@@ -444,6 +446,7 @@ router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCH
             device,
             assignedVehicles,
             repairVehicles,
+            repairDepartment,
             shift,
             shiftHour,
             safetyMeasure,
@@ -817,6 +820,7 @@ const orderPopulateOptions = [
     { path: 'excavator.device', select: 'code' },
     { path: 'location', select: 'name' },
     { path: 'material', select: 'name' },
+    { path: 'repairDepartment', select: 'code' },
     { path: 'shift' },
     {
         path: "assistants",

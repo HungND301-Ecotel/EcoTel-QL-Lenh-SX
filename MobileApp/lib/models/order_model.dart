@@ -1,3 +1,4 @@
+import 'package:soft/models/department_model.dart';
 import 'package:soft/models/device_model.dart';
 import 'package:soft/models/location_model.dart';
 import 'package:soft/models/material_model.dart';
@@ -75,6 +76,7 @@ class OrderModel {
   List<DeviceModel>? assignedVehicles;
   final UserModel? createdBy;
   final List<DeviceModel>? device;
+  final DepartmentModel? repairDepartment;
   final List<Excavator>? excavator;
   final List<LocationModel>? location;
   final List<MaterialModel>? material;
@@ -99,6 +101,7 @@ class OrderModel {
     this.resumeTime,
     this.createdBy,
     this.device,
+    this.repairDepartment,
     this.assignedVehicles,
     this.repairVehicles,
     this.excavator,
@@ -141,6 +144,11 @@ class OrderModel {
               ?.map((e) => DeviceModel.fromJson(e))
               .toList() ??
           [],
+      repairDepartment: json?['repairDepartment'] != null
+          ? DepartmentModel.fromJson(
+              json?['repairDepartment'],
+            )
+          : null,
       assignedVehicles: (json?['assignedVehicles'] as List?)
               ?.map((e) => DeviceModel.fromJson(e))
               .toList() ??
@@ -215,6 +223,7 @@ class OrderModel {
       'resumeTime': resumeTime?.toIso8601String(),
       'createdBy': createdBy?.toJson(),
       'device': device?.map((e) => e.toJson()).toList(),
+      'repairDepartment': repairDepartment?.toJson(),
       'assignedVehicles':
           assignedVehicles?.map((e) => e.toJson()).toList(),
       'repairVehicles':

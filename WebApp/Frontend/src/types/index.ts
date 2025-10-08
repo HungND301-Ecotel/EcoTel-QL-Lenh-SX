@@ -86,6 +86,7 @@ export interface Order {
     startTime?: Date;
     endTime?: Date;
     assignedVehicles?: string[];
+    repairDepartment?: string;
     device?: string[];
     repairVehicles?: {
         device?: string,

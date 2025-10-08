@@ -16,6 +16,7 @@ import {
     IconButton,
     CircularProgress,
     Chip,
+    AlertColor,
 } from '@mui/material';
 import React, { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -27,38 +28,43 @@ import {
 } from '@mui/icons-material';
 import api from '../../config/api.config';
 import RealTimeClock from '../../components/RealTimeClock';
-import { showErrorAlert } from '../../components/Alert';
+import { AlertSnackbar, showErrorAlert } from '../../components/Alert';
 import BlinkButton from '../../components/BlinkButton';
 import Deviceprocess from './DeviceProcess';
+import { useAtom } from 'jotai';
+import { userAtom } from '../../atoms/userAtoms';
 
-export default function DeviceAnalysic() {
+export default function DeviceAnalysic({ departments }: { departments: any[] }) {
+    const [user] = useAtom(userAtom)
+    const [department, setDepartment] = useState('');
     const queryClient = useQueryClient();
     const { data: deviceCount = [], isLoading: isLoadingDeviceCount } = useQuery({
-        queryKey: ['deviceCount'],
-        queryFn: () => api.get('/devices/count/status').then(res => res.data.data),
+        queryKey: ['deviceCount', department],
+        queryFn: () => api.get(`/devices/count/status?department=${department}`).then(res => res.data.data),
     });
     const { data: devices = [] } = useQuery({
         queryKey: ['devices'],
         queryFn: () => api.get('/devices').then(res => res.data.data),
     });
 
+    const [alert, setAlert] = useState<{ open: boolean; message: string; severity?: AlertColor }>({
+        open: false,
+        message: '',
+        severity: 'success',
+    });
     const handleUpdateDevices = useMutation({
         mutationFn: () => api.post('/devices/update_status').then(res => res.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['devices'] });
             queryClient.invalidateQueries({ queryKey: ['deviceCount'] });
-            showAlert('Cập nhật thành công');
+            setAlert({ open: true, message: 'Cập nhật thành công', severity: 'success' });
+
         },
         onError: (error: any) => {
             showErrorAlert(error.response.data.message || error.message || 'Lỗi');
+            setAlert({ open: true, message: 'Cập nhật thất bại', severity: 'error' });
         }
     });
-
-    const [alert, setAlert] = useState<{ open: boolean; message: string }>({ open: false, message: '' });
-
-    const showAlert = (message: string) => {
-        setAlert({ open: true, message });
-    };
 
 
     // Popover chi tiết (bảng dưới)
@@ -85,33 +91,10 @@ export default function DeviceAnalysic() {
         setSelectedDetailDevices([]);
     };
 
-    const statusColors: { [key: string]: string } = {
-        available: 'success',
-        in_use: 'error',
-        maintenance: 'warning',
-        retired: 'default',
-    };
-
-    const statusLabels: { [key: string]: string } = {
-        available: 'Chờ điều động',
-        in_use: 'Đang hoạt động',
-        maintenance: 'SC; BD',
-        retired: 'Niêm cất',
-    };
-
 
     return (
         <Paper variant="outlined" sx={{ borderRadius: 2 }}>
-            <Snackbar
-                open={alert.open}
-                onClose={() => setAlert({ ...alert, open: false })}
-                autoHideDuration={4000}
-                anchorOrigin={{ vertical: "top", horizontal: "right" }}
-            >
-                <Alert severity="success" variant="filled" onClose={() => setAlert({ ...alert, open: false })}>
-                    {alert.message}
-                </Alert>
-            </Snackbar>
+            <AlertSnackbar alert={alert} setAlert={setAlert} />
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
                 <IconButton onClick={() => handleUpdateDevices.mutate()} disabled={handleUpdateDevices.isPending}>
                     {handleUpdateDevices.isPending ? (
@@ -126,13 +109,28 @@ export default function DeviceAnalysic() {
                         />
                     )}
                 </IconButton>
-                <RealTimeClock />
+                <Box display="flex" alignItems="center" gap={2}>
+                    {["admin", "dispatcher"].includes(user?.role) && <Autocomplete
+                        size="small"
+                        options={departments}
+                        getOptionLabel={(option: any) =>
+                            option.code || ''
+                        }
+                        value={departments.find((p: any) => p._id === department) || null}
+                        onChange={(event, newValue) => {
+                            setDepartment(newValue?._id || '');
+                        }}
+                        sx={{ width: 200 }}
+                        renderInput={(params) => <TextField {...params} label="Đơn vị" />}
+                    />}
+                    <RealTimeClock />
+                </Box>
             </Box>
             <TableContainer sx={{ maxHeight: 600 }}>
-                <Table stickyHeader sx={{ '& td, & th': { border: '1px solid #e0e0e0', padding: '0 4px' } }}>
+                <Table stickyHeader sx={{ p: 2, '& td, & th': { border: '1px solid #e0e0e0', padding: '0 4px' } }}>
                     <TableHead>
                         <TableRow >
-                            <TableCell colSpan={7} align="center" sx={{
+                            <TableCell colSpan={8} align="center" sx={{
                                 bgcolor: '#d6e9f9',
                                 fontWeight: 'bold',
                                 fontSize: 18,
@@ -143,9 +141,10 @@ export default function DeviceAnalysic() {
                             }}>THIẾT BỊ</TableCell>
                         </TableRow>
                         <TableRow>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', width: '2%', top: '26px', zIndex: 10, position: 'sticky', }}>STT</TableCell>
                             <TableCell align="center" sx={{ fontWeight: 'bold', width: '2%', top: '26px', zIndex: 10, position: 'sticky', }}> </TableCell>
-                            <TableCell align="center" sx={{ fontWeight: 'bold', width: '18%', top: '26px', zIndex: 10, position: 'sticky', }}>Đơn vị</TableCell>
-                            <TableCell align="center" sx={{ fontWeight: 'bold', width: '10%', top: '26px', zIndex: 10, position: 'sticky', }}>Thiết bị</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', width: '13%', top: '26px', zIndex: 10, position: 'sticky', }}>Đơn vị</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', width: '13%', top: '26px', zIndex: 10, position: 'sticky', }}>Thiết bị</TableCell>
                             <TableCell align="center" sx={{ fontWeight: 'bold', width: '10%', color: 'green', top: '26px', zIndex: 10, position: 'sticky', }}>Chờ điều động</TableCell>
                             <TableCell align="center" sx={{ fontWeight: 'bold', width: '10%', color: 'red', top: '26px', zIndex: 10, position: 'sticky', }}>Đang hoạt động</TableCell>
                             <TableCell align="center" sx={{ fontWeight: 'bold', width: '10%', color: 'orange', top: '26px', zIndex: 10, position: 'sticky', }}>SC; BD</TableCell>
@@ -178,36 +177,40 @@ export default function DeviceAnalysic() {
                                         .map(v => Number(v) || 0)
                                         .reduce((sum, v) => sum + v, 0);
 
-                                    return (<TableRow key={`${groupIndex}-${index}`} sx={{ '&:nth-of-type(odd)': { bgcolor: '#f9f9f9' } }}>
-                                        {index === 0 && (
-                                            <TableCell rowSpan={span} align="center" sx={{ border: '1px solid #e0e0e0' }}>
-                                                <BlinkButton color={totalStatus.maintenance > 0
-                                                    ? 'orange'
-                                                    : totalStatus.in_use > 0
-                                                        ? 'red'
-                                                        : totalStatus.available > 0
-                                                            ? 'green'
-                                                            : 'grey'}
-                                                />
+                                    return (
+                                        <TableRow key={`${groupIndex}-${index}`} sx={{ '&:nth-of-type(odd)': { bgcolor: '#f9f9f9' } }}>
+                                            {index === 0 && (
+                                                <TableCell rowSpan={span} align="center" sx={{ border: '1px solid #e0e0e0' }}>{groupIndex + 1}</TableCell>
+                                            )}
+                                            {index === 0 && (
+                                                <TableCell rowSpan={span} align="center" sx={{ border: '1px solid #e0e0e0' }}>
+                                                    <BlinkButton color={totalStatus.maintenance > 0
+                                                        ? 'orange'
+                                                        : totalStatus.in_use > 0
+                                                            ? 'red'
+                                                            : totalStatus.available > 0
+                                                                ? 'green'
+                                                                : 'grey'}
+                                                    />
+                                                </TableCell>
+                                            )}
+                                            {index === 0 && (
+                                                <TableCell rowSpan={span} align="center" sx={{ border: '1px solid #e0e0e0' }}>{group.departmentName}</TableCell>
+                                            )}
+                                            <TableCell align="center" sx={{ border: '1px solid #e0e0e0' }}>{item.typeName}</TableCell>
+                                            <TableCell align="center" sx={{ border: '1px solid #e0e0e0', cursor: 'pointer' }} onClick={(e) => handleDetailClick(e, "available", group.departmentName, item.typeName)}>
+                                                {item.statusCounts?.available > 0 ? <Deviceprocess value={item.statusCounts?.available || 0} total={total} color="#4CAF50" /> : item.statusCounts?.available}
                                             </TableCell>
-                                        )}
-                                        {index === 0 && (
-                                            <TableCell rowSpan={span} align="center" sx={{ border: '1px solid #e0e0e0' }}>{group.departmentName}</TableCell>
-                                        )}
-                                        <TableCell align="center" sx={{ border: '1px solid #e0e0e0' }}>{item.typeName}</TableCell>
-                                        <TableCell align="center" sx={{ border: '1px solid #e0e0e0', cursor: 'pointer' }} onClick={(e) => handleDetailClick(e, "available", group.departmentName, item.typeName)}>
-                                            {item.statusCounts?.available > 0 ? <Deviceprocess value={item.statusCounts?.available || 0} total={total} color="#4CAF50" /> : item.statusCounts?.available}
-                                        </TableCell>
-                                        <TableCell align="center" sx={{ border: '1px solid #e0e0e0', cursor: 'pointer' }} onClick={(e) => handleDetailClick(e, "in_use", group.departmentName, item.typeName)}>
-                                            {item.statusCounts?.in_use > 0 ? <Deviceprocess value={item.statusCounts?.in_use || 0} total={total} color="#F44336" /> : item.statusCounts?.in_use}
-                                        </TableCell>
-                                        <TableCell align="center" sx={{ border: '1px solid #e0e0e0', cursor: 'pointer' }} onClick={(e) => handleDetailClick(e, "maintenance", group.departmentName, item.typeName)}>
-                                            {item.statusCounts?.maintenance > 0 ? <Deviceprocess value={item.statusCounts?.maintenance || 0} total={total} color="#FF9800" /> : item.statusCounts?.maintenance}
-                                        </TableCell>
-                                        <TableCell align="center" sx={{ border: '1px solid #e0e0e0', cursor: 'pointer' }} onClick={(e) => handleDetailClick(e, "retired", group.departmentName, item.typeName)}>
-                                            {item.statusCounts?.retired > 0 ? <Deviceprocess value={item.statusCounts?.retired || 0} total={total} color="#E0E0E0" /> : item.statusCounts?.retired}
-                                        </TableCell>
-                                    </TableRow>)
+                                            <TableCell align="center" sx={{ border: '1px solid #e0e0e0', cursor: 'pointer' }} onClick={(e) => handleDetailClick(e, "in_use", group.departmentName, item.typeName)}>
+                                                {item.statusCounts?.in_use > 0 ? <Deviceprocess value={item.statusCounts?.in_use || 0} total={total} color="#F44336" /> : item.statusCounts?.in_use}
+                                            </TableCell>
+                                            <TableCell align="center" sx={{ border: '1px solid #e0e0e0', cursor: 'pointer' }} onClick={(e) => handleDetailClick(e, "maintenance", group.departmentName, item.typeName)}>
+                                                {item.statusCounts?.maintenance > 0 ? <Deviceprocess value={item.statusCounts?.maintenance || 0} total={total} color="#FF9800" /> : item.statusCounts?.maintenance}
+                                            </TableCell>
+                                            <TableCell align="center" sx={{ border: '1px solid #e0e0e0', cursor: 'pointer' }} onClick={(e) => handleDetailClick(e, "retired", group.departmentName, item.typeName)}>
+                                                {item.statusCounts?.retired > 0 ? <Deviceprocess value={item.statusCounts?.retired || 0} total={total} color="#E0E0E0" /> : item.statusCounts?.retired}
+                                            </TableCell>
+                                        </TableRow>)
                                 })
                             })
                         )}

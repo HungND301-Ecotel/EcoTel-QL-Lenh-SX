@@ -35,6 +35,8 @@ import { StyledPopper } from '../../ui/poppers';
 import { editAndTransferOrderValidationSchema } from '../../utils/validation';
 import { JobTypeEnum } from '../../types/enums';
 import { MultiSelectField } from '../../components/MultiSelectField';
+import DepartmentService from '../../services/departmentService';
+import { AutocompleteSelect } from '../../components/AutocompleteSelect';
 dayjs.extend(utc);
 
 
@@ -93,6 +95,10 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
         queryKey: ['excavators'],
         queryFn: () => api.get('/devices/excavators/all').then(res => res.data.data),
     });
+    const { data: departments = [] } = useQuery({
+        queryKey: ['departments'],
+        queryFn: DepartmentService.getAll,
+    });
     const { data: cars = [] } = useQuery({
         queryKey: ['cars'],
         queryFn: () => api.get('/devices/car/all').then(res => res.data.data),
@@ -137,6 +143,9 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                     ? initialValues.device.at(-1)?._id
                     : initialValues.device.at(-1)]
                 : [],
+            repairDepartment: typeof initialValues?.repairDepartment === 'object'
+                ? initialValues?.repairDepartment?._id
+                : initialValues?.repairDepartment || undefined,
             assignedVehicles: Array.isArray(initialValues.assignedVehicles)
                 ? initialValues.assignedVehicles.map((d: any) => typeof d === 'object' ? d._id : d)
                 : initialValues.assignedVehicles
@@ -188,6 +197,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                 assignedTo: values.assignedTo,
                 device: values.device,
                 assignedVehicles: values.assignedVehicles,
+                repairDepartment: values.repairDepartment || undefined,
                 repairVehicles: values.repairVehicles.filter((i: any) => i.device != null && i.device !== ''),
                 job: values.job,
                 workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
@@ -380,6 +390,12 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                             )}
                         />
                     </Grid>}
+
+                    {selectedJob?.type === JobTypeEnum.MAINTENANCE &&
+                        <Grid item xs={6}>
+                            <AutocompleteSelect title="Đơn vị sửa chữa" fieldName="repairDepartment" options={departments} formik={formik} initData={initialValues} labelKey="code" />
+                        </Grid>
+                    }
 
                     {selectedJob?.type === JobTypeEnum.MAINTENANCE && <Grid item xs={12}>
                         <FieldArray name="repairVehicles">
@@ -580,7 +596,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                             renderInput={(params) => (
                                 <TextField
                                     {...params}
-                                    label="Loại vật liệu"
+                                    label="Vật liệu"
                                     error={formik.touched.material && Boolean(formik.errors.material)}
                                     helperText={formik.touched.material && typeof formik.errors.material === 'string' ? formik.errors.material : ''}
                                 />

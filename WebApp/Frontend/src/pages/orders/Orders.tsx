@@ -992,10 +992,11 @@ const Orders: React.FC = () => {
                                 </Grid>}
                                 <Typography><strong>Công việc:</strong> {selectedRow.job?.name}</Typography>
                                 {selectedRow.device?.length > 0 && <Typography><strong>Thiết bị vận hành:</strong> {selectedRow.device?.map((dev: any) => dev.code).join(', ')}</Typography>}
+                                {selectedRow.repairDepartment && <Typography><strong>Đơn vị sửa chữa:</strong> {selectedRow.repairDepartment?.code}</Typography>}
                                 {[JobTypeEnum.MAINTENANCE].includes(selectedRow.job?.type) &&
                                     <Box>
                                         <Typography><strong>Thiết bị sửa chữa:</strong></Typography>
-                                        {selectedRow?.repairVehicles.map((v: any) => (
+                                        {(selectedRow?.repairVehicles || []).map((v: any) => (
                                             <Grid container spacing={2}>
                                                 <Grid item xs={12} sm={3}>
                                                     <Typography fontWeight="bold">+ {v?.device?.code}</Typography>
