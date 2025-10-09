@@ -54,6 +54,7 @@ class _SettingPageState extends State<SettingPage> {
 
   @override
   Widget build(BuildContext context) {
+    final userprovider = Provider.of<UserProvider>(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -81,6 +82,28 @@ class _SettingPageState extends State<SettingPage> {
                     ),
                   ),
                 ),
+                Row(
+                    mainAxisAlignment:
+                        MainAxisAlignment.center,
+                    children: [
+                      Column(
+                        children: [
+                          Text(
+                            userprovider.user?.fullName ??
+                                '',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20),
+                          ),
+                          Text(
+                            "(${userprovider.user?.salaryCode ?? ''})",
+                            style: TextStyle(
+                                fontWeight:
+                                    FontWeight.bold),
+                          )
+                        ],
+                      )
+                    ]),
                 TextButton(
                   onPressed: () {
                     Navigator.pushNamed(
