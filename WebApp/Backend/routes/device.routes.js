@@ -526,6 +526,7 @@ router.get('/count/status', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, RO
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 const columnMapping = {
+    'Mã': '_id',
     'Biển số': 'code',
     'Tên xe/máy': 'name',
     'Số xe/máy': 'vehicleNumber',
@@ -577,7 +578,7 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         const invalidRows = [];
 
         for (const row of devicesToProcess) {
-            const { department, category, material, ...updateData } = row;
+            const { department, category, material, _id, ...updateData } = row;
 
             // Kiểm tra các trường bắt buộc
             if (!updateData.code) {
@@ -585,6 +586,15 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
                 continue;
             }
 
+            let filter = { code: updateData.code };
+            if (_id) {
+                try {
+                    filter = { _id: new mongoose.Types.ObjectId(_id) };
+                } catch (e) {
+                    invalidRows.push({ row: row, error: `Mã ID không hợp lệ: ${_id}` });
+                    continue;
+                }
+            }
             // Gán ID cho department
             let departmentId = null;
             if (department) {
@@ -627,9 +637,11 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
             // Thêm thao tác updateOne với upsert
             operations.push({
                 updateOne: {
-                    filter: { code: updateData.code },
-                    update: updateData,
-                    upsert: true,
+                    filter: filter, // Sử dụng filter đã được xác định (theo _id hoặc code)
+                    update: {
+                        $set: updateData // Dùng $set để chỉ cập nhật các trường có sẵn trong updateData
+                    },
+                    upsert: true, // Nếu không tìm thấy filter (chủ yếu là code) -> TẠO MỚI (insert)
                 },
             });
         }
@@ -681,6 +693,7 @@ router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
 
         // Định nghĩa tiêu đề và thuộc tính cột
         worksheet.columns = [
+            { header: 'Mã', key: '_id', width: 25 },
             { header: 'Biển số', key: 'code', width: 25 },
             { header: 'Tên xe/máy', key: 'name', width: 15 },
             { header: 'Số xe/máy', key: 'vehicleNumber', width: 15 },
@@ -690,6 +703,7 @@ router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
             { header: 'Trọng tải', key: 'capacity', width: 20 },
             { header: 'Đơn vị', key: 'department', width: 15 },
         ];
+
 
         // Điền dữ liệu
         const formattedDevices = (data || []).map(device => ({
@@ -728,7 +742,7 @@ router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
 
         // Áp dụng Data Validation
         const MAX = Math.max(worksheet.rowCount + 100, 1000); // dư dòng để người dùng thêm
-        worksheet.dataValidations.add(`D2:D${MAX}`, {
+        worksheet.dataValidations.add(`E2:E${MAX}`, {
             type: 'list',
             allowBlank: true,
             formulae: [`=$X$2:$X$${typeList.length + 1}`],
@@ -742,12 +756,46 @@ router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
             showErrorMessage: true,
             errorTitle: 'Giá trị không hợp lệ',
         });
-        worksheet.dataValidations.add(`E2:E${MAX}`, {
+        worksheet.dataValidations.add(`F2:F${MAX}`, {
             type: 'list',
             allowBlank: true,
             formulae: [`=$Z$2:$Z$${modelList.length + 1}`], // nguồn department
             showErrorMessage: true,
             errorTitle: 'Giá trị không hợp lệ',
+        });
+
+        worksheet.getRow(1).eachCell({ includeEmpty: true }, (cell) => {
+            cell.protection = { locked: true };
+        });
+        for (let r = 1; r <= MAX; r++) {
+            worksheet.getCell(`A${r}`).protection = { locked: true };
+        }
+
+        const editableCols = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
+        for (let r = 2; r <= MAX; r++) {
+            for (const col of editableCols) {
+                worksheet.getCell(`${col}${r}`).protection = { locked: false };
+            }
+        }
+
+        // 4) Khóa các cột ẩn (nguồn dropdown) X/Y/Z để tránh sửa danh mục
+        for (const col of ['X', 'Y', 'Z']) {
+            for (let r = 1; r <= MAX; r++) {
+                worksheet.getCell(`${col}${r}`).protection = { locked: true };
+            }
+        }
+
+        // 3) Bật bảo vệ sheet
+        await worksheet.protect('ktv-protect', {
+            selectLockedCells: true,
+            selectUnlockedCells: true,
+            formatCells: false,
+            formatColumns: false,
+            formatRows: false,
+            insertRows: true,   // cho phép thêm dòng mới nếu cần
+            deleteRows: false,
+            insertColumns: false,
+            deleteColumns: false,
         });
 
         // Ghi và gửi file

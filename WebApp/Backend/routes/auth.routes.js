@@ -204,6 +204,7 @@ router.post('/login', async (req, res) => {
                     username: user.username,
                     email: user.email,
                     fullName: user.fullName,
+                    salaryCode: user.salaryCode,
                     phone: user.phone,
                     department: user.department,
                     role: user.role
