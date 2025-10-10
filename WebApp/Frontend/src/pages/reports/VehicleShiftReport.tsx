@@ -1,9 +1,30 @@
 import { Typography, IconButton, Paper, Grid, Box } from '@mui/material';
 import { DataGrid, GridColDef, GridRenderCellParams, useGridApiRef } from '@mui/x-data-grid';
 import React, { useEffect, useState } from 'react'
+import { Department, Shift } from '../../types';
+import dayjs from 'dayjs';
+import { userAtom } from '../../atoms/userAtoms';
+import { useAtom } from 'jotai';
 
-export default function VehicleShiftReport({ data, signatureUrl }: { data: any[], signatureUrl: string | null }) {
+export default function VehicleShiftReport({ data,
+    signatureUrl,
+    maxTrip,
+    materials,
+    startDate,
+    endDate,
+    shifts,
+    department
+}: {
+    data: any[]; signatureUrl: string | null,
+    maxTrip: number,
+    materials: any[],
+    startDate: dayjs.Dayjs | null,
+    endDate: dayjs.Dayjs | null,
+    shifts: Shift[],
+    department: Department | null
+}) {
     const apiRef = useGridApiRef()
+    const [user] = useAtom(userAtom)
 
     const reportColumns: GridColDef[] = [
         {
@@ -15,23 +36,28 @@ export default function VehicleShiftReport({ data, signatureUrl }: { data: any[]
             },
         },
         {
-            field: 'vehicleNumber', headerName: 'Số xe', flex: 0.4,
-            renderCell: (params: any) => params.row.vehicleNumber || '',
+            field: 'code', headerName: 'Số xe', flex: 0.4,
+            renderCell: (params: any) => params.row.code || '',
         },
         {
-            field: 'note',
+            field: 'warning',
             headerName: 'Tình trạng hư/ hỏng',
             flex: 1,
-            renderCell: (params: any) => params.row.note || '',
         },
-        { field: 'repairResult', headerName: 'Kết quả sửa chữa trong ca', flex: 1 },
-        { field: 'generalNote', headerName: 'Ghi chú', flex: 1 },
+        { field: 'result', headerName: 'Kết quả sửa chữa trong ca', flex: 1 },
+        { field: 'repairDepartment', headerName: 'Đơn vị sửa chữa', flex: 0.4 },
+        { field: 'note', headerName: 'Ghi chú', flex: 1 },
     ];
 
     return (
         <Grid item xs={12}>
             <Paper sx={{ minHeight: "80vh", overflowX: 'auto', padding: 1, width: '100%', }}>
-                <Typography textAlign={'center'} mb={2} variant='h3'>Xe không hoạt động</Typography>
+                <i style={{ fontSize: 20 }}>CÔNG TY CỔ PHẦN THAN CAO SƠN-TKV</i>
+                <Typography textAlign={'center'} mb={2} variant='h3' fontWeight={'bold'}>Xe không hoạt động</Typography>
+                <Typography>Đơn vị: {department ? department.code : user?.department?.code}</Typography>
+                <Typography>Từ ngày: {startDate?.format('DD-MM-YYYY')}</Typography>
+                <Typography>Đến ngày: {endDate?.format('DD-MM-YYYY')}</Typography>
+                <Typography>Ca: {shifts.map(s => s.name).join(', ')}</Typography>
                 <DataGrid
                     rows={data}
                     apiRef={apiRef}

@@ -38,6 +38,7 @@ import { userAtom } from '../../atoms/userAtoms';
 import ExcavatorReport from './ExcavatorReport';
 import DozerReport from './DozerReport';
 import DrillReport from './DrillReport';
+import { calculateNewValue } from '@testing-library/user-event/dist/utils';
 
 
 function Reports() {
@@ -46,8 +47,8 @@ function Reports() {
     const [deviceType, setDeviceType] = useState("");
     const [title, setTitle] = useState("");
     const [account, setAccount] = useState('');
-    const [shift, setShift] = useState<string[]>([]);
-    const [department, setDepartment] = useState<string>('');
+    const [shift, setShift] = useState<Shift[]>([]);
+    const [department, setDepartment] = useState<Department | null>(null);
     const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
     const [data, setData] = useState<any[]>([]);
     const [maxTrip, setMaxTrip] = useState(1);
@@ -173,10 +174,10 @@ function Reports() {
             return api.post(config.viewUrl, {
                 startDate: startDate?.format('YYYY-MM-DD') || '',
                 endDate: endDate?.format('YYYY-MM-DD') || '',
-                shift,
+                shift: shift.map(s => s._id),
                 title,
                 signature: signatureUrl || null,
-                department
+                department: department?._id || ''
             }).then(res => {
                 setData(res.data.data);
                 setMaxTrip(res.data.maxTrips)
@@ -253,9 +254,9 @@ function Reports() {
                             size="small"
                             options={departments}
                             getOptionLabel={(option: Department) => option?.code || ''}
-                            value={departments.find((d: Department) => d._id === department)}
+                            value={departments.find((d: Department) => d._id === department?._id)}
                             onChange={(event, newValue) => {
-                                setDepartment(newValue?._id || '')
+                                setDepartment(newValue);
                             }}
                             renderInput={(params) => (
                                 <TextField
@@ -332,9 +333,9 @@ function Reports() {
                             size="small"
                             options={shifts}
                             getOptionLabel={(option: Shift) => `Ca ${option.name} (${option.startTime})`}
-                            value={shifts.filter((s: Shift) => shift.includes(s._id))}
+                            value={shifts.filter((s: Shift) => shift.includes(s))}
                             onChange={(event, newValue) => {
-                                setShift(newValue.map((item: Shift) => item._id))
+                                setShift(newValue);
                             }}
                             renderInput={(params) => (
                                 <TextField
@@ -404,7 +405,7 @@ function Reports() {
                         </Grid>
                     )}
                     <Grid item xs={12}>
-                        {preview && PreviewComponent ? <PreviewComponent data={data} signatureUrl={signatureUrl} maxTrip={maxTrip} materials={materials} /> : null}
+                        {preview && PreviewComponent ? <PreviewComponent data={data} signatureUrl={signatureUrl} maxTrip={maxTrip} materials={materials} startDate={startDate} endDate={endDate} shifts={shift} department={department} /> : null}
                         {signatureUrl && !preview && (
                             <Box mt={2} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                                 <img src={signatureUrl} alt="Chữ ký" style={{ maxWidth: 200, maxHeight: 100 }} />
