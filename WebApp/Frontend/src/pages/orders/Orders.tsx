@@ -36,6 +36,7 @@ import {
     TablePagination,
     InputAdornment,
     CircularProgress,
+    AlertColor,
 } from '@mui/material';
 import { format } from 'date-fns';
 import {
@@ -67,7 +68,7 @@ import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 import { useSocket } from '../../hooks/useSocket';
-import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
+import { AlertSnackbar, showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import { DataGrid, GridColDef, GridFilterModel, GridLogicOperator, GridRenderCellParams, GridToolbar } from '@mui/x-data-grid';
@@ -558,9 +559,16 @@ const Orders: React.FC = () => {
         [orderColumns, visibleColumns]
     );
 
+    const [alert, setAlert] = useState<{ open: boolean; message: string; severity?: AlertColor }>({
+        open: false,
+        message: '',
+        severity: 'success',
+    });
+
 
     return (
         <Box>
+            <AlertSnackbar alert={alert} setAlert={setAlert} />
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
                 <Typography variant="h3" color={'blue'}>Lệnh sản xuất</Typography>
             </Box>
@@ -765,7 +773,14 @@ const Orders: React.FC = () => {
             <Box display="flex" justifyContent="space-between" sx={{ mb: 2, mt: 2 }}>
                 <Box display="flex" alignItems='center'>
                     <Typography variant="h4">Bảng lệnh sản xuất</Typography>
-                    <IconButton onClick={() => refetchOrder()} disabled={isLoading}>
+                    <IconButton onClick={async () => {
+                        try {
+                            await refetchOrder(); // đợi xong refetch
+                            setAlert({ open: true, message: 'Cập nhật thành công', severity: 'success' });
+                        } catch (e) {
+                            setAlert({ open: true, message: 'Cập nhật thất bại', severity: 'error' });
+                        }
+                    }} disabled={isLoading}>
                         {isLoading ? (
                             <CircularProgress size={24} />
                         ) : (
