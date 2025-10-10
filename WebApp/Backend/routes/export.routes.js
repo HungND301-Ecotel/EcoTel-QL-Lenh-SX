@@ -2507,22 +2507,42 @@ router.post('/vehicleShiftReport/view', verifyToken, restrictTo(ROLE.MANAGER, RO
                 $lte: new Date(endDate),
             };
         }
+        query['repairVehicles.0'] = { $exists: true };
+        const orders = await Order.find(query)
+            .populate({
+                path: "shiftReport",
+                populate: [
+                    {
+                        path: "vehicleSummaries.vehicle",
+                        select: "code"
+                    }
+                ]
+            })
+            .populate('repairVehicles.device')
+            .populate('repairDepartment', 'code')
+            .populate("job")
+        const filterOrders = orders.filter(r =>
+            r.job?.type === JOB_TYPE.SUA_CHUA_BAO_DUONG
+        );
 
-        const orders = await Order.find(query).populate('device', 'vehicleNumber status note').lean();
+        const formattedData = filterOrders.flatMap((order, orderIndex) => {
 
-        const formattedData = orders.flatMap((order, orderIndex) => {
-            if (!order.device || order.device.length === 0) return [];
-
-            return order.device
-                .filter(d => d.status === "maintenance") // lọc device có status maintenance
-                .map(d => {
+            return order.repairVehicles
+                ?.map((d, index) => {
+                    let report = {};
+                    if (order.shiftReport && order.shiftReport?.vehicleRepair.length > 0) {
+                        report = order.shiftReport.vehicleRepair.find(
+                            vr => vr.device.toString() === d.device?._id.toString()
+                        ) || {};
+                    }
 
                     return {
-                        _id: d?._id,
-                        vehicleNumber: d?.vehicleNumber || '',
-                        warning: d?.note || '',
-                        result: '',
-                        note: ''
+                        _id: order._id + '' + index,
+                        code: d?.device?.code || '',
+                        warning: d.note || '',
+                        result: report.status || '',
+                        repairDepartment: order.repairDepartment?.code || '',
+                        note: report.noteRepair || ''
                     };
                 });
         });
@@ -2539,6 +2559,12 @@ router.post('/vehicleShiftReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.AD
         const shiftList = await Shift.find({ _id: { $in: shift } });
         const start = new Date(startDate);
         const end = new Date(endDate);
+        let dep;
+        if (department) {
+            dep = await Department.findById(department).select('code')
+        } else {
+            dep = user?.department
+        }
 
         // Đảm bảo end không nhỏ hơn start
         if (end < start) return res.status(400).json({ message: "Ngày kết thúc phải sau ngày bắt đầu" });
@@ -2549,28 +2575,42 @@ router.post('/vehicleShiftReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.AD
                 const orders = await Order.find({
                     workingDate: d,
                     shift: ca._id,
-                    department: user?.role === ROLE.ADMIN ? new mongoose.Types.ObjectId(department) : new mongoose.Types.ObjectId(user.department?._id)
+                    department: new mongoose.Types.ObjectId(dep?._id)
                 })
-                    .populate('device', 'vehicleNumber status note')
+                    .populate({
+                        path: "shiftReport",
+                        populate: [
+                            {
+                                path: "vehicleSummaries.vehicle",
+                                select: "code"
+                            }
+                        ]
+                    })
+                    .populate('repairVehicles.device')
+                    .populate('repairDepartment', 'code')
+                    .populate("job")
+                const filterOrders = orders.filter(r =>
+                    r.job?.type === JOB_TYPE.SUA_CHUA_BAO_DUONG
+                );
 
                 const sheetName = `${formatDate(d)}_${ca.name}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
 
                 const worksheet = workbook.addWorksheet(sheetName);
 
-                worksheet.mergeCells('A1:E1');
+                worksheet.mergeCells('A1:F1');
                 const infoRow = worksheet.getCell('A1');
-                infoRow.value = `Ca: ${ca.name}                  , ngày:    ${formatDate(d)}                             Tên cán bộ: ${req.user?.fullName}`;
+                infoRow.value = `Đơn vị: ${dep?.code}                  Ca: ${ca.name}                  , ngày:    ${formatDate(d)}                             Tên cán bộ: ${req.user?.fullName}`;
                 infoRow.font = { italic: true, size: 14 };
                 infoRow.alignment = { horizontal: 'left', vertical: 'middle' };
                 // Tiêu đề bảng
-                worksheet.mergeCells('A3:E3');
+                worksheet.mergeCells('A3:F3');
                 const header = worksheet.getCell('A3');
                 header.value = "Xe không hoạt động";
                 header.font = { bold: true, size: 16 };
                 header.alignment = { horizontal: 'center', vertical: 'middle' };
 
                 const headerRowNumber = 5;
-                const headers = ['STT', 'Số xe', 'Tình trạng hư/ hỏng', 'Kết quả sửa chữa trong ca', 'Ghi chú'];
+                const headers = ['STT', 'Số xe', 'Tình trạng hư/ hỏng', 'Kết quả sửa chữa\n trong ca', 'Đơn vị sửa chữa', 'Ghi chú'];
 
                 headers.forEach((text, index) => {
                     const cell = worksheet.getRow(headerRowNumber).getCell(index + 1);
@@ -2581,21 +2621,40 @@ router.post('/vehicleShiftReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.AD
 
                 let index = 1;
                 let totalDataRows = 5;
-                for (const order of orders) {
-                    const reps = order.device.filter(d => d.status === "maintenance")
-                    totalDataRows += reps.length;
-                    reps.map(d =>
-                        worksheet.addRow([
-                            index++,
-                            d?.vehicleNumber || '',
-                            d?.note || '',
-                            '',
-                            ''
-                        ])
-                    )
+                const formattedData = filterOrders.flatMap((order, orderIndex) => {
+
+                    return order.repairVehicles
+                        ?.map((d, index) => {
+                            let report = {};
+                            if (order.shiftReport && order.shiftReport?.vehicleRepair.length > 0) {
+                                report = order.shiftReport.vehicleRepair.find(
+                                    vr => vr.device.toString() === d.device?._id.toString()
+                                ) || {};
+                            }
+
+                            return {
+                                _id: order._id + '' + index,
+                                code: d?.device?.code || '',
+                                warning: d.note || '',
+                                result: report.status || '',
+                                repairDepartment: order.repairDepartment?.code || '',
+                                note: report.noteRepair || ''
+                            };
+                        });
+                });
+                for (const d of formattedData) {
+                    worksheet.addRow([
+                        index,
+                        d?.code || '',
+                        d.warning || '',
+                        d.result || '',
+                        d.repairDepartment || '',
+                        d.note || ''
+                    ])
+                    index++
 
                 }
-                addTableBorders(worksheet, 5, totalDataRows, 1, 5);
+                addTableBorders(worksheet, 5, totalDataRows + index, 1, 6);
 
                 worksheet.pageSetup = {
                     paperSize: 9,                // A4
@@ -2607,12 +2666,28 @@ router.post('/vehicleShiftReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.AD
                 };
 
                 worksheet.getColumn(1).width = 6;
-                worksheet.getColumn(1).alignment = { horizontal: 'center' }
+                worksheet.getColumn(1).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
                 worksheet.getColumn(2).width = 20;
-                worksheet.getColumn(2).alignment = { horizontal: 'center' }
+                worksheet.getColumn(2).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
                 worksheet.getColumn(3).width = 40;
-                worksheet.getColumn(4).width = 30;
-                worksheet.getColumn(5).width = 40;
+                worksheet.getColumn(3).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
+                worksheet.getColumn(4).width = 20;
+                worksheet.getColumn(4).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
+                worksheet.getColumn(5).width = 20;
+                worksheet.getColumn(5).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
+                worksheet.getColumn(6).width = 40;
+                worksheet.getColumn(6).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
+
+                worksheet.eachRow((row, rowNumber) => {
+                    row.eachCell((cell) => {
+                        if (!cell.font) cell.font = {};
+                        cell.font = {
+                            ...cell.font,            // giữ lại các thuộc tính khác (bold, italic,…)
+                            name: 'Times New Roman', // đổi font chữ
+                            ...(rowNumber > 3 ? { size: 12 } : {})            // kích thước chữ
+                        };
+                    });
+                });
 
                 if (signature) {
                     const response = await axios.get(signature, { responseType: 'arraybuffer' });
@@ -2634,13 +2709,6 @@ router.post('/vehicleShiftReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.AD
                     });
                 }
 
-                worksheet.eachRow((row) => {
-                    row.eachCell((cell) => {
-                        // Nếu chưa có font, tạo font mới
-                        if (!cell.font) cell.font = {};
-                        cell.font.size = 12; // hoặc 8, tuỳ theo bạn muốn nhỏ đến đâu
-                    });
-                });
             }
         }
 

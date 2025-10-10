@@ -12,22 +12,40 @@ import {
 } from '@mui/material';
 import { format } from 'date-fns';
 import React from 'react';
+import { userAtom } from '../../atoms/userAtoms';
+import { useAtom } from 'jotai';
+import { Department, Shift } from '../../types';
+import dayjs from 'dayjs';
 
 export default function ExcavatorTripReport({
     data,
     signatureUrl,
     maxTrip,
-    materials
+    materials,
+    startDate,
+    endDate,
+    shifts,
+    department
 }: {
     data: any[]; signatureUrl: string | null,
     maxTrip: number,
-    materials: any[]
+    materials: any[],
+    startDate: dayjs.Dayjs | null,
+    endDate: dayjs.Dayjs | null,
+    shifts: Shift[],
+    department: Department | null
 }) {
+    const [user] = useAtom(userAtom)
 
     return (
         <Grid item xs={12}>
             <Paper sx={{ p: 1 }}>
-                <Typography textAlign={'center'} mb={2} variant='h3'>Báo cáo số chuyến của máy xúc</Typography>
+                <i style={{ fontSize: 20 }}>CÔNG TY CỔ PHẦN THAN CAO SƠN-TKV</i>
+                <Typography textAlign={'center'} mb={2} variant='h3' fontWeight={'bold'}>Báo cáo số chuyến của máy xúc</Typography>
+                <Typography>Đơn vị: {department ? department.code : user?.department?.code}</Typography>
+                <Typography>Từ ngày: {startDate?.format('DD-MM-YYYY')}</Typography>
+                <Typography>Đến ngày: {endDate?.format('DD-MM-YYYY')}</Typography>
+                <Typography>Ca: {shifts.map(s => s.name).join(', ')}</Typography>
                 <TableContainer sx={{ maxHeight: '80vh' }}>
                     <Table stickyHeader size="small" aria-label="car-trip-report" sx={{
                         '& th, & td': { border: '1px solid black', padding: "2px 8px" }

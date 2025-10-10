@@ -28,6 +28,8 @@ import {
     ListItemText,
     Pagination,
     TablePagination,
+    AlertColor,
+    CircularProgress,
 } from '@mui/material';
 import { format } from 'date-fns';
 import {
@@ -43,6 +45,7 @@ import {
     Settings,
     Visibility,
     VisibilityOff,
+    RotateLeft,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -54,6 +57,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { useSocket } from '../../hooks/useSocket';
 import { DataGrid, GridColDef, GridRenderCellParams, GridToolbar } from '@mui/x-data-grid';
 import OrderService from '../../services/orderService';
+import { AlertSnackbar } from '../../components/Alert';
 
 const OrderByUsers: React.FC = () => {
 
@@ -105,7 +109,7 @@ const OrderByUsers: React.FC = () => {
         completed: 0,
         cancel: 0,
     });
-    const { data, isLoading } = useQuery({
+    const { data, isLoading, refetch: refetchOrder } = useQuery({
         queryKey: ['orderByUser', paginationModel, status, startTime, endTime, serverFilters],
         queryFn: () => OrderService.getByUser(
             {
@@ -204,8 +208,15 @@ const OrderByUsers: React.FC = () => {
         },
     ];
 
+    const [alert, setAlert] = useState<{ open: boolean; message: string; severity?: AlertColor }>({
+        open: false,
+        message: '',
+        severity: 'success',
+    });
+
     return (
         <Box>
+            <AlertSnackbar alert={alert} setAlert={setAlert} />
             <Typography variant="h3" color='blue'>Công việc của tôi</Typography>
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mt: 3, mb: 3, border: '1px solid white', p: 1, boxShadow: 2 }}>
                 <Box display={'flex'} gap={2} flex={1}>
@@ -272,8 +283,25 @@ const OrderByUsers: React.FC = () => {
             <Box display="flex" justifyContent="space-between" sx={{ mb: 2, mt: 2 }}>
                 <Box display="flex" alignItems='center'>
                     <Typography variant="h4">Bảng lệnh sản xuất</Typography>
-                    <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                        <Settings sx={{ fontSize: 30 }} />
+                    <IconButton onClick={async () => {
+                        try {
+                            await refetchOrder(); // đợi xong refetch
+                            setAlert({ open: true, message: 'Cập nhật thành công', severity: 'success' });
+                        } catch (e) {
+                            setAlert({ open: true, message: 'Cập nhật thất bại', severity: 'error' });
+                        }
+                    }} disabled={isLoading}>
+                        {isLoading ? (
+                            <CircularProgress size={24} />
+                        ) : (
+                            <RotateLeft
+                                sx={{
+                                    transition: "transform 0.3s ease",
+                                    "&:hover": { transform: "rotate(-180deg)" }, // xoay khi hover
+                                    color: "primary.main",
+                                }}
+                            />
+                        )}
                     </IconButton>
                 </Box>
                 <Button
