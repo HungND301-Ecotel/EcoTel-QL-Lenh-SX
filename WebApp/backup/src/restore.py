@@ -19,7 +19,7 @@ os.makedirs(restore_dir, exist_ok=True)
 # Call setup logger from common.py
 logger = setup_logger(name=__name__, log_file='/app/restore/restore.log')
 
-def restore_backup():
+def restore_backup(daily_version=None):
     '''Restore a backup from S3 to the MongoDB database.'''
 
     # MongoDB credentials
@@ -34,7 +34,10 @@ def restore_backup():
     S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "my-backup-bucket")
 
     # folder path like "backups/mongodb/{MONGODB_DATABASE}/mongodump-"
-    BACKUP_PREFIX = f"backups/mongodb/{MONGODB_DATABASE}/mongodump-" 
+    if daily_version is not None:
+        BACKUP_PREFIX = f"backups/mongodb/{MONGODB_DATABASE}/daily/"
+    else:
+        BACKUP_PREFIX = f"backups/mongodb/{MONGODB_DATABASE}/latest/"
 
     logger.info(f"✅ BACKUP_PREFIX: {BACKUP_PREFIX}")
     # --- Step 1: Find the latest backup in S3 ---
@@ -48,15 +51,23 @@ def restore_backup():
     if not backup_files:
         raise Exception("❌ No backup .gz files found in S3!")
 
-    latest_file = sorted(backup_files, key=lambda x: x['LastModified'], reverse=True)[0]
-    latest_key = latest_file['Key']
-    local_path = os.path.join(restore_dir, os.path.basename(latest_key))
+    logger.info(f"backup_files = {backup_files}")
+    if daily_version is not None:
+        # TODO: Find the matching file name with daily_version
+        restore_file = sorted(backup_files, key=lambda x: x['LastModified'], reverse=True)[0]
+    else:
+        # Find the latest file
+        restore_file = sorted(backup_files, key=lambda x: x['LastModified'], reverse=True)[0]
+    
+    logger.info(f"restore_file = {restore_file}")
+    restore_file_name = restore_file['Key']
+    local_restore_file_path = os.path.join(restore_dir, os.path.basename(restore_file_name))
 
-    logger.info(f"✅ Latest backup: {latest_key}")
-    logger.info(f"⬇️ Downloading to: {local_path}")
+    logger.info(f"✅ restore_file_name: {restore_file_name}")
+    logger.info(f"⬇️ Downloading to: {local_restore_file_path}")
 
     # --- Step 2: Download from S3 ---
-    s3.download_file(S3_BUCKET_NAME, latest_key, local_path)
+    s3.download_file(S3_BUCKET_NAME, restore_file_name, local_restore_file_path)
     logger.info("✅ Download complete.")
 
     # --- Step 3: Restore using mongorestore ---
@@ -70,7 +81,7 @@ def restore_backup():
         f"--password={MONGODB_PASSWORD}",
         f"--authenticationDatabase={MONGODB_AUTH_DB}",
         "--gzip",
-        f"--archive={local_path}",
+        f"--archive={local_restore_file_path}",
         "--noIndexRestore",
         "--noOptionsRestore"
     ]
@@ -88,7 +99,13 @@ if __name__ == "__main__":
         load_env_file('/app/src/env.list')
         
         # Restore from the backup
-        restore_backup()
+        if len(sys.argv) > 1:
+            # if pass a version, we will download the backup file from "daily" folder
+            restore_version = sys.argv[1]
+            restore_backup(daily_version=restore_version)
+        else:
+            # default is to restore from the latest folder in S3
+            restore_backup()
         
         # clean up the downloaded backup file
         clean_old_files(restore_dir, "mongodump", logger)

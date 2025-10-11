@@ -44,6 +44,13 @@ variable "backup_bucket_name" {
   default     = "my_bucket"
 }
 
+# Name of the S3 bucket for backups
+variable "s3_backup_object_prefix" {
+  description = "S3 backup object prefix"
+  type        = string
+  default     = "backup/mongodb/databse_name"
+}
+
 # IAM username for backup process
 variable "backup_user_name" {
   description = "IAM user that will be granted access to the backup bucket"

@@ -51,17 +51,24 @@ def load_env_file(filepath):
 
 def clean_old_files(dir, prefix, logger):
     '''Clean up old files in the backup directory.'''
+    
+    NUMBER_KEEP_FILES = 7 # Number of latest files need to be kept, not deleted!
+    
     try:
-        logger.info("Cleaning up old files...")
+        logger.info(f"Cleaning up: Keep the {NUMBER_KEEP_FILES} latest files and delete old files!")
         
         # Get list of old files sorted by modified time (newest first)
         pattern = os.path.join(dir, f"{prefix}-*.gz")
         old_files = sorted(glob.glob(pattern), key=os.path.getmtime, reverse=True)
-
-        logger.info(f"Keep the latest file {old_files[0]} and delete the rest!!")
-        for old_file in old_files[1:]:
-            logger.warning(f"Deleting old file(s): {old_file}")
-            os.remove(old_file)
+        
+        if len(old_files) < NUMBER_KEEP_FILES:
+            logger.info(f"Number of current files is less than {NUMBER_KEEP_FILES}! Skip cleaning!")
+            return
+        else:
+            logger.info(f"Keep the latest files {old_files[0:NUMBER_KEEP_FILES-1]} and delete the rest!!")
+            for old_file in old_files[NUMBER_KEEP_FILES:]:
+                logger.warning(f"Deleting old file(s): {old_file}")
+                os.remove(old_file)
         
     except Exception as e:
-        logger.error(f"❌ Failed to clean up old files: {e}")                
+        logger.error(f"❌ Failed to clean up old files: {e}")             

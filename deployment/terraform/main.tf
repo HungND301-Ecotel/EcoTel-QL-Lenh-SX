@@ -64,7 +64,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "lifecycle" {
     status = "Enabled"
 
     filter {
-      prefix = "backups/mongodb/latest/" # applies to files under "UserDB/latest"
+      prefix = "${var.s3_backup_object_prefix}/latest/" # applies to files under "UserDB/latest"
     }
 
     # Expire non-current (older) versions after N days
@@ -94,7 +94,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "lifecycle" {
     status = "Enabled"
 
     filter {
-      prefix = "backups/mongodb/Lenh_sx/"
+      prefix = "${var.s3_backup_object_prefix}/daily/"
     }
 
     expiration {
