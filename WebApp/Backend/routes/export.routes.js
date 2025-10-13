@@ -5149,7 +5149,7 @@ router.post('/carTripReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.AD
             });
         }
         let maxTrips = 0;
-        const materialSet = new Set();
+        const materialMap = new Map();
 
         result.forEach(order => {
             order.reports.forEach(rep => {
@@ -5159,13 +5159,23 @@ router.post('/carTripReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.AD
                 // gom tất cả material
                 rep.trips.forEach(trip => {
                     if (trip.material) {
-                        materialSet.add(trip.material);
+                        // tạo key duy nhất theo _id hoặc name
+                        const key = trip.material._id?.toString() || trip.material.name;
+
+                        // chỉ lưu 1 lần duy nhất
+                        if (!materialMap.has(key)) {
+                            materialMap.set(key, {
+                                _id: trip.material._id,
+                                name: trip.material.name,
+                                ...(trip.material.unit ? { unit: trip.material.unit } : {})
+                            });
+                        }
                     }
                 });
             });
         });
 
-        const materials = Array.from(materialSet);
+        const materials = Array.from(materialMap.values());
 
         res.status(200).send({ status: 'success', data: result, maxTrips, materials })
     } catch (err) {
@@ -5266,7 +5276,7 @@ router.post('/carTripReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, 
                     });
                 }
                 let maxTrips = 0;
-                const materialSet = new Set();
+                const materialMap = new Map();
 
                 result.forEach(order => {
                     order.reports.forEach(rep => {
@@ -5276,13 +5286,23 @@ router.post('/carTripReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, 
                         // gom tất cả material
                         rep.trips.forEach(trip => {
                             if (trip.material) {
-                                materialSet.add(trip.material);
+                                // tạo key duy nhất theo _id hoặc name
+                                const key = trip.material._id?.toString() || trip.material.name;
+
+                                // chỉ lưu 1 lần duy nhất
+                                if (!materialMap.has(key)) {
+                                    materialMap.set(key, {
+                                        _id: trip.material._id,
+                                        name: trip.material.name,
+                                        ...(trip.material.unit ? { unit: trip.material.unit } : {})
+                                    });
+                                }
                             }
                         });
                     });
                 });
 
-                const materials = Array.from(materialSet);
+                const materials = Array.from(materialMap.values());
 
                 const sheetName = `${formatDate(d)}_${ca.name}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
 
@@ -5537,12 +5557,12 @@ router.post('/carTripReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, 
                 };
 
 
-                const fixedWidths = [6, 20, 10, 12, 12]; // 5 cột đầu
+                const fixedWidths = [6, 15, 7, 12, 10, 10, 10]; // 5 cột đầu
 
                 // gán width
                 fixedWidths.forEach((w, i) => worksheet.getColumn(i + 1).width = w);
                 for (let col = fixedWidths.length + 1; col <= totalColumn; col++) {
-                    worksheet.getColumn(col).width = 120 / (Math.max(totalColumn - fixedWidths.length, 2));
+                    worksheet.getColumn(col).width = 110 / (Math.max(totalColumn - fixedWidths.length, 2));
                 }
 
                 worksheet.eachRow((row, rowNumber) => {
