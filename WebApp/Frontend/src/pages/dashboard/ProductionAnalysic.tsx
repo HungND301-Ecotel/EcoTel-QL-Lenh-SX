@@ -11,140 +11,225 @@ import {
     Autocomplete,
     TextField,
     IconButton,
-    Checkbox,
     Radio,
 } from '@mui/material';
 import LineChartProduction from '../../components/LineChartProduction';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs, { Dayjs } from 'dayjs';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
-import dayjs, { Dayjs } from 'dayjs';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { Analytics, BarChart } from '@mui/icons-material';
+import { BarChart } from '@mui/icons-material';
 import VehicleProductionChart from '../../components/VehicleProductionChart';
-import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import api from '../../config/api.config';
 
-
-const rawData = [
-    { date: "2025-09-01", SLD: 100, SLT: 200, MKS: 50, KLD: 120, KLT: 300, TTK: 90, CD: 70 },
-    { date: "2025-09-02", SLD: 80, SLT: 220, MKS: 60, KLD: 110, KLT: 280, TTK: 100, CD: 60 },
-    { date: "2025-09-03", SLD: 120, SLT: 210, MKS: 55, KLD: 130, KLT: 320, TTK: 95, CD: 65 },
-];
-
+// Danh sách loại sản lượng
 const productions = [
-    { key: "SLD", name: "Sản lượng đất thực hiện (m3)" },
-    { key: "SLT", name: "Sản lượng than nguyên khai (m3)" },
-    { key: "MKS", name: "Mét khoan sâu (mks)" },
-    { key: "KLD", name: "Khối lượng vận chuyển đất (Tkm)" },
-    { key: "KLT", name: "Khối lượng vận chuyển than" },
-    { key: "TTK", name: "Thể tích khối thực hiện" },
-    { key: "CD", name: "Cung độ thực hiện" },
+    { key: 'SLD', name: 'Sản lượng đất (m³)' },
+    { key: 'SLT', name: 'Sản lượng than nguyên khai (m³)' },
+    { key: 'MKS', name: 'Mét khoan sâu (mks)' },
+    { key: 'KLD', name: 'Khối lượng vận chuyển đất (Tkm)' },
+    { key: 'KLT', name: 'Khối lượng than' },
+    { key: 'TTK', name: 'Thể tích khối thực hiện' },
+    { key: 'CD', name: 'Cung độ thực hiện' },
 ];
 
 export default function ProductionAnalysic({ departments }: { departments: any[] }) {
-    const [user] = useAtom(userAtom)
+    const [user] = useAtom(userAtom);
     const [department, setDepartment] = useState('');
     const [date, setDate] = useState<Dayjs | null>(dayjs());
-    const [open, setOpen] = useState(false)
+    const [open, setOpen] = useState(false);
+    const [selectedKey, setSelectedKey] = useState('MKS');
 
-    const [selectedKey, setSelectedKey] = React.useState("SLD");
     const selectedName = productions.find(p => p.key === selectedKey)?.name || selectedKey;
 
+    // 🔹 Lấy dữ liệu API
+    const { data: analysicsData = [] } = useQuery({
+        queryKey: ['analysics', department, date],
+        queryFn: async () => {
+            const res = await api.get(
+                `/analysics?date=${date ? date.toISOString() : ''}&department=${department}`
+            );
+            return res.data.data || [];
+        },
+        enabled: !!department && !!date,
+    });
 
-    function transformData(data: any[]) {
-        const keys = productions.map(p => p.key);
-        return data.map((row, idx) => {
-            const newRow: any = { ...row };
-            keys.forEach(k => {
-                const prev = idx > 0 ? data.slice(0, idx + 1).reduce((s, r) => s + (r[k] || 0), 0) : row[k];
-                newRow[`${k}_cum`] = prev;
+    // 🔹 Chuẩn hóa dữ liệu cho bảng và biểu đồ
+    // 🔹 Chuẩn hóa dữ liệu cho bảng và biểu đồ (đảm bảo đủ loại)
+    const dataset = useMemo(() => {
+        const merged: Record<string, any> = {};
+
+        analysicsData.forEach((item: any) => {
+            item.productionByDay.forEach((day: any) => {
+                const date = dayjs(day.date).format('DD/MM');
+                if (!merged[date]) merged[date] = { date };
+
+                // Cập nhật giá trị cho loại có dữ liệu
+                merged[date][item.jobType] = day.dayTotal || 0;
+                merged[date][`${item.jobType}_cum`] = item.cumulativeTotal || 0;
             });
-            return newRow;
         });
-    }
 
-    const dataset = transformData(rawData);
+        // 🔹 Bổ sung các loại còn thiếu, gán 0
+        const allDates = Object.keys(merged);
+        allDates.forEach((date) => {
+            productions.forEach((prod) => {
+                if (merged[date][prod.key] === undefined) merged[date][prod.key] = 0;
+                if (merged[date][`${prod.key}_cum`] === undefined) merged[date][`${prod.key}_cum`] = 0;
+            });
+        });
+
+        return Object.values(merged).sort((a: any, b: any) => {
+            const da = dayjs(a.date, 'DD/MM');
+            const db = dayjs(b.date, 'DD/MM');
+            return da.diff(db);
+        });
+    }, [analysicsData]);
+
 
     return (
         <Paper variant="outlined" sx={{ mb: 4, borderRadius: 2 }}>
+            {/* Bộ lọc */}
             <Box
                 sx={{
                     display: 'flex',
                     justifyContent: 'flex-end',
                     alignItems: 'center',
                     mb: 2,
-                    p: 2
+                    p: 2,
                 }}
             >
                 <Box sx={{ display: 'flex', gap: 2 }}>
-                    {(user?.role === "admin" || user?.role === "dispatcher") && <Autocomplete
-                        size="small"
-                        options={departments}
-                        getOptionLabel={(option: any) =>
-                            option.code || ''
-                        }
-                        value={departments.find((p: any) => p._id === department) || null}
-                        onChange={(event, newValue) => {
-                            setDepartment(newValue?._id || '');
-                        }}
-                        sx={{ width: 200 }}
-                        renderInput={(params) => <TextField {...params} label="Đơn vị" />}
-                    />}
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <DatePicker
-                            inputFormat="DD/MM/YYYY"
-                            label="Ngày"
-                            value={date}
-                            onChange={(newValue) => setDate(newValue)}
-                            renderInput={(params) => <TextField {...params} size="small" sx={{ width: 200 }} />}
+                    {(user?.role === 'admin' || user?.role === 'dispatcher') && (
+                        <Autocomplete
+                            size="small"
+                            options={departments}
+                            getOptionLabel={(option: any) => option.code || ''}
+                            value={departments.find((p: any) => p._id === department) || null}
+                            onChange={(event, newValue) => {
+                                setDepartment(newValue?._id || '');
+                            }}
+                            sx={{ width: 200 }}
+                            renderInput={(params) => <TextField {...params} label="Đơn vị" />}
                         />
+                    )}
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DatePicker
+                                inputFormat="DD/MM/YYYY"
+                                label="Ngày"
+                                value={date ? dayjs(date) : null}
+                                onChange={(newValue) => setDate(newValue)}
+                                renderInput={(params) => <TextField {...params} size="small" sx={{ width: 200 }} />}
+                            />
+                        </LocalizationProvider>
                     </LocalizationProvider>
                     <IconButton onClick={() => setOpen(true)}>
-                        <BarChart color='primary' sx={{ fontSize: 30 }} />
+                        <BarChart color="primary" sx={{ fontSize: 30 }} />
                     </IconButton>
                 </Box>
             </Box>
+
+            {/* Bảng và Biểu đồ */}
             <Grid container spacing={2}>
                 <Grid item xs={12} md={8}>
                     <TableContainer sx={{ maxHeight: 600 }}>
-                        <Table stickyHeader sx={{ p: 2, '& td, & th': { border: '1px solid #e0e0e0', padding: '0 4px' } }}>
+                        <Table
+                            stickyHeader
+                            sx={{
+                                '& td, & th': { border: '1px solid #e0e0e0', padding: '4px' },
+                            }}
+                        >
                             <TableHead>
                                 <TableRow>
-                                    <TableCell colSpan={7} align="center" sx={{ bgcolor: '#ffe8d6', fontWeight: 'bold', fontSize: 18 }}>SẢN LƯỢNG</TableCell>
+                                    <TableCell
+                                        colSpan={7}
+                                        align="center"
+                                        sx={{ bgcolor: '#ffe8d6', fontWeight: 'bold', fontSize: 18 }}
+                                    >
+                                        SẢN LƯỢNG
+                                    </TableCell>
                                 </TableRow>
                                 <TableRow>
-                                    <TableCell align="center" colSpan={2} sx={{ fontWeight: 'bold', fontSize: 18, width: '20%' }}>Sản lượng</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 18, width: '10%' }}>Ca 1</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 18, width: '10%' }}>Ca 2</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 18, width: '10%' }}>Ca 3</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 18, width: '10%' }}>Ngày</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 18, width: '10%' }}>Lũy kế tháng</TableCell>
+                                    <TableCell align="center" colSpan={2} sx={{ fontWeight: 'bold', fontSize: 16 }}>
+                                        Sản lượng
+                                    </TableCell>
+                                    <TableCell align="center">Ca 1</TableCell>
+                                    <TableCell align="center">Ca 2</TableCell>
+                                    <TableCell align="center">Ca 3</TableCell>
+                                    <TableCell align="center">Ngày</TableCell>
+                                    <TableCell align="center">Lũy kế</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {productions.map((item, index) => (
-                                    <TableRow key={item.key} sx={{ '&:nth-of-type(odd)': { bgcolor: '#f9f9f9' } }}>
-                                        <TableCell align="center" sx={{ width: 30 }}>
-                                            <Radio onChange={() => setSelectedKey(item.key)} checked={selectedKey === item.key} size='small' />
-                                        </TableCell>
-                                        <TableCell>{item.name}</TableCell>
-                                        <TableCell align="center">0</TableCell>
-                                        <TableCell align="center">0</TableCell>
-                                        <TableCell align="center">0</TableCell>
-                                        <TableCell align="center">0</TableCell>
-                                        <TableCell align="center">0</TableCell>
-                                    </TableRow>
-                                ))}
+                                {productions.map((item) => {
+                                    const typeData = analysicsData.find((r: any) => r.jobType === item.key);
+                                    const dayTotal = typeData
+                                        ? typeData.productionByDay.reduce((s: number, d: any) => s + d.dayTotal, 0)
+                                        : 0;
+                                    const cumulativeTotal = typeData?.cumulativeTotal || 0;
+
+                                    return (
+                                        <TableRow
+                                            key={item.key}
+                                            sx={{ '&:nth-of-type(odd)': { bgcolor: '#fafafa' } }}
+                                        >
+                                            <TableCell align="center" sx={{ width: 30 }}>
+                                                <Radio
+                                                    onChange={() => setSelectedKey(item.key)}
+                                                    checked={selectedKey === item.key}
+                                                    size="small"
+                                                />
+                                            </TableCell>
+                                            <TableCell>{item.name}</TableCell>
+                                            <TableCell align="center">
+                                                {
+                                                    typeData?.productionByDay?.flatMap((d: any) =>
+                                                        d.shifts.filter((s: any) => s.shift === 1).map((s: any) => s.production)
+                                                    )[0] || 0
+                                                }
+                                            </TableCell>
+                                            <TableCell align="center">
+                                                {
+                                                    typeData?.productionByDay?.flatMap((d: any) =>
+                                                        d.shifts.filter((s: any) => s.shift === 2).map((s: any) => s.production)
+                                                    )[0] || 0
+                                                }
+                                            </TableCell>
+                                            <TableCell align="center">
+                                                {
+                                                    typeData?.productionByDay?.flatMap((d: any) =>
+                                                        d.shifts.filter((s: any) => s.shift === 3).map((s: any) => s.production)
+                                                    )[0] || 0
+                                                }
+                                            </TableCell>
+                                            <TableCell align="center">{dayTotal}</TableCell>
+                                            <TableCell align="center">{cumulativeTotal}</TableCell>
+                                        </TableRow>
+                                    );
+                                })}
                             </TableBody>
                         </Table>
                     </TableContainer>
                 </Grid>
+
                 <Grid item xs={12} md={4}>
-                    <LineChartProduction dataset={dataset} selectedName={selectedName} selectedKey={selectedKey} />
+                    <LineChartProduction
+                        dataset={dataset}
+                        selectedName={selectedName}
+                        selectedKey={selectedKey}
+                    />
                 </Grid>
             </Grid>
-            <VehicleProductionChart open={open} setOpen={setOpen} departments={departments} />
+
+            <VehicleProductionChart
+                open={open}
+                setOpen={setOpen}
+                departments={departments}
+            />
         </Paper>
-    )
+    );
 }

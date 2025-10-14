@@ -70,7 +70,8 @@ const Materials: React.FC = () => {
     };
     const defaultColumns = [
         { id: 'name', label: 'Tên vật liệu' },
-        { id: 'density', label: 'Tỷ trọng' },
+        { id: 'density', label: 'Tỷ trọng quy ẩm' },
+        { id: 'dryDensity', label: 'Tỷ trọng không quy ẩm' },
         { id: 'acceptedProduct', label: 'Sản phẩm nghiệm thu' },
     ]
 
@@ -157,6 +158,7 @@ const Materials: React.FC = () => {
         initialValues: {
             name: '',
             density: undefined as number | undefined,
+            dryDensity: undefined as number | undefined,
             acceptedProduct: ''
         },
         enableReinitialize: true,
@@ -176,6 +178,7 @@ const Materials: React.FC = () => {
             formik.setValues({
                 name: material.name,
                 density: material.density,
+                dryDensity: material.dryDensity,
                 acceptedProduct: material.acceptedProduct ?? '',
             });
         } else {
@@ -361,11 +364,23 @@ const Materials: React.FC = () => {
                                     fullWidth
                                     id="density"
                                     name="density"
-                                    label="Tỷ trọng"
+                                    label="Tỷ trọng quy ẩm"
                                     value={formik.values.density?.toString() ?? ''}
                                     onChange={formik.handleChange}
                                     error={formik.touched.density && Boolean(formik.errors.density)}
                                     helperText={formik.touched.density && formik.errors.density}
+                                    inputProps={{ shrink: true }}
+                                />
+                                <TextField
+                                    type="number"
+                                    fullWidth
+                                    id="dryDensity"
+                                    name="dryDensity"
+                                    label="Tỷ trọng không quy ẩm"
+                                    value={formik.values.dryDensity?.toString() ?? ''}
+                                    onChange={formik.handleChange}
+                                    error={formik.touched.dryDensity && Boolean(formik.errors.dryDensity)}
+                                    helperText={formik.touched.dryDensity && formik.errors.dryDensity}
                                     inputProps={{ shrink: true }}
                                 />
                                 <TextField
@@ -471,6 +486,7 @@ const Materials: React.FC = () => {
                                 {user?.role === "admin" && <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(material._id)} checked={selectedMaterials.includes(material._id)} /></TableCell>}
                                 {visibleColumns.includes('name') && <TableCell sx={{}}>{material.name}</TableCell>}
                                 {visibleColumns.includes('density') && <TableCell align='center' sx={{}}>{material.density}</TableCell>}
+                                {visibleColumns.includes('dryDensity') && <TableCell align='center' sx={{}}>{material.dryDensity}</TableCell>}
                                 {visibleColumns.includes("acceptedProduct") && <TableCell align='center' sx={{}}>{material.acceptedProduct}</TableCell>}
                                 {user?.role === "admin" && <TableCell align='center' sx={{}}>
                                     <IconButton color="primary" onClick={async () => {

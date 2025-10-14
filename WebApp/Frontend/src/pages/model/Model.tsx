@@ -73,12 +73,24 @@ const Models: React.FC = () => {
 
     const columns = useMemo(() => [
         {
-            field: 'material', headerName: 'Vật liệu', width: 150, resizable: false,
+            field: 'material', headerName: 'Vật liệu', width: 100, resizable: false,
             headerAlign: 'center',
-            filterable: false
+            filterable: false,
         },
         {
-            field: 'acceptedProduct', headerName: 'Sản phẩm nghiệm thu', width: 150,
+            field: 'acceptedProduct', headerName: 'Sản phẩm nghiệm thu', width: 100,
+            filterable: false,
+            headerAlign: 'center',
+            align: 'center',
+        },
+        {
+            field: 'density', headerName: 'Tỷ trọng quy ẩm', width: 100,
+            filterable: false,
+            headerAlign: 'center',
+            align: 'center',
+        },
+        {
+            field: 'dryDensity', headerName: 'Tỷ trọng không quy ẩm', width: 100,
             filterable: false,
             headerAlign: 'center',
             align: 'center',
@@ -86,7 +98,7 @@ const Models: React.FC = () => {
         ...devicemodels.map((d: any) => ({
             field: d._id,
             headerName: d.name,
-            width: 150,
+            width: 100,
             headerAlign: 'center',
             align: 'center',
             editable: true,
@@ -98,7 +110,7 @@ const Models: React.FC = () => {
     const rows = useMemo(() => {
         if (!materials.length || !devicemodels.length) return [];
         return materials.map((m: any) => {
-            const row: any = { id: m._id, material: m.name, acceptedProduct: m.acceptedProduct };
+            const row: any = { id: m._id, material: m.name, acceptedProduct: m.acceptedProduct, density: m.density, dryDensity: m.dryDensity };
             devicemodels.forEach((d: any) => {
                 const record = models.find(
                     (mdl: any) => mdl.material === m._id && mdl.deviceModel === d._id
@@ -202,14 +214,38 @@ const Models: React.FC = () => {
                             },
                             '& .MuiDataGrid-columnHeader[data-field="acceptedProduct"]': {
                                 position: 'sticky',
-                                left: 150,
+                                left: 100,
+                                zIndex: 20,
+                                backgroundColor: 'inherit',
+                            },
+                            '& .MuiDataGrid-cell[data-field="acceptedProduct"]': {
+                                position: 'sticky',
+                                left: 100,
+                                zIndex: 19,
+                                backgroundColor: 'white',
+                            },
+                            '& .MuiDataGrid-columnHeader[data-field="density"]': {
+                                position: 'sticky',
+                                left: 200,
+                                zIndex: 20,
+                                backgroundColor: 'inherit',
+                            },
+                            '& .MuiDataGrid-cell[data-field="density"]': {
+                                position: 'sticky',
+                                left: 200,
+                                zIndex: 19,
+                                backgroundColor: 'white',
+                            },
+                            '& .MuiDataGrid-columnHeader[data-field="dryDensity"]': {
+                                position: 'sticky',
+                                left: 300,
                                 zIndex: 20,
                                 backgroundColor: 'inherit',
                                 boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
                             },
-                            '& .MuiDataGrid-cell[data-field="acceptedProduct"]': {
+                            '& .MuiDataGrid-cell[data-field="dryDensity"]': {
                                 position: 'sticky',
-                                left: 150,
+                                left: 300,
                                 zIndex: 19,
                                 backgroundColor: 'white',
                                 boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
