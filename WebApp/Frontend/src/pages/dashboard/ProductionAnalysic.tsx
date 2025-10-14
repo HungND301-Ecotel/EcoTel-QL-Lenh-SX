@@ -31,7 +31,7 @@ const productions = [
     { key: 'SLT', name: 'Sản lượng than nguyên khai (m³)' },
     { key: 'MKS', name: 'Mét khoan sâu (mks)' },
     { key: 'KLD', name: 'Khối lượng vận chuyển đất (Tkm)' },
-    { key: 'KLT', name: 'Khối lượng than' },
+    { key: 'KLT', name: 'Khối lượng than (tấn)' },
     { key: 'TTK', name: 'Thể tích khối thực hiện' },
     { key: 'CD', name: 'Cung độ thực hiện' },
 ];
@@ -54,7 +54,6 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
             );
             return res.data.data || [];
         },
-        enabled: !!department && !!date,
     });
 
     // 🔹 Chuẩn hóa dữ liệu cho bảng và biểu đồ
