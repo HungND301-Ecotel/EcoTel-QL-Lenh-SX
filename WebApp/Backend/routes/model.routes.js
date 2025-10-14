@@ -18,7 +18,7 @@ router.post('/bulk-upsert', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), a
         for (const row of rows) {
             const materialId = row.id;
             for (const [field, value] of Object.entries(row)) {
-                if (field === 'id' || field === 'material' || field === 'acceptedProduct') continue;
+                if (field === 'id' || field === 'material' || field === 'acceptedProduct' || field === 'density' || field === 'dryDensity') continue;
 
                 const deviceModelId = field;
 
