@@ -438,7 +438,7 @@ const Users: React.FC = () => {
         ? userColumns
         : userColumns.filter((col: GridColDef) => col.field !== 'resetpass' && col.field !== 'active' && col.field !== 'edit');
 
-    
+
     return (
         <Box>
             <Breadcrumbs aria-label="breadcrumb">
@@ -589,6 +589,7 @@ const Users: React.FC = () => {
                                     label="Tên đăng nhập"
                                     value={formik.values.username}
                                     onChange={formik.handleChange}
+                                    disabled={!!selectedUser}
                                     error={formik.touched.username && Boolean(formik.errors.username)}
                                     helperText={formik.touched.username && formik.errors.username}
                                 />
@@ -723,8 +724,9 @@ const Users: React.FC = () => {
                                     onChange={formik.handleChange}
                                     error={formik.touched.role && Boolean(formik.errors.role)}
                                     helperText={formik.touched.role && formik.errors.role}
+                                    disabled={selectedUser?.role === "admin"}
                                 >
-                                    <MenuItem value="admin">Quản trị hệ thống</MenuItem>
+                                    {user?.role === "admin" && <MenuItem value="admin">Quản trị hệ thống</MenuItem>}
                                     <MenuItem value="dispatcher">Điều hành sản xuất</MenuItem>
                                     <MenuItem value="manager">Quản lý</MenuItem>
                                     <MenuItem value="employee">Nhân viên</MenuItem>
