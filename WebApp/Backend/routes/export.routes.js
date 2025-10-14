@@ -283,7 +283,7 @@ async function buildVehicle(order, workbook) {
         };
     }
 
-    const grouped = await groupTripsVehicle(reports)
+    const grouped = await groupTripsVehicle(reports, order.workingDate)
 
     let rowIndexTrip = rowHeader1 + 2;
     grouped.forEach((g, i) => {
@@ -916,7 +916,7 @@ async function buildExcavator(order, workbook) {
         };
     }
 
-    const grouped = await groupExcavator(reports)
+    const grouped = await groupExcavator(reports, order.workingDate)
 
     let rowIndexTrip = rowHeader1 + 2;
     grouped.forEach((g, i) => {
@@ -1490,65 +1490,67 @@ async function buildMaintence(order, workbook) {
     worksheet.mergeCells(`A${rowIndexTrip}:K${rowIndexTrip}`);
     worksheet.getCell(`A${rowIndexTrip}`).value = 'Mức bồi dưỡng (x1000đ):';
 
-    // worksheet.mergeCells(`A${rowIndexTrip + 1}:J${rowIndexTrip + 1}`);
-    // const header3 = worksheet.getCell(`A${rowIndexTrip + 1}`);
-    // header3.value = `II.NHIÊN LIỆU`;
-    // header3.font = { bold: true, size: 14 };
-    // header3.alignment = { horizontal: 'center', vertical: 'middle' };
-    // worksheet.getRow(rowIndexTrip + 2).height = 30;
+    worksheet.mergeCells(`A${rowIndexTrip + 1}:K${rowIndexTrip + 1}`);
+    const header3 = worksheet.getCell(`A${rowIndexTrip + 1}`);
+    header3.value = `II.NHIÊN LIỆU`;
+    header3.font = { bold: true, size: 14 };
+    header3.alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getRow(rowIndexTrip + 2).height = 30;
 
-    // worksheet.mergeCells(`A${rowIndexTrip + 2}:B${rowIndexTrip + 2}`);
-    // worksheet.getCell(`A${rowIndexTrip + 2}`).value = 'Thiết bị vận hành';
-    // worksheet.getCell(`A${rowIndexTrip + 2}`).font = { bold: true };
-    // worksheet.getCell(`A${rowIndexTrip + 2}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-    // worksheet.getCell(`C${rowIndexTrip + 2}`).value = 'Tồn dầu';
-    // worksheet.getCell(`C${rowIndexTrip + 2}`).font = { bold: true };
-    // worksheet.getCell(`C${rowIndexTrip + 2}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-    // worksheet.getCell(`D${rowIndexTrip + 2}`).value = 'Lĩnh trong ca';
-    // worksheet.getCell(`D${rowIndexTrip + 2}`).font = { bold: true };
-    // worksheet.getCell(`D${rowIndexTrip + 2}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-    // worksheet.getCell(`E${rowIndexTrip + 2}`).value = 'Tồn cuối ca';
-    // worksheet.getCell(`E${rowIndexTrip + 2}`).font = { bold: true };
-    // worksheet.getCell(`E${rowIndexTrip + 2}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-    // worksheet.getCell(`F${rowIndexTrip + 2}`).value = 'Tiêu thụ';
-    // worksheet.getCell(`F${rowIndexTrip + 2}`).font = { bold: true };
-    // worksheet.getCell(`F${rowIndexTrip + 2}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-    // worksheet.getCell(`G${rowIndexTrip + 2}`).value = 'Định mức';
-    // worksheet.getCell(`G${rowIndexTrip + 2}`).font = { bold: true };
-    // worksheet.getCell(`G${rowIndexTrip + 2}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-    // worksheet.getCell(`H${rowIndexTrip + 2}`).value = 'Tiết kiệm';
-    // worksheet.getCell(`H${rowIndexTrip + 2}`).font = { bold: true };
-    // worksheet.getCell(`H${rowIndexTrip + 2}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-    // worksheet.getCell(`I${rowIndexTrip + 2}`).value = 'Sử dụng vượt';
-    // worksheet.getCell(`I${rowIndexTrip + 2}`).font = { bold: true };
-    // worksheet.getCell(`I${rowIndexTrip + 2}`).alignment = { horizontal: 'center', vertical: 'middle' };
-    // worksheet.getCell(`J${rowIndexTrip + 2}`).value = 'Ghi chú';
-    // worksheet.getCell(`J${rowIndexTrip + 2}`).font = { bold: true };
-    // worksheet.getCell(`J${rowIndexTrip + 2}`).alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.mergeCells(`A${rowIndexTrip + 2}:B${rowIndexTrip + 2}`);
+    worksheet.getCell(`A${rowIndexTrip + 2}`).value = 'Thiết bị vận hành';
+    worksheet.getCell(`A${rowIndexTrip + 2}`).font = { bold: true };
+    worksheet.getCell(`A${rowIndexTrip + 2}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    worksheet.getCell(`C${rowIndexTrip + 2}`).value = 'Tồn dầu';
+    worksheet.getCell(`C${rowIndexTrip + 2}`).font = { bold: true };
+    worksheet.getCell(`C${rowIndexTrip + 2}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    worksheet.getCell(`D${rowIndexTrip + 2}`).value = 'Lĩnh trong ca';
+    worksheet.getCell(`D${rowIndexTrip + 2}`).font = { bold: true };
+    worksheet.getCell(`D${rowIndexTrip + 2}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    worksheet.getCell(`E${rowIndexTrip + 2}`).value = 'Tồn cuối ca';
+    worksheet.getCell(`E${rowIndexTrip + 2}`).font = { bold: true };
+    worksheet.getCell(`E${rowIndexTrip + 2}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    worksheet.getCell(`F${rowIndexTrip + 2}`).value = 'Tiêu thụ';
+    worksheet.getCell(`F${rowIndexTrip + 2}`).font = { bold: true };
+    worksheet.getCell(`F${rowIndexTrip + 2}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    worksheet.getCell(`G${rowIndexTrip + 2}`).value = 'Định mức';
+    worksheet.getCell(`G${rowIndexTrip + 2}`).font = { bold: true };
+    worksheet.getCell(`G${rowIndexTrip + 2}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    worksheet.getCell(`H${rowIndexTrip + 2}`).value = 'Tiết kiệm';
+    worksheet.getCell(`H${rowIndexTrip + 2}`).font = { bold: true };
+    worksheet.getCell(`H${rowIndexTrip + 2}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    worksheet.getCell(`I${rowIndexTrip + 2}`).value = 'Sử dụng vượt';
+    worksheet.getCell(`I${rowIndexTrip + 2}`).font = { bold: true };
+    worksheet.getCell(`I${rowIndexTrip + 2}`).alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.mergeCells(`J${rowIndexTrip + 2}:K${rowIndexTrip + 2}`)
+    worksheet.getCell(`J${rowIndexTrip + 2}`).value = 'Ghi chú';
+    worksheet.getCell(`J${rowIndexTrip + 2}`).font = { bold: true };
+    worksheet.getCell(`J${rowIndexTrip + 2}`).alignment = { horizontal: 'center', vertical: 'middle' };
 
-    // const fuelHeaderRow = rowIndexTrip + 3;
+    const fuelHeaderRow = rowIndexTrip + 3;
 
-    // let index = 0;
-    // for (let d of (order.device || [{}])) {
-    //     const rep = (order.shiftReport?.vehicleSummaries || []).find(i => i?.vehicle?._id.toString() === d._id.toString());
-    //     const currentRow = fuelHeaderRow + index;
-    //     worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
-    //     worksheet.getCell(`A${currentRow}`).value = d?.code || '';
-    //     worksheet.getCell(`C${currentRow}`).value = rep?.fuelRemain || '';
-    //     worksheet.getCell(`D${currentRow}`).value = rep?.fuelReceived || '';
-    //     worksheet.getCell(`E${currentRow}`).value = rep?.fuelRemainEnd || '';
-    //     worksheet.getCell(`F${currentRow}`).value = (rep?.fuelRemain ?? 0) + (rep?.fuelReceived ?? 0) - (rep?.fuelRemainEnd ?? 0);
+    let index = 0;
+    for (let d of (order.repairVehicles || [{}])) {
+        const rep = (order.shiftReport?.vehicleSummaries || []).find(i => i?.vehicle?._id.toString() === d.device?._id.toString());
+        const currentRow = fuelHeaderRow + index;
+        worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
+        worksheet.getCell(`A${currentRow}`).value = d.device?.code || '';
+        worksheet.getCell(`C${currentRow}`).value = rep?.fuelRemain || '';
+        worksheet.getCell(`D${currentRow}`).value = rep?.fuelReceived || '';
+        worksheet.getCell(`E${currentRow}`).value = rep?.fuelRemainEnd || '';
+        worksheet.getCell(`F${currentRow}`).value = (rep?.fuelRemain ?? 0) + (rep?.fuelReceived ?? 0) - (rep?.fuelRemainEnd ?? 0);
 
-    //     worksheet.getCell(`G${currentRow}`).value = '';
+        worksheet.getCell(`G${currentRow}`).value = '';
 
-    //     worksheet.getCell(`H${currentRow}`).value = '';
-    //     worksheet.getCell(`I${currentRow}`).value = '';
-    //     worksheet.getCell(`J${currentRow}`).value = '';
-    //     index++;
-    // }
-    const fuelEndRow = rowIndexTrip
+        worksheet.getCell(`H${currentRow}`).value = '';
+        worksheet.getCell(`I${currentRow}`).value = '';
+        worksheet.mergeCells(`J${currentRow}:K${currentRow}`)
+        worksheet.getCell(`J${currentRow}`).value = '';
+        index++;
+    }
+    const fuelEndRow = fuelHeaderRow + index
 
-    addTableBorders(worksheet, rowHeader1, fuelEndRow, 1, 10)
+    addTableBorders(worksheet, rowHeader1, fuelEndRow - 1, 1, 10)
 
     worksheet.mergeCells(`B${fuelEndRow + 2}:D${fuelEndRow + 2}`)
     worksheet.getCell(`B${fuelEndRow + 2}`).value = 'NGƯỜI NHẬN LỆNH';
@@ -3289,7 +3291,7 @@ router.post('/excavatorReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.
                 .populate('material', 'name density')
             if (!reports.length) continue;
 
-            const grouped = await groupExcavator(reports)
+            const grouped = await groupExcavator(reports, order.workingDate)
 
             result.push({
                 _id: order._id,
@@ -3473,7 +3475,7 @@ router.post('/excavatorReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN
                         .populate('material', 'name')
                     if (!reports.length) continue;
 
-                    const grouped = await groupExcavator(reports)
+                    const grouped = await groupExcavator(reports, order.workingDate)
 
                     result.push({
                         _id: order._id,
@@ -3491,20 +3493,6 @@ router.post('/excavatorReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN
                         fuelRemainUsed: (order?.shiftReport?.vehicleSummaries || []).map(i => (i?.fuelRemain || 0) + (i?.fuelReceived || 0) - (i?.fuelRemainEnd || 0)),
                         travelHours: (order?.shiftReport?.vehicleSummaries || []).map(i => i?.travelHours),
                     });
-                    if (span > 1) {
-                        const endRow = startRow + span - 1;
-                        ['A', 'B', 'C', 'D', 'E', 'I', 'J', 'K', 'L', 'M'].forEach((col) => worksheet.mergeCells(`${col}${startRow}:${col}${endRow}`));
-                    }
-
-                    // Căn giữa 4 cột đầu, trái 3 cột sau, bật wrapText cho 3 cột sau
-                    for (let r = startRow; r < startRow + span; r++) {
-                        ['A', 'B', 'C', 'D', 'E', 'I', 'J', 'K', 'L', 'M'].forEach((col) => {
-                            const cell = worksheet.getCell(`${col}${r}`);
-                            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-                        });
-                    }
-
-                    index++;
                 }
 
                 let currentRow = 10;

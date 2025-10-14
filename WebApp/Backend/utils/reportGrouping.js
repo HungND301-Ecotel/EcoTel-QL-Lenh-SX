@@ -69,7 +69,7 @@ function groupReportsByExcavator(reports = []) {
 }
 
 // lenh sx vh xe
-async function groupTripsVehicle(trips) {
+async function groupTripsVehicle(trips, date) {
     // Sử dụng Promise.all với map để xử lý bất đồng bộ song song (tăng tốc độ)
     const formattedTrips = await Promise.all(trips.map(async (t) => {
 
@@ -102,7 +102,7 @@ async function groupTripsVehicle(trips) {
         totalDistance = timeLogs.reduce((sum, log) => sum + log.distance, 0);
 
         // 2. TÍNH TOÁN KHỐI LƯỢNG VÀ TẤN
-        const value = await caculatorWeight(t.material?._id, t.device?.material, t.quantity, totalDistance);
+        const value = await caculatorWeight(t.material?._id, t.device?.material, t.quantity, totalDistance, date);
 
         // 3. TRẢ VỀ ĐỐI TƯỢNG CHUYẾN ĐI MỚI (PHẲNG)
         return {
@@ -122,7 +122,7 @@ async function groupTripsVehicle(trips) {
     return formattedTrips;
 }
 
-async function groupExcavator(trips) {
+async function groupExcavator(trips, date) {
     const groups = {};
 
     for (const t of trips) {
@@ -135,7 +135,7 @@ async function groupExcavator(trips) {
                 totalTon: 0
             };
         }
-        const value = await caculatorWeight(t.material?._id, t.device?.material, t.quantity, 0)
+        const value = await caculatorWeight(t.material?._id, t.device?.material, t.quantity, 0, date)
         groups[key].totalCubicMeter += value.cubicMeter;
         groups[key].totalTon += value.ton;
 
@@ -376,14 +376,22 @@ function groupDrill(trips) {
 
 // khoi luong, trong luong tam tinh
 
-async function caculatorWeight(material, deviceModel, quantity, totalDistance) {
+async function caculatorWeight(materialId, deviceModel, quantity, totalDistance, date) {
     let cubicMeter = 0
     let ton = 0
     let production = 0
-    const data = await Model.findOne({ material: material, deviceModel: deviceModel })
-        .populate('material', 'density acceptedProduct');
+
+    const data = await Model.findOne({ material: materialId, deviceModel: deviceModel })
+        .populate('material', 'name dryDensity acceptedProduct dryDensityHistory');
+
+    if (!data || !data.material) return { cubicMeter, ton, production };
+    const material = data?.material;
+
+    // 🧠 Tính tỷ trọng tại thời điểm `date`
+    const dryDensity = getTyTrongAtDate(material, normalizeDateToUTC(date))
+
     if (data && data.material?.acceptedProduct === ACCEPTED_PRODUCT.COAL) {
-        ton = (data.value || 0) * (quantity || 0) * (data.material?.density || 0)
+        ton = (data.value || 0) * (quantity || 0) * dryDensity
         production = (ton || 0) * (totalDistance || 0)
     } else if (data && data.material?.acceptedProduct === ACCEPTED_PRODUCT.LAND) {
         cubicMeter = (data.value || 0) * (quantity || 0)
@@ -391,6 +399,54 @@ async function caculatorWeight(material, deviceModel, quantity, totalDistance) {
     }
     return { cubicMeter, ton, production }
 }
+
+function getTyTrongAtDate(material, date) {
+
+    if (!material) return 0;
+
+    const histories = Array.isArray(material.dryDensityHistory)
+        ? material.dryDensityHistory
+        : [];
+
+    // Nếu không có lịch sử thì lấy current
+    if (histories.length === 0) return material.dryDensity || 0;
+
+    const target = new Date(date);
+
+    // sắp xếp tăng dần theo ngày hiệu lực
+    const sorted = histories.sort((a, b) => new Date(a.effectiveDate) - new Date(b.effectiveDate));
+
+    // nếu ngày cần tính < mốc đầu tiên -> dùng giá trị đầu tiên
+    if (target < new Date(sorted[0].effectiveDate)) {
+        return sorted[0].value;
+    }
+
+    // duyệt qua các mốc để tìm giá trị phù hợp
+    for (let i = 0; i < sorted.length; i++) {
+        const current = sorted[i];
+        const next = sorted[i + 1];
+
+        // Nếu không có mốc tiếp theo → bản cuối cùng trước currentTyTrong
+        if (!next) {
+            return material.dryDensity || current.value;
+        }
+
+        // Nếu date nằm giữa current và next
+        if (target >= new Date(current.effectiveDate) && target < new Date(next.effectiveDate)) {
+            return next.value; // giá trị mới bắt đầu có hiệu lực tại next.effectiveDate
+        }
+    }
+
+    // nếu sau tất cả -> currentTyTrong
+    return material.dryDensity || 0;
+}
+
+function normalizeDateToUTC(date) {
+    const d = new Date(date);
+    // bỏ phần giờ/phút/giây để chỉ so sánh theo ngày
+    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+}
+
 
 
 module.exports = {
