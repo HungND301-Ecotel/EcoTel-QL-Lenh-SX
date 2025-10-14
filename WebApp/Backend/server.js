@@ -35,6 +35,8 @@ const ReportHistoryRoutes = require('./routes/reportHistory.routes');
 const TravelLogRoutes = require('./routes/travelLog.routes');
 const DeviceModelRoutes = require('./routes/deviceModel.routes');
 const ModelRoutes = require('./routes/model.routes');
+const AnalysicRoutes = require('./routes/analysic.routes');
+
 
 
 
@@ -160,6 +162,8 @@ app.use('/api/reporthistories', ReportHistoryRoutes);
 app.use('/api/travellogs', TravelLogRoutes);
 app.use('/api/devicemodels', DeviceModelRoutes);
 app.use('/api/models', ModelRoutes);
+app.use('/api/analysics', AnalysicRoutes);
+
 
 
 

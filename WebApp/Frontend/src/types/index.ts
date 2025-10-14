@@ -118,6 +118,7 @@ export interface Material {
     _id: string;
     name: string;
     density?: number;
+    dryDensity?: number;
     acceptedProduct?: string;
     createdAt?: string;
     updatedAt?: string;
