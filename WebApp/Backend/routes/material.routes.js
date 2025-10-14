@@ -13,7 +13,7 @@ const { ROLE } = require('../config/config');
 
 router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
-        const { name, density, acceptedProduct } = req.body
+        const { name, density, dryDensity, acceptedProduct } = req.body
         const existingMaterial = await Material.findOne({ name });
         if (existingMaterial) {
             req.logger.error("❌ Tên vật liệu đã tồn tại");
@@ -22,8 +22,10 @@ router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, 
         const newMaterial = new Material({
             name: name,
             density: density,
+            dryDensity: dryDensity,
             acceptedProduct: acceptedProduct,
-
+            densityHistory: [],
+            dryDensityHistory: []
         });
         await newMaterial.save();
         req.logger.info(`🔥 Tạo thành công`);
@@ -65,13 +67,41 @@ router.delete('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req
 router.put('/:id', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
         const user = req.user
-        const material = await Material.findByIdAndUpdate(req.params.id, req.body, { new: true });
-
+        const { density, dryDensity, ...updateFields } = req.body;
+        const material = await Material.findById(req.params.id);
         if (!material) {
-            req.logger.error("❌ Sửa thất bại");
-
-            return res.status(404).send({ status: 'error', message: 'Sửa thất bại ' });
+            req.logger.error('❌ Không tìm thấy vật liệu');
+            return res.status(404).json({ status: 'error', message: 'Không tìm thấy vật liệu' });
         }
+
+        if (req.body.hasOwnProperty('density')) {
+            // Nếu khác giá trị hiện tại (kể cả khác giữa null và số)
+            if (density !== material.density) {
+                if (material.density != null) {
+                    material.densityHistory.push({
+                        value: material.density, // lưu giá trị cũ
+                        effectiveDate: new Date(),
+                    });
+                }
+                material.density = density; // cập nhật kể cả null
+            }
+        }
+
+        // 🟢 Xử lý TỶ TRỌNG KHÔNG QUY ẨM
+        if (req.body.hasOwnProperty('dryDensity')) {
+            if (dryDensity !== material.dryDensity) {
+                if (material.dryDensity != null) {
+                    material.dryDensityHistory.push({
+                        value: material.dryDensity,
+                        effectiveDate: new Date(),
+                    });
+                }
+                material.dryDensity = dryDensity;
+            }
+        }
+        Object.assign(material, updateFields);
+
+        await material.save();
         req.logger.info(`🔥 ${user?.username} Sửa vật liệu thành công`);
 
         res.status(200).json({

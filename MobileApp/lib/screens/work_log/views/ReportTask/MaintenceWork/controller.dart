@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 class VehicleSummariesControllers {
+  String statusRepair = 'Đã sửa xong';
+  final TextEditingController noteRepair =
+      TextEditingController();
   final TextEditingController fuelRemain =
       TextEditingController();
   final TextEditingController fuelReceived =
@@ -16,8 +19,3 @@ class VehicleSummariesControllers {
   String sealStatus = 'Tốt';
 }
 
-class VehicleRepairControllers {
-  String status = 'Đã sửa xong';
-  late final TextEditingController noteRepair =
-      TextEditingController();
-}
