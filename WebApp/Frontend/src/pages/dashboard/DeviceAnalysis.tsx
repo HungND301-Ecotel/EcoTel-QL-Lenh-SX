@@ -126,7 +126,7 @@ export default function DeviceAnalysic({ departments }: { departments: any[] }) 
                     <RealTimeClock />
                 </Box>
             </Box>
-            <TableContainer sx={{ maxHeight: 600 }}>
+            <TableContainer sx={{ maxHeight: 600, }}>
                 <Table stickyHeader sx={{ '& td, & th': { border: '1px solid #e0e0e0', padding: '0 4px' } }}>
                     <TableHead>
                         <TableRow >

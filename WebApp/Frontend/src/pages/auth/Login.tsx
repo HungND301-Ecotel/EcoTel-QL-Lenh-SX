@@ -97,11 +97,11 @@ const Login = () => {
                     sx={{
                         fontWeight: "bold",
                         mt: 1,
-                        fontSize: { xs: 26, sm: 40, lg: 70 }
+                        fontSize: { xs: 26, sm: 40, lg: 66 }
                     }}
                     color={"blue"}
                 >
-                    PHẦN MỀM QUẢN LÝ VÀ ĐIỀU PHỐI MÁY MÓC THIẾT BỊ
+                    HỆ THỐNG QUẢN LÝ ĐIỀU PHỐI VÀ SỬ DỤNG MÁY MÓC THIẾT BỊ
                 </Typography>
             </Container>
 
