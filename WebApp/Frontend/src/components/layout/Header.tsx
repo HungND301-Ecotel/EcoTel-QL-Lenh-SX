@@ -143,7 +143,7 @@ export default function Header() {
                             sx={{
                                 fontWeight: 'medium',
                                 mt: 1,
-                                fontSize: { xs: 18, sm: 24, md: 30 }
+                                fontSize: { xs: 18, md: 30 }
                             }}
                         >
                             CÔNG TY THAN CAO SƠN - KTV

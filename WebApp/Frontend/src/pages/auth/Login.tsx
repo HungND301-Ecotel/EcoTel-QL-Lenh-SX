@@ -88,92 +88,94 @@ const Login = () => {
                 height: '100vh'
             }}
         >
-            <Container component="main" maxWidth="xs">
+            <Container component="main" maxWidth="md">
                 <Typography
                     variant="h4"
                     textAlign={'center'}
                     sx={{
                         fontWeight: 'medium',
                         mt: 1,
-                        fontSize: { xs: 18, sm: 24, md: 36 }
+                        fontSize: { xs: 18, sm: 30, md: 40 }
                     }}
-                    color={"white"}
+                    color={"blue"}
                 >
                     Phần mềm quản lý và điều phối máy móc thiết bị
                 </Typography>
                 <Box display="flex" alignItems="center" justifyContent={"center"} sx={{ mt: 1.5, gap: 4 }}>
                     {/* Hotline (Số điện thoại) */}
                     <Box display="flex" alignItems="center" gap={0.5}>
-                        <Typography variant="body1" color={"white"} sx={{ fontSize: 18 }}>
+                        <Typography variant="body1" color={"blue"} sx={{ fontSize: { xs: 18, md: 24 } }}>
                             Điện thoại: 024.35180141
                         </Typography>
                     </Box>
 
                     {/* Email (Tùy chọn) */}
-                    <Box display="flex" alignItems="center" gap={0.5} color={"white"}>
-                        <Typography variant="body1" sx={{ fontSize: 18 }}>
+                    <Box display="flex" alignItems="center" gap={0.5} color={"blue"}>
+                        <Typography variant="body1" sx={{ fontSize: { xs: 18, md: 24 } }}>
                             Fax: 024.38510724
                         </Typography>
                     </Box>
                 </Box>
-                <Box
-                    sx={{
-                        marginTop: 8,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                    }}
-                >
-                    <Paper elevation={3} sx={{ p: 4, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                        <img src="/image/logo.png" style={{ width: 150, height: 150, }} />
-                        <Typography component="h1" variant="h5" align="center" gutterBottom>
-                            Đăng nhập
-                        </Typography>
-                        <Box component="form" onSubmit={loginFormik.handleSubmit} sx={{ mt: 1 }}>
-                            <TextField
-                                margin="normal"
-                                fullWidth
-                                id="username"
-                                name="username"
-                                label="Tên đăng nhập"
-                                value={loginFormik.values.username}
-                                onChange={loginFormik.handleChange}
-                                error={loginFormik.touched.username && Boolean(loginFormik.errors.username)}
-                                helperText={loginFormik.touched.username && loginFormik.errors.username}
-                            />
-                            <TextField
-                                margin="normal"
-                                fullWidth
-                                id="password"
-                                name="password"
-                                label="Mật khẩu"
-                                type={showPassword ? 'text' : 'password'}
-                                InputProps={{
-                                    endAdornment: (
-                                        <InputAdornment position="end">
-                                            <IconButton onClick={handleTogglePassword} edge="end">
-                                                {showPassword ? <Visibility /> : <VisibilityOff />}
-                                            </IconButton>
-                                        </InputAdornment>
-                                    )
-                                }}
-                                value={loginFormik.values.password}
-                                onChange={loginFormik.handleChange}
-                                error={loginFormik.touched.password && Boolean(loginFormik.errors.password)}
-                                helperText={loginFormik.touched.password && loginFormik.errors.password}
-                            />
-                            <Button
-                                type="submit"
-                                fullWidth
-                                variant="contained"
-                                sx={{ mt: 3, mb: 2 }}
-                                disabled={loginMutation.isPending}
-                            >
-                                {loginMutation.isPending ? 'Đang đăng nhập...' : 'Đăng nhập'}
-                            </Button>
-                        </Box>
-                    </Paper>
-                </Box>
+                <Container component="main" maxWidth="xs">
+                    <Box
+                        sx={{
+                            marginTop: 8,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <Paper elevation={3} sx={{ p: 4, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                            <img src="/image/logo.png" style={{ width: 150, height: 150, }} />
+                            <Typography component="h1" variant="h5" align="center" gutterBottom>
+                                Đăng nhập
+                            </Typography>
+                            <Box component="form" onSubmit={loginFormik.handleSubmit} sx={{ mt: 1 }}>
+                                <TextField
+                                    margin="normal"
+                                    fullWidth
+                                    id="username"
+                                    name="username"
+                                    label="Tên đăng nhập"
+                                    value={loginFormik.values.username}
+                                    onChange={loginFormik.handleChange}
+                                    error={loginFormik.touched.username && Boolean(loginFormik.errors.username)}
+                                    helperText={loginFormik.touched.username && loginFormik.errors.username}
+                                />
+                                <TextField
+                                    margin="normal"
+                                    fullWidth
+                                    id="password"
+                                    name="password"
+                                    label="Mật khẩu"
+                                    type={showPassword ? 'text' : 'password'}
+                                    InputProps={{
+                                        endAdornment: (
+                                            <InputAdornment position="end">
+                                                <IconButton onClick={handleTogglePassword} edge="end">
+                                                    {showPassword ? <Visibility /> : <VisibilityOff />}
+                                                </IconButton>
+                                            </InputAdornment>
+                                        )
+                                    }}
+                                    value={loginFormik.values.password}
+                                    onChange={loginFormik.handleChange}
+                                    error={loginFormik.touched.password && Boolean(loginFormik.errors.password)}
+                                    helperText={loginFormik.touched.password && loginFormik.errors.password}
+                                />
+                                <Button
+                                    type="submit"
+                                    fullWidth
+                                    variant="contained"
+                                    sx={{ mt: 3, mb: 2 }}
+                                    disabled={loginMutation.isPending}
+                                >
+                                    {loginMutation.isPending ? 'Đang đăng nhập...' : 'Đăng nhập'}
+                                </Button>
+                            </Box>
+                        </Paper>
+                    </Box>
+                </Container>
             </Container>
         </Box>
     );

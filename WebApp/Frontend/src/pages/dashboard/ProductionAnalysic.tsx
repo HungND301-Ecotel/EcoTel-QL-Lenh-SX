@@ -100,7 +100,6 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
         refetchInterval: 2 * 60 * 1000,    // ✅ Tự động gọi lại API mỗi 2 phút
         placeholderData: vehicleCache || undefined,
     });
-    console.log(localforage.getItem(VEHICLE_STORAGE_KEY))
 
     // ✅ Tổng hợp dữ liệu và trạng thái loading
     const analysicsData = useMemo(() => {
@@ -152,74 +151,11 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
 
 
     return (
-        <Paper variant="outlined" sx={{ mb: 4, borderRadius: 2 }}>
+        <Paper variant="outlined" sx={{ borderRadius: 2 }}>
             <AlertSnackbar alert={alert} setAlert={setAlert} />
-            {/* Bộ lọc */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    p: 2,
-                }}
-            >
-                <IconButton
-                    onClick={async () => {
-                        try {
-                            await Promise.all([refetchDrilling(), refetchVehicle()]);
-                            setAlert({ open: true, message: 'Cập nhật thành công', severity: 'success' });
-                        } catch (e) {
-                            setAlert({ open: true, message: 'Cập nhật thất bại', severity: 'error' });
-                        }
-                    }}
-                    disabled={isLoading}
-                >
-                    {isLoading ? (
-                        <CircularProgress size={24} />
-                    ) : (
-                        <RotateLeft
-                            sx={{
-                                transition: "transform 0.3s ease",
-                                "&:hover": { transform: "rotate(-180deg)" }, // xoay khi hover
-                                color: "primary.main",
-                            }}
-                        />
-                    )}
-                </IconButton>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                    <IconButton onClick={() => setOpen(true)}>
-                        <BarChart color="primary" sx={{ fontSize: 30 }} />
-                    </IconButton>
-                    {(user?.role === 'admin' || user?.role === 'dispatcher') && (
-                        <Autocomplete
-                            size="small"
-                            options={departments}
-                            getOptionLabel={(option: any) => option.code || ''}
-                            value={departments.find((p: any) => p._id === department) || null}
-                            onChange={(event, newValue) => {
-                                setDepartment(newValue?._id || '');
-                            }}
-                            sx={{ width: 200 }}
-                            renderInput={(params) => <TextField {...params} label="Đơn vị" />}
-                        />
-                    )}
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                            <DatePicker
-                                inputFormat="DD/MM/YYYY"
-                                label="Ngày"
-                                value={date ? dayjs(date) : null}
-                                onChange={(newValue) => setDate(newValue)}
-                                renderInput={(params) => <TextField {...params} size="small" sx={{ width: 200 }} />}
-                            />
-                        </LocalizationProvider>
-                    </LocalizationProvider>
-                </Box>
-            </Box>
-
             {/* Bảng và Biểu đồ */}
             <Grid container spacing={2}>
-                <Grid item xs={12} md={8}>
+                <Grid item xs={12} lg={7}>
                     <TableContainer sx={{ maxHeight: 600 }}>
                         <Table
                             stickyHeader
@@ -232,8 +168,37 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
                                     <TableCell
                                         colSpan={7}
                                         align="center"
-                                        sx={{ bgcolor: '#ffe8d6', fontWeight: 'bold', fontSize: 18 }}
+                                        sx={{ bgcolor: '#ffe8d6', fontWeight: 'bold', fontSize: 18, position: 'relative' }}
                                     >
+                                        <IconButton
+                                            sx={{
+                                                position: 'absolute',
+                                                left: 8,
+                                                top: '50%',
+                                                transform: 'translateY(-50%)',
+                                            }}
+                                            onClick={async () => {
+                                                try {
+                                                    await Promise.all([refetchDrilling(), refetchVehicle()]);
+                                                    setAlert({ open: true, message: 'Cập nhật thành công', severity: 'success' });
+                                                } catch (e) {
+                                                    setAlert({ open: true, message: 'Cập nhật thất bại', severity: 'error' });
+                                                }
+                                            }}
+                                            disabled={isLoading}
+                                        >
+                                            {isLoading ? (
+                                                <CircularProgress size={24} />
+                                            ) : (
+                                                <RotateLeft
+                                                    sx={{
+                                                        transition: "transform 0.3s ease",
+                                                        "&:hover": { transform: "rotate(-180deg)" }, // xoay khi hover
+                                                        color: "primary.main",
+                                                    }}
+                                                />
+                                            )}
+                                        </IconButton>
                                         SẢN LƯỢNG
                                     </TableCell>
                                 </TableRow>
@@ -263,31 +228,31 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
                                             key={item.key}
                                             sx={{ '&:nth-of-type(odd)': { bgcolor: '#fafafa' } }}
                                         >
-                                            <TableCell align="center" sx={{ width: 30 }}>
+                                            <TableCell align="center" sx={{ width: '2%' }}>
                                                 <Radio
                                                     onChange={() => setSelectedKey(item.key)}
                                                     checked={selectedKey === item.key}
                                                     size="small"
                                                 />
                                             </TableCell>
-                                            <TableCell>{item.name}</TableCell>
-                                            <TableCell align="center">
+                                            <TableCell sx={{ width: '20%' }}>{item.name}</TableCell>
+                                            <TableCell align="center" sx={{ width: '10%' }}>
                                                 {
-                                                    ca1
+                                                    Number(ca1).toFixed(1)
                                                 }
                                             </TableCell>
-                                            <TableCell align="center">
+                                            <TableCell align="center" sx={{ width: '10%' }}>
                                                 {
-                                                    ca2
+                                                    Number(ca2).toFixed(1)
                                                 }
                                             </TableCell>
-                                            <TableCell align="center">
+                                            <TableCell align="center" sx={{ width: '10%' }}>
                                                 {
-                                                    ca3
+                                                    Number(ca3).toFixed(1)
                                                 }
                                             </TableCell>
-                                            <TableCell align="center">{dayTotal}</TableCell>
-                                            <TableCell align="center">{cumulativeTotal}</TableCell>
+                                            <TableCell align="center" sx={{ width: '10%' }}>{Number(dayTotal).toFixed(1)}</TableCell>
+                                            <TableCell align="center" sx={{ width: '10%' }}>{Number(cumulativeTotal).toFixed(1)}</TableCell>
                                         </TableRow>
                                     );
                                 })}
@@ -296,7 +261,45 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
                     </TableContainer>
                 </Grid>
 
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} lg={5}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            justifyContent: 'flex-end',
+                            alignItems: 'center',
+                            p: 2,
+                        }}
+                    >
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                            <IconButton onClick={() => setOpen(true)}>
+                                <BarChart color="primary" sx={{ fontSize: 30 }} />
+                            </IconButton>
+                            {(user?.role === 'admin' || user?.role === 'dispatcher') && (
+                                <Autocomplete
+                                    size="small"
+                                    options={departments}
+                                    getOptionLabel={(option: any) => option.code || ''}
+                                    value={departments.find((p: any) => p._id === department) || null}
+                                    onChange={(event, newValue) => {
+                                        setDepartment(newValue?._id || '');
+                                    }}
+                                    sx={{ width: 200 }}
+                                    renderInput={(params) => <TextField {...params} label="Đơn vị" />}
+                                />
+                            )}
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                    <DatePicker
+                                        inputFormat="DD/MM/YYYY"
+                                        label="Ngày"
+                                        value={date ? dayjs(date) : null}
+                                        onChange={(newValue) => setDate(newValue)}
+                                        renderInput={(params) => <TextField {...params} size="small" sx={{ width: 200 }} />}
+                                    />
+                                </LocalizationProvider>
+                            </LocalizationProvider>
+                        </Box>
+                    </Box>
                     {isLoading ?
                         <Box display="flex" flexDirection={"column"} minHeight={300} alignItems={"center"} justifyContent={"center"}>
                             <CircularProgress />
