@@ -82,7 +82,7 @@ export default function OrderAnalysic({ departments }: { departments: any[] }) {
             <Grid container spacing={2}>
                 <Grid item xs={12} lg={7}>
                     <TableContainer sx={{ maxHeight: 300 }}>
-                        <Table stickyHeader sx={{ p: 2, '& td, & th': { border: '1px solid #e0e0e0', padding: '6px', } }}>
+                        <Table stickyHeader sx={{'& td, & th': { border: '1px solid #e0e0e0', padding: '8px', } }}>
                             <TableHead>
                                 <TableRow>
                                     <TableCell colSpan={7} align="center" sx={{ bgcolor: '#dcf1d8', fontWeight: 'bold', fontSize: 18, position: 'relative' }}>
@@ -119,11 +119,11 @@ export default function OrderAnalysic({ departments }: { departments: any[] }) {
                                     </TableCell>
                                 </TableRow>
                                 <TableRow>
-                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 18, width: '20%' }}>Lệnh sản xuất</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 18, width: '10%' }}>Ca 1</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 18, width: '10%' }}>Ca 2</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 18, width: '10%' }}>Ca 3</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 18, width: '10%' }}>Ngày</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 18, width: '24%' }}>Lệnh sản xuất</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 18, width: '12%' }}>Ca 1</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 18, width: '12%' }}>Ca 2</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 18, width: '12%' }}>Ca 3</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 18, width: '12%' }}>Ngày</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
