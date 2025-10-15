@@ -46,12 +46,14 @@ export default function PieChartOrder({ data }: { data: any }) {
                 textAlign: 'center',
             }}>Không có dữ liệu</Typography>}
             <ResponsiveChartContainer
+                height={200}
                 series={[{
                     type: 'pie',
                     innerRadius: 30,
                     outerRadius: 60,
                     data: chartData
                 }]}
+            margin={{ top: -40, left: 0, right: 0, bottom: 0 }}
             >
                 <PiePlot />
                 <ChartsTooltip trigger="item" />

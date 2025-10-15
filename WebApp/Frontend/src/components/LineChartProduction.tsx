@@ -31,17 +31,21 @@ export default function ResponsiveLineChartProduction({ dataset, selectedName, s
         responsiveMarkerSize = 8;
     }
     return (
-        <Box sx={{ width: "100%", height: '100%', display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ width: "100%", height: '100%', display: 'flex', alignItems: 'flex-start' }}>
 
             <ResponsiveChartContainer
-                height={350}
+                height={320}
                 dataset={dataset}
-                xAxis={[{ dataKey: "date", scaleType: "point" }]}
+                xAxis={[{
+                    dataKey: "date", scaleType: "point",
+                    tickLabelInterval: (value, index) => index % 3 === 0,
+                }]}
                 yAxis={[{ min: 0 }]}  // 👈 luôn bắt đầu từ 0
                 series={[
                     { type: "line", dataKey: `${selectedKey}_cum`, label: `${selectedName} (lũy kế)`, area: true },
                     { type: "line", dataKey: selectedKey, label: `${selectedName} (ngày)`, area: true },
                 ]}
+                margin={{ top: 10, left: 50, right: 10, bottom: 80 }}
             >
 
                 <AreaPlot // Sử dụng AreaPlot để tô màu vùng
@@ -65,13 +69,13 @@ export default function ResponsiveLineChartProduction({ dataset, selectedName, s
                         legend: {
                             labelStyle: {
                                 fontSize: responsiveMarkerSize,
-                                marginTop: 2
+                                marginTop: 8
                             },
                             itemMarkHeight: responsiveMarkerSize,
                             itemMarkWidth: responsiveMarkerSize,
                         }
                     }} />
             </ResponsiveChartContainer>
-        </Box>
+        </Box >
     );
 }
