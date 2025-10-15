@@ -130,12 +130,40 @@ export default function Header() {
             >
                 <Box display="flex" justifyContent='center' alignItems={'center'} gap={2}>
                     <img src="/image/logo.png" style={{ width: 100, height: 100 }} />
-                    <Typography variant="h6" sx={{
-                        fontSize: {
-                            md: 30,
-                            xs: 18
-                        },
-                    }} textAlign={'center'}>HỆ THỐNG QUẢN LÝ ĐIỀU PHỐI VÀ SỬ DỤNG MÁY MÓC THIẾT BỊ</Typography>
+                    <Box>
+                        <Typography variant="h6" sx={{
+                            fontSize: {
+                                md: 30,
+                                xs: 18
+                            },
+                        }} textAlign={'center'}>HỆ THỐNG QUẢN LÝ ĐIỀU PHỐI VÀ SỬ DỤNG MÁY MÓC THIẾT BỊ</Typography>
+                        <Typography
+                            variant="h5"
+                            textAlign={'center'}
+                            sx={{
+                                fontWeight: 'medium',
+                                mt: 1,
+                                fontSize: { xs: 18, sm: 24, md: 30 }
+                            }}
+                        >
+                            CÔNG TY THAN CAO SƠN - KTV
+                        </Typography>
+                        <Box display="flex" alignItems="center" justifyContent={"center"} sx={{ mt: 1.5, gap: 4 }}>
+                            {/* Hotline (Số điện thoại) */}
+                            <Box display="flex" alignItems="center" gap={0.5}>
+                                <Typography variant="body1">
+                                    Điện thoại: 024.35180141
+                                </Typography>
+                            </Box>
+
+                            {/* Email (Tùy chọn) */}
+                            <Box display="flex" alignItems="center" gap={0.5}>
+                                <Typography variant="body1">
+                                    Fax: 024.38510724
+                                </Typography>
+                            </Box>
+                        </Box>
+                    </Box>
                 </Box>
             </Box>
             <AppBar position="sticky">
