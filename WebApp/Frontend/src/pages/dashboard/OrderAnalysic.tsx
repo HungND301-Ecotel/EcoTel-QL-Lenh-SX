@@ -79,70 +79,44 @@ export default function OrderAnalysic({ departments }: { departments: any[] }) {
     return (
         <Paper variant="outlined" sx={{ mb: 4, borderRadius: 2 }}>
             <AlertSnackbar alert={alert} setAlert={setAlert} />
-            <Box
-                sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: 2,
-                    p: 2
-                }}
-            >
-                <IconButton
-                    onClick={async () => {
-                        try {
-                            await refetchOrderCount(); // đợi xong refetch
-                            setAlert({ open: true, message: 'Cập nhật thành công', severity: 'success' });
-                        } catch (e) {
-                            setAlert({ open: true, message: 'Cập nhật thất bại', severity: 'error' });
-                        }
-                    }}
-                    disabled={isLoadingOrderCount}
-                >
-                    {isLoadingOrderCount ? (
-                        <CircularProgress size={24} />
-                    ) : (
-                        <RotateLeftIcon
-                            sx={{
-                                transition: "transform 0.3s ease",
-                                "&:hover": { transform: "rotate(-180deg)" }, // xoay khi hover
-                                color: "primary.main",
-                            }}
-                        />
-                    )}
-                </IconButton>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                    {user?.role === "admin" && <Autocomplete
-                        size="small"
-                        options={departments}
-                        getOptionLabel={(option: any) =>
-                            option.code || ''
-                        }
-                        value={departments.find((p: any) => p._id === department) || null}
-                        onChange={(event, newValue) => {
-                            setDepartment(newValue?._id || '');
-                        }}
-                        sx={{ width: 200 }}
-                        renderInput={(params) => <TextField {...params} label="Đơn vị" />}
-                    />}
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <DatePicker
-                            inputFormat="DD/MM/YYYY"
-                            label="Ngày"
-                            value={date}
-                            onChange={(newValue) => setDate(newValue)}
-                            renderInput={(params) => <TextField {...params} size="small" sx={{ width: 200 }} />}
-                        />
-                    </LocalizationProvider>
-                </Box>
-            </Box>
             <Grid container spacing={2}>
-                <Grid item xs={12} md={8}>
+                <Grid item xs={12} lg={7}>
                     <TableContainer sx={{ maxHeight: 300 }}>
-                        <Table stickyHeader sx={{ p: 2, '& td, & th': { border: '1px solid #e0e0e0', padding: '4px', } }}>
+                        <Table stickyHeader sx={{ p: 2, '& td, & th': { border: '1px solid #e0e0e0', padding: '6px', } }}>
                             <TableHead>
                                 <TableRow>
-                                    <TableCell colSpan={7} align="center" sx={{ bgcolor: '#dcf1d8', fontWeight: 'bold', fontSize: 18 }}>LỆNH SẢN XUẤT</TableCell>
+                                    <TableCell colSpan={7} align="center" sx={{ bgcolor: '#dcf1d8', fontWeight: 'bold', fontSize: 18, position: 'relative' }}>
+                                        <IconButton
+                                            sx={{
+                                                position: 'absolute',
+                                                left: 8,
+                                                top: '50%',
+                                                transform: 'translateY(-50%)',
+                                            }}
+                                            onClick={async () => {
+                                                try {
+                                                    await refetchOrderCount(); // đợi xong refetch
+                                                    setAlert({ open: true, message: 'Cập nhật thành công', severity: 'success' });
+                                                } catch (e) {
+                                                    setAlert({ open: true, message: 'Cập nhật thất bại', severity: 'error' });
+                                                }
+                                            }}
+                                            disabled={isLoadingOrderCount}
+                                        >
+                                            {isLoadingOrderCount ? (
+                                                <CircularProgress size={24} />
+                                            ) : (
+                                                <RotateLeftIcon
+                                                    sx={{
+                                                        transition: "transform 0.3s ease",
+                                                        "&:hover": { transform: "rotate(-180deg)" }, // xoay khi hover
+                                                        color: "primary.main",
+                                                    }}
+                                                />
+                                            )}
+                                        </IconButton>
+                                        LỆNH SẢN XUẤT
+                                    </TableCell>
                                 </TableRow>
                                 <TableRow>
                                     <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 18, width: '20%' }}>Lệnh sản xuất</TableCell>
@@ -166,7 +140,41 @@ export default function OrderAnalysic({ departments }: { departments: any[] }) {
                         </Table>
                     </TableContainer>
                 </Grid>
-                <Grid item xs={12} md={4} sx={{ maxHeight: 300 }}>
+                <Grid item xs={12} lg={5} sx={{ maxHeight: 300 }}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            justifyContent: 'flex-end',
+                            alignItems: 'center',
+                            mb: 2,
+                            p: 2
+                        }}
+                    >
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                            {user?.role === "admin" && <Autocomplete
+                                size="small"
+                                options={departments}
+                                getOptionLabel={(option: any) =>
+                                    option.code || ''
+                                }
+                                value={departments.find((p: any) => p._id === department) || null}
+                                onChange={(event, newValue) => {
+                                    setDepartment(newValue?._id || '');
+                                }}
+                                sx={{ width: 200 }}
+                                renderInput={(params) => <TextField {...params} label="Đơn vị" />}
+                            />}
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                <DatePicker
+                                    inputFormat="DD/MM/YYYY"
+                                    label="Ngày"
+                                    value={date}
+                                    onChange={(newValue) => setDate(newValue)}
+                                    renderInput={(params) => <TextField {...params} size="small" sx={{ width: 200 }} />}
+                                />
+                            </LocalizationProvider>
+                        </Box>
+                    </Box>
                     <PieChartOrder data={orderCount} />
                 </Grid>
             </Grid>
