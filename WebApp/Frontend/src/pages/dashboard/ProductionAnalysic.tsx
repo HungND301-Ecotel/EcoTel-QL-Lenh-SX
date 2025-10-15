@@ -206,11 +206,11 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
                                     <TableCell align="center" colSpan={2} sx={{ fontWeight: 'bold', fontSize: 16 }}>
                                         Sản lượng
                                     </TableCell>
-                                    <TableCell align="center">Ca 1</TableCell>
-                                    <TableCell align="center">Ca 2</TableCell>
-                                    <TableCell align="center">Ca 3</TableCell>
-                                    <TableCell align="center">Ngày</TableCell>
-                                    <TableCell align="center">Lũy kế</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 16 }}>Ca 1</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 16 }}>Ca 2</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 16 }}>Ca 3</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 16 }}>Ngày</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 16 }}>Lũy kế</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
