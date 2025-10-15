@@ -83,28 +83,43 @@ const Login = () => {
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat',
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                flexDirection: 'column', // Ensures children stack vertically (title then content)
+                // alignItems: 'center', // This is still good for overall horizontal centering
+                justifyContent: 'flex-start', // Start content from the top
                 minHeight: '100vh'
             }}
         >
-            <Container component="main" maxWidth="md">
+            <Container component="main" maxWidth="lg">
+                {/* Title remains at the top of the container, pushed slightly down by mt: 1 */}
                 <Typography
                     variant="h4"
                     textAlign={'center'}
                     sx={{
                         fontWeight: "bold",
                         mt: 1,
-                        fontSize: { xs: 18, sm: 30, md: 40, lg: 44 }
+                        fontSize: { xs: 26, sm: 40, lg: 66 }
                     }}
                     color={"blue"}
                 >
-                    PHẦN MỀM QUẢN LÝ VÀ ĐIỀU PHỐI MÁY MÓC THIẾT BỊ
+                    HỆ THỐNG QUẢN LÝ ĐIỀU PHỐI VÀ SỬ DỤNG MÁY MÓC THIẾT BỊ
                 </Typography>
+            </Container>
+
+            {/* New wrapper Box for vertical centering the login form */}
+            <Box
+                sx={{
+                    flexGrow: 1, // Allows this Box to consume the remaining vertical space
+                    display: 'flex',
+                    alignItems: 'center', // Centers the child (Container maxWidth="xs") vertically
+                    justifyContent: 'center', // Centers the child (Container maxWidth="xs") horizontally
+                    p: 2, // Optional: padding for a little space around the login form
+                }}
+            >
+                {/* The login form container (maxWidth="xs") is now the element being centered */}
                 <Container component="main" maxWidth="xs">
                     <Box
                         sx={{
-                            marginTop: 4,
+                            // Removed marginTop: 4 (no longer needed for vertical centering)
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
@@ -161,7 +176,7 @@ const Login = () => {
                         </Paper>
                     </Box>
                 </Container>
-            </Container>
+            </Box>
         </Box>
     );
 };
