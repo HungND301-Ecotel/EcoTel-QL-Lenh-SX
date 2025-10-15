@@ -137,7 +137,7 @@ export default function Header() {
                                 md: 30,
                                 xs: 18
                             },
-                        }} textAlign={'center'}>HỆ THỐNG QUẢN LÝ ĐIỀU PHỐI VÀ SỬ DỤNG MÁY MÓC THIẾT BỊ</Typography>
+                        }} textAlign={'center'}>PHẦN MỀM QUẢN LÝ VÀ ĐIỀU PHỐI MÁY MÓC THIẾT BỊ</Typography>
                         <Typography
                             variant="h5"
                             textAlign={'center'}
