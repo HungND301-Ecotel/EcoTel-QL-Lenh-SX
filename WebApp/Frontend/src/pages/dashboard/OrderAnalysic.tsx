@@ -77,7 +77,7 @@ export default function OrderAnalysic({ departments }: { departments: any[] }) {
 
 
     return (
-        <Paper variant="outlined" sx={{ mb: 4, borderRadius: 2 }}>
+        <Paper variant="outlined" sx={{ borderRadius: 2 }}>
             <AlertSnackbar alert={alert} setAlert={setAlert} />
             <Grid container spacing={2}>
                 <Grid item xs={12} lg={7}>

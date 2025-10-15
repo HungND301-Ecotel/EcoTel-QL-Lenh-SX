@@ -100,7 +100,6 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
         refetchInterval: 2 * 60 * 1000,    // ✅ Tự động gọi lại API mỗi 2 phút
         placeholderData: vehicleCache || undefined,
     });
-    console.log(localforage.getItem(VEHICLE_STORAGE_KEY))
 
     // ✅ Tổng hợp dữ liệu và trạng thái loading
     const analysicsData = useMemo(() => {
@@ -152,7 +151,7 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
 
 
     return (
-        <Paper variant="outlined" sx={{ mb: 4, borderRadius: 2 }}>
+        <Paper variant="outlined" sx={{ borderRadius: 2 }}>
             <AlertSnackbar alert={alert} setAlert={setAlert} />
             {/* Bảng và Biểu đồ */}
             <Grid container spacing={2}>
