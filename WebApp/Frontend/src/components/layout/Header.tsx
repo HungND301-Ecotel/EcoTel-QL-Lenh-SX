@@ -132,6 +132,7 @@ export default function Header() {
                     <img src="/image/logo.png" style={{ width: 100, height: 100 }} />
                     <Box>
                         <Typography variant="h6" sx={{
+                            fontWeight: "bold",
                             fontSize: {
                                 md: 30,
                                 xs: 18
@@ -141,12 +142,12 @@ export default function Header() {
                             variant="h5"
                             textAlign={'center'}
                             sx={{
-                                fontWeight: 'medium',
+                                fontWeight: "bold",
                                 mt: 1,
-                                fontSize: { xs: 18, md: 30 }
+                                fontSize: { xs: 14, md: 22 }
                             }}
                         >
-                            CÔNG TY THAN CAO SƠN - KTV
+                            CÔNG TY CP THAN CAO SƠN - KTV
                         </Typography>
                         <Box display="flex" alignItems="center" justifyContent={"center"} sx={{ mt: 1.5, gap: 4 }}>
                             {/* Hotline (Số điện thoại) */}
