@@ -89,6 +89,33 @@ const Login = () => {
             }}
         >
             <Container component="main" maxWidth="xs">
+                <Typography
+                    variant="h4"
+                    textAlign={'center'}
+                    sx={{
+                        fontWeight: 'medium',
+                        mt: 1,
+                        fontSize: { xs: 18, sm: 24, md: 36 }
+                    }}
+                    color={"white"}
+                >
+                    Phần mềm quản lý và điều phối máy móc thiết bị
+                </Typography>
+                <Box display="flex" alignItems="center" justifyContent={"center"} sx={{ mt: 1.5, gap: 4 }}>
+                    {/* Hotline (Số điện thoại) */}
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                        <Typography variant="body1" color={"white"} sx={{ fontSize: 18 }}>
+                            Điện thoại: 024.35180141
+                        </Typography>
+                    </Box>
+
+                    {/* Email (Tùy chọn) */}
+                    <Box display="flex" alignItems="center" gap={0.5} color={"white"}>
+                        <Typography variant="body1" sx={{ fontSize: 18 }}>
+                            Fax: 024.38510724
+                        </Typography>
+                    </Box>
+                </Box>
                 <Box
                     sx={{
                         marginTop: 8,

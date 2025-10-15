@@ -4485,7 +4485,7 @@ router.post('/drillReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, RO
 
 
 
-                addTableBorders(worksheet, 8, 12, 1, 20);
+                addTableBorders(worksheet, 8, currentRow, 1, 20);
 
                 worksheet.mergeCells(`O${currentRow + 1}:R${currentRow + 1}`)
                 worksheet.getCell(`O${currentRow + 1}`).value = 'Cán bộ CT kiểm tra trong ca';

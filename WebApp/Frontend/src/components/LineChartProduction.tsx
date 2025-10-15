@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Paper, Box, Typography, RadioGroup, FormControlLabel, Radio } from "@mui/material";
+import { Paper, Box, Typography, RadioGroup, FormControlLabel, Radio, useMediaQuery, useTheme } from "@mui/material";
 import {
     ResponsiveChartContainer,
     LinePlot,
@@ -12,7 +12,24 @@ import {
 
 
 export default function ResponsiveLineChartProduction({ dataset, selectedName, selectedKey }: { dataset: any, selectedName: string, selectedKey: string }) {
+    const theme = useTheme();
 
+    const isLargeScreen = useMediaQuery(theme.breakpoints.up('lg'));
+
+    // 2. Kiểm tra màn hình nhỏ (< md, tức là < 900px)
+    const isSmallToMediumScreen = useMediaQuery(theme.breakpoints.down('md'));
+    let responsiveMarkerSize;
+
+    if (isLargeScreen) {
+        // >= lg (1200px): size 12
+        responsiveMarkerSize = 14;
+    } else if (isSmallToMediumScreen) {
+        // < md (dưới 900px): size 12
+        responsiveMarkerSize = 14;
+    } else {
+        // Trường hợp còn lại: md (900px) đến < lg (1200px): size 8
+        responsiveMarkerSize = 8;
+    }
     return (
         <Box sx={{ width: "100%", height: '100%', display: 'flex', alignItems: 'center' }}>
 
@@ -43,7 +60,17 @@ export default function ResponsiveLineChartProduction({ dataset, selectedName, s
                 <ChartsXAxis />
                 <ChartsYAxis />
                 <ChartsTooltip />
-                <ChartsLegend />
+                <ChartsLegend position={{ vertical: 'bottom', horizontal: 'middle' }}
+                    slotProps={{
+                        legend: {
+                            labelStyle: {
+                                fontSize: responsiveMarkerSize,
+                                marginTop: 2
+                            },
+                            itemMarkHeight: responsiveMarkerSize,
+                            itemMarkWidth: responsiveMarkerSize,
+                        }
+                    }} />
             </ResponsiveChartContainer>
         </Box>
     );
