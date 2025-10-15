@@ -12,29 +12,36 @@ import {
     TextField,
     IconButton,
     Radio,
+    CircularProgress,
+    AlertColor,
 } from '@mui/material';
 import LineChartProduction from '../../components/LineChartProduction';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
-import { BarChart } from '@mui/icons-material';
+import { BarChart, RotateLeft } from '@mui/icons-material';
 import VehicleProductionChart from '../../components/VehicleProductionChart';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../config/api.config';
+import { Typography } from 'antd';
+import { AlertSnackbar } from '../../components/Alert';
+import localforage from 'localforage';
 
 // Danh sách loại sản lượng
 const productions = [
-    { key: 'SLD', name: 'Sản lượng đất (m³)' },
-    { key: 'SLT', name: 'Sản lượng than nguyên khai (m³)' },
+    { key: 'KLD', name: 'Khối lượng đất thực hiện (m³)' },
+    { key: 'TLT', name: 'Trọng lượng than thực hiện (tấn)' },
     { key: 'MKS', name: 'Mét khoan sâu (mks)' },
-    { key: 'KLD', name: 'Khối lượng vận chuyển đất (Tkm)' },
-    { key: 'KLT', name: 'Khối lượng than (tấn)' },
+    { key: 'SLD', name: 'Sản lượng vận chuyển đất (Tkm)' },
+    { key: 'SLT', name: 'Sản lượng vận chuyển than (tấn)' },
     { key: 'TTK', name: 'Thể tích khối thực hiện' },
     { key: 'CD', name: 'Cung độ thực hiện' },
 ];
+const DRILLING_STORAGE_KEY = 'drillingData';
+const VEHICLE_STORAGE_KEY = 'vehicleData';
 
 export default function ProductionAnalysic({ departments }: { departments: any[] }) {
     const [user] = useAtom(userAtom);
@@ -42,19 +49,68 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
     const [date, setDate] = useState<Dayjs | null>(dayjs());
     const [open, setOpen] = useState(false);
     const [selectedKey, setSelectedKey] = useState('MKS');
+    const [drillingCache, setDrillingCache] = useState<any[] | null>(null);
+    const [vehicleCache, setVehicleCache] = useState<any[] | null>(null);
+
+    // Load dữ liệu localforage trước khi query
+    useEffect(() => {
+        (async () => {
+            const d = await localforage.getItem(DRILLING_STORAGE_KEY);
+            const v = await localforage.getItem(VEHICLE_STORAGE_KEY);
+            setDrillingCache(Array.isArray(d) ? d : []);
+            setVehicleCache(Array.isArray(v) ? v : []);
+        })();
+    }, [department, date]);
 
     const selectedName = productions.find(p => p.key === selectedKey)?.name || selectedKey;
-
     // 🔹 Lấy dữ liệu API
-    const { data: analysicsData = [] } = useQuery({
-        queryKey: ['analysics', department, date],
+    const {
+        data: drillingData = [], // Đổi tên thành drillingData
+        refetch: refetchDrilling,
+        isLoading: isLoadingDrilling,
+    } = useQuery({
+        queryKey: ['analysicsVHK', department, date?.format('YYYY-MM-DD')],
         queryFn: async () => {
             const res = await api.get(
-                `/analysics?date=${date ? date.toISOString() : ''}&department=${department}`
+                `/analysics/vhk?date=${date ? date.toISOString() : ''}&department=${department}`
             );
-            return res.data.data || [];
+            const newData = res.data.data || [];
+            await localforage.setItem(DRILLING_STORAGE_KEY, newData); // ✅ Lưu vào localforage
+            return newData;
         },
+        refetchInterval: 2 * 60 * 1000,    // ✅ Tự động gọi lại API mỗi 2 phút
+        placeholderData: drillingCache || undefined,
     });
+
+    // ✅ Khai báo dữ liệu Vận hành Xúc (VHX)
+    const {
+        data: vehicleData = [], // Đổi tên thành vehicleData
+        refetch: refetchVehicle,
+        isLoading: isLoadingVehicle,
+    } = useQuery({
+        queryKey: ['analysicsVHX', department, date?.format('YYYY-MM-DD')],
+        queryFn: async () => {
+            const res = await api.get(
+                `/analysics/vhx?date=${date ? date.toISOString() : ''}&department=${department}`
+            );
+            const newData = res.data.data || [];
+            await localforage.setItem(VEHICLE_STORAGE_KEY, newData); // ✅ Lưu vào localforage
+            return newData;
+        },
+        refetchInterval: 2 * 60 * 1000,    // ✅ Tự động gọi lại API mỗi 2 phút
+        placeholderData: vehicleCache || undefined,
+    });
+    console.log(localforage.getItem(VEHICLE_STORAGE_KEY))
+
+    // ✅ Tổng hợp dữ liệu và trạng thái loading
+    const analysicsData = useMemo(() => {
+        // Đảm bảo cả hai biến đều là mảng trước khi dùng spread operator
+        const safeDrillingData = Array.isArray(drillingData) ? drillingData : [];
+        const safeVehicleData = Array.isArray(vehicleData) ? vehicleData : [];
+
+        return [...safeDrillingData, ...safeVehicleData];
+    }, [drillingData, vehicleData]);
+    const isLoading = isLoadingDrilling || isLoadingVehicle;
 
     // 🔹 Chuẩn hóa dữ liệu cho bảng và biểu đồ
     // 🔹 Chuẩn hóa dữ liệu cho bảng và biểu đồ (đảm bảo đủ loại)
@@ -88,20 +144,52 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
         });
     }, [analysicsData]);
 
+    const [alert, setAlert] = useState<{ open: boolean; message: string; severity?: AlertColor }>({
+        open: false,
+        message: '',
+        severity: 'success',
+    });
+
 
     return (
         <Paper variant="outlined" sx={{ mb: 4, borderRadius: 2 }}>
+            <AlertSnackbar alert={alert} setAlert={setAlert} />
             {/* Bộ lọc */}
             <Box
                 sx={{
                     display: 'flex',
-                    justifyContent: 'flex-end',
+                    justifyContent: 'space-between',
                     alignItems: 'center',
-                    mb: 2,
                     p: 2,
                 }}
             >
+                <IconButton
+                    onClick={async () => {
+                        try {
+                            await Promise.all([refetchDrilling(), refetchVehicle()]);
+                            setAlert({ open: true, message: 'Cập nhật thành công', severity: 'success' });
+                        } catch (e) {
+                            setAlert({ open: true, message: 'Cập nhật thất bại', severity: 'error' });
+                        }
+                    }}
+                    disabled={isLoading}
+                >
+                    {isLoading ? (
+                        <CircularProgress size={24} />
+                    ) : (
+                        <RotateLeft
+                            sx={{
+                                transition: "transform 0.3s ease",
+                                "&:hover": { transform: "rotate(-180deg)" }, // xoay khi hover
+                                color: "primary.main",
+                            }}
+                        />
+                    )}
+                </IconButton>
                 <Box sx={{ display: 'flex', gap: 2 }}>
+                    <IconButton onClick={() => setOpen(true)}>
+                        <BarChart color="primary" sx={{ fontSize: 30 }} />
+                    </IconButton>
                     {(user?.role === 'admin' || user?.role === 'dispatcher') && (
                         <Autocomplete
                             size="small"
@@ -126,9 +214,6 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
                             />
                         </LocalizationProvider>
                     </LocalizationProvider>
-                    <IconButton onClick={() => setOpen(true)}>
-                        <BarChart color="primary" sx={{ fontSize: 30 }} />
-                    </IconButton>
                 </Box>
             </Box>
 
@@ -166,9 +251,11 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
                             <TableBody>
                                 {productions.map((item) => {
                                     const typeData = analysicsData.find((r: any) => r.jobType === item.key);
-                                    const dayTotal = typeData
-                                        ? typeData.productionByDay.reduce((s: number, d: any) => s + d.dayTotal, 0)
-                                        : 0;
+
+                                    const ca1 = typeData?.selectedDay?.shifts?.find((s: any) => s.shift === 1)?.production || 0;
+                                    const ca2 = typeData?.selectedDay?.shifts?.find((s: any) => s.shift === 2)?.production || 0;
+                                    const ca3 = typeData?.selectedDay?.shifts?.find((s: any) => s.shift === 3)?.production || 0;
+                                    const dayTotal = typeData?.selectedDay?.dayTotal || 0;
                                     const cumulativeTotal = typeData?.cumulativeTotal || 0;
 
                                     return (
@@ -186,23 +273,17 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
                                             <TableCell>{item.name}</TableCell>
                                             <TableCell align="center">
                                                 {
-                                                    typeData?.productionByDay?.flatMap((d: any) =>
-                                                        d.shifts.filter((s: any) => s.shift === 1).map((s: any) => s.production)
-                                                    )[0] || 0
+                                                    ca1
                                                 }
                                             </TableCell>
                                             <TableCell align="center">
                                                 {
-                                                    typeData?.productionByDay?.flatMap((d: any) =>
-                                                        d.shifts.filter((s: any) => s.shift === 2).map((s: any) => s.production)
-                                                    )[0] || 0
+                                                    ca2
                                                 }
                                             </TableCell>
                                             <TableCell align="center">
                                                 {
-                                                    typeData?.productionByDay?.flatMap((d: any) =>
-                                                        d.shifts.filter((s: any) => s.shift === 3).map((s: any) => s.production)
-                                                    )[0] || 0
+                                                    ca3
                                                 }
                                             </TableCell>
                                             <TableCell align="center">{dayTotal}</TableCell>
@@ -216,11 +297,18 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
                 </Grid>
 
                 <Grid item xs={12} md={4}>
-                    <LineChartProduction
-                        dataset={dataset}
-                        selectedName={selectedName}
-                        selectedKey={selectedKey}
-                    />
+                    {isLoading ?
+                        <Box display="flex" flexDirection={"column"} minHeight={300} alignItems={"center"} justifyContent={"center"}>
+                            <CircularProgress />
+                            <Typography>Đang tải dữ liệu ...</Typography>
+                        </Box>
+                        :
+                        <LineChartProduction
+                            dataset={dataset}
+                            selectedName={selectedName}
+                            selectedKey={selectedKey}
+                        />
+                    }
                 </Grid>
             </Grid>
 
