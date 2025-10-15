@@ -85,7 +85,7 @@ const Login = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                height: '100vh'
+                minHeight: '100vh'
             }}
         >
             <Container component="main" maxWidth="md">
@@ -93,33 +93,18 @@ const Login = () => {
                     variant="h4"
                     textAlign={'center'}
                     sx={{
-                        fontWeight: 'medium',
+                        fontWeight: "bold",
                         mt: 1,
-                        fontSize: { xs: 18, sm: 30, md: 40 }
+                        fontSize: { xs: 18, sm: 30, md: 40, lg: 44 }
                     }}
                     color={"blue"}
                 >
-                    Phần mềm quản lý và điều phối máy móc thiết bị
+                    PHẦN MỀM QUẢN LÝ VÀ ĐIỀU PHỐI MÁY MÓC THIẾT BỊ
                 </Typography>
-                <Box display="flex" alignItems="center" justifyContent={"center"} sx={{ mt: 1.5, gap: 4 }}>
-                    {/* Hotline (Số điện thoại) */}
-                    <Box display="flex" alignItems="center" gap={0.5}>
-                        <Typography variant="body1" color={"blue"} sx={{ fontSize: { xs: 18, md: 24 } }}>
-                            Điện thoại: 024.35180141
-                        </Typography>
-                    </Box>
-
-                    {/* Email (Tùy chọn) */}
-                    <Box display="flex" alignItems="center" gap={0.5} color={"blue"}>
-                        <Typography variant="body1" sx={{ fontSize: { xs: 18, md: 24 } }}>
-                            Fax: 024.38510724
-                        </Typography>
-                    </Box>
-                </Box>
                 <Container component="main" maxWidth="xs">
                     <Box
                         sx={{
-                            marginTop: 8,
+                            marginTop: 4,
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
