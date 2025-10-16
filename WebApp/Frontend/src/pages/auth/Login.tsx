@@ -86,27 +86,34 @@ const Login = () => {
                 flexDirection: 'column', // Ensures children stack vertically (title then content)
                 // alignItems: 'center', // This is still good for overall horizontal centering
                 justifyContent: 'flex-start', // Start content from the top
-                minHeight: '100vh'
+                minHeight: '100vh',
             }}
         >
-            <Container component="main" maxWidth="lg">
-                {/* Title remains at the top of the container, pushed slightly down by mt: 1 */}
-                <Typography
-                    variant="h4"
-                    textAlign={'center'}
-                    sx={{
-                        fontWeight: "bold",
-                        mt: 1,
-                        fontSize: { xs: 26, sm: 40, lg: 66 }
-                    }}
-                    color={"blue"}
-                >
-                    HỆ THỐNG QUẢN LÝ ĐIỀU PHỐI VÀ SỬ DỤNG MÁY MÓC THIẾT BỊ
-                </Typography>
-            </Container>
+            <Box
+                sx={{
+                    background: "#035bb4ff", // màu xanh giống ảnh
+                    color: "white",
+                    py: 2,
+                    px: 3,
+                }}
+            >
+                <Box display="flex" justifyContent='center' alignItems={'center'} gap={2}>
+                    <Box>
+                        <Typography variant="h6" sx={{
+                            fontWeight: "bold",
+                            fontSize: {
+                                xl: 66,
+                                lg: 48,
+                                md: 30,
+                                xs: 18
+                            },
+                        }} textAlign={'center'}>HỆ THỐNG QUẢN LÝ ĐIỀU PHỐI VÀ SỬ DỤNG MÁY MÓC THIẾT BỊ</Typography>
+                    </Box>
+                </Box>
+            </Box>
 
             {/* New wrapper Box for vertical centering the login form */}
-            <Box
+            < Box
                 sx={{
                     flexGrow: 1, // Allows this Box to consume the remaining vertical space
                     display: 'flex',
@@ -116,7 +123,7 @@ const Login = () => {
                 }}
             >
                 {/* The login form container (maxWidth="xs") is now the element being centered */}
-                <Container component="main" maxWidth="xs">
+                < Container component="main" maxWidth="xs" >
                     <Box
                         sx={{
                             // Removed marginTop: 4 (no longer needed for vertical centering)
@@ -175,9 +182,10 @@ const Login = () => {
                             </Box>
                         </Paper>
                     </Box>
-                </Container>
-            </Box>
-        </Box>
+                </Container >
+            </Box >
+            <Typography alignSelf={"flex-start"} padding={2} color="white">quanlyvadieuphoimaymocthietbi-Version: release_1.0.10</Typography>
+        </Box >
     );
 };
 
