@@ -120,6 +120,12 @@ const orderSchema = new mongoose.Schema({
 orderSchema.index({ device: 1 });
 orderSchema.index({ status: 1 });
 orderSchema.index({ createdAt: -1 });
+orderSchema.index({ job: 1});
+orderSchema.index({ department: 1});
+orderSchema.index({ workingDate: 1});
+orderSchema.index({ shift: 1});
+
+
 
 orderSchema.virtual('shiftReport', {
     ref: 'ShiftReport',         // Model cần populate

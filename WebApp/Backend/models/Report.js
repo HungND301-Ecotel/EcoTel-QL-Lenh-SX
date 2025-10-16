@@ -46,4 +46,16 @@ const Report = new mongoose.Schema({
     timestamps: true
 })
 
+Report.index({ orderId: 1 });
+Report.index({ material: 1 });
+Report.index({ quantity: 1 });
+Report.index({ excavator: 1 });
+Report.index({ device: 1 });
+Report.index({ toLocation: 1 });
+Report.index({ fromLocation: 1 });
+Report.index({ drillDepth: 1 });
+
+
+
+
 module.exports = mongoose.model('Report', Report)

@@ -111,6 +111,8 @@ async function groupTripsVehicle(trips, date) {
             location: t.toLocation,
             material: t.material,
             quantity: t.quantity,
+            workingDate: t.workingDate,
+            shift: t.shift || 1,
             // Thông tin đã tính toán
             totalCubicMeter: value.cubicMeter, // Đổi tên thành totalCubicMeter để nhất quán, nhưng nó là của chuyến đi này
             totalTon: value.ton,
@@ -131,6 +133,8 @@ async function groupExcavator(trips, date) {
             groups[key] = {
                 device: t.device,
                 materials: [],
+                workingDate: t.workingDate,
+                shift: t.shift || 1,
                 totalCubicMeter: 0,
                 totalTon: 0
             };
@@ -147,6 +151,51 @@ async function groupExcavator(trips, date) {
             times: t.quantityUpdateTimes
         });
     };
+
+    return Object.values(groups);
+}
+async function groupProduction(trips, date) {
+    const groups = {};
+
+    for (const t of trips) {
+        if (!t.workingDate) continue;
+
+        const dayKey = new Date(t.workingDate).toISOString().slice(0, 10);
+        const shift = t.shift || 1;
+
+        // ✅ KHÓA CHUẨN — gồm thiết bị, ngày, ca
+        const key = `${t.device}_${dayKey}_${shift}`;
+
+        if (!groups[key]) {
+            groups[key] = {
+                device: t.device,
+                materials: [],
+                workingDate: t.workingDate,
+                shift,
+                totalCubicMeter: 0,
+                totalTon: 0
+            };
+        }
+
+        const value = await caculatorWeight(
+            t.material?._id,
+            t.device?.material,
+            t.quantity,
+            0,
+            date
+        );
+
+        groups[key].totalCubicMeter += value.cubicMeter;
+        groups[key].totalTon += value.ton;
+
+        groups[key].materials.push({
+            material: t.material,
+            quantity: t.quantity,
+            cubicMeter: value.cubicMeter,
+            ton: value.ton,
+            times: t.quantityUpdateTimes
+        });
+    }
 
     return Object.values(groups);
 }
@@ -459,5 +508,6 @@ module.exports = {
     groupExcavator,
     groupDozer,
     groupDrill,
-    groupCar
+    groupCar,
+    groupProduction
 };

@@ -12,29 +12,36 @@ import {
     TextField,
     IconButton,
     Radio,
+    CircularProgress,
+    AlertColor,
 } from '@mui/material';
 import LineChartProduction from '../../components/LineChartProduction';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
-import { BarChart } from '@mui/icons-material';
+import { BarChart, RotateLeft } from '@mui/icons-material';
 import VehicleProductionChart from '../../components/VehicleProductionChart';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../config/api.config';
+import { Typography } from 'antd';
+import { AlertSnackbar } from '../../components/Alert';
+import localforage from 'localforage';
 
 // Danh sách loại sản lượng
 const productions = [
-    { key: 'SLD', name: 'Sản lượng đất (m³)' },
-    { key: 'SLT', name: 'Sản lượng than nguyên khai (m³)' },
+    { key: 'KLD', name: 'Khối lượng đất thực hiện (m³)' },
+    { key: 'TLT', name: 'Trọng lượng than thực hiện (tấn)' },
     { key: 'MKS', name: 'Mét khoan sâu (mks)' },
-    { key: 'KLD', name: 'Khối lượng vận chuyển đất (Tkm)' },
-    { key: 'KLT', name: 'Khối lượng than (tấn)' },
+    { key: 'SLD', name: 'Sản lượng vận chuyển đất (Tkm)' },
+    { key: 'SLT', name: 'Sản lượng vận chuyển than (tấn)' },
     { key: 'TTK', name: 'Thể tích khối thực hiện' },
     { key: 'CD', name: 'Cung độ thực hiện' },
 ];
+const DRILLING_STORAGE_KEY = 'drillingData';
+const VEHICLE_STORAGE_KEY = 'vehicleData';
 
 export default function ProductionAnalysic({ departments }: { departments: any[] }) {
     const [user] = useAtom(userAtom);
@@ -42,19 +49,67 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
     const [date, setDate] = useState<Dayjs | null>(dayjs());
     const [open, setOpen] = useState(false);
     const [selectedKey, setSelectedKey] = useState('MKS');
+    const [drillingCache, setDrillingCache] = useState<any[] | null>(null);
+    const [vehicleCache, setVehicleCache] = useState<any[] | null>(null);
+
+    // Load dữ liệu localforage trước khi query
+    useEffect(() => {
+        (async () => {
+            const d = await localforage.getItem(DRILLING_STORAGE_KEY);
+            const v = await localforage.getItem(VEHICLE_STORAGE_KEY);
+            setDrillingCache(Array.isArray(d) ? d : []);
+            setVehicleCache(Array.isArray(v) ? v : []);
+        })();
+    }, [department, date]);
 
     const selectedName = productions.find(p => p.key === selectedKey)?.name || selectedKey;
-
     // 🔹 Lấy dữ liệu API
-    const { data: analysicsData = [] } = useQuery({
-        queryKey: ['analysics', department, date],
+    const {
+        data: drillingData = [], // Đổi tên thành drillingData
+        refetch: refetchDrilling,
+        isLoading: isLoadingDrilling,
+    } = useQuery({
+        queryKey: ['analysicsVHK', department, date?.format('YYYY-MM-DD')],
         queryFn: async () => {
             const res = await api.get(
-                `/analysics?date=${date ? date.toISOString() : ''}&department=${department}`
+                `/analysics/vhk?date=${date ? date.toISOString() : ''}&department=${department}`
             );
-            return res.data.data || [];
+            const newData = res.data.data || [];
+            await localforage.setItem(DRILLING_STORAGE_KEY, newData); // ✅ Lưu vào localforage
+            return newData;
         },
+        refetchInterval: 2 * 60 * 1000,    // ✅ Tự động gọi lại API mỗi 2 phút
+        placeholderData: drillingCache || undefined,
     });
+
+    // ✅ Khai báo dữ liệu Vận hành Xúc (VHX)
+    const {
+        data: vehicleData = [], // Đổi tên thành vehicleData
+        refetch: refetchVehicle,
+        isLoading: isLoadingVehicle,
+    } = useQuery({
+        queryKey: ['analysicsVHX', department, date?.format('YYYY-MM-DD')],
+        queryFn: async () => {
+            const res = await api.get(
+                `/analysics/vhx?date=${date ? date.toISOString() : ''}&department=${department}`
+            );
+            const newData = res.data.data || [];
+            await localforage.setItem(VEHICLE_STORAGE_KEY, newData); // ✅ Lưu vào localforage
+            return newData;
+        },
+        refetchInterval: 2 * 60 * 1000,    // ✅ Tự động gọi lại API mỗi 2 phút
+        placeholderData: vehicleCache || undefined,
+    });
+
+    // ✅ Tổng hợp dữ liệu và trạng thái loading
+    const analysicsData = useMemo(() => {
+        // Đảm bảo cả hai biến đều là mảng trước khi dùng spread operator
+        const safeDrillingData = Array.isArray(drillingData) ? drillingData : [];
+        const safeVehicleData = Array.isArray(vehicleData) ? vehicleData : [];
+
+        return [...safeDrillingData, ...safeVehicleData];
+    }, [drillingData, vehicleData]);
+    const isLoading = isLoadingDrilling || isLoadingVehicle;
 
     // 🔹 Chuẩn hóa dữ liệu cho bảng và biểu đồ
     // 🔹 Chuẩn hóa dữ liệu cho bảng và biểu đồ (đảm bảo đủ loại)
@@ -88,53 +143,19 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
         });
     }, [analysicsData]);
 
+    const [alert, setAlert] = useState<{ open: boolean; message: string; severity?: AlertColor }>({
+        open: false,
+        message: '',
+        severity: 'success',
+    });
+
 
     return (
-        <Paper variant="outlined" sx={{ mb: 4, borderRadius: 2 }}>
-            {/* Bộ lọc */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    alignItems: 'center',
-                    mb: 2,
-                    p: 2,
-                }}
-            >
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                    {(user?.role === 'admin' || user?.role === 'dispatcher') && (
-                        <Autocomplete
-                            size="small"
-                            options={departments}
-                            getOptionLabel={(option: any) => option.code || ''}
-                            value={departments.find((p: any) => p._id === department) || null}
-                            onChange={(event, newValue) => {
-                                setDepartment(newValue?._id || '');
-                            }}
-                            sx={{ width: 200 }}
-                            renderInput={(params) => <TextField {...params} label="Đơn vị" />}
-                        />
-                    )}
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                            <DatePicker
-                                inputFormat="DD/MM/YYYY"
-                                label="Ngày"
-                                value={date ? dayjs(date) : null}
-                                onChange={(newValue) => setDate(newValue)}
-                                renderInput={(params) => <TextField {...params} size="small" sx={{ width: 200 }} />}
-                            />
-                        </LocalizationProvider>
-                    </LocalizationProvider>
-                    <IconButton onClick={() => setOpen(true)}>
-                        <BarChart color="primary" sx={{ fontSize: 30 }} />
-                    </IconButton>
-                </Box>
-            </Box>
-
+        <Paper variant="outlined" sx={{ borderRadius: 2 }}>
+            <AlertSnackbar alert={alert} setAlert={setAlert} />
             {/* Bảng và Biểu đồ */}
             <Grid container spacing={2}>
-                <Grid item xs={12} md={8}>
+                <Grid item xs={12} lg={7}>
                     <TableContainer sx={{ maxHeight: 600 }}>
                         <Table
                             stickyHeader
@@ -147,8 +168,37 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
                                     <TableCell
                                         colSpan={7}
                                         align="center"
-                                        sx={{ bgcolor: '#ffe8d6', fontWeight: 'bold', fontSize: 18 }}
+                                        sx={{ bgcolor: '#ffe8d6', fontWeight: 'bold', fontSize: 18, position: 'relative' }}
                                     >
+                                        <IconButton
+                                            sx={{
+                                                position: 'absolute',
+                                                left: 8,
+                                                top: '50%',
+                                                transform: 'translateY(-50%)',
+                                            }}
+                                            onClick={async () => {
+                                                try {
+                                                    await Promise.all([refetchDrilling(), refetchVehicle()]);
+                                                    setAlert({ open: true, message: 'Cập nhật thành công', severity: 'success' });
+                                                } catch (e) {
+                                                    setAlert({ open: true, message: 'Cập nhật thất bại', severity: 'error' });
+                                                }
+                                            }}
+                                            disabled={isLoading}
+                                        >
+                                            {isLoading ? (
+                                                <CircularProgress size={24} />
+                                            ) : (
+                                                <RotateLeft
+                                                    sx={{
+                                                        transition: "transform 0.3s ease",
+                                                        "&:hover": { transform: "rotate(-180deg)" }, // xoay khi hover
+                                                        color: "primary.main",
+                                                    }}
+                                                />
+                                            )}
+                                        </IconButton>
                                         SẢN LƯỢNG
                                     </TableCell>
                                 </TableRow>
@@ -156,19 +206,21 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
                                     <TableCell align="center" colSpan={2} sx={{ fontWeight: 'bold', fontSize: 16 }}>
                                         Sản lượng
                                     </TableCell>
-                                    <TableCell align="center">Ca 1</TableCell>
-                                    <TableCell align="center">Ca 2</TableCell>
-                                    <TableCell align="center">Ca 3</TableCell>
-                                    <TableCell align="center">Ngày</TableCell>
-                                    <TableCell align="center">Lũy kế</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 16 }}>Ca 1</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 16 }}>Ca 2</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 16 }}>Ca 3</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 16 }}>Ngày</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', fontSize: 16 }}>Lũy kế</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
                                 {productions.map((item) => {
                                     const typeData = analysicsData.find((r: any) => r.jobType === item.key);
-                                    const dayTotal = typeData
-                                        ? typeData.productionByDay.reduce((s: number, d: any) => s + d.dayTotal, 0)
-                                        : 0;
+
+                                    const ca1 = typeData?.selectedDay?.shifts?.find((s: any) => s.shift === 1)?.production || 0;
+                                    const ca2 = typeData?.selectedDay?.shifts?.find((s: any) => s.shift === 2)?.production || 0;
+                                    const ca3 = typeData?.selectedDay?.shifts?.find((s: any) => s.shift === 3)?.production || 0;
+                                    const dayTotal = typeData?.selectedDay?.dayTotal || 0;
                                     const cumulativeTotal = typeData?.cumulativeTotal || 0;
 
                                     return (
@@ -176,37 +228,31 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
                                             key={item.key}
                                             sx={{ '&:nth-of-type(odd)': { bgcolor: '#fafafa' } }}
                                         >
-                                            <TableCell align="center" sx={{ width: 30 }}>
+                                            <TableCell align="center" sx={{ width: '2%' }}>
                                                 <Radio
                                                     onChange={() => setSelectedKey(item.key)}
                                                     checked={selectedKey === item.key}
                                                     size="small"
                                                 />
                                             </TableCell>
-                                            <TableCell>{item.name}</TableCell>
-                                            <TableCell align="center">
+                                            <TableCell sx={{ width: '20%' }}>{item.name}</TableCell>
+                                            <TableCell align="center" sx={{ width: '10%' }}>
                                                 {
-                                                    typeData?.productionByDay?.flatMap((d: any) =>
-                                                        d.shifts.filter((s: any) => s.shift === 1).map((s: any) => s.production)
-                                                    )[0] || 0
+                                                    Number(ca1).toFixed(1)
                                                 }
                                             </TableCell>
-                                            <TableCell align="center">
+                                            <TableCell align="center" sx={{ width: '10%' }}>
                                                 {
-                                                    typeData?.productionByDay?.flatMap((d: any) =>
-                                                        d.shifts.filter((s: any) => s.shift === 2).map((s: any) => s.production)
-                                                    )[0] || 0
+                                                    Number(ca2).toFixed(1)
                                                 }
                                             </TableCell>
-                                            <TableCell align="center">
+                                            <TableCell align="center" sx={{ width: '10%' }}>
                                                 {
-                                                    typeData?.productionByDay?.flatMap((d: any) =>
-                                                        d.shifts.filter((s: any) => s.shift === 3).map((s: any) => s.production)
-                                                    )[0] || 0
+                                                    Number(ca3).toFixed(1)
                                                 }
                                             </TableCell>
-                                            <TableCell align="center">{dayTotal}</TableCell>
-                                            <TableCell align="center">{cumulativeTotal}</TableCell>
+                                            <TableCell align="center" sx={{ width: '10%' }}>{Number(dayTotal).toFixed(1)}</TableCell>
+                                            <TableCell align="center" sx={{ width: '10%' }}>{Number(cumulativeTotal).toFixed(1)}</TableCell>
                                         </TableRow>
                                     );
                                 })}
@@ -215,12 +261,57 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
                     </TableContainer>
                 </Grid>
 
-                <Grid item xs={12} md={4}>
-                    <LineChartProduction
-                        dataset={dataset}
-                        selectedName={selectedName}
-                        selectedKey={selectedKey}
-                    />
+                <Grid item xs={12} lg={5}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            justifyContent: 'flex-end',
+                            alignItems: 'center',
+                            p: 2,
+                        }}
+                    >
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                            <IconButton onClick={() => setOpen(true)}>
+                                <BarChart color="primary" sx={{ fontSize: 30 }} />
+                            </IconButton>
+                            {(user?.role === 'admin' || user?.role === 'dispatcher') && (
+                                <Autocomplete
+                                    size="small"
+                                    options={departments}
+                                    getOptionLabel={(option: any) => option.code || ''}
+                                    value={departments.find((p: any) => p._id === department) || null}
+                                    onChange={(event, newValue) => {
+                                        setDepartment(newValue?._id || '');
+                                    }}
+                                    sx={{ width: 200 }}
+                                    renderInput={(params) => <TextField {...params} label="Đơn vị" />}
+                                />
+                            )}
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                    <DatePicker
+                                        inputFormat="DD/MM/YYYY"
+                                        label="Ngày"
+                                        value={date ? dayjs(date) : null}
+                                        onChange={(newValue) => setDate(newValue)}
+                                        renderInput={(params) => <TextField {...params} size="small" sx={{ width: 200 }} />}
+                                    />
+                                </LocalizationProvider>
+                            </LocalizationProvider>
+                        </Box>
+                    </Box>
+                    {isLoading ?
+                        <Box display="flex" flexDirection={"column"} minHeight={300} alignItems={"center"} justifyContent={"center"}>
+                            <CircularProgress />
+                            <Typography>Đang tải dữ liệu ...</Typography>
+                        </Box>
+                        :
+                        <LineChartProduction
+                            dataset={dataset}
+                            selectedName={selectedName}
+                            selectedKey={selectedKey}
+                        />
+                    }
                 </Grid>
             </Grid>
 
