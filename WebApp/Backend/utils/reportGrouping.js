@@ -441,10 +441,10 @@ async function caculatorWeight(materialId, deviceModel, quantity, totalDistance,
 
     if (data && data.material?.acceptedProduct === ACCEPTED_PRODUCT.COAL) {
         ton = (data.value || 0) * (quantity || 0) * dryDensity
-        production = (ton || 0) * (totalDistance || 0)
+        production = (data.value || 0) * (totalDistance || 0) * dryDensity
     } else if (data && data.material?.acceptedProduct === ACCEPTED_PRODUCT.LAND) {
         cubicMeter = (data.value || 0) * (quantity || 0)
-        production = (totalDistance || 0) * (cubicMeter || 0)
+        production = (totalDistance || 0) * (data.value || 0) * dryDensity
     }
     return { cubicMeter, ton, production }
 }
