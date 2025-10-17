@@ -1,5 +1,5 @@
 // utils/pagination.js
-export const paginateQuery = async (modelQuery, model, filter = {}, reqQuery = {}) => {
+const paginateQuery = async (modelQuery, model, filter = {}, reqQuery = {}) => {
     const page = parseInt(reqQuery.page);
     const limit = parseInt(reqQuery.limit);
     const skip = (page - 1) * limit;
@@ -24,3 +24,4 @@ export const paginateQuery = async (modelQuery, model, filter = {}, reqQuery = {
         data,
     };
 };
+module.exports = { paginateQuery }

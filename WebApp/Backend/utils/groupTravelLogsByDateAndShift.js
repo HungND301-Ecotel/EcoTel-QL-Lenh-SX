@@ -1,4 +1,4 @@
-export const groupTravelLogsByDateAndShift = (travelLogs = []) => {
+const groupTravelLogsByDateAndShift = (travelLogs = []) => {
     const grouped = {};
 
     for (const log of travelLogs) {
@@ -30,3 +30,4 @@ export const groupTravelLogsByDateAndShift = (travelLogs = []) => {
 
     return result;
 };
+module.exports = { groupTravelLogsByDateAndShift }
