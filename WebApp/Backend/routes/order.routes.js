@@ -17,7 +17,7 @@ const Device = require('../models/Device');
 const DeviceType = require('../models/DeviceType');
 
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
-const { sendShiftNotification } = require('../utils/email');
+const { paginateQuery } = require('../utils/pagination');
 const CheckIn = require('../models/CheckIn');
 const sendPushNotification = require('../utils/sendNotification')
 
@@ -175,12 +175,6 @@ router.get('/', verifyToken, async (req, res, next) => {
             dataFilter.status = req.query.status;
         }
 
-        // ---- Pagination ----
-        const page = parseInt(req.query.page);
-        const limit = parseInt(req.query.limit);
-        const skip = (page - 1) * limit;
-
-        let totalDocs = 0;
         let baseQuery = Order.find(dataFilter)
             .populate({
                 path: 'assignedTo',
@@ -215,16 +209,10 @@ router.get('/', verifyToken, async (req, res, next) => {
             .populate('updatedBy', 'username fullName')
             .sort({ workingDate: -1, createdAt: -1 });
 
-        let orders;
-        if (!isNaN(page) && !isNaN(limit)) {
-            totalDocs = await Order.countDocuments(dataFilter);
-            orders = await baseQuery.skip(skip).limit(limit);
-        } else {
-            orders = await baseQuery;
-        }
+        const paginationResult = await paginateQuery(baseQuery, Order, dataFilter, req.query);
 
         // ---- Sort bổ sung theo shift.name ở JS ----
-        orders.sort((a, b) => {
+        paginationResult.data.sort((a, b) => {
             const dateA = new Date(a.workingDate);
             const dateB = new Date(b.workingDate);
             if (dateA > dateB) return -1;
@@ -236,11 +224,7 @@ router.get('/', verifyToken, async (req, res, next) => {
 
         return res.status(200).json({
             status: 'success',
-            totalDocs,
-            page: !isNaN(page) ? page : undefined,
-            totalPages: !isNaN(page) && !isNaN(limit) ? Math.ceil(totalDocs / limit) : undefined,
-            results: orders.length,
-            data: orders,
+            ...paginationResult,
             statusCounts
         });
     } catch (err) {
@@ -904,25 +888,15 @@ router.get('/user', verifyToken, async (req, res, next) => {
         }
 
         // Phân trang
-        const page = parseInt(req.query.page);
-        const limit = parseInt(req.query.limit);
-        const skip = (page - 1) * limit;
 
-        let totalDocs = 0;
-        let orders;
-        if (!isNaN(page) && !isNaN(limit)) {
-            totalDocs = await Order.countDocuments(dataFilter);
-            orders = await Order.find(dataFilter)
-                .populate(orderPopulateOptions)
-                .sort({ workingDate: -1, createdAt: -1 })
-                .skip(skip)
-                .limit(limit);
-        } else {
-            orders = await Order.find(dataFilter)
-                .populate(orderPopulateOptions)
-                .sort({ workingDate: -1, createdAt: -1 });
-        }
-        orders.sort((a, b) => {
+        let baseQuery = Order.find(dataFilter)
+            .populate(orderPopulateOptions)
+            .sort({ workingDate: -1, createdAt: -1 })
+
+        const paginationResult = await paginateQuery(baseQuery, Order, dataFilter, req.query);
+
+
+        paginationResult.data?.sort((a, b) => {
             // 1. So sánh workingDate (DESC)
             const dateA = new Date(a.workingDate);
             const dateB = new Date(b.workingDate);
@@ -934,8 +908,8 @@ router.get('/user', verifyToken, async (req, res, next) => {
             const nameB = b.shift?.name ? String(b.shift.name) : "";
             return nameB.localeCompare(nameA);  // DESC
         });
-        req.logger.info(`✅ Đã tìm thấy ${orders.length} lệnh.`);
-        res.status(200).send({ status: 'success', data: orders, totalDocs, statusCounts });
+        req.logger.info(`✅ Đã tìm thấy ${paginationResult.data.length} lệnh.`);
+        res.status(200).send({ status: 'success', ...paginationResult, statusCounts });
 
     } catch (err) {
         req.logger.error("❌ Lỗi khi lấy danh sách lệnh", err);

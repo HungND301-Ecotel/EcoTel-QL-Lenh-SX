@@ -1,4 +1,4 @@
-import { JobTypeEnum } from "./enums";
+import { JobTypeEnum } from "../enums/index";
 
 export interface User {
     _id: string;
@@ -131,12 +131,22 @@ export interface DeviceModel {
 }
 export interface TravelLog {
     _id: string;
-    excavator?: string;
-    location?: string;
-    distance?: number;
-    startTime?: Date;
-    endTime?: Date;
-    note?: string;
+    excavator?: String,
+    workingDate?: Date,
+    shift?: String,
+    area?: String,
+    routes: {
+        location?: String,
+        material?: String,
+        excavationLevel?: String,
+        dumpHeightActual?: String,
+        fullDistanceKm?: Number,
+        fullLiftHeightM?: Number,
+        localMinHeightM?: Number,
+        localMaxHeightM?: Number,
+        localDistanceKm?: Number,
+        localLiftHeightM?: Number,
+    }[]
     createdAt?: string;
     updatedAt?: string;
 }

@@ -283,7 +283,7 @@ async function buildVehicle(order, workbook) {
         };
     }
 
-    const grouped = await groupTripsVehicle(reports, order.workingDate)
+    const grouped = await groupTripsVehicle(reports, order.workingDate, order.shift)
 
     let rowIndexTrip = rowHeader1 + 2;
     grouped.forEach((g, i) => {

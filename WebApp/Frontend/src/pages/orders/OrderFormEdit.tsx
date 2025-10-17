@@ -34,7 +34,7 @@ import { DesktopTimePicker } from '@mui/x-date-pickers';
 import { MultiSelectField } from '../../components/MultiSelectField';
 import { StyledPopper } from '../../ui/poppers';
 import { editAndTransferOrderValidationSchema } from '../../utils/validation';
-import { JobTypeEnum } from '../../types/enums';
+import { JobTypeEnum } from '../../enums/index';
 import DepartmentService from '../../services/departmentService';
 import { AutocompleteSelect } from '../../components/AutocompleteSelect';
 dayjs.extend(utc);
