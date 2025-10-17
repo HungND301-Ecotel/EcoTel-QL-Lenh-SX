@@ -11,8 +11,9 @@ const Job = require('../models/Job')
 const Shift = require('../models/Shift')
 const mongoose = require('mongoose')
 const { ROLE, JOB_TYPE, STATUS_DEVICE, STATUS_DEVICES, STATUS_ORDERS, STATUS_ORDER, STATUS_REPAIR } = require('../config/config');
-
-
+const ExcelJS = require('exceljs');
+const xlsx = require('xlsx');
+const dayjs = require('dayjs');
 const Device = require('../models/Device');
 const DeviceType = require('../models/DeviceType');
 
@@ -1114,5 +1115,188 @@ function getDistanceFromLatLngInMeters(lat1, lon1, lat2, lon2) {
     return R * c;
 }
 
+router.post('/exportFile/bulk', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
+    try {
+        const { ids } = req.body;
+        const user = req.user;
 
+        // 1. Kiểm tra đầu vào
+        if (!Array.isArray(ids) || ids.length === 0) {
+            req.logger.error("❌ Chọn bản ghi tải xuống");
+            return res.status(400).send({ status: 'error', message: 'Chọn bản ghi cần tải xuống' });
+        }
+
+        // 2. Lấy dữ liệu Orders và Populate
+        const orders = await Order.find({ _id: { $in: ids } })
+            .populate({
+                path: "assignedTo",
+                select: " fullName salaryCode",
+            })
+            .populate('job', 'name')
+            .populate('device', 'code')
+            .populate('excavator.device', 'code')
+            .populate('location', 'name')
+            .populate('material', 'name')
+            .populate('shift', 'name')
+            // QUAN TRỌNG: Populate department để lấy cả code và name
+            .populate('department', 'code name')
+            .populate({
+                path: "createdBy",
+                select: "fullName",
+            })
+            .sort('-workingDate');
+
+        // 3. Nhóm Orders theo Department Code
+        const ordersByDepartment = orders.reduce((acc, order) => {
+            const department = order.department;
+
+            // Xác định mã đơn vị. Nếu không có department, nhóm vào 'UNDEFINED'
+            const departmentCode = department?.code || 'UNDEFINED';
+            const departmentName = department?.name || 'Không có đơn vị';
+
+            if (!acc[departmentCode]) {
+                acc[departmentCode] = {
+                    name: departmentCode,
+                    orders: []
+                };
+            }
+            acc[departmentCode].orders.push(order);
+            return acc;
+        }, {});
+
+        // 4. Khởi tạo Workbook
+        const workbook = new ExcelJS.Workbook();
+
+        // Định nghĩa cấu trúc cột chung cho tất cả các sheet
+        const columns = [
+            { header: 'Stt', key: 'number', width: 6 },
+            { header: 'Người nhận lệnh', key: 'assignedTo', width: 20 },
+            { header: 'Số thẻ', key: 'salaryCode', width: 6 },
+            { header: 'Ngày làm việc', key: 'workingDate', width: 15 },
+            { header: 'Thiết bị', key: 'device', width: 10 },
+            { header: 'Máy xúc', key: 'excavator', width: 10 },
+            { header: 'Vật liệu', key: 'material', width: 15 },
+            { header: 'Điểm đổ', key: 'location', width: 15 },
+            { header: 'Người ra lệnh', key: 'createdBy', width: 20 },
+            { header: 'Thời gian tạo lệnh', key: 'createdAt', width: 20 },
+            { header: 'Bắt đầu', key: 'startTime', width: 10 },
+            { header: 'Kết thức', key: 'endTime', width: 10 },
+            { header: 'Trạng thái lệnh', key: 'status', width: 15 },
+        ];
+
+        // 5. Tạo Worksheet cho TỪNG ĐƠN VỊ
+        for (const departmentCode in ordersByDepartment) {
+            const departmentData = ordersByDepartment[departmentCode];
+
+            // Lấy tên đơn vị và đảm bảo tên sheet không quá 31 ký tự
+            const sheetName = (departmentData.name).substring(0, 31).trim();
+            const worksheet = workbook.addWorksheet(sheetName);
+
+            worksheet.columns = columns; // Áp dụng cấu trúc cột
+            const totalCols = columns.length;
+            const title = `ĐƠN VỊ: ${departmentData.orders[0]?.department?.name || departmentData.name}`;
+
+            // Dòng 1: tiêu đề đơn vị
+            worksheet.mergeCells(1, 1, 1, totalCols);
+
+            const titleCell = worksheet.getCell('A1');
+            titleCell.value = title
+            titleCell.font = { size: 12, bold: true };
+            titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+            // Dòng 2: để trống tạo khoảng cách (tuỳ chọn, nhưng nên có)
+            worksheet.addRow([]);
+
+
+            // Đặt style cho header (hàng 3)
+            worksheet.addRow(columns.map(c => c.header));
+
+            const headerRow = worksheet.getRow(3);
+            headerRow.eachCell(cell => {
+                cell.font = { bold: true, size: 12 };
+                cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+            });
+
+            // Định dạng dữ liệu cho đơn vị hiện tại
+            const formattedDevices = (departmentData.orders || []).map((item, index) => ({
+                number: index + 1,
+                assignedTo: item?.assignedTo?.fullName || '',
+                salaryCode: item?.assignedTo?.salaryCode || '',
+                workingDate: item?.workingDate ? dayjs(item.workingDate).format('DD-MM-YYYY') : '',
+                // Xử lý các trường có thể là mảng (như trong code gốc)
+                device: Array.isArray(item?.device) ? item.device.map((i) => i?.code || '').join(',') : item.device?.code || '',
+                excavator: Array.isArray(item?.excavator) ? item.excavator.map((i) => i?.device?.code || '').join(',') : item.excavator?.device?.code || '',
+                material: Array.isArray(item?.material) ? item.material.map((i) => i?.name || '').join(',') : item.material?.name || '',
+                location: Array.isArray(item?.location) ? item.location.map((i) => i?.name || '').join(',') : item.location?.name || '',
+
+                createdBy: item?.createdBy?.fullName || '',
+                createdAt: item?.createdAt ? dayjs(item.createdAt).format('DD-MM-YYYY HH:mm') : '',
+                startTime: item?.startTime ? dayjs(item.startTime).format('HH:mm:ss') : '',
+                endTime: item?.endTime ? dayjs(item.endTime).format('HH:mm:ss') : '',
+                status: item?.status === STATUS_ORDER.PENDING ? "Chờ nhận lệnh"
+                    : item?.status === STATUS_ORDER.INPROGRESS ? 'Đã nhận lệnh'
+                        : item?.status === STATUS_ORDER.COMPLETED ? 'Đã kết thúc'
+                            : item?.status === STATUS_ORDER.WARNING ? 'Lỗi' : 'Đã hủy'
+            }));
+
+            worksheet.addRows(formattedDevices);
+            addTableBorders(worksheet, 3, formattedDevices.length + 3, 1, totalCols);
+            worksheet.pageSetup = {
+                paperSize: 9,                // A4
+                orientation: 'landscape',    // ngang
+                fitToPage: true,
+                fitToWidth: 1,               // vừa 1 trang theo chiều ngang
+                fitToHeight: 0,              // không ép theo chiều dọc
+                margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } // inch
+            };
+            // Áp dụng định dạng (font, alignment)
+            worksheet.eachRow((row, rowNumber) => {
+                row.eachCell((cell) => {
+                    if (!cell.font) cell.font = {};
+                    cell.font = {
+                        ...cell.font,            // giữ lại các thuộc tính khác (bold, italic,…)
+                        name: 'Times New Roman', // đổi font chữ
+                        ...(rowNumber > 3 ? { size: 10 } : {})            // kích thước chữ
+                    };
+                });
+            });
+        }
+
+        // 6. Gửi file Excel về client
+        const buffer = await workbook.xlsx.writeBuffer();
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=' + 'danh_sach_don_vi_diem_do_tai.xlsx');
+        res.send(buffer);
+        req.logger.info("✅ Xuất file thành công.");
+
+    } catch (err) {
+        req.logger.error("❌ Lỗi khi xuất file điểm đổ tải", err);
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
+    }
+});
+
+
+const addTableBorders = (
+    ws,
+    startRow,
+    endRow,
+    startCol,
+    endCol
+) => {
+    const lightBorder = { style: 'thin', color: "black" };
+
+    for (let r = startRow; r <= endRow; r++) {
+        const row = ws.getRow(r);
+        for (let c = startCol; c <= endCol; c++) {
+            const cell = row.getCell(c);
+
+            cell.border = {
+                top: lightBorder,
+                bottom: lightBorder,
+                left: lightBorder,
+                right: lightBorder,
+            };
+        }
+    }
+};
 module.exports = router; 

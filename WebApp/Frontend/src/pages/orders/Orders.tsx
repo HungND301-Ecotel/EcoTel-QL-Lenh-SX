@@ -37,6 +37,7 @@ import {
     InputAdornment,
     CircularProgress,
     AlertColor,
+    LinearProgress,
 } from '@mui/material';
 import { format } from 'date-fns';
 import {
@@ -56,6 +57,8 @@ import {
     FilterTiltShiftSharp,
     RotateLeft,
     VisibilityOff,
+    CloudDownload,
+    CloudUpload,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -79,10 +82,10 @@ import ShiftReport from '../../components/Modal/ShiftReport';
 import DepartmentService from '../../services/departmentService';
 import OrderService from '../../services/orderService';
 
-
 const Orders: React.FC = () => {
     const [open, setOpen] = useState(false);
     const [history, setHistory] = useState(false);
+    const [exportOrder, setExportOrder] = useState(false);
     const [shiftReport, setShiftReport] = useState(false);
     const [transfer, setTransfer] = useState(false);
     const [status, setStatus] = useState("");
@@ -207,14 +210,35 @@ const Orders: React.FC = () => {
             showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
-
+    const [isDownloadLoading, setIsDownloadLoading] = useState(false)
     const reportExcel = useMutation({
         mutationFn: () => OrderService.exportFile(selectedOrders),
+        onMutate: () => {
+            setIsDownloadLoading(true);
+        },
         onSuccess: () => {
             showSuccessAlert('Xuất file thành công');
             setSelectedOrders([])
+            setIsDownloadLoading(false)
         },
         onError: (error: any) => {
+            setIsDownloadLoading(false)
+            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
+        }
+    });
+
+    const reportListorderExcel = useMutation({
+        mutationFn: () => OrderService.exportFileList(selectedOrders),
+        onMutate: () => {
+            setIsDownloadLoading(true);
+        },
+        onSuccess: () => {
+            showSuccessAlert('Xuất file thành công');
+            setSelectedOrders([])
+            setIsDownloadLoading(false)
+        },
+        onError: (error: any) => {
+            setIsDownloadLoading(false)
             showErrorAlert(error.response.data.message || error.message || 'Lỗi')
         }
     });
@@ -794,20 +818,30 @@ const Orders: React.FC = () => {
                         )}
                     </IconButton>
                 </Box>
-                <Button
-                    variant="outlined"
-                    color="info"
-                    startIcon={info ? <VisibilityOff /> : <Visibility />}
-                    onClick={() => setInfo(!info)}
-                    sx={{
-                        textTransform: 'none',
-                        borderRadius: 2,
-                        px: 1.5,
-                        py: 0.75,
-                    }}
-                >
-                    {info ? 'Mở rộng' : 'Thu gọn'}
-                </Button>
+                <Box display="flex" gap={2}>
+                    <IconButton
+                        color='primary'
+                        onClick={() => setInfo(!info)}
+                        sx={{
+                            textTransform: 'none',
+                            borderRadius: 2,
+                            py: 0.75,
+                            border: '1px solid'
+                        }}>
+                        {info ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                    {user?.role === "admin" && <IconButton
+                        color='primary'
+                        onClick={() => reportListorderExcel.mutate()}
+                        sx={{
+                            textTransform: 'none',
+                            borderRadius: 2,
+                            py: 0.75,
+                            border: '1px solid'
+                        }}>
+                        <CloudUpload />
+                    </IconButton>}
+                </Box>
                 <Menu
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}
@@ -822,6 +856,14 @@ const Orders: React.FC = () => {
                     ))}
                 </Menu>
             </Box>
+            {isDownloadLoading && (
+                <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" align="center">
+                        Đang xử lý...
+                    </Typography>
+                    <LinearProgress variant="determinate" />
+                </Box>
+            )}
             <Grid container spacing={2} sx={{ mb: 2, }}>
                 <Grid item xs={12} sm={info ? 8 : 12} maxHeight='60vh'>
                     <DataGrid
