@@ -102,8 +102,8 @@ const Login = () => {
                         <Typography variant="h6" sx={{
                             fontWeight: "bold",
                             fontSize: {
-                                xl: 66,
-                                lg: 48,
+                                xl: 60,
+                                lg: 40,
                                 md: 30,
                                 xs: 18
                             },
