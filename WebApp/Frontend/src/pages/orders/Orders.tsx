@@ -73,7 +73,7 @@ import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import { DataGrid, GridColDef, GridFilterModel, GridLogicOperator, GridRenderCellParams, GridToolbar } from '@mui/x-data-grid';
 import { StyledPopper } from '../../ui/poppers';
-import { JobTypeEnum } from '../../types/enums';
+import { JobTypeEnum } from '../../enums/index';
 import OrderHistories from '../../components/Modal/OrderHistories';
 import ShiftReport from '../../components/Modal/ShiftReport';
 import DepartmentService from '../../services/departmentService';

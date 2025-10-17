@@ -332,7 +332,7 @@ const OrderByUsers: React.FC = () => {
                 </Menu>
             </Box>
             <Grid container spacing={2} sx={{ mb: 2 }}>
-                <Grid item xs={12} sm={info ? 8 : 12}>
+                <Grid item xs={12} sm={info ? 8 : 12} maxHeight='60vh'>
                     <DataGrid
                         columns={orderColumns.filter((col: GridColDef) => col.field && visibleColumns.includes(col.field.toString()))}
                         rows={orderByUser}

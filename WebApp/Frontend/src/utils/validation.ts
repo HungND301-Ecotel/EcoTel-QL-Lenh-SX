@@ -1,13 +1,17 @@
 import * as yup from 'yup';
-import { JobTypeEnum } from '../types/enums';
+import { JobTypeEnum } from '../enums/index';
 
 // cung do
 export const trvelLogValidationSchema = yup.object({
     excavator: yup.string().required('Vui lòng chọn máy xúc'),
-    location: yup.string().required('Vui lòng chọn điểm đổ tải'),
-    distance: yup.string().required('Vui lòng nhập cung độ'),
-    startTime: yup.string().required('Vui lòng chọn thời gian bắt đầu'),
-    endTime: yup.string().required('Vui lòng chọn thời gian kết thúc'),
+    workingDate: yup.string().required('Vui lòng chọn ngày'),
+    shift: yup.string().required('Vui lòng chọn ca'),
+    routes: yup.array().of(
+        yup.object().shape({
+            location: yup.string().required('Vui lòng chọn điểm đổ tải'),
+            fullDistanceKm: yup.string().required('Vui lòng nhập cung độ'),
+        })
+    ),
 });
 
 // thong tin xe

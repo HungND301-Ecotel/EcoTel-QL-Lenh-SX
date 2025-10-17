@@ -33,7 +33,7 @@ import { DesktopTimePicker } from '@mui/x-date-pickers';
 import { Add, ContentCopy, Delete } from '@mui/icons-material';
 import { StyledPopper } from '../../ui/poppers';
 import { editAndTransferOrderValidationSchema } from '../../utils/validation';
-import { JobTypeEnum } from '../../types/enums';
+import { JobTypeEnum } from '../../enums/index';
 import { MultiSelectField } from '../../components/MultiSelectField';
 import DepartmentService from '../../services/departmentService';
 import { AutocompleteSelect } from '../../components/AutocompleteSelect';
