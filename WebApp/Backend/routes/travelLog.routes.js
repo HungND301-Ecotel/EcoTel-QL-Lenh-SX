@@ -10,13 +10,15 @@ const ExcelJS = require('exceljs');
 const xlsx = require('xlsx');
 const dayjs = require('dayjs');
 const { ROLE } = require('../config/config');
+const { paginateQuery } = require('../utils/pagination')
+const { groupTravelLogsByDateAndShift } = require('../utils/groupTravelLogsByDateAndShift')
 
 
 router.post('/', verifyToken, async (req, res, next) => {
     try {
-        const { excavator, distance, location, startTime, endTime, note } = req.body
+        const { excavator, workingDate, shift, area, routes } = req.body
         const newTravelLog = new TravelLog({
-            excavator, distance, location, startTime, endTime, note
+            excavator, workingDate, shift, area, routes
         });
         await newTravelLog.save();
         req.logger.info(`🔥 Tạo thành công cung độ`);
@@ -81,218 +83,226 @@ router.get('/', verifyToken, async (req, res) => {
         const query = {}
 
         if (req.query.startTime && req.query.endTime) {
-            const startTime = new Date(req.query.startTime);
-            startTime.setHours(0, 0, 0, 0);  // từ 00:00:00
-
             const endTime = new Date(req.query.endTime);
-            endTime.setHours(23, 59, 59, 999); // tới 23:59:59.999
-
-            query.startTime = { $gte: startTime };
-            query.endTime = { $lte: endTime };
-
+            endTime.setHours(23, 59, 59, 999);
+            query.workingDate = { $gte: new Date(req.query.startTime), $lte: new Date(endTime) };
         } else if (req.query.startTime) {
-            const startTime = new Date(req.query.startTime);
-            startTime.setHours(0, 0, 0, 0);
-            query.startTime = { $gte: startTime };
-
+            query.workingDate = { $gte: new Date(req.query.startTime) };
         } else if (req.query.endTime) {
             const endTime = new Date(req.query.endTime);
             endTime.setHours(23, 59, 59, 999);
-            query.endTime = { $lte: endTime };
+            query.workingDate = { $lte: new Date(endTime) };
         }
-        const travellogs = await TravelLog.find(query).populate('location', 'name').populate('excavator', 'code')
-            .sort({ startTime: -1 });
+        let baseQuery = TravelLog.find(query)
+            .populate('excavator', 'code')
+            .populate('shift', 'name')
+            .populate("routes.location", "name")
+            .populate("routes.material", "name")
+            .sort({ workingDate: -1 });
+        const paginationResult = await paginateQuery(baseQuery, TravelLog, query, req.query);
+        paginationResult.data.sort((a, b) => {
+            const dateA = new Date(a.workingDate);
+            const dateB = new Date(b.workingDate);
+            if (dateA > dateB) return -1;
+            if (dateA < dateB) return 1;
+            const nameA = a.shift?.name ? String(a.shift.name) : "";
+            const nameB = b.shift?.name ? String(b.shift.name) : "";
+            return nameB.localeCompare(nameA);  // DESC
+        });
         req.logger.info(`🔥 Load thành công`);
-        res.status(200).send({ status: 'success', data: travellogs });
+        res.status(200).send({
+            status: 'success',
+            ...paginationResult
+        });
     } catch (err) {
         req.logger.error("❌ Lỗi", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
 
-const columnMapping = {
-    'Máy xúc': 'excavator',
-    'Điểm đổ tải': 'location',
-    'Cung độ (km)': 'distance',
-    'Bắt đầu': 'startTime',
-    'Kết thúc': 'endTime',
-    'Ghi chú': 'note'
-};
-router.post('/importFile', upload.single('file'), verifyToken, async (req, res) => {
-    try {
-        const user = req.user;
-        if (!req.file) {
-            req.logger.warn("⚠️ Import file thất bại - Không có file được chọn.");
-            return res.status(400).json({ status: 'error', message: 'Vui lòng chọn file' });
-        }
+// const columnMapping = {
+//     'Máy xúc': 'excavator',
+//     'Điểm đổ tải': 'location',
+//     'Cung độ (km)': 'distance',
+//     'Bắt đầu': 'startTime',
+//     'Kết thúc': 'endTime',
+//     'Ghi chú': 'note'
+// };
+// router.post('/importFile', upload.single('file'), verifyToken, async (req, res) => {
+//     try {
+//         const user = req.user;
+//         if (!req.file) {
+//             req.logger.warn("⚠️ Import file thất bại - Không có file được chọn.");
+//             return res.status(400).json({ status: 'error', message: 'Vui lòng chọn file' });
+//         }
 
-        const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
+//         const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+//         const sheetName = workbook.SheetNames[0];
+//         const worksheet = workbook.Sheets[sheetName];
 
-        const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1, range: 0, raw: true })[0];
-        const mappedHeaders = headers.map(header => columnMapping[header] || header);
-        const data = xlsx.utils.sheet_to_json(worksheet, { header: mappedHeaders, range: 1 });
-        const dataImport = data.filter(row => row.excavator);
+//         const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1, range: 0, raw: true })[0];
+//         const mappedHeaders = headers.map(header => columnMapping[header] || header);
+//         const data = xlsx.utils.sheet_to_json(worksheet, { header: mappedHeaders, range: 1 });
+//         const dataImport = data.filter(row => row.excavator);
 
-        if (dataImport.length === 0) {
-            req.logger.warn("⚠️ Import file thất bại - Không tìm thấy dữ liệu hợp lệ.");
-            return res.status(400).json({ status: 'error', message: 'Không tìm thấy dữ liệu hợp lệ trong file.' });
-        }
+//         if (dataImport.length === 0) {
+//             req.logger.warn("⚠️ Import file thất bại - Không tìm thấy dữ liệu hợp lệ.");
+//             return res.status(400).json({ status: 'error', message: 'Không tìm thấy dữ liệu hợp lệ trong file.' });
+//         }
 
-        const uniqueDevices = [...new Set(dataImport.map(d => d.department).filter(Boolean))];
-        const uniqueLocations = [...new Set(dataImport.map(d => d.location).filter(Boolean))];
+//         const uniqueDevices = [...new Set(dataImport.map(d => d.department).filter(Boolean))];
+//         const uniqueLocations = [...new Set(dataImport.map(d => d.location).filter(Boolean))];
 
-        const [existingDepartments, existingCategories] = await Promise.all([
-            Device.find({ code: { $in: uniqueDevices } }).lean(),
-            Location.find({ name: { $in: uniqueLocations } }).lean(),
-        ]);
+//         const [existingDepartments, existingCategories] = await Promise.all([
+//             Device.find({ code: { $in: uniqueDevices } }).lean(),
+//             Location.find({ name: { $in: uniqueLocations } }).lean(),
+//         ]);
 
-        const deviceMap = new Map(existingDepartments.map(d => [d.code, d._id]));
-        const locationMap = new Map(existingCategories.map(c => [c.name, c._id]));
+//         const deviceMap = new Map(existingDepartments.map(d => [d.code, d._id]));
+//         const locationMap = new Map(existingCategories.map(c => [c.name, c._id]));
 
-        const operations = [];
-        const invalidRows = [];
+//         const operations = [];
+//         const invalidRows = [];
 
 
-        for (const row of dataImport) {
-            const { excavator, location, ...updateData } = row;
+//         for (const row of dataImport) {
+//             const { excavator, location, ...updateData } = row;
 
-            // Gán ID cho department
-            let deviceId = null;
-            if (excavator) {
-                deviceId = deviceMap.get(excavator);
-                if (!deviceId) {
-                    invalidRows.push({ row: row, error: `Mã phòng ban không hợp lệ: ${excavator}` });
-                    continue;
-                }
-            }
-            if (deviceId) {
-                updateData.excavator = deviceId;
-            }
+//             // Gán ID cho department
+//             let deviceId = null;
+//             if (excavator) {
+//                 deviceId = deviceMap.get(excavator);
+//                 if (!deviceId) {
+//                     invalidRows.push({ row: row, error: `Mã phòng ban không hợp lệ: ${excavator}` });
+//                     continue;
+//                 }
+//             }
+//             if (deviceId) {
+//                 updateData.excavator = deviceId;
+//             }
 
-            // Gán ID cho category
-            let locationId = null;
-            if (location) {
-                locationId = locationMap.get(location);
-                if (!locationId) {
-                    invalidRows.push({ row: row, error: `Loại phương tiện không hợp lệ: ${location}` });
-                    continue;
-                }
-            }
-            if (locationId) {
-                updateData.location = locationId;
-            }
+//             // Gán ID cho category
+//             let locationId = null;
+//             if (location) {
+//                 locationId = locationMap.get(location);
+//                 if (!locationId) {
+//                     invalidRows.push({ row: row, error: `Loại phương tiện không hợp lệ: ${location}` });
+//                     continue;
+//                 }
+//             }
+//             if (locationId) {
+//                 updateData.location = locationId;
+//             }
 
-            // Thêm thao tác updateOne với upsert
-            operations.push({
-                updateOne: {
-                    filter: {
-                        excavator: updateData.excavator,
-                        startTime: updateData.startTime
-                    },
-                    update: updateData,
-                    upsert: true,
-                },
-            });
-        }
+//             // Thêm thao tác updateOne với upsert
+//             operations.push({
+//                 updateOne: {
+//                     filter: {
+//                         excavator: updateData.excavator,
+//                         startTime: updateData.startTime
+//                     },
+//                     update: updateData,
+//                     upsert: true,
+//                 },
+//             });
+//         }
 
-        let bulkResult = null;
-        if (operations.length > 0) {
-            bulkResult = await TravelLog.bulkWrite(operations);
-        }
-        req.logger.info(`✅ ${user?.username}  Import file thành công. Đã xử lý ${dataImport.length} bản ghi.`);
-        res.status(200).json({
-            status: 'success',
-            message: 'Import dữ liệu hoàn tất.',
-            summary: {
-                totalProcessed: dataImport.length,
-                insertedCount: bulkResult ? bulkResult.upsertedCount : 0,
-                updatedCount: bulkResult ? bulkResult.modifiedCount : 0,
-                invalidCount: invalidRows.length,
-            },
-            invalidRows: invalidRows,
-        });
-    } catch (error) {
-        req.logger.error("❌ Lỗi khi import file cung độ", error);
-        res.status(500).json({
-            status: 'error',
-            message: 'Tải thất bại',
-            error: error.message
-        });
-    }
-});
+//         let bulkResult = null;
+//         if (operations.length > 0) {
+//             bulkResult = await TravelLog.bulkWrite(operations);
+//         }
+//         req.logger.info(`✅ ${user?.username}  Import file thành công. Đã xử lý ${dataImport.length} bản ghi.`);
+//         res.status(200).json({
+//             status: 'success',
+//             message: 'Import dữ liệu hoàn tất.',
+//             summary: {
+//                 totalProcessed: dataImport.length,
+//                 insertedCount: bulkResult ? bulkResult.upsertedCount : 0,
+//                 updatedCount: bulkResult ? bulkResult.modifiedCount : 0,
+//                 invalidCount: invalidRows.length,
+//             },
+//             invalidRows: invalidRows,
+//         });
+//     } catch (error) {
+//         req.logger.error("❌ Lỗi khi import file cung độ", error);
+//         res.status(500).json({
+//             status: 'error',
+//             message: 'Tải thất bại',
+//             error: error.message
+//         });
+//     }
+// });
 
-router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
-    try {
-        const data = await TravelLog.find().populate('excavator', 'code').populate('location', 'name');
-        const devices = await Device.find().populate('category', 'name');
-        const excavators = devices.filter(i => i.category?.name.toLowerCase().includes("máy xúc"))
-        const locations = await Location.find();
+// router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
+//     try {
+//         const data = await TravelLog.find().populate('excavator', 'code').populate('location', 'name');
+//         const devices = await Device.find().populate('category', 'name');
+//         const excavators = devices.filter(i => i.category?.name.toLowerCase().includes("máy xúc"))
+//         const locations = await Location.find();
 
-        const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('DS.cung_do');
+//         const workbook = new ExcelJS.Workbook();
+//         const worksheet = workbook.addWorksheet('DS.cung_do');
 
-        worksheet.columns = [
-            { header: 'Máy xúc', key: 'excavator', width: 20 },
-            { header: 'Điểm đổ tải', key: 'location', width: 20 },
-            { header: 'Cung độ (km)', key: 'distance', width: 20 },
-            { header: 'Bắt đầu', key: 'startTime', width: 20 },
-            { header: 'Kết thúc', key: 'endTime', width: 20 },
-            { header: 'Ghi chú', key: 'note', width: 20 },
-        ];
+//         worksheet.columns = [
+//             { header: 'Máy xúc', key: 'excavator', width: 20 },
+//             { header: 'Điểm đổ tải', key: 'location', width: 20 },
+//             { header: 'Cung độ (km)', key: 'distance', width: 20 },
+//             { header: 'Bắt đầu', key: 'startTime', width: 20 },
+//             { header: 'Kết thúc', key: 'endTime', width: 20 },
+//             { header: 'Ghi chú', key: 'note', width: 20 },
+//         ];
 
-        const formattedTravelLogs = (data || []).map(item => ({
-            excavator: item?.excavator?.code || '',
-            location: item?.location?.name || '',
-            distance: item?.distance || '',
-            startTime: item?.startTime ? dayjs(item.startTime).format('DD-MM-YYYY HH:mm') : '',
-            endTime: item?.endTime ? dayjs(item.endTime).format('DD-MM-YYYY HH:mm') : '',
-            note: item?.note || '',
-        }));
-        worksheet.addRows(formattedTravelLogs);
+//         const formattedTravelLogs = (data || []).map(item => ({
+//             excavator: item?.excavator?.code || '',
+//             location: item?.location?.name || '',
+//             distance: item?.distance || '',
+//             startTime: item?.startTime ? dayjs(item.startTime).format('DD-MM-YYYY HH:mm') : '',
+//             endTime: item?.endTime ? dayjs(item.endTime).format('DD-MM-YYYY HH:mm') : '',
+//             note: item?.note || '',
+//         }));
+//         worksheet.addRows(formattedTravelLogs);
 
-        worksheet.eachRow((row, rowNumber) => {
-            row.eachCell(cell => {
-                cell.font = { size: 9, bold: (rowNumber === 1) };
-                cell.alignment = { vertical: 'middle', wrapText: true, };
-            });
-        });
+//         worksheet.eachRow((row, rowNumber) => {
+//             row.eachCell(cell => {
+//                 cell.font = { size: 9, bold: (rowNumber === 1) };
+//                 cell.alignment = { vertical: 'middle', wrapText: true, };
+//             });
+//         });
 
-        const deviceList = [...new Set(excavators.map(p => p.code).filter(Boolean))];
-        const locationList = [...new Set(locations.map(d => d.name).filter(Boolean))];
+//         const deviceList = [...new Set(excavators.map(p => p.code).filter(Boolean))];
+//         const locationList = [...new Set(locations.map(d => d.name).filter(Boolean))];
 
-        worksheet.getColumn('X').values = ['excavators', ...deviceList];
-        worksheet.getColumn('Y').values = ['locations', ...locationList];
-        worksheet.getColumn('X').hidden = true;
-        worksheet.getColumn('Y').hidden = true;
+//         worksheet.getColumn('X').values = ['excavators', ...deviceList];
+//         worksheet.getColumn('Y').values = ['locations', ...locationList];
+//         worksheet.getColumn('X').hidden = true;
+//         worksheet.getColumn('Y').hidden = true;
 
-        const MAX = Math.max(worksheet.rowCount + 100, 1000);
+//         const MAX = Math.max(worksheet.rowCount + 100, 1000);
 
-        worksheet.dataValidations.add(`A2:A${MAX}`, {
-            type: 'list',
-            allowBlank: true,
-            formulae: [`=$X$2:$X$${deviceList.length + 1}`],
-            showErrorMessage: true,
-            errorTitle: 'Giá trị không hợp lệ',
-        });
-        worksheet.dataValidations.add(`B2:B${MAX}`, {
-            type: 'list',
-            allowBlank: true,
-            formulae: [`=$Y$2:$Y$${locationList.length + 1}`],
-            showErrorMessage: true,
-            errorTitle: 'Giá trị không hợp lệ',
-        });
+//         worksheet.dataValidations.add(`A2:A${MAX}`, {
+//             type: 'list',
+//             allowBlank: true,
+//             formulae: [`=$X$2:$X$${deviceList.length + 1}`],
+//             showErrorMessage: true,
+//             errorTitle: 'Giá trị không hợp lệ',
+//         });
+//         worksheet.dataValidations.add(`B2:B${MAX}`, {
+//             type: 'list',
+//             allowBlank: true,
+//             formulae: [`=$Y$2:$Y$${locationList.length + 1}`],
+//             showErrorMessage: true,
+//             errorTitle: 'Giá trị không hợp lệ',
+//         });
 
-        const buffer = await workbook.xlsx.writeBuffer();
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', 'attachment; filename=' + 'danh_sach_nguoi_dung.xlsx');
-        res.send(buffer);
-        req.logger.info("✅ Xuất file thành công.");
+//         const buffer = await workbook.xlsx.writeBuffer();
+//         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+//         res.setHeader('Content-Disposition', 'attachment; filename=' + 'danh_sach_nguoi_dung.xlsx');
+//         res.send(buffer);
+//         req.logger.info("✅ Xuất file thành công.");
 
-    } catch (err) {
-        req.logger.error("❌ Lỗi khi xuất file vật liệu", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
-    }
-});
+//     } catch (err) {
+//         req.logger.error("❌ Lỗi khi xuất file vật liệu", err);
+//         res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
+//     }
+// });
 module.exports = router; 
