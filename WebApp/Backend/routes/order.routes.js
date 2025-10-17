@@ -1173,10 +1173,12 @@ router.post('/exportFile/bulk', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN
             { header: 'Người nhận lệnh', key: 'assignedTo', width: 20 },
             { header: 'Số thẻ', key: 'salaryCode', width: 6 },
             { header: 'Ngày làm việc', key: 'workingDate', width: 15 },
+            { header: 'Ca', key: 'shift', width: 6 },
+            { header: 'Công việc', key: 'job', width: 15 },
             { header: 'Thiết bị', key: 'device', width: 10 },
             { header: 'Máy xúc', key: 'excavator', width: 10 },
-            { header: 'Vật liệu', key: 'material', width: 15 },
-            { header: 'Điểm đổ', key: 'location', width: 15 },
+            { header: 'Vật liệu', key: 'material', width: 10 },
+            { header: 'Điểm đổ', key: 'location', width: 10 },
             { header: 'Người ra lệnh', key: 'createdBy', width: 20 },
             { header: 'Thời gian tạo lệnh', key: 'createdAt', width: 20 },
             { header: 'Bắt đầu', key: 'startTime', width: 10 },
@@ -1223,7 +1225,8 @@ router.post('/exportFile/bulk', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN
                 assignedTo: item?.assignedTo?.fullName || '',
                 salaryCode: item?.assignedTo?.salaryCode || '',
                 workingDate: item?.workingDate ? dayjs(item.workingDate).format('DD-MM-YYYY') : '',
-                // Xử lý các trường có thể là mảng (như trong code gốc)
+                shift: item?.shift?.name || '',
+                job: item?.job?.name || '',
                 device: Array.isArray(item?.device) ? item.device.map((i) => i?.code || '').join(',') : item.device?.code || '',
                 excavator: Array.isArray(item?.excavator) ? item.excavator.map((i) => i?.device?.code || '').join(',') : item.excavator?.device?.code || '',
                 material: Array.isArray(item?.material) ? item.material.map((i) => i?.name || '').join(',') : item.material?.name || '',
@@ -1256,7 +1259,7 @@ router.post('/exportFile/bulk', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN
                     cell.font = {
                         ...cell.font,            // giữ lại các thuộc tính khác (bold, italic,…)
                         name: 'Times New Roman', // đổi font chữ
-                        ...(rowNumber > 3 ? { size: 10 } : {})            // kích thước chữ
+                        ...(rowNumber > 3 ? { size: 9 } : {})            // kích thước chữ
                     };
                 });
             });
