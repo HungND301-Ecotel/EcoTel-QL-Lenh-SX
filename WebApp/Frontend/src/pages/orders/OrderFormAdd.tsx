@@ -31,7 +31,7 @@ import { showConfirmAlert, showSuccessAlert } from '../../components/Alert';
 import { Add, ContentCopy, Delete } from '@mui/icons-material';
 import { StyledPopper } from '../../ui/poppers';
 import { addOrderValidationSchema } from '../../utils/validation';
-import { JobTypeEnum } from '../../types/enums';
+import { JobTypeEnum } from '../../enums/index';
 import { MultiSelectField } from '../../components/MultiSelectField';
 import DepartmentService from '../../services/departmentService';
 dayjs.extend(utc);

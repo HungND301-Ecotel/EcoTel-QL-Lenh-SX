@@ -69,7 +69,7 @@ function groupReportsByExcavator(reports = []) {
 }
 
 // lenh sx vh xe
-async function groupTripsVehicle(trips, date) {
+async function groupTripsVehicle(trips, date, shift) {
     // Sử dụng Promise.all với map để xử lý bất đồng bộ song song (tăng tốc độ)
     const formattedTrips = await Promise.all(trips.map(async (t) => {
 
@@ -81,15 +81,28 @@ async function groupTripsVehicle(trips, date) {
         // 1. TÍNH TOÁN VÀ GOM timeLogs
         // Sử dụng Promise.all để tìm TravelLog song song cho mỗi mốc thời gian
         let totalDistance = 0;
-        const timeLogPromises = timesArray.map(async (time) => {
-            const travelLog = await TravelLog.findOne({
-                excavator: t.excavator,
-                location: t.toLocation,
-                startTime: { $lte: time },
-                endTime: { $gte: time }
-            }).lean();
 
-            const distance = travelLog ? (travelLog.distance || 0) : 0;
+        const travelLog = await TravelLog.findOne({
+            excavator: t.excavator?._id,
+            workingDate: date,
+            shift: shift?._id,
+        }).lean();
+
+        let routeMatched = null;
+
+        if (travelLog?.routes?.length > 0 && t.toLocation) {
+            // 🔍 Tìm route khớp location
+            routeMatched = travelLog.routes.find(r => {
+                const routeLocId = typeof r.location === 'object' ? r.location._id?.toString() : r.location?.toString();
+                const tripLocId = typeof t.toLocation === 'object' ? t.toLocation._id?.toString() : t.toLocation?.toString();
+                return routeLocId === tripLocId;
+            });
+
+        }
+
+        const timeLogPromises = timesArray.map(async (time) => {
+
+            const distance = routeMatched ? (routeMatched.fullDistanceKm || 0) : 0;
 
             return {
                 time: time,
@@ -446,7 +459,11 @@ async function caculatorWeight(materialId, deviceModel, quantity, totalDistance,
         cubicMeter = (data.value || 0) * (quantity || 0)
         production = (totalDistance || 0) * (data.value || 0) * dryDensity
     }
-    return { cubicMeter, ton, production }
+    return {
+        cubicMeter: Number(cubicMeter.toFixed(1)),
+        ton: Number(ton.toFixed(1)),
+        production: Number(production.toFixed(1)),
+    };
 }
 
 function getTyTrongAtDate(material, date) {

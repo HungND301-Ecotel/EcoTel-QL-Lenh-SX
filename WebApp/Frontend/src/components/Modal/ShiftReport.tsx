@@ -21,7 +21,7 @@ import api from '../../config/api.config';
 import { ShiftReportType, Report, Job } from '../../types';
 import { showErrorAlert, showSuccessAlert } from '../Alert';
 import { format } from 'date-fns';
-import { JobTypeEnum } from '../../types/enums';
+import { JobTypeEnum } from '../../enums/index';
 import { Close } from '@mui/icons-material';
 
 export default function ShiftReport({
