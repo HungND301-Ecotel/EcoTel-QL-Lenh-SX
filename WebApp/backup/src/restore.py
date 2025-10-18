@@ -36,6 +36,7 @@ def restore_backup(daily_version=None):
     # folder path like "backups/mongodb/{MONGODB_DATABASE}/mongodump-"
     if daily_version is not None:
         BACKUP_PREFIX = f"backups/mongodb/{MONGODB_DATABASE}/daily/"
+        daily_version = daily_version.strip()
     else:
         BACKUP_PREFIX = f"backups/mongodb/{MONGODB_DATABASE}/latest/"
 
@@ -44,21 +45,31 @@ def restore_backup(daily_version=None):
     s3 = boto3.client("s3", region_name=AWS_REGION)
 
     response = s3.list_objects_v2(Bucket=S3_BUCKET_NAME, Prefix=BACKUP_PREFIX)
-    files = response.get("Contents", [])
+    files = response.get("Contents", []) # list of S3 bucket objects
 
-    # Filter only .gz files and sort by LastModified
+    # Filter the object list with only key of .gz files
     backup_files = [f for f in files if f['Key'].endswith('.gz')]
     if not backup_files:
         raise Exception("❌ No backup .gz files found in S3!")
 
     logger.info(f"backup_files = {backup_files}")
     if daily_version is not None:
-        # TODO: Find the matching file name with daily_version
-        restore_file = sorted(backup_files, key=lambda x: x['LastModified'], reverse=True)[0]
+        # Find the matching file name with daily_version
+        restore_file = [f for f in backup_files if daily_version in f['Key']]
+        num_found = len(restore_file)
+        if num_found == 0:
+            raise Exception("Can't find the desired backup file for restoration!")
+        elif num_found == 1:
+            logger.info(f"Found the file with version: {daily_version}")
+            restore_file = restore_file[0]
+        else:
+            raise Exception("Multiple restore_file versions found!!!! Please select a uniqe version")
     else:
-        # Find the latest file
+        # Find the latest file with sorted by LastModified
         restore_file = sorted(backup_files, key=lambda x: x['LastModified'], reverse=True)[0]
+        
     
+            
     logger.info(f"restore_file = {restore_file}")
     restore_file_name = restore_file['Key']
     local_restore_file_path = os.path.join(restore_dir, os.path.basename(restore_file_name))
