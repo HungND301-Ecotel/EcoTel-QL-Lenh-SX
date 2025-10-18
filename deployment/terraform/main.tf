@@ -64,7 +64,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "lifecycle" {
     status = "Enabled"
 
     filter {
-      prefix = "UserDB/latest/" # applies to files under "UserDB/latest"
+      prefix = "${var.s3_backup_object_prefix}/latest/" # applies to files under "UserDB/latest"
     }
 
     # Expire non-current (older) versions after N days
@@ -74,19 +74,19 @@ resource "aws_s3_bucket_lifecycle_configuration" "lifecycle" {
   }
 
   # Rule 2: Clean up old versions of the "latest file" under SystemDB/latest
-  rule {
-    id     = "expire-systemdb-old-backups"
-    status = "Enabled"
+  # rule {
+  #   id     = "expire-systemdb-old-backups"
+  #   status = "Enabled"
 
-    filter {
-      prefix = "SystemDB/latest/" # applies to files under "SystemDB/latest"
-    }
+  #   filter {
+  #     prefix = "SystemDB/latest/" # applies to files under "SystemDB/latest"
+  #   }
 
-    # Expire non-current (older) versions after N days
-    noncurrent_version_expiration {
-      noncurrent_days = var.backup_expiration_days
-    }
-  }
+  #   # Expire non-current (older) versions after N days
+  #   noncurrent_version_expiration {
+  #     noncurrent_days = var.backup_expiration_days
+  #   }
+  # }
 
   # Rule 3: Delete daily distinct backups for files under userdb/daily after N days 
   rule {
@@ -94,7 +94,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "lifecycle" {
     status = "Enabled"
 
     filter {
-      prefix = "UserDB/daily/"
+      prefix = "${var.s3_backup_object_prefix}/daily/"
     }
 
     expiration {
@@ -114,7 +114,7 @@ resource "aws_iam_user" "backup_user" {
 
 # 7. Create IAM Policy to allow upload/download from the bucket
 resource "aws_iam_policy" "backup_policy" {
-  name        = "backup-s3-policy"
+  name        = "backup-s3-${var.customer_it_group_name}-policy"
   description = "Allow backup-user to upload/download backups"
   policy = jsonencode({
     Version = "2012-10-17"
@@ -148,19 +148,19 @@ resource "aws_iam_group" "customer_it_group" {
 
 # 10-a. Create IAM policy for customers to access S3
 resource "aws_iam_policy" "backup_bucket_policy" {
-  name        = "Customer-Bucket-Access"
+  name        = "Customer-${var.customer_it_group_name}-Bucket-Access"
   description = "Allow IT Department users from customer to access only IT bucket"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Effect = "Allow"
-        Action = ["s3:ListAllMyBuckets"]
+        Effect   = "Allow"
+        Action   = ["s3:ListAllMyBuckets"]
         Resource = "*"
       },
       {
-        Effect = "Allow"
-        Action = ["s3:ListBucket"]
+        Effect   = "Allow"
+        Action   = ["s3:ListBucket"]
         Resource = aws_s3_bucket.backup_bucket.arn
       },
       {
@@ -184,7 +184,7 @@ resource "aws_iam_group_policy_attachment" "group_attach_bucket" {
 
 # 11-a. IAM Policy: Allow customer users to change their own password
 resource "aws_iam_policy" "allow_change_password" {
-  name        = "AllowUserChangeOwnPassword"
+  name        = "AllowUserChangeOwnPassword-${var.customer_it_group_name}"
   description = "Allow IAM users to change their own password"
   policy = jsonencode({
     Version = "2012-10-17"
@@ -213,7 +213,7 @@ resource "aws_iam_user" "it_users" {
     Department  = var.customer_it_group_name
     Environment = var.environment
   }
-  
+
   # Disable programmatic access
   force_destroy = false
 }
@@ -234,7 +234,7 @@ resource "aws_iam_group_membership" "it_membership" {
 
 # 13. IAM policy: allow IT users to view Storage Lens dashboard & reports
 resource "aws_iam_policy" "storage_lens_readonly" {
-  name        = "StorageLens-ReadOnly"
+  name        = "StorageLens-${var.customer_it_group_name}-ReadOnly"
   description = "Allow IT Department users to view S3 Storage Lens dashboard (free)"
   policy = jsonencode({
     Version = "2012-10-17"
@@ -259,15 +259,62 @@ resource "aws_iam_group_policy_attachment" "it_group_attach_storage_lens" {
 }
 
 
-
-# Note: Access Keys (use carefully!):  Output backup-user credentials (store securely!)
-resource "aws_iam_access_key" "backup_user_key" {
-  user = aws_iam_user.backup_user.name
-}
-
 # -------------------------------
 # ✅ Notes
 # -------------------------------
 # - No aws_iam_access_key is created → users cannot use CLI/API.
 # - Users can log in to AWS console using the temporary password and must reset it.
 # - Bucket policy ensures they only see the IT department bucket.
+# Note: Access Keys (use carefully!):  Output backup-user credentials (store securely!)
+resource "aws_iam_access_key" "backup_user_key" {
+  user = aws_iam_user.backup_user.name
+}
+
+# ======================================
+# 14. SNS Topic for Backup Notifications
+# ======================================
+resource "aws_sns_topic" "backup_alerts" {
+  name = "backup-alerts"
+  tags = {
+    Environment = var.environment
+  }
+}
+
+# Subscribe your email address to receive alerts
+# SNS Subscriptions for multiple emails
+resource "aws_sns_topic_subscription" "backup_alerts_emails" {
+  for_each  = toset(var.backup_alert_emails)
+  topic_arn = aws_sns_topic.backup_alerts.arn
+  protocol  = "email"
+  endpoint  = each.value
+}
+
+
+# ======================================
+# 15. CloudWatch Alarm for Daily Backup Monitor
+# ======================================
+resource "aws_cloudwatch_metric_alarm" "s3_backup_stalled" {
+  alarm_name          = "${var.backup_bucket_name}-failed-today!! Check backup service!"
+  alarm_description   = "Triggers if the S3 backup bucket has no new uploads in the last 24h. Check backup service in your server"
+  comparison_operator = "LessThanThreshold"
+  threshold           = 1
+  evaluation_periods  = 1
+  period              = 86400 # 1 day = 24 * 60 * 60 seconds
+  metric_name         = "NumberOfObjects"
+  namespace           = "AWS/S3"
+  statistic           = "Maximum"
+
+  dimensions = {
+    BucketName  = aws_s3_bucket.backup_bucket.bucket
+    StorageType = "AllStorageTypes"
+  }
+
+  alarm_actions = [aws_sns_topic.backup_alerts.arn]
+
+  tags = {
+    Environment = var.environment
+  }
+}
+
+
+
