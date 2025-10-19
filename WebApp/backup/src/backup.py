@@ -87,21 +87,28 @@ def run_backup():
         open(f"{backup_dir}/last_hash.txt", "w").write(current_hash)
 
     # Create a unique S3 object name based on the DB and backup_name with timestamp
-    s3_object_name = f"backups/mongodb/{MONGODB_DATABASE}/{backup_name}.gz"
+    s3_object_prefix = f"backups/mongodb/{MONGODB_DATABASE}"
+    s3_daily_backup = f"{s3_object_prefix}/daily/{backup_name}.gz"
+    s3_latest_backup = f"{s3_object_prefix}/latest/latest_backup.gz"
 
-    logger.info("Uploading to S3...")
+    
     s3 = boto3.client("s3", region_name=AWS_REGION)
+    
     try:
-        s3.upload_file(archive_path, S3_BUCKET_NAME, s3_object_name,  Config=config)
+        logger.info(f"Uploading {s3_daily_backup} to S3...")
+        s3.upload_file(archive_path, S3_BUCKET_NAME, s3_daily_backup,  Config=config)
+        
+        logger.info(f"Uploading {s3_latest_backup} to S3...")
+        s3.upload_file(archive_path, S3_BUCKET_NAME, s3_latest_backup,  Config=config)
     except Exception as e:
-        logger.error(f"❌ Failed to upload backup to S3: {e}")
+        logger.error(f"❌ Failed to upload {s3_daily_backup} or {s3_latest_backup} backup to S3: {e}")
         raise        
     
     logger.info("Verifying S3 upload...")
-    response = s3.head_object(Bucket=S3_BUCKET_NAME, Key=s3_object_name)
+    response = s3.head_object(Bucket=S3_BUCKET_NAME, Key=s3_daily_backup)
     size = response['ContentLength']
     if size > 0:
-        logger.info(f"✅ Backup uploaded successfully: {s3_object_name} ({size} bytes)")
+        logger.info(f"✅ Backup uploaded successfully: {s3_daily_backup} ({size} bytes)")
     else:
         raise Exception("❌ Backup file exists but is empty!")    
 
