@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:soft/models/order_model.dart';
+import 'package:soft/models/shift_report_model.dart';
 import 'package:soft/models/user_model.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
 import 'package:soft/screens/work_log/views/ReportTask/MaintenceWork/controller.dart';
@@ -69,34 +70,43 @@ class _MaintenceWorkReport
       for (var item in report.vehicleRepair ?? []) {
         final controller =
             _deviceSummaryControllers[item.device.id];
-        final vehicleSummarie =
-            (report.vehicleSummaries ?? []).firstWhere(
-                (i) =>
-                    i.vehicle?.id.toString() ==
-                    item.device.id.toString());
+        final VehicleSummariesModel? vehicleSummarie =
+            (report.vehicleSummaries ?? [])
+                .cast<VehicleSummariesModel?>()
+                .firstWhere(
+                  (i) =>
+                      i?.vehicle?.id.toString() ==
+                      item.device.id.toString(),
+                  orElse: () => null,
+                );
+
         if (controller != null) {
           controller.statusRepair =
-              item.status?.toString() ?? '';
+              item.status?.toString() ?? 'Đã sửa xong';
           controller.noteRepair.text =
               item.noteRepair?.toString() ?? '';
           controller.fuelRemain.text =
-              vehicleSummarie.fuelRemain?.toString() ?? '';
+              vehicleSummarie?.fuelRemain?.toString() ?? '';
           controller.fuelReceived.text =
-              vehicleSummarie.fuelReceived?.toString() ??
+              vehicleSummarie?.fuelReceived?.toString() ??
                   '';
           controller.fuelRemainEnd.text =
-              vehicleSummarie.fuelRemainEnd?.toString() ??
+              vehicleSummarie?.fuelRemainEnd?.toString() ??
                   '';
           controller.status =
-              vehicleSummarie.status?.toString() ?? '';
+              vehicleSummarie?.status?.toString() ?? 'good';
           controller.note.text =
-              vehicleSummarie.note?.toString() ?? '';
+              vehicleSummarie?.note?.toString() ?? '';
           controller.gpsStatus =
-              vehicleSummarie.gpsStatus?.toString() ?? '';
+              vehicleSummarie?.gpsStatus?.toString() ??
+                  'Hoạt động bình thường';
           controller.sealStatus =
-              vehicleSummarie.sealStatus?.toString() ?? '';
-          _calculateFuelUsedFor(
-              vehicleSummarie.vehicle!.id);
+              vehicleSummarie?.sealStatus?.toString() ??
+                  'Tốt';
+          if (vehicleSummarie?.vehicle?.id != null) {
+            _calculateFuelUsedFor(
+                vehicleSummarie!.vehicle!.id);
+          }
         }
       }
     }
