@@ -77,25 +77,21 @@ router.put('/:id', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req
         if (req.body.hasOwnProperty('density')) {
             // Nếu khác giá trị hiện tại (kể cả khác giữa null và số)
             if (density !== material.density) {
-                if (material.density != null) {
-                    material.densityHistory.push({
-                        value: material.density, // lưu giá trị cũ
-                        effectiveDate: new Date(),
-                    });
-                }
-                material.density = density; // cập nhật kể cả null
+                material.densityHistory.push({
+                    value: material.density,
+                    effectiveDate: new Date(),
+                });
+                material.density = density;
             }
         }
 
         // 🟢 Xử lý TỶ TRỌNG KHÔNG QUY ẨM
         if (req.body.hasOwnProperty('dryDensity')) {
             if (dryDensity !== material.dryDensity) {
-                if (material.dryDensity != null) {
-                    material.dryDensityHistory.push({
-                        value: material.dryDensity,
-                        effectiveDate: new Date(),
-                    });
-                }
+                material.dryDensityHistory.push({
+                    value: material.dryDensity ? material.dryDensity : null,
+                    effectiveDate: new Date(),
+                });
                 material.dryDensity = dryDensity;
             }
         }

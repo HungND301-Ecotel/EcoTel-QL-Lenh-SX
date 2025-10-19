@@ -124,9 +124,9 @@ const Models: React.FC = () => {
     const [tableRows, setTableRows] = useState<any[]>([]);
 
     useEffect(() => {
-        if (tableRows.length === 0 && rows.length > 0) {
-            setTableRows(rows);
-        }
+        // Chỉ cập nhật nếu rows mới khác rows hiện tại
+        const isSame = JSON.stringify(rows) === JSON.stringify(tableRows);
+        if (!isSame) setTableRows(rows);
     }, [rows]);
 
     const processRowUpdate = (newRow: GridRowModel, oldRow: GridRowModel) => {

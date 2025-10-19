@@ -10,52 +10,85 @@ const xlsx = require('xlsx');
 const { ROLE } = require('../config/config');
 
 
-router.post('/bulk-upsert', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
+router.post('/bulk-upsert', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res) => {
     try {
-        const user = req.user
+        const user = req.user;
         const { rows } = req.body;
 
+        const ops = []; // chứa các thao tác bulkWrite
+
+        // Duyệt từng vật liệu (material)
         for (const row of rows) {
             const materialId = row.id;
-            for (const [field, value] of Object.entries(row)) {
-                if (field === 'id' || field === 'material' || field === 'acceptedProduct' || field === 'density' || field === 'dryDensity') continue;
+
+            // Lấy toàn bộ model hiện có của material để so sánh
+            const existingModels = await Model.find({ material: materialId });
+            const mapExisting = new Map(existingModels.map(m => [m.deviceModel.toString(), m]));
+
+            // Duyệt từng field của dòng
+            for (const [field, rawValue] of Object.entries(row)) {
+                if (['id', 'material', 'acceptedProduct', 'density', 'dryDensity'].includes(field)) continue;
 
                 const deviceModelId = field;
+                const newValue = rawValue === '' || rawValue === null || rawValue === undefined ? null : Number(rawValue);
 
-                // Tìm record
-                const existing = await Model.findOne({ material: materialId, deviceModel: deviceModelId });
+                const existing = mapExisting.get(deviceModelId);
 
-                if (value === '' || value === null) {
-                    // Nếu đã có mà value rỗng → xóa
-                    if (existing) {
-                        await Model.deleteOne({ _id: existing._id });
-                    }
-                } else {
-                    if (existing) {
-                        // update
-                        await Model.updateOne(
-                            { _id: existing._id },
-                            { $set: { value: Number(value) } }
-                        );
-                    } else {
-                        // create
-                        await Model.create({
-                            material: materialId,
-                            deviceModel: deviceModelId,
-                            value: Number(value),
+                if (existing) {
+                    // Nếu có rồi -> chỉ cập nhật nếu khác giá trị
+                    if (existing.value !== newValue) {
+                        ops.push({
+                            updateOne: {
+                                filter: { _id: existing._id },
+                                update: {
+                                    $set: { value: newValue },
+                                    $push: {
+                                        valueHistory: {
+                                            value: existing.value ?? null,
+                                            effectiveDate: new Date(),
+                                        },
+                                    },
+                                },
+                            },
                         });
                     }
+                } else {
+                    // Nếu chưa có -> tạo mới
+                    ops.push({
+                        insertOne: {
+                            document: {
+                                material: materialId,
+                                deviceModel: deviceModelId,
+                                value: newValue,
+                                valueHistory: [],
+                            },
+                        },
+                    });
                 }
             }
         }
-        req.logger.info(`🔥${user?.username} Tạo mô hình thành công`);
 
-        res.status(200).send({ status: 'success', message: "Tạo mô hình thành công" });
+        // Nếu có thao tác -> thực hiện bulkWrite
+        if (ops.length > 0) {
+            await Model.bulkWrite(ops);
+        }
+
+        req.logger.info(`🔥 ${user?.username} thực hiện bulk upsert ${ops.length} thay đổi`);
+        res.status(200).send({
+            status: 'success',
+            message: `Cập nhật mô hình thành công (${ops.length} thay đổi)`,
+        });
+
     } catch (err) {
-        req.logger.error("❌ Lỗi khi tạo", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        req.logger.error("❌ Lỗi khi bulk upsert", err);
+        res.status(500).send({
+            status: 'error',
+            message: err.message,
+            stack: err.stack,
+        });
     }
 });
+
 
 router.delete('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
