@@ -156,7 +156,7 @@ router.get('/getOne/salaryCodeOrName', verifyToken, async (req, res) => {
 
             // Điều kiện theo role
             let roleCondition = {};
-            if (currentUser?.role === ROLE.MANAGER || currentUser?.role === "employee") {
+            if (currentUser?.role === ROLE.MANAGER || currentUser?.role === ROLE.EMPLOYEE) {
                 roleCondition = { department: currentUser?.department?._id };
             }
             if (currentUser?.role === ROLE.DISPATCHER) {

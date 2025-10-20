@@ -75,6 +75,7 @@ const CustomDataGrid: React.FC<CustomDataGridProps> = ({
                     pagination: {
                         paginationModel: { pageSize: 10, page: 0 },
                     },
+                    density: "compact"
                 }}
                 loading={isLoading}
                 slots={{ toolbar: GridToolbar }}

@@ -1,63 +1,34 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
     Box,
     Button,
-    Card,
-    CardContent,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
     Grid,
     IconButton,
-    Paper,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
     Typography,
     Chip,
     Checkbox,
     TextField,
     MenuItem,
-    Tooltip,
     Switch,
     Menu,
     ListItemText,
-    Pagination,
-    TablePagination,
     AlertColor,
     CircularProgress,
 } from '@mui/material';
 import { format } from 'date-fns';
 import {
-    Add as AddIcon,
-    Edit as EditIcon,
-    Delete as DeleteIcon,
-    Search,
-    MoreVert,
-    MoreHoriz,
-    FileDownload,
-    InfoOutlined,
-    SyncAlt,
-    Settings,
     Visibility,
     VisibilityOff,
     RotateLeft,
 } from '@mui/icons-material';
-import { useFormik } from 'formik';
-import * as yup from 'yup';
-import api from '../../config/api.config';
-import { Order } from '../../types';
 import dayjs, { Dayjs } from 'dayjs';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { useSocket } from '../../hooks/useSocket';
 import { DataGrid, GridColDef, GridRenderCellParams, GridToolbar } from '@mui/x-data-grid';
 import OrderService from '../../services/orderService';
 import { AlertSnackbar } from '../../components/Alert';
+import { StatusOrderEnum } from '../../enums';
 
 const OrderByUsers: React.FC = () => {
 
@@ -67,7 +38,6 @@ const OrderByUsers: React.FC = () => {
     const [selectedRow, setSelectedRow] = useState<any | null>(null);
     const [info, setInfo] = useState(false);
 
-    const queryClient = useQueryClient();
     const [paginationModel, setPaginationModel] = useState({
         pageSize: 50,
         page: 0,
@@ -100,7 +70,6 @@ const OrderByUsers: React.FC = () => {
     const handleChange = (value: string) => {
         setStatus(prev => (prev === value ? '' : value)); // bỏ chọn nếu click lại
     };
-    const [serverFilters, setServerFilters] = useState<any>({});
     const [statusCounts, setStatusCounts] = useState<any>({
         all: 0,
         pending: 0,
@@ -110,7 +79,7 @@ const OrderByUsers: React.FC = () => {
         cancel: 0,
     });
     const { data, isLoading, refetch: refetchOrder } = useQuery({
-        queryKey: ['orderByUser', paginationModel, status, startTime, endTime, serverFilters],
+        queryKey: ['orderByUser', paginationModel, status, startTime, endTime],
         queryFn: () => OrderService.getByUser(
             {
                 page: paginationModel.page + 1,
@@ -118,8 +87,6 @@ const OrderByUsers: React.FC = () => {
                 status: status || undefined,
                 startTime: startTime ? startTime.toISOString() : '',
                 endTime: endTime ? endTime.toISOString() : '',
-
-                shift: serverFilters.shift || undefined,
             }
         )
     })
@@ -192,17 +159,17 @@ const OrderByUsers: React.FC = () => {
             headerName: 'Trạng thái lệnh', field: 'status', width: 150, minWidth: 50, align: 'center', headerAlign: 'center',
             renderCell: (params: any) => (
                 <Chip
-                    sx={{ width: 120, minWidth: 50, }}
-                    label={params?.row?.status === 'pending' ? 'Chưa nhận lệnh' :
-                        params?.row?.status === 'in_progress' ? 'Đã nhận lệnh' :
-                            params?.row?.status === 'completed' ? 'Đã hoàn thành' :
-                                params?.row?.status === 'warning' ? 'Lỗi' : "Đã hủy"
+                    sx={{ width: '120px' }}
+                    label={params.row.status === StatusOrderEnum.PENDING ? 'Chưa nhận lệnh' :
+                        params.row.status === StatusOrderEnum.INPROGRESS ? 'Đã nhận lệnh' :
+                            params.row.status === StatusOrderEnum.COMPLETED ? 'Đã hoàn thành' :
+                                params.row.status === StatusOrderEnum.WARNING ? 'Lỗi' : "Đã hủy"
                     }
                     color={
-                        params?.row?.status === 'pending' ? 'default' :
-                            params?.row?.status === 'completed' ? 'error' :
-                                params?.row?.status === 'in_progress' ? 'success' :
-                                    params?.row?.status === 'warning' ? 'warning' : 'secondary'}
+                        params.row.status === StatusOrderEnum.PENDING ? 'default' :
+                            params.row.status === StatusOrderEnum.COMPLETED ? 'error' :
+                                params.row.status === StatusOrderEnum.INPROGRESS ? 'success' :
+                                    params.row.status === StatusOrderEnum.WARNING ? 'warning' : 'secondary'}
                 />
             ),
         },
@@ -260,23 +227,23 @@ const OrderByUsers: React.FC = () => {
                     <ListItemText primary={`Tất cả (${statusCounts.all})`} sx={{ color: 'blue' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
-                    <Checkbox color='default' name="status" checked={status === 'pending'}
-                        onChange={() => handleChange('pending')} />
+                    <Checkbox color='default' name="status" checked={status === StatusOrderEnum.PENDING}
+                        onChange={() => handleChange(StatusOrderEnum.PENDING)} />
                     <ListItemText primary={`Chưa nhận lệnh (${statusCounts.pending})`} sx={{ color: 'grey' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
-                    <Checkbox color='success' name="status" checked={status === 'in_progress'}
-                        onChange={() => handleChange('in_progress')} />
+                    <Checkbox color='success' name="status" checked={status === StatusOrderEnum.INPROGRESS}
+                        onChange={() => handleChange(StatusOrderEnum.INPROGRESS)} />
                     <ListItemText primary={`Đã nhận lệnh (${statusCounts.in_progress})`} sx={{ color: 'green' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
-                    <Checkbox color='warning' name="status" checked={status === 'warning'}
-                        onChange={() => handleChange('warning')} />
+                    <Checkbox color="warning" name="status" checked={status === StatusOrderEnum.WARNING}
+                        onChange={() => handleChange(StatusOrderEnum.WARNING)} />
                     <ListItemText primary={`Lỗi (${statusCounts.warning})`} sx={{ color: 'orange' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
-                    <Checkbox color='error' name="status" checked={status === 'completed'}
-                        onChange={() => handleChange('completed')} />
+                    <Checkbox color='error' name="status" checked={status === StatusOrderEnum.COMPLETED}
+                        onChange={() => handleChange(StatusOrderEnum.COMPLETED)} />
                     <ListItemText primary={`Đã kết thúc (${statusCounts.completed})`} sx={{ color: 'red' }} />
                 </Box>
             </Box>
@@ -349,19 +316,19 @@ const OrderByUsers: React.FC = () => {
                             let base = '';
 
                             switch (record.status) {
-                                case 'pending':
+                                case StatusOrderEnum.PENDING:
                                     base = 'row-pending';
                                     break;
-                                case 'in_progress':
+                                case StatusOrderEnum.INPROGRESS:
                                     base = 'row-in-progress';
                                     break;
-                                case 'completed':
+                                case StatusOrderEnum.COMPLETED:
                                     base = 'row-completed';
                                     break;
-                                case 'warning':
+                                case StatusOrderEnum.WARNING:
                                     base = 'row-warning';
                                     break;
-                                case 'cancel':
+                                case StatusOrderEnum.CANCEL:
                                     base = 'row-cancel';
                                     break;
                             }
@@ -370,6 +337,9 @@ const OrderByUsers: React.FC = () => {
                             return `${base} ${selectedRow?._id === record._id ? 'row-selected' : ''}`;
                         }}
                         slots={{ toolbar: GridToolbar }}
+                        initialState={{
+                            density: "compact"
+                        }}
                         localeText={{
                             toolbarColumns: 'Cột',
                             toolbarFilters: 'Bộ lọc',
@@ -482,10 +452,11 @@ const OrderByUsers: React.FC = () => {
                                 <Typography><strong>Công việc:</strong> {selectedRow.job?.name}</Typography>
                                 <Typography><strong>Nội dung lệnh:</strong> {selectedRow.workContent}</Typography>
                                 <Typography><strong>Trạng thái lệnh:</strong> {
-                                    selectedRow.status === 'pending' ? 'Chưa nhận lệnh' :
-                                        selectedRow.status === 'in_progress' ? 'Đã nhận lệnh' :
-                                            selectedRow.status === 'completed' ? 'Đã hoàn thành' :
-                                                selectedRow.status === 'warning' ? 'Lỗi' : "Đã hủy"}</Typography>
+                                    selectedRow.status === StatusOrderEnum.PENDING ? 'Chưa nhận lệnh' :
+                                        selectedRow.status === StatusOrderEnum.INPROGRESS ? 'Đã nhận lệnh' :
+                                            selectedRow.status === StatusOrderEnum.COMPLETED ? 'Đã hoàn thành' :
+                                                selectedRow.status === StatusOrderEnum.WARNING ? 'Lỗi' : "Đã hủy"
+                                }</Typography>
                             </Box>
                         ) : null}
                     </Box>

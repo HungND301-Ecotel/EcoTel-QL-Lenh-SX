@@ -1,35 +1,25 @@
-import React, { useRef, useState } from 'react';
+import React from 'react';
 import { FieldArray, FormikProvider, useFormik } from 'formik';
-import * as yup from 'yup';
 import {
     Autocomplete,
     Box,
     Button,
-    Dialog,
-    DialogContent,
-    DialogTitle,
     Grid,
-    IconButton,
-    Menu,
-    MenuItem,
-    Popper,
-    styled,
     TextField,
 } from '@mui/material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/api.config';
-import { Order, Device, Job, Location, Material, SafetyMeasure, Shift } from '../../types';
-import { DatePicker, DesktopTimePicker, LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
+import { Order, Job } from '../../types';
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { showConfirmAlert, showSuccessAlert } from '../../components/Alert';
-import { ContentCopy } from '@mui/icons-material';
-import { v4 as uuidv4 } from 'uuid'
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import { StyledPopper } from '../../ui/poppers';
 import { dispatcherOrderValidationSchema } from '../../utils/validation';
+import { JobTypeEnum } from '../../enums';
 dayjs.extend(utc);
 
 
@@ -67,11 +57,11 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
             workContent: '',
             note: '',
         },
-        validationSchema:dispatcherOrderValidationSchema,
+        validationSchema: dispatcherOrderValidationSchema,
         onSubmit: async (values) => {
             const orders: Partial<Order>[] = values.usersAndDepartments.map(item => ({
                 assignedTo: item.assignedTo,
-                job: jobs.find((i: Job) => i.name === "Điều hành sản xuất")?._id,
+                job: jobs.find((i: Job) => i.name === JobTypeEnum.DISPATCHER)?._id,
                 workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
                 workContent: values.workContent,
                 note: values.note,

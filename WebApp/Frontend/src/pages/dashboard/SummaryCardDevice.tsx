@@ -7,6 +7,7 @@ import { Device } from '../../types';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../config/api.config';
 import { useNavigate } from 'react-router-dom';
+import { DeviceTypeEnum, StatusDeviceEnum } from '../../enums';
 export default function SummaryCardDevice(
     {
         title,
@@ -28,7 +29,7 @@ export default function SummaryCardDevice(
     const [anchorElSummary, setAnchorElSummary] = useState<HTMLElement | null>(null);
     const [selectedSummaryDevices, setSelectedSummaryDevices] = useState<any[]>([]);
 
-    const { data: deviceCount = [], isLoading: isLoadingDeviceCount } = useQuery({
+    const { data: deviceCount = [] } = useQuery({
         queryKey: ['deviceCount', type],
         queryFn: () => api.get(`/devices/count/status?group=${type}`).then(res => res.data.data),
     });
@@ -75,7 +76,7 @@ export default function SummaryCardDevice(
             }}>
                 <Box sx={{ flexGrow: 1 }}>
                     <Typography variant="h4" sx={{ fontWeight: 'bold', cursor: 'pointer' }} gutterBottom
-                        onClick={() => { navigate(`${type === "Máy" ? '/machines' : '/vehicles'}`) }}>
+                        onClick={() => { navigate(`${type === DeviceTypeEnum.MACHINE ? '/machines' : '/vehicles'}`) }}>
                         {title}
                     </Typography>
                     <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
@@ -105,31 +106,31 @@ export default function SummaryCardDevice(
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Box display="flex" gap={2} alignItems={'center'}>
                         <DeviceIcon sx={{ color: 'green' }} fontSize='medium' />
-                        <Typography variant='h6' onClick={(e) => handleSummaryClick(e, "available")} sx={{ fontWeight: 'bold', cursor: 'pointer' }}>Chờ điều động</Typography>
+                        <Typography variant='h6' onClick={(e) => handleSummaryClick(e, StatusDeviceEnum.AVAILABLE)} sx={{ fontWeight: 'bold', cursor: 'pointer' }}>Chờ điều động</Typography>
                     </Box>
-                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{data.filter((o: Device) => o.status === "available").length}</Typography>
+                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{data.filter((o: Device) => o.status === StatusDeviceEnum.AVAILABLE).length}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Box display="flex" gap={2} alignItems={'center'}>
                         <DeviceIcon color='error' fontSize='medium' />
-                        <Typography variant='h6' onClick={(e) => handleSummaryClick(e, "in_use")} sx={{ fontWeight: 'bold', cursor: 'pointer' }}>Đang hoạt động</Typography>
+                        <Typography variant='h6' onClick={(e) => handleSummaryClick(e, StatusDeviceEnum.IN_USE)} sx={{ fontWeight: 'bold', cursor: 'pointer' }}>Đang hoạt động</Typography>
                     </Box>
-                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{data.filter((o: Device) => o.status === "in_use").length}</Typography>
+                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{data.filter((o: Device) => o.status === StatusDeviceEnum.IN_USE).length}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Box display="flex" gap={2} alignItems={'center'}>
                         <DeviceIcon color='warning' fontSize='medium' />
-                        <Typography variant='h6' onClick={(e) => handleSummaryClick(e, "maintenance")} sx={{ fontWeight: 'bold', cursor: 'pointer' }}>SC; BD</Typography>
+                        <Typography variant='h6' onClick={(e) => handleSummaryClick(e, StatusDeviceEnum.MAINTENANCE)} sx={{ fontWeight: 'bold', cursor: 'pointer' }}>SC; BD</Typography>
 
                     </Box>
-                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{data.filter((o: Device) => o.status === "maintenance").length}</Typography>
+                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{data.filter((o: Device) => o.status === StatusDeviceEnum.MAINTENANCE).length}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Box display="flex" gap={2} alignItems={'center'}>
                         <DeviceIcon color='disabled' fontSize='medium' />
-                        <Typography variant='h6' onClick={(e) => handleSummaryClick(e, "retired")} sx={{ fontWeight: 'bold', cursor: 'pointer' }}>Niêm cất</Typography>
+                        <Typography variant='h6' onClick={(e) => handleSummaryClick(e, StatusDeviceEnum.RETIRED)} sx={{ fontWeight: 'bold', cursor: 'pointer' }}>Niêm cất</Typography>
                     </Box>
-                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{data.filter((o: Device) => o.status === "retired").length}</Typography>
+                    <Typography variant='h6' sx={{ fontWeight: 'bold', }}>{data.filter((o: Device) => o.status === StatusDeviceEnum.RETIRED).length}</Typography>
                 </Box>
             </Box>
             <Popover

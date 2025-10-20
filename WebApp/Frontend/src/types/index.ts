@@ -1,4 +1,4 @@
-import { JobTypeEnum } from "../enums/index";
+import { DeviceTypeEnum, JobTypeEnum, StatusDeviceEnum, StatusOrderEnum } from "../enums/index";
 
 export interface User {
     _id: string;
@@ -37,7 +37,7 @@ export interface Position {
 export interface DeviceType {
     _id: string;
     name: string;
-    group: 'Xe' | 'Máy',
+    group: DeviceTypeEnum,
     createdAt?: string;
     updatedAt?: string;
 }
@@ -66,7 +66,7 @@ export interface Device {
         lat: number
         lng: number,
     },
-    status: 'available' | 'in_use' | 'maintenance' | 'retired';
+    status: StatusDeviceEnum;
     note?: string;
     createdBy?: string;
     updatedBy?: string;
@@ -100,7 +100,7 @@ export interface Order {
     material?: string[];
     workContent?: string;
     assistants?: string[];
-    status: 'pending' | 'in_progress' | 'completed' | 'warning' | 'cancel';
+    status: StatusOrderEnum;
     previous_order_id?: string,
     batchId?: string | null;
     note?: string;

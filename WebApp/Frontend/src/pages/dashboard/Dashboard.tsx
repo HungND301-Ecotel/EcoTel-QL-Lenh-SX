@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
     Grid,
-    Typography,
     Box,
-    Card,
     Paper,
 } from '@mui/material';
 import {
@@ -12,7 +10,6 @@ import {
     Business as DepartmentIcon,
     DirectionsCar,
     Person2 as PersonIcon,
-    RotateLeft as RotateLeftIcon,
 } from '@mui/icons-material';
 import api from '../../config/api.config';
 import GoogleMap from './GoogleMap';
@@ -21,11 +18,10 @@ import DeviceAnalysic from './DeviceAnalysis';
 import ProductionAnalysic from './ProductionAnalysic';
 import SummaryCard from './SummaryCard';
 import SummaryCardDevice from './SummaryCardDevice';
+import { DeviceTypeEnum } from '../../enums';
 
 const DashBoard: React.FC = () => {
     const [tabIndex, setTabIndex] = useState(0);
-
-    const queryClient = useQueryClient();
 
     const { data: departments = [], isLoading: isLoadingDepartments } = useQuery({
         queryKey: ['departments'],
@@ -50,21 +46,21 @@ const DashBoard: React.FC = () => {
                 <Grid item xs={12} sm={6}>
                     <SummaryCardDevice
                         title="Thông tin máy"
-                        value={devices.filter((d: any) => d.category?.group === "Máy").length}
+                        value={devices.filter((d: any) => d.category?.group === DeviceTypeEnum.MACHINE).length}
                         icon={<Construction />}
                         color="#e4d52cff"
-                        data={devices.filter((d: any) => d.category?.group === "Máy")}
-                        type="Máy"
+                        data={devices.filter((d: any) => d.category?.group === DeviceTypeEnum.MACHINE)}
+                        type={DeviceTypeEnum.MACHINE}
                     />
                 </Grid>
                 <Grid item xs={12} sm={6}>
                     <SummaryCardDevice
                         title="Thông tin xe"
-                        value={devices.filter((d: any) => d.category?.group === "Xe").length}
+                        value={devices.filter((d: any) => d.category?.group === DeviceTypeEnum.VEHICLE).length}
                         icon={<DirectionsCar />}
                         color="#f34f21ff"
-                        data={devices.filter((d: any) => d.category?.group === "Xe")}
-                        type="Xe"
+                        data={devices.filter((d: any) => d.category?.group === DeviceTypeEnum.VEHICLE)}
+                        type={DeviceTypeEnum.VEHICLE}
                     />
                 </Grid>
                 <Grid item xs={12} sm={6}>

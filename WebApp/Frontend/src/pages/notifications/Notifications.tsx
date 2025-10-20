@@ -3,10 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Box,
     Button,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
     IconButton,
     Paper,
     Table,
@@ -16,38 +12,20 @@ import {
     TableHead,
     TableRow,
     Typography,
-    TextField,
-    MenuItem,
     Chip,
     Badge,
     TablePagination,
 } from '@mui/material';
 import {
-    Add as AddIcon,
-    Edit as EditIcon,
     Delete as DeleteIcon,
     Check,
     Close,
 } from '@mui/icons-material';
-import { useFormik } from 'formik';
-import * as yup from 'yup';
 import api from '../../config/api.config';
-import { Notification } from '../../types';
-import socketService from '../../services/socketService';
-import { useSocket } from '../../hooks/useSocket';
 import { showConfirmAlert, showErrorAlert } from '../../components/Alert';
-
-const validationSchema = yup.object({
-    title: yup.string().required('Vui lòng nhập tiêu đề'),
-    message: yup.string().required('Vui lòng nhập nội dung'),
-    type: yup.string().required('Vui lòng chọn loại thông báo'),
-    recipient: yup.string().required('Vui lòng chọn người nhận'),
-});
 
 
 const Notifications: React.FC = () => {
-    const [open, setOpen] = useState(false);
-    const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
     const [type, setType] = useState<string | boolean>('')
     const [newNotification, setNewNotification] = useState(null)
     const queryClient = useQueryClient();

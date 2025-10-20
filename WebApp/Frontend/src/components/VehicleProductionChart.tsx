@@ -11,7 +11,7 @@ import {
     type TooltipComponentOption,
 } from "echarts/components";
 import { CanvasRenderer } from "echarts/renderers";
-import { Autocomplete, Box, Dialog, DialogContent, DialogTitle, IconButton, TextField, Typography } from "@mui/material";
+import { Autocomplete, Box, Dialog, DialogContent, DialogTitle, TextField, Typography } from "@mui/material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import dayjs, { Dayjs } from "dayjs";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -19,6 +19,7 @@ import { useAtom } from "jotai";
 import { userAtom } from "../atoms/userAtoms";
 import DeviceService from "../services/deviceService";
 import { useQuery } from "@tanstack/react-query";
+import { RoleEnum } from "../enums";
 
 echarts.use([BarChart, GridComponent, TooltipComponent, CanvasRenderer]);
 
@@ -27,7 +28,6 @@ type ECOption = echarts.ComposeOption<
 >;
 
 type Row = { vehicle: string; actual: number; target: number };
-const DUMMY_TARGET_MAX = 800;
 
 const niceMax = (n: number) => {
     if (n <= 10) return 10;
@@ -173,7 +173,7 @@ export default function VehicleBulletVariance({
                     }}
                 >
                     <Box sx={{ display: 'flex', gap: 2 }}>
-                        {(user?.role === "admin" || user?.role === "dispatcher") && <Autocomplete
+                        {(user?.role === RoleEnum.ADMIN || user?.role === RoleEnum.DISPATCHER) && <Autocomplete
                             size="small"
                             options={departments}
                             getOptionLabel={(option: any) =>

@@ -1,26 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
-    AppBar,
-    Toolbar,
     Typography,
-    Container,
     Grid,
     TextField,
     MenuItem,
     Button,
-    Checkbox,
-    FormControlLabel,
     Box,
-    Select,
-    FormControl,
-    InputLabel,
     Paper,
     Autocomplete,
     LinearProgress
 } from '@mui/material';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import api from '../../config/api.config';
-import { Department, DeviceType, Shift } from '../../types';
+import { Department, Shift } from '../../types';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
@@ -28,7 +20,6 @@ import VehicleShiftReport from './VehicleShiftReport';
 import CarReport from './CarReport';
 import ExcavatorTripReport from './ExcavatorTripReport';
 import CarTripReport from './CarTripReport';
-import ProductionReport from './ProductionReport';
 import WorkLogReport from './WorkLogReport';
 import mealRequestReport from './MealRepuestReport';
 import { Close, Edit } from '@mui/icons-material';
@@ -38,15 +29,13 @@ import { userAtom } from '../../atoms/userAtoms';
 import ExcavatorReport from './ExcavatorReport';
 import DozerReport from './DozerReport';
 import DrillReport from './DrillReport';
-import { calculateNewValue } from '@testing-library/user-event/dist/utils';
+import { RoleEnum } from '../../enums';
 
 
 function Reports() {
     const [startDate, setStartDate] = useState<dayjs.Dayjs | null>(null);
     const [endDate, setEndDate] = useState<dayjs.Dayjs | null>(null);
-    const [deviceType, setDeviceType] = useState("");
     const [title, setTitle] = useState("");
-    const [account, setAccount] = useState('');
     const [shift, setShift] = useState<Shift[]>([]);
     const [department, setDepartment] = useState<Department | null>(null);
     const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
@@ -248,7 +237,7 @@ function Reports() {
             <Paper elevation={3} sx={{ p: 3 }}>
                 <Grid container spacing={3}>
                     {/* Tên báo cáo & Số ngày xem */}
-                    {user?.role === "admin" && <Grid item xs={12}>
+                    {user?.role === RoleEnum.ADMIN && <Grid item xs={12}>
                         <Autocomplete
                             fullWidth
                             size="small"

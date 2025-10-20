@@ -1,135 +1,161 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     Box,
     Button,
-    Dialog,
     DialogActions,
     DialogContent,
     DialogTitle,
     IconButton,
-    Paper,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
     Typography,
     TextField,
     MenuItem,
-    Alert,
     Menu,
     Switch,
     ListItemText,
     Accordion,
     AccordionSummary,
     AccordionDetails,
-    Checkbox,
-    TablePagination,
     Breadcrumbs,
     InputAdornment,
-} from '@mui/material';
+} from "@mui/material";
 import {
     Add as AddIcon,
     Edit as EditIcon,
     Delete as DeleteIcon,
     Settings,
-    ExpandMore,
     Search,
-} from '@mui/icons-material';
-import { useFormik } from 'formik';
-import * as yup from 'yup';
-import api from '../../config/api.config';
-import { DeviceType } from '../../types';
-import { useAtom } from 'jotai';
-import { userAtom } from '../../atoms/userAtoms';
-import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
-import { deviceTypeValidationSchema } from '../../utils/validation';
-import DeviceTypeService from '../../services/deviceTypeService';
-
+} from "@mui/icons-material";
+import { useFormik } from "formik";
+import { DeviceType } from "../../types";
+import { useAtom } from "jotai";
+import { userAtom } from "../../atoms/userAtoms";
+import {
+    showConfirmAlert,
+    showErrorAlert,
+    showSuccessAlert,
+} from "../../components/Alert";
+import { deviceTypeValidationSchema } from "../../utils/validation";
+import DeviceTypeService from "../../services/deviceTypeService";
+import { RoleEnum } from "../../enums";
+import CustomDataGrid from "../../components/Table/CustomDataGrid";
+import { DEVICE_TYPE_OPTIONS } from "../../utils/const";
 
 const DeviceTypes: React.FC = () => {
     const [open, setOpen] = useState(false);
-    const [selectedDeviceType, setSelectedDeviceType] = useState<DeviceType | null>(null);
+    const [selectedDeviceType, setSelectedDeviceType] =
+        useState<DeviceType | null>(null);
     const [selectedDeviceTypes, setSelectedDeviceTypes] = useState<string[]>([]);
     const queryClient = useQueryClient();
-    const [user, setUser] = useAtom(userAtom)
-    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
+    const [user] = useAtom(userAtom);
+    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
     const [expanded, setExpanded] = useState(false);
-    const [value, setValue] = useState("")
+    const [value, setValue] = useState("");
 
-    const handleSelected = (deviceTypeId: string) => {
-        setSelectedDeviceTypes(prev =>
-            prev.includes(deviceTypeId)
-                ? prev.filter(id => id !== deviceTypeId)
-                : [...prev, deviceTypeId]
-        );
-    };
     const defaultColumns = [
-        { id: 'name', label: 'Tên loại thiết bị' },
-        { id: 'group', label: 'Nhóm thiết bị' },
-    ]
-    const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
+        { id: "name", label: "Tên loại thiết bị", align: "left" as "left" },
+        { id: "group", label: "Nhóm thiết bị" },
+        {
+            id: "edit",
+            label: "Sửa",
+            width: 60,
+            renderCell: (params: { row: any }) => (
+                <IconButton
+                    color="primary"
+                    disabled={user?.role !== RoleEnum.ADMIN}
+                    onClick={async () => {
+                        if (user?.role !== RoleEnum.ADMIN) return;
+                        if (open) {
+                            const result = await showConfirmAlert(
+                                "Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?"
+                            );
+                            if (result.isConfirmed) {
+                                handleOpen(params.row);
+                            }
+                        } else {
+                            handleOpen(params.row);
+                        }
+                    }}
+                >
+                    <EditIcon />
+                </IconButton>
+            ),
+            sortable: false,
+            filterable: false,
+        },
+    ];
+    const [visibleColumns, setVisibleColumns] = useState<string[]>(
+        user?.role === RoleEnum.ADMIN
+            ? defaultColumns.map((i) => i.id)
+            : defaultColumns.filter((i) => i.id !== "edit").map((i) => i.id)
+    );
 
     const handleToggleColumn = (id: string) => {
-        setVisibleColumns(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
-    }
+        setVisibleColumns((prev) =>
+            prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+        );
+    };
 
     const { data: DeviceTypes = [], isLoading } = useQuery({
-        queryKey: ['DeviceTypes', value],
+        queryKey: ["DeviceTypes", value],
         queryFn: () => DeviceTypeService.getAll({ q: value }),
     });
-
 
     const createMutation = useMutation({
         mutationFn: DeviceTypeService.create,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['DeviceTypes'] });
-            showSuccessAlert('Thêm loại thiết bị thành công');
+            queryClient.invalidateQueries({ queryKey: ["DeviceTypes"] });
+            showSuccessAlert("Thêm loại thiết bị thành công");
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
-        }
+            showErrorAlert(error.response.data.message || error.message || "Lỗi");
+        },
     });
 
     const updateMutation = useMutation({
         mutationFn: DeviceTypeService.update,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['DeviceTypes'] });
-            showSuccessAlert('Cập nhật loại thiết bị thành công');
+            queryClient.invalidateQueries({ queryKey: ["DeviceTypes"] });
+            showSuccessAlert("Cập nhật loại thiết bị thành công");
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
-        }
+            showErrorAlert(error.response.data.message || error.message || "Lỗi");
+        },
     });
 
     const deleteMutation = useMutation({
         mutationFn: DeviceTypeService.delete,
         onSuccess: (message) => {
-            queryClient.invalidateQueries({ queryKey: ['DeviceTypes'] });
+            queryClient.invalidateQueries({ queryKey: ["DeviceTypes"] });
             setSelectedDeviceTypes([]);
-            showSuccessAlert(message || 'Xóa thành công');
-            handleClose()
+            showSuccessAlert(message || "Xóa thành công");
+            handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
-        }
+            showErrorAlert(error.response.data.message || error.message || "Lỗi");
+        },
     });
 
     const formik = useFormik({
         initialValues: {
-            name: '',
-            group: ''
+            name: "",
+            group: "",
         },
         validationSchema: deviceTypeValidationSchema,
         onSubmit: (values) => {
             if (selectedDeviceType) {
-                updateMutation.mutate({ ...values, _id: selectedDeviceType._id, group: values.group as DeviceType["group"] });
+                updateMutation.mutate({
+                    ...values,
+                    _id: selectedDeviceType._id,
+                    group: values.group as DeviceType["group"],
+                });
             } else {
-                createMutation.mutate({ ...values, group: values.group as DeviceType["group"] });
+                createMutation.mutate({
+                    ...values,
+                    group: values.group as DeviceType["group"],
+                });
             }
         },
     });
@@ -144,7 +170,7 @@ const DeviceTypes: React.FC = () => {
         }
         setExpanded(true);
         setOpen(true);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     const handleClose = () => {
@@ -156,41 +182,30 @@ const DeviceTypes: React.FC = () => {
 
     const handleDelete = () => {
         if (selectedDeviceTypes.length === 0) {
-            showErrorAlert('Không tìm thấy bản ghi cần xóa');
+            showErrorAlert("Không tìm thấy bản ghi cần xóa");
             return;
         }
-        showConfirmAlert(`Bạn có muốn xóa ${selectedDeviceTypes.length} bản ghi?`).then((result) => {
+        showConfirmAlert(
+            `Bạn có muốn xóa ${selectedDeviceTypes.length} bản ghi?`
+        ).then((result) => {
             if (result.isConfirmed) {
                 deleteMutation.mutate(selectedDeviceTypes);
             }
         });
     };
 
-    const [page, setPage] = React.useState(0);
-    const [pageSize, setPageSize] = React.useState(10);
-
-    const handleChangePage = (event: React.MouseEvent<HTMLButtonElement, MouseEvent> | null, page: number) => {
-        setPage(page);
-    };
-
-    const pageData = (DeviceTypes: any[], page: number, pageSize: number) => {
-        let data;
-        if (!page && !pageSize) {
-            data = DeviceTypes
-        } else {
-            data = DeviceTypes.slice(page * pageSize, (page + 1) * pageSize)
-        }
-        return data
-    }
-    const paginatedData = pageData(DeviceTypes, page, pageSize);
     return (
         <Box>
             <Breadcrumbs aria-label="breadcrumb">
                 <Typography>Danh mục</Typography>
                 <Typography>Phân loại thiết bị</Typography>
             </Breadcrumbs>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, mt: 3 }}>
-                <Typography variant="h3" color={'blue'}>Phân loại thiết bị</Typography>
+            <Box
+                sx={{ display: "flex", justifyContent: "space-between", mb: 3, mt: 3 }}
+            >
+                <Typography variant="h3" color={"blue"}>
+                    Phân loại thiết bị
+                </Typography>
             </Box>
             <Accordion expanded={expanded}>
                 <AccordionSummary
@@ -198,63 +213,85 @@ const DeviceTypes: React.FC = () => {
                     aria-controls="panel1-content"
                     id="panel1-header"
                     sx={{
-                        backgroundColor: 'white', '&.Mui-focusVisible': {
-                            backgroundColor: 'white',
+                        backgroundColor: "white",
+                        "&.Mui-focusVisible": {
+                            backgroundColor: "white",
                         },
                     }}
                 >
-                    <Box sx={{
-                        display: 'flex', gap: 2, alignItems: 'center', width: '100%',
-                        flexDirection: {
-                            xs: 'column',
-                            md: 'row',
-                        },
-                        justifyContent: {
-                            xs: 'flex-start',
-                            md: 'space-between',
-                        },
-                    }}>
-                        {user?.role === "admin" && <Box
-                            sx={{
-                                display: 'flex',
-                                gap: 1, // Khoảng cách nhỏ hơn giữa các nút
-                                flexDirection: {
-                                    xs: 'column',
-                                    md: 'row',
-                                },
-                                width: {
-                                    xs: '100%', // Group này chiếm 100% khi xếp dọc
-                                    md: 'auto',
-                                },
-                            }}
-                        >
-                            <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
-                                Thêm
-                            </Button>
-                            <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
-                                Xóa
-                            </Button>
-                        </Box>}
-                        <Box sx={{ display: 'flex', flex: 1, width: '100%' }}>
-                            <TextField fullWidth size="small" value={value}
-                                placeholder='Tìm kiếm theo tên loại thiết bị'
+                    <Box
+                        sx={{
+                            display: "flex",
+                            gap: 2,
+                            alignItems: "center",
+                            width: "100%",
+                            flexDirection: {
+                                xs: "column",
+                                md: "row",
+                            },
+                            justifyContent: {
+                                xs: "flex-start",
+                                md: "space-between",
+                            },
+                        }}
+                    >
+                        {user?.role === RoleEnum.ADMIN && (
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    gap: 1, // Khoảng cách nhỏ hơn giữa các nút
+                                    flexDirection: {
+                                        xs: "column",
+                                        md: "row",
+                                    },
+                                    width: {
+                                        xs: "100%", // Group này chiếm 100% khi xếp dọc
+                                        md: "auto",
+                                    },
+                                }}
+                            >
+                                <Button
+                                    variant="contained"
+                                    startIcon={<AddIcon />}
+                                    onClick={() => handleOpen()}
+                                >
+                                    Thêm
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    startIcon={<DeleteIcon />}
+                                    color="error"
+                                    onClick={handleDelete}
+                                >
+                                    Xóa
+                                </Button>
+                            </Box>
+                        )}
+                        <Box sx={{ display: "flex", flex: 1, width: "100%" }}>
+                            <TextField
+                                fullWidth
+                                size="small"
+                                value={value}
+                                placeholder="Tìm kiếm theo tên loại thiết bị"
                                 onChange={(e) => setValue(e.target.value)}
                                 InputProps={{
                                     endAdornment: (
                                         <InputAdornment position="end">
                                             <Search sx={{ fontSize: 24 }} />
                                         </InputAdornment>
-                                    )
-                                }}>
-                            </TextField>
+                                    ),
+                                }}
+                            ></TextField>
                         </Box>
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
-                    <DialogTitle>{selectedDeviceType ? 'Sửa loại thiết bị' : 'Thêm loại thiết bị'}</DialogTitle>
+                    <DialogTitle>
+                        {selectedDeviceType ? "Sửa loại thiết bị" : "Thêm loại thiết bị"}
+                    </DialogTitle>
                     <DialogContent>
                         <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                                 <TextField
                                     fullWidth
                                     id="name"
@@ -276,8 +313,9 @@ const DeviceTypes: React.FC = () => {
                                     error={formik.touched.group && Boolean(formik.errors.group)}
                                     helperText={formik.touched.group && formik.errors.group}
                                 >
-                                    <MenuItem value="Xe">Xe</MenuItem>
-                                    <MenuItem value="Máy">Máy</MenuItem>
+                                    {DEVICE_TYPE_OPTIONS.map(o => (
+                                        <MenuItem key={o.label} value={o.value}>{o.label}</MenuItem>
+                                    ))}
                                 </TextField>
                             </Box>
                         </Box>
@@ -285,12 +323,12 @@ const DeviceTypes: React.FC = () => {
                     <DialogActions>
                         <Button onClick={handleClose}>Hủy</Button>
                         <Button onClick={() => formik.submitForm()} variant="contained">
-                            {selectedDeviceType ? 'Cập nhật' : 'Thêm mới'}
+                            {selectedDeviceType ? "Cập nhật" : "Thêm mới"}
                         </Button>
                     </DialogActions>
                 </AccordionDetails>
             </Accordion>
-            <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
+            <Box display="flex" alignItems="center" sx={{ mb: 2, mt: 2 }}>
                 <Typography variant="h4">Bảng phân loại thiết bị</Typography>
                 <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
                     <Settings sx={{ fontSize: 30 }} />
@@ -309,71 +347,16 @@ const DeviceTypes: React.FC = () => {
                     ))}
                 </Menu>
             </Box>
-            <TableContainer component={Paper}>
-                <Table sx={{
-                    "& td, & th": { padding: "4px 8px" },
-                }}>
-                    <TableHead>
-                        <TableRow>
-                            {user?.role === "admin" && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>
-                                <Checkbox
-                                    color="primary"
-                                    checked={DeviceTypes.length > 0 && selectedDeviceTypes.length === DeviceTypes.length}
-                                    indeterminate={selectedDeviceTypes.length > 0 && selectedDeviceTypes.length < DeviceTypes.length}
-                                    onChange={() => {
-                                        if (selectedDeviceTypes.length === DeviceTypes.length) {
-                                            setSelectedDeviceTypes([]);
-                                        } else {
-                                            setSelectedDeviceTypes(DeviceTypes.map((item: DeviceType) => item._id));
-                                        }
-                                    }}
-                                />
-                            </TableCell>}
-                            {visibleColumns.includes('name') && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>Tên loại thiết bị</TableCell>}
-                            {visibleColumns.includes('group') && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 150 }}>Nhóm thiết bị</TableCell>}
-                            {user?.role === "admin" && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 100, minWidth: 100 }}>Sửa</TableCell>}
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {!isLoading ? paginatedData.map((DeviceType: any, index: number) => (
-                            <TableRow key={DeviceType._id} sx={{
-                                // Dùng chỉ mục index để tạo màu xen kẽ
-                                backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
-                            }}>
-                                {user?.role === "admin" && <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(DeviceType._id)} checked={selectedDeviceTypes.includes(DeviceType._id)} /></TableCell>}
-                                {visibleColumns.includes('name') && <TableCell sx={{}}>{DeviceType.name}</TableCell>}
-                                {visibleColumns.includes('group') && <TableCell align='center' sx={{}}>{DeviceType.group}</TableCell>}
-                                {user?.role === "admin" && (user?.role !== 'dispatcher' && <TableCell align='center' sx={{}}>
-                                    <IconButton color="primary" onClick={async () => {
-                                        if (open) {
-                                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                                            if (result.isConfirmed) {
-                                                handleOpen(DeviceType);
-                                            }
-                                        } else {
-                                            handleOpen(DeviceType);
-                                        }
-                                    }}>
-                                        <EditIcon />
-                                    </IconButton>
-                                </TableCell>)}
-                            </TableRow>
-                        )) : <Typography>Loading...</Typography>}
-                    </TableBody>
-                </Table>
-                <TablePagination
-                    component="div"
-                    count={DeviceTypes.length}
-                    page={page}
-                    onPageChange={handleChangePage}
-                    rowsPerPage={pageSize}
-                    onRowsPerPageChange={(event) => {
-                        setPageSize(parseInt(event.target.value, 10));
-                        setPage(0);
-                    }}
-                />
-            </TableContainer>
-
+            <CustomDataGrid
+                rows={DeviceTypes}
+                defaultColumns={defaultColumns.filter((c) =>
+                    visibleColumns.includes(c.id)
+                )}
+                isAdmin={user?.role === RoleEnum.ADMIN}
+                onEdit={handleOpen}
+                onSelectionChange={setSelectedDeviceTypes}
+                isLoading={isLoading}
+            />
         </Box>
     );
 };
