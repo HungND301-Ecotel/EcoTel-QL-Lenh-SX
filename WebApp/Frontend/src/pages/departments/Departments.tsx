@@ -1,19 +1,11 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState } from "react";
 import {
     Box,
     Button,
-    Dialog,
     DialogTitle,
     DialogContent,
     DialogActions,
     TextField,
-    Paper,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
     IconButton,
     Typography,
     MenuItem,
@@ -23,130 +15,166 @@ import {
     Accordion,
     AccordionSummary,
     AccordionDetails,
-    Checkbox,
-    TablePagination,
     Breadcrumbs,
     InputAdornment,
     LinearProgress,
-} from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, Settings, ExpandMore, Search, UploadFile, Download, } from '@mui/icons-material';
-import { useFormik } from 'formik';
-import * as yup from 'yup';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '../../config/api.config';
-import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
-import { Department } from '../../types';
-import { useAtom } from 'jotai';
-import { userAtom } from '../../atoms/userAtoms';
-import { departmentValidationSchema } from '../../utils/validation';
-import DepartmentService from '../../services/departmentService';
-
+} from "@mui/material";
+import {
+    Delete as DeleteIcon,
+    Add as AddIcon,
+    Edit as EditIcon,
+    Settings,
+    Search,
+    UploadFile,
+    Download,
+} from "@mui/icons-material";
+import { useFormik } from "formik";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+    showConfirmAlert,
+    showErrorAlert,
+    showSuccessAlert,
+} from "../../components/Alert";
+import { useAtom } from "jotai";
+import { userAtom } from "../../atoms/userAtoms";
+import { departmentValidationSchema } from "../../utils/validation";
+import DepartmentService from "../../services/departmentService";
+import { RoleEnum } from "../../enums";
+import CustomDataGrid from "../../components/Table/CustomDataGrid";
 
 const Departments = () => {
     const [open, setOpen] = useState(false);
     const [selectedDepartment, setSelectedDepartment] = useState<any>(null);
     const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
-    const [value, setValue] = useState("")
-    const [user] = useAtom(userAtom)
+    const [value, setValue] = useState("");
+    const [user] = useAtom(userAtom);
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
     const formRef = useRef<HTMLDivElement>(null);
 
-    const handleSelected = (departmentId: string) => {
-        setSelectedDepartments(prev =>
-            prev.includes(departmentId)
-                ? prev.filter(id => id !== departmentId)
-                : [...prev, departmentId]
-        );
-    };
-    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
+    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
     const defaultColumns = [
-        { id: 'code', label: 'Mã đơn vị' },
-        { id: 'name', label: 'Tên đơn vị' },
-        { id: 'description', label: 'Chức năng' },
-    ]
-    const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
+        { id: "code", label: "Mã đơn vị", width: 150, align: "left" as "left"},
+        { id: "name", label: "Tên đơn vị", align: "left" as "left" },
+        { id: "description", label: "Chức năng", align: "left" as "left" },
+        {
+            id: "edit",
+            label: "Sửa",
+            width: 60,
+            renderCell: (params: { row: any }) => (
+                <IconButton
+                    color="primary"
+                    disabled={user?.role !== RoleEnum.ADMIN}
+                    onClick={async () => {
+                        if (user?.role !== RoleEnum.ADMIN) return;
+                        if (open) {
+                            const result = await showConfirmAlert(
+                                "Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?"
+                            );
+                            if (result.isConfirmed) {
+                                handleOpen(params.row);
+                            }
+                        } else {
+                            handleOpen(params.row);
+                        }
+                    }}
+                >
+                    <EditIcon />
+                </IconButton>
+            ),
+            sortable: false,
+            filterable: false,
+        },
+    ];
+
+    const [visibleColumns, setVisibleColumns] = useState<string[]>(
+        user?.role === RoleEnum.ADMIN
+            ? defaultColumns.map((i) => i.id)
+            : defaultColumns.filter((i) => i.id !== "edit").map((i) => i.id)
+    );
 
     const handleToggleColumn = (id: string) => {
-        setVisibleColumns(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
-    }
+        setVisibleColumns((prev) =>
+            prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+        );
+    };
 
     const { data: departments = [], isLoading } = useQuery({
-        queryKey: ['departments', value],
+        queryKey: ["departments", value],
         queryFn: () => DepartmentService.getAll({ code: value }),
     });
-
 
     const createMutation = useMutation({
         mutationFn: DepartmentService.create,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['departments'] });
-            showSuccessAlert('Thêm đơn vị thành công');
+            queryClient.invalidateQueries({ queryKey: ["departments"] });
+            showSuccessAlert("Thêm đơn vị thành công");
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
-        }
+            showErrorAlert(error.response.data.message || error.message || "Lỗi");
+        },
     });
 
     const updateMutation = useMutation({
         mutationFn: DepartmentService.update,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['departments'] });
-            showSuccessAlert('Cập nhật đơn vị thành công');
+            queryClient.invalidateQueries({ queryKey: ["departments"] });
+            showSuccessAlert("Cập nhật đơn vị thành công");
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
-        }
+            showErrorAlert(error.response.data.message || error.message || "Lỗi");
+        },
     });
 
     const deleteMutation = useMutation({
         mutationFn: DepartmentService.delete,
         onSuccess: (message) => {
-            queryClient.invalidateQueries({ queryKey: ['departments'] });
+            queryClient.invalidateQueries({ queryKey: ["departments"] });
             setSelectedDepartments([]);
-            showSuccessAlert(message || 'Xóa thành công');
-            handleClose()
+            showSuccessAlert(message || "Xóa thành công");
+            handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
-        }
+            showErrorAlert(error.response.data.message || error.message || "Lỗi");
+        },
     });
-    const [progress, setProgress] = useState(0)
+    const [progress, setProgress] = useState(0);
     const [isUploading, setIsUploading] = useState(false);
     const importFile = useMutation({
-        mutationFn: (formData: FormData) => DepartmentService.importFile(formData, setProgress),
+        mutationFn: (formData: FormData) =>
+            DepartmentService.importFile(formData, setProgress),
         onMutate: () => {
             setIsUploading(true);
             setProgress(0); // Reset tiến trình khi bắt đầu
         },
         onSuccess: (message) => {
-            queryClient.invalidateQueries({ queryKey: ['departments'] });
+            queryClient.invalidateQueries({ queryKey: ["departments"] });
             setIsUploading(false);
             showSuccessAlert(message || "Import thành công!");
             handleClose();
         },
         onError: (error: any) => {
             setIsUploading(false);
-            showErrorAlert(error.response?.data?.message || 'Lỗi khi import');
-        }
+            showErrorAlert(error.response?.data?.message || "Lỗi khi import");
+        },
     });
 
     const exportExcel = useMutation({
         mutationFn: DepartmentService.exportFile,
         onSuccess: () => { },
         onError: (error: any) => {
-            showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
-        }
+            showErrorAlert(error.response?.data?.message || error.message || "Lỗi");
+        },
     });
 
     const formik = useFormik({
         initialValues: {
-            name: '',
-            code: '',
-            description: '',
+            name: "",
+            code: "",
+            description: "",
         },
         validationSchema: departmentValidationSchema,
         onSubmit: (values) => {
@@ -164,7 +192,7 @@ const Departments = () => {
             formik.setValues({
                 name: department.name,
                 code: department.code,
-                description: department.description || '',
+                description: department.description || "",
             });
         } else {
             setSelectedDepartment(null);
@@ -175,8 +203,8 @@ const Departments = () => {
         setTimeout(() => {
             if (formRef.current) {
                 formRef.current.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
+                    behavior: "smooth",
+                    block: "start",
                 });
             }
         }, 500);
@@ -191,41 +219,30 @@ const Departments = () => {
 
     const handleDelete = () => {
         if (selectedDepartments.length === 0) {
-            showErrorAlert('Không tìm thấy bản ghi cần xóa');
+            showErrorAlert("Không tìm thấy bản ghi cần xóa");
             return;
         }
-        showConfirmAlert(`Bạn có muốn xóa ${selectedDepartments.length} bản ghi?`).then((result) => {
+        showConfirmAlert(
+            `Bạn có muốn xóa ${selectedDepartments.length} bản ghi?`
+        ).then((result) => {
             if (result.isConfirmed) {
                 deleteMutation.mutate(selectedDepartments);
             }
         });
     };
 
-    const [page, setPage] = React.useState(0);
-    const [pageSize, setPageSize] = React.useState(10);
-
-    const handleChangePage = (event: React.MouseEvent<HTMLButtonElement, MouseEvent> | null, page: number) => {
-        setPage(page);
-    };
-
-    const pageData = (departments: any[], page: number, pageSize: number) => {
-        let data;
-        if (!page && !pageSize) {
-            data = departments
-        } else {
-            data = departments.slice(page * pageSize, (page + 1) * pageSize)
-        }
-        return data
-    }
-    const paginatedData = pageData(departments, page, pageSize);
     return (
         <Box>
             <Breadcrumbs aria-label="breadcrumb">
                 <Typography>Danh mục</Typography>
                 <Typography>Đơn vị</Typography>
             </Breadcrumbs>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, mt: 3 }}>
-                <Typography variant="h3" color={'blue'}>Đơn vị</Typography>
+            <Box
+                sx={{ display: "flex", justifyContent: "space-between", mb: 3, mt: 3 }}
+            >
+                <Typography variant="h3" color={"blue"}>
+                    Đơn vị
+                </Typography>
             </Box>
             <Accordion expanded={expanded} ref={formRef}>
                 <AccordionSummary
@@ -233,106 +250,140 @@ const Departments = () => {
                     aria-controls="panel1-content"
                     id="panel1-header"
                     sx={{
-                        backgroundColor: 'white', '&.Mui-focusVisible': {
-                            backgroundColor: 'white',
+                        backgroundColor: "white",
+                        "&.Mui-focusVisible": {
+                            backgroundColor: "white",
                         },
                     }}
                 >
-                    <Box sx={{
-                        display: 'flex', gap: 2, alignItems: 'center', width: '100%', flexDirection: {
-                            xs: 'column',
-                            md: 'row',
-                        },
-                    }}>
-                        {user?.role === "admin" && <Box display={'flex'} gap={2} sx={{
+                    <Box
+                        sx={{
+                            display: "flex",
+                            gap: 2,
+                            alignItems: "center",
+                            width: "100%",
                             flexDirection: {
-                                xs: 'column',
-                                md: 'row',
+                                xs: "column",
+                                md: "row",
                             },
-                            width: {
-                                xs: '100%', // Group này chiếm 100% khi xếp dọc
-                                md: 'auto',
-                            },
-                        }}>
-                            <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
-                                Thêm
-                            </Button>
-                            <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
-                                Xóa
-                            </Button>
-                        </Box>}
-                        <Box flex={2} sx={{
-                            flexDirection: {
-                                xs: 'column',
-                                md: 'row',
-                            },
-                            width: {
-                                xs: '100%', // Group này chiếm 100% khi xếp dọc
-                                md: 'auto',
-                            },
-                        }}>
-                            <TextField fullWidth size="small" value={value}
-                                placeholder='Tìm kiếm theo mã đơn vị'
+                        }}
+                    >
+                        {user?.role === RoleEnum.ADMIN && (
+                            <Box
+                                display={"flex"}
+                                gap={2}
+                                sx={{
+                                    flexDirection: {
+                                        xs: "column",
+                                        md: "row",
+                                    },
+                                    width: {
+                                        xs: "100%", // Group này chiếm 100% khi xếp dọc
+                                        md: "auto",
+                                    },
+                                }}
+                            >
+                                <Button
+                                    variant="contained"
+                                    startIcon={<AddIcon />}
+                                    onClick={() => handleOpen()}
+                                >
+                                    Thêm
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    startIcon={<DeleteIcon />}
+                                    color="error"
+                                    onClick={handleDelete}
+                                >
+                                    Xóa
+                                </Button>
+                            </Box>
+                        )}
+                        <Box
+                            flex={2}
+                            sx={{
+                                flexDirection: {
+                                    xs: "column",
+                                    md: "row",
+                                },
+                                width: {
+                                    xs: "100%", // Group này chiếm 100% khi xếp dọc
+                                    md: "auto",
+                                },
+                            }}
+                        >
+                            <TextField
+                                fullWidth
+                                size="small"
+                                value={value}
+                                placeholder="Tìm kiếm theo mã đơn vị"
                                 onChange={(e) => setValue(e.target.value)}
                                 InputProps={{
                                     endAdornment: (
                                         <InputAdornment position="end">
                                             <Search sx={{ fontSize: 24 }} />
                                         </InputAdornment>
-                                    )
-                                }}>
-                            </TextField>
-                        </Box>
-                        {user?.role === "admin" && <Box display="flex" gap={2} sx={{
-                            flexDirection: {
-                                xs: 'column',
-                                md: 'row',
-                            },
-                            width: {
-                                xs: '100%', // Group này chiếm 100% khi xếp dọc
-                                md: 'auto',
-                            },
-                        }}>
-                            <input
-                                id="upload-excel"
-                                type="file"
-                                accept=".xlsx, .xls"
-                                style={{ display: 'none' }}
-                                onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                        const formData = new FormData();
-                                        formData.append('file', file);
-                                        importFile.mutate(formData);
-                                    }
-                                    e.target.value = "";
+                                    ),
                                 }}
-                            />
+                            ></TextField>
+                        </Box>
+                        {user?.role === RoleEnum.ADMIN && (
+                            <Box
+                                display="flex"
+                                gap={2}
+                                sx={{
+                                    flexDirection: {
+                                        xs: "column",
+                                        md: "row",
+                                    },
+                                    width: {
+                                        xs: "100%", // Group này chiếm 100% khi xếp dọc
+                                        md: "auto",
+                                    },
+                                }}
+                            >
+                                <input
+                                    id="upload-excel"
+                                    type="file"
+                                    accept=".xlsx, .xls"
+                                    style={{ display: "none" }}
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                            const formData = new FormData();
+                                            formData.append("file", file);
+                                            importFile.mutate(formData);
+                                        }
+                                        e.target.value = "";
+                                    }}
+                                />
 
-                            <label htmlFor="upload-excel">
+                                <label htmlFor="upload-excel">
+                                    <Button
+                                        fullWidth
+                                        component="span"
+                                        variant="contained"
+                                        startIcon={<UploadFile />}
+                                    >
+                                        Tải lên excel
+                                    </Button>
+                                </label>
                                 <Button
-                                    fullWidth
                                     component="span"
                                     variant="contained"
-                                    startIcon={<UploadFile />}
+                                    startIcon={<Download />}
+                                    onClick={() => exportExcel.mutate()}
                                 >
-                                    Tải lên excel
+                                    Tải xuống
                                 </Button>
-                            </label>
-                            <Button
-                                component="span"
-                                variant="contained"
-                                startIcon={<Download />}
-                                onClick={() => exportExcel.mutate()}
-                            >
-                                Tải xuống
-                            </Button>
-                        </Box>}
+                            </Box>
+                        )}
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
                     <DialogTitle>
-                        {selectedDepartment ? 'Sửa đơn vị' : 'Thêm đơn vị mới'}
+                        {selectedDepartment ? "Sửa đơn vị" : "Thêm đơn vị mới"}
                     </DialogTitle>
                     <DialogContent>
                         <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
@@ -368,8 +419,13 @@ const Departments = () => {
                                 rows={3}
                                 value={formik.values.description}
                                 onChange={formik.handleChange}
-                                error={formik.touched.description && Boolean(formik.errors.description)}
-                                helperText={formik.touched.description && formik.errors.description}
+                                error={
+                                    formik.touched.description &&
+                                    Boolean(formik.errors.description)
+                                }
+                                helperText={
+                                    formik.touched.description && formik.errors.description
+                                }
                             />
                         </Box>
                     </DialogContent>
@@ -381,10 +437,10 @@ const Departments = () => {
                             disabled={createMutation.isPending || updateMutation.isPending}
                         >
                             {createMutation.isPending || updateMutation.isPending
-                                ? 'Đang lưu...'
+                                ? "Đang lưu..."
                                 : selectedDepartment
-                                    ? 'Cập nhật'
-                                    : 'Thêm mới'}
+                                    ? "Cập nhật"
+                                    : "Thêm mới"}
                         </Button>
                     </DialogActions>
                 </AccordionDetails>
@@ -408,7 +464,7 @@ const Departments = () => {
                     )}
                 </Box>
             )}
-            <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
+            <Box display="flex" alignItems="center" sx={{ mb: 2, mt: 2 }}>
                 <Typography variant="h4">Bảng đơn vị</Typography>
                 <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
                     <Settings sx={{ fontSize: 30 }} />
@@ -427,85 +483,18 @@ const Departments = () => {
                     ))}
                 </Menu>
             </Box>
-            <TableContainer component={Paper}>
-                <Table sx={{
-                    "& td, & th": { padding: "4px 8px" },
-                }}>
-                    <TableHead>
-                        <TableRow>
-                            {user?.role === "admin" && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>
-                                <Checkbox
-                                    color="primary"
-                                    checked={departments.length > 0 && selectedDepartments.length === departments.length}
-                                    indeterminate={selectedDepartments.length > 0 && selectedDepartments.length < departments.length}
-                                    onChange={() => {
-                                        if (selectedDepartments.length === departments.length) {
-                                            setSelectedDepartments([]);
-                                        } else {
-                                            setSelectedDepartments(departments.map((item: Department) => item._id));
-                                        }
-                                    }}
-                                />
-                            </TableCell>}
-                            {defaultColumns.map((col) =>
-                                visibleColumns.includes(col.id) && (
-                                    <TableCell key={col.id} align="center" sx={{
-                                        backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18
-                                    }}>
-                                        {col.label}
-                                    </TableCell>
-                                )
-                            )}
-                            {user?.role === "admin" && <TableCell align="center" sx={{
-                                backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 50
-                            }}>
-                                Sửa
-                            </TableCell>}
-                        </TableRow>
-                    </TableHead>
-                    {!isLoading ? <TableBody>
-                        {paginatedData.map((department: any, index: number) => (
-                            <TableRow key={department._id} sx={{
-                                // Dùng chỉ mục index để tạo màu xen kẽ
-                                backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
-                            }}>
-                                {user?.role === "admin" && <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(department._id)} checked={selectedDepartments.includes(department._id)} /></TableCell>}
-                                {visibleColumns.includes('code') && <TableCell align='center' sx={{ width: 200 }}>{department.code}</TableCell>}
-                                {visibleColumns.includes('name') && <TableCell sx={{}}>{department.name}</TableCell>}
-                                {visibleColumns.includes('description') && <TableCell sx={{}}>{department.description}</TableCell>}
-                                {user?.role === "admin" && <TableCell sx={{}}>
-                                    <IconButton onClick={async () => {
-                                        if (open) {
-                                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                                            if (result.isConfirmed) {
-                                                handleOpen(department);
-                                            }
-                                        } else {
-                                            handleOpen(department);
-                                        }
-                                    }} color="primary">
-                                        <EditIcon />
-                                    </IconButton>
-                                </TableCell>}
-                            </TableRow>
-                        ))}
-                    </TableBody> : <Typography>Loading...</Typography>}
-                </Table>
-                <TablePagination
-                    component="div"
-                    count={departments.length}
-                    page={page}
-                    onPageChange={handleChangePage}
-                    rowsPerPage={pageSize}
-                    onRowsPerPageChange={(event) => {
-                        setPageSize(parseInt(event.target.value, 10));
-                        setPage(0);
-                    }}
-                />
-            </TableContainer>
-
+            <CustomDataGrid
+                rows={departments}
+                defaultColumns={defaultColumns.filter((c) =>
+                    visibleColumns.includes(c.id)
+                )}
+                isAdmin={user?.role === RoleEnum.ADMIN}
+                onEdit={(department) => handleOpen(department)}
+                onSelectionChange={setSelectedDepartments}
+                isLoading={isLoading}
+            />
         </Box>
     );
 };
 
-export default Departments; 
+export default Departments;

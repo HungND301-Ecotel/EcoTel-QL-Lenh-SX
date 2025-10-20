@@ -3,29 +3,18 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Box,
     Button,
-    Dialog,
     DialogActions,
     DialogContent,
     DialogTitle,
     IconButton,
     Paper,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
     Typography,
     TextField,
     MenuItem,
-    Chip,
     Autocomplete,
-    styled,
-    Popper,
     InputAdornment,
     Grid,
     Checkbox,
-    Tooltip,
     AccordionDetails,
     AccordionSummary,
     Accordion,
@@ -39,17 +28,14 @@ import {
     Delete as DeleteIcon,
     Visibility,
     VisibilityOff,
-    ImportExport,
     UploadFile,
     Close,
     InfoOutlined,
-    ExpandMore,
     Download,
     Search,
     ResetTv,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
-import * as yup from 'yup';
 import api from '../../config/api.config';
 import { Department, Position, User } from '../../types';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
@@ -63,6 +49,8 @@ import { userValidationSchema } from '../../utils/validation';
 import UserService from '../../services/userService';
 import PositionService from '../../services/positionService';
 import DepartmentService from '../../services/departmentService';
+import { RoleEnum } from '../../enums';
+import { ROLE_TYPE_OPTIONS } from '../../utils/const';
 
 
 const Users: React.FC = () => {
@@ -75,17 +63,13 @@ const Users: React.FC = () => {
     const [active, setActive] = useState("")
     const [avatar, setAvatar] = useState("")
     const queryClient = useQueryClient();
-    const [user, setUser] = useAtom(userAtom)
+    const [user] = useAtom(userAtom)
 
     const [showPassword, setShowPassword] = useState(false);
     const [expanded, setExpanded] = useState(false);
     const formRef = useRef<HTMLDivElement>(null);
     const handleTogglePassword = () => {
         setShowPassword((prev) => !prev);
-    };
-
-    const handleChange = (value: string) => {
-        setActive(prev => (prev === value ? '' : value)); // bỏ chọn nếu click lại
     };
 
     const { data: users = [], isLoading } = useQuery({
@@ -214,7 +198,7 @@ const Users: React.FC = () => {
             phone: '',
             avatar: avatar,
             salaryCode: '',
-            department: user?.role === "manager" ? user?.department?._id : '',
+            department: user?.role === RoleEnum.ADMIN ? user?.department?._id : '',
             position: undefined,
             role: '',
             ...selectedUser,
@@ -358,7 +342,7 @@ const Users: React.FC = () => {
             field: 'role', headerName: 'Phân quyền', width: 150, headerAlign: 'center',
             renderCell: (params) => (
                 <Typography>
-                    {params.row.role === "admin" ? "Quản trị hệ thống" : params.row.role === "dispatcher" ? "Điều hành sản xuất" : params.row.role === "manager" ? "Quản lý" : "Nhân viên"}
+                    {params.row.role === RoleEnum.ADMIN ? "Quản trị hệ thống" : params.row.role === RoleEnum.DISPATCHER ? "Điều hành sản xuất" : params.row.role === RoleEnum.MANAGER ? "Quản lý" : "Nhân viên"}
                 </Typography>
             )
         },
@@ -434,7 +418,7 @@ const Users: React.FC = () => {
             filterable: false,
         },
     ];
-    const visibleColumns = user?.role === 'admin'
+    const visibleColumns = user?.role === RoleEnum.ADMIN
         ? userColumns
         : userColumns.filter((col: GridColDef) => col.field !== 'resetpass' && col.field !== 'active' && col.field !== 'edit');
 
@@ -465,7 +449,7 @@ const Users: React.FC = () => {
                             md: 'row',
                         },
                     }}>
-                        {user?.role === "admin" && <Box display="flex" gap={2} sx={{
+                        {user?.role === RoleEnum.ADMIN && <Box display="flex" gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -508,7 +492,7 @@ const Users: React.FC = () => {
                                         )
                                     }}>
                                 </TextField>
-                                {user?.role === 'admin' && <Autocomplete
+                                {user?.role === RoleEnum.ADMIN && <Autocomplete
                                     fullWidth
                                     size='small'
                                     options={departments}
@@ -528,7 +512,7 @@ const Users: React.FC = () => {
                                 />}
                             </Box>
                         </Box>
-                        {user?.role === "admin" && <Box display="flex" gap={2} sx={{
+                        {user?.role === RoleEnum.ADMIN && <Box display="flex" gap={2} sx={{
                             flexDirection: {
                                 xs: 'column',
                                 md: 'row',
@@ -724,12 +708,11 @@ const Users: React.FC = () => {
                                     onChange={formik.handleChange}
                                     error={formik.touched.role && Boolean(formik.errors.role)}
                                     helperText={formik.touched.role && formik.errors.role}
-                                    disabled={selectedUser?.role === "admin"}
+                                    disabled={selectedUser?.role === RoleEnum.ADMIN}
                                 >
-                                    {user?.role === "admin" && <MenuItem value="admin">Quản trị hệ thống</MenuItem>}
-                                    <MenuItem value="dispatcher">Điều hành sản xuất</MenuItem>
-                                    <MenuItem value="manager">Quản lý</MenuItem>
-                                    <MenuItem value="employee">Nhân viên</MenuItem>
+                                    {ROLE_TYPE_OPTIONS.map(i => (
+                                        <MenuItem key={i.label} value={i.label} hidden={user?.role !== RoleEnum.ADMIN}>{i.value}</MenuItem>
+                                    ))}
                                 </TextField>
 
                                 <Grid container spacing={2}>
@@ -796,8 +779,8 @@ const Users: React.FC = () => {
                     pageSizeOptions={[10, 20, 50]}
                     autoHeight
                     disableRowSelectionOnClick
-                    checkboxSelection={user?.role === "admin"}
-                    isRowSelectable={(params) => params.row.role !== 'admin'}
+                    checkboxSelection={user?.role === RoleEnum.ADMIN}
+                    isRowSelectable={(params) => params.row.role !== RoleEnum.ADMIN}
                     onRowSelectionModelChange={(newSelection) => {
                         setSelectedUsers(newSelection as string[]);
                     }}

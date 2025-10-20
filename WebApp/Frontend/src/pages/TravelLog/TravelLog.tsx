@@ -1,11 +1,8 @@
-import React, { Fragment, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     Box,
     Button,
-    Card,
-    CardContent,
-    Dialog,
     DialogActions,
     DialogContent,
     DialogTitle,
@@ -18,21 +15,12 @@ import {
     TableHead,
     TableRow,
     Typography,
-    Chip,
     Checkbox,
     TextField,
-    MenuItem,
-    Tooltip,
     Autocomplete,
-    styled,
-    Popper,
-    Menu,
-    Switch,
-    ListItemText,
     Accordion,
     AccordionSummary,
     AccordionDetails,
-    Pagination,
     TablePagination,
     Stack,
     Table,
@@ -42,35 +30,17 @@ import {
     Add as AddIcon,
     Edit as EditIcon,
     Delete as DeleteIcon,
-    Search,
-    MoreVert,
-    MoreHoriz,
-    FileDownload,
-    InfoOutlined,
-    SyncAlt,
-    Visibility,
-    CancelOutlined,
-    Settings,
-    ExpandMore,
-    FilterTiltShiftSharp,
-    Download,
-    UploadFile,
     Delete,
 } from "@mui/icons-material";
 import { FieldArray, FormikProvider, useFormik } from "formik";
-import * as yup from "yup";
 import api from "../../config/api.config";
 import { Device, Location, Material, Shift, TravelLog } from "../../types";
 import {
     DatePicker,
-    DateTimePicker,
-    DesktopTimePicker,
     LocalizationProvider,
 } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs, { Dayjs } from "dayjs";
-import { useSocket } from "../../hooks/useSocket";
-import ShiftReport from "../../components/Modal/ShiftReport";
 import {
     showConfirmAlert,
     showErrorAlert,
@@ -78,13 +48,9 @@ import {
 } from "../../components/Alert";
 import { useAtom } from "jotai";
 import { userAtom } from "../../atoms/userAtoms";
-import { DataGrid, GridColDef } from "@mui/x-data-grid";
-// import { Table, TableColumnsType, TableProps } from "antd";
-// import { TableRowSelection } from "antd/es/table/interface";
 import { trvelLogValidationSchema } from "../../utils/validation";
 import TravelLogService from "../../services/travelLogService";
 import { RoleEnum } from "../../enums";
-import CustomDataGrid from "../../components/Table/CustomDataGrid";
 import { getFormikFieldProps } from "../../utils/helper";
 import { StyledPopper } from "../../ui/poppers";
 
@@ -99,8 +65,6 @@ const TravelLogs: React.FC = () => {
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
     const formRef = useRef<HTMLDivElement>(null);
-
-    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(50);
@@ -186,7 +150,7 @@ const TravelLogs: React.FC = () => {
         queryKey: ["locations"],
         queryFn: () => api.get("/locations").then((res) => res.data.data),
     });
-    const { data, isLoading } = useQuery({
+    const { data } = useQuery({
         queryKey: ["travellogs", page, pageSize, startTime, endTime],
         queryFn: () =>
             TravelLogService.getAll({
@@ -214,55 +178,6 @@ const TravelLogs: React.FC = () => {
             showErrorAlert(error.response.data.message || error.message || "Lỗi");
         },
     });
-
-    // const [progress, setProgress] = useState(0);
-    // const [isUploading, setIsUploading] = useState(false);
-    // const importFile = useMutation({
-    //     mutationFn: (formData: FormData) =>
-    //         TravelLogService.importFile(formData, setProgress),
-    //     onMutate: () => {
-    //         setIsUploading(true);
-    //         setProgress(0); // Reset tiến trình khi bắt đầu
-    //     },
-    //     onSuccess: (data) => {
-    //         queryClient.invalidateQueries({ queryKey: ["safetyMeasures"] });
-    //         setIsUploading(false);
-    //         let combinedMessage = `Import dữ liệu hoàn tất. Đã xử lý ${data.summary.totalProcessed} bản ghi.`;
-    //         combinedMessage += `\nĐã thêm mới: ${data.summary.insertedCount}`;
-    //         combinedMessage += `\nĐã cập nhật: ${data.summary.updatedCount}`;
-
-    //         // Thêm chi tiết lỗi nếu có
-    //         if (data.invalidRows && data.invalidRows.length > 0) {
-    //             combinedMessage += `\n\n--- CÓ LỖI XẢY RA TRONG QUÁ TRÌNH IMPORT ---`;
-    //             combinedMessage += `\n${data.invalidRows.length} bản ghi không hợp lệ:`;
-
-    //             // Liệt kê chi tiết một vài lỗi đầu tiên
-    //             data.invalidRows.slice(0, 5).forEach((item: any, index: number) => {
-    //                 combinedMessage += `\n- Dòng ${index + 1}: Lỗi "${item.error}"`;
-    //             });
-
-    //             // Thông báo nếu còn nhiều lỗi hơn
-    //             if (data.invalidRows.length > 5) {
-    //                 combinedMessage += `\n... và ${data.invalidRows.length - 5} lỗi khác.`;
-    //             }
-    //         }
-
-    //         showSuccessAlert(combinedMessage);
-    //         handleClose();
-    //     },
-    //     onError: (error: any) => {
-    //         setIsUploading(false);
-    //         showErrorAlert(error.response?.data?.message || "Lỗi khi import");
-    //     },
-    // });
-
-    // const exportExcel = useMutation({
-    //     mutationFn: TravelLogService.exportFile,
-    //     onSuccess: () => { },
-    //     onError: (error: any) => {
-    //         showErrorAlert(error.response?.data?.message || error.message || "Lỗi");
-    //     },
-    // });
 
     const updateMutation = useMutation({
         mutationFn: (updatedTravelLog: Partial<TravelLog>) =>
@@ -541,59 +456,6 @@ const TravelLogs: React.FC = () => {
                                 </LocalizationProvider>
                             </Box>
 
-                            {/* {user?.role === RoleEnum.ADMIN && (
-                                <Box
-                                    display="flex"
-                                    gap={2}
-                                    sx={{
-                                        display: "flex",
-                                        gap: 1, // Khoảng cách nhỏ hơn giữa các nút
-                                        flexDirection: {
-                                            xs: "column",
-                                            md: "row",
-                                        },
-                                        width: {
-                                            xs: "100%", // Group này chiếm 100% khi xếp dọc
-                                            md: "auto",
-                                        },
-                                    }}
-                                >
-                                    <input
-                                        id="upload-excel"
-                                        type="file"
-                                        accept=".xlsx, .xls"
-                                        style={{ display: "none" }}
-                                        onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            if (file) {
-                                                const formData = new FormData();
-                                                formData.append("file", file);
-                                                importFile.mutate(formData);
-                                            }
-                                            e.target.value = "";
-                                        }}
-                                    />
-
-                                    <label htmlFor="upload-excel">
-                                        <Button
-                                            fullWidth
-                                            component="span"
-                                            variant="contained"
-                                            startIcon={<UploadFile />}
-                                        >
-                                            Tải lên excel
-                                        </Button>
-                                    </label>
-                                    <Button
-                                        component="span"
-                                        variant="contained"
-                                        startIcon={<Download />}
-                                        onClick={() => exportExcel.mutate()}
-                                    >
-                                        Tải xuống
-                                    </Button>
-                                </Box>
-                            )} */}
                         </Box>
                     </AccordionSummary>
                     <AccordionDetails>
@@ -926,7 +788,7 @@ const TravelLogs: React.FC = () => {
                         }}>
                             <TableHead>
                                 <TableRow>
-                                    {user?.role === "admin" && <TableCell rowSpan={2} align="center" sx={{
+                                    {user?.role === RoleEnum.ADMIN && <TableCell rowSpan={2} align="center" sx={{
                                         backgroundColor: '#f5f5f5',
                                     }}>
                                         <Checkbox
@@ -953,7 +815,7 @@ const TravelLogs: React.FC = () => {
                                     <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5' }} rowSpan={2}>Độ cao thực tế nơi đổ</TableCell>
                                     <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5' }} colSpan={2}>Toàn tuyến</TableCell>
                                     <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5' }} colSpan={4}>Trong đó cục bộ</TableCell>
-                                    {user?.role === "admin" && <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5' }} rowSpan={2}>Sửa</TableCell>}
+                                    {user?.role === RoleEnum.ADMIN && <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5' }} rowSpan={2}>Sửa</TableCell>}
                                 </TableRow>
                                 <TableRow>
                                     <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5' }}>C.độ (km)</TableCell>
@@ -975,7 +837,7 @@ const TravelLogs: React.FC = () => {
                                                     {/* Chỉ hiển thị các ô gộp ở dòng đầu */}
                                                     {routeIndex === 0 && (
                                                         <>
-                                                            {user?.role === "admin" && <TableCell align='center' rowSpan={span} sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(t._id)} checked={selectedTravelLogs.includes(t._id)} /></TableCell>}
+                                                            {user?.role === RoleEnum.ADMIN && <TableCell align='center' rowSpan={span} sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(t._id)} checked={selectedTravelLogs.includes(t._id)} /></TableCell>}
                                                             <TableCell align="center" rowSpan={span} sx={{ width: 30 }}>{(page * pageSize) + index + 1}</TableCell>
                                                             <TableCell align="center" rowSpan={span}>{t.excavator?.code}</TableCell>
                                                             <TableCell align="center" rowSpan={span}>{t.workingDate ? format(new Date(t.workingDate), 'dd-MM-yyyy') : ''}</TableCell>
@@ -993,7 +855,7 @@ const TravelLogs: React.FC = () => {
                                                     <TableCell align="center">{r.localMaxHeightM}</TableCell>
                                                     <TableCell align="center">{r.localDistanceKm}</TableCell>
                                                     <TableCell align="center">{r.localLiftHeightM}</TableCell>
-                                                    {routeIndex === 0 && user?.role === "admin" && (
+                                                    {routeIndex === 0 && user?.role === RoleEnum.ADMIN && (
                                                         <TableCell align='center' rowSpan={span} sx={{ width: 50 }}>
                                                             <IconButton color="primary" onClick={async () => {
                                                                 if (open) {

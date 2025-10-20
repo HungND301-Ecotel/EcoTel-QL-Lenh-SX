@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Login from './pages/auth/Login';
 import Orders from './pages/orders/Orders';
 import Devices from './pages/vehicles/Vehicles';
@@ -23,13 +23,13 @@ import Machines from './pages/machine/Machine';
 import Shifts from './pages/shift/Shifts';
 import OrderByUsers from './pages/orders/OrderByUser';
 import './index.css'
-import { useSocket } from './hooks/useSocket';
 import PrivacyPolicy from './pages/PrivacyPolicy/PrivacyPolicy';
 import TravelLogs from './pages/TravelLog/TravelLog';
-import MainLayout from './components/layout/MainLayout';
+import MainLayout from './layout/MainLayout';
 import DashBoard from './pages/dashboard/Dashboard';
 import DeviceModels from './pages/deviceModels/DeviceModels';
 import Models from './pages/model/Model';
+import { RoleEnum } from './enums';
 
 
 interface PrivateRouteProps {
@@ -38,7 +38,6 @@ interface PrivateRouteProps {
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
     const token = localStorage.getItem('token');
-    const [user] = useAtom(userAtom);
     if (!token) {
         return <Navigate to="/login" />;
     }
@@ -49,9 +48,8 @@ const App = () => {
     const token = localStorage.getItem('token');
     const [user, setUser] = useAtom(userAtom)
     const queryClient = useQueryClient();
-    const socket = useSocket();
 
-    const { data, isLoading } = useQuery({
+    const { data } = useQuery({
         queryKey: ['user', token],
         queryFn: () => api.get(`/auth/me`).then(res => res.data.data.user),
         enabled: !!token,
@@ -97,7 +95,7 @@ const App = () => {
                     path="/orders"
                     element={
                         <PrivateRoute>
-                            {user?.role === "dispatcher" ? <DispatcherOrders /> : <Orders />}
+                            {user?.role === RoleEnum.DISPATCHER ? <DispatcherOrders /> : <Orders />}
                         </PrivateRoute>
                     }
                 />

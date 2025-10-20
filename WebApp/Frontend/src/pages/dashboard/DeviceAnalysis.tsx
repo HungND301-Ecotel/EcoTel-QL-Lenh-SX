@@ -9,21 +9,15 @@ import {
     TableCell,
     TableBody,
     Popover,
-    Snackbar,
-    Alert,
     TextField,
     Autocomplete,
     IconButton,
     CircularProgress,
-    Chip,
     AlertColor,
 } from '@mui/material';
 import React, { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-    Devices as DeviceIcon,
-    Business as DepartmentIcon,
-    Person2 as PersonIcon,
     RotateLeft as RotateLeftIcon,
 } from '@mui/icons-material';
 import api from '../../config/api.config';
@@ -33,6 +27,7 @@ import BlinkButton from '../../components/BlinkButton';
 import Deviceprocess from './DeviceProcess';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
+import { RoleEnum, StatusDeviceEnum } from '../../enums';
 
 export default function DeviceAnalysic({ departments }: { departments: any[] }) {
     const [user] = useAtom(userAtom)
@@ -110,7 +105,7 @@ export default function DeviceAnalysic({ departments }: { departments: any[] }) 
                     )}
                 </IconButton>
                 <Box display="flex" alignItems="center" gap={2}>
-                    {["admin", "dispatcher"].includes(user?.role) && <Autocomplete
+                    {[RoleEnum.ADMIN, RoleEnum.DISPATCHER].includes(user?.role) && <Autocomplete
                         size="small"
                         options={departments}
                         getOptionLabel={(option: any) =>
@@ -198,16 +193,16 @@ export default function DeviceAnalysic({ departments }: { departments: any[] }) 
                                                 <TableCell rowSpan={span} align="center" sx={{ border: '1px solid #e0e0e0' }}>{group.departmentName}</TableCell>
                                             )}
                                             <TableCell align="center" sx={{ border: '1px solid #e0e0e0' }}>{item.typeName}</TableCell>
-                                            <TableCell align="center" sx={{ border: '1px solid #e0e0e0', cursor: 'pointer' }} onClick={(e) => handleDetailClick(e, "available", group.departmentName, item.typeName)}>
+                                            <TableCell align="center" sx={{ border: '1px solid #e0e0e0', cursor: 'pointer' }} onClick={(e) => handleDetailClick(e, StatusDeviceEnum.AVAILABLE, group.departmentName, item.typeName)}>
                                                 {item.statusCounts?.available > 0 ? <Deviceprocess value={item.statusCounts?.available || 0} total={total} color="#4CAF50" /> : item.statusCounts?.available}
                                             </TableCell>
-                                            <TableCell align="center" sx={{ border: '1px solid #e0e0e0', cursor: 'pointer' }} onClick={(e) => handleDetailClick(e, "in_use", group.departmentName, item.typeName)}>
+                                            <TableCell align="center" sx={{ border: '1px solid #e0e0e0', cursor: 'pointer' }} onClick={(e) => handleDetailClick(e, StatusDeviceEnum.IN_USE, group.departmentName, item.typeName)}>
                                                 {item.statusCounts?.in_use > 0 ? <Deviceprocess value={item.statusCounts?.in_use || 0} total={total} color="#F44336" /> : item.statusCounts?.in_use}
                                             </TableCell>
-                                            <TableCell align="center" sx={{ border: '1px solid #e0e0e0', cursor: 'pointer' }} onClick={(e) => handleDetailClick(e, "maintenance", group.departmentName, item.typeName)}>
+                                            <TableCell align="center" sx={{ border: '1px solid #e0e0e0', cursor: 'pointer' }} onClick={(e) => handleDetailClick(e, StatusDeviceEnum.MAINTENANCE, group.departmentName, item.typeName)}>
                                                 {item.statusCounts?.maintenance > 0 ? <Deviceprocess value={item.statusCounts?.maintenance || 0} total={total} color="#FF9800" /> : item.statusCounts?.maintenance}
                                             </TableCell>
-                                            <TableCell align="center" sx={{ border: '1px solid #e0e0e0', cursor: 'pointer' }} onClick={(e) => handleDetailClick(e, "retired", group.departmentName, item.typeName)}>
+                                            <TableCell align="center" sx={{ border: '1px solid #e0e0e0', cursor: 'pointer' }} onClick={(e) => handleDetailClick(e, StatusDeviceEnum.RETIRED, group.departmentName, item.typeName)}>
                                                 {item.statusCounts?.retired > 0 ? <Deviceprocess value={item.statusCounts?.retired || 0} total={total} color="#E0E0E0" /> : item.statusCounts?.retired}
                                             </TableCell>
                                         </TableRow>)

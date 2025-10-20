@@ -29,6 +29,7 @@ import api from '../../config/api.config';
 import { Typography } from 'antd';
 import { AlertSnackbar } from '../../components/Alert';
 import localforage from 'localforage';
+import { RoleEnum } from '../../enums';
 
 // Danh sách loại sản lượng
 const productions = [
@@ -274,7 +275,7 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
                             <IconButton onClick={() => setOpen(true)}>
                                 <BarChart color="primary" sx={{ fontSize: 30 }} />
                             </IconButton>
-                            {(user?.role === 'admin' || user?.role === 'dispatcher') && (
+                            {(user?.role === RoleEnum.ADMIN || user?.role === RoleEnum.DISPATCHER) && (
                                 <Autocomplete
                                     size="small"
                                     options={departments}

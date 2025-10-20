@@ -1,20 +1,11 @@
-import React, { useRef, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useRef, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     Box,
     Button,
-    Dialog,
     DialogActions,
     DialogContent,
-    DialogTitle,
     IconButton,
-    Paper,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
     Typography,
     TextField,
     MenuItem,
@@ -24,142 +15,172 @@ import {
     Accordion,
     AccordionSummary,
     AccordionDetails,
-    Checkbox,
-    TablePagination,
     Breadcrumbs,
     InputAdornment,
     LinearProgress,
-} from '@mui/material';
+} from "@mui/material";
 import {
     Add as AddIcon,
-    Edit as EditIcon,
     Delete as DeleteIcon,
+    Edit as EditIcon,
     Settings,
-    ExpandMore,
     Search,
     UploadFile,
     Download,
-} from '@mui/icons-material';
-import { useFormik } from 'formik';
-import * as yup from 'yup';
-import api from '../../config/api.config';
-import { Job, Position } from '../../types';
-import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
-import { useAtom } from 'jotai';
-import { userAtom } from '../../atoms/userAtoms';
-import { positionValidationSchema } from '../../utils/validation';
-import PositionService from '../../services/positionService';
-
+} from "@mui/icons-material";
+import { useFormik } from "formik";
+import { Position } from "../../types";
+import {
+    showConfirmAlert,
+    showErrorAlert,
+    showSuccessAlert,
+} from "../../components/Alert";
+import { useAtom } from "jotai";
+import { userAtom } from "../../atoms/userAtoms";
+import { positionValidationSchema } from "../../utils/validation";
+import PositionService from "../../services/positionService";
+import { RoleEnum } from "../../enums";
+import CustomDataGrid from "../../components/Table/CustomDataGrid";
 
 const Positions: React.FC = () => {
     const [open, setOpen] = useState(false);
-    const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
+    const [selectedPosition, setSelectedPosition] = useState<Position | null>(
+        null
+    );
     const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
-    const [value, setValue] = useState("")
-    const [user] = useAtom(userAtom)
+    const [value, setValue] = useState("");
+    const [user] = useAtom(userAtom);
     const queryClient = useQueryClient();
     const [expanded, setExpanded] = useState(false);
     const formRef = useRef<HTMLDivElement>(null);
 
-    const handleSelected = (positionId: string) => {
-        setSelectedPositions(prev =>
-            prev.includes(positionId)
-                ? prev.filter(id => id !== positionId)
-                : [...prev, positionId]
-        );
-    };
-    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
+    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
     const defaultColumns = [
-        { id: 'name', label: 'Tên chức danh, nghề nghiệp' },
-        { id: 'note', label: 'Mô tả' },
-    ]
-    const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
+        { id: "name", label: "Tên chức danh, nghề nghiệp", align: "left" as "left" },
+        { id: "note", label: "Mô tả", align: "left" as "left" },
+        {
+            id: "edit",
+            label: "Sửa",
+            width: 60,
+            renderCell: (params: { row: any }) => (
+                <IconButton
+                    color="primary"
+                    disabled={user?.role !== RoleEnum.ADMIN}
+                    onClick={async () => {
+                        if (user?.role !== RoleEnum.ADMIN) return;
+                        if (open) {
+                            const result = await showConfirmAlert(
+                                "Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?"
+                            );
+                            if (result.isConfirmed) {
+                                handleOpen(params.row);
+                            }
+                        } else {
+                            handleOpen(params.row);
+                        }
+                    }}
+                >
+                    <EditIcon />
+                </IconButton>
+            ),
+            sortable: false,
+            filterable: false,
+        },
+    ];
+    const [visibleColumns, setVisibleColumns] = useState<string[]>(
+        user?.role === RoleEnum.ADMIN
+            ? defaultColumns.map((i) => i.id)
+            : defaultColumns.filter((i) => i.id !== "edit").map((i) => i.id)
+    );
 
     const handleToggleColumn = (id: string) => {
-        setVisibleColumns(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
-    }
+        setVisibleColumns((prev) =>
+            prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+        );
+    };
 
     const { data: positions = [], isLoading } = useQuery({
-        queryKey: ['positions', value],
+        queryKey: ["positions", value],
         queryFn: () => PositionService.getAll({ name: value }),
     });
-
 
     const createMutation = useMutation({
         mutationFn: PositionService.create,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['positions'] });
-            showSuccessAlert('Thêm chức danh thành công');
+            queryClient.invalidateQueries({ queryKey: ["positions"] });
+            showSuccessAlert("Thêm chức danh thành công");
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
-        }
+            showErrorAlert(error.response.data.message || error.message || "Lỗi");
+        },
     });
 
     const updateMutation = useMutation({
         mutationFn: PositionService.update,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['positions'] });
-            showSuccessAlert('Cập nhật chức danh thành công');
+            queryClient.invalidateQueries({ queryKey: ["positions"] });
+            showSuccessAlert("Cập nhật chức danh thành công");
             handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
-        }
+            showErrorAlert(error.response.data.message || error.message || "Lỗi");
+        },
     });
 
     const deleteMutation = useMutation({
         mutationFn: PositionService.delete,
         onSuccess: (message) => {
-            queryClient.invalidateQueries({ queryKey: ['positions'] });
+            queryClient.invalidateQueries({ queryKey: ["positions"] });
             setSelectedPositions([]);
-            showSuccessAlert(message || 'Xóa thành công');
-            handleClose()
+            showSuccessAlert(message || "Xóa thành công");
+            handleClose();
         },
         onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
-        }
+            showErrorAlert(error.response.data.message || error.message || "Lỗi");
+        },
     });
-    const [progress, setProgress] = useState(0)
+
+    const [progress, setProgress] = useState(0);
     const [isUploading, setIsUploading] = useState(false);
     const importFile = useMutation({
-        mutationFn: (formData: FormData) => PositionService.importFile(formData, setProgress),
+        mutationFn: (formData: FormData) =>
+            PositionService.importFile(formData, setProgress),
         onMutate: () => {
             setIsUploading(true);
             setProgress(0); // Reset tiến trình khi bắt đầu
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['positions'] });
+            queryClient.invalidateQueries({ queryKey: ["positions"] });
             setIsUploading(false);
             showSuccessAlert("Import thành công!");
             handleClose();
         },
         onError: (error: any) => {
             setIsUploading(false);
-            showErrorAlert(error.response?.data?.message || 'Lỗi khi import');
-        }
+            showErrorAlert(error.response?.data?.message || "Lỗi khi import");
+        },
     });
 
     const exportExcel = useMutation({
         mutationFn: PositionService.exportFile,
         onSuccess: () => { },
         onError: (error: any) => {
-            showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
-        }
+            showErrorAlert(error.response?.data?.message || error.message || "Lỗi");
+        },
     });
     const formik = useFormik({
         initialValues: {
-            name: '',
-            note: ''
+            name: "",
+            note: "",
         },
         validationSchema: positionValidationSchema,
         onSubmit: (values) => {
             if (selectedPosition) {
                 updateMutation.mutate({ ...values, _id: selectedPosition._id });
             } else {
-                createMutation.mutate({ ...values, });
+                createMutation.mutate({ ...values });
             }
         },
     });
@@ -169,19 +190,19 @@ const Positions: React.FC = () => {
             setSelectedPosition(position);
             formik.setValues({
                 ...position,
-                note: position.note ?? ''
+                note: position.note ?? "",
             });
         } else {
             setSelectedPosition(null);
             formik.resetForm();
         }
-        setExpanded(true)
+        setExpanded(true);
         setOpen(true);
         setTimeout(() => {
             if (formRef.current) {
                 formRef.current.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
+                    behavior: "smooth",
+                    block: "start",
                 });
             }
         }, 500);
@@ -189,48 +210,37 @@ const Positions: React.FC = () => {
 
     const handleClose = () => {
         setOpen(false);
-        setExpanded(false)
+        setExpanded(false);
         setSelectedPosition(null);
         formik.resetForm();
     };
 
     const handleDelete = () => {
         if (selectedPositions.length === 0) {
-            showErrorAlert('Không tìm thấy bản ghi cần xóa');
+            showErrorAlert("Không tìm thấy bản ghi cần xóa");
             return;
         }
-        showConfirmAlert(`Bạn có muốn xóa ${selectedPositions.length} bản ghi?`).then((result) => {
+        showConfirmAlert(
+            `Bạn có muốn xóa ${selectedPositions.length} bản ghi?`
+        ).then((result) => {
             if (result.isConfirmed) {
                 deleteMutation.mutate(selectedPositions);
             }
         });
     };
 
-    const [page, setPage] = React.useState(0);
-    const [pageSize, setPageSize] = React.useState(10);
-
-    const handleChangePage = (event: React.MouseEvent<HTMLButtonElement, MouseEvent> | null, page: number) => {
-        setPage(page);
-    };
-
-    const pageData = (positions: any[], page: number, pageSize: number) => {
-        let data;
-        if (!page && !pageSize) {
-            data = positions
-        } else {
-            data = positions.slice(page * pageSize, (page + 1) * pageSize)
-        }
-        return data
-    }
-    const paginatedData = pageData(positions, page, pageSize);
     return (
         <Box>
             <Breadcrumbs aria-label="breadcrumb">
                 <Typography>Danh mục</Typography>
                 <Typography>Chức danh, nghề nghiệp</Typography>
             </Breadcrumbs>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, mt: 3 }}>
-                <Typography variant="h3" color={'blue'}>Chức danh, nghề nghiệp</Typography>
+            <Box
+                sx={{ display: "flex", justifyContent: "space-between", mb: 3, mt: 3 }}
+            >
+                <Typography variant="h3" color={"blue"}>
+                    Chức danh, nghề nghiệp
+                </Typography>
             </Box>
             <Accordion expanded={expanded} ref={formRef}>
                 <AccordionSummary
@@ -238,107 +248,141 @@ const Positions: React.FC = () => {
                     aria-controls="panel1-content"
                     id="panel1-header"
                     sx={{
-                        backgroundColor: 'white', '&.Mui-focusVisible': {
-                            backgroundColor: 'white',
+                        backgroundColor: "white",
+                        "&.Mui-focusVisible": {
+                            backgroundColor: "white",
                         },
                     }}
                 >
-                    <Box sx={{
-                        display: 'flex', gap: 2, alignItems: 'center', width: '100%', flexDirection: {
-                            xs: 'column',
-                            md: 'row',
-                        },
-                    }}>
-                        {user?.role === "admin" && <Box display={'flex'} gap={2} sx={{
+                    <Box
+                        sx={{
+                            display: "flex",
+                            gap: 2,
+                            alignItems: "center",
+                            width: "100%",
                             flexDirection: {
-                                xs: 'column',
-                                md: 'row',
+                                xs: "column",
+                                md: "row",
                             },
-                            width: {
-                                xs: '100%', // Group này chiếm 100% khi xếp dọc
-                                md: 'auto',
-                            },
-                        }}>
-                            <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()}>
-                                Thêm
-                            </Button>
-                            <Button variant="contained" startIcon={<DeleteIcon />} color='error' onClick={handleDelete}>
-                                Xóa
-                            </Button>
-                        </Box>}
-                        <Box flex={2} sx={{
-                            flexDirection: {
-                                xs: 'column',
-                                md: 'row',
-                            },
-                            width: {
-                                xs: '100%', // Group này chiếm 100% khi xếp dọc
-                                md: 'auto',
-                            },
-                        }}>
-                            <TextField fullWidth size="small" value={value}
-                                placeholder='Tìm kiếm theo tên chức danh, nghề nghiệp'
+                        }}
+                    >
+                        {user?.role === RoleEnum.ADMIN && (
+                            <Box
+                                display={"flex"}
+                                gap={2}
+                                sx={{
+                                    flexDirection: {
+                                        xs: "column",
+                                        md: "row",
+                                    },
+                                    width: {
+                                        xs: "100%", // Group này chiếm 100% khi xếp dọc
+                                        md: "auto",
+                                    },
+                                }}
+                            >
+                                <Button
+                                    variant="contained"
+                                    startIcon={<AddIcon />}
+                                    onClick={() => handleOpen()}
+                                >
+                                    Thêm
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    startIcon={<DeleteIcon />}
+                                    color="error"
+                                    onClick={handleDelete}
+                                >
+                                    Xóa
+                                </Button>
+                            </Box>
+                        )}
+                        <Box
+                            flex={2}
+                            sx={{
+                                flexDirection: {
+                                    xs: "column",
+                                    md: "row",
+                                },
+                                width: {
+                                    xs: "100%", // Group này chiếm 100% khi xếp dọc
+                                    md: "auto",
+                                },
+                            }}
+                        >
+                            <TextField
+                                fullWidth
+                                size="small"
+                                value={value}
+                                placeholder="Tìm kiếm theo tên chức danh, nghề nghiệp"
                                 onChange={(e) => setValue(e.target.value)}
                                 InputProps={{
                                     endAdornment: (
                                         <InputAdornment position="end">
                                             <Search sx={{ fontSize: 24 }} />
                                         </InputAdornment>
-                                    )
-                                }}>
-                            </TextField>
-                        </Box>
-                        {user?.role === "admin" && <Box display="flex" gap={2} sx={{
-                            flexDirection: {
-                                xs: 'column',
-                                md: 'row',
-                            },
-                            width: {
-                                xs: '100%', // Group này chiếm 100% khi xếp dọc
-                                md: 'auto',
-                            },
-                        }}>
-                            <input
-                                id="upload-excel"
-                                type="file"
-                                accept=".xlsx, .xls"
-                                style={{ display: 'none' }}
-                                onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                        const formData = new FormData();
-                                        formData.append('file', file);
-                                        importFile.mutate(formData);
-                                    }
-                                    e.target.value = "";
+                                    ),
                                 }}
-                            />
+                            ></TextField>
+                        </Box>
+                        {user?.role === RoleEnum.ADMIN && (
+                            <Box
+                                display="flex"
+                                gap={2}
+                                sx={{
+                                    flexDirection: {
+                                        xs: "column",
+                                        md: "row",
+                                    },
+                                    width: {
+                                        xs: "100%", // Group này chiếm 100% khi xếp dọc
+                                        md: "auto",
+                                    },
+                                }}
+                            >
+                                <input
+                                    id="upload-excel"
+                                    type="file"
+                                    accept=".xlsx, .xls"
+                                    style={{ display: "none" }}
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                            const formData = new FormData();
+                                            formData.append("file", file);
+                                            importFile.mutate(formData);
+                                        }
+                                        e.target.value = "";
+                                    }}
+                                />
 
-                            <label htmlFor="upload-excel">
+                                <label htmlFor="upload-excel">
+                                    <Button
+                                        fullWidth
+                                        component="span"
+                                        variant="contained"
+                                        startIcon={<UploadFile />}
+                                    >
+                                        Tải lên excel
+                                    </Button>
+                                </label>
                                 <Button
-                                    fullWidth
                                     component="span"
                                     variant="contained"
-                                    startIcon={<UploadFile />}
+                                    startIcon={<Download />}
+                                    onClick={() => exportExcel.mutate()}
                                 >
-                                    Tải lên excel
+                                    Tải xuống
                                 </Button>
-                            </label>
-                            <Button
-                                component="span"
-                                variant="contained"
-                                startIcon={<Download />}
-                                onClick={() => exportExcel.mutate()}
-                            >
-                                Tải xuống
-                            </Button>
-                        </Box>}
+                            </Box>
+                        )}
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
                     <DialogContent>
                         <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                                 <TextField
                                     fullWidth
                                     id="name"
@@ -367,7 +411,7 @@ const Positions: React.FC = () => {
                     <DialogActions>
                         <Button onClick={handleClose}>Hủy</Button>
                         <Button onClick={() => formik.submitForm()} variant="contained">
-                            {selectedPosition ? 'Cập nhật' : 'Thêm mới'}
+                            {selectedPosition ? "Cập nhật" : "Thêm mới"}
                         </Button>
                     </DialogActions>
                 </AccordionDetails>
@@ -391,7 +435,7 @@ const Positions: React.FC = () => {
                     )}
                 </Box>
             )}
-            <Box display="flex" alignItems='center' sx={{ mb: 2, mt: 2 }}>
+            <Box display="flex" alignItems="center" sx={{ mb: 2, mt: 2 }}>
                 <Typography variant="h4">Bảng chức danh, nghề nghiệp</Typography>
                 <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
                     <Settings sx={{ fontSize: 30 }} />
@@ -410,86 +454,16 @@ const Positions: React.FC = () => {
                     ))}
                 </Menu>
             </Box>
-            <TableContainer component={Paper}>
-                <Table sx={{
-                    "& td, & th": { padding: "4px 8px" },
-                }}>
-                    <TableHead>
-                        <TableRow>
-                            {user?.role === "admin" && <TableCell align='center' sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18 }}>
-                                <Checkbox
-                                    color="primary"
-                                    checked={positions.length > 0 && selectedPositions.length === positions.length}
-                                    indeterminate={selectedPositions.length > 0 && selectedPositions.length < positions.length}
-                                    onChange={() => {
-                                        if (selectedPositions.length === positions.length) {
-                                            setSelectedPositions([]);
-                                        } else {
-                                            setSelectedPositions(positions.map((item: Position) => item._id));
-                                        }
-                                    }}
-                                />
-                            </TableCell>}
-                            {defaultColumns.map((col) =>
-                                visibleColumns.includes(col.id) && (
-                                    <TableCell key={col.id} align="center" sx={{
-                                        backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18
-                                    }}>
-                                        {col.label}
-                                    </TableCell>
-                                )
-                            )}
-                            {user?.role === "admin" && <TableCell align="center" sx={{
-                                backgroundColor: '#f5f5f5', fontWeight: 'bold', fontSize: 18, width: 50
-                            }}>
-                                Sửa
-                            </TableCell>}
-                        </TableRow>
-                    </TableHead>
-                    {!isLoading ? <TableBody>
-                        {paginatedData.map((position: Position, index: number) => (
-                            <TableRow key={position._id} sx={{
-                                // Dùng chỉ mục index để tạo màu xen kẽ
-                                backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd',
-                            }}>
-                                {user?.role === "admin" && <TableCell align='center' sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(position._id)} checked={selectedPositions.includes(position._id)} /></TableCell>}
-                                {visibleColumns.includes('name') && <TableCell sx={{}}>{position.name}</TableCell>}
-                                {visibleColumns.includes('note') && <TableCell sx={{
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    maxWidth: 400,
-                                }}>{position.note}</TableCell>}
-                                {user?.role === "admin" && <TableCell sx={{}}>
-                                    <IconButton color="primary" onClick={async () => {
-                                        if (open) {
-                                            const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
-                                            if (result.isConfirmed) {
-                                                handleOpen(position);
-                                            }
-                                        } else {
-                                            handleOpen(position);
-                                        }
-                                    }}>
-                                        <EditIcon />
-                                    </IconButton>
-                                </TableCell>}
-                            </TableRow>
-                        ))}
-                    </TableBody> : <Typography>Loading...</Typography>}
-                </Table>
-                <TablePagination
-                    component="div"
-                    count={positions.length}
-                    page={page}
-                    onPageChange={handleChangePage}
-                    rowsPerPage={pageSize}
-                    onRowsPerPageChange={(event) => {
-                        setPageSize(parseInt(event.target.value, 10));
-                        setPage(0);
-                    }}
-                />
-            </TableContainer>
+            <CustomDataGrid
+                rows={positions}
+                defaultColumns={defaultColumns.filter((c) =>
+                    visibleColumns.includes(c.id)
+                )}
+                isAdmin={user?.role === RoleEnum.ADMIN}
+                onEdit={handleOpen}
+                onSelectionChange={setSelectedPositions}
+                isLoading={isLoading}
+            />
         </Box>
     );
 };

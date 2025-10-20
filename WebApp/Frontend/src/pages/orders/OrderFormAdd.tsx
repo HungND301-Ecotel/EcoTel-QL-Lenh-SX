@@ -1,29 +1,22 @@
 import React, { useRef, useState } from 'react';
 import { FieldArray, FormikProvider, useFormik } from 'formik';
-import * as yup from 'yup';
 import {
     Autocomplete,
     Box,
     Button,
     Checkbox,
-    Dialog,
-    DialogContent,
-    DialogTitle,
     Grid,
     IconButton,
     Menu,
     MenuItem,
-    Paper,
-    Popper,
     Stack,
-    styled,
     TextField,
     Typography,
 } from '@mui/material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/api.config';
 import { Order, Device, Job, Location, Material, SafetyMeasure, Shift, Department } from '../../types';
-import { DatePicker, DesktopTimePicker, LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
+import { DatePicker, DesktopTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -51,7 +44,6 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedJob, setSelectedJob] = useState<Job | null>(null)
     const [jobSafetyText, setJobSafetyText] = useState("");
-    const [userSafetyText, setUserSafetyText] = useState("");
 
     const safetyTextFieldRef = useRef<HTMLInputElement>(null);
 

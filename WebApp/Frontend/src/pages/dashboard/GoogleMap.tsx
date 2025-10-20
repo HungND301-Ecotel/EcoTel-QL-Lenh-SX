@@ -1,8 +1,7 @@
 import { Box } from '@mui/material';
-import React from 'react'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { customIcon } from '../../fixLeafletIcon'
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import api from '../../config/api.config';
 
 const containerStyle = {
@@ -15,7 +14,6 @@ const defaultCenter = {
 };
 
 export default function GoogleMap() {
-    const queryClient = useQueryClient();
     const { data: devices = [] } = useQuery({
         queryKey: ['devices'],
         queryFn: () => api.get('/devices').then(res => res.data.data),

@@ -11,15 +11,16 @@ import { useFormik } from 'formik'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Department, User } from '../../types'
 import { showErrorAlert, showSuccessAlert } from '../Alert'
+import { RoleEnum } from '../../enums'
+import { ROLE_TYPE_OPTIONS } from '../../utils/const'
 
 export default function Profile({ open, setOpen }: { open: boolean, setOpen: Dispatch<SetStateAction<boolean>> }) {
     const [avatar, setAvatar] = useState('')
     const [signatureUrl, setSignatureUrl] = useState('')
-    const [userData, setUserData] = useState<User | null>(null)
 
     const queryClient = useQueryClient()
 
-    const { data: user, isLoading } = useQuery({
+    const { data: user } = useQuery({
         queryKey: ['user'],
         queryFn: () => api.get(`/auth/me`).then(res => res.data.data.user),
     })
@@ -77,7 +78,6 @@ export default function Profile({ open, setOpen }: { open: boolean, setOpen: Dis
 
     useEffect(() => {
         if (user && open) {
-            setUserData(user)
             setAvatar(user.avatar || '')
             setSignatureUrl(user.signature || '')
             formik.setValues({
@@ -210,10 +210,9 @@ export default function Profile({ open, setOpen }: { open: boolean, setOpen: Dis
                         <TextField fullWidth select name="role" label="Phân quyền"
                             disabled
                             value={formik.values.role} onChange={formik.handleChange}>
-                            <MenuItem value="admin">Quản trị hệ thống</MenuItem>
-                            <MenuItem value="dispatcher">Điều hành sản xuất</MenuItem>
-                            <MenuItem value="manager">Quản lý</MenuItem>
-                            <MenuItem value="employee">Nhân viên</MenuItem>
+                            {ROLE_TYPE_OPTIONS.map(i => (
+                                <MenuItem key={i.label} value={i.label} hidden={user?.role !== RoleEnum.ADMIN}>{i.value}</MenuItem>
+                            ))}
                         </TextField>
 
                         <Grid container spacing={2}>

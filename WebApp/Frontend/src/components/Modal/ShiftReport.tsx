@@ -11,7 +11,6 @@ import {
     Accordion,
     AccordionSummary,
     AccordionDetails,
-    IconButton,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -22,7 +21,6 @@ import { ShiftReportType, Report, Job } from '../../types';
 import { showErrorAlert, showSuccessAlert } from '../Alert';
 import { format } from 'date-fns';
 import { JobTypeEnum } from '../../enums/index';
-import { Close } from '@mui/icons-material';
 
 export default function ShiftReport({
     open,
@@ -252,13 +250,13 @@ export default function ShiftReport({
             // case 'Vận hành xe':
             //     // gộp theo xe + máy xúc + điểm đến + Vật liệu (tùy nghiệp vụ)
             //     return `device:${r.device?._id || ''}__exc:${r.excavator?._id || ''}__to:${r.toLocation?._id || ''}__mat:${r.material?._id || ''}`;
-            case 'Vận hành xe phục vụ':
+            case JobTypeEnum.SERVICE_VEHICLE:
                 // gộp theo xe + from + to + Vật liệu
                 return `device:${r.device?._id || ''}__from:${r.fromLocation?._id || ''}__to:${r.toLocation?._id || ''}__mat:${r.material?._id || ''}`;
-            case 'Vận hành gạt':
+            case JobTypeEnum.DOZER:
                 // gộp theo device + material
                 return `device:${r.device?._id || ''}__mat:${r.material?._id || ''}`;
-            case 'Vận hành khoan':
+            case JobTypeEnum.DRILL:
                 // để mỗi bản ghi 1 nhóm riêng (không cộng số chuyến)
                 return `single:${r._id}`;
             default:
@@ -319,19 +317,19 @@ export default function ShiftReport({
 
             // Cộng dồn từ Formik để hiển thị tổng "sống"
             const vr = reportFormik.values.vehicleReports?.[formIndex] || {};
-            if (['Vận hành xe', 'Vận hành xúc', 'Vận hành xe phục vụ'].includes(jobType)) {
+            if ([JobTypeEnum.VEHICLE, JobTypeEnum.EXCAVATOR, JobTypeEnum.SERVICE_VEHICLE].includes(jobType)) {
                 byKey[key].totalQuantity = (byKey[key].totalQuantity || 0) + (Number(vr.quantity) || 0);
             }
-            if (jobType === 'Vận hành xe phục vụ') {
+            if (jobType === JobTypeEnum.SERVICE_VEHICLE) {
                 byKey[key].totalDistanceKm = (byKey[key].totalDistanceKm || 0) + (Number(vr.distanceKm) || 0);
                 byKey[key].totalWorkingMinutes =
                     (byKey[key].totalWorkingMinutes || 0) + (Number(vr.workingMinutes) || 0);
             }
-            if (jobType === 'Vận hành gạt') {
+            if (jobType === JobTypeEnum.DOZER) {
                 byKey[key].totalWorkingMinutes =
                     (byKey[key].totalWorkingMinutes || 0) + (Number(vr.workingMinutes) || 0);
             }
-            if (jobType === 'Vận hành khoan') {
+            if (jobType === JobTypeEnum.DRILL) {
                 byKey[key].totalDrillDepth =
                     (byKey[key].totalDrillDepth || 0) + (Number(vr.drillDepth) || 0);
                 byKey[key].totalHardnessF =
@@ -352,7 +350,7 @@ export default function ShiftReport({
                     {initialValues?.job?.name}
                 </Typography>
 
-                {['Vận hành xe', 'Vận hành xúc', 'Vận hành gạt', 'Vận hành khoan', 'Vận hành xe phục vụ'].includes(
+                {[JobTypeEnum.VEHICLE, JobTypeEnum.EXCAVATOR, JobTypeEnum.DOZER, JobTypeEnum.DRILL, JobTypeEnum.SERVICE_VEHICLE].includes(
                     jobType ?? '',
                 ) && (
                         <Box>
@@ -367,14 +365,14 @@ export default function ShiftReport({
                                     const toName = group.toLocation?.name || '';
 
                                     const headerRight =
-                                        jobType === 'Vận hành xúc'
+                                        jobType === JobTypeEnum.EXCAVATOR
                                             ? `Tổng số chuyến: ${group.totalQuantity || 0}`
-                                            : jobType === 'Vận hành xe'
+                                            : jobType === JobTypeEnum.VEHICLE
                                                 ? `Tổng số chuyến: ${group.totalQuantity || 0}`
-                                                : jobType === 'Vận hành xe phục vụ'
+                                                : jobType === JobTypeEnum.SERVICE_VEHICLE
                                                     ? `Tổng chuyến: ${group.totalQuantity || 0} • Tổng km: ${group.totalDistanceKm || 0} • Tổng phút: ${group.totalWorkingMinutes || 0
                                                     }`
-                                                    : jobType === 'Vận hành gạt'
+                                                    : jobType === JobTypeEnum.DOZER
                                                         ? `Tổng phút: ${group.totalWorkingMinutes || 0}`
                                                         : '';
 
@@ -386,10 +384,10 @@ export default function ShiftReport({
                                                         <Typography variant="subtitle1">
                                                             + Phương tiện: <b>{deviceCode}</b>
                                                         </Typography>
-                                                        {jobType === 'Vận hành xe' && excCode && (
+                                                        {jobType === JobTypeEnum.VEHICLE && excCode && (
                                                             <Typography variant="body2">Từ máy xúc: {excCode} • Đến điểm: {toName}</Typography>
                                                         )}
-                                                        {jobType === 'Vận hành xe phục vụ' && (fromName || toName) && (
+                                                        {jobType === JobTypeEnum.SERVICE_VEHICLE && (fromName || toName) && (
                                                             <Typography variant="body2">
                                                                 {fromName ? `Từ điểm: ${fromName}` : ''}
                                                                 {fromName && toName ? ' • ' : ''}
@@ -418,7 +416,7 @@ export default function ShiftReport({
                                                                 </Typography>
                                                             </Grid>
                                                             {/* KHOAN: drillDepth + hardnessF */}
-                                                            {jobType === 'Vận hành khoan' && (
+                                                            {jobType === JobTypeEnum.DRILL && (
                                                                 <>
                                                                     <Grid item xs={3}>
                                                                         <Typography>Mét khoan sâu:</Typography>
@@ -479,7 +477,7 @@ export default function ShiftReport({
                                                             )}
 
                                                             {/* XE/XÚC/SERVICE: quantity */}
-                                                            {['Vận hành xe phục vụ'].includes(jobType) && (
+                                                            {[JobTypeEnum.SERVICE_VEHICLE].includes(jobType) && (
                                                                 <>
                                                                     <Grid item xs={3}>
                                                                         <Typography>Số chuyến:</Typography>
@@ -510,7 +508,7 @@ export default function ShiftReport({
                                                                     </Grid>
                                                                 </>
                                                             )}
-                                                            {['Vận hành xe', 'Vận hành xúc',].includes(jobType) && (
+                                                            {[JobTypeEnum.VEHICLE, JobTypeEnum.EXCAVATOR,].includes(jobType) && (
                                                                 <>
                                                                     <Grid item xs={3}>
                                                                         <Typography>Thời gian:</Typography>
@@ -523,7 +521,7 @@ export default function ShiftReport({
                                                                 </>
                                                             )}
                                                             {/* SERVICE: distanceKm + workingMinutes */}
-                                                            {jobType === 'Vận hành xe phục vụ' && (
+                                                            {jobType === JobTypeEnum.SERVICE_VEHICLE && (
                                                                 <>
                                                                     <Grid item xs={3}>
                                                                         <Typography>Km di chuyển:</Typography>
@@ -584,7 +582,7 @@ export default function ShiftReport({
                                                             )}
 
                                                             {/* GẠT: workingMinutes */}
-                                                            {jobType === 'Vận hành gạt' && (
+                                                            {jobType === JobTypeEnum.DOZER && (
                                                                 <>
                                                                     <Grid item xs={3}>
                                                                         <Typography>Giờ sản phẩm (phút):</Typography>

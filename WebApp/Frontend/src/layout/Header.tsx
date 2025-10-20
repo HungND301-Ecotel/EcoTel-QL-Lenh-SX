@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import api from '../../config/api.config';
+import api from '../config/api.config';
 import { useAtom } from 'jotai';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -25,17 +25,8 @@ import {
     MenuList,
 } from '@mui/material';
 import {
-    Category,
-    LocationCity,
     Work,
-    LocalOffer,
-    PrecisionManufacturing,
-    SafetyCheck,
-    Timelapse,
-    Business,
     People,
-    LocalShipping,
-    AssignmentInd,
     MenuOpen,
     ExpandMore,
     VpnKeyOutlined,
@@ -45,10 +36,11 @@ import {
     ArrowRight,
     KeyboardArrowRight,
 } from '@mui/icons-material';
-import { userAtom } from '../../atoms/userAtoms';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import ChangePassword from '../Modal/ChangePassword';
-import Profile from '../Modal/Profile';
+import { userAtom } from '../atoms/userAtoms';
+import { useLocation, useNavigate } from 'react-router-dom';
+import ChangePassword from '../components/Modal/ChangePassword';
+import Profile from '../components/Modal/Profile';
+import { RoleEnum } from '../enums';
 
 export default function Header() {
     const navigate = useNavigate();
@@ -78,10 +70,10 @@ export default function Header() {
     };
 
     const menuItems = [
-        ["admin", "manager"].includes(user?.role) && {
+        [RoleEnum.ADMIN, RoleEnum.MANAGER].includes(user?.role) && {
             text: 'Biện pháp an toàn', path: '/safetyMeasures'
         },
-        ["admin", "manager", "dispatcher"].includes(user?.role) && {
+        [RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.DISPATCHER].includes(user?.role) && {
             text: 'Thiết bị', icon: <ArrowRight color='primary' />, path: '#',
             submenu: [
                 { text: 'Phân loại thiết bị', path: '/deviceTypes' },
@@ -90,31 +82,31 @@ export default function Header() {
                 { text: 'Thông tin máy', path: '/machines' },
             ]
         },
-        ["admin", "manager"].includes(user?.role) && {
+        [RoleEnum.ADMIN, RoleEnum.MANAGER].includes(user?.role) && {
             text: 'Cung độ', path: '/travelLog'
         },
-        ["admin", "manager", "dispatcher"].includes(user?.role) && {
+        [RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.DISPATCHER].includes(user?.role) && {
             text: 'Mô hình xe', path: '/models'
         },
-        ["admin", "manager"].includes(user?.role) && {
+        [RoleEnum.ADMIN, RoleEnum.MANAGER].includes(user?.role) && {
             text: 'Vật liệu', path: '/materials'
         },
-        ["admin", "manager"].includes(user?.role) && {
+        [RoleEnum.ADMIN, RoleEnum.MANAGER].includes(user?.role) && {
             text: 'Điểm đổ tải', path: '/locations'
         },
-        ["admin", "manager", "dispatcher"].includes(user?.role) && {
+        [RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.DISPATCHER].includes(user?.role) && {
             text: 'Cán bộ nhân viên', icon: <People color='primary' />, path: '/users'
         },
-        ["admin", "manager"].includes(user?.role) && {
+        [RoleEnum.ADMIN, RoleEnum.MANAGER].includes(user?.role) && {
             text: 'Công việc', icon: <Work color='primary' />, path: '/jobs'
         },
-        ["admin", "manager"].includes(user?.role) && {
+        [RoleEnum.ADMIN, RoleEnum.MANAGER].includes(user?.role) && {
             text: 'Chức danh nghề nghiệp', path: '/positions'
         },
-        ["admin", "manager", "dispatcher"].includes(user?.role) && {
+        [RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.DISPATCHER].includes(user?.role) && {
             text: 'Đơn vị', path: '/departments'
         },
-        ["admin", "manager"].includes(user?.role) && {
+        [RoleEnum.ADMIN, RoleEnum.MANAGER].includes(user?.role) && {
             text: 'Ca làm việc', path: '/shifts'
         },
     ].filter(Boolean);
@@ -187,7 +179,7 @@ export default function Header() {
                                     <ListItem button onClick={() => { navigate('/orders'); setDrawerOpen(false); }}>
                                         <ListItemText primary="Lệnh sản xuất" />
                                     </ListItem>
-                                    {["manager"].includes(user?.role) && (
+                                    {[RoleEnum.MANAGER].includes(user?.role) && (
                                         <ListItem button onClick={() => { navigate('/orderByUsers'); setDrawerOpen(false); }}>
                                             <ListItemText primary="Công việc của tôi" />
                                         </ListItem>
@@ -219,7 +211,7 @@ export default function Header() {
                                     }
 
                                     )}
-                                    {["admin", "manager", "dispatcher"].includes(user?.role) && (
+                                    {[RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.DISPATCHER].includes(user?.role) && (
                                         <ListItem button onClick={() => { navigate('/reports'); setDrawerOpen(false); }}>
                                             <ListItemText primary="Báo cáo" />
                                         </ListItem>
@@ -231,7 +223,7 @@ export default function Header() {
                         <Box display="flex" gap={2} maxWidth='xl' justifyContent='center'>
                             <Button color="inherit" sx={{ fontSize: 20, borderBottom: location.pathname === '/' ? '5px solid red' : '' }} onClick={() => navigate('/')}>Tổng quan</Button>
                             <Button color="inherit" sx={{ fontSize: 20, borderBottom: location.pathname === '/orders' ? '5px solid red' : '' }} onClick={() => navigate('/orders')}>Lệnh sản xuất</Button>
-                            {["manager"].includes(user?.role) && (
+                            {[RoleEnum.MANAGER].includes(user?.role) && (
                                 <Button color="inherit" sx={{ fontSize: 20, borderBottom: location.pathname === '/orderByUsers' ? '5px solid red' : '' }} onClick={() => navigate('/orderByUsers')}>Công việc của tôi</Button>
                             )}
                             {menuItems.length > 0 && (
@@ -279,7 +271,7 @@ export default function Header() {
                                     </Menu>
                                 </>
                             )}
-                            {["admin", "manager", "dispatcher"].includes(user?.role) && (
+                            {[RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.DISPATCHER].includes(user?.role) && (
                                 <Button color="inherit" sx={{ fontSize: 20, borderBottom: location.pathname === '/reports' ? '5px solid red' : '' }} onClick={() => navigate('/reports')}>Báo cáo</Button>
                             )}
                         </Box>

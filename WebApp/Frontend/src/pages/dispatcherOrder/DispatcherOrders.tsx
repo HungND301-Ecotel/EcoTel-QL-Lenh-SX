@@ -3,12 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Box,
     Button,
-    Card,
-    CardContent,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
     Grid,
     IconButton,
     Paper,
@@ -24,8 +18,6 @@ import {
     MenuItem,
     Tooltip,
     Autocomplete,
-    styled,
-    Popper,
     Typography,
     Menu,
     Switch,
@@ -33,7 +25,6 @@ import {
     Accordion,
     AccordionSummary,
     AccordionDetails,
-    Pagination,
     TablePagination,
 } from '@mui/material';
 import { format } from 'date-fns';
@@ -41,12 +32,8 @@ import {
     Add as AddIcon,
     Edit as EditIcon,
     Delete as DeleteIcon,
-    Search,
-    MoreVert,
-    MoreHoriz,
     FileDownload,
     InfoOutlined,
-    SyncAlt,
     CancelOutlined,
     Settings,
     ExpandMore,
@@ -54,9 +41,6 @@ import {
     Visibility,
     VisibilityOff,
 } from '@mui/icons-material';
-import { useFormik } from 'formik';
-import * as yup from 'yup';
-import api from '../../config/api.config';
 import { Order } from '../../types';
 import OrderFormAdd from './DispatcherOrderFormAdd';
 import OrderFormEdit from './DispatcherOrderFormEdit';
@@ -64,13 +48,13 @@ import DispatcherOrderFormTransfer from './DispatcherOrderFormTransfer';
 import dayjs, { Dayjs } from 'dayjs';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { useSocket } from '../../hooks/useSocket';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { StyledPopper } from '../../ui/poppers';
-import OrderHistories from '../../components/Modal/OrderHistories';
 import UserService from '../../services/userService';
 import DepartmentService from '../../services/departmentService';
 import OrderService from '../../services/orderService';
+import { StatusOrderEnum } from '../../enums';
+import OrderHistories from '../../components/Modal/OrderHistories';
 
 const DispatcherOrders: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -221,7 +205,7 @@ const DispatcherOrders: React.FC = () => {
             if (result.isConfirmed) {
                 // Nếu updateMutation đã hỗ trợ mảng thì gửi cancelable trực tiếp
                 cancelable.forEach((o) => {
-                    updateMutation.mutate({ _id: o._id, status: "cancel" });
+                    updateMutation.mutate({ _id: o._id, status: StatusOrderEnum.CANCEL });
                 });
             }
         });
@@ -506,29 +490,29 @@ const DispatcherOrders: React.FC = () => {
                     <ListItemText primary={`Tất cả (${orders.length})`} sx={{ color: 'blue' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
-                    <Checkbox color='default' name="status" checked={status === 'pending'}
-                        onChange={() => handleChange('pending')} />
-                    <ListItemText primary={`Chưa nhận lệnh (${orders.filter((o: Order) => o.status === "pending").length})`} sx={{ color: 'grey' }} />
+                    <Checkbox color='default' name="status" checked={status === StatusOrderEnum.PENDING}
+                        onChange={() => handleChange(StatusOrderEnum.PENDING)} />
+                    <ListItemText primary={`Chưa nhận lệnh (${orders.filter((o: Order) => o.status === StatusOrderEnum.PENDING).length})`} sx={{ color: 'grey' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
-                    <Checkbox color='success' name="status" checked={status === 'in_progress'}
-                        onChange={() => handleChange('in_progress')} />
-                    <ListItemText primary={`Đã nhận lệnh (${orders.filter((o: Order) => o.status === "in_progress").length})`} sx={{ color: 'green' }} />
+                    <Checkbox color='success' name="status" checked={status === StatusOrderEnum.INPROGRESS}
+                        onChange={() => handleChange(StatusOrderEnum.INPROGRESS)} />
+                    <ListItemText primary={`Đã nhận lệnh (${orders.filter((o: Order) => o.status === StatusOrderEnum.INPROGRESS).length})`} sx={{ color: 'green' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
-                    <Checkbox color='warning' name="status" checked={status === 'warning'}
-                        onChange={() => handleChange('warning')} />
-                    <ListItemText primary={`Lỗi (${orders.filter((o: Order) => o.status === "warning").length})`} sx={{ color: 'orange' }} />
+                    <Checkbox color='warning' name="status" checked={status === StatusOrderEnum.WARNING}
+                        onChange={() => handleChange(StatusOrderEnum.WARNING)} />
+                    <ListItemText primary={`Lỗi (${orders.filter((o: Order) => o.status === StatusOrderEnum.WARNING).length})`} sx={{ color: 'orange' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
-                    <Checkbox color='error' name="status" checked={status === 'completed'}
-                        onChange={() => handleChange('completed')} />
-                    <ListItemText primary={`Đã kết thúc (${orders.filter((o: Order) => o.status === "completed").length})`} sx={{ color: 'red' }} />
+                    <Checkbox color='error' name="status" checked={status === StatusOrderEnum.COMPLETED}
+                        onChange={() => handleChange(StatusOrderEnum.COMPLETED)} />
+                    <ListItemText primary={`Đã kết thúc (${orders.filter((o: Order) => o.status === StatusOrderEnum.COMPLETED).length})`} sx={{ color: 'red' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
-                    <Checkbox color='secondary' name="status" checked={status === 'cancel'}
-                        onChange={() => handleChange('cancel')} />
-                    <ListItemText primary={`Đã hủy (${orders.filter((o: Order) => o.status === "cancel").length})`} sx={{ color: 'purple' }} />
+                    <Checkbox color='secondary' name="status" checked={status === StatusOrderEnum.CANCEL}
+                        onChange={() => handleChange(StatusOrderEnum.CANCEL)} />
+                    <ListItemText primary={`Đã hủy (${orders.filter((o: Order) => o.status === StatusOrderEnum.CANCEL).length})`} sx={{ color: 'purple' }} />
                 </Box>
             </Box>
             <Box display="flex" justifyContent="space-between" sx={{ mb: 2, mt: 2 }}>
@@ -775,13 +759,13 @@ const DispatcherOrders: React.FC = () => {
                                                     {/* CÁC DÒNG TRONG NHÓM (giữ nguyên code cũ) */}
                                                     {expanded && (list as any[]).map((order: any, index: number) => (
                                                         <TableRow key={order._id} sx={{
-                                                            cursor: 'pointer', backgroundColor: order.status === 'pending'
+                                                            cursor: 'pointer', backgroundColor: order.status === StatusOrderEnum.PENDING
                                                                 ? 'white'
-                                                                : order.status === 'completed'
+                                                                : order.status === StatusOrderEnum.COMPLETED
                                                                     ? '#ffe5e5'
-                                                                    : order.status === 'in_progress'
+                                                                    : order.status === StatusOrderEnum.INPROGRESS
                                                                         ? '#e5f7e5'
-                                                                        : order.status === 'warning'
+                                                                        : order.status === StatusOrderEnum.WARNING
                                                                             ? '#fff8e1'
                                                                             : '#ede7f6',
                                                         }} onClick={() => setSelectedRow(order)}>
@@ -790,13 +774,13 @@ const DispatcherOrders: React.FC = () => {
                                                                 left: 0,
                                                                 zIndex: 1,
                                                                 width: 50,
-                                                                backgroundColor: order.status === 'pending'
+                                                                backgroundColor: order.status === StatusOrderEnum.PENDING
                                                                     ? 'white'
-                                                                    : order.status === 'completed'
+                                                                    : order.status === StatusOrderEnum.COMPLETED
                                                                         ? '#ffe5e5'
-                                                                        : order.status === 'in_progress'
+                                                                        : order.status === StatusOrderEnum.INPROGRESS
                                                                             ? '#e5f7e5'
-                                                                            : order.status === 'warning'
+                                                                            : order.status === StatusOrderEnum.WARNING
                                                                                 ? '#fff8e1'
                                                                                 : '#ede7f6',
 
@@ -809,13 +793,13 @@ const DispatcherOrders: React.FC = () => {
                                                                 left: 50,
                                                                 zIndex: 1,
                                                                 width: 50,
-                                                                backgroundColor: order.status === 'pending'
+                                                                backgroundColor: order.status === StatusOrderEnum.PENDING
                                                                     ? 'white'
-                                                                    : order.status === 'completed'
+                                                                    : order.status === StatusOrderEnum.COMPLETED
                                                                         ? '#ffe5e5'
-                                                                        : order.status === 'in_progress'
+                                                                        : order.status === StatusOrderEnum.INPROGRESS
                                                                             ? '#e5f7e5'
-                                                                            : order.status === 'warning'
+                                                                            : order.status === StatusOrderEnum.WARNING
                                                                                 ? '#fff8e1'
                                                                                 : '#ede7f6',
 
@@ -831,13 +815,13 @@ const DispatcherOrders: React.FC = () => {
                                                                 overflow: 'hidden',
                                                                 textOverflow: 'ellipsis',
                                                                 maxWidth: 150,
-                                                                backgroundColor: order.status === 'pending'
+                                                                backgroundColor: order.status === StatusOrderEnum.PENDING
                                                                     ? 'white'
-                                                                    : order.status === 'completed'
+                                                                    : order.status === StatusOrderEnum.COMPLETED
                                                                         ? '#ffe5e5'
-                                                                        : order.status === 'in_progress'
+                                                                        : order.status === StatusOrderEnum.INPROGRESS
                                                                             ? '#e5f7e5'
-                                                                            : order.status === 'warning'
+                                                                            : order.status === StatusOrderEnum.WARNING
                                                                                 ? '#fff8e1'
                                                                                 : '#ede7f6',
 
@@ -917,23 +901,23 @@ const DispatcherOrders: React.FC = () => {
                                                             }}>
                                                                 <Chip
                                                                     sx={{ width: '120px' }}
-                                                                    label={order.status === 'pending' ? 'Chưa nhận lệnh' :
-                                                                        order.status === 'in_progress' ? 'Đã nhận lệnh' :
-                                                                            order.status === 'completed' ? 'Đã hoàn thành' :
-                                                                                order.status === 'warning' ? 'Lỗi' : "Đã hủy"
+                                                                    label={order.status === StatusOrderEnum.PENDING ? 'Chưa nhận lệnh' :
+                                                                        order.status === StatusOrderEnum.INPROGRESS ? 'Đã nhận lệnh' :
+                                                                            order.status === StatusOrderEnum.COMPLETED ? 'Đã hoàn thành' :
+                                                                                order.status === StatusOrderEnum.WARNING ? 'Lỗi' : "Đã hủy"
                                                                     }
                                                                     color={
-                                                                        order.status === 'pending' ? 'default' :
-                                                                            order.status === 'completed' ? 'error' :
-                                                                                order.status === 'in_progress' ? 'success' :
-                                                                                    order.status === 'warning' ? 'warning' : 'secondary'}
+                                                                        order.status === StatusOrderEnum.PENDING ? 'default' :
+                                                                            order.status === StatusOrderEnum.COMPLETED ? 'error' :
+                                                                                order.status === StatusOrderEnum.INPROGRESS ? 'success' :
+                                                                                    order.status === StatusOrderEnum.WARNING ? 'warning' : 'secondary'}
                                                                 />
                                                             </TableCell>}
 
                                                             {visibleColumns.includes('edit') && <TableCell align='center' sx={{ width: 50, }}>
                                                                 <IconButton
                                                                     color="primary"
-                                                                    disabled={!['pending', 'warning'].includes(order.status)}
+                                                                    disabled={![StatusOrderEnum.PENDING, StatusOrderEnum.WARNING].includes(order.status)}
                                                                     onClick={async () => {
                                                                         if (open) {
                                                                             const result = await showConfirmAlert('Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?');
@@ -951,10 +935,10 @@ const DispatcherOrders: React.FC = () => {
                                                                 </IconButton>
                                                             </TableCell>}
 
-                                                            {visibleColumns.includes('cancel') && <TableCell align='center' sx={{ width: 50, }}>
+                                                            {visibleColumns.includes(StatusOrderEnum.CANCEL) && <TableCell align='center' sx={{ width: 50, }}>
                                                                 <IconButton
                                                                     color="warning"
-                                                                    disabled={!['pending', 'warning'].includes(order.status)}
+                                                                    disabled={![StatusOrderEnum.PENDING, StatusOrderEnum.WARNING].includes(order.status)}
                                                                     onClick={() => handleCancel([order])}
                                                                 >
                                                                     <Tooltip title="Hủy" placement='top'>
@@ -1068,10 +1052,10 @@ const DispatcherOrders: React.FC = () => {
                                 <Typography><strong>Công việc:</strong> {selectedRow.job?.name}</Typography>
                                 <Typography><strong>Nội dung lệnh:</strong> {selectedRow.workContent}</Typography>
                                 <Typography><strong>Trạng thái lệnh:</strong> {
-                                    selectedRow.status === 'pending' ? 'Chưa nhận lệnh' :
-                                        selectedRow.status === 'in_progress' ? 'Đã nhận lệnh' :
-                                            selectedRow.status === 'completed' ? 'Đã hoàn thành' :
-                                                selectedRow.status === 'warning' ? 'Lỗi' : "Đã hủy"}</Typography>
+                                    selectedRow.status === StatusOrderEnum.PENDING ? 'Chưa nhận lệnh' :
+                                        selectedRow.status === StatusOrderEnum.INPROGRESS ? 'Đã nhận lệnh' :
+                                            selectedRow.status === StatusOrderEnum.COMPLETED ? 'Đã hoàn thành' :
+                                                selectedRow.status === StatusOrderEnum.WARNING ? 'Lỗi' : "Đã hủy"}</Typography>
                             </Box>
                         ) : null}
                     </Box>
