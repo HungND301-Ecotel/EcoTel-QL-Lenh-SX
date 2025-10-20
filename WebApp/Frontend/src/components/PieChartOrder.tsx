@@ -1,6 +1,7 @@
 import { Typography, useMediaQuery, useTheme } from '@mui/material';
-import { ChartsLegend, ChartsTooltip, PieChart, PiePlot, ResponsiveChartContainer } from '@mui/x-charts'
+import { ChartsLegend, ChartsTooltip, PiePlot, ResponsiveChartContainer } from '@mui/x-charts'
 import React from 'react'
+import { StatusOrderEnum } from '../enums';
 
 export default function PieChartOrder({ data }: { data: any }) {
 
@@ -25,11 +26,11 @@ export default function PieChartOrder({ data }: { data: any }) {
     }
 
     const chartData = [
-        { label: 'Chưa nhận lệnh', value: data['pending']?.day || 0, color: 'grey' },
-        { label: 'Đã nhận lệnh', value: data['in_progress']?.day || 0, color: 'green' },
-        { label: 'Đã hoàn thành', value: data['completed']?.day || 0, color: 'red' },
-        { label: 'Lỗi', value: data['warning']?.day || 0, color: 'orange' },
-        { label: 'Đã hủy', value: data['cancel']?.day || 0, color: 'purple' },
+        { label: 'Chưa nhận lệnh', value: data[StatusOrderEnum.PENDING]?.day || 0, color: 'grey' },
+        { label: 'Đã nhận lệnh', value: data[StatusOrderEnum.INPROGRESS]?.day || 0, color: 'green' },
+        { label: 'Đã hoàn thành', value: data[StatusOrderEnum.COMPLETED]?.day || 0, color: 'red' },
+        { label: 'Lỗi', value: data[StatusOrderEnum.WARNING]?.day || 0, color: 'orange' },
+        { label: 'Đã hủy', value: data[StatusOrderEnum.CANCEL]?.day || 0, color: 'purple' },
     ];
 
     // Tính tổng giá trị của tất cả các mục dữ liệu
@@ -53,7 +54,7 @@ export default function PieChartOrder({ data }: { data: any }) {
                     outerRadius: 60,
                     data: chartData
                 }]}
-            margin={{ top: -40, left: 0, right: 0, bottom: 0 }}
+                margin={{ top: -40, left: 0, right: 0, bottom: 0 }}
             >
                 <PiePlot />
                 <ChartsTooltip trigger="item" />

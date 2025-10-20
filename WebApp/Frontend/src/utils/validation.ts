@@ -1,5 +1,5 @@
 import * as yup from 'yup';
-import { JobTypeEnum } from '../enums/index';
+import { JobTypeEnum, StatusDeviceEnum } from '../enums/index';
 
 // cung do
 export const trvelLogValidationSchema = yup.object({
@@ -24,7 +24,7 @@ export const vehicleValidationSchema = yup.object({
         lat: yup.number().required('Vui lòng chọn kinh độ'),
     }).required('Vui lòng chọn tọa độ'),
     department: yup.string().required('Vui lòng chọn đơn vị'),
-    status: yup.string().oneOf(['available', 'in_use', 'maintenance', 'retired']).required('Vui lòng chọn trạng thái'),
+    status: yup.string().oneOf(Object.values(StatusDeviceEnum)).required('Vui lòng chọn trạng thái'),
 });
 
 // thong tin may
@@ -37,7 +37,7 @@ export const machineValidationSchema = yup.object({
     }).required('Vui lòng chọn tọa độ'),
     department: yup.string().required('Vui lòng chọn đơn vị'),
     category: yup.string().required('Vui lòng chọn loại máy'),
-    status: yup.string().oneOf(['available', 'in_use', 'maintenance', 'retired']).required('Vui lòng chọn trạng thái'),
+    status: yup.string().oneOf(Object.values(StatusDeviceEnum)).required('Vui lòng chọn trạng thái'),
 });
 
 // nguoi dung

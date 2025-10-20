@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Box,
@@ -7,29 +7,18 @@ import {
     Typography,
     Container,
     Paper,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    MenuItem,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
     IconButton,
     InputAdornment,
-    Avatar,
 } from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon, VisibilityOff, Visibility } from '@mui/icons-material';
+import { VisibilityOff, Visibility } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import api from '../../config/api.config';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import { showErrorAlert } from '../../components/Alert';
+import { RoleEnum } from '../../enums';
 
 const loginValidationSchema = yup.object({
     username: yup.string().required('Vui lòng nhập tên đăng nhập'),
@@ -39,9 +28,7 @@ const loginValidationSchema = yup.object({
 
 const Login = () => {
     const navigate = useNavigate();
-    const [openRegister, setOpenRegister] = useState(false);
     const [, setUser] = useAtom(userAtom)
-    const queryClient = useQueryClient();
     const [showPassword, setShowPassword] = useState(false);
 
     const handleTogglePassword = () => {
@@ -51,7 +38,7 @@ const Login = () => {
         mutationFn: (credentials: { username: string; password: string }) =>
             api.post('/auth/login', credentials).then(res => res.data),
         onSuccess: (data) => {
-            if (data.data.user?.role.toLowerCase() === 'employee') {
+            if (data.data.user?.role.toLowerCase() === RoleEnum.EMPLOYEE) {
                 showErrorAlert('Bạn không có quyền truy cập hệ thống.');
                 return;
             }

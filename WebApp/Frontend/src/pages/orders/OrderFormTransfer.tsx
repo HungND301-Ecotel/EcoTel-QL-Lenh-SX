@@ -1,21 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FieldArray, FormikProvider, useFormik } from 'formik';
-import * as yup from 'yup';
 import {
     Autocomplete,
     Box,
     Button,
     Checkbox,
-    Dialog,
-    DialogContent,
-    DialogTitle,
     Grid,
     IconButton,
     Menu,
     MenuItem,
-    Popper,
     Stack,
-    styled,
     TextField,
     Typography,
 } from '@mui/material';
@@ -33,8 +27,7 @@ import { DesktopTimePicker } from '@mui/x-date-pickers';
 import { Add, ContentCopy, Delete } from '@mui/icons-material';
 import { StyledPopper } from '../../ui/poppers';
 import { editAndTransferOrderValidationSchema } from '../../utils/validation';
-import { JobTypeEnum } from '../../enums/index';
-import { MultiSelectField } from '../../components/MultiSelectField';
+import { JobTypeEnum, StatusOrderEnum } from '../../enums/index';
 import DepartmentService from '../../services/departmentService';
 import { AutocompleteSelect } from '../../components/AutocompleteSelect';
 dayjs.extend(utc);
@@ -208,7 +201,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                 material: values.material,
                 workContent: values.workContent,
                 safetyMeasure: values.safetyMeasure,
-                status: "pending",
+                status: StatusOrderEnum.PENDING,
                 note: values.note,
                 previous_order_id: values.previous_order_id
             };

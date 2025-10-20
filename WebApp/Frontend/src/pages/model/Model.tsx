@@ -52,6 +52,7 @@ import { userAtom } from '../../atoms/userAtoms';
 import { jobValidationSchema } from '../../utils/validation';
 import { JOB_TYPE_OPTIONS } from '../../utils/const';
 import { DataGrid, GridRowModel } from '@mui/x-data-grid';
+import CustomDataGrid from '../../components/Table/CustomDataGrid';
 
 
 const Models: React.FC = () => {
@@ -71,41 +72,91 @@ const Models: React.FC = () => {
         queryFn: () => api.get(`/models`).then(res => res.data.data),
     });
 
-    const columns = useMemo(() => [
-        {
-            field: 'material', headerName: 'Vật liệu', width: 100, resizable: false,
-            headerAlign: 'center',
+    const defaultColumns = useMemo(() => {
+        const staticCols = [
+            {
+                id: "material",
+                label: "Vật liệu",
+                width: 100,
+                headerAlign: "center",
+                align: "left",
+                sortable: true,
+                filterable: true,
+                sticky: true,
+                resizable: false,
+            },
+            {
+                id: "acceptedProduct",
+                label: "Sản phẩm nghiệm thu",
+                width: 100,
+                headerAlign: "center",
+                align: "center",
+                sortable: true,
+                filterable: true,
+                sticky: true,
+                resizable: false,
+            },
+            {
+                id: "density",
+                label: "Tỷ trọng quy ẩm",
+                width: 100,
+                headerAlign: "center",
+                align: "center",
+                sortable: true,
+                filterable: false,
+                sticky: true,
+                resizable: false,
+            },
+            {
+                id: "dryDensity",
+                label: "Tỷ trọng không quy ẩm",
+                width: 100,
+                headerAlign: "center",
+                align: "center",
+                sortable: true,
+                filterable: false,
+                sticky: true,
+                resizable: false,
+            },
+        ];
+
+        const dynamicCols = devicemodels.map((d: any) => ({
+            id: d._id,
+            label: d.name,
+            width: 150,
+            headerAlign: "center",
+            align: "center",
+            sortable: false,
             filterable: false,
-        },
-        {
-            field: 'acceptedProduct', headerName: 'Sản phẩm nghiệm thu', width: 100,
-            filterable: false,
-            headerAlign: 'center',
-            align: 'center',
-        },
-        {
-            field: 'density', headerName: 'Tỷ trọng quy ẩm', width: 100,
-            filterable: false,
-            headerAlign: 'center',
-            align: 'center',
-        },
-        {
-            field: 'dryDensity', headerName: 'Tỷ trọng không quy ẩm', width: 100,
-            filterable: false,
-            headerAlign: 'center',
-            align: 'center',
-        },
-        ...devicemodels.map((d: any) => ({
-            field: d._id,
-            headerName: d.name,
-            width: 100,
-            headerAlign: 'center',
-            align: 'center',
-            editable: true,
-            type: 'number',
-            filterable: false
-        }))
-    ], [devicemodels]);
+            renderCell: (params: any) => {
+                return (
+                    <input
+                        type="number"
+                        style={{
+                            width: "100%",
+                            border: "none",
+                            textAlign: "center",
+                            outline: "none",
+                            background: "transparent",
+                        }}
+                        value={params.value ?? ""}
+                        onChange={(e) => {
+                            const newValue = e.target.value;
+                            setTableRows((prev) =>
+                                prev.map((r) =>
+                                    r.id === params.row.id
+                                        ? { ...r, [params.field]: newValue }
+                                        : r
+                                )
+                            );
+                        }}
+                    />
+                );
+            },
+        }));
+
+        return [...staticCols, ...dynamicCols];
+    }, [devicemodels]);
 
     const rows = useMemo(() => {
         if (!materials.length || !devicemodels.length) return [];
@@ -193,12 +244,11 @@ const Models: React.FC = () => {
                     </Box>
                 )}
                 <Box sx={{ height: '60vh' }}>
-                    <DataGrid
+                    <CustomDataGrid
                         rows={tableRows}
-                        columns={columns}
-                        processRowUpdate={processRowUpdate}
-                        disableVirtualization
-                        rowSelection={false}
+                        defaultColumns={defaultColumns}
+                        isLoading={false}
+                        onSelectionChange={() => { }}
                         sx={{
                             '& .MuiDataGrid-columnHeader[data-field="material"]': {
                                 position: 'sticky',
@@ -210,7 +260,7 @@ const Models: React.FC = () => {
                                 position: 'sticky',
                                 left: 0,
                                 zIndex: 19,
-                                backgroundColor: 'white',
+                                backgroundColor: "inherit !important",
                             },
                             '& .MuiDataGrid-columnHeader[data-field="acceptedProduct"]': {
                                 position: 'sticky',
@@ -222,7 +272,7 @@ const Models: React.FC = () => {
                                 position: 'sticky',
                                 left: 100,
                                 zIndex: 19,
-                                backgroundColor: 'white',
+                                backgroundColor: "inherit !important",
                             },
                             '& .MuiDataGrid-columnHeader[data-field="density"]': {
                                 position: 'sticky',
@@ -234,7 +284,7 @@ const Models: React.FC = () => {
                                 position: 'sticky',
                                 left: 200,
                                 zIndex: 19,
-                                backgroundColor: 'white',
+                                backgroundColor: "inherit !important",
                             },
                             '& .MuiDataGrid-columnHeader[data-field="dryDensity"]': {
                                 position: 'sticky',
@@ -247,7 +297,7 @@ const Models: React.FC = () => {
                                 position: 'sticky',
                                 left: 300,
                                 zIndex: 19,
-                                backgroundColor: 'white',
+                                backgroundColor: "inherit !important",
                                 boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
                             },
                         }} />

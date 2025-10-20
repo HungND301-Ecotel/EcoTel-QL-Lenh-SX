@@ -3,20 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Box,
     Button,
-    Card,
-    CardContent,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
     Grid,
     IconButton,
-    Paper,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
     Typography,
     Chip,
     Checkbox,
@@ -24,16 +12,12 @@ import {
     MenuItem,
     Tooltip,
     Autocomplete,
-    styled,
-    Popper,
     Menu,
     Switch,
     ListItemText,
     Accordion,
     AccordionSummary,
     AccordionDetails,
-    Pagination,
-    TablePagination,
     InputAdornment,
     CircularProgress,
     AlertColor,
@@ -45,38 +29,28 @@ import {
     Edit as EditIcon,
     Delete as DeleteIcon,
     Search,
-    MoreVert,
-    MoreHoriz,
     FileDownload,
     InfoOutlined,
     SyncAlt,
     Visibility,
     CancelOutlined,
-    Settings,
-    ExpandMore,
-    FilterTiltShiftSharp,
     RotateLeft,
     VisibilityOff,
-    CloudDownload,
     CloudUpload,
 } from '@mui/icons-material';
-import { useFormik } from 'formik';
-import * as yup from 'yup';
-import api from '../../config/api.config';
-import { Department, Order, Shift } from '../../types';
+import { Order } from '../../types';
 import OrderFormAdd from './OrderFormAdd';
 import OrderFormEdit from './OrderFormEdit';
 import OrderFormTransfer from './OrderFormTransfer';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
-import { useSocket } from '../../hooks/useSocket';
 import { AlertSnackbar, showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
-import { DataGrid, GridColDef, GridFilterModel, GridLogicOperator, GridRenderCellParams, GridToolbar } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRenderCellParams, GridToolbar } from '@mui/x-data-grid';
 import { StyledPopper } from '../../ui/poppers';
-import { JobTypeEnum } from '../../enums/index';
+import { JobTypeEnum, RoleEnum, StatusOrderEnum } from '../../enums/index';
 import OrderHistories from '../../components/Modal/OrderHistories';
 import ShiftReport from '../../components/Modal/ShiftReport';
 import DepartmentService from '../../services/departmentService';
@@ -85,13 +59,11 @@ import OrderService from '../../services/orderService';
 const Orders: React.FC = () => {
     const [open, setOpen] = useState(false);
     const [history, setHistory] = useState(false);
-    const [exportOrder, setExportOrder] = useState(false);
     const [shiftReport, setShiftReport] = useState(false);
     const [transfer, setTransfer] = useState(false);
     const [status, setStatus] = useState("");
     const [startTime, setStartTime] = useState<Dayjs | null>(null);
     const [endTime, setEndTime] = useState<Dayjs | null>(null);
-    const [device, setDevice] = useState("");
     const [department, setDepartment] = useState("");
     const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
     const [selectedRow, setSelectedRow] = useState<any | null>(null);
@@ -164,7 +136,7 @@ const Orders: React.FC = () => {
     });
 
     const { data, refetch: refetchOrder, isLoading } = useQuery({
-        queryKey: ['orders', paginationModel, value, status, department, device, startTime, endTime, serverFilters],
+        queryKey: ['orders', paginationModel, value, status, department, startTime, endTime, serverFilters],
         queryFn: () => OrderService.getAll(
             {
                 page: paginationModel.page + 1,
@@ -269,15 +241,15 @@ const Orders: React.FC = () => {
     });
 
     const handleCancel = (order: any) => {
-        if (order.status === "in_progress") {
+        if (order.status === StatusOrderEnum.INPROGRESS) {
             return showErrorAlert('Lệnh đang thực hiện không thể hủy')
         }
-        if (order.status === "completed") {
+        if (order.status === StatusOrderEnum.COMPLETED) {
             return showErrorAlert('Lệnh đã hoàn thành không thể hủy')
         }
         showConfirmAlert('Bạn có chắc chắn muốn hủy lệnh sản xuất này?. Bạn sẽ không thể thay đổi').then((result) => {
             if (result.isConfirmed) {
-                updateMutation.mutate({ _id: order._id, status: 'cancel' });
+                updateMutation.mutate({ _id: order._id, status: StatusOrderEnum.CANCEL });
             }
         })
     }
@@ -320,7 +292,7 @@ const Orders: React.FC = () => {
             return showErrorAlert('Không tìm thấy bản ghi cần xóa');
         }
 
-        if (user?.role === "admin") {
+        if (user?.role === RoleEnum.ADMIN) {
             showConfirmAlert('Bạn có muốn xóa?. Bạn sẽ không thể hoàn tác.').then((result) => {
                 if (result.isConfirmed) {
                     deleteMutation.mutate(selectedOrders.map(o => o._id));
@@ -329,7 +301,7 @@ const Orders: React.FC = () => {
         } else {
             // lọc ra những order có thể xoá
             const deletableOrders = selectedOrders.filter(o =>
-                o.status !== "in_progress" && o.status !== "completed"
+                o.status !== StatusOrderEnum.INPROGRESS && o.status !== StatusOrderEnum.COMPLETED
             );
 
             if (deletableOrders.length === 0) {
@@ -453,16 +425,16 @@ const Orders: React.FC = () => {
             renderCell: (params: any) => (
                 <Chip
                     sx={{ width: '120px' }}
-                    label={params.row.status === 'pending' ? 'Chưa nhận lệnh' :
-                        params.row.status === 'in_progress' ? 'Đã nhận lệnh' :
-                            params.row.status === 'completed' ? 'Đã hoàn thành' :
-                                params.row.status === 'warning' ? 'Lỗi' : "Đã hủy"
+                    label={params.row.status === StatusOrderEnum.PENDING ? 'Chưa nhận lệnh' :
+                        params.row.status === StatusOrderEnum.INPROGRESS ? 'Đã nhận lệnh' :
+                            params.row.status === StatusOrderEnum.COMPLETED ? 'Đã hoàn thành' :
+                                params.row.status === StatusOrderEnum.WARNING ? 'Lỗi' : "Đã hủy"
                     }
                     color={
-                        params.row.status === 'pending' ? 'default' :
-                            params.row.status === 'completed' ? 'error' :
-                                params.row.status === 'in_progress' ? 'success' :
-                                    params.row.status === 'warning' ? 'warning' : 'secondary'}
+                        params.row.status === StatusOrderEnum.PENDING ? 'default' :
+                            params.row.status === StatusOrderEnum.COMPLETED ? 'error' :
+                                params.row.status === StatusOrderEnum.INPROGRESS ? 'success' :
+                                    params.row.status === StatusOrderEnum.WARNING ? 'warning' : 'secondary'}
                 />
             ),
         },
@@ -499,7 +471,7 @@ const Orders: React.FC = () => {
             renderCell: (params: any) => (
                 <IconButton
                     color="primary"
-                    disabled={!['pending', 'warning'].includes(params.row?.status)
+                    disabled={![StatusOrderEnum.PENDING, StatusOrderEnum.WARNING].includes(params.row?.status)
                     }
                     onClick={async () => {
                         if (open) {
@@ -525,7 +497,7 @@ const Orders: React.FC = () => {
             filterable: false,
             renderCell: (params: any) => (
                 <IconButton
-                    disabled={!['pending', 'warning'].includes(params.row.status)}
+                    disabled={![StatusOrderEnum.PENDING, StatusOrderEnum.WARNING].includes(params.row.status)}
                     color="warning"
                     onClick={() => handleCancel(params.row)}
                 >
@@ -693,7 +665,7 @@ const Orders: React.FC = () => {
                                     )
                                 }}>
                             </TextField>
-                            {user?.role === "admin" && <Autocomplete
+                            {user?.role === RoleEnum.ADMIN && <Autocomplete
                                 fullWidth
                                 options={departments}
                                 getOptionLabel={(option: any) =>
@@ -769,28 +741,28 @@ const Orders: React.FC = () => {
                     <ListItemText primary={`Tất cả (${statusCounts.all})`} sx={{ color: 'blue' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
-                    <Checkbox color='default' name="status" checked={status === 'pending'}
-                        onChange={() => handleChange('pending')} />
+                    <Checkbox color='default' name="status" checked={status === StatusOrderEnum.PENDING}
+                        onChange={() => handleChange(StatusOrderEnum.PENDING)} />
                     <ListItemText primary={`Chưa nhận lệnh (${statusCounts.pending})`} sx={{ color: 'grey' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
-                    <Checkbox color='success' name="status" checked={status === 'in_progress'}
-                        onChange={() => handleChange('in_progress')} />
+                    <Checkbox color='success' name="status" checked={status === StatusOrderEnum.INPROGRESS}
+                        onChange={() => handleChange(StatusOrderEnum.INPROGRESS)} />
                     <ListItemText primary={`Đã nhận lệnh (${statusCounts.in_progress})`} sx={{ color: 'green' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
-                    <Checkbox color='warning' name="status" checked={status === 'warning'}
-                        onChange={() => handleChange('warning')} />
+                    <Checkbox color="warning" name="status" checked={status === StatusOrderEnum.WARNING}
+                        onChange={() => handleChange(StatusOrderEnum.WARNING)} />
                     <ListItemText primary={`Lỗi (${statusCounts.warning})`} sx={{ color: 'orange' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
-                    <Checkbox color='error' name="status" checked={status === 'completed'}
-                        onChange={() => handleChange('completed')} />
+                    <Checkbox color='error' name="status" checked={status === StatusOrderEnum.COMPLETED}
+                        onChange={() => handleChange(StatusOrderEnum.COMPLETED)} />
                     <ListItemText primary={`Đã kết thúc (${statusCounts.completed})`} sx={{ color: 'red' }} />
                 </Box>
                 <Box display="flex" alignItems={'center'}>
-                    <Checkbox color='secondary' name="status" checked={status === 'cancel'}
-                        onChange={() => handleChange('cancel')} />
+                    <Checkbox color='secondary' name="status" checked={status === StatusOrderEnum.CANCEL}
+                        onChange={() => handleChange(StatusOrderEnum.CANCEL)} />
                     <ListItemText primary={`Đã hủy (${statusCounts.cancel})`} sx={{ color: 'purple' }} />
                 </Box>
             </Box>
@@ -830,7 +802,7 @@ const Orders: React.FC = () => {
                         }}>
                         {info ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
-                    {user?.role === "admin" && <IconButton
+                    {user?.role === RoleEnum.ADMIN && <IconButton
                         color='primary'
                         onClick={() => reportListorderExcel.mutate()}
                         sx={{
@@ -891,19 +863,19 @@ const Orders: React.FC = () => {
                             let base = '';
 
                             switch (record.status) {
-                                case 'pending':
+                                case StatusOrderEnum.PENDING:
                                     base = 'row-pending';
                                     break;
-                                case 'in_progress':
+                                case StatusOrderEnum.INPROGRESS:
                                     base = 'row-in-progress';
                                     break;
-                                case 'completed':
+                                case StatusOrderEnum.COMPLETED:
                                     base = 'row-completed';
                                     break;
-                                case 'warning':
+                                case StatusOrderEnum.WARNING:
                                     base = 'row-warning';
                                     break;
-                                case 'cancel':
+                                case StatusOrderEnum.CANCEL:
                                     base = 'row-cancel';
                                     break;
                             }
@@ -913,6 +885,9 @@ const Orders: React.FC = () => {
                         }}
                         disableVirtualization={true}
                         filterMode="server"
+                        initialState={{
+                            density: "compact"
+                        }}
                         slots={{ toolbar: GridToolbar }}
                         localeText={{
                             toolbarColumns: 'Cột',
@@ -1071,10 +1046,11 @@ const Orders: React.FC = () => {
                                 {selectedRow.location?.length > 0 && <Typography><strong>Điểm đổ:</strong> {selectedRow.location?.map((dev: any) => dev.name).join(', ')}</Typography>}
                                 <Typography><strong>Nội dung lệnh:</strong> {selectedRow.workContent}</Typography>
                                 <Typography><strong>Trạng thái lệnh:</strong> {
-                                    selectedRow.status === 'pending' ? 'Chưa nhận lệnh' :
-                                        selectedRow.status === 'in_progress' ? 'Đã nhận lệnh' :
-                                            selectedRow.status === 'completed' ? 'Đã hoàn thành' :
-                                                selectedRow.status === 'warning' ? 'Lỗi' : "Đã hủy"}</Typography>
+                                    selectedRow.status === StatusOrderEnum.PENDING ? 'Chưa nhận lệnh' :
+                                        selectedRow.status === StatusOrderEnum.INPROGRESS ? 'Đã nhận lệnh' :
+                                            selectedRow.status === StatusOrderEnum.COMPLETED ? 'Đã hoàn thành' :
+                                                selectedRow.status === StatusOrderEnum.WARNING ? 'Lỗi' : "Đã hủy"
+                                }</Typography>
                                 <Typography><strong>Nội dung bàn giao ca:</strong> {selectedRow?.note}</Typography>
                             </Box>
                         ) : null}

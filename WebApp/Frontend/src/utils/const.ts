@@ -6,7 +6,7 @@ export const JOB_TYPE_OPTIONS = Object.values(JobTypeEnum).map((value) => ({
 }));
 export const STATUS_DEVICE_OPTIONS = Object.values(StatusDeviceEnum).map((value) => ({
     label: value,
-    value,
+    value: value === StatusDeviceEnum.AVAILABLE ? "Chờ điều động" : value === StatusDeviceEnum.IN_USE ? "Đang hoạt động" : value === StatusDeviceEnum.MAINTENANCE ? "SC; BD" : "Niêm cất",
 }));
 export const STATUS_ORDER_OPTIONS = Object.values(StatusOrderEnum).map((value) => ({
     label: value,

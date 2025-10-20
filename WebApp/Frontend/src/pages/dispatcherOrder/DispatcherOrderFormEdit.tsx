@@ -1,28 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { FieldArray, FormikProvider, getIn, useFormik } from 'formik';
-import * as yup from 'yup';
+import { FieldArray, FormikProvider, useFormik } from 'formik';
 import {
     Autocomplete,
     Box,
     Button,
-    Dialog,
-    DialogContent,
-    DialogTitle,
     Grid,
-    MenuItem,
-    Popper,
-    styled,
     TextField,
 } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/api.config';
-import { Order, Device, Job, Location, Material, DeviceType, Shift } from '../../types';
-import { DatePicker, DesktopTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { Order, Job} from '../../types';
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { StyledPopper } from '../../ui/poppers';
 import { dispatcherOrderValidationSchema } from '../../utils/validation';
+import { JobTypeEnum, StatusOrderEnum } from '../../enums';
 
 
 interface OrderFormProps {
@@ -105,10 +99,10 @@ const DispatcherOrderFormEdit: React.FC<OrderFormProps> = ({
             values.usersAndDepartments.forEach((item) => {
                 const orderData: Partial<Order> = {
                     assignedTo: item.assignedTo,
-                    job:jobs.find((i:Job)=>i.name==="Điều hành sản xuất")?._id,
+                    job:jobs.find((i:Job)=>i.name===JobTypeEnum.DISPATCHER)?._id,
                     workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
                     workContent: values.workContent,
-                    status: "pending",
+                    status: StatusOrderEnum.PENDING,
                 };
 
                 if (item._id) {

@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
 import api from "../config/api.config";
 import { Device } from "../types";
+import { DeviceTypeEnum } from "../enums";
 
 const DeviceService = {
     getAll: async (params?: Record<string, any>): Promise<any[]> => {
@@ -9,11 +9,11 @@ const DeviceService = {
     },
     getVehicles: async (params?: Record<string, any>): Promise<any[]> => {
         const res = await api.get('/devices', { params });
-        return res.data.data?.filter((item: any) => item?.category?.group.toLowerCase() === "xe".toLowerCase());
+        return res.data.data?.filter((item: any) => item?.category?.group.toLowerCase() === DeviceTypeEnum.VEHICLE.toLowerCase());
     },
     getMachines: async (params?: Record<string, any>): Promise<any[]> => {
         const res = await api.get('/devices', { params });
-        return res.data.data?.filter((item: any) => item?.category?.group.toLowerCase() === "máy".toLowerCase());
+        return res.data.data?.filter((item: any) => item?.category?.group.toLowerCase() === DeviceTypeEnum.MACHINE.toLowerCase());
     },
     create: async (data: Partial<Device>): Promise<any> => {
         const res = await api.post('/devices', data);

@@ -1,40 +1,33 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FieldArray, FormikProvider, useFormik } from 'formik';
-import * as yup from 'yup';
 import {
     Autocomplete,
     Box,
     Button,
     Checkbox,
-    Dialog,
-    DialogContent,
-    DialogTitle,
     Grid,
     IconButton,
     Menu,
     MenuItem,
-    Popper,
     Stack,
-    styled,
     TextField,
     Typography,
 } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../config/api.config';
-import { Order, Device, Job, Location, Material, SafetyMeasure, Shift } from '../../types';
+import { Order, Device, Job, SafetyMeasure, Shift } from '../../types';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import 'dayjs/locale/en-gb';
 import utc from 'dayjs/plugin/utc';
-import { showErrorAlert } from '../../components/Alert';
 import { Add, ContentCopy, Delete } from '@mui/icons-material';
 import { DesktopTimePicker } from '@mui/x-date-pickers';
 import { MultiSelectField } from '../../components/MultiSelectField';
 import { StyledPopper } from '../../ui/poppers';
 import { editAndTransferOrderValidationSchema } from '../../utils/validation';
-import { JobTypeEnum } from '../../enums/index';
+import { JobTypeEnum, StatusOrderEnum } from '../../enums/index';
 import DepartmentService from '../../services/departmentService';
 import { AutocompleteSelect } from '../../components/AutocompleteSelect';
 dayjs.extend(utc);
@@ -195,7 +188,7 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                 workContent: values.workContent,
                 safetyMeasure: values.safetyMeasure,
                 safetyMeasureSpecific: values.safetyMeasureSpecific,
-                status: "pending",
+                status: StatusOrderEnum.PENDING,
                 temporaryError: '',
                 note: values.note
             };

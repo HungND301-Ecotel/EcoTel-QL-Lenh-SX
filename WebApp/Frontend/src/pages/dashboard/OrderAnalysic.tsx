@@ -1,9 +1,6 @@
 import {
     Grid,
-    Typography,
     Box,
-    Card,
-    CardContent,
     Paper,
     TableContainer,
     Table,
@@ -11,24 +8,16 @@ import {
     TableHead,
     TableCell,
     TableBody,
-    Popover,
-    Snackbar,
-    Alert,
     TextField,
     Autocomplete,
     IconButton,
     CircularProgress,
-    Chip,
-    useTheme,
-    useMediaQuery,
     AlertColor,
 } from '@mui/material';
-import React, { useState } from 'react'
+import { useState } from 'react'
 import PieChartOrder from '../../components/PieChartOrder'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {  useQuery } from '@tanstack/react-query';
 import {
-    Business as DepartmentIcon,
-    Person2 as PersonIcon,
     RotateLeft as RotateLeftIcon,
 } from '@mui/icons-material';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
@@ -38,6 +27,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import { AlertSnackbar } from '../../components/Alert';
+import { RoleEnum, StatusOrderEnum } from '../../enums';
 
 export default function OrderAnalysic({ departments }: { departments: any[] }) {
     const [user] = useAtom(userAtom)
@@ -45,11 +35,11 @@ export default function OrderAnalysic({ departments }: { departments: any[] }) {
     const [date, setDate] = useState<Dayjs | null>(dayjs());
 
     const orderStatus = [
-        { key: "pending", name: "Chưa nhận lệnh", color: 'black' },
-        { key: "in_progress", name: "Đã nhận lệnh", color: 'green' },
-        { key: "warning", name: "Lỗi", color: 'orange' },
-        { key: "completed", name: "Đã hoàn thành", color: 'red' },
-        { key: "cancel", name: "Đã hủy", color: 'purple' },
+        { key: StatusOrderEnum.PENDING, name: "Chưa nhận lệnh", color: 'black' },
+        { key: StatusOrderEnum.INPROGRESS, name: "Đã nhận lệnh", color: 'green' },
+        { key: StatusOrderEnum.WARNING, name: "Lỗi", color: 'orange' },
+        { key: StatusOrderEnum.COMPLETED, name: "Đã hoàn thành", color: 'red' },
+        { key: StatusOrderEnum.CANCEL, name: "Đã hủy", color: 'purple' },
     ];
 
     const [alert, setAlert] = useState<{ open: boolean; message: string; severity?: AlertColor }>({
@@ -82,7 +72,7 @@ export default function OrderAnalysic({ departments }: { departments: any[] }) {
             <Grid container spacing={2}>
                 <Grid item xs={12} lg={7}>
                     <TableContainer sx={{ maxHeight: 300 }}>
-                        <Table stickyHeader sx={{'& td, & th': { border: '1px solid #e0e0e0', padding: '8px', } }}>
+                        <Table stickyHeader sx={{ '& td, & th': { border: '1px solid #e0e0e0', padding: '8px', } }}>
                             <TableHead>
                                 <TableRow>
                                     <TableCell colSpan={7} align="center" sx={{ bgcolor: '#dcf1d8', fontWeight: 'bold', fontSize: 18, position: 'relative' }}>
@@ -151,7 +141,7 @@ export default function OrderAnalysic({ departments }: { departments: any[] }) {
                         }}
                     >
                         <Box sx={{ display: 'flex', gap: 2 }}>
-                            {user?.role === "admin" && <Autocomplete
+                            {user?.role === RoleEnum.ADMIN && <Autocomplete
                                 size="small"
                                 options={departments}
                                 getOptionLabel={(option: any) =>
