@@ -41,6 +41,7 @@ import { departmentValidationSchema } from "../../utils/validation";
 import DepartmentService from "../../services/departmentService";
 import { RoleEnum } from "../../enums";
 import CustomDataGrid from "../../components/Table/CustomDataGrid";
+import { parseAxiosError } from "../../utils/handleApiError";
 
 const Departments = () => {
     const [open, setOpen] = useState(false);
@@ -55,7 +56,7 @@ const Departments = () => {
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
     const defaultColumns = [
-        { id: "code", label: "Mã đơn vị", width: 150, align: "left" as "left"},
+        { id: "code", label: "Mã đơn vị", width: 150, align: "left" as "left" },
         { id: "name", label: "Tên đơn vị", align: "left" as "left" },
         { id: "description", label: "Chức năng", align: "left" as "left" },
         {
@@ -165,9 +166,10 @@ const Departments = () => {
     const exportExcel = useMutation({
         mutationFn: DepartmentService.exportFile,
         onSuccess: () => { },
-        onError: (error: any) => {
-            showErrorAlert(error.response?.data?.message || error.message || "Lỗi");
-        },
+        onError: async (error: any) => {
+            const message = await parseAxiosError(error)
+            showErrorAlert(message);
+        }
     });
 
     const formik = useFormik({

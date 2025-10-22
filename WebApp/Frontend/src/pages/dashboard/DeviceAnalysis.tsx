@@ -154,7 +154,7 @@ export default function DeviceAnalysic({ departments }: { departments: any[] }) 
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            deviceCount.filter((i: any) => i?.departmentName !== "ĐXVP" || i?.departmentName !== "QM").map((group: any, groupIndex: number) => {
+                            deviceCount.filter((i: any) => i?.departmentName !== "ĐXVP" && i?.departmentName !== "QM").map((group: any, groupIndex: number) => {
                                 const totalStatus = group.deviceTypes.reduce(
                                     (acc: any, deviceType: any) => {
                                         acc.maintenance += deviceType.statusCounts.maintenance || 0;

@@ -38,7 +38,7 @@ import {
 import { useFormik } from 'formik';
 import api from '../../config/api.config';
 import { Department, Position, User } from '../../types';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridToolbar } from '@mui/x-data-grid';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import imageCompression from 'browser-image-compression';
@@ -51,6 +51,7 @@ import PositionService from '../../services/positionService';
 import DepartmentService from '../../services/departmentService';
 import { RoleEnum } from '../../enums';
 import { ROLE_TYPE_OPTIONS } from '../../utils/const';
+import { parseAxiosError } from '../../utils/handleApiError';
 
 
 const Users: React.FC = () => {
@@ -101,8 +102,9 @@ const Users: React.FC = () => {
             showSuccessAlert('Thêm người dùng thành công');
             handleClose();
         },
-        onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
+        onError: async (error: any) => {
+            const message = await parseAxiosError(error)
+            showErrorAlert(message);
         }
     });
     const [progress, setProgress] = useState(0)
@@ -147,8 +149,9 @@ const Users: React.FC = () => {
     const exportExcel = useMutation({
         mutationFn: UserService.exportFile,
         onSuccess: () => { },
-        onError: (error: any) => {
-            showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
+        onError: async (error: any) => {
+            const message = await parseAxiosError(error)
+            showErrorAlert(message);
         }
     });
 
@@ -171,8 +174,9 @@ const Users: React.FC = () => {
             showSuccessAlert('Reset mật khẩu thành công. Mật khẩu là:"123456"');
             handleClose();
         },
-        onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
+        onError: async (error: any) => {
+            const message = await parseAxiosError(error)
+            showErrorAlert(message);
         }
     });
     const deleteMutation = useMutation({
@@ -783,10 +787,24 @@ const Users: React.FC = () => {
                     onRowSelectionModelChange={(newSelection) => {
                         setSelectedUsers(newSelection as string[]);
                     }}
+                    slots={{ toolbar: GridToolbar }}
+                    localeText={{
+                        toolbarColumns: "Cột",
+                        toolbarFilters: "Bộ lọc",
+                        toolbarDensity: "Mật độ",
+                    }}
+                    slotProps={{
+                        filterPanel: { disableAddFilterButton: false },
+                        toolbar: {
+                            csvOptions: { disableToolbarButton: true },
+                            printOptions: { disableToolbarButton: true },
+                        },
+                    }}
                     initialState={{
                         pagination: {
                             paginationModel: { pageSize: 10, page: 0 },
                         },
+                        density: "compact"
                     }}
                     loading={isLoading}
                     sx={{

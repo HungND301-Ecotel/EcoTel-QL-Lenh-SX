@@ -15,29 +15,29 @@ async function summariseExcavatorProduction(reports, selectedDate) {
     const selectedKey = new Date(selectedDate).toISOString().slice(0, 10);
 
     if (!reports || reports.length === 0) {
-        // Trả về cấu trúc rỗng cho cả 2 loại (KLD, TLT/KLT)
         const emptySummary = (code) => ({
             jobType: code,
             productionByDay: [],
             cumulativeTotal: 0,
             selectedDay: {
                 date: selectedKey,
-                // Đảm bảo trả về đủ 3 ca rỗng cho ngày được chọn
                 shifts: [{ shift: 1, production: 0 }, { shift: 2, production: 0 }, { shift: 3, production: 0 }],
                 dayTotal: 0,
             },
+            deviceProductions: []
         });
+
         return {
             kldSummary: emptySummary('KLD'),
-            tltSummary: emptySummary('TLT'), // Hoặc kltSummary: emptySummary('KLT')
+            tltSummary: emptySummary('TLT')
         };
     }
 
-    // 1. 🔹 GỌI HÀM NHÓM CHUYẾN MỘT LẦN DUY NHẤT
     const tripsRaw = await groupProduction(reports, selectedDate);
 
-    // 2️⃣ Gom lại theo ngày + ca
     const tripMap = {};
+    const deviceMapKLD = {};
+    const deviceMapTLT = {};
 
     for (const t of tripsRaw) {
         if (!t.workingDate) continue;
@@ -45,13 +45,39 @@ async function summariseExcavatorProduction(reports, selectedDate) {
         const dateKey = new Date(t.workingDate).toISOString().slice(0, 10);
         const shift = Math.max(1, Math.min(3, t.shift || 1));
 
+        // 🔹 Chỉ cộng thiết bị trong NGÀY ĐƯỢC CHỌN
+        if (dateKey === selectedKey) {
+            const deviceId = t.device?._id?.toString() || t.deviceId?.toString();
+            if (deviceId) {
+                // --- KLD ---
+                if (!deviceMapKLD[deviceId]) {
+                    deviceMapKLD[deviceId] = {
+                        deviceId,
+                        code: t.device?.code || 'N/A',
+                        totalProduction: 0
+                    };
+                }
+                deviceMapKLD[deviceId].totalProduction += t.totalCubicMeter || 0;
+
+                // --- TLT ---
+                if (!deviceMapTLT[deviceId]) {
+                    deviceMapTLT[deviceId] = {
+                        deviceId,
+                        code: t.device?.code || 'N/A',
+                        totalProduction: 0
+                    };
+                }
+                deviceMapTLT[deviceId].totalProduction += t.totalTon || 0;
+            }
+        }
+
         const mapKey = `${dateKey}_${shift}`;
         if (!tripMap[mapKey]) {
             tripMap[mapKey] = {
                 workingDate: t.workingDate,
                 shift,
                 totalCubicMeter: 0,
-                totalTon: 0,
+                totalTon: 0
             };
         }
 
@@ -59,106 +85,77 @@ async function summariseExcavatorProduction(reports, selectedDate) {
         tripMap[mapKey].totalTon += t.totalTon || 0;
     }
 
-    // 3️⃣ Chuyển map thành mảng trips chuẩn
     const trips = Object.values(tripMap);
+    const groupedByDate = { KLD: {}, TLT: {} };
 
-    // Sử dụng cấu trúc để lưu trữ 2 loại sản lượng theo ngày
-    const groupedByDate = {
-        KLD: {}, // { 'YYYY-MM-DD': { dayTotal: X, shifts: { 1: Y, 2: Z, 3: W } } }
-        TLT: {},
-    };
-
-    // 2. 🔹 VÒNG LẶP DUY NHẤT ĐỂ TÍNH TOÁN
+    // 🔹 Gom theo ngày + ca
     for (const trip of trips) {
-        if (!trip.workingDate) continue;
         const dateKey = new Date(trip.workingDate).toISOString().slice(0, 10);
-        // Đảm bảo shift là số và trong phạm vi 1-3
         const shift = Math.max(1, Math.min(3, trip.shift || 1));
 
-        // Lấy giá trị cho từng loại
-        const values = {
-            'KLD': trip.totalCubicMeter || 0,
-            'TLT': trip.totalTon || 0,
-        };
+        const values = { KLD: trip.totalCubicMeter || 0, TLT: trip.totalTon || 0 };
 
-        // Lặp qua từng loại sản lượng và cộng dồn
         for (const code of ['KLD', 'TLT']) {
             const value = values[code];
             const group = groupedByDate[code];
 
-            // 🔹 Khởi tạo ngày (chỉ cần khởi tạo một lần)
             if (!group[dateKey]) {
                 const isSelectedDay = dateKey === selectedKey;
-
                 group[dateKey] = {
-                    // FIX: Nếu là ngày được chọn, khởi tạo 3 ca với giá trị 0
                     shifts: isSelectedDay ? { 1: 0, 2: 0, 3: 0 } : undefined,
-                    dayTotal: 0,
+                    dayTotal: 0
                 };
             }
 
-            // 🔹 Cộng dồn
-            // FIX: Cộng dồn vào shifts nếu là ngày được chọn
             if (dateKey === selectedKey && group[dateKey].shifts) {
                 group[dateKey].shifts[shift] += value;
             }
 
-            // FIX: Luôn cộng dồn vào dayTotal cho TẤT CẢ các ngày
             group[dateKey].dayTotal += value;
         }
     }
 
-    // 3. 🔹 FORMAT DỮ LIỆU TRẢ VỀ CHO CẢ 2 LOẠI
-    const finalResult = {};
-
-    for (const code of ['KLD', 'TLT']) {
+    const buildSummary = (code, deviceMap) => {
         const group = groupedByDate[code];
-
         const productionByDay = Object.keys(group)
             .sort()
             .map((date) => {
                 const dayData = group[date];
-
-                let shifts = [];
-                if (dayData.shifts) {
-                    // FIX: Duyệt qua keys 1, 2, 3 để đảm bảo thứ tự và đủ 3 ca
-                    shifts = [1, 2, 3].map((shiftNum) => ({
+                const shifts = dayData.shifts
+                    ? [1, 2, 3].map((shiftNum) => ({
                         shift: shiftNum,
-                        production: dayData.shifts[shiftNum] || 0, // Đảm bảo production là 0 nếu không có dữ liệu
-                    }));
-                }
-
-                return {
-                    date,
-                    shifts,
-                    dayTotal: dayData.dayTotal,
-                };
+                        production: dayData.shifts[shiftNum] || 0
+                    }))
+                    : [];
+                return { date, shifts, dayTotal: dayData.dayTotal };
             });
 
         const cumulativeTotal = productionByDay.reduce((sum, d) => sum + d.dayTotal, 0);
-
-        // Lấy dữ liệu ngày được chọn
-        const selectedDay = productionByDay.find((d) => d.date === selectedKey);
-
-        // Hoặc tạo lại nếu không tìm thấy (trường hợp ngày được chọn không có dữ liệu)
-        const finalSelectedDay = selectedDay || {
+        const selectedDay = productionByDay.find((d) => d.date === selectedKey) || {
             date: selectedKey,
             shifts: [{ shift: 1, production: 0 }, { shift: 2, production: 0 }, { shift: 3, production: 0 }],
-            dayTotal: 0,
+            dayTotal: 0
         };
 
-        finalResult[`${code.toLowerCase()}Summary`] = {
+        const deviceProductions = Object.values(deviceMap).map((d) => ({
+            deviceId: d.deviceId,
+            code: d.code,
+            totalProduction: d.totalProduction
+        }));
+
+        return {
             jobType: code,
-            // FIX: Chỉ giữ lại các ngày trước hoặc khác ngày được chọn trong productionByDay
             productionByDay,
             cumulativeTotal,
-            selectedDay: finalSelectedDay,
+            selectedDay,
+            deviceProductions
         };
-    }
+    };
 
-    // FIX: Tên trả về phải khớp với tên trong logic (tltSummary)
-    // Nếu bạn muốn KLT, hãy đổi tất cả TLT thành KLT
-    return finalResult;
+    return {
+        kldSummary: buildSummary('KLD', deviceMapKLD),
+        tltSummary: buildSummary('TLT', deviceMapTLT)
+    };
 }
 
 
@@ -222,30 +219,57 @@ async function summariseDrillingOrdersAggFull(selectedDate, startOfMonth, depart
                 drillValue: { $ifNull: ['$reports.drillDepth', 0] },
             },
         },
-        // Gom theo ngày + ca
         {
-            $group: {
-                _id: { date: '$dateStr', shift: '$shiftNum' },
-                totalDrill: { $sum: '$drillValue' },
-            },
-        },
-        // Gom lại theo ngày
-        {
-            $group: {
-                _id: '$_id.date',
-                shifts: {
-                    $push: {
-                        shift: '$_id.shift',
-                        production: '$totalDrill',
+            $facet: {
+                // ---- A. Tính tổng theo ngày và ca ----
+                byDate: [
+                    {
+                        $group: {
+                            _id: { date: '$dateStr', shift: '$shiftNum' },
+                            totalDrill: { $sum: '$drillValue' }
+                        }
                     },
-                },
-                dayTotal: { $sum: '$totalDrill' },
-            },
-        },
-        { $sort: { _id: 1 } },
+                    {
+                        $group: {
+                            _id: '$_id.date',
+                            shifts: {
+                                $push: { shift: '$_id.shift', production: '$totalDrill' }
+                            },
+                            dayTotal: { $sum: '$totalDrill' }
+                        }
+                    },
+                    { $sort: { _id: 1 } }
+                ],
+
+                // ---- B. Tính tổng theo máy trong ngày được chọn ----
+                byDevice: [
+                    { $match: { dateStr: selectedKey } },
+                    {
+                        $lookup: {
+                            from: 'devices',
+                            localField: 'reports.device',
+                            foreignField: '_id',
+                            as: 'device',
+                            pipeline: [{ $project: { code: 1 } }]
+                        }
+                    },
+                    { $unwind: { path: '$device', preserveNullAndEmptyArrays: true } },
+                    {
+                        $group: {
+                            _id: '$device._id',
+                            code: { $first: '$device.code' },
+                            totalDrill: { $sum: '$drillValue' }
+                        }
+                    },
+                    { $sort: { code: 1 } }
+                ]
+            }
+        }
     ]);
 
-    const productionByDay = result.map((r) => ({
+    const { byDate, byDevice } = result[0] || { byDate: [], byDevice: [] };
+
+    const productionByDay = byDate.map((r) => ({
         date: r._id,
         shifts: r.shifts.filter((s) => !!s.shift),
         dayTotal: r.dayTotal,
@@ -269,6 +293,11 @@ async function summariseDrillingOrdersAggFull(selectedDate, startOfMonth, depart
         productionByDay,
         cumulativeTotal,
         selectedDay,
+        deviceProductions: byDevice.map(d => ({
+            deviceId: d._id,
+            code: d.code || 'N/A',
+            totalProduction: d.totalDrill
+        }))
     };
 }
 
@@ -529,6 +558,33 @@ router.get(
 
             const grouped = Object.values(tripMap);
             const selectedKey = new Date(selectedDate).toISOString().slice(0, 10);
+
+            // 🔹 tính sản lượng theo xe trong ngày
+            const tripsToday = tripsRaw.filter(t => {
+                if (!t.workingDate) return false;
+                const dKey = new Date(t.workingDate).toISOString().slice(0, 10);
+                return dKey === selectedKey;
+            });
+            const deviceMap = {};
+            for (const t of tripsToday) {
+                const devId = t.device?._id?.toString();
+                if (!devId) continue;
+
+                if (!deviceMap[devId]) {
+                    deviceMap[devId] = {
+                        deviceId: devId,
+                        code: t.device?.code || 'N/A',
+                        totalProduction: 0,
+                    };
+                }
+
+                deviceMap[devId].totalProduction += t.production || 0;
+            }
+
+            // 🔹 Chuyển về mảng
+            const deviceProductions = Object.values(deviceMap);
+            //
+
             const byDate = {};
             for (const trip of grouped) {
                 const dKey = new Date(trip.workingDate).toISOString().slice(0, 10);
@@ -555,6 +611,7 @@ router.get(
                 productionByDay,
                 cumulativeTotal: productionByDay.reduce((sum, d) => sum + d.dayTotal, 0),
                 selectedDay,
+                deviceProductions
             };
             res.status(200).json({
                 status: 'success',
@@ -567,4 +624,5 @@ router.get(
         }
     }
 );
+
 module.exports = router

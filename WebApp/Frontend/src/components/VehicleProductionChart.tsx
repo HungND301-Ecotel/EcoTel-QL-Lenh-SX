@@ -11,15 +11,11 @@ import {
     type TooltipComponentOption,
 } from "echarts/components";
 import { CanvasRenderer } from "echarts/renderers";
-import { Autocomplete, Box, Dialog, DialogContent, DialogTitle, TextField, Typography } from "@mui/material";
-import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
-import dayjs, { Dayjs } from "dayjs";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { Dialog, DialogContent, DialogTitle, Typography } from "@mui/material";
 import { useAtom } from "jotai";
 import { userAtom } from "../atoms/userAtoms";
 import DeviceService from "../services/deviceService";
 import { useQuery } from "@tanstack/react-query";
-import { RoleEnum } from "../enums";
 
 echarts.use([BarChart, GridComponent, TooltipComponent, CanvasRenderer]);
 
@@ -39,19 +35,19 @@ const niceMax = (n: number) => {
 export default function VehicleBulletVariance({
     open,
     setOpen,
-    departments
+    department,
+    data
 }: {
     open: boolean;
     setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-    departments: any[]
+    department: any,
+    data: any[]
 }) {
     const [user] = useAtom(userAtom)
-    const [department, setDepartment] = useState('');
-    const [date, setDate] = useState<Dayjs | null>(dayjs());
 
     const { data: allDevices = [] } = useQuery({
         queryKey: ['allDevices', department],
-        queryFn: () => DeviceService.getAll({ department: department }),
+        queryFn: () => DeviceService.getAll({ department }),
     });
 
     const mapDeviceData = (devices: any[]): Row[] => {
@@ -61,9 +57,9 @@ export default function VehicleBulletVariance({
         // Tạo dữ liệu giả định cho biểu đồ
         return devices.map((device, index) => {
             // Định mức (Target): Ngẫu nhiên trong khoảng 100-800
-            const target = Math.floor(Math.random() * 700) + 100;
+            const target = 1000;
             // Sản lượng thực tế (Actual): Ngẫu nhiên gần target (± 20%)
-            const actual = Math.floor(target * (1 + (Math.random() * 0.4 - 0.2)));
+            const actual = data.find((d: any) => device.code === d.code)?.totalProduction || 0
 
             return {
                 // Sử dụng tên thiết bị hoặc code thiết bị thực tế
@@ -87,7 +83,7 @@ export default function VehicleBulletVariance({
     const fmt = (v: number) => (Number.isFinite(v) ? v.toLocaleString("vi-VN") : "");
 
     const option: ECOption = {
-        grid: { left: 110, right: 20, top: 16, bottom: 16 },
+        grid: { left: 110, right: 200, top: 16, bottom: 16 },
         tooltip: {
             trigger: "axis",
             axisPointer: { type: "shadow" },
@@ -110,7 +106,7 @@ export default function VehicleBulletVariance({
         series: [
             // Nền Target (to hơn, màu xám)
             {
-                name: "Target",
+                name: "Định mức",
                 type: "bar",
                 data: targets,
                 barWidth: 18,
@@ -125,7 +121,7 @@ export default function VehicleBulletVariance({
             },
             // Actual (mảnh hơn, tô màu theo over/under), kèm nhãn ±Delta (±%)
             {
-                name: "Actual",
+                name: "Thực tế",
                 type: "bar",
                 data: actuals,
                 barWidth: 12,
@@ -163,44 +159,10 @@ export default function VehicleBulletVariance({
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
             <DialogTitle>
-                <Box
-                    sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        mb: 2,
-                        p: 2
-                    }}
-                >
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                        {(user?.role === RoleEnum.ADMIN || user?.role === RoleEnum.DISPATCHER) && <Autocomplete
-                            size="small"
-                            options={departments}
-                            getOptionLabel={(option: any) =>
-                                option.code || ''
-                            }
-                            value={departments.find((p: any) => p._id === department) || null}
-                            onChange={(event, newValue) => {
-                                setDepartment(newValue?._id || '');
-                            }}
-                            sx={{ width: 200 }}
-                            renderInput={(params) => <TextField {...params} label="Đơn vị" />}
-                        />}
-                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                            <DatePicker
-                                inputFormat="DD/MM/YYYY"
-                                label="Ngày"
-                                value={date}
-                                onChange={(newValue) => setDate(newValue)}
-                                renderInput={(params) => <TextField {...params} size="small" sx={{ width: 200 }} />}
-                            />
-                        </LocalizationProvider>
-                    </Box>
-                </Box>
                 <Typography align="center">Thống kê sản lượng & định mức theo thiết bị</Typography>
             </DialogTitle>
             <DialogContent>
-                <ReactECharts echarts={echarts} option={option} style={{ height: 52 * chartData.length + 40, width: "100%" }} />;
+                <ReactECharts echarts={echarts} option={option} style={{ height: 52 * chartData.length + 40, width: "100%",}} />
             </DialogContent>
         </Dialog>
     )
