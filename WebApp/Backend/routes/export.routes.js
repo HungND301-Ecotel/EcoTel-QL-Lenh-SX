@@ -11,7 +11,7 @@ const Department = require('../models/Department');
 
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 const mongoose = require('mongoose');
-const { groupReportsByExcavator, groupReportsForProduct, groupTripsVehicle, getCombinedUsers, groupTripsExcavator, groupTripsCar, groupExcavator, groupDozer, groupDrill, groupCar } = require('../utils/reportGrouping');
+const { groupTripsVehicle, getCombinedUsers, groupTripsExcavator, groupTripsCar, groupExcavator, groupDozer, groupDrill, groupCar } = require('../utils/reportGrouping');
 const { ROLE, STATUS_ORDER, JOB_TYPE } = require('../config/config');
 // lệnh sx
 router.post('/order/bulk', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
