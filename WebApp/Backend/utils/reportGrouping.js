@@ -1,7 +1,8 @@
 const TravelLog = require('../models/TravelLog')
 const Model = require('../models/Model');
 const { ACCEPTED_PRODUCTS, ACCEPTED_PRODUCT } = require('../config/config');
-const pLimit = require('p-limit').default;
+let pLimit = require('p-limit');
+if (pLimit.default) pLimit = pLimit.default;
 
 async function safeQuery(fn, retries = 3, delay = 300) {
     for (let i = 0; i < retries; i++) {
@@ -9,7 +10,6 @@ async function safeQuery(fn, retries = 3, delay = 300) {
             return await fn();
         } catch (err) {
             if (err.code === 18 && i < retries - 1) {
-                req.logger.warn(`Retry ${i + 1} after auth failed...`);
                 await new Promise(r => setTimeout(r, delay));
             } else throw err;
         }
