@@ -90,7 +90,7 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
 
     // ✅ Khai báo dữ liệu Vận hành Xúc (VHX)
     const {
-        data: vehicleData = [], 
+        data: vehicleData = [],
         refetch: refetchVehicle,
         isLoading: isLoadingVehicle,
     } = useQuery({
@@ -133,8 +133,12 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
         const safeVehicleData = Array.isArray(vehicleData) ? vehicleData : [];
 
         return [...safeDrillingData, ...safeExcavatorData, ...safeVehicleData];
-    }, [drillingData, excavatorData]);
+    }, [drillingData, excavatorData, vehicleData]);
     const isLoading = isLoadingDrilling || isLoadingExcavator || isLoadingVehicle;
+
+    const deviceProduction = useMemo(() => {
+        return analysicsData.find((i: any) => i.jobType === selectedKey)?.deviceProductions || []
+    }, [analysicsData, selectedKey]);
 
     // 🔹 Chuẩn hóa dữ liệu cho bảng và biểu đồ
     // 🔹 Chuẩn hóa dữ liệu cho bảng và biểu đồ (đảm bảo đủ loại)
@@ -343,7 +347,8 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
             <VehicleProductionChart
                 open={open}
                 setOpen={setOpen}
-                departments={departments}
+                department={department}
+                data={deviceProduction}
             />
         </Paper>
     );

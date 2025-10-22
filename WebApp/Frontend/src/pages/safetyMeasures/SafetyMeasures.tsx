@@ -46,6 +46,7 @@ import PositionService from "../../services/positionService";
 import SafetyService from "../../services/SafetyService";
 import { RoleEnum } from "../../enums";
 import CustomDataGrid from "../../components/Table/CustomDataGrid";
+import { parseAxiosError } from "../../utils/handleApiError";
 
 const SafetyMeasures: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -177,9 +178,10 @@ const SafetyMeasures: React.FC = () => {
     const exportExcel = useMutation({
         mutationFn: SafetyService.exportFile,
         onSuccess: () => { },
-        onError: (error: any) => {
-            showErrorAlert(error.response?.data?.message || error.message || "Lỗi");
-        },
+        onError: async (error: any) => {
+            const message = await parseAxiosError(error)
+            showErrorAlert(message);
+        }
     });
 
     const updateMutation = useMutation({

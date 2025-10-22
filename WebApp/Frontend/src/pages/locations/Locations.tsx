@@ -44,6 +44,7 @@ import { locationValidationSchema } from "../../utils/validation";
 import LocationService from "../../services/locationService";
 import { RoleEnum } from "../../enums";
 import CustomDataGrid from "../../components/Table/CustomDataGrid";
+import { parseAxiosError } from "../../utils/handleApiError";
 
 const containerStyle = {
     width: "100%",
@@ -197,9 +198,10 @@ const Locations: React.FC = () => {
     const exportExcel = useMutation({
         mutationFn: LocationService.exportFile,
         onSuccess: () => { },
-        onError: (error: any) => {
-            showErrorAlert(error.response?.data?.message || error.message || "Lỗi");
-        },
+        onError: async (error: any) => {
+            const message = await parseAxiosError(error)
+            showErrorAlert(message);
+        }
     });
     const formik = useFormik({
         initialValues: {
