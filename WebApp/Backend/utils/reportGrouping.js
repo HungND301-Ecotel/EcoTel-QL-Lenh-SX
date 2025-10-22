@@ -1,72 +1,23 @@
 const TravelLog = require('../models/TravelLog')
 const Model = require('../models/Model');
 const { ACCEPTED_PRODUCTS, ACCEPTED_PRODUCT } = require('../config/config');
+const pLimit = require('p-limit').default;
 
-// Ưu tiên fromLocation, nếu không có thì dùng excavator làm "điểm nhận tải"
-const pickFrom = (r) => r?.fromLocation || r?.excavator || null;
-
-// Lấy _id, nếu thiếu thì tạo fallback riêng theo từng bản ghi để không gộp nhầm
-const getId = (obj, fallback) => (obj && obj._id) ? obj._id : fallback;
-
-const getProductGroupKey = (r) => {
-    const deviceId = getId(r?.device, `device-unknown`);
-    const from = pickFrom(r);
-    const fromId = getId(from, `from-unknown`);
-    const toId = getId(r?.toLocation, `to-unknown`);
-    const matId = getId(r?.material, `mat-unknown`);
-    return `device:${deviceId}__from:${fromId}__to:${toId}__mat:${matId}`;
-};
-
-function groupReportsForProduct(reports = []) {
-    const map = new Map(); // key -> { from, to, material, quantity, workingMinutes }
-
-    for (const r of reports) {
-        const key = getProductGroupKey(r);
-        if (!map.has(key)) {
-            map.set(key, {
-                device: r.device || null,
-                from: pickFrom(r),
-                to: r.toLocation || null,
-                material: r.material || null,
-                quantity: 0,
-                workingMinutes: 0,
-            });
+async function safeQuery(fn, retries = 3, delay = 300) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            return await fn();
+        } catch (err) {
+            if (err.code === 18 && i < retries - 1) {
+                req.logger.warn(`Retry ${i + 1} after auth failed...`);
+                await new Promise(r => setTimeout(r, delay));
+            } else throw err;
         }
-        const g = map.get(key);
-        g.quantity += Number(r?.quantity || 0);
-        g.workingMinutes += Number((r?.workingMinutes ?? r?.workingMinute) || 0);
     }
-
-    return Array.from(map.values());
 }
 
-const getExcavatorGroupKey = (r) => {
-    const from = pickFrom(r);
-    const fromId = getId(from, `from-unknown`);
-    const toId = getId(r?.toLocation, `to-unknown`);
-    return `from:${fromId}__to:${toId}`;
-};
-
-function groupReportsByExcavator(reports = []) {
-    const map = new Map();
-
-    for (const r of reports) {
-        const key = getExcavatorGroupKey(r);
-        if (!map.has(key)) {
-            map.set(key, {
-                from: pickFrom(r),
-                to: r.toLocation || null,
-                quantity: 0,
-                workingMinutes: 0,
-            });
-        }
-        const g = map.get(key);
-        g.quantity += Number(r?.quantity || 0);
-        g.workingMinutes += Number((r?.workingMinutes ?? r?.workingMinute) || 0);
-    }
-
-    return Array.from(map.values());
-}
+// giới hạn 10 query song song
+const limit = pLimit(10);
 
 // lenh sx vh xe
 async function groupTripsVehicle(trips, date, shift) {
@@ -81,11 +32,10 @@ async function groupTripsVehicle(trips, date, shift) {
         // 1. TÍNH TOÁN VÀ GOM timeLogs
         // Sử dụng Promise.all để tìm TravelLog song song cho mỗi mốc thời gian
         let totalDistance = 0;
-
         const travelLog = await TravelLog.findOne({
             excavator: t.excavator?._id,
             workingDate: date,
-            shift: shift?._id,
+            shift: shift?._id
         }).lean();
 
         let routeMatched = null;
@@ -125,7 +75,7 @@ async function groupTripsVehicle(trips, date, shift) {
             material: t.material,
             quantity: t.quantity,
             workingDate: t.workingDate,
-            shift: t.shift || 1,
+            shift: t.shift?.name || 1,
             // Thông tin đã tính toán
             totalCubicMeter: value.cubicMeter, // Đổi tên thành totalCubicMeter để nhất quán, nhưng nó là của chuyến đi này
             totalTon: value.ton,
@@ -135,6 +85,64 @@ async function groupTripsVehicle(trips, date, shift) {
     }));
 
     return formattedTrips;
+}
+
+// san luong tkm
+async function groupTripsVehicleProduction(trips) {
+    return Promise.all(
+        trips.map(t =>
+            limit(async () => {
+                const travelLog = await safeQuery(() =>
+                    TravelLog.findOne({
+                        excavator: t.excavator?._id,
+                        workingDate: t.workingDate,
+                        shift: t.shift?._id
+                    }).lean()
+                );
+
+                let totalDistance = 0;
+                let routeMatched = null;
+
+                if (travelLog?.routes?.length && t.toLocation) {
+                    const tripLocId =
+                        typeof t.toLocation === 'object'
+                            ? t.toLocation._id?.toString()
+                            : t.toLocation?.toString();
+                    routeMatched = travelLog.routes.find(r => {
+                        const routeLocId =
+                            typeof r.location === 'object'
+                                ? r.location._id?.toString()
+                                : r.location?.toString();
+                        return routeLocId === tripLocId;
+                    });
+                }
+
+                const distance = routeMatched ? routeMatched.fullDistanceKm || 0 : 0;
+                totalDistance = distance * (Array.isArray(t.quantityUpdateTimes) ? t.quantityUpdateTimes.length : 1);
+
+                const value = await safeQuery(() =>
+                    caculatorWeight(
+                        t.material?._id,
+                        t.device?.material,
+                        t.quantity,
+                        totalDistance,
+                        t.workingDate
+                    )
+                );
+
+                return {
+                    device: t.device,
+                    excavator: t.excavator,
+                    location: t.toLocation,
+                    material: t.material,
+                    quantity: t.quantity,
+                    workingDate: t.workingDate,
+                    shift: t.shift?.name || 1,
+                    production: value.production,
+                };
+            })
+        )
+    );
 }
 
 async function groupExcavator(trips, date) {
@@ -558,8 +566,6 @@ function normalizeDateToUTC(date) {
 
 
 module.exports = {
-    groupReportsByExcavator,
-    groupReportsForProduct,
     groupTripsVehicle,
     getCombinedUsers,
     groupTripsExcavator,
@@ -568,5 +574,7 @@ module.exports = {
     groupDozer,
     groupDrill,
     groupCar,
-    groupProduction
+    groupProduction,
+    groupTripsVehicleProduction,
+    safeQuery
 };

@@ -40,8 +40,8 @@ const travelLogSchema = new mongoose.Schema({
 // Indexes
 travelLogSchema.index({ createdAt: -1 });
 travelLogSchema.index({ excavator: 1 });
-travelLogSchema.index({ workingDate: -1 });
-travelLogSchema.index({ shift: -1 });
+travelLogSchema.index({ workingDate: 1 });
+travelLogSchema.index({ shift: 1 });
 
 
 const Order = mongoose.model('TravelLog', travelLogSchema);

@@ -6,12 +6,12 @@ const Job = require('../models/Job');
 const mongoose = require('mongoose');
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 const { ROLE, JOB_TYPE } = require('../config/config');
-const { groupTripsVehicle, groupExcavator, groupProduction } = require('../utils/reportGrouping'); // ⚠️ đường dẫn đúng tới function của bạn nhé
+const { groupTripsVehicle, groupExcavator, groupProduction, groupTripsVehicleProduction, safeQuery } = require('../utils/reportGrouping'); // ⚠️ đường dẫn đúng tới function của bạn nhé
 
 // ------------------
-// HÀM GOM CHO XE (KLD & SLD)
+// HÀM GOM CHO XUC (KLD & TLT)
 // ------------------
-async function summariseVehicleProduction(reports, selectedDate) {
+async function summariseExcavatorProduction(reports, selectedDate) {
     const selectedKey = new Date(selectedDate).toISOString().slice(0, 10);
 
     if (!reports || reports.length === 0) {
@@ -402,7 +402,7 @@ router.get(
                 allVehicleReports.push(...reportsWithOrderInfo);
             }
 
-            const { kldSummary, tltSummary } = await summariseVehicleProduction(allVehicleReports, selectedDate);
+            const { kldSummary, tltSummary } = await summariseExcavatorProduction(allVehicleReports, selectedDate);
             res.status(200).json({
                 status: 'success',
                 message: 'Tính sản lượng tổng hợp thành công',
@@ -414,5 +414,157 @@ router.get(
         }
     }
 );
+router.get(
+    '/tkm',
+    verifyToken,
+    restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER),
+    async (req, res) => {
+        try {
+            const { date, department } = req.query;
+            const user = req.user;
 
-module.exports = router;
+            if (!date) {
+                return res.status(400).json({ status: 'error', message: 'Thiếu tham số date' });
+            }
+
+            const selected = new Date(date);
+            const selectedDate = new Date(selected.getFullYear(), selected.getMonth(), selected.getDate(), 23, 59, 59, 999);
+            const startOfMonth = new Date(selected.getFullYear(), selected.getMonth(), 1, 0, 0, 0, 0);
+
+            let query = { workingDate: { $gte: startOfMonth, $lte: selectedDate } };
+
+            // Giới hạn theo phòng ban / user
+            if (user?.role === ROLE.MANAGER && user?.department) {
+                query.department = new mongoose.Types.ObjectId(user.department._id);
+            } else if ([ROLE.ADMIN, ROLE.DISPATCHER].includes(user?.role) && department) {
+                query.department = new mongoose.Types.ObjectId(department);
+            }
+
+            const jobsVehicle = await Job.find({ type: JOB_TYPE.VAN_HANH_XE }).select('_id');
+            const jobIdVehicle = jobsVehicle.map(j => j._id);
+            const vehicleOrders = await Order.aggregate([
+                // 1. Lọc Order theo ngày, phòng ban và Job ID
+                {
+                    $match: {
+                        ...query,
+                        job: { $in: jobIdVehicle }, // jobIdVehicle từ Job.find({ type: JOB_TYPE.VAN_HANH_XUC })
+                    },
+                },
+                {
+                    $lookup: {
+                        from: 'shifts', // Tên collection chứa thông tin ca (shifts)
+                        localField: 'shift', // Trường reference trong Order
+                        foreignField: '_id', // Trường ID trong collection shifts
+                        as: 'shiftDetails', // Tên mảng tạm chứa kết quả lookup
+                    },
+                },
+
+                // 3. 🔹 Unwind (giải nén) mảng shiftDetails
+                // Vì trường 'shift' thường là reference 1:1, ta dùng $unwind để biến mảng thành object
+                {
+                    $unwind: {
+                        path: '$shiftDetails',
+                        preserveNullAndEmptyArrays: true, // Giữ lại Order nếu không có shift
+                    },
+                },
+
+                // 4. 🔹 PROJECT (Chọn và Định hình lại dữ liệu)
+                {
+                    $project: {
+                        // Giữ lại các trường cần thiết để truy vấn Report
+                        _id: 1,
+                        workingDate: 1,
+                        // ⚠️ CHỌN shift và CHỈ LẤY TRƯỜNG 'name'
+                        shift: '$shiftDetails',
+                        // Bạn có thể thêm các trường khác nếu cần (ví dụ: department: 1, job: 1)
+                    },
+                }
+            ]);
+
+            // 1. Truy vấn TẤT CẢ Reports chỉ trong MỘT LẦN (sử dụng $in)
+            const orderIds = vehicleOrders.map(o => o._id);
+            const allReports = await safeQuery(() =>
+                Report.find({ orderId: { $in: orderIds } })
+                    .populate({
+                        path: "device",
+                        select: "code material",
+                    })
+                    .populate("material", "name")
+                    .populate("excavator", "code")
+                    .populate("fromLocation", "name")
+                    .populate("toLocation", "name")
+            )
+
+            // 🔹 2. Tạo map để tra thông tin Order nhanh
+            const orderMap = new Map();
+            for (const o of vehicleOrders) {
+                orderMap.set(o._id.toString(), {
+                    shift: o.shift,
+                    workingDate: o.workingDate,
+                });
+            }
+            // 🔹 3. Gán thông tin Order vào Report
+            const allVehicleReports = allReports.map(r => {
+                const orderInfo = orderMap.get(r.orderId?.toString());
+                return {
+                    ...r.toObject(),
+                    shift: orderInfo?.shift,
+                    workingDate: orderInfo?.workingDate,
+                };
+            });
+
+            // nhóm và tính toán
+            const tripsRaw = await groupTripsVehicleProduction(allVehicleReports);
+
+            // tổng hợp
+            const tripMap = {};
+            for (const t of tripsRaw) {
+                if (!t.workingDate) continue;
+                const dateKey = new Date(t.workingDate).toISOString().slice(0, 10);
+                const shift = Number(t.shift) || 1;
+                const mapKey = `${dateKey}_${shift}`;
+                tripMap[mapKey] = tripMap[mapKey] || { workingDate: t.workingDate, shift, production: 0 };
+                tripMap[mapKey].production += t.production || 0;
+            }
+
+            const grouped = Object.values(tripMap);
+            const selectedKey = new Date(selectedDate).toISOString().slice(0, 10);
+            const byDate = {};
+            for (const trip of grouped) {
+                const dKey = new Date(trip.workingDate).toISOString().slice(0, 10);
+                const s = trip.shift;
+                byDate[dKey] = byDate[dKey] || { shifts: { 1: 0, 2: 0, 3: 0 }, dayTotal: 0 };
+                byDate[dKey].shifts[s] += trip.production;
+                byDate[dKey].dayTotal += trip.production;
+            }
+
+            const productionByDay = Object.keys(byDate).sort().map(date => ({
+                date,
+                shifts: [1, 2, 3].map(i => ({ shift: i, production: byDate[date].shifts[i] || 0 })),
+                dayTotal: byDate[date].dayTotal,
+            }));
+
+            const selectedDay = productionByDay.find(d => d.date === selectedKey) || {
+                date: selectedKey,
+                shifts: [{ shift: 1, production: 0 }, { shift: 2, production: 0 }, { shift: 3, production: 0 }],
+                dayTotal: 0,
+            };
+
+            const result = {
+                jobType: 'SLD',
+                productionByDay,
+                cumulativeTotal: productionByDay.reduce((sum, d) => sum + d.dayTotal, 0),
+                selectedDay,
+            };
+            res.status(200).json({
+                status: 'success',
+                message: 'Tính sản lượng tổng hợp thành công',
+                data: [result],
+            });
+        } catch (err) {
+            console.log(err)
+            res.status(500).json({ status: 'error', message: err.message });
+        }
+    }
+);
+module.exports = router

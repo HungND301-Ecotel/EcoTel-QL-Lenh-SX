@@ -478,6 +478,9 @@ router.get('/count/status', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, RO
 
             // Lọc thiết bị theo phân xưởng
             const devicesInDept = devices.filter(d => d.department?._id?.toString() === deptId);
+            if (devicesInDept.length === 0) {
+                continue;
+            }
 
             // Nhóm theo loại phương tiện
             const typesMap = new Map();

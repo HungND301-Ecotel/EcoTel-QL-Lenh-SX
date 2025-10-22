@@ -167,7 +167,7 @@ export default function Profile({ open, setOpen }: { open: boolean, setOpen: Dis
             <DialogContent>
                 <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <TextField fullWidth name="username" label="Tên đăng nhập" disabled value={formik.values.username} InputProps={{ readOnly: true }} />
+                        <TextField fullWidth name="username" label="Tên đăng nhập" value={formik.values.username} InputProps={{ readOnly: true }} />
 
                         <TextField fullWidth name="fullName" label="Họ tên" value={formik.values.fullName}
                             onChange={formik.handleChange} error={!!formik.errors.fullName}
@@ -179,7 +179,7 @@ export default function Profile({ open, setOpen }: { open: boolean, setOpen: Dis
                             <MenuItem value="Nữ">Nữ</MenuItem>
                         </TextField>
 
-                        <TextField fullWidth name="salaryCode" label="Mã thẻ lương" disabled
+                        <TextField fullWidth name="salaryCode" label="Mã thẻ lương"
                             value={formik.values.salaryCode} onChange={formik.handleChange} />
 
                         <TextField fullWidth name="email" label="Email"
@@ -190,7 +190,6 @@ export default function Profile({ open, setOpen }: { open: boolean, setOpen: Dis
                             value={formik.values.phone} onChange={formik.handleChange} />
 
                         <TextField fullWidth select name="position" label="Chức danh, nghề nghiệp"
-                            disabled
                             value={formik.values.position} onChange={formik.handleChange}>
                             {positions.map((p: any) => (
                                 <MenuItem key={p._id} value={p._id}>{p.name}</MenuItem>
@@ -200,7 +199,6 @@ export default function Profile({ open, setOpen }: { open: boolean, setOpen: Dis
                         <Autocomplete
                             fullWidth
                             options={departments}
-                            disabled
                             getOptionLabel={(option: Department) => option.name || ''}
                             value={departments.find((d: Department) => d._id === formik.values.department) || null}
                             onChange={(e, val) => formik.setFieldValue('department', val?._id || '')}
