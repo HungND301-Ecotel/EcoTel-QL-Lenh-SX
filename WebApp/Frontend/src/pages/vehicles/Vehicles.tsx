@@ -52,6 +52,7 @@ import { DeviceTypeEnum, RoleEnum, StatusDeviceEnum } from "../../enums";
 import CustomDataGrid from "../../components/Table/CustomDataGrid";
 import { GridRenderCellParams } from "@mui/x-data-grid";
 import { STATUS_DEVICE_OPTIONS } from "../../utils/const";
+import { parseAxiosError } from "../../utils/handleApiError";
 
 const containerStyle = {
     width: "100%",
@@ -251,18 +252,20 @@ const Vehicles: React.FC = () => {
 
             showSuccessAlert(combinedMessage);
         },
-        onError: (error: any) => {
-            setIsUploading(false);
-            showErrorAlert(error.response?.data?.message || "Lỗi khi import");
-        },
+        onError: async (error: any) => {
+            setIsUploading(false)
+            const message = await parseAxiosError(error)
+            showErrorAlert(message);
+        }
     });
 
     const exportExcel = useMutation({
         mutationFn: () => DeviceService.exportDevicesFile(vehicles),
         onSuccess: () => { },
-        onError: (error: any) => {
-            showErrorAlert(error.response?.data?.message || error.message || "Lỗi");
-        },
+        onError: async (error: any) => {
+            const message = await parseAxiosError(error)
+            showErrorAlert(message);
+        }
     });
 
     const createMutation = useMutation({

@@ -42,6 +42,7 @@ import {
 import { deviceModelValidationSchema } from "../../utils/validation";
 import { RoleEnum } from "../../enums";
 import CustomDataGrid from "../../components/Table/CustomDataGrid";
+import { parseAxiosError } from "../../utils/handleApiError";
 
 const DeviceModels: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -163,9 +164,10 @@ const DeviceModels: React.FC = () => {
                 });
         },
         onSuccess: () => { },
-        onError: (error: any) => {
-            showErrorAlert(error.response?.data?.message || error.message || "Lỗi");
-        },
+        onError: async (error: any) => {
+            const message = await parseAxiosError(error)
+            showErrorAlert(message);
+        }
     });
 
     const createMutation = useMutation({
@@ -260,7 +262,7 @@ const DeviceModels: React.FC = () => {
         });
     };
 
-  
+
     return (
         <Box>
             <Breadcrumbs aria-label="breadcrumb">

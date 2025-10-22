@@ -1117,7 +1117,7 @@ function getDistanceFromLatLngInMeters(lat1, lon1, lat2, lon2) {
 
 router.post('/exportFile/bulk', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
-        const { ids } = req.body;
+        const { ids, isSelectedAll, status } = req.body;
         const user = req.user;
 
         // 1. Kiểm tra đầu vào
@@ -1126,8 +1126,17 @@ router.post('/exportFile/bulk', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN
             return res.status(400).send({ status: 'error', message: 'Chọn bản ghi cần tải xuống' });
         }
 
+        let query = {}
+        if (isSelectedAll) {
+            if (status) {
+                query.status = status
+            }
+        } else {
+            query._id = { $in: ids }
+        }
+
         // 2. Lấy dữ liệu Orders và Populate
-        const orders = await Order.find({ _id: { $in: ids } })
+        const orders = await Order.find(query)
             .populate({
                 path: "assignedTo",
                 select: " fullName salaryCode",
@@ -1144,7 +1153,8 @@ router.post('/exportFile/bulk', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN
                 path: "createdBy",
                 select: "fullName",
             })
-            .sort('-workingDate');
+            .sort('-workingDate')
+            .lean();
 
         // 3. Nhóm Orders theo Department Code
         const ordersByDepartment = orders.reduce((acc, order) => {
@@ -1268,7 +1278,7 @@ router.post('/exportFile/bulk', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN
         // 6. Gửi file Excel về client
         const buffer = await workbook.xlsx.writeBuffer();
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', 'attachment; filename=' + 'danh_sach_don_vi_diem_do_tai.xlsx');
+        res.setHeader('Content-Disposition', 'attachment; filename=' + 'danh_sach_lenh_sx.xlsx');
         res.send(buffer);
         req.logger.info("✅ Xuất file thành công.");
 

@@ -55,6 +55,7 @@ import OrderHistories from '../../components/Modal/OrderHistories';
 import ShiftReport from '../../components/Modal/ShiftReport';
 import DepartmentService from '../../services/departmentService';
 import OrderService from '../../services/orderService';
+import { parseAxiosError } from '../../utils/handleApiError';
 
 const Orders: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -172,6 +173,8 @@ const Orders: React.FC = () => {
         }
     }, [data]);
 
+    const isSelectAll = orders.length > 0 && selectedOrders.length === orders.length;
+
     const createMutation = useMutation({
         mutationFn: OrderService.create,
         onSuccess: () => {
@@ -193,14 +196,15 @@ const Orders: React.FC = () => {
             setSelectedOrders([])
             setIsDownloadLoading(false)
         },
-        onError: (error: any) => {
+        onError: async (error: any) => {
             setIsDownloadLoading(false)
-            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
+            const message = await parseAxiosError(error)
+            showErrorAlert(message);
         }
     });
 
     const reportListorderExcel = useMutation({
-        mutationFn: () => OrderService.exportFileList(selectedOrders),
+        mutationFn: () => OrderService.exportFileList(selectedOrders, isSelectAll, status),
         onMutate: () => {
             setIsDownloadLoading(true);
         },
@@ -209,9 +213,10 @@ const Orders: React.FC = () => {
             setSelectedOrders([])
             setIsDownloadLoading(false)
         },
-        onError: (error: any) => {
+        onError: async (error: any) => {
             setIsDownloadLoading(false)
-            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
+            const message = await parseAxiosError(error)
+            showErrorAlert(message);
         }
     });
 
@@ -804,7 +809,11 @@ const Orders: React.FC = () => {
                     </IconButton>
                     {user?.role === RoleEnum.ADMIN && <IconButton
                         color='primary'
-                        onClick={() => reportListorderExcel.mutate()}
+                        onClick={async () => {
+                            if (selectedOrders.length === 0) return showErrorAlert("Vui lòng chọn bản ghi")
+                            reportListorderExcel.mutate()
+                        }
+                        }
                         sx={{
                             textTransform: 'none',
                             borderRadius: 2,
@@ -840,7 +849,7 @@ const Orders: React.FC = () => {
                 <Grid item xs={12} sm={info ? 8 : 12} maxHeight='60vh'>
                     <DataGrid
                         // rowSelection={rowSelection}
-                        pageSizeOptions={[50, 100, 200, 500]}
+                        pageSizeOptions={[20, 50, 100]}
                         paginationModel={paginationModel}
                         onPaginationModelChange={setPaginationModel}
                         paginationMode="server"

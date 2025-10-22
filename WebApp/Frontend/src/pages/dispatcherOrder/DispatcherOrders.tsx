@@ -55,6 +55,8 @@ import DepartmentService from '../../services/departmentService';
 import OrderService from '../../services/orderService';
 import { StatusOrderEnum } from '../../enums';
 import OrderHistories from '../../components/Modal/OrderHistories';
+import { parseAxiosError } from '../../utils/handleApiError';
+
 
 const DispatcherOrders: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -160,8 +162,9 @@ const DispatcherOrders: React.FC = () => {
             setSelectedOrders([])
             showSuccessAlert('Xuất file thành công');
         },
-        onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
+        onError: async (error: any) => {
+            const message = await parseAxiosError(error)
+            showErrorAlert(message);
         }
     });
 

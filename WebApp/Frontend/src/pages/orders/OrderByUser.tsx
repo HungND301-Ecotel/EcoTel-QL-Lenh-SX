@@ -303,7 +303,7 @@ const OrderByUsers: React.FC = () => {
                     <DataGrid
                         columns={orderColumns.filter((col: GridColDef) => col.field && visibleColumns.includes(col.field.toString()))}
                         rows={orderByUser}
-                        pageSizeOptions={[50, 100, 200, 500]}
+                        pageSizeOptions={[20, 50, 100]}
                         paginationModel={paginationModel}
                         onPaginationModelChange={setPaginationModel}
                         paginationMode="server"

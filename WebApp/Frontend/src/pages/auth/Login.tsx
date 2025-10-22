@@ -88,11 +88,12 @@ const Login = () => {
                     <Box>
                         <Typography variant="h6" sx={{
                             fontWeight: "bold",
-                            fontSize: {
-                                xl: 60,
-                                lg: 40,
-                                md: 30,
-                                xs: 18
+                             fontSize: {
+                                xl: 48,
+                                lg: 28,
+                                md: 24,
+                                sm: 20,
+                                xs: 14
                             },
                         }} textAlign={'center'}>HỆ THỐNG QUẢN LÝ ĐIỀU PHỐI VÀ SỬ DỤNG MÁY MÓC THIẾT BỊ</Typography>
                     </Box>

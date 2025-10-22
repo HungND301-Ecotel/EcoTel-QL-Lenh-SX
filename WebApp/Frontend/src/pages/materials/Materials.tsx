@@ -43,6 +43,8 @@ import MaterialService from "../../services/materialService";
 import { RoleEnum } from "../../enums";
 import { ACCEPTED_PRODUCT_OPTIONS } from "../../utils/const";
 import CustomDataGrid from "../../components/Table/CustomDataGrid";
+import { parseAxiosError } from '../../utils/handleApiError';
+
 
 const Materials: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -170,9 +172,10 @@ const Materials: React.FC = () => {
     const exportExcel = useMutation({
         mutationFn: MaterialService.exportFile,
         onSuccess: () => { },
-        onError: (error: any) => {
-            showErrorAlert(error.response?.data?.message || error.message || "Lỗi");
-        },
+        onError: async (error: any) => {
+            const message = await parseAxiosError(error)
+            showErrorAlert(message);
+        }
     });
 
     const formik = useFormik({

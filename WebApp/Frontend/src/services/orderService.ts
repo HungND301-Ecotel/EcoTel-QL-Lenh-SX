@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import api from "../config/api.config";
 import { Device, Location, Material, Order } from "../types";
+import { Dayjs } from "dayjs";
 
 const OrderService = {
     getAll: async (params?: Record<string, any>): Promise<any> => {
@@ -63,9 +64,15 @@ const OrderService = {
         window.URL.revokeObjectURL(url);
     },
     exportFileList: async (
-        selectedOrders: any[]
+        selectedOrders: any[],
+        isSelectedAll: boolean,
+        status: string
     ) => {
-        const res = await api.post('/orders/exportFile/bulk', { ids: selectedOrders.map(o => o._id) }, {
+        const res = await api.post('/orders/exportFile/bulk', {
+            ids: selectedOrders.map(o => o._id),
+            isSelectedAll,
+            status
+        }, {
             responseType: 'blob',
         });
         const blob = new Blob([res.data], {

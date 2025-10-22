@@ -16,8 +16,8 @@ async function safeQuery(fn, retries = 3, delay = 300) {
     }
 }
 
-// giới hạn 10 query song song
-const limit = pLimit(10);
+// giới hạn 100 query song song
+const limit = pLimit(50);
 
 // lenh sx vh xe
 async function groupTripsVehicle(trips, date, shift) {
