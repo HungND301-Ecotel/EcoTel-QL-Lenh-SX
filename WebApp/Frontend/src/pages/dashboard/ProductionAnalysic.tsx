@@ -42,7 +42,9 @@ const productions = [
     { key: 'CD', name: 'Cung độ thực hiện' },
 ];
 const DRILLING_STORAGE_KEY = 'drillingData';
+const EXCAVATOR_STORAGE_KEY = 'excavatorData';
 const VEHICLE_STORAGE_KEY = 'vehicleData';
+
 
 export default function ProductionAnalysic({ departments }: { departments: any[] }) {
     const [user] = useAtom(userAtom);
@@ -51,14 +53,17 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
     const [open, setOpen] = useState(false);
     const [selectedKey, setSelectedKey] = useState('MKS');
     const [drillingCache, setDrillingCache] = useState<any[] | null>(null);
+    const [excavatorCache, setExcavatorCache] = useState<any[] | null>(null);
     const [vehicleCache, setVehicleCache] = useState<any[] | null>(null);
 
     // Load dữ liệu localforage trước khi query
     useEffect(() => {
         (async () => {
             const d = await localforage.getItem(DRILLING_STORAGE_KEY);
+            const e = await localforage.getItem(EXCAVATOR_STORAGE_KEY);
             const v = await localforage.getItem(VEHICLE_STORAGE_KEY);
             setDrillingCache(Array.isArray(d) ? d : []);
+            setExcavatorCache(Array.isArray(e) ? e : []);
             setVehicleCache(Array.isArray(v) ? v : []);
         })();
     }, [department, date]);
@@ -79,15 +84,33 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
             await localforage.setItem(DRILLING_STORAGE_KEY, newData); // ✅ Lưu vào localforage
             return newData;
         },
-        refetchInterval: 2 * 60 * 1000,    // ✅ Tự động gọi lại API mỗi 2 phút
+        refetchInterval: 5 * 60 * 1000,    // ✅ Tự động gọi lại API mỗi 2 phút
         placeholderData: drillingCache || undefined,
     });
 
     // ✅ Khai báo dữ liệu Vận hành Xúc (VHX)
     const {
-        data: vehicleData = [], // Đổi tên thành vehicleData
+        data: vehicleData = [], 
         refetch: refetchVehicle,
         isLoading: isLoadingVehicle,
+    } = useQuery({
+        queryKey: ['analysicsVHXE', department, date?.format('YYYY-MM-DD')],
+        queryFn: async () => {
+            const res = await api.get(
+                `/analysics/tkm?date=${date ? date.toISOString() : ''}&department=${department}`
+            );
+            const newData = res.data.data || [];
+            await localforage.setItem(VEHICLE_STORAGE_KEY, newData); // ✅ Lưu vào localforage
+            return newData;
+        },
+        refetchInterval: 5 * 60 * 1000,    // ✅ Tự động gọi lại API mỗi 2 phút
+        placeholderData: vehicleCache || undefined,
+    });
+
+    const {
+        data: excavatorData = [], // Đổi tên thành excavatorData
+        refetch: refetchExcavator,
+        isLoading: isLoadingExcavator,
     } = useQuery({
         queryKey: ['analysicsVHX', department, date?.format('YYYY-MM-DD')],
         queryFn: async () => {
@@ -95,22 +118,23 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
                 `/analysics/vhx?date=${date ? date.toISOString() : ''}&department=${department}`
             );
             const newData = res.data.data || [];
-            await localforage.setItem(VEHICLE_STORAGE_KEY, newData); // ✅ Lưu vào localforage
+            await localforage.setItem(EXCAVATOR_STORAGE_KEY, newData); // ✅ Lưu vào localforage
             return newData;
         },
-        refetchInterval: 2 * 60 * 1000,    // ✅ Tự động gọi lại API mỗi 2 phút
-        placeholderData: vehicleCache || undefined,
+        refetchInterval: 5 * 60 * 1000,    // ✅ Tự động gọi lại API mỗi 2 phút
+        placeholderData: excavatorCache || undefined,
     });
 
     // ✅ Tổng hợp dữ liệu và trạng thái loading
     const analysicsData = useMemo(() => {
         // Đảm bảo cả hai biến đều là mảng trước khi dùng spread operator
         const safeDrillingData = Array.isArray(drillingData) ? drillingData : [];
+        const safeExcavatorData = Array.isArray(excavatorData) ? excavatorData : [];
         const safeVehicleData = Array.isArray(vehicleData) ? vehicleData : [];
 
-        return [...safeDrillingData, ...safeVehicleData];
-    }, [drillingData, vehicleData]);
-    const isLoading = isLoadingDrilling || isLoadingVehicle;
+        return [...safeDrillingData, ...safeExcavatorData, ...safeVehicleData];
+    }, [drillingData, excavatorData]);
+    const isLoading = isLoadingDrilling || isLoadingExcavator || isLoadingVehicle;
 
     // 🔹 Chuẩn hóa dữ liệu cho bảng và biểu đồ
     // 🔹 Chuẩn hóa dữ liệu cho bảng và biểu đồ (đảm bảo đủ loại)
@@ -180,7 +204,7 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
                                             }}
                                             onClick={async () => {
                                                 try {
-                                                    await Promise.all([refetchDrilling(), refetchVehicle()]);
+                                                    await Promise.all([refetchDrilling(), refetchExcavator(), refetchVehicle()]);
                                                     setAlert({ open: true, message: 'Cập nhật thành công', severity: 'success' });
                                                 } catch (e) {
                                                     setAlert({ open: true, message: 'Cập nhật thất bại', severity: 'error' });

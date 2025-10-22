@@ -573,7 +573,6 @@ const Users: React.FC = () => {
                                     label="Tên đăng nhập"
                                     value={formik.values.username}
                                     onChange={formik.handleChange}
-                                    disabled={!!selectedUser}
                                     error={formik.touched.username && Boolean(formik.errors.username)}
                                     helperText={formik.touched.username && formik.errors.username}
                                 />
