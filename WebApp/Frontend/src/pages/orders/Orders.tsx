@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useEffect, useRef, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     Box,
     Button,
@@ -75,66 +75,70 @@ const Orders: React.FC = () => {
     const [expanded, setExpanded] = useState(false);
     const [info, setInfo] = useState(false);
 
-    const formRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
 
-    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
-    const [paginationModel, setPaginationModel] = useState({
-        pageSize: 50,
-        page: 0,
-    });
-    const [total, setTotal] = useState(0);
-    const [orders, setOrders] = useState<any[]>([]);
-    const [statusCounts, setStatusCounts] = useState<any>({
-        all: 0,
-        pending: 0,
-        in_progress: 0,
-        warning: 0,
-        completed: 0,
-        cancel: 0,
-    });
+  const [paginationModel, setPaginationModel] = useState({
+    pageSize: 50,
+    page: 0,
+  });
+  const [total, setTotal] = useState(0);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [statusCounts, setStatusCounts] = useState<any>({
+    all: 0,
+    pending: 0,
+    in_progress: 0,
+    warning: 0,
+    completed: 0,
+    cancel: 0,
+  });
 
-    const defaultColumns = [
-        { id: 'number', label: 'Số thứ tự' },
-        { id: 'assignedTo', label: 'Người nhận lệnh' },
-        { id: 'salaryCode', label: 'Số thẻ' },
-        { id: 'workingDate', label: 'Ngày làm việc' },
-        { id: 'shift', label: 'Ca' },
-        { id: 'job', label: 'Công việc' },
-        { id: 'content', label: 'Nội dung lệnh' },
-        { id: 'device', label: 'Thiết bị' },
-        { id: 'excavator', label: 'Máy xúc' },
-        { id: 'material', label: 'Vật liệu' },
-        { id: 'location', label: 'Điểm đổ' },
-        { id: 'createdBy', label: 'Người ra lệnh' },
-        { id: 'createdAt', label: 'Thời gian tạo lệnh' },
-        { id: 'startTime', label: 'Bắt đầu' },
-        { id: 'endTime', label: 'Kết thúc' },
-        { id: 'status', label: 'Trạng thái lệnh' },
-        { id: 'deviceStatus', label: 'Tình trạng thiết bị' },
-        { id: 'view', label: 'Xem' },
-        { id: 'edit', label: 'Sửa' },
-        { id: 'cancel', label: 'Hủy' },
-        { id: 'transfer', label: 'Chuyển ca' },
+  const defaultColumns = [
+    { id: "number", label: "Số thứ tự" },
+    { id: "assignedTo", label: "Người nhận lệnh" },
+    { id: "salaryCode", label: "Số thẻ" },
+    { id: "workingDate", label: "Ngày làm việc" },
+    { id: "shift", label: "Ca" },
+    { id: "job", label: "Công việc" },
+    { id: "content", label: "Nội dung lệnh" },
+    { id: "device", label: "Thiết bị" },
+    { id: "excavator", label: "Máy xúc" },
+    { id: "material", label: "Vật liệu" },
+    { id: "location", label: "Điểm đổ" },
+    { id: "createdBy", label: "Người ra lệnh" },
+    { id: "createdAt", label: "Thời gian tạo lệnh" },
+    { id: "startTime", label: "Bắt đầu" },
+    { id: "endTime", label: "Kết thúc" },
+    { id: "status", label: "Trạng thái lệnh" },
+    { id: "deviceStatus", label: "Tình trạng thiết bị" },
+    { id: "view", label: "Xem" },
+    { id: "edit", label: "Sửa" },
+    { id: "cancel", label: "Hủy" },
+    { id: "transfer", label: "Chuyển ca" },
+  ];
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(
+    defaultColumns.map((i) => i.id)
+  );
 
-    ]
-    const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultColumns.map(i => i.id))
+  const handleToggleColumn = (id: string) => {
+    setVisibleColumns((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
 
-    const handleToggleColumn = (id: string) => {
-        setVisibleColumns(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
-    }
+  const handleChange = (value: string) => {
+    setStatus((prev) => (prev === value ? "" : value)); // bỏ chọn nếu click lại
+  };
 
-    const handleChange = (value: string) => {
-        setStatus(prev => (prev === value ? '' : value)); // bỏ chọn nếu click lại
-    };
+  const [serverFilters, setServerFilters] = useState<
+    Record<string, string | null>
+  >({});
 
-    const [serverFilters, setServerFilters] = useState<Record<string, string | null>>({});
-
-
-    const { data: departments = [] } = useQuery({
-        queryKey: ['departments'],
-        queryFn: () => DepartmentService.getAll(),
-    });
+  const { data: departments = [] } = useQuery({
+    queryKey: ["departments"],
+    queryFn: () => DepartmentService.getAll(),
+  });
 
     const { data, refetch: refetchOrder, isLoading } = useQuery({
         queryKey: ['orders', paginationModel, value, status, department, startTime, endTime, serverFilters],
@@ -220,30 +224,30 @@ const Orders: React.FC = () => {
         }
     });
 
-    const updateMutation = useMutation({
-        mutationFn: OrderService.update,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['orders'] });
-            showSuccessAlert('Cập nhật lệnh sản xuất thành công');
-            handleClose();
-        },
-        onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
-        }
-    });
+  const updateMutation = useMutation({
+    mutationFn: OrderService.update,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      showSuccessAlert("Cập nhật lệnh sản xuất thành công");
+      handleClose();
+    },
+    onError: (error: any) => {
+      showErrorAlert(error.response.data.message || error.message || "Lỗi");
+    },
+  });
 
-    const deleteMutation = useMutation({
-        mutationFn: OrderService.delete,
-        onSuccess: (message) => {
-            queryClient.invalidateQueries({ queryKey: ['orders'] });
-            setSelectedOrders([]);
-            showSuccessAlert(message || 'Xóa thành công');
-            handleClose()
-        },
-        onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.message || 'Lỗi')
-        }
-    });
+  const deleteMutation = useMutation({
+    mutationFn: OrderService.delete,
+    onSuccess: (message) => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      setSelectedOrders([]);
+      showSuccessAlert(message || "Xóa thành công");
+      handleClose();
+    },
+    onError: (error: any) => {
+      showErrorAlert(error.response.data.message || error.message || "Lỗi");
+    },
+  });
 
     const handleCancel = (order: any) => {
         if (order.status === StatusOrderEnum.INPROGRESS) {
@@ -259,43 +263,43 @@ const Orders: React.FC = () => {
         })
     }
 
-    const handleOpen = (order?: any) => {
-        if (order) {
-            setSelectedOrder(order);
-        } else {
-            setSelectedOrder(null);
-        }
-        setTransfer(false)
-        setExpanded(true)
-        setOpen(true);
-        setTimeout(() => {
-            if (formRef.current) {
-                formRef.current.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            }
-        }, 500);
-    };
+  const handleOpen = (order?: any) => {
+    if (order) {
+      setSelectedOrder(order);
+    } else {
+      setSelectedOrder(null);
+    }
+    setTransfer(false);
+    setExpanded(true);
+    setOpen(true);
+    setTimeout(() => {
+      if (formRef.current) {
+        formRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    }, 500);
+  };
 
-    const handleClose = () => {
-        setOpen(false);
-        setTransfer(false);
-        setSelectedOrder(null);
-        setExpanded(false)
-    };
+  const handleClose = () => {
+    setOpen(false);
+    setTransfer(false);
+    setSelectedOrder(null);
+    setExpanded(false);
+  };
 
-    const handleSubmit = (values: Partial<Order>) => {
-        if (selectedOrder) {
-            updateMutation.mutate({ ...values, _id: selectedOrder._id });
-        } else {
-            createMutation.mutate(values);
-        }
-    };
-    const handleDelete = () => {
-        if (selectedOrders.length === 0) {
-            return showErrorAlert('Không tìm thấy bản ghi cần xóa');
-        }
+  const handleSubmit = (values: Partial<Order>) => {
+    if (selectedOrder) {
+      updateMutation.mutate({ ...values, _id: selectedOrder._id });
+    } else {
+      createMutation.mutate(values);
+    }
+  };
+  const handleDelete = () => {
+    if (selectedOrders.length === 0) {
+      return showErrorAlert("Không tìm thấy bản ghi cần xóa");
+    }
 
         if (user?.role === RoleEnum.ADMIN) {
             showConfirmAlert('Bạn có muốn xóa?. Bạn sẽ không thể hoàn tác.').then((result) => {
@@ -309,42 +313,40 @@ const Orders: React.FC = () => {
                 o.status !== StatusOrderEnum.INPROGRESS && o.status !== StatusOrderEnum.COMPLETED
             );
 
-            if (deletableOrders.length === 0) {
-                return showErrorAlert("Không có bản ghi nào hợp lệ để xoá");
-            }
+      if (deletableOrders.length === 0) {
+        return showErrorAlert("Không có bản ghi nào hợp lệ để xoá");
+      }
 
-            // cảnh báo cho các bản ghi bị bỏ qua
-            const skipped = selectedOrders.length - deletableOrders.length;
+      // cảnh báo cho các bản ghi bị bỏ qua
+      const skipped = selectedOrders.length - deletableOrders.length;
 
-            let message = "";
-            if (skipped > 0) {
-                message = `${skipped} bản ghi đang thực hiện hoặc đã hoàn thành. `;
-            }
+      let message = "";
+      if (skipped > 0) {
+        message = `${skipped} bản ghi đang thực hiện hoặc đã hoàn thành. `;
+      }
 
-            message += `Bạn có thể xóa ${deletableOrders.length} bản ghi. Bạn có muốn xóa?`;
+      message += `Bạn có thể xóa ${deletableOrders.length} bản ghi. Bạn có muốn xóa?`;
 
-            showConfirmAlert(message).then((result) => {
-                if (result.isConfirmed) {
-                    deleteMutation.mutate(deletableOrders.map(o => o._id));
-                }
-            });
+      showConfirmAlert(message).then((result) => {
+        if (result.isConfirmed) {
+          deleteMutation.mutate(deletableOrders.map((o) => o._id));
         }
+      });
+    }
+  };
 
-    };
-
-    useEffect(() => {
-        if (transfer && formRef.current) {
-            setTimeout(() => {
-                if (formRef.current) {
-                    formRef.current.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            }, 500);
+  useEffect(() => {
+    if (transfer && formRef.current) {
+      setTimeout(() => {
+        if (formRef.current) {
+          formRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
         }
-    }, [transfer]);
-
+      }, 500);
+    }
+  }, [transfer]);
 
     const orderColumns: GridColDef[] = [
         {
@@ -555,92 +557,116 @@ const Orders: React.FC = () => {
         },
     ];
 
-    const filteredColumns = React.useMemo(
-        () => orderColumns.filter((col: GridColDef) => col.field && visibleColumns.includes(String(col.field))),
-        [orderColumns, visibleColumns]
-    );
+  const filteredColumns = React.useMemo(
+    () =>
+      orderColumns.filter(
+        (col: GridColDef) =>
+          col.field && visibleColumns.includes(String(col.field))
+      ),
+    [orderColumns, visibleColumns]
+  );
 
-    const [alert, setAlert] = useState<{ open: boolean; message: string; severity?: AlertColor }>({
-        open: false,
-        message: '',
-        severity: 'success',
-    });
+  const [alert, setAlert] = useState<{
+    open: boolean;
+    message: string;
+    severity?: AlertColor;
+  }>({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
-
-    return (
-        <Box>
-            <AlertSnackbar alert={alert} setAlert={setAlert} />
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h3" color={'blue'}>Lệnh sản xuất</Typography>
+  return (
+    <Box>
+      <AlertSnackbar alert={alert} setAlert={setAlert} />
+      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
+        <Typography variant="h3" color={"blue"}>
+          Lệnh sản xuất
+        </Typography>
+      </Box>
+      <Accordion expanded={expanded} ref={formRef}>
+        <AccordionSummary
+          expandIcon={<></>}
+          aria-controls="panel1-content"
+          id="panel1-header"
+          sx={{
+            backgroundColor: "white",
+            "&.Mui-focusVisible": {
+              backgroundColor: "white",
+            },
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              alignItems: "center",
+              width: "100%",
+              flexWrap: "wrap", // Tự động xuống dòng khi không đủ không gian
+              flexDirection: {
+                xs: "column", // Màn hình nhỏ: các items xếp dọc
+                md: "row", // Màn hình lớn: các items xếp ngang
+              },
+              // Thêm các thuộc tính căn chỉnh để bố cục đẹp hơn
+              justifyContent: {
+                xs: "flex-start", // Màn hình nhỏ: căn trái
+                md: "space-between", // Màn hình lớn: giãn đều các items
+              },
+            }}
+          >
+            {/* Nhóm các nút lại với nhau */}
+            <Box
+              sx={{
+                display: "flex",
+                gap: 1, // Khoảng cách nhỏ hơn giữa các nút
+                flexDirection: {
+                  xs: "column",
+                  md: "row",
+                },
+                width: {
+                  xs: "100%", // Group này chiếm 100% khi xếp dọc
+                  md: "auto",
+                },
+              }}
+            >
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => handleOpen()}
+              >
+                Thêm
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<DeleteIcon />}
+                color="error"
+                onClick={handleDelete}
+              >
+                Xóa
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<InfoOutlined />}
+                color="inherit"
+                onClick={() => setHistory(true)}
+              >
+                Lịch sử
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<FileDownload />}
+                color="success"
+                onClick={() => {
+                  if (selectedOrders.length > 0) {
+                    reportExcel.mutate();
+                  } else {
+                    showErrorAlert("Vui lòng chọn bản ghi cần tải xuống");
+                  }
+                }}
+              >
+                Tải xuống
+              </Button>
             </Box>
-            <Accordion expanded={expanded} ref={formRef}>
-                <AccordionSummary
-                    expandIcon={
-                        <></>}
-                    aria-controls="panel1-content"
-                    id="panel1-header"
-                    sx={{
-                        backgroundColor: 'white', '&.Mui-focusVisible': {
-                            backgroundColor: 'white',
-                        },
-                    }}
-                >
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            gap: 2,
-                            alignItems: 'center',
-                            width: '100%',
-                            flexWrap: 'wrap', // Tự động xuống dòng khi không đủ không gian
-                            flexDirection: {
-                                xs: 'column', // Màn hình nhỏ: các items xếp dọc
-                                md: 'row',    // Màn hình lớn: các items xếp ngang
-                            },
-                            // Thêm các thuộc tính căn chỉnh để bố cục đẹp hơn
-                            justifyContent: {
-                                xs: 'flex-start', // Màn hình nhỏ: căn trái
-                                md: 'space-between', // Màn hình lớn: giãn đều các items
-                            },
-                        }}
-                    >
-                        {/* Nhóm các nút lại với nhau */}
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                gap: 1, // Khoảng cách nhỏ hơn giữa các nút
-                                flexDirection: {
-                                    xs: 'column',
-                                    md: 'row',
-                                },
-                                width: {
-                                    xs: '100%', // Group này chiếm 100% khi xếp dọc
-                                    md: 'auto',
-                                },
-                            }}
-                        >
-                            <Button
-                                variant="contained"
-                                startIcon={<AddIcon />}
-                                onClick={() => handleOpen()}
-                            >
-                                Thêm
-                            </Button>
-                            <Button variant="contained" startIcon={<DeleteIcon />} color="error" onClick={handleDelete}>
-                                Xóa
-                            </Button>
-                            <Button variant="contained" startIcon={<InfoOutlined />} color="inherit" onClick={() => setHistory(true)}>
-                                Lịch sử
-                            </Button>
-                            <Button variant="contained" startIcon={<FileDownload />} color="success" onClick={() => {
-                                if (selectedOrders.length > 0) {
-                                    reportExcel.mutate();
-                                } else {
-                                    showErrorAlert('Vui lòng chọn bản ghi cần tải xuống');
-                                }
-                            }}>
-                                Tải xuống
-                            </Button>
-                        </Box>
 
                         {/* Nhóm các Autocomplete và DatePicker lại với nhau */}
                         <Box
@@ -942,72 +968,105 @@ const Orders: React.FC = () => {
                                 backgroundColor: 'inherit !important',
                             },
 
-                            '& .MuiDataGrid-columnHeader[data-field="assignedTo"]': {
-                                position: 'sticky',
-                                left: 100, // 👈 phải đúng bằng width cột number
-                                zIndex: 11,
-                                backgroundColor: 'inherit !important',
-                                boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
-                            },
-                            '& .MuiDataGrid-cell[data-field="assignedTo"]': {
-                                position: 'sticky',
-                                left: 100,
-                                zIndex: 10,
-                                backgroundColor: 'inherit !important',
-                                boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
-                            },
-                            '& .MuiDataGrid-virtualScroller': {
-                                overflowX: 'auto',
-                            },
-                        }} />
-                </Grid>
-                {info && <Grid item xs={12} sm={4}>
-                    <Box
-                        sx={{
-                            position: 'sticky',
-                            top: 0,
-                            maxHeight: '80vh',
-                            overflowY: 'auto',
-                            border: '1px solid #ccc',
-                            borderRadius: 2,
-                            p: 1.5, // Giảm padding một chút để phù hợp với cột nhỏ hơn
-                            transition: 'width 0.3s ease-in-out, background-color 0.3s ease-in-out', // Thêm hiệu ứng chuyển đổi
-                        }}
-                    >
-                        <Box display="flex" justifyContent={info ? 'space-between' : 'center'} alignItems="flex-start" flexDirection={info ? 'row' : 'column'}>
-                            {info && <Typography variant="h6" sx={{ mb: 2, fontSize: '1.2rem' }}>Thông tin lệnh sản xuất</Typography>}
-                        </Box>
-                        {info && selectedRow ? (
-                            <Box>
-                                <Typography sx={{ display: 'flex', gap: 3 }}>
-                                    <Typography><strong>Đơn vị: </strong>{selectedRow.assignedTo?.department?.code}</Typography>
-                                    <Typography><strong>Ngày: </strong>{selectedRow.workingDate ? format(new Date(selectedRow.workingDate), 'dd-MM-yyyy') : ''}</Typography>
-                                    <Typography><strong>Ca: </strong> {selectedRow.shift?.name}</Typography>
-                                </Typography>
-                                <Grid container spacing={2}>
-                                    {/* Người nhận lệnh */}
-                                    <Grid item xs={12} sm={4}>
-                                        <Typography fontWeight="bold">Người ra lệnh:</Typography>
-                                        <Typography>{selectedRow.createdBy?.fullName}</Typography>
-                                    </Grid>
+              '& .MuiDataGrid-columnHeader[data-field="assignedTo"]': {
+                position: "sticky",
+                left: 100, // 👈 phải đúng bằng width cột number
+                zIndex: 11,
+                backgroundColor: "inherit !important",
+                boxShadow: "2px 0 4px rgba(0,0,0,0.1)",
+              },
+              '& .MuiDataGrid-cell[data-field="assignedTo"]': {
+                position: "sticky",
+                left: 100,
+                zIndex: 10,
+                backgroundColor: "inherit !important",
+                boxShadow: "2px 0 4px rgba(0,0,0,0.1)",
+              },
+              "& .MuiDataGrid-virtualScroller": {
+                overflowX: "auto",
+              },
+            }}
+          />
+        </Grid>
+        {info && (
+          <Grid item xs={12} sm={4}>
+            <Box
+              sx={{
+                position: "sticky",
+                top: 0,
+                maxHeight: "80vh",
+                overflowY: "auto",
+                border: "1px solid #ccc",
+                borderRadius: 2,
+                p: 1.5, // Giảm padding một chút để phù hợp với cột nhỏ hơn
+                transition:
+                  "width 0.3s ease-in-out, background-color 0.3s ease-in-out", // Thêm hiệu ứng chuyển đổi
+              }}
+            >
+              <Box
+                display="flex"
+                justifyContent={info ? "space-between" : "center"}
+                alignItems="flex-start"
+                flexDirection={info ? "row" : "column"}
+              >
+                {info && (
+                  <Typography variant="h6" sx={{ mb: 2, fontSize: "1.2rem" }}>
+                    Thông tin lệnh sản xuất
+                  </Typography>
+                )}
+              </Box>
+              {info && selectedRow ? (
+                <Box>
+                  <Typography sx={{ display: "flex", gap: 3 }}>
+                    <Typography>
+                      <strong>Đơn vị: </strong>
+                      {selectedRow.assignedTo?.department?.code}
+                    </Typography>
+                    <Typography>
+                      <strong>Ngày: </strong>
+                      {selectedRow.workingDate
+                        ? format(
+                            new Date(selectedRow.workingDate),
+                            "dd-MM-yyyy"
+                          )
+                        : ""}
+                    </Typography>
+                    <Typography>
+                      <strong>Ca: </strong> {selectedRow.shift?.name}
+                    </Typography>
+                  </Typography>
+                  <Grid container spacing={2}>
+                    {/* Người nhận lệnh */}
+                    <Grid item xs={12} sm={4}>
+                      <Typography fontWeight="bold">Người ra lệnh:</Typography>
+                      <Typography>{selectedRow.createdBy?.fullName}</Typography>
+                    </Grid>
 
-                                    {/* Thẻ lương */}
-                                    <Grid item xs={12} sm={4}>
-                                        <Typography fontWeight="bold">Số thẻ:</Typography>
-                                        <Typography>{selectedRow.createdBy?.salaryCode}</Typography>
-                                    </Grid>
-                                    {/* Chức vụ */}
-                                    <Grid item xs={12} sm={4}>
-                                        <Typography fontWeight="bold">Chức vụ:</Typography>
-                                        <Typography>{selectedRow.createdBy?.position?.name}</Typography>
-                                    </Grid>
-                                </Grid>
-                                <Grid container spacing={2}>
-                                    {/* Người nhận lệnh */}
-                                    <Grid item xs={12} sm={4}>
-                                        <Typography fontWeight="bold">Người nhận lệnh:</Typography>
-                                        <Typography>{selectedRow.assignedTo?.fullName}</Typography>
-                                    </Grid>
+                    {/* Thẻ lương */}
+                    <Grid item xs={12} sm={4}>
+                      <Typography fontWeight="bold">Số thẻ:</Typography>
+                      <Typography>
+                        {selectedRow.createdBy?.salaryCode}
+                      </Typography>
+                    </Grid>
+                    {/* Chức vụ */}
+                    <Grid item xs={12} sm={4}>
+                      <Typography fontWeight="bold">Chức vụ:</Typography>
+                      <Typography>
+                        {selectedRow.createdBy?.position?.name}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                  <Grid container spacing={2}>
+                    {/* Người nhận lệnh */}
+                    <Grid item xs={12} sm={4}>
+                      <Typography fontWeight="bold">
+                        Người nhận lệnh:
+                      </Typography>
+                      <Typography>
+                        {selectedRow.assignedTo?.fullName}
+                      </Typography>
+                    </Grid>
 
                                     {/* Thẻ lương */}
                                     <Grid item xs={12} sm={4}>
@@ -1072,4 +1131,4 @@ const Orders: React.FC = () => {
     );
 };
 
-export default Orders; 
+export default Orders;
