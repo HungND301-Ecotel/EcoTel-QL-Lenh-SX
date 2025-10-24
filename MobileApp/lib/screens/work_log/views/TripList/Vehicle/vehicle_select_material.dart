@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:soft/models/material_model.dart';
+import 'package:hive/hive.dart';
+import 'package:soft/local/LocalSyncService.dart';
+import 'package:soft/local/material_hive.dart';
+import 'package:soft/local/material_hive_extension.dart';
+import 'package:soft/local/report_hive.dart';
 import 'package:soft/providers/report_provider.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
+import 'package:soft/screens/work_log/widgets/Button/button_save.dart';
 import 'package:soft/screens/work_log/widgets/material_item.dart';
 import 'package:soft/services/material_service.dart';
 import 'package:provider/provider.dart';
@@ -19,10 +24,18 @@ class _VehicleSelectMaterial
     extends State<VehicleSelectMaterial> {
   bool _isLoading = true;
 
-  final List<MaterialModel> materials = [];
+  List<MaterialHive> materials = [];
   final MaterialService _materialService =
       MaterialService();
+  final LocalSyncService _localSyncService =
+      LocalSyncService();
+
   void getAllMaterial() async {
+    final box = Hive.box<MaterialHive>("materials");
+    final localMaterials = box.values.toList();
+    setState(() {
+      materials = localMaterials;
+    });
     var result = await _materialService.getAllMaterial();
 
     if (!mounted) return;
@@ -34,28 +47,31 @@ class _VehicleSelectMaterial
         ),
       );
     } else {
-      var data = result['data'];
+      final List data = result['data'] ?? [];
+      await _localSyncService.syncHive<MaterialHive>(
+          box: box,
+          data: data,
+          prefix: "MATERIAL",
+          fromJson: (item) => MaterialHive.fromJson(item));
+
+      // 🟢 4. Reload lại danh sách
+      final updated = box.values.toList();
       setState(() {
-        materials
-            .clear(); // Nếu cần làm sạch danh sách trước
-        materials.addAll(
-          (data as List)
-              .map((e) => MaterialModel.fromJson(e))
-              .toList(),
-        );
+        materials = updated;
+        _isLoading = false;
       });
-      final order =
-          Provider.of<ReportDraftProvider>(
-            context,
-            listen: false,
-          ).order;
+      final order = Provider.of<ReportDraftProvider>(
+        context,
+        listen: false,
+      ).order;
       if (order?.material != null &&
           order!.material!.isNotEmpty) {
         final selectedIds =
             order.material!.map((m) => m.id).toList();
-        _selectedMaterial = selectedIds.last;
+        _selectedMaterial = order.material!.last.toHive();
         setState(() {
-          _onSelectedMaterial(order.material!.last.id);
+          _onSelectedMaterial(
+              order.material!.last.toHive());
           materials.sort((a, b) {
             if (selectedIds.contains(a.id) &&
                 !selectedIds.contains(b.id)) {
@@ -80,8 +96,8 @@ class _VehicleSelectMaterial
     getAllMaterial();
   }
 
-  String? _selectedMaterial;
-  void _onSelectedMaterial(String selectedMaterial) {
+  MaterialHive? _selectedMaterial;
+  void _onSelectedMaterial(MaterialHive selectedMaterial) {
     setState(() {
       _selectedMaterial = selectedMaterial;
     });
@@ -93,40 +109,77 @@ class _VehicleSelectMaterial
 
   final ReportService _reportService = ReportService();
   void create() async {
+    final box = Hive.box<ReportHive>("reports");
     final provider = Provider.of<ReportDraftProvider>(
-      context,
-      listen: false,
-    );
+        context,
+        listen: false);
 
     provider.setMaterial(_selectedMaterial!);
-    var result = await _reportService.createReport({
-      "orderId": provider.orderId,
-      "material": provider.material,
-      "device": provider.device,
-      "excavator": provider.excavator,
-      "toLocation": provider.toLocation,
-      "quantity": 0,
-    });
-    if (!mounted) return;
-    if (result['status'] == 'error') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message']),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } else {
+
+    try {
+      // 🧱 1. Tạo danh sách ReportHive để lưu local
+      final List<ReportHive> reportList =
+          provider.devices.map((device) {
+        return ReportHive(
+          id: "${provider.orderId}_${provider.device?.id}_${provider.material?.id}_${provider.excavator?.id}_${provider.toLocation?.id}",
+          orderId: provider.orderId ?? "",
+          material: provider.material,
+          device: provider.device,
+          excavator: provider.excavator,
+          toLocation: provider.toLocation,
+          quantity: 0,
+        );
+      }).toList();
+
+      // 🗃️ 2. Lưu toàn bộ vào Hive
+      for (final report in reportList) {
+        await _localSyncService.putIfNotExists<ReportHive>(
+          box: box,
+          id: report.id,
+          data: report,
+          condition: (r) =>
+              r.orderId == report.orderId &&
+              r.device?.id == report.device?.id &&
+              r.material?.id == report.material?.id &&
+              r.excavator?.id == report.excavator?.id &&
+              r.toLocation?.id == report.toLocation?.id,
+        );
+      }
+
+      // ✅ 3. Reset provider (hoàn tất tạo báo cáo)
       provider.reset();
+
+      // 🟢 4. Chuyển hướng sang màn hình danh sách chuyến
+      if (!mounted) return;
       Navigator.pushNamed(
         context,
         WorkLogRoutes.vehicleTripList,
         arguments: provider.orderId,
       );
+
+      // 🛰️ (Tuỳ chọn) Gọi sync nếu có mạng
+      // await ReportSyncService.syncReportsToServer();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Có lỗi khi lưu dữ liệu local: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
+  String _searchText = '';
   @override
   Widget build(BuildContext context) {
+    List<MaterialHive> filteredItems = materials
+        .where(
+          (item) => item.name.toLowerCase().contains(
+                _searchText.toLowerCase(),
+              ),
+        )
+        .toList();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
@@ -144,31 +197,29 @@ class _VehicleSelectMaterial
       body: Column(
         children: [
           Expanded(
-            child:
-                _isLoading
-                    ? Center(
-                      child: CircularProgressIndicator(),
-                    )
-                    : SingleChildScrollView(
-                      child: Column(
-                        children:
-                            materials
-                                .map(
-                                  (item) => MaterialItem(
-                                    data: item,
-                                    selected:
-                                        _selectedMaterial ==
-                                        item.id,
-                                    onTap: () {
-                                      _onSelectedMaterial(
-                                        item.id,
-                                      );
-                                    },
-                                  ),
-                                )
-                                .toList(),
-                      ),
+            child: _isLoading
+                ? Center(
+                    child: CircularProgressIndicator(),
+                  )
+                : SingleChildScrollView(
+                    child: Column(
+                      children: filteredItems
+                          .map(
+                            (item) => MaterialItem(
+                              data: item,
+                              selected:
+                                  _selectedMaterial?.id ==
+                                      item.id,
+                              onTap: () {
+                                _onSelectedMaterial(
+                                  item,
+                                );
+                              },
+                            ),
+                          )
+                          .toList(),
                     ),
+                  ),
           ),
           Container(
             padding: const EdgeInsets.all(8.0),
@@ -190,65 +241,10 @@ class _VehicleSelectMaterial
                 ),
                 SizedBox(width: 8),
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed:
-                        _selectedMaterial == null
-                            ? null
-                            : () {
-                              showDialog(
-                                context: context,
-                                builder:
-                                    (
-                                      BuildContext
-                                      dialogContext,
-                                    ) => AlertDialog(
-                                      title: Text(
-                                        "Xác nhận",
-                                      ),
-                                      content: Text(
-                                        "Bạn muốn lưu chuyến vào hệ thống",
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () {
-                                            Navigator.of(
-                                              dialogContext,
-                                            ).pop();
-                                          },
-                                          style: TextButton.styleFrom(
-                                            foregroundColor:
-                                                Colors.blue,
-                                          ),
-                                          child: Text(
-                                            "Bỏ qua",
-                                          ),
-                                        ),
-                                        TextButton(
-                                          onPressed: () {
-                                            Navigator.of(
-                                              dialogContext,
-                                            ).pop();
-                                            create();
-                                          },
-                                          style: TextButton.styleFrom(
-                                            foregroundColor:
-                                                Colors.blue,
-                                          ),
-                                          child: Text(
-                                            "Lưu lại",
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                              );
-                            },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: Text('Ghi lại'),
-                  ),
-                ),
+                  child: ButtonSave(
+                      canSave: _selectedMaterial != null,
+                      create: create),
+                )
               ],
             ),
           ),

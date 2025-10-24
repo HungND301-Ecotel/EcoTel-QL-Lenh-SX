@@ -1,6 +1,9 @@
 // Chọn phương tiện
 import 'package:flutter/material.dart';
-import 'package:soft/models/device_model.dart';
+import 'package:hive/hive.dart';
+import 'package:soft/local/LocalSyncService.dart';
+import 'package:soft/local/device_hive.dart';
+import 'package:soft/local/device_hive_extension.dart';
 import 'package:soft/providers/report_provider.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
 import 'package:soft/screens/work_log/widgets/device_item.dart';
@@ -18,11 +21,20 @@ class ExcavatorSelectVehicle extends StatefulWidget {
 class _ExcavatorSelectVehicle
     extends State<ExcavatorSelectVehicle> {
   bool _isLoading = true;
-  final List<DeviceModel> devices = [];
+  List<DeviceHive> devices = [];
   final DeviceService _deviceService = DeviceService();
-  Set<String> _selectedDevices = {};
+  Set<DeviceHive> _selectedDevices = {};
+  final LocalSyncService _localSyncService =
+      LocalSyncService();
 
   void getAllDevice() async {
+    final box = Hive.box<DeviceHive>("devices");
+    final localDevices = box.values.toList();
+    setState(() {
+      devices = localDevices
+          .where((d) => d.type == "CAR")
+          .toList();
+    });
     var result = await _deviceService.getAllCar();
 
     if (!mounted) return;
@@ -34,15 +46,22 @@ class _ExcavatorSelectVehicle
         ),
       );
     } else {
-      var data = result['data'];
+      final List data = result['data'] ?? [];
+      await _localSyncService.syncHive<DeviceHive>(
+          box: box,
+          data: data,
+          prefix: "CAR",
+          fromJson: (item) =>
+              DeviceHive.fromJson(item, "CAR"));
+
+      // 🟢 4. Reload lại danh sách
+      final updated = box.values.toList();
       setState(() {
-        devices.clear(); // Nếu cần làm sạch danh sách trước
-        devices.addAll(
-          (data as List)
-              .map((e) => DeviceModel.fromJson(e))
-              .toList(),
-        );
+        devices =
+            updated.where((d) => d.type == "CAR").toList();
+        _isLoading = false;
       });
+
       final order = Provider.of<ReportDraftProvider>(
         context,
         listen: false,
@@ -50,16 +69,19 @@ class _ExcavatorSelectVehicle
       if (order?.assignedVehicles != null &&
           order!.assignedVehicles!.isNotEmpty) {
         // Lấy danh sách id từ assignedVehicles
+        final selected = order.assignedVehicles!
+            .map((m) => m.toHive())
+            .toSet();
         final selectedIds = order.assignedVehicles!
             .map((m) => m.id)
             .toSet();
 
         Provider.of<ReportDraftProvider>(context,
                 listen: false)
-            .devices = selectedIds.toList();
+            .devices = selected.cast<DeviceHive>().toList();
 
         setState(() {
-          _selectedDevices = selectedIds;
+          _selectedDevices = selected.cast<DeviceHive>();
 
           // Sắp xếp: xe đã chọn nằm lên trên
           devices.sort((a, b) {
@@ -102,7 +124,7 @@ class _ExcavatorSelectVehicle
     // });
   }
 
-  void _onToggleDevice(String id) {
+  void _onToggleDevice(DeviceHive id) {
     setState(() {
       if (_selectedDevices.contains(id)) {
         _selectedDevices.remove(id); // bỏ chọn
@@ -119,7 +141,7 @@ class _ExcavatorSelectVehicle
   String _searchText = '';
   @override
   Widget build(BuildContext context) {
-    List<DeviceModel> filteredItems = devices
+    List<DeviceHive> filteredItems = devices
         .where(
           (item) => item.code.toLowerCase().contains(
                 _searchText.toLowerCase(),
@@ -179,12 +201,13 @@ class _ExcavatorSelectVehicle
                           .map(
                             (item) => ExcavatorItem(
                               data: item,
-                              selected:
-                                  _selectedDevices.contains(
-                                item.id,
-                              ),
+                              selected: _selectedDevices
+                                  .map((s) => s.id)
+                                  .contains(
+                                    item.id,
+                                  ),
                               onTap: () => _onToggleDevice(
-                                item.id,
+                                item,
                               ),
                             ),
                           )

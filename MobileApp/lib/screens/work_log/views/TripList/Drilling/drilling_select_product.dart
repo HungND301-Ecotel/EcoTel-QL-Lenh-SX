@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:soft/models/material_model.dart';
+import 'package:hive/hive.dart';
+import 'package:soft/local/LocalSyncService.dart';
+import 'package:soft/local/material_hive.dart';
 import 'package:soft/providers/report_provider.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
 import 'package:soft/screens/work_log/widgets/material_item.dart';
@@ -17,10 +19,17 @@ class DrillingSelectProduct extends StatefulWidget {
 class _DrillingSelectProduct
     extends State<DrillingSelectProduct> {
   bool _isLoading = true;
-  final List<MaterialModel> materials = [];
+  List<MaterialHive> materials = [];
   final MaterialService _materialService =
       MaterialService();
+  final LocalSyncService _localSyncService =
+      LocalSyncService();
   void getAllMaterial() async {
+    final box = Hive.box<MaterialHive>("materials");
+    final localMaterials = box.values.toList();
+    setState(() {
+      materials = localMaterials;
+    });
     var result = await _materialService.getAllMaterial();
 
     if (!mounted) return;
@@ -32,15 +41,18 @@ class _DrillingSelectProduct
         ),
       );
     } else {
-      var data = result['data'];
+      final List data = result['data'] ?? [];
+      await _localSyncService.syncHive<MaterialHive>(
+          box: box,
+          data: data,
+          prefix: "MATERIAL",
+          fromJson: (item) => MaterialHive.fromJson(item));
+
+      // 🟢 4. Reload lại danh sách
+      final updated = box.values.toList();
       setState(() {
-        materials
-            .clear(); // Nếu cần làm sạch danh sách trước
-        materials.addAll(
-          (data as List)
-              .map((e) => MaterialModel.fromJson(e))
-              .toList(),
-        );
+        materials = updated;
+        _isLoading = false;
       });
     }
     setState(() {
@@ -54,8 +66,8 @@ class _DrillingSelectProduct
     getAllMaterial();
   }
 
-  String? _selectedMaterialId;
-  void _onSelectMaterial(String selectedMaterialId) {
+  MaterialHive? _selectedMaterialId;
+  void _onSelectMaterial(MaterialHive selectedMaterialId) {
     setState(() {
       _selectedMaterialId = selectedMaterialId;
     });
@@ -69,14 +81,13 @@ class _DrillingSelectProduct
   String _searchText = '';
   @override
   Widget build(BuildContext context) {
-    List<MaterialModel> filteredItems =
-        materials
-            .where(
-              (item) => item.name.toLowerCase().contains(
+    List<MaterialHive> filteredItems = materials
+        .where(
+          (item) => item.name.toLowerCase().contains(
                 _searchText.toLowerCase(),
               ),
-            )
-            .toList();
+        )
+        .toList();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
@@ -120,31 +131,29 @@ class _DrillingSelectProduct
           ),
           Divider(height: 1),
           Expanded(
-            child:
-                _isLoading
-                    ? Center(
-                      child: CircularProgressIndicator(),
-                    )
-                    : SingleChildScrollView(
-                      child: Column(
-                        children:
-                            filteredItems
-                                .map(
-                                  (item) => MaterialItem(
-                                    data: item,
-                                    selected:
-                                        _selectedMaterialId ==
-                                        item.id,
-                                    onTap: () {
-                                      _onSelectMaterial(
-                                        item.id,
-                                      );
-                                    },
-                                  ),
-                                )
-                                .toList(),
-                      ),
+            child: _isLoading
+                ? Center(
+                    child: CircularProgressIndicator(),
+                  )
+                : SingleChildScrollView(
+                    child: Column(
+                      children: filteredItems
+                          .map(
+                            (item) => MaterialItem(
+                              data: item,
+                              selected:
+                                  _selectedMaterialId?.id ==
+                                      item.id,
+                              onTap: () {
+                                _onSelectMaterial(
+                                  item,
+                                );
+                              },
+                            ),
+                          )
+                          .toList(),
                     ),
+                  ),
           ),
           Container(
             padding: const EdgeInsets.all(8.0),
@@ -153,16 +162,15 @@ class _DrillingSelectProduct
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed:
-                    _selectedMaterialId == null
-                        ? null
-                        : () {
-                          Navigator.pushNamed(
-                            context,
-                            WorkLogRoutes
-                                .drillingInputQuantity,
-                          );
-                        },
+                onPressed: _selectedMaterialId == null
+                    ? null
+                    : () {
+                        Navigator.pushNamed(
+                          context,
+                          WorkLogRoutes
+                              .drillingInputQuantity,
+                        );
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                   foregroundColor: Colors.white,

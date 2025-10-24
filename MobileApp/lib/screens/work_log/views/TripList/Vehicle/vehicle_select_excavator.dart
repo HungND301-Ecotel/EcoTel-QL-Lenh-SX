@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:soft/models/device_model.dart';
+import 'package:hive/hive.dart';
+import 'package:soft/local/LocalSyncService.dart';
+import 'package:soft/local/device_hive.dart';
+import 'package:soft/local/device_hive_extension.dart';
 import 'package:soft/providers/report_provider.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
 import 'package:soft/screens/work_log/widgets/device_item.dart';
@@ -17,9 +20,19 @@ class VehicleSelectExcavator extends StatefulWidget {
 class _VehicleSelectExcavator
     extends State<VehicleSelectExcavator> {
   bool _isLoading = true;
-  final List<DeviceModel> devices = [];
+  List<DeviceHive> devices = [];
   final DeviceService _deviceService = DeviceService();
+  final LocalSyncService _localSyncService =
+      LocalSyncService();
+
   void getAllDevice() async {
+    final box = Hive.box<DeviceHive>("devices");
+    final localDevices = box.values.toList();
+    setState(() {
+      devices = localDevices
+          .where((d) => d.type == "EXCAVATOR")
+          .toList();
+    });
     var result = await _deviceService.getAllExcavator();
 
     if (!mounted) return;
@@ -31,14 +44,21 @@ class _VehicleSelectExcavator
         ),
       );
     } else {
-      var data = result['data'];
+      final List data = result['data'] ?? [];
+      await _localSyncService.syncHive<DeviceHive>(
+          box: box,
+          data: data,
+          prefix: "EXCAVATOR",
+          fromJson: (item) =>
+              DeviceHive.fromJson(item, "EXCAVATOR"));
+
+      // 🟢 4. Reload lại danh sách
+      final updated = box.values.toList();
       setState(() {
-        devices.clear(); // Nếu cần làm sạch danh sách trước
-        devices.addAll(
-          (data as List)
-              .map((e) => DeviceModel.fromJson(e))
-              .toList(),
-        );
+        devices = updated
+            .where((d) => d.type == "EXCAVATOR")
+            .toList();
+        _isLoading = false;
       });
       final order = Provider.of<ReportDraftProvider>(
         context,
@@ -50,15 +70,18 @@ class _VehicleSelectExcavator
             .where((i) => i.status == true)
             .map((m) => m.device?.id)
             .toList();
-        _selectedDevice = selectedIds.last;
+        _selectedDevice = order.excavator!
+            .where((i) => i.status == true)
+            .map((m) => m.device)
+            .last
+            ?.toHive();
         if (selectedIds.isNotEmpty) {
-          final lastId = selectedIds.last;
-          _selectedDevice = lastId;
-          _onSelectDevice(lastId!); // chỉ gọi 1 lần
+          _onSelectDevice(
+              _selectedDevice!); // chỉ gọi 1 lần
           setState(() {
             devices.sort((a, b) {
-              if (a.id == lastId) return -1;
-              if (b.id == lastId) return 1;
+              if (a.id == _selectedDevice?.id) return -1;
+              if (b.id == _selectedDevice?.id) return 1;
               return 0;
             });
           });
@@ -89,8 +112,8 @@ class _VehicleSelectExcavator
     // });
   }
 
-  String? _selectedDevice;
-  void _onSelectDevice(String selectedDevice) {
+  DeviceHive? _selectedDevice;
+  void _onSelectDevice(DeviceHive selectedDevice) {
     setState(() {
       _selectedDevice = selectedDevice;
     });
@@ -104,7 +127,7 @@ class _VehicleSelectExcavator
   String _searchText = '';
   @override
   Widget build(BuildContext context) {
-    List<DeviceModel> filteredItems = devices
+    List<DeviceHive> filteredItems = devices
         .where(
           (item) => item.code.toLowerCase().contains(
                 _searchText.toLowerCase(),
@@ -171,11 +194,12 @@ class _VehicleSelectExcavator
                           .map(
                             (item) => ExcavatorItem(
                               data: item,
-                              selected: _selectedDevice ==
-                                  item.id,
+                              selected:
+                                  _selectedDevice?.id ==
+                                      item.id,
                               onTap: () {
                                 _onSelectDevice(
-                                  item.id,
+                                  item,
                                 );
                               },
                             ),

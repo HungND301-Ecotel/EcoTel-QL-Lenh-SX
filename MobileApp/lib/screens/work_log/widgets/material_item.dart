@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:soft/models/material_model.dart';
+import 'package:soft/local/material_hive.dart';
 
 class MaterialItem extends StatelessWidget {
-  final MaterialModel data;
+  final MaterialHive data;
   final VoidCallback? onTap;
   final bool selected;
 

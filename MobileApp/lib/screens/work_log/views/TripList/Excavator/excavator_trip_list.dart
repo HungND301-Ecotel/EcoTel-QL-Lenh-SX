@@ -1,6 +1,9 @@
 // Danh sách chuyến của máy xúc
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
+import 'package:soft/local/LocalSyncService.dart';
+import 'package:soft/local/report_hive.dart';
 import 'package:soft/models/report_model.dart';
 import 'package:soft/providers/report_provider.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
@@ -35,35 +38,51 @@ class _ExcavatorTripList extends State<ExcavatorTripList> {
 
   bool _isLoading = true;
   final ReportService _reportService = ReportService();
-  final List<ReportModel> _allData = [];
+  List<ReportHive> _allData = [];
+  final LocalSyncService _localSyncService =
+      LocalSyncService();
   void getReportByOrder() async {
-    var result = await _reportService.getByOrder(
-      widget.orderId,
-    );
-    if (!mounted) return;
-    if (result['status'] == 'error') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message']),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } else {
-      var data = result['data'];
-      setState(() {
-        _allData
-            .clear(); // Nếu cần làm sạch danh sách trước
-        _allData.addAll(
-          (data as List)
-              .map((e) => ReportModel.fromJson(e))
-              .toList(),
-        );
-      });
-    }
+    final box = Hive.box<ReportHive>("reports");
+    final reports = box.values.toList();
     setState(() {
-      _isLoading = false;
+      _allData = reports
+          .where((r) => r.orderId == widget.orderId)
+          .toList();
     });
   }
+
+  bool _isSyncing = false;
+
+  Future<void> _syncReports() async {}
+  // void getReportByOrder() async {
+  //   final box = Hive.box<ReportHive>("reports");
+  //   var result = await _reportService.getByOrder(
+  //     widget.orderId,
+  //   );
+  //   if (!mounted) return;
+  //   if (result['status'] == 'error') {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text(result['message']),
+  //         backgroundColor: Colors.red,
+  //       ),
+  //     );
+  //   } else {
+  //     var data = result['data'];
+  //     setState(() {
+  //       _allData
+  //           .clear(); // Nếu cần làm sạch danh sách trước
+  //       _allData.addAll(
+  //         (data as List)
+  //             .map((e) => ReportModel.fromJson(e))
+  //             .toList(),
+  //       );
+  //     });
+  //   }
+  //   setState(() {
+  //     _isLoading = false;
+  //   });
+  // }
 
   void addTripTime(int index) async {
     final report = _allData[index];
@@ -183,9 +202,8 @@ class _ExcavatorTripList extends State<ExcavatorTripList> {
                   child: ExpansionTile(
                     trailing: SizedBox.shrink(),
                     showTrailingIcon: false,
-                    tilePadding:
-                        EdgeInsets
-                            .zero, // Xoá padding trái/phải
+                    tilePadding: EdgeInsets
+                        .zero, // Xoá padding trái/phải
                     childrenPadding: EdgeInsets.zero,
                     title: Row(
                       children: [
@@ -220,8 +238,8 @@ class _ExcavatorTripList extends State<ExcavatorTripList> {
                             Icons.add,
                             color: Colors.green,
                           ),
-                          onPressed:
-                              () => addTripTime(index),
+                          onPressed: () =>
+                              addTripTime(index),
                         ),
                       ],
                     ),
@@ -241,11 +259,10 @@ class _ExcavatorTripList extends State<ExcavatorTripList> {
                               Icons.close,
                               color: Colors.red,
                             ),
-                            onPressed:
-                                () => removeTripTime(
-                                  index,
-                                  timeIndex,
-                                ),
+                            onPressed: () => removeTripTime(
+                              index,
+                              timeIndex,
+                            ),
                           ),
                         );
                       }),
@@ -253,6 +270,23 @@ class _ExcavatorTripList extends State<ExcavatorTripList> {
                   ),
                 );
               },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.sync),
+                label: const Text('Lưu dữ liệu'),
+                onPressed: _isSyncing ? null : _syncReports,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 12),
+                ),
+              ),
             ),
           ),
         ],

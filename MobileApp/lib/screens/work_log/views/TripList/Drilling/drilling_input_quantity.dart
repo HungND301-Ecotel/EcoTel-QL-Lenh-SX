@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:soft/providers/report_provider.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
+import 'package:soft/screens/work_log/widgets/Button/button_save.dart';
 import 'package:soft/services/report_service.dart';
 import 'package:provider/provider.dart';
 
@@ -137,57 +138,9 @@ class _DrillingInputQuantity
                 ),
                 SizedBox(width: 8),
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder:
-                            (
-                              BuildContext dialogContext,
-                            ) => AlertDialog(
-                              title: Text("Xác nhận"),
-                              content: Text(
-                                "Bạn muốn lưu dữ liệu vào hệ thống",
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.of(
-                                      dialogContext,
-                                    ).pop();
-                                  },
-                                  style:
-                                      TextButton.styleFrom(
-                                        foregroundColor:
-                                            Colors.blue,
-                                      ),
-                                  child: Text("Bỏ qua"),
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.of(
-                                      dialogContext,
-                                    ).pop();
-                                    create();
-                                  },
-                                  style:
-                                      TextButton.styleFrom(
-                                        foregroundColor:
-                                            Colors.blue,
-                                      ),
-                                  child: Text("Lưu lại"),
-                                ),
-                              ],
-                            ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: Text('Ghi lại'),
-                  ),
-                ),
+                  child: ButtonSave(
+                      canSave: true, create: create),
+                )
               ],
             ),
           ),

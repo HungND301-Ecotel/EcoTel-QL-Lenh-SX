@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:soft/models/location_model.dart';
+import 'package:soft/local/location_hive.dart';
 
 class LocationItem extends StatelessWidget {
-  final LocationModel data;
+  final LocationHive data;
   final VoidCallback? onTap;
   final bool selected;
 

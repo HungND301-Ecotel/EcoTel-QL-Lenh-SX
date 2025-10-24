@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:soft/local/device_hive.dart';
+import 'package:soft/local/location_hive.dart';
+import 'package:soft/local/material_hive.dart';
 import 'package:soft/models/order_model.dart';
 
 class ReportDraftProvider with ChangeNotifier {
   String? orderId;
   OrderModel? order;
-  String? device;
-  String? excavator;
-  String? material;
-  String? fromLocation;
-  String? toLocation;
+  DeviceHive? device;
+  DeviceHive? excavator;
+  MaterialHive? material;
+  LocationHive? fromLocation;
+  LocationHive? toLocation;
   num? drillDepth;
   num? hardnessF;
   int? workingMinutes;
   num? distanceKm;
   int? quantity;
 
-  List<String> devices = [];
+  List<DeviceHive> devices = [];
 
   void setOrderId(String id) {
     orderId = id;
@@ -27,27 +30,27 @@ class ReportDraftProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void setMaterial(String value) {
+  void setMaterial(MaterialHive value) {
     material = value;
     notifyListeners();
   }
 
-  void setDevice(String value) {
+  void setDevice(DeviceHive value) {
     device = value;
     notifyListeners();
   }
 
-  void setExcavator(String value) {
+  void setExcavator(DeviceHive value) {
     excavator = value;
     notifyListeners();
   }
 
-  void setFromLocation(String value) {
+  void setFromLocation(LocationHive value) {
     fromLocation = value;
     notifyListeners();
   }
 
-  void setToLocation(String value) {
+  void setToLocation(LocationHive value) {
     toLocation = value;
     notifyListeners();
   }
@@ -80,7 +83,7 @@ class ReportDraftProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void addDevice(String id) {
+  void addDevice(DeviceHive id) {
     if (!devices.contains(id)) {
       devices.add(id);
       notifyListeners();

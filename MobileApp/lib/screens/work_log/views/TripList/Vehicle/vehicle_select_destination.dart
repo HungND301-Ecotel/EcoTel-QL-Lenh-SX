@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:soft/models/location_model.dart';
+import 'package:hive/hive.dart';
+import 'package:soft/local/LocalSyncService.dart';
+import 'package:soft/local/location_hive.dart';
+import 'package:soft/local/location_hive_extension.dart';
 import 'package:soft/providers/report_provider.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
 import 'package:soft/screens/work_log/widgets/location_item.dart';
@@ -17,10 +20,17 @@ class VehicleSelectDestination extends StatefulWidget {
 class _VehicleSelectDestination
     extends State<VehicleSelectDestination> {
   bool _isLoading = true;
-  final List<LocationModel> locations = [];
+  List<LocationHive> locations = [];
   final LocationService _locationService =
       LocationService();
+  final LocalSyncService _localSyncService =
+      LocalSyncService();
   void getAllLocation() async {
+    final box = Hive.box<LocationHive>("locations");
+    final localMaterials = box.values.toList();
+    setState(() {
+      locations = localMaterials;
+    });
     var result = await _locationService.getAllLocation();
 
     if (!mounted) return;
@@ -32,28 +42,30 @@ class _VehicleSelectDestination
         ),
       );
     } else {
-      var data = result['data'];
+      final List data = result['data'] ?? [];
+      await _localSyncService.syncHive<LocationHive>(
+          box: box,
+          data: data,
+          prefix: "LOCATION",
+          fromJson: (item) => LocationHive.fromJson(item));
+
+      // 🟢 4. Reload lại danh sách
+      final updated = box.values.toList();
       setState(() {
-        locations
-            .clear(); // Nếu cần làm sạch danh sách trước
-        locations.addAll(
-          (data as List)
-              .map((e) => LocationModel.fromJson(e))
-              .toList(),
-        );
+        locations = updated;
+        _isLoading = false;
       });
-      final order =
-          Provider.of<ReportDraftProvider>(
-            context,
-            listen: false,
-          ).order;
+      final order = Provider.of<ReportDraftProvider>(
+        context,
+        listen: false,
+      ).order;
       if (order?.location != null &&
           order!.location!.isNotEmpty) {
         final selectedIds =
             order.location!.map((m) => m.id).toList();
-        _selectedLocation = selectedIds.last;
+        _selectedLocation = order.location!.last.toHive();
         setState(() {
-          _onSelectLocation(order.location!.last.id);
+          _onSelectLocation(order.location!.last.toHive());
           locations.sort((a, b) {
             if (selectedIds.contains(a.id) &&
                 !selectedIds.contains(b.id)) {
@@ -91,8 +103,8 @@ class _VehicleSelectDestination
     // });
   }
 
-  String? _selectedLocation;
-  void _onSelectLocation(String selectedLocation) {
+  LocationHive? _selectedLocation;
+  void _onSelectLocation(LocationHive selectedLocation) {
     setState(() {
       _selectedLocation = selectedLocation;
     });
@@ -107,14 +119,13 @@ class _VehicleSelectDestination
 
   @override
   Widget build(BuildContext context) {
-    List<LocationModel> filteredItems =
-        locations
-            .where(
-              (item) => item.name.toLowerCase().contains(
+    List<LocationHive> filteredItems = locations
+        .where(
+          (item) => item.name.toLowerCase().contains(
                 _searchText.toLowerCase(),
               ),
-            )
-            .toList();
+        )
+        .toList();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
@@ -158,31 +169,28 @@ class _VehicleSelectDestination
           ),
           Divider(height: 1),
           Expanded(
-            child:
-                _isLoading
-                    ? Center(
-                      child: CircularProgressIndicator(),
-                    )
-                    : SingleChildScrollView(
-                      child: Column(
-                        children:
-                            filteredItems
-                                .map(
-                                  (item) => LocationItem(
-                                    data: item,
-                                    selected:
-                                        _selectedLocation ==
-                                        item.id,
-                                    onTap: () {
-                                      _onSelectLocation(
-                                        item.id,
-                                      );
-                                    },
-                                  ),
-                                )
-                                .toList(),
-                      ),
+            child: _isLoading
+                ? Center(
+                    child: CircularProgressIndicator(),
+                  )
+                : SingleChildScrollView(
+                    child: Column(
+                      children: filteredItems
+                          .map(
+                            (item) => LocationItem(
+                              data: item,
+                              selected: _selectedLocation?.id ==
+                                  item.id,
+                              onTap: () {
+                                _onSelectLocation(
+                                  item,
+                                );
+                              },
+                            ),
+                          )
+                          .toList(),
                     ),
+                  ),
           ),
           Container(
             padding: const EdgeInsets.all(8.0),
@@ -205,16 +213,15 @@ class _VehicleSelectDestination
                 SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed:
-                        _selectedLocation == null
-                            ? null
-                            : () {
-                              Navigator.pushNamed(
-                                context,
-                                WorkLogRoutes
-                                    .vehicleSelectMaterial,
-                              );
-                            },
+                    onPressed: _selectedLocation == null
+                        ? null
+                        : () {
+                            Navigator.pushNamed(
+                              context,
+                              WorkLogRoutes
+                                  .vehicleSelectMaterial,
+                            );
+                          },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,
