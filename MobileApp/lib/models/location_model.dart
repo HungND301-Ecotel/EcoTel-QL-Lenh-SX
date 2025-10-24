@@ -9,8 +9,8 @@ class LocationModel {
   LocationModel({
     required this.id,
     required this.name,
-    required this.distance,
-    required this.coordinates,
+    this.distance,
+    this.coordinates,
   });
 
   factory LocationModel.fromJson(
@@ -20,13 +20,12 @@ class LocationModel {
       id: json?['_id'] ?? '',
       name: json?['name'] ?? '',
       distance: json?['distance'],
-      coordinates:
-          json?['coordinates'] != null
-              ? Coordinates.fromJson(json?['coordinates'])
-              : null,
+      coordinates: json?['coordinates'] != null
+          ? Coordinates.fromJson(json?['coordinates'])
+          : null,
     );
   }
-   Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'name': name,

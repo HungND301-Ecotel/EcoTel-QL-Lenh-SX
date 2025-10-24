@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:soft/models/device_model.dart';
+import 'package:hive/hive.dart';
+import 'package:soft/local/LocalSyncService.dart';
+import 'package:soft/local/device_hive.dart';
+import 'package:soft/local/device_hive_extension.dart';
 import 'package:soft/providers/report_provider.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
 import 'package:soft/screens/work_log/widgets/device_item.dart';
@@ -17,10 +20,19 @@ class VehicleSelectVehicle extends StatefulWidget {
 class _VehicleSelectVehicle
     extends State<VehicleSelectVehicle> {
   bool _isLoading = true;
-  final List<DeviceModel> devices = [];
+  List<DeviceHive> devices = [];
   final DeviceService _deviceService = DeviceService();
+  final LocalSyncService _localSyncService =
+      LocalSyncService();
 
   void getAllDevice() async {
+    final box = Hive.box<DeviceHive>("devices");
+    final localDevices = box.values.toList();
+    setState(() {
+      devices = localDevices
+          .where((d) => d.type == "VEHICLE")
+          .toList();
+    });
     var result = await _deviceService.getAllVehicle();
 
     if (!mounted) return;
@@ -32,27 +44,33 @@ class _VehicleSelectVehicle
         ),
       );
     } else {
-      var data = result['data'];
+      final List data = result['data'] ?? [];
+      await _localSyncService.syncHive<DeviceHive>(
+          box: box,
+          data: data,
+          prefix: "VEHICLE",
+          fromJson: (item) =>
+              DeviceHive.fromJson(item, "VEHICLE"));
+
+      // 🟢 4. Reload lại danh sách
+      final updated = box.values.toList();
       setState(() {
-        devices.clear(); // Nếu cần làm sạch danh sách trước
-        devices.addAll(
-          (data as List)
-              .map((e) => DeviceModel.fromJson(e))
-              .toList(),
-        );
+        devices = updated
+            .where((d) => d.type == "VEHICLE")
+            .toList();
+        _isLoading = false;
       });
-      final order =
-          Provider.of<ReportDraftProvider>(
-            context,
-            listen: false,
-          ).order;
+      final order = Provider.of<ReportDraftProvider>(
+        context,
+        listen: false,
+      ).order;
       if (order?.device != null &&
           order!.device!.isNotEmpty) {
         final selectedIds =
             order.device!.map((m) => m.id).toList();
-        _selectedDevice = selectedIds.last;
+        _selectedDevice = order.device!.last.toHive();
         setState(() {
-          _onSelectDevice(order.device!.last.id);
+          _onSelectDevice(order.device!.last.toHive());
           devices.sort((a, b) {
             if (selectedIds.contains(a.id) &&
                 !selectedIds.contains(b.id)) {
@@ -93,8 +111,8 @@ class _VehicleSelectVehicle
     // });
   }
 
-  String? _selectedDevice;
-  void _onSelectDevice(String selectedDevice) {
+  DeviceHive? _selectedDevice;
+  void _onSelectDevice(DeviceHive selectedDevice) {
     setState(() {
       _selectedDevice = selectedDevice;
     });
@@ -108,14 +126,13 @@ class _VehicleSelectVehicle
   String _searchText = '';
   @override
   Widget build(BuildContext context) {
-    List<DeviceModel> filteredItems =
-        devices
-            .where(
-              (item) => item.code.toLowerCase().contains(
+    List<DeviceHive> filteredItems = devices
+        .where(
+          (item) => item.code.toLowerCase().contains(
                 _searchText.toLowerCase(),
               ),
-            )
-            .toList();
+        )
+        .toList();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
@@ -159,45 +176,42 @@ class _VehicleSelectVehicle
           ),
           Divider(height: 1),
           Expanded(
-            child:
-                _isLoading
-                    ? Center(
-                      child: CircularProgressIndicator(),
-                    )
-                    : SingleChildScrollView(
-                      child: Column(
-                        children:
-                            filteredItems
-                                .map(
-                                  (item) => ExcavatorItem(
-                                    data: item,
-                                    selected:
-                                        _selectedDevice ==
-                                        item.id,
-                                    onTap: () {
-                                      _onSelectDevice(
-                                        item.id,
-                                      );
-                                    },
-                                  ),
-                                )
-                                .toList(),
-                      ),
+            child: _isLoading
+                ? Center(
+                    child: CircularProgressIndicator(),
+                  )
+                : SingleChildScrollView(
+                    child: Column(
+                      children: filteredItems
+                          .map(
+                            (item) => ExcavatorItem(
+                              data: item,
+                              selected:
+                                  _selectedDevice?.id ==
+                                      item.id,
+                              onTap: () {
+                                _onSelectDevice(
+                                  item,
+                                );
+                              },
+                            ),
+                          )
+                          .toList(),
                     ),
+                  ),
           ),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed:
-                  _selectedDevice == null
-                      ? null
-                      : () {
-                        Navigator.pushNamed(
-                          context,
-                          WorkLogRoutes
-                              .vehicleSelectExcavator,
-                        );
-                      },
+              onPressed: _selectedDevice == null
+                  ? null
+                  : () {
+                      Navigator.pushNamed(
+                        context,
+                        WorkLogRoutes
+                            .vehicleSelectExcavator,
+                      );
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,

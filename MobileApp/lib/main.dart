@@ -6,6 +6,12 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/adapters.dart';
+import 'package:soft/local/device_hive.dart';
+import 'package:soft/local/location_hive.dart';
+import 'package:soft/local/material_hive.dart';
+import 'package:soft/local/report_hive.dart';
 import 'package:soft/models/user_model.dart';
 import 'package:soft/providers/report_provider.dart';
 import 'package:soft/providers/user_provider.dart';
@@ -65,6 +71,25 @@ Future<void> main() async {
     await NotificationService.init();
     NotificationService.listenFCM();
   }
+
+  await Hive.initFlutter();
+  if (!Hive.isAdapterRegistered(1)) {
+    Hive.registerAdapter(DeviceHiveAdapter());
+  }
+  if (!Hive.isAdapterRegistered(2)) {
+    Hive.registerAdapter(MaterialHiveAdapter());
+  }
+  if (!Hive.isAdapterRegistered(3)) {
+    Hive.registerAdapter(LocationHiveAdapter());
+  }
+  if (!Hive.isAdapterRegistered(4)) {
+    Hive.registerAdapter(ReportHiveAdapter());
+  }
+
+  await Hive.openBox<MaterialHive>("materials");
+  await Hive.openBox<DeviceHive>("devices");
+  await Hive.openBox<LocationHive>("locations");
+  await Hive.openBox<ReportHive>("reports");
 
   runApp(
     MultiProvider(
@@ -188,11 +213,11 @@ class _MyAppState extends State<MyApp> {
         } else {
           final Widget screen = snapshot.data ?? SignIn();
 
-          final Widget home = (screen is MyPage)
-              ? NetworkGate(child: screen)
-              : screen;
+          // final Widget home = (screen is MyPage)
+          //     ? NetworkGate(child: screen)
+          //     : screen;
           return MaterialApp(
-            home: home,
+            home: screen,
             onGenerateRoute: AppRoute.generateRoute,
             debugShowCheckedModeBanner: false,
             navigatorKey: navigatorKey,

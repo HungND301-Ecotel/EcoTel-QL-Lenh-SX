@@ -30,96 +30,13 @@ class MyHomePageState extends State<MyPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       UpdateVersionService.checkForUpdate(context);
     });
-    // Future.microtask(() async {
-    //   if (!mounted) return;
-
-    //   final userProvider = Provider.of<UserProvider>(
-    //     context,
-    //     listen: false,
-    //   );
-    //   await userProvider.loadToken();
-    //   _checkPhone(userProvider);
-
-    //   // Khởi động timer kiểm tra mỗi 30s
-    //   _checkTimer = Timer.periodic(Duration(hours: 3), (_) {
-    //     if (!mounted) return;
-    //     _checkPhone(userProvider);
-    //   });
-    // });
   }
-
-  // void _checkPhone(UserProvider userProvider) {
-  //   final user = userProvider.user;
-  //   if (!_hasShownPhoneDialog &&
-  //       user != null &&
-  //       (user.phone == null || user.phone!.isEmpty)) {
-  //     _hasShownPhoneDialog = true;
-
-  //     WidgetsBinding.instance.addPostFrameCallback((_) {
-  //       if (!mounted) return;
-  //       _showPhoneDialog();
-  //     });
-  //   }
-  // }
 
   @override
   void dispose() {
     _checkTimer?.cancel();
     super.dispose();
   }
-
-  // void _showPhoneDialog() {
-  //   if (!mounted) return;
-  //   showDialog(
-  //     context: context,
-  //     builder:
-  //         (_) => AlertDialog(
-  //           title: Row(
-  //             children: [
-  //               Icon(
-  //                 Icons.contact_support_outlined,
-  //                 color: Colors.blue,
-  //                 size: 30,
-  //               ),
-  //               SizedBox(width: 10),
-  //               Expanded(
-  //                 child: Text(
-  //                   "Cập nhật điện thoại",
-  //                   style: TextStyle(fontSize: 20),
-  //                 ),
-  //               ),
-  //             ],
-  //           ),
-  //           content: Text(
-  //             "Để thuận tiện cho việc liên lạc, bạn cần cập nhật số điện thoại của bạn.",
-  //           ),
-  //           actions: [
-  //             TextButton(
-  //               onPressed: () {
-  //                 Navigator.of(context).pop();
-  //                 _hasShownPhoneDialog = false;
-  //               },
-  //               style: TextButton.styleFrom(
-  //                 foregroundColor: Colors.blue,
-  //               ),
-  //               child: Text("Bỏ qua"),
-  //             ),
-  //             TextButton(
-  //               onPressed: () {
-  //                 Navigator.pushNamed(
-  //                   context,
-  //                   AppRoute.addPhone,
-  //                 );
-  //               },
-  //               style: TextButton.styleFrom(
-  //                 foregroundColor: Colors.blue,
-  //               ),
-  //               child: Text("Cập nhật"),
-  //             ),
-  //           ],
-  //         ),
-  //   );
-  // }
 
   @override
   Widget build(BuildContext context) {

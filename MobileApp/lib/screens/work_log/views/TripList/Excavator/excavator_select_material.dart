@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:soft/models/material_model.dart';
+import 'package:hive/hive.dart';
+import 'package:soft/local/LocalSyncService.dart';
+import 'package:soft/local/material_hive.dart';
+import 'package:soft/local/report_hive.dart';
 import 'package:soft/providers/report_provider.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
+import 'package:soft/screens/work_log/widgets/Button/button_save.dart';
 import 'package:soft/screens/work_log/widgets/material_item.dart';
 import 'package:soft/services/material_service.dart';
 import 'package:provider/provider.dart';
@@ -18,10 +22,17 @@ class ExcavatorSelectMaterial extends StatefulWidget {
 class _ExcavatorSelectMaterial
     extends State<ExcavatorSelectMaterial> {
   bool _isLoading = true;
-  final List<MaterialModel> materials = [];
+  List<MaterialHive> materials = [];
   final MaterialService _materialService =
       MaterialService();
+  final LocalSyncService _localSyncService =
+      LocalSyncService();
   void getAllMaterial() async {
+    final box = Hive.box<MaterialHive>("materials");
+    final localMaterials = box.values.toList();
+    setState(() {
+      materials = localMaterials;
+    });
     var result = await _materialService.getAllMaterial();
 
     if (!mounted) return;
@@ -33,15 +44,18 @@ class _ExcavatorSelectMaterial
         ),
       );
     } else {
-      var data = result['data'];
+      final List data = result['data'] ?? [];
+      await _localSyncService.syncHive<MaterialHive>(
+          box: box,
+          data: data,
+          prefix: "MATERIAL",
+          fromJson: (item) => MaterialHive.fromJson(item));
+
+      // 🟢 4. Reload lại danh sách
+      final updated = box.values.toList();
       setState(() {
-        materials
-            .clear(); // Nếu cần làm sạch danh sách trước
-        materials.addAll(
-          (data as List)
-              .map((e) => MaterialModel.fromJson(e))
-              .toList(),
-        );
+        materials = updated;
+        _isLoading = false;
       });
     }
     setState(() {
@@ -55,8 +69,8 @@ class _ExcavatorSelectMaterial
     getAllMaterial();
   }
 
-  String? _selectedMaterial;
-  void _onSelectedMaterial(String selectedMaterial) {
+  MaterialHive? _selectedMaterial;
+  void _onSelectedMaterial(MaterialHive selectedMaterial) {
     setState(() {
       _selectedMaterial = selectedMaterial;
     });
@@ -67,56 +81,58 @@ class _ExcavatorSelectMaterial
   }
 
   final ReportService _reportService = ReportService();
+
   void create() async {
+    final box = Hive.box<ReportHive>("reports");
     final provider = Provider.of<ReportDraftProvider>(
-      context,
-      listen: false,
-    );
+        context,
+        listen: false);
 
     provider.setMaterial(_selectedMaterial!);
 
-    print(provider.devices);
-
     try {
-      // Tạo danh sách các Future (gọi API cho từng device)
-      final futures = provider.devices.map((device) {
-        return _reportService.createReport({
-          "orderId": provider.orderId,
-          "material": provider.material,
-          "device": device,
-          "quantity": 0,
-        });
+      // 🧱 1. Tạo danh sách ReportHive để lưu local
+      final List<ReportHive> reportList =
+          provider.devices.map((device) {
+        return ReportHive(
+          id: "${provider.orderId}_${device.id}_${provider.material?.id}", // tạo id tạm local
+          orderId: provider.orderId ?? "",
+          device: device,
+          material: provider.material,
+          quantity: 0,
+        );
       }).toList();
-      // Đợi tất cả request hoàn thành
-      final results = await Future.wait(futures);
 
-      // Kiểm tra kết quả
-      for (var result in results) {
-        if (result['status'] == 'error') {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result['message']),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return; // dừng lại nếu có lỗi
-        }
+      // 🗃️ 2. Lưu toàn bộ vào Hive
+      for (final report in reportList) {
+        await _localSyncService.putIfNotExists<ReportHive>(
+            box: box,
+            id: report.id,
+            data: report,
+            condition: (r) =>
+                r.orderId == report.orderId &&
+                r.device?.id == report.device?.id &&
+                r.material?.id == report.material?.id);
       }
 
-      // Nếu tất cả đều thành công
-      if (!mounted) return;
+      // ✅ 3. Reset provider (hoàn tất tạo báo cáo)
       provider.reset();
+
+      // 🟢 4. Chuyển hướng sang màn hình danh sách chuyến
+      if (!mounted) return;
       Navigator.pushNamed(
         context,
         WorkLogRoutes.excavatorTripList,
         arguments: provider.orderId,
       );
+
+      // 🛰️ (Tuỳ chọn) Gọi sync nếu có mạng
+      // await ReportSyncService.syncReportsToServer();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Có lỗi xảy ra: $e"),
+          content: Text("Có lỗi khi lưu dữ liệu local: $e"),
           backgroundColor: Colors.red,
         ),
       );
@@ -126,7 +142,7 @@ class _ExcavatorSelectMaterial
   String _searchText = '';
   @override
   Widget build(BuildContext context) {
-    List<MaterialModel> filteredItems = materials
+    List<MaterialHive> filteredItems = materials
         .where(
           (item) => item.name.toLowerCase().contains(
                 _searchText.toLowerCase(),
@@ -186,11 +202,12 @@ class _ExcavatorSelectMaterial
                           .map(
                             (item) => MaterialItem(
                               data: item,
-                              selected: _selectedMaterial ==
-                                  item.id,
+                              selected:
+                                  _selectedMaterial?.id ==
+                                      item.id,
                               onTap: () {
                                 _onSelectedMaterial(
-                                  item.id,
+                                  item,
                                 );
                               },
                             ),
@@ -219,65 +236,10 @@ class _ExcavatorSelectMaterial
                 ),
                 SizedBox(width: 8),
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: _selectedMaterial == null
-                        ? null
-                        : () {
-                            showDialog(
-                              context: context,
-                              builder: (
-                                BuildContext dialogContext,
-                              ) =>
-                                  AlertDialog(
-                                title: Text(
-                                  "Xác nhận",
-                                ),
-                                content: Text(
-                                  "Bạn muốn lưu chuyến vào hệ thống",
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.of(
-                                        dialogContext,
-                                      ).pop();
-                                    },
-                                    style: TextButton
-                                        .styleFrom(
-                                      foregroundColor:
-                                          Colors.blue,
-                                    ),
-                                    child: Text(
-                                      "Bỏ qua",
-                                    ),
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.of(
-                                        dialogContext,
-                                      ).pop();
-                                      create();
-                                    },
-                                    style: TextButton
-                                        .styleFrom(
-                                      foregroundColor:
-                                          Colors.blue,
-                                    ),
-                                    child: Text(
-                                      "Lưu lại",
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: Text('Ghi lại'),
-                  ),
-                ),
+                  child: ButtonSave(
+                      canSave: _selectedMaterial != null,
+                      create: create),
+                )
               ],
             ),
           ),
