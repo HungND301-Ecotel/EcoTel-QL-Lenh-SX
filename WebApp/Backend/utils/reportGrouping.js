@@ -17,7 +17,7 @@ async function safeQuery(fn, retries = 3, delay = 300) {
 }
 
 // giới hạn 100 query song song
-const limit = pLimit(50);
+const limit = pLimit(20);
 
 // lenh sx vh xe
 async function groupTripsVehicle(trips, date, shift) {
@@ -576,5 +576,6 @@ module.exports = {
     groupCar,
     groupProduction,
     groupTripsVehicleProduction,
-    safeQuery
+    safeQuery,
+    caculatorWeight
 };

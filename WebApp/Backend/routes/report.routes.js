@@ -1,8 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const Report = require('../models/Report');
+const Order = require('../models/Order');
 const ReportHistory = require('../models/ReportHistory');
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
+const { production_van_hanh_xe, production_van_hanh_xuc } = require('../utils/cron');
+const { JOB_TYPE } = require('../config/config');
+
 
 router.post('/', verifyToken, async (req, res, next) => {
     try {
@@ -20,7 +24,12 @@ router.post('/', verifyToken, async (req, res, next) => {
             workingMinutes,
             distanceKm
         });
+        const result = await caculate(newReport)
+        newReport.totalProduction = result.totalProduction;
+        newReport.totalCubicMeter = result.totalCubicMeter;
+        newReport.totalTon = result.totalTon;
         await newReport.save();
+
         req.logger.info(`✅ Tạo báo cáo thành công cho Order ID: ${orderId}`);
         res.status(200).send({ status: 'success', message: "Tạo thành công" });
     } catch (err) {
@@ -118,7 +127,15 @@ router.put('/:id', verifyToken, async (req, res) => {
 
 router.put('/:id/add-trip-time', verifyToken, async (req, res) => {
     try {
-        const report = await Report.findById(req.params.id);
+        const report = await Report.findById(req.params.id)
+            .populate({
+                path: "device",
+                select: "code material",
+            })
+            .populate("material", "name")
+            .populate("excavator", "code")
+            .populate("fromLocation", "name")
+            .populate("toLocation", "name");
         if (!report) {
             return res.status(404).json({ status: 'error', message: 'Không tìm thấy báo chuyến' });
         }
@@ -129,6 +146,10 @@ router.put('/:id/add-trip-time', verifyToken, async (req, res) => {
             ...(report.quantityUpdateTimes ?? []),
             new Date()  // giờ server
         ];
+        const value = await caculate(report)
+        report.totalProduction = value.totalProduction
+        report.totalCubicMeter = value.totalCubicMeter
+        report.totalTon = value.totalTon
 
         await report.save();
 
@@ -140,7 +161,15 @@ router.put('/:id/add-trip-time', verifyToken, async (req, res) => {
 });
 router.put('/:id/remove-trip-time/:timeIndex', verifyToken, async (req, res) => {
     try {
-        const report = await Report.findById(req.params.id);
+        const report = await Report.findById(req.params.id)
+            .populate({
+                path: "device",
+                select: "code material",
+            })
+            .populate("material", "name")
+            .populate("excavator", "code")
+            .populate("fromLocation", "name")
+            .populate("toLocation", "name");
         if (!report) {
             return res.status(404).json({ status: 'error', message: 'Không tìm thấy báo chuyến' });
         }
@@ -154,6 +183,11 @@ router.put('/:id/remove-trip-time/:timeIndex', verifyToken, async (req, res) => 
         report.quantity = Math.max(0, (report.quantity ?? 0) - 1);
         report.quantityUpdateTimes.splice(timeIndex, 1);
 
+        const value = await caculate(report)
+        report.totalProduction = value.totalProduction
+        report.totalCubicMeter = value.totalCubicMeter
+        report.totalTon = value.totalTon
+
         await report.save();
 
         res.json({ status: 'success', data: report });
@@ -162,4 +196,40 @@ router.put('/:id/remove-trip-time/:timeIndex', verifyToken, async (req, res) => 
         res.status(500).json({ status: 'error', message: 'Lỗi server' });
     }
 });
+
+async function caculate(report) {
+    let totalProduction = 0
+    let totalCubicMeter = 0
+    let totalTon = 0
+
+    let order = report.orderId;
+    if (!order || !order.workingDate) {
+        order = await Order.findById(report.orderId)
+            .populate('job', 'type')
+            .populate('shift', 'name')
+            .lean();
+    }
+    report = {
+        ...report.toObject(),
+        shift: order?.shift,
+        workingDate: order?.workingDate,
+    }
+    const jobType = order.job?.type;
+    if (jobType === JOB_TYPE.VAN_HANH_XE) {
+        totalProduction = await production_van_hanh_xe(report);
+    } else if (jobType === JOB_TYPE.VAN_HANH_XUC) {
+        const value = await production_van_hanh_xuc(report);
+        totalCubicMeter = value.cubicMeter;
+        totalTon = value.ton;
+    } else if (jobType === JOB_TYPE.VAN_HANH_KHOAN) {
+        totalProduction = report.drillDepth || 0;
+    }
+    return {
+        totalProduction,
+        totalCubicMeter,
+        totalTon
+    }
+
+}
+
 module.exports = router;
