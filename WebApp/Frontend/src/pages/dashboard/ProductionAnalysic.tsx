@@ -84,7 +84,7 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
             await localforage.setItem(DRILLING_STORAGE_KEY, newData); // ✅ Lưu vào localforage
             return newData;
         },
-        refetchInterval: 5 * 60 * 1000,    // ✅ Tự động gọi lại API mỗi 2 phút
+        refetchInterval: 2 * 60 * 1000,    // ✅ Tự động gọi lại API mỗi 2 phút
         placeholderData: drillingCache || undefined,
     });
 
@@ -103,7 +103,7 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
             await localforage.setItem(VEHICLE_STORAGE_KEY, newData); // ✅ Lưu vào localforage
             return newData;
         },
-        refetchInterval: 5 * 60 * 1000,    // ✅ Tự động gọi lại API mỗi 2 phút
+        refetchInterval: 2 * 60 * 1000,    // ✅ Tự động gọi lại API mỗi 2 phút
         placeholderData: vehicleCache || undefined,
     });
 
@@ -121,7 +121,7 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
             await localforage.setItem(EXCAVATOR_STORAGE_KEY, newData); // ✅ Lưu vào localforage
             return newData;
         },
-        refetchInterval: 5 * 60 * 1000,    // ✅ Tự động gọi lại API mỗi 2 phút
+        refetchInterval: 2 * 60 * 1000,    // ✅ Tự động gọi lại API mỗi 2 phút
         placeholderData: excavatorCache || undefined,
     });
 

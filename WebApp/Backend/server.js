@@ -38,6 +38,8 @@ const ModelRoutes = require('./routes/model.routes');
 const AnalysicRoutes = require('./routes/analysic.routes');
 
 
+require('./utils/cron')
+
 
 
 
