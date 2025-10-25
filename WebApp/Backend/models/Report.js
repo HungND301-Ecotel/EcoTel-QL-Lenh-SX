@@ -42,6 +42,18 @@ const Report = new mongoose.Schema({
         type: Number,
     },
     quantityUpdateTimes: [{ type: Date }],
+    totalProduction: {
+        type: Number,
+        default: 0
+    },
+    totalCubicMeter: {
+        type: Number,
+        default: 0
+    },
+    totalTon: {
+        type: Number,
+        default: 0
+    }
 }, {
     timestamps: true
 })
