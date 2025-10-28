@@ -21,7 +21,7 @@ class ShiftModel {
   }
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      '_id': id,
       'name': name,
       'startTime': startTime,
       'endTime': endTime,

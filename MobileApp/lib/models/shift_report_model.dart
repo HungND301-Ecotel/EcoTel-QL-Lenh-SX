@@ -13,7 +13,7 @@ class Device {
     );
   }
   Map<String, dynamic> toJson() {
-    return {'id': id, 'code': code};
+    return {'_id': id, 'code': code};
   }
 }
 
@@ -158,7 +158,7 @@ class ShiftReportModel {
   }
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      '_id': id,
       'orderId': orderId,
       'assignedTo': assignedTo,
       'vehicleSummaries':

@@ -29,6 +29,14 @@ import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import { RoleEnum, StatusDeviceEnum } from '../../enums';
 
+const filter = [
+    "Thuê ngoài AB",
+    "Thuê ngoài VN",
+    "Thuê ngoài-QM",
+    "ĐXVP",
+    "QM"
+]
+
 export default function DeviceAnalysic({ departments }: { departments: any[] }) {
     const [user] = useAtom(userAtom)
     const [department, setDepartment] = useState('');
@@ -154,7 +162,7 @@ export default function DeviceAnalysic({ departments }: { departments: any[] }) 
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            deviceCount.filter((i: any) => i?.departmentName !== "ĐXVP" && i?.departmentName !== "QM").map((group: any, groupIndex: number) => {
+                            deviceCount.filter((i: any) => !filter.includes(i?.departmentName)).map((group: any, groupIndex: number) => {
                                 const totalStatus = group.deviceTypes.reduce(
                                     (acc: any, deviceType: any) => {
                                         acc.maintenance += deviceType.statusCounts.maintenance || 0;

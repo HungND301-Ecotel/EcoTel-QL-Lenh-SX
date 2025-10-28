@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:soft/models/material_model.dart';
+import 'package:hive/hive.dart';
+import 'package:soft/local/LocalSyncService.dart';
+import 'package:soft/local/material_hive.dart';
 import 'package:soft/providers/report_provider.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
 import 'package:soft/screens/work_log/widgets/material_item.dart';
@@ -16,67 +20,93 @@ class DozerSelectProduct extends StatefulWidget {
 
 class _DozerSelectProduct
     extends State<DozerSelectProduct> {
-  bool _isLoading = true;
-  final List<MaterialModel> materials = [];
   final MaterialService _materialService =
       MaterialService();
-  void getAllMaterial() async {
-    var result = await _materialService.getAllMaterial();
+  final LocalSyncService _localSyncService =
+      LocalSyncService();
 
-    if (!mounted) return;
-    if (result['status'] == 'error') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message']),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } else {
-      var data = result['data'];
-      setState(() {
-        materials
-            .clear(); // Nếu cần làm sạch danh sách trước
-        materials.addAll(
-          (data as List)
-              .map((e) => MaterialModel.fromJson(e))
-              .toList(),
-        );
-      });
-    }
-    setState(() {
-      _isLoading = false;
-    });
-  }
+  bool _isLoading = false;
+  List<MaterialHive> materials = [];
+  MaterialHive? _selectedMaterial;
+  String _searchText = '';
+  Timer? _searchDebounce;
 
   @override
   void initState() {
     super.initState();
-    getAllMaterial();
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _initPage());
   }
 
-  String? _selectedMaterialId;
-  void _onSelectMaterial(String selectedMaterialId) {
+  /// 🚀 Load dữ liệu nhẹ & đồng bộ nền
+  Future<void> _initPage() async {
+    setState(() => _isLoading = true);
+    final box = Hive.box<MaterialHive>("materials");
+
+    // 1️⃣ Đọc cache sau khi UI render (không block)
+    final cached = await Future.delayed(
+      const Duration(milliseconds: 100),
+      () => box.values.toList(),
+    );
+
+    if (!mounted) return;
     setState(() {
-      _selectedMaterialId = selectedMaterialId;
+      materials = cached;
+      _isLoading = false;
     });
 
-    Provider.of<ReportDraftProvider>(
-      context,
-      listen: false,
-    ).setMaterial(selectedMaterialId);
+    // 2️⃣ Sync nền (non-blocking)
+    unawaited(Future.delayed(
+        const Duration(milliseconds: 300), () async {
+      await _syncMaterials(box);
+    }));
   }
 
-  String _searchText = '';
+  /// 🔄 Sync dữ liệu từ server về Hive
+  Future<void> _syncMaterials(Box<MaterialHive> box) async {
+    try {
+      await _localSyncService
+          .fetchAndSyncHive<MaterialHive>(
+        box: box,
+        prefix: "MATERIAL",
+        fetch: _materialService.getAllMaterial,
+        fromJson: (item) => MaterialHive.fromJson(item),
+      );
+
+      final updated = box.values.toList();
+
+      if (!mounted) return;
+      setState(() {
+        materials = updated;
+      });
+      debugPrint("✅ Synced ${updated.length} materials.");
+    } catch (e, stack) {
+      debugPrint("❌ Sync material error: $e");
+      debugPrint(stack.toString());
+    }
+  }
+
+  void _onSelectedMaterial(MaterialHive selectedMaterial) {
+    _selectedMaterial = selectedMaterial;
+    Provider.of<ReportDraftProvider>(context, listen: false)
+        .setMaterial(selectedMaterial);
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    List<MaterialModel> filteredItems =
-        materials
-            .where(
-              (item) => item.name.toLowerCase().contains(
+    List<MaterialHive> filteredItems = materials
+        .where(
+          (item) => item.name.toLowerCase().contains(
                 _searchText.toLowerCase(),
               ),
-            )
-            .toList();
+        )
+        .toList();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
@@ -98,53 +128,48 @@ class _DozerSelectProduct
             child: TextField(
               decoration: InputDecoration(
                 labelText: 'Tìm kiếm',
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.grey[200],
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(32),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: EdgeInsets.symmetric(
-                  vertical: 0,
-                ),
                 floatingLabelBehavior:
                     FloatingLabelBehavior.never,
               ),
               onChanged: (value) {
-                setState(() {
-                  _searchText = value;
-                });
+                _searchDebounce?.cancel();
+                _searchDebounce = Timer(
+                  const Duration(milliseconds: 300),
+                  () => setState(() => _searchText = value),
+                );
               },
             ),
           ),
           Divider(height: 1),
           Expanded(
-            child:
-                _isLoading
-                    ? Center(
-                      child: CircularProgressIndicator(),
-                    )
-                    : SingleChildScrollView(
-                      child: Column(
-                        children:
-                            filteredItems
-                                .map(
-                                  (item) => MaterialItem(
-                                    data: item,
-                                    selected:
-                                        _selectedMaterialId ==
-                                        item.id,
-                                    onTap: () {
-                                      _onSelectMaterial(
-                                        item.id,
-                                      );
-                                    },
-                                  ),
-                                )
-                                .toList(),
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator())
+                : materials.isEmpty
+                    ? const Center(
+                        child: Text("Không có dữ liệu"))
+                    : ListView.builder(
+                        itemCount: filteredItems.length,
+                        itemBuilder: (context, index) {
+                          final item = filteredItems[index];
+                          return MaterialItem(
+                            data: item,
+                            selected:
+                                _selectedMaterial?.id ==
+                                    item.id,
+                            onTap: () => setState(() {
+                              _onSelectedMaterial(item);
+                            }),
+                          );
+                        },
                       ),
-                    ),
           ),
           Container(
             padding: const EdgeInsets.all(8.0),
@@ -153,16 +178,14 @@ class _DozerSelectProduct
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed:
-                    _selectedMaterialId == null
-                        ? null
-                        : () {
-                          Navigator.pushNamed(
-                            context,
-                            WorkLogRoutes
-                                .dozerInputQuantity,
-                          );
-                        },
+                onPressed: _selectedMaterial == null
+                    ? null
+                    : () {
+                        Navigator.pushNamed(
+                          context,
+                          WorkLogRoutes.dozerInputQuantity,
+                        );
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                   foregroundColor: Colors.white,

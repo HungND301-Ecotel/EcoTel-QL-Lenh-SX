@@ -1,6 +1,9 @@
-// Chọn phương tiện
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:soft/models/device_model.dart';
+import 'package:hive/hive.dart';
+import 'package:soft/local/LocalSyncService.dart';
+import 'package:soft/local/device_hive.dart';
+import 'package:soft/local/device_hive_extension.dart';
 import 'package:soft/providers/report_provider.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
 import 'package:soft/screens/work_log/widgets/device_item.dart';
@@ -17,180 +20,203 @@ class ExcavatorSelectVehicle extends StatefulWidget {
 
 class _ExcavatorSelectVehicle
     extends State<ExcavatorSelectVehicle> {
-  bool _isLoading = true;
-  final List<DeviceModel> devices = [];
   final DeviceService _deviceService = DeviceService();
-  Set<String> _selectedDevices = {};
+  final LocalSyncService _localSyncService =
+      LocalSyncService();
 
-  void getAllDevice() async {
-    var result = await _deviceService.getAllCar();
+  bool _isLoading = false;
+  List<DeviceHive> devices = [];
+  Set<DeviceHive> _selectedDevices = {};
+  String _searchText = '';
+  Timer? _searchDebounce;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _initPage());
+  }
+
+  Future<void> _initPage() async {
+    setState(() => _isLoading = true);
+
+    // 🧠 1️⃣ Load cache nhẹ sau khi UI hiển thị
+    final cached = await Future.delayed(
+        const Duration(milliseconds: 100), () {
+      final box = Hive.box<DeviceHive>("devices");
+      return box.values
+          .where((d) => d.type == "CAR")
+          .toList();
+    });
 
     if (!mounted) return;
-    if (result['status'] == 'error') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message']),
-          backgroundColor: Colors.red,
-        ),
+
+    setState(() {
+      devices = cached;
+      _isLoading = false;
+    });
+
+    // 🧩 2️⃣ Gọi API nền (không block UI)
+    unawaited(Future.delayed(
+        const Duration(milliseconds: 300), _syncDevices));
+  }
+
+  Future<void> _syncDevices() async {
+    final box = Hive.box<DeviceHive>("devices");
+    try {
+      await _localSyncService.fetchAndSyncHive<DeviceHive>(
+        box: box,
+        prefix: "CAR",
+        fetch: _deviceService.getAllCar,
+        fromJson: (item) =>
+            DeviceHive.fromJson(item, "CAR"),
       );
-    } else {
-      var data = result['data'];
-      setState(() {
-        devices.clear(); // Nếu cần làm sạch danh sách trước
-        devices.addAll(
-          (data as List)
-              .map((e) => DeviceModel.fromJson(e))
-              .toList(),
-        );
-      });
+
+      final updated =
+          box.values.where((d) => d.type == "CAR").toList();
+
+      if (!mounted) return;
+
+      // 🔄 Lấy order hiện tại
       final order = Provider.of<ReportDraftProvider>(
         context,
         listen: false,
       ).order;
+
+      Set<DeviceHive> selected = {};
+      Set<String> selectedIds = {};
+
       if (order?.assignedVehicles != null &&
           order!.assignedVehicles!.isNotEmpty) {
-        // Lấy danh sách id từ assignedVehicles
-        final selectedIds = order.assignedVehicles!
+        selected = order.assignedVehicles!
+            .map((m) => m.toHive())
+            .toSet();
+        selectedIds = order.assignedVehicles!
             .map((m) => m.id)
             .toSet();
 
         Provider.of<ReportDraftProvider>(context,
                 listen: false)
-            .devices = selectedIds.toList();
+            .devices = selected.toList();
+      }
 
-        setState(() {
-          _selectedDevices = selectedIds;
-
-          // Sắp xếp: xe đã chọn nằm lên trên
+      // ⚡ Gom lại 1 setState duy nhất
+      setState(() {
+        _selectedDevices = selected;
+        devices = updated;
+        if (selected.isNotEmpty) {
           devices.sort((a, b) {
             if (selectedIds.contains(a.id) &&
-                !selectedIds.contains(b.id)) {
-              return -1;
-            } else if (!selectedIds.contains(a.id) &&
-                selectedIds.contains(b.id)) {
-              return 1;
-            }
+                !selectedIds.contains(b.id)) return -1;
+            if (!selectedIds.contains(a.id) &&
+                selectedIds.contains(b.id)) return 1;
             return 0;
           });
-        });
-      }
+        }
+      });
+
+      debugPrint(
+          "✅ Sync completed: ${updated.length} CAR devices");
+    } catch (e, stack) {
+      debugPrint("❌ Sync vehicle error: $e");
+      debugPrint(stack.toString());
     }
-    setState(() {
-      _isLoading = false;
-    });
   }
 
-  @override
-  void initState() {
-    super.initState();
-    getAllDevice();
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   final order =
-    //       Provider.of<ReportDraftProvider>(
-    //         context,
-    //         listen: false,
-    //       ).order;
-    //   setState(() {
-    //     devices.clear(); // Nếu cần làm sạch danh sách trước
-    //     if (order?.device != null) {
-    //       devices.addAll(
-    //         order?.device as List<DeviceModel>,
-    //       );
-    //     }
-    //     _isLoading = false;
-    //   });
-    // });
-  }
-
-  void _onToggleDevice(String id) {
+  void _onToggleDevice(DeviceHive device) {
     setState(() {
-      if (_selectedDevices.contains(id)) {
-        _selectedDevices.remove(id); // bỏ chọn
+      if (_selectedDevices.contains(device)) {
+        _selectedDevices.remove(device);
       } else {
-        _selectedDevices.add(id); // chọn thêm
+        _selectedDevices.add(device);
       }
     });
 
-    // cập nhật provider (nhiều phương tiện)
     Provider.of<ReportDraftProvider>(context, listen: false)
         .devices = _selectedDevices.toList();
   }
 
-  String _searchText = '';
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    List<DeviceModel> filteredItems = devices
-        .where(
-          (item) => item.code.toLowerCase().contains(
-                _searchText.toLowerCase(),
-              ),
-        )
-        .toList();
+    final filtered = _searchText.isEmpty
+        ? devices
+        : devices
+            .where((d) => d.code
+                .toLowerCase()
+                .contains(_searchText.toLowerCase()))
+            .toList();
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
-        title: Text(
+        title: const Text(
           'Xe nhận tải',
           style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600),
         ),
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
       ),
       body: Column(
         children: [
+          // 🔍 Ô tìm kiếm có debounce
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: TextField(
               decoration: InputDecoration(
                 labelText: 'Tìm kiếm',
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.grey[200],
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(32),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: EdgeInsets.symmetric(
-                  vertical: 0,
-                ),
                 floatingLabelBehavior:
                     FloatingLabelBehavior.never,
               ),
               onChanged: (value) {
-                setState(() {
-                  _searchText = value;
-                });
+                _searchDebounce?.cancel();
+                _searchDebounce = Timer(
+                  const Duration(milliseconds: 300),
+                  () => setState(() => _searchText = value),
+                );
               },
             ),
           ),
-          Divider(height: 1),
+          const Divider(height: 1),
           Expanded(
             child: _isLoading
-                ? Center(
-                    child: CircularProgressIndicator(),
-                  )
-                : SingleChildScrollView(
-                    child: Column(
-                      children: filteredItems
-                          .map(
-                            (item) => ExcavatorItem(
-                              data: item,
-                              selected:
-                                  _selectedDevices.contains(
-                                item.id,
-                              ),
-                              onTap: () => _onToggleDevice(
-                                item.id,
-                              ),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ),
+                ? const Center(
+                    child: CircularProgressIndicator())
+                : devices.isEmpty
+                    ? const Center(
+                        child: Text("Không có dữ liệu"))
+                    : ListView.builder(
+                        physics:
+                            const AlwaysScrollableScrollPhysics(),
+                        itemCount: filtered.length,
+                        itemBuilder: (context, index) {
+                          final item = filtered[index];
+                          final isSelected =
+                              _selectedDevices.any(
+                                  (d) => d.id == item.id);
+                          return ExcavatorItem(
+                            data: item,
+                            selected: isSelected,
+                            onTap: () =>
+                                _onToggleDevice(item),
+                          );
+                        },
+                      ),
           ),
           SizedBox(
             width: double.infinity,
@@ -208,7 +234,7 @@ class _ExcavatorSelectVehicle
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
               ),
-              child: Text('Tiếp tục'),
+              child: const Text('Tiếp tục'),
             ),
           ),
         ],

@@ -12,7 +12,7 @@ class OrderService {
 
   Future<Map<String, dynamic>> getAllOrder({
     int page = 1,
-    int limit = 50,
+    int limit = 20,
     String search = "",
   }) async {
     return await _apiService.get(
@@ -33,7 +33,7 @@ class OrderService {
 
   Future<Map<String, dynamic>> getByUser({
     int page = 1,
-    int limit = 50,
+    int limit = 20,
   }) async {
     return await _apiService.get(
       '/orders/user?page=$page&limit=$limit',

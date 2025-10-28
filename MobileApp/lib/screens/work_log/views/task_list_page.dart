@@ -18,7 +18,7 @@ class _TaskListPage extends State<TaskListPage> {
   final List<OrderModel> taskList = [];
   bool _isLoading = true;
   int _page = 1;
-  final int _limit = 50;
+  final int _limit = 20;
   bool _isLoadingMore = false;
   bool _hasMore = true;
   final OrderService _orderService = OrderService();

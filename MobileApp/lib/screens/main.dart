@@ -1,6 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
+import 'package:soft/local/LocalSyncService.dart';
+import 'package:soft/local/device_hive.dart';
+import 'package:soft/local/location_hive.dart';
+import 'package:soft/local/material_hive.dart';
 import 'package:soft/providers/user_provider.dart';
 import 'package:soft/routes/app_routes.dart';
 import 'package:soft/routes/report_routes.dart';
@@ -8,6 +13,10 @@ import 'package:soft/routes/task_assignment_route.dart';
 import 'package:soft/screens/setting/setting_page.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
 import 'package:provider/provider.dart';
+import 'package:soft/services/device_service.dart';
+import 'package:soft/services/location_service.dart';
+import 'package:soft/services/material_service.dart';
+import 'package:soft/services/report_service.dart';
 import 'package:soft/services/update_version_service.dart';
 
 class MyPage extends StatefulWidget {
@@ -29,38 +38,61 @@ class MyHomePageState extends State<MyPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       UpdateVersionService.checkForUpdate(context);
+      _preloadStaticData();
     });
-    // Future.microtask(() async {
-    //   if (!mounted) return;
-
-    //   final userProvider = Provider.of<UserProvider>(
-    //     context,
-    //     listen: false,
-    //   );
-    //   await userProvider.loadToken();
-    //   _checkPhone(userProvider);
-
-    //   // Khởi động timer kiểm tra mỗi 30s
-    //   _checkTimer = Timer.periodic(Duration(hours: 3), (_) {
-    //     if (!mounted) return;
-    //     _checkPhone(userProvider);
-    //   });
-    // });
   }
 
-  // void _checkPhone(UserProvider userProvider) {
-  //   final user = userProvider.user;
-  //   if (!_hasShownPhoneDialog &&
-  //       user != null &&
-  //       (user.phone == null || user.phone!.isEmpty)) {
-  //     _hasShownPhoneDialog = true;
+  final MaterialService _materialService =
+      MaterialService();
+  final DeviceService _deviceService = DeviceService();
+  final LocationService _locationService =
+      LocationService();
 
-  //     WidgetsBinding.instance.addPostFrameCallback((_) {
-  //       if (!mounted) return;
-  //       _showPhoneDialog();
-  //     });
-  //   }
-  // }
+  final LocalSyncService _localSyncService =
+      LocalSyncService();
+  Future<void> _preloadStaticData() async {
+    await _localSyncService.fetchAndSyncHive<MaterialHive>(
+      box: Hive.box("materials"),
+      prefix: "MATERIAL",
+      fetch: _materialService.getAllMaterial,
+      fromJson: (item) => MaterialHive.fromJson(item),
+    );
+
+    await _localSyncService.fetchAndSyncHive<LocationHive>(
+      box: Hive.box("locations"),
+      prefix: "LOCATION",
+      fetch: _locationService.getAllLocation,
+      fromJson: (item) => LocationHive.fromJson(item),
+    );
+
+    await _localSyncService.fetchAndSyncHive<DeviceHive>(
+      box: Hive.box("devices"),
+      prefix: "EXCAVATOR",
+      fetch: _deviceService.getAllExcavator,
+      fromJson: (item) =>
+          DeviceHive.fromJson(item, "EXCAVATOR"),
+    );
+    await _localSyncService.fetchAndSyncHive<DeviceHive>(
+      box: Hive.box("devices"),
+      prefix: "CAR",
+      fetch: _deviceService.getAllCar,
+      fromJson: (item) => DeviceHive.fromJson(item, "CAR"),
+    );
+    await _localSyncService.fetchAndSyncHive<DeviceHive>(
+      box: Hive.box("devices"),
+      prefix: "VEHICLE",
+      fetch: _deviceService.getAllVehicle,
+      fromJson: (item) =>
+          DeviceHive.fromJson(item, "VEHICLE"),
+    );
+    await _localSyncService.fetchAndSyncHive<DeviceHive>(
+      box: Hive.box("devices"),
+      prefix: "DEPARTMENT",
+      fetch: _deviceService.getAlldevice,
+      fromJson: (item) =>
+          DeviceHive.fromJson(item, "DEPARTMENT"),
+    );
+  }
 
   @override
   void dispose() {
@@ -68,66 +100,12 @@ class MyHomePageState extends State<MyPage> {
     super.dispose();
   }
 
-  // void _showPhoneDialog() {
-  //   if (!mounted) return;
-  //   showDialog(
-  //     context: context,
-  //     builder:
-  //         (_) => AlertDialog(
-  //           title: Row(
-  //             children: [
-  //               Icon(
-  //                 Icons.contact_support_outlined,
-  //                 color: Colors.blue,
-  //                 size: 30,
-  //               ),
-  //               SizedBox(width: 10),
-  //               Expanded(
-  //                 child: Text(
-  //                   "Cập nhật điện thoại",
-  //                   style: TextStyle(fontSize: 20),
-  //                 ),
-  //               ),
-  //             ],
-  //           ),
-  //           content: Text(
-  //             "Để thuận tiện cho việc liên lạc, bạn cần cập nhật số điện thoại của bạn.",
-  //           ),
-  //           actions: [
-  //             TextButton(
-  //               onPressed: () {
-  //                 Navigator.of(context).pop();
-  //                 _hasShownPhoneDialog = false;
-  //               },
-  //               style: TextButton.styleFrom(
-  //                 foregroundColor: Colors.blue,
-  //               ),
-  //               child: Text("Bỏ qua"),
-  //             ),
-  //             TextButton(
-  //               onPressed: () {
-  //                 Navigator.pushNamed(
-  //                   context,
-  //                   AppRoute.addPhone,
-  //                 );
-  //               },
-  //               style: TextButton.styleFrom(
-  //                 foregroundColor: Colors.blue,
-  //               ),
-  //               child: Text("Cập nhật"),
-  //             ),
-  //           ],
-  //         ),
-  //   );
-  // }
-
   @override
   Widget build(BuildContext context) {
-    final user =
-        Provider.of<UserProvider>(
-          context,
-          listen: false,
-        ).user;
+    final user = Provider.of<UserProvider>(
+      context,
+      listen: false,
+    ).user;
     final role = user?.role;
 
     final items = <BottomNavigationBarItem>[

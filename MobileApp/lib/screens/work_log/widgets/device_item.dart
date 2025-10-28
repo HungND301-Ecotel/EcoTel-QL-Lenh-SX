@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:soft/local/device_hive.dart';
 import 'package:soft/models/device_model.dart';
 
 class ExcavatorItem extends StatelessWidget {
-  final DeviceModel data;
+  final DeviceHive data;
   final VoidCallback? onTap;
   final bool selected;
 

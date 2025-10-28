@@ -10,7 +10,7 @@ const { JOB_TYPE } = require('../config/config');
 
 router.post('/', verifyToken, async (req, res, next) => {
     try {
-        const { orderId, device, excavator, fromLocation, toLocation, material, quantity, drillDepth, hardnessF, workingMinutes, distanceKm } = req.body;
+        const { orderId, device, excavator, fromLocation, toLocation, material, quantity, drillDepth, hardnessF, workingMinutes, distanceKm, quantityUpdateTimes } = req.body;
         const newReport = new Report({
             orderId,
             device,
@@ -22,16 +22,28 @@ router.post('/', verifyToken, async (req, res, next) => {
             drillDepth,
             hardnessF,
             workingMinutes,
-            distanceKm
+            distanceKm,
+            quantityUpdateTimes
         });
+
+        await newReport.populate([
+            {
+                path: "device",
+                select: "code material",
+            },
+            { path: "excavator", select: "code" },
+            { path: "fromLocation", select: "name" },
+            { path: "toLocation", select: "name" },
+            { path: "material", select: "name" }
+        ]);
         const result = await caculate(newReport)
         newReport.totalProduction = result.totalProduction;
         newReport.totalCubicMeter = result.totalCubicMeter;
         newReport.totalTon = result.totalTon;
-        await newReport.save();
+        const report = await newReport.save();
 
         req.logger.info(`✅ Tạo báo cáo thành công cho Order ID: ${orderId}`);
-        res.status(200).send({ status: 'success', message: "Tạo thành công" });
+        res.status(200).send({ status: 'success', message: "Tạo thành công", data: report });
     } catch (err) {
         req.logger.error("❌ Lỗi khi tạo báo cáo", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
@@ -117,6 +129,39 @@ router.put('/:id', verifyToken, async (req, res) => {
         await report.save();
 
         req.logger.info(`✅ ${user?.username} Cập nhật báo cáo thành công cho ID: ${req.params.id}`);
+        res.status(200).send({ status: 'success', message: "Sửa thành công", data: report });
+
+    } catch (err) {
+        req.logger.error("❌ Lỗi khi cập nhật báo cáo", err);
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
+    }
+});
+
+router.put('/update/:id', verifyToken, async (req, res) => {
+    try {
+        const user = req.user;
+        const report = await Report.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!report) {
+            req.logger.warn(`⚠️ Không tìm thấy báo cáo với ID: ${req.params.id}`);
+            return res.status(404).send({ status: 'error', message: "Not found" });
+        }
+        await report.populate([
+            { path: 'device', select: 'code material' },
+            { path: 'excavator', select: 'code' },
+            { path: 'fromLocation', select: 'name' },
+            { path: 'toLocation', select: 'name' },
+            { path: 'material', select: 'name' }
+        ]);
+
+        // 4️⃣ Tính toán lại sau cập nhật
+        const { totalProduction, totalCubicMeter, totalTon } = await caculate(report);
+        report.totalProduction = totalProduction;
+        report.totalCubicMeter = totalCubicMeter;
+        report.totalTon = totalTon;
+
+        // 5️⃣ Lưu lại kết quả sau tính toán
+        await report.save();
+        req.logger.info(`✅ ${user?.username} Đồng bộ dữ liệu báo chuyến thành công`);
         res.status(200).send({ status: 'success', message: "Sửa thành công", data: report });
 
     } catch (err) {

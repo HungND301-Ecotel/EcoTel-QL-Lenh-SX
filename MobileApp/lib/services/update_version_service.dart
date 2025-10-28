@@ -3,7 +3,7 @@ import 'package:new_version_plus/new_version_plus.dart';
 
 class UpdateVersionService {
   static Future<void> checkForUpdate(
-    BuildContext context) async {
+      BuildContext context) async {
     try {
       final newVersion = NewVersionPlus(
         iOSId:
@@ -13,17 +13,16 @@ class UpdateVersionService {
       );
 
       final status = await newVersion.getVersionStatus();
-
       if (status != null && status.canUpdate) {
         newVersion.showUpdateDialog(
           context: context,
           versionStatus: status,
           dialogTitle: 'Có bản cập nhật mới!',
           dialogText:
-              'Bạn muốn nâng cấp từ ${status.localVersion} lên ${status.storeVersion} không?',
+              'Vui lòng cập nhật phiên bản lên ${status.storeVersion} để tiếp tục sử dụng?',
           updateButtonText: 'Cập nhật',
-          dismissButtonText: 'Để sau',
-          allowDismissal: true, // ✅ Cho phép user bỏ qua
+          // dismissButtonText: 'Để sau',
+          allowDismissal: false, // ✅ Cho phép user bỏ qua
         );
       }
     } catch (e) {
