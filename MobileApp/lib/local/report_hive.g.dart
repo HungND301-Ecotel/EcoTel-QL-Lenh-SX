@@ -17,26 +17,29 @@ class ReportHiveAdapter extends TypeAdapter<ReportHive> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return ReportHive(
-      id: fields[0] as String,
+      id: fields[0] as String?,
       orderId: fields[1] as String,
       device: fields[2] as DeviceHive?,
       excavator: fields[3] as DeviceHive?,
       fromLocation: fields[4] as LocationHive?,
       toLocation: fields[5] as LocationHive?,
       material: fields[6] as MaterialHive?,
-      quantity: fields[7] as int?,
+      quantity: fields[7] as num?,
       drillDepth: fields[8] as num?,
       hardnessF: fields[9] as num?,
       workingMinutes: fields[10] as int?,
       distanceKm: fields[11] as num?,
-      quantityUpdateTimes: (fields[12] as List?)?.cast<DateTime>(),
+      quantityUpdateTimes: (fields[12] as List?)?.cast<QuantityUpdateHive>(),
+      isSynced: fields[14] as bool?,
+      localKey: fields[15] as String?,
+      isDeleted: fields[16] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, ReportHive obj) {
     writer
-      ..writeByte(13)
+      ..writeByte(16)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -62,7 +65,13 @@ class ReportHiveAdapter extends TypeAdapter<ReportHive> {
       ..writeByte(11)
       ..write(obj.distanceKm)
       ..writeByte(12)
-      ..write(obj.quantityUpdateTimes);
+      ..write(obj.quantityUpdateTimes)
+      ..writeByte(14)
+      ..write(obj.isSynced)
+      ..writeByte(15)
+      ..write(obj.localKey)
+      ..writeByte(16)
+      ..write(obj.isDeleted);
   }
 
   @override

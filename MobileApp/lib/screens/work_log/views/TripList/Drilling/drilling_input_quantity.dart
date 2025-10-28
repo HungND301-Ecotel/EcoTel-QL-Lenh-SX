@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
+import 'package:soft/local/LocalSyncService.dart';
+import 'package:soft/local/report_hive.dart';
 import 'package:soft/providers/report_provider.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
 import 'package:soft/screens/work_log/widgets/Button/button_save.dart';
-import 'package:soft/services/report_service.dart';
 import 'package:provider/provider.dart';
 
 class DrillingInputQuantity extends StatefulWidget {
@@ -20,8 +22,11 @@ class _DrillingInputQuantity
   final TextEditingController _hardnessController =
       TextEditingController();
 
-  final ReportService _reportService = ReportService();
+  final LocalSyncService _localSyncService =
+      LocalSyncService();
+
   void create() async {
+    final box = Hive.box<ReportHive>("reports");
     final provider = Provider.of<ReportDraftProvider>(
       context,
       listen: false,
@@ -42,27 +47,51 @@ class _DrillingInputQuantity
       return;
     }
     provider.setDrillingInfo(drillDepth, hardness);
-    var result = await _reportService.createReport({
-      "orderId": provider.orderId,
-      "device": provider.device,
-      "material": provider.material,
-      "drillDepth": provider.drillDepth,
-      "hardnessF": provider.hardnessF,
-    });
-    if (!mounted) return;
-    if (result['status'] == 'error') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message']),
-          backgroundColor: Colors.red,
-        ),
+
+    try {
+      // 🧱 1. Tạo danh sách ReportHive để lưu local
+      final ReportHive report = ReportHive(
+        localKey:
+            "DRILL_${provider.orderId}_${provider.device?.id}_${provider.material?.id}_${provider.drillDepth}_${provider.hardnessF}",
+        orderId: provider.orderId ?? '',
+        device: provider.device,
+        material: provider.material,
+        drillDepth: provider.drillDepth,
+        hardnessF: provider.hardnessF,
       );
-    } else {
+
+      // 🗃️ 2. Lưu toàn bộ vào Hive
+      await _localSyncService.putIfNotExists<ReportHive>(
+          box: box,
+          id: report.localKey!,
+          data: report,
+          condition: (r) =>
+              r.orderId == report.orderId &&
+              r.device?.id == report.device?.id &&
+              r.material?.id == report.material?.id &&
+              r.drillDepth == report.drillDepth &&
+              r.hardnessF == report.hardnessF);
+
+      // ✅ 3. Reset provider (hoàn tất tạo báo cáo)
       provider.reset();
+
+      // 🟢 4. Chuyển hướng sang màn hình danh sách chuyến
+      if (!mounted) return;
       Navigator.pushNamed(
         context,
         WorkLogRoutes.drillingProductList,
         arguments: provider.orderId,
+      );
+
+      // 🛰️ (Tuỳ chọn) Gọi sync nếu có mạng
+      // await ReportSyncService.syncReportsToServer();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Có lỗi khi lưu dữ liệu local: $e"),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }

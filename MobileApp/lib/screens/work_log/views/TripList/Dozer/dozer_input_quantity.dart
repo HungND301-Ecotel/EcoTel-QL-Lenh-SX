@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:hive/hive.dart';
+import 'package:soft/local/LocalSyncService.dart';
+import 'package:soft/local/report_hive.dart';
 import 'package:soft/providers/report_provider.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
 import 'package:soft/screens/work_log/widgets/Button/button_save.dart';
-import 'package:soft/services/report_service.dart';
 import 'package:provider/provider.dart';
 
 class DozerInputQuantity extends StatefulWidget {
@@ -19,8 +21,11 @@ class _DozerInputQuantity
   final TextEditingController _minuteController =
       TextEditingController();
 
-  final ReportService _reportService = ReportService();
+  final LocalSyncService _localSyncService =
+      LocalSyncService();
+
   void create() async {
+    final box = Hive.box<ReportHive>("reports");
     final provider = Provider.of<ReportDraftProvider>(
       context,
       listen: false,
@@ -38,28 +43,50 @@ class _DozerInputQuantity
       );
       return;
     }
-    print(minute);
     provider.setDozerInfo(minute);
-    var result = await _reportService.createReport({
-      "orderId": provider.orderId,
-      "device": provider.device?.id,
-      "material": provider.material?.id,
-      "workingMinutes": provider.workingMinutes,
-    });
-    if (!mounted) return;
-    if (result['status'] == 'error') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message']),
-          backgroundColor: Colors.red,
-        ),
+
+    try {
+      // 🧱 1. Tạo danh sách ReportHive để lưu local
+      final ReportHive report = ReportHive(
+        localKey:
+            "DOZER_${provider.orderId}_${provider.device?.id}_${provider.material?.id}_${provider.workingMinutes}",
+        orderId: provider.orderId ?? '',
+        device: provider.device,
+        material: provider.material,
+        workingMinutes: provider.workingMinutes,
       );
-    } else {
+
+      // 🗃️ 2. Lưu toàn bộ vào Hive
+      await _localSyncService.putIfNotExists<ReportHive>(
+          box: box,
+          id: report.localKey!,
+          data: report,
+          condition: (r) =>
+              r.orderId == report.orderId &&
+              r.device?.id == report.device?.id &&
+              r.material?.id == report.material?.id &&
+              r.workingMinutes == report.workingMinutes);
+
+      // ✅ 3. Reset provider (hoàn tất tạo báo cáo)
       provider.reset();
+
+      // 🟢 4. Chuyển hướng sang màn hình danh sách chuyến
+      if (!mounted) return;
       Navigator.pushNamed(
         context,
         WorkLogRoutes.dozerProductList,
         arguments: provider.orderId,
+      );
+
+      // 🛰️ (Tuỳ chọn) Gọi sync nếu có mạng
+      // await ReportSyncService.syncReportsToServer();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Có lỗi khi lưu dữ liệu local: $e"),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }

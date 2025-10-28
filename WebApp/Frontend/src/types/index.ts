@@ -201,7 +201,10 @@ export interface Report {
     hardnessF?: number,
     workingMinutes?: number,
     quantity?: number,
-    quantityUpdateTimes?: Date[]
+    quantityUpdateTimes?: {
+        time?: Date,
+        quantity?: number
+    }[]
 }
 export interface Location {
     _id: string;

@@ -13,6 +13,6 @@ class MaterialModel {
     );
   }
   Map<String, dynamic> toJson() {
-    return {'id': id, 'name': name};
+    return {'_id': id, 'name': name};
   }
 }

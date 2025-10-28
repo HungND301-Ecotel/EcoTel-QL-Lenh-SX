@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:soft/local/LocalSyncService.dart';
@@ -19,112 +21,135 @@ class VehicleSelectExcavator extends StatefulWidget {
 
 class _VehicleSelectExcavator
     extends State<VehicleSelectExcavator> {
-  bool _isLoading = true;
-  List<DeviceHive> devices = [];
   final DeviceService _deviceService = DeviceService();
   final LocalSyncService _localSyncService =
       LocalSyncService();
 
-  void getAllDevice() async {
-    final box = Hive.box<DeviceHive>("devices");
-    final localDevices = box.values.toList();
-    setState(() {
-      devices = localDevices
-          .where((d) => d.type == "EXCAVATOR")
-          .toList();
-    });
-    var result = await _deviceService.getAllExcavator();
-
-    if (!mounted) return;
-    if (result['status'] == 'error') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message']),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } else {
-      final List data = result['data'] ?? [];
-      await _localSyncService.syncHive<DeviceHive>(
-          box: box,
-          data: data,
-          prefix: "EXCAVATOR",
-          fromJson: (item) =>
-              DeviceHive.fromJson(item, "EXCAVATOR"));
-
-      // 🟢 4. Reload lại danh sách
-      final updated = box.values.toList();
-      setState(() {
-        devices = updated
-            .where((d) => d.type == "EXCAVATOR")
-            .toList();
-        _isLoading = false;
-      });
-      final order = Provider.of<ReportDraftProvider>(
-        context,
-        listen: false,
-      ).order;
-      if (order?.excavator != null &&
-          order!.excavator!.isNotEmpty) {
-        final selectedIds = order.excavator!
-            .where((i) => i.status == true)
-            .map((m) => m.device?.id)
-            .toList();
-        _selectedDevice = order.excavator!
-            .where((i) => i.status == true)
-            .map((m) => m.device)
-            .last
-            ?.toHive();
-        if (selectedIds.isNotEmpty) {
-          _onSelectDevice(
-              _selectedDevice!); // chỉ gọi 1 lần
-          setState(() {
-            devices.sort((a, b) {
-              if (a.id == _selectedDevice?.id) return -1;
-              if (b.id == _selectedDevice?.id) return 1;
-              return 0;
-            });
-          });
-        }
-      }
-    }
-    setState(() {
-      _isLoading = false;
-    });
-  }
+  bool _isLoading = false;
+  List<DeviceHive> devices = [];
+  DeviceHive? _selectedDevice;
+  String _searchText = '';
+  Timer? _searchDebounce;
 
   @override
   void initState() {
     super.initState();
-    getAllDevice();
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   final order =
-    //       Provider.of<ReportDraftProvider>(
-    //         context,
-    //         listen: false,
-    //       ).order;
-    //   if (order?.excavator != null) {
-    //     _selectedDevice = order!.excavator!.first.id;
-    //     setState(() {
-    //       _onSelectDevice(order.excavator!.first.id);
-    //     });
-    //   }
-    // });
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _initPage());
   }
 
-  DeviceHive? _selectedDevice;
-  void _onSelectDevice(DeviceHive selectedDevice) {
+  /// 🚀 Load dữ liệu nhẹ & đồng bộ nền
+  Future<void> _initPage() async {
+    setState(() => _isLoading = true);
+    final box = Hive.box<DeviceHive>("devices");
+
+    // 1️⃣ Đọc cache sau khi UI render (không block)
+    final cachedDevices = await Future.delayed(
+      const Duration(milliseconds: 100),
+      () {
+        final box = Hive.box<DeviceHive>("devices");
+        return box.values
+            .where((d) => d.type == "EXCAVATOR")
+            .toList();
+      },
+    );
+
+    if (!mounted) return;
     setState(() {
-      _selectedDevice = selectedDevice;
+      devices = cachedDevices;
+      _isLoading = false;
     });
 
-    Provider.of<ReportDraftProvider>(
-      context,
-      listen: false,
-    ).setExcavator(selectedDevice);
+    // 2️⃣ Sync nền (non-blocking)
+    unawaited(Future.delayed(
+        const Duration(milliseconds: 300), () async {
+      await _syncDevices(box);
+    }));
   }
 
-  String _searchText = '';
+  Future<void> _syncDevices(Box<DeviceHive> box) async {
+    try {
+      await _localSyncService.fetchAndSyncHive<DeviceHive>(
+        box: box,
+        prefix: "EXCAVATOR",
+        fetch: _deviceService.getAllExcavator,
+        fromJson: (item) =>
+            DeviceHive.fromJson(item, "EXCAVATOR"),
+      );
+
+      final updated = box.values
+          .where((d) => d.type == "EXCAVATOR")
+          .toList();
+
+      final order = Provider.of<ReportDraftProvider>(
+        context,
+        listen: false,
+      ).order;
+
+      // 🧩 Xác định danh sách máy xúc được chọn (status == true)
+      List<String> selectedIds = [];
+      DeviceHive? selected;
+
+      if (order?.excavator != null &&
+          order!.excavator!.isNotEmpty) {
+        final activeExcavators = order.excavator!
+            .where((i) =>
+                i.status == true && i.device?.id != null)
+            .toList();
+
+        if (activeExcavators.isNotEmpty) {
+          selectedIds = activeExcavators
+              .map((m) => m.device!.id)
+              .toList();
+
+          selected = activeExcavators.last.device!.toHive();
+        }
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        devices = updated;
+        _selectedDevice = selected;
+
+        if (selected != null) {
+          // 🟢 Đặt mặc định máy xúc đã chọn
+          _onSelectedExcavator(selected);
+
+          // 🔄 Sắp xếp lại list: máy xúc được chọn nằm trên đầu
+          devices.sort((a, b) {
+            if (selectedIds.contains(a.id) &&
+                !selectedIds.contains(b.id)) {
+              return -1;
+            }
+            if (!selectedIds.contains(a.id) &&
+                selectedIds.contains(b.id)) {
+              return 1;
+            }
+            return 0;
+          });
+        }
+      });
+
+      debugPrint("✅ Synced ${updated.length} excavators.");
+    } catch (e, stack) {
+      debugPrint("❌ Sync excavator error: $e");
+      debugPrint(stack.toString());
+    }
+  }
+
+  void _onSelectedExcavator(DeviceHive selectedExcavator) {
+    _selectedDevice = selectedExcavator;
+    Provider.of<ReportDraftProvider>(context, listen: false)
+        .setExcavator(selectedExcavator);
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     List<DeviceHive> filteredItems = devices
@@ -134,13 +159,6 @@ class _VehicleSelectExcavator
               ),
         )
         .toList();
-    if (_selectedDevice != null) {
-      filteredItems.sort((a, b) {
-        if (a.id == _selectedDevice) return -1;
-        if (b.id == _selectedDevice) return 1;
-        return 0;
-      });
-    }
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
@@ -185,28 +203,27 @@ class _VehicleSelectExcavator
           Divider(height: 1),
           Expanded(
             child: _isLoading
-                ? Center(
-                    child: CircularProgressIndicator(),
-                  )
-                : SingleChildScrollView(
-                    child: Column(
-                      children: filteredItems
-                          .map(
-                            (item) => ExcavatorItem(
-                              data: item,
-                              selected:
-                                  _selectedDevice?.id ==
-                                      item.id,
-                              onTap: () {
-                                _onSelectDevice(
-                                  item,
-                                );
-                              },
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ),
+                ? const Center(
+                    child: CircularProgressIndicator())
+                : devices.isEmpty
+                    ? const Center(
+                        child: Text("Không có dữ liệu"))
+                    : ListView.builder(
+                        physics:
+                            const AlwaysScrollableScrollPhysics(),
+                        itemCount: filteredItems.length,
+                        itemBuilder: (context, index) {
+                          final item = filteredItems[index];
+                          return ExcavatorItem(
+                            data: item,
+                            selected: _selectedDevice?.id ==
+                                item.id,
+                            onTap: () => setState(() {
+                              _onSelectedExcavator(item);
+                            }),
+                          );
+                        },
+                      ),
           ),
           Container(
             padding: const EdgeInsets.all(8.0),

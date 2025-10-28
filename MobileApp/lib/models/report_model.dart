@@ -2,6 +2,29 @@ import 'package:soft/models/device_model.dart';
 import 'package:soft/models/location_model.dart';
 import 'package:soft/models/material_model.dart';
 
+class QuantityUpdateModel {
+  DateTime time;
+  num quantity;
+
+  QuantityUpdateModel({
+    required this.time,
+    required this.quantity,
+  });
+
+  factory QuantityUpdateModel.fromJson(
+      Map<String, dynamic> json) {
+    return QuantityUpdateModel(
+      time: DateTime.parse(json['time']).toLocal(),
+      quantity: json['quantity'] ?? 1,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'time': time.toIso8601String(),
+        'quantity': quantity,
+      };
+}
+
 class ReportModel {
   final String id;
   final String orderId;
@@ -10,12 +33,12 @@ class ReportModel {
   final LocationModel? fromLocation;
   final LocationModel? toLocation;
   final MaterialModel? material;
-  final int? quantity;
+  final num? quantity;
   final num? drillDepth;
   final num? hardnessF;
   final int? workingMinutes;
   final num? distanceKm;
-  final List<DateTime>? quantityUpdateTimes;
+  final List<QuantityUpdateModel>? quantityUpdateTimes;
 
   ReportModel({
     required this.id,
@@ -50,9 +73,9 @@ class ReportModel {
       hardnessF: json?['hardnessF'],
       workingMinutes: json?['workingMinutes'],
       distanceKm: json?['distanceKm'],
-      quantityUpdateTimes:
-          (json?['quantityUpdateTimes'] as List?)
-              ?.map((e) => DateTime.parse(e).toLocal())
+      quantityUpdateTimes: (json?['quantityUpdateTimes']
+                  as List?)
+              ?.map((e) => QuantityUpdateModel.fromJson(e))
               .toList() ??
           [],
     );

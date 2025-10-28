@@ -25,9 +25,7 @@ async function groupTripsVehicle(trips, date, shift) {
     const formattedTrips = await Promise.all(trips.map(async (t) => {
 
         // Chuyển quantityUpdateTimes thành mảng để lặp
-        const timesArray = Array.isArray(t.quantityUpdateTimes)
-            ? t.quantityUpdateTimes
-            : [t.quantityUpdateTimes];
+        const timesArray = (t.quantityUpdateTimes || []).map(i => i?.time)
 
         // 1. TÍNH TOÁN VÀ GOM timeLogs
         // Sử dụng Promise.all để tìm TravelLog song song cho mỗi mốc thời gian
@@ -118,7 +116,7 @@ async function groupTripsVehicleProduction(trips) {
                 }
 
                 const distance = routeMatched ? routeMatched.fullDistanceKm || 0 : 0;
-                totalDistance = distance * (Array.isArray(t.quantityUpdateTimes) ? t.quantityUpdateTimes.length : 1);
+                totalDistance = distance * t?.quantity;
 
                 const value = await safeQuery(() =>
                     caculatorWeight(
@@ -169,7 +167,7 @@ async function groupExcavator(trips, date) {
             quantity: t.quantity,
             cubicMeter: value.cubicMeter,
             ton: value.ton,
-            times: t.quantityUpdateTimes
+            times: (t.quantityUpdateTimes || []).map(i => i?.time)
         });
     };
 
@@ -214,7 +212,7 @@ async function groupProduction(trips, date) {
             quantity: t.quantity,
             cubicMeter: value.cubicMeter,
             ton: value.ton,
-            times: t.quantityUpdateTimes
+            times: (t.quantityUpdateTimes || []).map(i => i?.time)
         });
     }
 
@@ -233,10 +231,8 @@ function groupTripsExcavator(trips) {
                 totalTrips: 0
             };
         }
-        const times = Array.isArray(t.quantityUpdateTimes)
-            ? t.quantityUpdateTimes
-            : [t.quantityUpdateTimes];
-        times.forEach((time) => {
+        const timesArray = (t.quantityUpdateTimes || []).map(i => i?.time)
+        timesArray.forEach((time) => {
             groups[key].trips.push({
                 material: t.material,
                 time: time
@@ -274,10 +270,8 @@ async function groupTripsCar(trips) {
                 totalDistance: 0
             };
         }
-        const times = Array.isArray(t.quantityUpdateTimes)
-            ? t.quantityUpdateTimes
-            : [t.quantityUpdateTimes];
-        for (const time of times) {
+        const timesArray = (t.quantityUpdateTimes || []).map(i => i?.time)
+        for (const time of timesArray) {
             const travelLog = await TravelLog.findOne({
                 excavator: t.excavator,        // lọc theo máy xúc
                 location: t.toLocation,       // lọc theo điểm đổ tải
@@ -325,11 +319,9 @@ async function groupCar(trips) {
             };
         }
 
-        const times = Array.isArray(t.quantityUpdateTimes)
-            ? t.quantityUpdateTimes
-            : [t.quantityUpdateTimes];
+        const timesArray = (t.quantityUpdateTimes || []).map(i => i?.time)
 
-        for (const time of times) {
+        for (const time of timesArray) {
             const travelLog = await TravelLog.findOne({
                 excavator: t.excavator,
                 location: t.toLocation,

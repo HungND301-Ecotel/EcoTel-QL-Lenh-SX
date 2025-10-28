@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:soft/models/report_model.dart';
-import 'package:soft/services/report_service.dart';
+import 'package:hive/hive.dart';
+import 'package:soft/local/report_hive.dart';
 
 class PerformanceItem extends StatefulWidget {
-  final ReportModel data;
+  final ReportHive data;
   final Function() getReportByOrder;
 
   const PerformanceItem({
@@ -18,26 +18,28 @@ class PerformanceItem extends StatefulWidget {
 }
 
 class _PerformanceItemState extends State<PerformanceItem> {
-  final ReportService _reportService = ReportService();
-  void delete(String id) async {
-    var result = await _reportService.delete(id);
-    if (!mounted) return;
-    if (result['status'] == 'error') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message']),
-          backgroundColor: Colors.red,
-        ),
-      );
+  void deleteLocal(ReportHive report) async {
+    final box = Hive.box<ReportHive>("reports");
+
+    // 🗑 Nếu report chưa có id (chưa sync lên server) → xóa hẳn khỏi Hive
+    if (report.id == null || report.id!.isEmpty) {
+      await box.delete(report.localKey);
     } else {
-      widget.getReportByOrder();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message']),
-          backgroundColor: Colors.green,
-        ),
-      );
+      // 🚫 Nếu đã có trên server → đánh dấu isDeleted để xóa khi sync
+      report.isDeleted = true;
+      report.isSynced = false; // Để sync lại
+      await box.put(report.localKey, report);
     }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Đã xóa khỏi danh sách local."),
+        backgroundColor: Colors.orange,
+      ),
+    );
+
+    widget.getReportByOrder(); // Làm mới danh sách
   }
 
   @override
@@ -76,42 +78,40 @@ class _PerformanceItemState extends State<PerformanceItem> {
                 onPressed: () {
                   showDialog(
                     context: context,
-                    builder:
-                        (
-                          BuildContext dialogContext,
-                        ) => AlertDialog(
-                          title: Text("Xác nhận"),
-                          content: Text(
-                            "Bạn muốn xóa khỏi hệ thống? Bạn sẽ không thể hoàn tác",
+                    builder: (
+                      BuildContext dialogContext,
+                    ) =>
+                        AlertDialog(
+                      title: Text("Xác nhận"),
+                      content: Text(
+                        "Bạn muốn xóa khỏi hệ thống? Bạn sẽ không thể hoàn tác",
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(
+                              dialogContext,
+                            ).pop();
+                          },
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.blue,
                           ),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.of(
-                                  dialogContext,
-                                ).pop();
-                              },
-                              style: TextButton.styleFrom(
-                                foregroundColor:
-                                    Colors.blue,
-                              ),
-                              child: Text("Bỏ qua"),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.of(
-                                  dialogContext,
-                                ).pop();
-                                delete(widget.data.id);
-                              },
-                              style: TextButton.styleFrom(
-                                foregroundColor:
-                                    Colors.blue,
-                              ),
-                              child: Text("Xác nhận"),
-                            ),
-                          ],
+                          child: Text("Bỏ qua"),
                         ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(
+                              dialogContext,
+                            ).pop();
+                            deleteLocal(widget.data);
+                          },
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.blue,
+                          ),
+                          child: Text("Xác nhận"),
+                        ),
+                      ],
+                    ),
                   );
                 },
                 icon: Icon(

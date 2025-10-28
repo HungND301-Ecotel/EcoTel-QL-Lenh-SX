@@ -37,7 +37,7 @@ class SafetyMeasureModel {
   }
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      '_id': id,
       'name': name,
       'content': content,
       'job': job?.map((e) => e.toJson()).toList(),

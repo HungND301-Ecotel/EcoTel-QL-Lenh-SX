@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:soft/local/LocalSyncService.dart';
@@ -18,67 +20,84 @@ class DrillingSelectProduct extends StatefulWidget {
 
 class _DrillingSelectProduct
     extends State<DrillingSelectProduct> {
-  bool _isLoading = true;
-  List<MaterialHive> materials = [];
   final MaterialService _materialService =
       MaterialService();
   final LocalSyncService _localSyncService =
       LocalSyncService();
-  void getAllMaterial() async {
-    final box = Hive.box<MaterialHive>("materials");
-    final localMaterials = box.values.toList();
-    setState(() {
-      materials = localMaterials;
-    });
-    var result = await _materialService.getAllMaterial();
 
-    if (!mounted) return;
-    if (result['status'] == 'error') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message']),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } else {
-      final List data = result['data'] ?? [];
-      await _localSyncService.syncHive<MaterialHive>(
-          box: box,
-          data: data,
-          prefix: "MATERIAL",
-          fromJson: (item) => MaterialHive.fromJson(item));
-
-      // 🟢 4. Reload lại danh sách
-      final updated = box.values.toList();
-      setState(() {
-        materials = updated;
-        _isLoading = false;
-      });
-    }
-    setState(() {
-      _isLoading = false;
-    });
-  }
+  bool _isLoading = false;
+  List<MaterialHive> materials = [];
+  MaterialHive? _selectedMaterial;
+  String _searchText = '';
+  Timer? _searchDebounce;
 
   @override
   void initState() {
     super.initState();
-    getAllMaterial();
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _initPage());
   }
 
-  MaterialHive? _selectedMaterialId;
-  void _onSelectMaterial(MaterialHive selectedMaterialId) {
+  /// 🚀 Load dữ liệu nhẹ & đồng bộ nền
+  Future<void> _initPage() async {
+    setState(() => _isLoading = true);
+    final box = Hive.box<MaterialHive>("materials");
+
+    // 1️⃣ Đọc cache sau khi UI render (không block)
+    final cached = await Future.delayed(
+      const Duration(milliseconds: 100),
+      () => box.values.toList(),
+    );
+
+    if (!mounted) return;
     setState(() {
-      _selectedMaterialId = selectedMaterialId;
+      materials = cached;
+      _isLoading = false;
     });
 
-    Provider.of<ReportDraftProvider>(
-      context,
-      listen: false,
-    ).setMaterial(selectedMaterialId);
+    // 2️⃣ Sync nền (non-blocking)
+    unawaited(Future.delayed(
+        const Duration(milliseconds: 300), () async {
+      await _syncMaterials(box);
+    }));
   }
 
-  String _searchText = '';
+  /// 🔄 Sync dữ liệu từ server về Hive
+  Future<void> _syncMaterials(Box<MaterialHive> box) async {
+    try {
+      await _localSyncService
+          .fetchAndSyncHive<MaterialHive>(
+        box: box,
+        prefix: "MATERIAL",
+        fetch: _materialService.getAllMaterial,
+        fromJson: (item) => MaterialHive.fromJson(item),
+      );
+
+      final updated = box.values.toList();
+
+      if (!mounted) return;
+      setState(() {
+        materials = updated;
+      });
+      debugPrint("✅ Synced ${updated.length} materials.");
+    } catch (e, stack) {
+      debugPrint("❌ Sync material error: $e");
+      debugPrint(stack.toString());
+    }
+  }
+
+  void _onSelectedMaterial(MaterialHive selectedMaterial) {
+    _selectedMaterial = selectedMaterial;
+    Provider.of<ReportDraftProvider>(context, listen: false)
+        .setMaterial(selectedMaterial);
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     List<MaterialHive> filteredItems = materials
@@ -92,7 +111,7 @@ class _DrillingSelectProduct
       appBar: AppBar(
         backgroundColor: Colors.blue,
         title: Text(
-          'Nhập vật liệu',
+          'Vật liệu',
           style: TextStyle(
             color: Colors.white,
             fontSize: 18,
@@ -109,51 +128,48 @@ class _DrillingSelectProduct
             child: TextField(
               decoration: InputDecoration(
                 labelText: 'Tìm kiếm',
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.grey[200],
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(32),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: EdgeInsets.symmetric(
-                  vertical: 0,
-                ),
                 floatingLabelBehavior:
                     FloatingLabelBehavior.never,
               ),
               onChanged: (value) {
-                setState(() {
-                  _searchText = value;
-                });
+                _searchDebounce?.cancel();
+                _searchDebounce = Timer(
+                  const Duration(milliseconds: 300),
+                  () => setState(() => _searchText = value),
+                );
               },
             ),
           ),
           Divider(height: 1),
           Expanded(
             child: _isLoading
-                ? Center(
-                    child: CircularProgressIndicator(),
-                  )
-                : SingleChildScrollView(
-                    child: Column(
-                      children: filteredItems
-                          .map(
-                            (item) => MaterialItem(
-                              data: item,
-                              selected:
-                                  _selectedMaterialId?.id ==
-                                      item.id,
-                              onTap: () {
-                                _onSelectMaterial(
-                                  item,
-                                );
-                              },
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ),
+                ? const Center(
+                    child: CircularProgressIndicator())
+                : materials.isEmpty
+                    ? const Center(
+                        child: Text("Không có dữ liệu"))
+                    : ListView.builder(
+                        itemCount: filteredItems.length,
+                        itemBuilder: (context, index) {
+                          final item = filteredItems[index];
+                          return MaterialItem(
+                            data: item,
+                            selected:
+                                _selectedMaterial?.id ==
+                                    item.id,
+                            onTap: () => setState(() {
+                              _onSelectedMaterial(item);
+                            }),
+                          );
+                        },
+                      ),
           ),
           Container(
             padding: const EdgeInsets.all(8.0),
@@ -162,7 +178,7 @@ class _DrillingSelectProduct
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _selectedMaterialId == null
+                onPressed: _selectedMaterial == null
                     ? null
                     : () {
                         Navigator.pushNamed(

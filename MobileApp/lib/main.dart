@@ -11,6 +11,7 @@ import 'package:hive_flutter/adapters.dart';
 import 'package:soft/local/device_hive.dart';
 import 'package:soft/local/location_hive.dart';
 import 'package:soft/local/material_hive.dart';
+import 'package:soft/local/quantity_update_hive.dart';
 import 'package:soft/local/report_hive.dart';
 import 'package:soft/models/user_model.dart';
 import 'package:soft/providers/report_provider.dart';
@@ -22,6 +23,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soft/services/notification_service.dart';
 import 'package:soft/services/socket_service.dart';
+import 'package:soft/services/update_version_service.dart';
 import 'package:soft/services/user_service.dart';
 import 'package:soft/widgets/network_gate.dart';
 
@@ -84,6 +86,9 @@ Future<void> main() async {
   }
   if (!Hive.isAdapterRegistered(4)) {
     Hive.registerAdapter(ReportHiveAdapter());
+  }
+  if (!Hive.isAdapterRegistered(5)) {
+    Hive.registerAdapter(QuantityUpdateHiveAdapter());
   }
 
   await Hive.openBox<MaterialHive>("materials");

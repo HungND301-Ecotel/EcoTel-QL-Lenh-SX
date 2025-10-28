@@ -33,28 +33,26 @@ class UserModel {
       phone: json?['phone'] ?? '',
       salaryCode: json?['salaryCode'] ?? '',
       role: json?['role'] ?? '',
-      position:
-          json?['position'] != null
-              ? PositionModel.fromJson(json?['position'])
-              : null,
-      department:
-          json?['department'] != null
-              ? DepartmentModel.fromJson(
-                json?['department'],
-              )
-              : null,
+      position: json?['position'] != null
+          ? PositionModel.fromJson(json?['position'])
+          : null,
+      department: json?['department'] != null
+          ? DepartmentModel.fromJson(
+              json?['department'],
+            )
+          : null,
     );
   }
 
   Map<String, dynamic> toJson() => {
-    '_id': id,
-    'username': username,
-    'fullName': fullName,
-    'email': email,
-    'phone': phone,
-    'salaryCode': salaryCode,
-    'role': role,
-    'position': position?.toJson(),
-    'department': department?.toJson(),
-  };
+        '_id': id,
+        'username': username,
+        'fullName': fullName,
+        'email': email,
+        'phone': phone,
+        'salaryCode': salaryCode,
+        'role': role,
+        'position': position?.toJson(),
+        'department': department?.toJson(),
+      };
 }

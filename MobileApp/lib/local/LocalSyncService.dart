@@ -34,6 +34,48 @@ class LocalSyncService {
     print('✅ Đồng bộ ${data.length} item [$prefix]');
   }
 
+  /// ⚡ Gọi API + đồng bộ vào Hive (offline-first)
+  Future<void> fetchAndSyncHive<T>({
+    required Box<T> box,
+    required String prefix,
+    required Future<Map<String, dynamic>> Function() fetch,
+    required T Function(Map<String, dynamic>) fromJson,
+    Duration maxAge = const Duration(hours: 24),
+  }) async {
+    try {
+      // 🔍 Kiểm tra cache
+      final lastUpdated = box.get('lastUpdated');
+      final isCacheExpired = lastUpdated == null ||
+          DateTime.now()
+                  .difference(lastUpdated as DateTime)
+                  .compareTo(maxAge) >
+              0;
+
+      // ⚙️ Nếu Hive rỗng hoặc cache cũ → gọi API
+      if (box.isEmpty || isCacheExpired) {
+
+        print("🌐 Gọi API cập nhật [$prefix]...");
+        final result = await fetch();
+        if (result['status'] == 'success') {
+          final List data = result['data'] ?? [];
+          await syncHive<T>(
+            box: box,
+            data: data,
+            prefix: prefix,
+            fromJson: fromJson,
+          );
+        } else {
+          print("⚠️ API lỗi: ${result['message']}");
+        }
+      } else {
+        print(
+            "🗃️ Cache [$prefix] còn mới, không cần sync");
+      }
+    } catch (e, s) {
+      print("❌ Lỗi fetchAndSyncHive [$prefix]: $e\n$s");
+    }
+  }
+
   Future<void> putIfNotExists<T>({
     required Box<T> box,
     required String id,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:soft/local/LocalSyncService.dart';
@@ -19,203 +20,206 @@ class DozerSelectVehicle extends StatefulWidget {
 
 class _DozerSelectVehicle
     extends State<DozerSelectVehicle> {
-  bool _isLoading = true;
-  List<DeviceHive> devices = [];
   final DeviceService _deviceService = DeviceService();
   final LocalSyncService _localSyncService =
       LocalSyncService();
 
-  void getAllDevice() async {
-    final box = Hive.box<DeviceHive>("devices");
-    final localDevices = box.values.toList();
-    setState(() {
-      devices = localDevices
-          .where((d) => d.type == "DEPARTMENT")
-          .toList();
-    });
-    var result = await _deviceService.getAlldevice();
+  List<DeviceHive> devices = [];
+  DeviceHive? _selectedDevice;
+  bool _isLoading = false;
+  String _searchText = '';
 
-    if (!mounted) return;
-    if (result['status'] == 'error') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message']),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } else {
-      final List data = result['data'] ?? [];
-      await _localSyncService.syncHive<DeviceHive>(
-          box: box,
-          data: data,
-          prefix: "DEPARTMENT",
-          fromJson: (item) =>
-              DeviceHive.fromJson(item, "DEPARTMENT"));
-
-      // 🟢 4. Reload lại danh sách
-      final updated = box.values.toList();
-      setState(() {
-        devices = updated
-            .where((d) => d.type == "DEPARTMENT")
-            .toList();
-        _isLoading = false;
-      });
-      final order = Provider.of<ReportDraftProvider>(
-        context,
-        listen: false,
-      ).order;
-      if (order?.device != null &&
-          order!.device!.isNotEmpty) {
-        final selectedIds =
-            order.device!.map((m) => m.id).toList();
-        _selectedDevice = order.device!.last.toHive();
-        setState(() {
-          _onSelectDevice(order.device!.last.toHive());
-          devices.sort((a, b) {
-            if (selectedIds.contains(a.id) &&
-                !selectedIds.contains(b.id)) {
-              return -1;
-            } else if (!selectedIds.contains(a.id) &&
-                selectedIds.contains(b.id)) {
-              return 1;
-            }
-            return 0;
-          });
-        });
-      }
-    }
-    setState(() {
-      _isLoading = false;
-    });
-  }
+  Timer? _searchDebounce;
 
   @override
   void initState() {
     super.initState();
-    getAllDevice();
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   final order =
-    //       Provider.of<ReportDraftProvider>(
-    //         context,
-    //         listen: false,
-    //       ).order;
-    //   setState(() {
-    //     devices.clear(); // Nếu cần làm sạch danh sách trước
-    //     if (order?.device != null) {
-    //       devices.addAll(
-    //         order?.device as List<DeviceModel>,
-    //       );
-    //     }
-    //     _isLoading = false;
-    //   });
-    // });
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _initPage());
   }
 
-  DeviceHive? _selectedDevice;
-  void _onSelectDevice(DeviceHive selectedDevice) {
+  Future<void> _initPage() async {
+    setState(() => _isLoading = true);
+
+    // 1️⃣ Đọc Hive cache nhẹ trong isolate (delayed để không block UI)
+    final cachedDevices = await Future.delayed(
+      const Duration(milliseconds: 100),
+      () {
+        final box = Hive.box<DeviceHive>("devices");
+        return box.values
+            .where((d) => d.type == "DEPARTMENT")
+            .toList();
+      },
+    );
+
+    if (!mounted) return;
+
     setState(() {
-      _selectedDevice = selectedDevice;
+      devices = cachedDevices;
+      _isLoading = false;
     });
 
-    Provider.of<ReportDraftProvider>(
-      context,
-      listen: false,
-    ).setDevice(selectedDevice);
+    // 2️⃣ Gọi sync nền sau 300ms (không block UI)
+    unawaited(Future.delayed(
+        const Duration(milliseconds: 300), _syncDevices));
   }
 
-  String _searchText = '';
+  Future<void> _syncDevices() async {
+    final box = Hive.box<DeviceHive>("devices");
+    try {
+      await _localSyncService.fetchAndSyncHive<DeviceHive>(
+        box: box,
+        prefix: "DEPARTMENT",
+        fetch: _deviceService.getAllVehicle,
+        fromJson: (item) =>
+            DeviceHive.fromJson(item, "DEPARTMENT"),
+      );
+
+      final updated = box.values
+          .where((d) => d.type == "DEPARTMENT")
+          .toList();
+
+      if (!mounted) return;
+
+      final order = Provider.of<ReportDraftProvider>(
+        context,
+        listen: false,
+      ).order;
+
+      DeviceHive? selectedDevice;
+      List<String> selectedIds = [];
+
+      if (order?.device != null &&
+          order!.device!.isNotEmpty) {
+        selectedIds =
+            order.device!.map((m) => m.id).toList();
+        selectedDevice = order.device!.last.toHive();
+      }
+
+      // ⚡ Gom setState lại 1 lần duy nhất (giảm lag)
+      setState(() {
+        devices = updated;
+        _selectedDevice = selectedDevice;
+
+        if (selectedDevice != null) {
+          _onSelectDevice(selectedDevice);
+          devices.sort((a, b) {
+            if (selectedIds.contains(a.id) &&
+                !selectedIds.contains(b.id)) return -1;
+            if (!selectedIds.contains(a.id) &&
+                selectedIds.contains(b.id)) return 1;
+            return 0;
+          });
+        }
+      });
+
+      debugPrint(
+          "✅ Synced ${updated.length} VEHICLE devices.");
+    } catch (e, stack) {
+      debugPrint("❌ Sync vehicle error: $e");
+      debugPrint(stack.toString());
+    }
+  }
+
+  void _onSelectDevice(DeviceHive selectedDevice) {
+    _selectedDevice = selectedDevice;
+    Provider.of<ReportDraftProvider>(context, listen: false)
+        .setDevice(selectedDevice);
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    List<DeviceHive> filteredItems = devices
-        .where(
-          (item) => item.code.toLowerCase().contains(
-                _searchText.toLowerCase(),
-              ),
-        )
-        .toList();
+    final filteredItems = _searchText.isEmpty
+        ? devices
+        : devices
+            .where((item) => item.code
+                .toLowerCase()
+                .contains(_searchText.toLowerCase()))
+            .toList();
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
-        title: Text(
-          'Phương tiện',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        iconTheme: IconThemeData(color: Colors.white),
+        title: const Text('Phương tiện',
+            style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600)),
+        iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
       ),
       body: Column(
         children: [
+          // 🔍 Ô tìm kiếm có debounce
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: TextField(
               decoration: InputDecoration(
                 labelText: 'Tìm kiếm',
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.grey[200],
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(32),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: EdgeInsets.symmetric(
-                  vertical: 0,
-                ),
                 floatingLabelBehavior:
                     FloatingLabelBehavior.never,
               ),
               onChanged: (value) {
-                setState(() {
-                  _searchText = value;
-                });
+                _searchDebounce?.cancel();
+                _searchDebounce = Timer(
+                  const Duration(milliseconds: 300),
+                  () => setState(() => _searchText = value),
+                );
               },
             ),
           ),
-          Divider(height: 1),
+          const Divider(height: 1),
           Expanded(
             child: _isLoading
-                ? Center(
-                    child: CircularProgressIndicator(),
-                  )
-                : SingleChildScrollView(
-                    child: Column(
-                      children: filteredItems
-                          .map(
-                            (item) => ExcavatorItem(
-                              data: item,
-                              selected:
-                                  _selectedDevice?.id ==
-                                      item.id,
-                              onTap: () {
-                                _onSelectDevice(
-                                  item,
-                                );
-                              },
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ),
+                ? const Center(
+                    child: CircularProgressIndicator())
+                : devices.isEmpty
+                    ? const Center(
+                        child: Text("Không có dữ liệu"))
+                    : ListView.builder(
+                        physics:
+                            const AlwaysScrollableScrollPhysics(),
+                        itemCount: filteredItems.length,
+                        itemBuilder: (context, index) {
+                          final item = filteredItems[index];
+                          return ExcavatorItem(
+                            data: item,
+                            selected: _selectedDevice?.id ==
+                                item.id,
+                            onTap: () => setState(() {
+                              _onSelectDevice(item);
+                            }),
+                          );
+                        },
+                      ),
           ),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               onPressed: _selectedDevice == null
                   ? null
-                  : () {
-                      Navigator.pushNamed(
+                  : () => Navigator.pushNamed(
                         context,
                         WorkLogRoutes.dozerSelectProduct,
-                      );
-                    },
+                      ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
               ),
-              child: Text('Tiếp tục'),
+              child: const Text('Tiếp tục'),
             ),
           ),
         ],

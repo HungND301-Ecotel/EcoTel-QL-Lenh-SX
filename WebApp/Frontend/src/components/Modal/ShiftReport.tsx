@@ -405,7 +405,7 @@ export default function ShiftReport({
                                             </AccordionSummary>
 
                                             <AccordionDetails>
-                                                {group.children.map(({ report, formIndex, history }) => (
+                                                {group.children?.map(({ report, formIndex, history }) => (
                                                     <Box key={report._id} sx={{ mb: 2 }}>
                                                         <Grid container spacing={2}>
                                                             <Grid item xs={12}>
@@ -514,8 +514,8 @@ export default function ShiftReport({
                                                                         <Typography>Thời gian:</Typography>
                                                                     </Grid>
                                                                     <Grid item xs={9}>
-                                                                        {report.quantityUpdateTimes.map((d: any) => (
-                                                                            <Typography>{d ? format(new Date(d), 'dd-MM-yyyy HH:mm:ss') : ''}</Typography>
+                                                                        {report.quantityUpdateTimes?.map((d: any) => (
+                                                                            <Typography>{d.time ? format(new Date(d.time), 'dd-MM-yyyy HH:mm:ss') : ''}</Typography>
                                                                         ))}
                                                                     </Grid>
                                                                 </>
