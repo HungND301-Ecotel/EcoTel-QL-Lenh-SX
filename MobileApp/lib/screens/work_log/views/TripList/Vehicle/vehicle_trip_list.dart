@@ -409,7 +409,7 @@ class _VehicleTripList extends State<VehicleTripList> {
                             ),
                           ),
                         ),
-                        SizedBox(width: 6),
+                        SizedBox(width: 4),
                         Expanded(
                           flex: 2,
                           child: Text(
@@ -419,7 +419,7 @@ class _VehicleTripList extends State<VehicleTripList> {
                             ),
                           ),
                         ),
-                        SizedBox(width: 6),
+                        SizedBox(width: 4),
                         Expanded(
                           flex: 2,
                           child: Text(
@@ -429,7 +429,7 @@ class _VehicleTripList extends State<VehicleTripList> {
                             ),
                           ),
                         ),
-                        SizedBox(width: 6),
+                        SizedBox(width: 4),
                         Expanded(
                           flex: 2,
                           child: Text(

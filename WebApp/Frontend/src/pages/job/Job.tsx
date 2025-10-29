@@ -40,10 +40,10 @@ import { useAtom } from "jotai";
 import { userAtom } from "../../atoms/userAtoms";
 import { jobValidationSchema } from "../../utils/validation";
 import { JOB_TYPE_OPTIONS } from "../../utils/const";
-import JobService from "../../services/locationService copy";
 import { RoleEnum } from "../../enums";
 import CustomDataGrid from "../../components/Table/CustomDataGrid";
 import { parseAxiosError } from '../../utils/handleApiError';
+import JobService from '../../services/jobService'
 
 
 const Jobs: React.FC = () => {
