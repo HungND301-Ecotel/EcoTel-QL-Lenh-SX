@@ -444,6 +444,8 @@ router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCH
         });
         req.logger.info(`✅ Tạo lệnh thành công với ID: ${order._id}`);
 
+        await Promise.all((order.repairVehicles || []).filter(d => d.device).map(async (r) => await Device.findByIdAndUpdate(r.device, { $set: { note: r.note } }, { new: true })))
+
         req.logger.info("🔔 Gửi thông báo đến người dùng.");
         const tokens = user?.deviceTokens;
         await Promise.all(tokens.map(t => sendPushNotification(t, "Bạn có thông báo mới", "Có 1 lệnh được cập nhật")));
