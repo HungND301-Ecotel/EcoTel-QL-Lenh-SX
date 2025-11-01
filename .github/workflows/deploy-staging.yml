@@ -53,6 +53,7 @@ jobs:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.STAGING_SSH_KEY }}
+          port: ${{ secrets.STAGING_PORT }}
           script: |
             mkdir -p /home/${{ secrets.STAGING_USER }}/ecotel_ktv/deployment/staging
       

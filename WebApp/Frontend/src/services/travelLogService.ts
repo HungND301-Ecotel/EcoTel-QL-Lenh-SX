@@ -32,7 +32,7 @@ const TravelLogService = {
                 onProgress(percent);
             },
         });
-        return res.data.message
+        return res.data
     },
     exportFile: async (
     ) => {

@@ -17,6 +17,7 @@ import {
     AccordionDetails,
     TablePagination,
     Stack,
+    Paper,
 } from "@mui/material";
 import { format } from "date-fns";
 import {
@@ -69,16 +70,14 @@ const TravelLogs: React.FC = () => {
     const [total, setTotal] = useState(0);
     const [travelLogs, setTravelLogs] = useState<any[]>([]);
 
-    const handleChangePage = (event: React.MouseEvent<HTMLButtonElement, MouseEvent> | null, page: number) => {
-        setPage(page);
-    };
-
 
     const columns: TableColumnsType<any> = [
         {
             title: 'STT',
             dataIndex: 'number',
             key: 'number',
+            align: 'center',
+            width: 50,
             render: (_: any, __: any, index: number) => index + 1,
         },
         {
@@ -97,6 +96,8 @@ const TravelLogs: React.FC = () => {
             title: 'Ca',
             dataIndex: 'shift',
             key: 'shift',
+            width: 50,
+            align: 'center',
             render: (_: any, record: any) => record.shift?.name
         },
         {
@@ -133,11 +134,15 @@ const TravelLogs: React.FC = () => {
                     title: 'C.độ (km)',
                     dataIndex: 'fullDistanceKm',
                     key: 'fullDistanceKm',
+                    align: 'center',
+                    width: 80,
                 },
                 {
                     title: 'Chiều cao N.tải(m)',
                     dataIndex: 'fullLiftHeightM',
                     key: 'fullLiftHeightM',
+                    align: 'center',
+                    width: 80,
                 }
             ]
         },
@@ -148,21 +153,29 @@ const TravelLogs: React.FC = () => {
                     title: 'H min',
                     dataIndex: 'localMinHeightM',
                     key: 'localMinHeightM',
+                    align: 'center',
+                    width: 70,
                 },
                 {
                     title: 'H max',
                     dataIndex: 'localMaxHeightM',
                     key: 'localMaxHeightM',
+                    align: 'center',
+                    width: 70,
                 },
                 {
                     title: 'C. độ (km)',
                     dataIndex: 'localDistanceKm',
                     key: 'localDistanceKm',
+                    align: 'center',
+                    width: 80,
                 },
                 {
                     title: 'Chiều cao N.tải (m)',
                     dataIndex: 'localLiftHeightM',
                     key: 'localLiftHeightM',
+                    align: 'center',
+                    width: 80,
                 }
             ]
         },
@@ -170,12 +183,14 @@ const TravelLogs: React.FC = () => {
             title: 'Sửa',
             dataIndex: 'edit',
             key: 'edit',
+            align: 'center',
+            width: 50,
             render: (_: any, record: any) => (
                 <IconButton
                     color="primary"
-                    disabled={user?.role !== RoleEnum.ADMIN}
+                    // disabled={user?.role !== RoleEnum.ADMIN}
                     onClick={async () => {
-                        if (user?.role !== RoleEnum.ADMIN) return;
+                        // if (user?.role !== RoleEnum.ADMIN) return;
 
                         if (open) {
                             const result = await showConfirmAlert(
@@ -242,10 +257,31 @@ const TravelLogs: React.FC = () => {
             setIsUploading(true);
             setProgress(0); // Reset tiến trình khi bắt đầu
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["positions"] });
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ["travellogs"] });
             setIsUploading(false);
-            showSuccessAlert("Import thành công!");
+            console.log(data)
+            let combinedMessage = `Import dữ liệu hoàn tất. Đã xử lý ${data.summary.totalProcessed} bản ghi.`;
+            combinedMessage += `\nĐã thêm mới: ${data.summary.insertedCount}`;
+            combinedMessage += `\nĐã cập nhật: ${data.summary.updatedCount}`;
+
+            // Thêm chi tiết lỗi nếu có
+            if (data.invalidRows && data.invalidRows.length > 0) {
+                combinedMessage += `\n\n--- CÓ LỖI XẢY RA TRONG QUÁ TRÌNH IMPORT ---`;
+                combinedMessage += `\n${data.invalidRows.length} bản ghi không hợp lệ:`;
+
+                // Liệt kê chi tiết một vài lỗi đầu tiên
+                data.invalidRows.slice(0, 5).forEach((item: any, index: number) => {
+                    combinedMessage += `\n- Dòng ${index + 1}: Lỗi "${item.error}"`;
+                });
+
+                // Thông báo nếu còn nhiều lỗi hơn
+                if (data.invalidRows.length > 5) {
+                    combinedMessage += `\n... và ${data.invalidRows.length - 5} lỗi khác.`;
+                }
+            }
+
+            showSuccessAlert(combinedMessage);
             handleClose();
         },
         onError: (error: any) => {
@@ -877,7 +913,37 @@ const TravelLogs: React.FC = () => {
                         ))}
                     </Menu> */}
                 </Box>
-                <Table columns={columns} dataSource={travelLogs} />
+                <Paper>
+                    <Table
+                        rowKey="_id"
+                        columns={columns}
+                        dataSource={travelLogs}
+                        scroll={{ y: '60vh' }}
+                        pagination={{
+                            current: page + 1, // vì backend bắt đầu từ 1
+                            pageSize: pageSize,
+                            total: total,
+                            showSizeChanger: true,
+                            pageSizeOptions: [10, 20, 50, 100],
+                            onChange: (newPage, newPageSize) => {
+                                setPage(newPage - 1);
+                                setPageSize(newPageSize);
+                            },
+                            showTotal: (total) => `Tổng ${total} bản ghi`,
+                        }}
+                        rowClassName={(_, index) =>
+                            index % 2 === 0 ? "row-even" : "row-odd"
+                        }
+                        size="small"
+                        rowSelection={{
+                            type: 'checkbox',
+                            selectedRowKeys: selectedTravelLogs,
+                            onChange: (keys) => setSelectedTravelLogs(keys),
+                        }
+                        }
+                        loading={isLoading}
+                    />
+                </Paper>
             </Box >
         </FormikProvider >
     );
