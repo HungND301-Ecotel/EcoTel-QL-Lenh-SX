@@ -11,14 +11,31 @@ const xlsx = require('xlsx');
 const dayjs = require('dayjs');
 const { ROLE } = require('../config/config');
 const { paginateQuery } = require('../utils/pagination')
-const { groupTravelLogsByDateAndShift } = require('../utils/groupTravelLogsByDateAndShift')
 
 
 router.post('/', verifyToken, async (req, res, next) => {
     try {
-        const { excavator, workingDate, shift, area, routes } = req.body
+        const { excavator, workingDate, shift, area, excavationLevel,
+            location,
+            material,
+            dumpHeightActual,
+            fullDistanceKm,
+            fullLiftHeightM,
+            localMinHeightM,
+            localMaxHeightM,
+            localDistanceKm,
+            localLiftHeightM } = req.body
         const newTravelLog = new TravelLog({
-            excavator, workingDate, shift, area, routes
+            excavator, workingDate, shift, area, excavationLevel,
+            location,
+            material,
+            dumpHeightActual,
+            fullDistanceKm,
+            fullLiftHeightM,
+            localMinHeightM,
+            localMaxHeightM,
+            localDistanceKm,
+            localLiftHeightM
         });
         await newTravelLog.save();
         req.logger.info(`🔥 Tạo thành công cung độ`);
@@ -96,8 +113,8 @@ router.get('/', verifyToken, async (req, res) => {
         let baseQuery = TravelLog.find(query)
             .populate('excavator', 'code')
             .populate('shift', 'name')
-            .populate("routes.location", "name")
-            .populate("routes.material", "name")
+            .populate("location", "name")
+            .populate("material", "name")
             .sort({ workingDate: -1 });
         const paginationResult = await paginateQuery(baseQuery, TravelLog, query, req.query);
         paginationResult.data.sort((a, b) => {
@@ -233,76 +250,80 @@ router.get('/', verifyToken, async (req, res) => {
 //     }
 // });
 
-// router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
-//     try {
-//         const data = await TravelLog.find().populate('excavator', 'code').populate('location', 'name');
-//         const devices = await Device.find().populate('category', 'name');
-//         const excavators = devices.filter(i => i.category?.name.toLowerCase().includes("máy xúc"))
-//         const locations = await Location.find();
+router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
+    try {
+        const data = await TravelLog.find()
+        .populate('excavator', 'code')
+        .populate('location', 'name')
+        .populate('material', 'name');
+        const devices = await Device.find().populate('category', 'name');
+        const excavators = devices.filter(i => i.category?.name.toLowerCase().includes("máy xúc"))
+        const locations = await Location.find();
 
-//         const workbook = new ExcelJS.Workbook();
-//         const worksheet = workbook.addWorksheet('DS.cung_do');
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('DS.cung_do');
 
-//         worksheet.columns = [
-//             { header: 'Máy xúc', key: 'excavator', width: 20 },
-//             { header: 'Điểm đổ tải', key: 'location', width: 20 },
-//             { header: 'Cung độ (km)', key: 'distance', width: 20 },
-//             { header: 'Bắt đầu', key: 'startTime', width: 20 },
-//             { header: 'Kết thúc', key: 'endTime', width: 20 },
-//             { header: 'Ghi chú', key: 'note', width: 20 },
-//         ];
+        worksheet.columns = [
+            { header: 'TT', key: 'number', width: 20 },
+            { header: 'Máy xúc', key: 'excavator', width: 20 },
+            { header: 'Ngày', key: 'location', width: 20 },
+            { header: 'Cung độ (km)', key: 'distance', width: 20 },
+            { header: 'Bắt đầu', key: 'startTime', width: 20 },
+            { header: 'Kết thúc', key: 'endTime', width: 20 },
+            { header: 'Ghi chú', key: 'note', width: 20 },
+        ];
 
-//         const formattedTravelLogs = (data || []).map(item => ({
-//             excavator: item?.excavator?.code || '',
-//             location: item?.location?.name || '',
-//             distance: item?.distance || '',
-//             startTime: item?.startTime ? dayjs(item.startTime).format('DD-MM-YYYY HH:mm') : '',
-//             endTime: item?.endTime ? dayjs(item.endTime).format('DD-MM-YYYY HH:mm') : '',
-//             note: item?.note || '',
-//         }));
-//         worksheet.addRows(formattedTravelLogs);
+        const formattedTravelLogs = (data || []).map(item => ({
+            excavator: item?.excavator?.code || '',
+            location: item?.location?.name || '',
+            distance: item?.distance || '',
+            startTime: item?.startTime ? dayjs(item.startTime).format('DD-MM-YYYY HH:mm') : '',
+            endTime: item?.endTime ? dayjs(item.endTime).format('DD-MM-YYYY HH:mm') : '',
+            note: item?.note || '',
+        }));
+        worksheet.addRows(formattedTravelLogs);
 
-//         worksheet.eachRow((row, rowNumber) => {
-//             row.eachCell(cell => {
-//                 cell.font = { size: 9, bold: (rowNumber === 1) };
-//                 cell.alignment = { vertical: 'middle', wrapText: true, };
-//             });
-//         });
+        worksheet.eachRow((row, rowNumber) => {
+            row.eachCell(cell => {
+                cell.font = { size: 9, bold: (rowNumber === 1) };
+                cell.alignment = { vertical: 'middle', wrapText: true, };
+            });
+        });
 
-//         const deviceList = [...new Set(excavators.map(p => p.code).filter(Boolean))];
-//         const locationList = [...new Set(locations.map(d => d.name).filter(Boolean))];
+        const deviceList = [...new Set(excavators.map(p => p.code).filter(Boolean))];
+        const locationList = [...new Set(locations.map(d => d.name).filter(Boolean))];
 
-//         worksheet.getColumn('X').values = ['excavators', ...deviceList];
-//         worksheet.getColumn('Y').values = ['locations', ...locationList];
-//         worksheet.getColumn('X').hidden = true;
-//         worksheet.getColumn('Y').hidden = true;
+        worksheet.getColumn('X').values = ['excavators', ...deviceList];
+        worksheet.getColumn('Y').values = ['locations', ...locationList];
+        worksheet.getColumn('X').hidden = true;
+        worksheet.getColumn('Y').hidden = true;
 
-//         const MAX = Math.max(worksheet.rowCount + 100, 1000);
+        const MAX = Math.max(worksheet.rowCount + 100, 1000);
 
-//         worksheet.dataValidations.add(`A2:A${MAX}`, {
-//             type: 'list',
-//             allowBlank: true,
-//             formulae: [`=$X$2:$X$${deviceList.length + 1}`],
-//             showErrorMessage: true,
-//             errorTitle: 'Giá trị không hợp lệ',
-//         });
-//         worksheet.dataValidations.add(`B2:B${MAX}`, {
-//             type: 'list',
-//             allowBlank: true,
-//             formulae: [`=$Y$2:$Y$${locationList.length + 1}`],
-//             showErrorMessage: true,
-//             errorTitle: 'Giá trị không hợp lệ',
-//         });
+        worksheet.dataValidations.add(`A2:A${MAX}`, {
+            type: 'list',
+            allowBlank: true,
+            formulae: [`=$X$2:$X$${deviceList.length + 1}`],
+            showErrorMessage: true,
+            errorTitle: 'Giá trị không hợp lệ',
+        });
+        worksheet.dataValidations.add(`B2:B${MAX}`, {
+            type: 'list',
+            allowBlank: true,
+            formulae: [`=$Y$2:$Y$${locationList.length + 1}`],
+            showErrorMessage: true,
+            errorTitle: 'Giá trị không hợp lệ',
+        });
 
-//         const buffer = await workbook.xlsx.writeBuffer();
-//         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-//         res.setHeader('Content-Disposition', 'attachment; filename=' + 'danh_sach_nguoi_dung.xlsx');
-//         res.send(buffer);
-//         req.logger.info("✅ Xuất file thành công.");
+        const buffer = await workbook.xlsx.writeBuffer();
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=' + 'danh_sach_nguoi_dung.xlsx');
+        res.send(buffer);
+        req.logger.info("✅ Xuất file thành công.");
 
-//     } catch (err) {
-//         req.logger.error("❌ Lỗi khi xuất file vật liệu", err);
-//         res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
-//     }
-// });
+    } catch (err) {
+        req.logger.error("❌ Lỗi khi xuất file vật liệu", err);
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
+    }
+});
 module.exports = router; 

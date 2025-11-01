@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     Box,
@@ -8,12 +8,6 @@ import {
     DialogTitle,
     Grid,
     IconButton,
-    Paper,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
     Typography,
     Checkbox,
     TextField,
@@ -23,7 +17,6 @@ import {
     AccordionDetails,
     TablePagination,
     Stack,
-    Table,
 } from "@mui/material";
 import { format } from "date-fns";
 import {
@@ -31,6 +24,8 @@ import {
     Edit as EditIcon,
     Delete as DeleteIcon,
     Delete,
+    Download,
+    UploadFile,
 } from "@mui/icons-material";
 import { FieldArray, FormikProvider, useFormik } from "formik";
 import api from "../../config/api.config";
@@ -53,6 +48,9 @@ import TravelLogService from "../../services/travelLogService";
 import { RoleEnum } from "../../enums";
 import { getFormikFieldProps } from "../../utils/helper";
 import { StyledPopper } from "../../ui/poppers";
+import { parseAxiosError } from "../../utils/handleApiError";
+import CustomDataGrid from "../../components/Table/CustomDataGrid";
+import { Table, TableColumnsType, TableColumnType } from "antd";
 
 
 const TravelLogs: React.FC = () => {
@@ -76,60 +74,128 @@ const TravelLogs: React.FC = () => {
     };
 
 
-    // const defaultColumns = [
-    //     { id: "stt", label: "STT" },
-    //     { id: "excavator", label: "Máy xúc" },
-    //     { id: "area", label: "Khu vực" },
-    //     { id: "location", label: "Điểm đổ tải" },
-    //     { id: "excavationLevel", label: "Tầng xúc" },
-    //     { id: "dumpHeightActual", label: "Độ cao thực tế nơi đổ" },
-    //     { id: "dumpHeightActual", label: "Cung độ (km)" },
-    //     { id: "dumpHeightActual", label: "Chiều cao nâng tải (m)" },
-    //     { id: "dumpHeightActual", label: "H min" },
-    //     { id: "dumpHeightActual", label: "H max" },
-    //     { id: "dumpHeightActual", label: "Cung độ (km)" },
-    //     { id: "note", label: "Chiều cao nâng tải(m)" },
-    //     {
-    //         id: "edit",
-    //         label: "Sửa",
-    //         width: 60,
-    //         renderCell: (params: { row: any }) => (
-    //             <IconButton
-    //                 color="primary"
-    //                 disabled={user?.role !== RoleEnum.ADMIN}
-    //                 onClick={async () => {
-    //                     if (user?.role !== RoleEnum.ADMIN) return;
-    //                     if (open) {
-    //                         const result = await showConfirmAlert(
-    //                             "Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?"
-    //                         );
-    //                         if (result.isConfirmed) {
-    //                             handleOpen(params.row.edit);
-    //                         }
-    //                     } else {
-    //                         handleOpen(params.row.edit);
-    //                     }
-    //                 }}
-    //             >
-    //                 <EditIcon />
-    //             </IconButton>
-    //         ),
-    //         sortable: false,
-    //         filterable: false,
-    //     },
-    // ];
+    const columns: TableColumnsType<any> = [
+        {
+            title: 'STT',
+            dataIndex: 'number',
+            key: 'number',
+            render: (_: any, __: any, index: number) => index + 1,
+        },
+        {
+            title: 'Máy xúc',
+            dataIndex: 'excavator',
+            key: 'excavator',
+            render: (_: any, record: any) => record.excavator?.code
+        },
+        {
+            title: 'Ngày',
+            dataIndex: 'workingDate',
+            key: 'workingDate',
+            render: (_: any, record: any) => record.workingDate ? dayjs(record.workingDate).format("DD-MM-YYYY") : ''
+        },
+        {
+            title: 'Ca',
+            dataIndex: 'shift',
+            key: 'shift',
+            render: (_: any, record: any) => record.shift?.name
+        },
+        {
+            title: 'Khu vực',
+            dataIndex: 'area',
+            key: 'area',
+        },
+        {
+            title: 'Điểm đổ tải',
+            dataIndex: 'location',
+            key: 'location',
+            render: (_: any, record: any) => record.location?.name
+        },
+        {
+            title: 'Vật liệu',
+            dataIndex: 'material',
+            key: 'material',
+            render: (_: any, record: any) => record.material?.name
+        },
+        {
+            title: 'Tầng xúc',
+            dataIndex: 'excavationLevel',
+            key: 'excavationLevel',
+        },
+        {
+            title: 'Độ cao thực tế nơi đổ',
+            dataIndex: 'dumpHeightActual',
+            key: 'dumpHeightActual',
+        },
+        {
+            title: 'Toàn tuyến',
+            children: [
+                {
+                    title: 'C.độ (km)',
+                    dataIndex: 'fullDistanceKm',
+                    key: 'fullDistanceKm',
+                },
+                {
+                    title: 'Chiều cao N.tải(m)',
+                    dataIndex: 'fullLiftHeightM',
+                    key: 'fullLiftHeightM',
+                }
+            ]
+        },
+        {
+            title: 'Trong đó cục bộ',
+            children: [
+                {
+                    title: 'H min',
+                    dataIndex: 'localMinHeightM',
+                    key: 'localMinHeightM',
+                },
+                {
+                    title: 'H max',
+                    dataIndex: 'localMaxHeightM',
+                    key: 'localMaxHeightM',
+                },
+                {
+                    title: 'C. độ (km)',
+                    dataIndex: 'localDistanceKm',
+                    key: 'localDistanceKm',
+                },
+                {
+                    title: 'Chiều cao N.tải (m)',
+                    dataIndex: 'localLiftHeightM',
+                    key: 'localLiftHeightM',
+                }
+            ]
+        },
+        {
+            title: 'Sửa',
+            dataIndex: 'edit',
+            key: 'edit',
+            render: (_: any, record: any) => (
+                <IconButton
+                    color="primary"
+                    disabled={user?.role !== RoleEnum.ADMIN}
+                    onClick={async () => {
+                        if (user?.role !== RoleEnum.ADMIN) return;
 
-    // const [visibleColumns, setVisibleColumns] = useState<string[]>(
-    //     user?.role === RoleEnum.ADMIN
-    //         ? defaultColumns.map((i) => i.id)
-    //         : defaultColumns.filter((i) => i.id !== "edit").map((i) => i.id)
-    // );
+                        if (open) {
+                            const result = await showConfirmAlert(
+                                'Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?'
+                            );
+                            if (result.isConfirmed) {
+                                handleOpen(record);
+                            }
+                        } else {
+                            handleOpen(record);
+                        }
+                    }}
+                >
+                    <EditIcon />
+                </IconButton>
+            ),
 
-    // const handleToggleColumn = (id: string) => {
-    //     setVisibleColumns((prev) =>
-    //         prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    //     );
-    // };
+
+        }
+    ]
 
     const { data: excavators = [] } = useQuery({
         queryKey: ["excavators"],
@@ -150,7 +216,7 @@ const TravelLogs: React.FC = () => {
         queryKey: ["locations"],
         queryFn: () => api.get("/locations").then((res) => res.data.data),
     });
-    const { data } = useQuery({
+    const { data, isLoading } = useQuery({
         queryKey: ["travellogs", page, pageSize, startTime, endTime],
         queryFn: () =>
             TravelLogService.getAll({
@@ -166,6 +232,35 @@ const TravelLogs: React.FC = () => {
             setTotal(data.totalDocs);
         }
     }, [data]);
+
+    const [progress, setProgress] = useState(0);
+    const [isUploading, setIsUploading] = useState(false);
+    const importFile = useMutation({
+        mutationFn: (formData: FormData) =>
+            TravelLogService.importFile(formData, setProgress),
+        onMutate: () => {
+            setIsUploading(true);
+            setProgress(0); // Reset tiến trình khi bắt đầu
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["positions"] });
+            setIsUploading(false);
+            showSuccessAlert("Import thành công!");
+            handleClose();
+        },
+        onError: (error: any) => {
+            setIsUploading(false);
+            showErrorAlert(error.response?.data?.message || "Lỗi khi import");
+        },
+    });
+    const exportExcel = useMutation({
+        mutationFn: TravelLogService.exportFile,
+        onSuccess: () => { },
+        onError: async (error: any) => {
+            const message = await parseAxiosError(error)
+            showErrorAlert(message);
+        }
+    });
 
     const createMutation = useMutation({
         mutationFn: TravelLogService.create,
@@ -216,18 +311,16 @@ const TravelLogs: React.FC = () => {
             workingDate: new Date(),
             shift: undefined,
             area: "",
-            routes: [{
-                location: undefined,
-                material: undefined,
-                excavationLevel: "",
-                dumpHeightActual: "",
-                fullDistanceKm: undefined as number | undefined,
-                fullLiftHeightM: undefined as number | undefined,
-                localMinHeightM: undefined as number | undefined,
-                localMaxHeightM: undefined as number | undefined,
-                localDistanceKm: undefined as number | undefined,
-                localLiftHeightM: undefined as number | undefined,
-            }]
+            location: undefined,
+            material: undefined,
+            excavationLevel: "",
+            dumpHeightActual: "",
+            fullDistanceKm: undefined as number | undefined,
+            fullLiftHeightM: undefined as number | undefined,
+            localMinHeightM: undefined as number | undefined,
+            localMaxHeightM: undefined as number | undefined,
+            localDistanceKm: undefined as number | undefined,
+            localLiftHeightM: undefined as number | undefined,
         },
         // enableReinitialize: true,
         validationSchema: trvelLogValidationSchema,
@@ -237,19 +330,18 @@ const TravelLogs: React.FC = () => {
                 workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
                 shift: values.shift,
                 area: values.area,
-                routes: (values.routes || []).filter(r => r.location).map((i) => ({
-                    location: i.location,
-                    material: i.material,
-                    excavationLevel: i.excavationLevel,
-                    dumpHeightActual: i.dumpHeightActual,
-                    fullDistanceKm: i.fullDistanceKm,
-                    fullLiftHeightM: i.fullLiftHeightM,
-                    localMinHeightM: i.localMinHeightM,
-                    localMaxHeightM: i.localMaxHeightM,
-                    localDistanceKm: i.localDistanceKm,
-                    localLiftHeightM: i.localLiftHeightM,
+                location: values.location,
+                material: values.material,
+                excavationLevel: values.excavationLevel,
+                dumpHeightActual: values.dumpHeightActual,
+                fullDistanceKm: values.fullDistanceKm,
+                fullLiftHeightM: values.fullLiftHeightM,
+                localMinHeightM: values.localMinHeightM,
+                localMaxHeightM: values.localMaxHeightM,
+                localDistanceKm: values.localDistanceKm,
+                localLiftHeightM: values.localLiftHeightM,
 
-                }))
+
             };
             if (selectedTravelLog) {
                 updateMutation.mutate({
@@ -278,25 +370,23 @@ const TravelLogs: React.FC = () => {
                     ? travellog.shift._id
                     : travellog.shift || undefined,
                 area: travellog.area,
-                routes: (travellog.routes || []).map((i: any) => ({
-                    location: i.location !== null &&
-                        typeof i.location === "object"
-                        ? i.location._id
-                        : i.location || undefined,
-                    material: i.material !== null &&
-                        typeof i.material === "object"
-                        ? i.material._id
-                        : i.material || undefined,
-                    excavationLevel: i.excavationLevel,
-                    dumpHeightActual: i.dumpHeightActual,
-                    fullDistanceKm: i.fullDistanceKm,
-                    fullLiftHeightM: i.fullLiftHeightM,
-                    localMinHeightM: i.localMinHeightM,
-                    localMaxHeightM: i.localMaxHeightM,
-                    localDistanceKm: i.localDistanceKm,
-                    localLiftHeightM: i.localLiftHeightM,
+                location: travellog.location !== null &&
+                    typeof travellog.location === "object"
+                    ? travellog.location._id
+                    : travellog.location || undefined,
+                material: travellog.material !== null &&
+                    typeof travellog.material === "object"
+                    ? travellog.material._id
+                    : travellog.material || undefined,
+                excavationLevel: travellog.excavationLevel,
+                dumpHeightActual: travellog.dumpHeightActual,
+                fullDistanceKm: travellog.fullDistanceKm,
+                fullLiftHeightM: travellog.fullLiftHeightM,
+                localMinHeightM: travellog.localMinHeightM,
+                localMaxHeightM: travellog.localMaxHeightM,
+                localDistanceKm: travellog.localDistanceKm,
+                localLiftHeightM: travellog.localLiftHeightM,
 
-                }))
             }
             setSelectedTravelLog(value);
             formik.setValues(value);
@@ -455,6 +545,59 @@ const TravelLogs: React.FC = () => {
                                     />
                                 </LocalizationProvider>
                             </Box>
+                            {user?.role === RoleEnum.ADMIN && (
+                                <Box
+                                    display="flex"
+                                    gap={2}
+                                    sx={{
+                                        display: "flex",
+                                        gap: 1, // Khoảng cách nhỏ hơn giữa các nút
+                                        flexDirection: {
+                                            xs: "column",
+                                            md: "row",
+                                        },
+                                        width: {
+                                            xs: "100%", // Group này chiếm 100% khi xếp dọc
+                                            md: "auto",
+                                        },
+                                    }}
+                                >
+                                    <input
+                                        id="upload-excel"
+                                        type="file"
+                                        accept=".xlsx, .xls"
+                                        style={{ display: "none" }}
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                const formData = new FormData();
+                                                formData.append("file", file);
+                                                importFile.mutate(formData);
+                                            }
+                                            e.target.value = "";
+                                        }}
+                                    />
+
+                                    <label htmlFor="upload-excel">
+                                        <Button
+                                            fullWidth
+                                            component="span"
+                                            variant="contained"
+                                            startIcon={<UploadFile />}
+                                        >
+                                            Tải lên excel
+                                        </Button>
+                                    </label>
+                                    <Button
+                                        component="span"
+                                        variant="contained"
+                                        startIcon={<Download />}
+                                        onClick={() => exportExcel.mutate()}
+                                    >
+                                        Tải xuống
+                                    </Button>
+                                </Box>
+                            )}
 
                         </Box>
                     </AccordionSummary>
@@ -548,208 +691,161 @@ const TravelLogs: React.FC = () => {
                                                 />
                                             </Grid>
                                         </Grid>
-                                        <FieldArray name="routes">
-                                            {({ push, remove }) => (
-                                                <Stack spacing={3} sx={{ mt: 2 }}>
-                                                    {formik.values.routes.map((route, index) => (
-                                                        <Box key={index} sx={{ border: '1px solid #ccc', borderRadius: 2, p: 2, position: 'relative' }}>
-                                                            {index > 0 && (
-                                                                <IconButton
-                                                                    onClick={() => remove(index)}
-                                                                    color="error"
-                                                                    sx={{
-                                                                        position: 'absolute',
-                                                                        top: -16,             // nổi lên trên viền 1 chút
-                                                                        left: 12,
-                                                                        bgcolor: 'background.paper',
-                                                                    }}
-                                                                >
-                                                                    <Delete fontSize='small' />
-                                                                    <Typography variant="caption" sx={{ userSelect: 'none' }}>Xóa</Typography>
-                                                                </IconButton>
-                                                            )}
-                                                            <Grid container spacing={2}>
-                                                                {/* --- Nhóm 1: Chọn địa điểm & vật liệu --- */}
-                                                                <Grid item xs={12} sm={6} md={3}>
-                                                                    <Autocomplete
-                                                                        fullWidth
-                                                                        options={locations}
-                                                                        getOptionLabel={(option: Location) => option.name || ""}
-                                                                        value={locations.find((p: any) => p._id === route.location) || null}
-                                                                        onChange={(e, newValue) =>
-                                                                            formik.setFieldValue(`routes[${index}].location`, newValue?._id || "")
-                                                                        }
-                                                                        renderInput={(params) => (
-                                                                            <TextField
-                                                                                {...params}
-                                                                                label="Điểm đổ"
-                                                                                {...getFormikFieldProps(formik, `routes[${index}].location`)}
-                                                                            />
-                                                                        )}
-                                                                    />
-                                                                </Grid>
+                                        <Grid container spacing={2}>
+                                            {/* --- Nhóm 1: Chọn địa điểm & vật liệu --- */}
+                                            <Grid item xs={12} sm={6} md={3}>
+                                                <Autocomplete
+                                                    fullWidth
+                                                    options={locations}
+                                                    getOptionLabel={(option: Location) => option.name || ""}
+                                                    value={locations.find((p: any) => p._id === formik.values.location) || null}
+                                                    onChange={(e, newValue) =>
+                                                        formik.setFieldValue(`location`, newValue?._id || "")
+                                                    }
+                                                    renderInput={(params) => (
+                                                        <TextField
+                                                            {...params}
+                                                            label="Điểm đổ"
+                                                            {...getFormikFieldProps(formik, `location`)}
+                                                        />
+                                                    )}
+                                                />
+                                            </Grid>
 
-                                                                <Grid item xs={12} sm={6} md={3}>
-                                                                    <Autocomplete
-                                                                        fullWidth
-                                                                        options={materials}
-                                                                        getOptionLabel={(option: Material) => option.name || ""}
-                                                                        value={materials.find((p: any) => p._id === route.material) || null}
-                                                                        onChange={(e, newValue) =>
-                                                                            formik.setFieldValue(`routes[${index}].material`, newValue?._id || "")
-                                                                        }
-                                                                        renderInput={(params) => (
-                                                                            <TextField
-                                                                                {...params}
-                                                                                label="Vật liệu"
-                                                                                {...getFormikFieldProps(formik, `routes[${index}].material`)}
-                                                                            />
-                                                                        )}
-                                                                    />
-                                                                </Grid>
+                                            <Grid item xs={12} sm={6} md={3}>
+                                                <Autocomplete
+                                                    fullWidth
+                                                    options={materials}
+                                                    getOptionLabel={(option: Material) => option.name || ""}
+                                                    value={materials.find((p: any) => p._id === formik.values.material) || null}
+                                                    onChange={(e, newValue) =>
+                                                        formik.setFieldValue(`material`, newValue?._id || "")
+                                                    }
+                                                    renderInput={(params) => (
+                                                        <TextField
+                                                            {...params}
+                                                            label="Vật liệu"
+                                                            {...getFormikFieldProps(formik, `material`)}
+                                                        />
+                                                    )}
+                                                />
+                                            </Grid>
 
-                                                                <Grid item xs={12} sm={6} md={3}>
-                                                                    <TextField
-                                                                        fullWidth
-                                                                        label="Tầng xúc"
-                                                                        name={`routes[${index}].excavationLevel`}
-                                                                        value={route.excavationLevel}
-                                                                        onChange={formik.handleChange}
-                                                                        {...getFormikFieldProps(formik, `routes[${index}].excavationLevel`)}
-                                                                    />
-                                                                </Grid>
+                                            <Grid item xs={12} sm={6} md={3}>
+                                                <TextField
+                                                    fullWidth
+                                                    label="Tầng xúc"
+                                                    name={`excavationLevel`}
+                                                    value={formik.values.excavationLevel}
+                                                    onChange={formik.handleChange}
+                                                    {...getFormikFieldProps(formik, `excavationLevel`)}
+                                                />
+                                            </Grid>
 
-                                                                <Grid item xs={12} sm={6} md={3}>
-                                                                    <TextField
-                                                                        fullWidth
-                                                                        type="number"
-                                                                        label="Độ cao thực tế điểm đổ"
-                                                                        name={`routes[${index}].dumpHeightActual`}
-                                                                        value={route.dumpHeightActual}
-                                                                        onChange={formik.handleChange}
-                                                                        {...getFormikFieldProps(formik, `routes[${index}].dumpHeightActual`)}
-                                                                    />
-                                                                </Grid>
+                                            <Grid item xs={12} sm={6} md={3}>
+                                                <TextField
+                                                    fullWidth
+                                                    type="number"
+                                                    label="Độ cao thực tế điểm đổ"
+                                                    name={`dumpHeightActual`}
+                                                    value={formik.values.dumpHeightActual}
+                                                    onChange={formik.handleChange}
+                                                    {...getFormikFieldProps(formik, `dumpHeightActual`)}
+                                                />
+                                            </Grid>
 
-                                                                {/* --- Nhóm 2: Thông số toàn tuyến --- */}
-                                                                <Grid item xs={12}>
-                                                                    <Typography variant="subtitle2" sx={{ mt: 1, fontWeight: 600 }}>
-                                                                        Thông số toàn tuyến
-                                                                    </Typography>
-                                                                </Grid>
+                                            {/* --- Nhóm 2: Thông số toàn tuyến --- */}
+                                            <Grid item xs={12}>
+                                                <Typography variant="subtitle2" sx={{ mt: 1, fontWeight: 600 }}>
+                                                    Thông số toàn tuyến
+                                                </Typography>
+                                            </Grid>
 
-                                                                <Grid item xs={12} sm={6}>
-                                                                    <TextField
-                                                                        fullWidth
-                                                                        type="number"
-                                                                        label="Cung độ (km)"
-                                                                        name={`routes[${index}].fullDistanceKm`}
-                                                                        value={route.fullDistanceKm ?? ''}
-                                                                        onChange={formik.handleChange}
-                                                                        InputLabelProps={{ shrink: true }}
-                                                                        {...getFormikFieldProps(formik, `routes[${index}].fullDistanceKm`)}
-                                                                    />
-                                                                </Grid>
+                                            <Grid item xs={12} sm={6}>
+                                                <TextField
+                                                    fullWidth
+                                                    type="number"
+                                                    label="Cung độ (km)"
+                                                    name={`fullDistanceKm`}
+                                                    value={formik.values.fullDistanceKm ?? ''}
+                                                    onChange={formik.handleChange}
+                                                    InputLabelProps={{ shrink: true }}
+                                                    {...getFormikFieldProps(formik, `fullDistanceKm`)}
+                                                />
+                                            </Grid>
 
-                                                                <Grid item xs={12} sm={6}>
-                                                                    <TextField
-                                                                        fullWidth
-                                                                        type="number"
-                                                                        label="Chiều cao nâng tải (m)"
-                                                                        name={`routes[${index}].fullLiftHeightM`}
-                                                                        value={route.fullLiftHeightM?.toString() ?? ''}
-                                                                        onChange={formik.handleChange}
-                                                                        InputLabelProps={{ shrink: true }}
-                                                                        {...getFormikFieldProps(formik, `routes[${index}].fullLiftHeightM`)}
-                                                                    />
-                                                                </Grid>
+                                            <Grid item xs={12} sm={6}>
+                                                <TextField
+                                                    fullWidth
+                                                    type="number"
+                                                    label="Chiều cao nâng tải (m)"
+                                                    name={`fullLiftHeightM`}
+                                                    value={formik.values.fullLiftHeightM?.toString() ?? ''}
+                                                    onChange={formik.handleChange}
+                                                    InputLabelProps={{ shrink: true }}
+                                                    {...getFormikFieldProps(formik, `fullLiftHeightM`)}
+                                                />
+                                            </Grid>
 
-                                                                {/* --- Nhóm 3: Thông số cục bộ --- */}
-                                                                <Grid item xs={12}>
-                                                                    <Typography variant="subtitle2" sx={{ mt: 1, fontWeight: 600 }}>
-                                                                        Thông số cục bộ
-                                                                    </Typography>
-                                                                </Grid>
+                                            {/* --- Nhóm 3: Thông số cục bộ --- */}
+                                            <Grid item xs={12}>
+                                                <Typography variant="subtitle2" sx={{ mt: 1, fontWeight: 600 }}>
+                                                    Thông số cục bộ
+                                                </Typography>
+                                            </Grid>
 
-                                                                <Grid item xs={12} sm={6} md={3}>
-                                                                    <TextField
-                                                                        fullWidth
-                                                                        type="number"
-                                                                        label="Chiều cao tối thiểu (m)"
-                                                                        name={`routes[${index}].localMinHeightM`}
-                                                                        value={route.localMinHeightM ?? ''}
-                                                                        onChange={formik.handleChange}
-                                                                        InputLabelProps={{ shrink: true }}
-                                                                        {...getFormikFieldProps(formik, `routes[${index}].localMinHeightM`)}
-                                                                    />
-                                                                </Grid>
+                                            <Grid item xs={12} sm={6} md={3}>
+                                                <TextField
+                                                    fullWidth
+                                                    type="number"
+                                                    label="Chiều cao tối thiểu (m)"
+                                                    name={`localMinHeightM`}
+                                                    value={formik.values.localMinHeightM ?? ''}
+                                                    onChange={formik.handleChange}
+                                                    InputLabelProps={{ shrink: true }}
+                                                    {...getFormikFieldProps(formik, `localMinHeightM`)}
+                                                />
+                                            </Grid>
 
-                                                                <Grid item xs={12} sm={6} md={3}>
-                                                                    <TextField
-                                                                        fullWidth
-                                                                        type="number"
-                                                                        label="Chiều cao tối đa (m)"
-                                                                        name={`routes[${index}].localMaxHeightM`}
-                                                                        value={route.localMaxHeightM ?? ''}
-                                                                        onChange={formik.handleChange}
-                                                                        InputLabelProps={{ shrink: true }}
-                                                                        {...getFormikFieldProps(formik, `routes[${index}].localMaxHeightM`)}
-                                                                    />
-                                                                </Grid>
+                                            <Grid item xs={12} sm={6} md={3}>
+                                                <TextField
+                                                    fullWidth
+                                                    type="number"
+                                                    label="Chiều cao tối đa (m)"
+                                                    name={`localMaxHeightM`}
+                                                    value={formik.values.localMaxHeightM ?? ''}
+                                                    onChange={formik.handleChange}
+                                                    InputLabelProps={{ shrink: true }}
+                                                    {...getFormikFieldProps(formik, `localMaxHeightM`)}
+                                                />
+                                            </Grid>
 
-                                                                <Grid item xs={12} sm={6} md={3}>
-                                                                    <TextField
-                                                                        fullWidth
-                                                                        type="number"
-                                                                        label="Cung độ (km)"
-                                                                        name={`routes[${index}].localDistanceKm`}
-                                                                        value={route.localDistanceKm ?? ''}
-                                                                        onChange={formik.handleChange}
-                                                                        InputLabelProps={{ shrink: true }}
-                                                                        {...getFormikFieldProps(formik, `routes[${index}].localDistanceKm`)}
-                                                                    />
-                                                                </Grid>
+                                            <Grid item xs={12} sm={6} md={3}>
+                                                <TextField
+                                                    fullWidth
+                                                    type="number"
+                                                    label="Cung độ (km)"
+                                                    name={`localDistanceKm`}
+                                                    value={formik.values.localDistanceKm ?? ''}
+                                                    onChange={formik.handleChange}
+                                                    InputLabelProps={{ shrink: true }}
+                                                    {...getFormikFieldProps(formik, `localDistanceKm`)}
+                                                />
+                                            </Grid>
 
-                                                                <Grid item xs={12} sm={6} md={3}>
-                                                                    <TextField
-                                                                        fullWidth
-                                                                        type="number"
-                                                                        label="Chiều cao nâng tải (m)"
-                                                                        name={`routes[${index}].localLiftHeightM`}
-                                                                        value={route.localLiftHeightM ?? ''}
-                                                                        onChange={formik.handleChange}
-                                                                        InputLabelProps={{ shrink: true }}
-                                                                        {...getFormikFieldProps(formik, `routes[${index}].localLiftHeightM`)}
-                                                                    />
-                                                                </Grid>
-                                                            </Grid>
-
-                                                        </Box>
-                                                    ))}
-
-                                                    <Button
-                                                        variant="outlined"
-                                                        startIcon={<AddIcon />}
-                                                        onClick={() =>
-                                                            push({
-                                                                location: "",
-                                                                material: "",
-                                                                excavationLevel: "",
-                                                                dumpHeightActual: "",
-                                                                fullDistanceKm: "",
-                                                                fullLiftHeightM: "",
-                                                                localMinHeightM: "",
-                                                                localMaxHeightM: "",
-                                                                localDistanceKm: "",
-                                                                localLiftHeightM: "",
-                                                            })
-                                                        }
-                                                    >
-                                                        Thêm tuyến
-                                                    </Button>
-                                                </Stack>
-                                            )}
-                                        </FieldArray>
+                                            <Grid item xs={12} sm={6} md={3}>
+                                                <TextField
+                                                    fullWidth
+                                                    type="number"
+                                                    label="Chiều cao nâng tải (m)"
+                                                    name={`localLiftHeightM`}
+                                                    value={formik.values.localLiftHeightM ?? ''}
+                                                    onChange={formik.handleChange}
+                                                    InputLabelProps={{ shrink: true }}
+                                                    {...getFormikFieldProps(formik, `localLiftHeightM`)}
+                                                />
+                                            </Grid>
+                                        </Grid>
                                     </Box>
                                 </Box>
                             </DialogContent>
@@ -761,7 +857,7 @@ const TravelLogs: React.FC = () => {
                             </DialogActions>
                         </AccordionDetails>
                     </AccordionDetails>
-                </Accordion>
+                </Accordion >
                 <Box display="flex" alignItems="center" sx={{ mb: 2, mt: 2 }}>
                     <Typography variant="h4">Bảng cung độ</Typography>
                     {/* <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
@@ -781,121 +877,9 @@ const TravelLogs: React.FC = () => {
                         ))}
                     </Menu> */}
                 </Box>
-                <Paper>
-                    <TableContainer>
-                        <Table sx={{
-                            "& td, & th": { padding: "4px 8px" },
-                        }}>
-                            <TableHead>
-                                <TableRow>
-                                    {user?.role === RoleEnum.ADMIN && <TableCell rowSpan={2} align="center" sx={{
-                                        backgroundColor: '#f5f5f5',
-                                    }}>
-                                        <Checkbox
-                                            color="primary"
-                                            checked={travelLogs.length > 0 && selectedTravelLogs.length === travelLogs.length}
-                                            indeterminate={selectedTravelLogs.length > 0 && selectedTravelLogs.length < travelLogs.length}
-                                            onChange={() => {
-                                                if (selectedTravelLogs.length === travelLogs.length) {
-                                                    setSelectedTravelLogs([]);
-                                                } else {
-                                                    setSelectedTravelLogs(travelLogs.map((t: TravelLog) => t._id));
-                                                }
-                                            }}
-                                        />
-                                    </TableCell>}
-                                    <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5', }} rowSpan={2}>TT</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5' }} rowSpan={2}>Máy xúc</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5' }} rowSpan={2}>Ngày</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5' }} rowSpan={2}>Ca</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5' }} rowSpan={2}>Khu vực</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5' }} rowSpan={2}>Điểm đổ tải</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5' }} rowSpan={2}>Vật liệu</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5' }} rowSpan={2}>Tầng xúc</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5' }} rowSpan={2}>Độ cao thực tế nơi đổ</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5' }} colSpan={2}>Toàn tuyến</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5' }} colSpan={4}>Trong đó cục bộ</TableCell>
-                                    {user?.role === RoleEnum.ADMIN && <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5' }} rowSpan={2}>Sửa</TableCell>}
-                                </TableRow>
-                                <TableRow>
-                                    <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5' }}>C.độ (km)</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5' }}>Chiều cao N.tải(m)</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5' }}>H min</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5' }}>H max</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5' }}>C. độ (km)</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: "bold", background: '#f5f5f5' }}>Chiều cao N.tải (m)</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {travelLogs.map((t: any, index: number) => {
-                                    const span = t.routes?.length || 1;
-
-                                    return (
-                                        <>
-                                            {(t.routes.length > 0 ? t.routes : [{}]).map((r: any, routeIndex: number) => (
-                                                <TableRow key={`${t._id}-${routeIndex}`} sx={{ backgroundColor: index % 2 === 0 ? 'white' : '#e3f2fd', }}>
-                                                    {/* Chỉ hiển thị các ô gộp ở dòng đầu */}
-                                                    {routeIndex === 0 && (
-                                                        <>
-                                                            {user?.role === RoleEnum.ADMIN && <TableCell align='center' rowSpan={span} sx={{ width: 50 }}><Checkbox onChange={() => handleSelected(t._id)} checked={selectedTravelLogs.includes(t._id)} /></TableCell>}
-                                                            <TableCell align="center" rowSpan={span} sx={{ width: 30 }}>{(page * pageSize) + index + 1}</TableCell>
-                                                            <TableCell align="center" rowSpan={span}>{t.excavator?.code}</TableCell>
-                                                            <TableCell align="center" rowSpan={span}>{t.workingDate ? format(new Date(t.workingDate), 'dd-MM-yyyy') : ''}</TableCell>
-                                                            <TableCell align="center" rowSpan={span}>{t.shift?.name}</TableCell>
-                                                            <TableCell align="center" rowSpan={span}>{t.area}</TableCell>
-                                                        </>
-                                                    )}
-                                                    <TableCell align="center">{r.location?.name}</TableCell>
-                                                    <TableCell align="center">{r.material?.name}</TableCell>
-                                                    <TableCell align="center">{r.excavationLevel}</TableCell>
-                                                    <TableCell align="center">{r.dumpHeightActual}</TableCell>
-                                                    <TableCell align="center">{r.fullDistanceKm}</TableCell>
-                                                    <TableCell align="center">{r.fullLiftHeightM}</TableCell>
-                                                    <TableCell align="center">{r.localMinHeightM}</TableCell>
-                                                    <TableCell align="center">{r.localMaxHeightM}</TableCell>
-                                                    <TableCell align="center">{r.localDistanceKm}</TableCell>
-                                                    <TableCell align="center">{r.localLiftHeightM}</TableCell>
-                                                    {routeIndex === 0 && user?.role === RoleEnum.ADMIN && (
-                                                        <TableCell align='center' rowSpan={span} sx={{ width: 50 }}>
-                                                            <IconButton color="primary" onClick={async () => {
-                                                                if (open) {
-                                                                    const result = await showConfirmAlert(
-                                                                        "Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?"
-                                                                    );
-                                                                    if (result.isConfirmed) {
-                                                                        handleOpen(t);
-                                                                    }
-                                                                } else {
-                                                                    handleOpen(t);
-                                                                }
-                                                            }}>
-                                                                <EditIcon />
-                                                            </IconButton>
-                                                        </TableCell>
-                                                    )}
-                                                </TableRow>
-
-                                            ))}
-                                        </>
-                                    );
-                                })}
-                            </TableBody>
-                        </Table>
-                        <TablePagination
-                            component="div"
-                            count={total}
-                            page={page}
-                            onPageChange={handleChangePage}
-                            rowsPerPage={pageSize}
-                            onRowsPerPageChange={(event) => {
-                                setPageSize(parseInt(event.target.value, 10));
-                                setPage(0);
-                            }}
-                        />
-                    </TableContainer>
-                </Paper>
-            </Box>
-        </FormikProvider>
+                <Table columns={columns} dataSource={travelLogs} />
+            </Box >
+        </FormikProvider >
     );
 };
 

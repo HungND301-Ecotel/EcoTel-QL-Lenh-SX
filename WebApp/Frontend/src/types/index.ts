@@ -135,18 +135,16 @@ export interface TravelLog {
     workingDate?: Date,
     shift?: String,
     area?: String,
-    routes: {
-        location?: String,
-        material?: String,
-        excavationLevel?: String,
-        dumpHeightActual?: String,
-        fullDistanceKm?: Number,
-        fullLiftHeightM?: Number,
-        localMinHeightM?: Number,
-        localMaxHeightM?: Number,
-        localDistanceKm?: Number,
-        localLiftHeightM?: Number,
-    }[]
+    location?: String,
+    material?: String,
+    excavationLevel?: String,
+    dumpHeightActual?: String,
+    fullDistanceKm?: Number,
+    fullLiftHeightM?: Number,
+    localMinHeightM?: Number,
+    localMaxHeightM?: Number,
+    localDistanceKm?: Number,
+    localLiftHeightM?: Number,
     createdAt?: string;
     updatedAt?: string;
 }

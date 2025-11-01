@@ -97,7 +97,7 @@ const CustomDataGrid: React.FC<CustomDataGridProps> = ({
                         "& .MuiDataGrid-columnHeaderTitle": {
                             textAlign: "center",
                             fontWeight: "bold",
-                            fontSize: 18,
+                            fontSize: 16,
                         },
                         "& .MuiDataGrid-row:nth-of-type(odd)": {
                             backgroundColor: "#e3f2fd",

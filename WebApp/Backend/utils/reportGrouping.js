@@ -32,25 +32,14 @@ async function groupTripsVehicle(trips, date, shift) {
         let totalDistance = 0;
         const travelLog = await TravelLog.findOne({
             excavator: t.excavator?._id,
+            location: t.toLocation?._id,
             workingDate: date,
             shift: shift?._id
         }).lean();
 
-        let routeMatched = null;
-
-        if (travelLog?.routes?.length > 0 && t.toLocation) {
-            // 🔍 Tìm route khớp location
-            routeMatched = travelLog.routes.find(r => {
-                const routeLocId = typeof r.location === 'object' ? r.location._id?.toString() : r.location?.toString();
-                const tripLocId = typeof t.toLocation === 'object' ? t.toLocation._id?.toString() : t.toLocation?.toString();
-                return routeLocId === tripLocId;
-            });
-
-        }
-
         const timeLogPromises = timesArray.map(async (time) => {
 
-            const distance = routeMatched ? (routeMatched.fullDistanceKm || 0) : 0;
+            const distance = travelLog ? (travelLog.fullDistanceKm || 0) : 0;
 
             return {
                 time: time,
@@ -93,30 +82,16 @@ async function groupTripsVehicleProduction(trips) {
                 const travelLog = await safeQuery(() =>
                     TravelLog.findOne({
                         excavator: t.excavator?._id,
+                        location: t.toLocation?._id,
                         workingDate: t.workingDate,
                         shift: t.shift?._id
                     }).lean()
                 );
 
                 let totalDistance = 0;
-                let routeMatched = null;
 
-                if (travelLog?.routes?.length && t.toLocation) {
-                    const tripLocId =
-                        typeof t.toLocation === 'object'
-                            ? t.toLocation._id?.toString()
-                            : t.toLocation?.toString();
-                    routeMatched = travelLog.routes.find(r => {
-                        const routeLocId =
-                            typeof r.location === 'object'
-                                ? r.location._id?.toString()
-                                : r.location?.toString();
-                        return routeLocId === tripLocId;
-                    });
-                }
-
-                const distance = routeMatched ? routeMatched.fullDistanceKm || 0 : 0;
-                totalDistance = distance * t?.quantity;
+                const distance = travelLog ? travelLog.fullDistanceKm || 0 : 0;
+                totalDistance = distance * (Array.isArray(t.quantityUpdateTimes) ? t.quantityUpdateTimes.length : 1);
 
                 const value = await safeQuery(() =>
                     caculatorWeight(
@@ -279,7 +254,7 @@ async function groupTripsCar(trips) {
                 endTime: { $gte: time }       // kết thúc >= time
             }).lean();
 
-            const distance = travelLog ? travelLog.distance : 0
+            const distance = travelLog ? travelLog.fullDistanceKm : 0
             groups[key].trips.push({
                 material: t.material,
                 time,
@@ -329,7 +304,7 @@ async function groupCar(trips) {
                 endTime: { $gte: time }
             }).lean();
 
-            const distance = travelLog ? travelLog.distance : 0;
+            const distance = travelLog ? travelLog.fullDistanceKm : 0;
 
             if (!groups[key].materials[t.material.name]) {
                 groups[key].materials[t.material.name] = {
@@ -452,6 +427,7 @@ async function caculatorWeight(materialId, deviceModel, quantity, totalDistance,
     // 🧠 Tính tỷ trọng tại thời điểm `date`
     const dryDensity = getTyTrongAtDate(material, normalizeDateToUTC(date))
     const valueModel = getMohinhAtDate(data, normalizeDateToUTC(date))
+
 
 
     if (data && data.material?.acceptedProduct === ACCEPTED_PRODUCT.COAL) {
