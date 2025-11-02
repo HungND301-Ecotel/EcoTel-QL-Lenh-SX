@@ -344,12 +344,12 @@ class _ExcavatorTripList extends State<ExcavatorTripList> {
                   ),
                   const Text("1"),
                   Radio<num>(
-                    value: 0.5,
+                    value: 0.66,
                     groupValue: _selectedQuantity,
                     onChanged: (v) => setState(
                         () => _selectedQuantity = v ?? 1.0),
                   ),
-                  const Text("1/2"),
+                  const Text("2/3"),
                   Radio<num>(
                     value: 0.33,
                     groupValue: _selectedQuantity,
