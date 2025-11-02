@@ -233,6 +233,8 @@ const Models: React.FC = () => {
             showSuccessAlert("Lưu thành công");
             setIsUploading(false);
             setIsCreatingNewSlot(false); // Tắt chế độ tạo mới sau khi lưu thành công
+            setExpanded(false)
+            setSelectedTimeSlot(null)
             queryClient.invalidateQueries({ queryKey: ['models'] });
         },
         onError: (error: any) => {
