@@ -117,9 +117,15 @@ export interface Order {
 export interface Material {
     _id: string;
     name: string;
-    density?: number;
-    dryDensity?: number;
     acceptedProduct?: string;
+    density?: number,
+    dryDensity?: number,
+    valueHistory: {
+        density?: number,
+        dryDensity?: number,
+        startTime: Date,
+        endTime: Date,
+    }[],
     createdAt?: string;
     updatedAt?: string;
 }

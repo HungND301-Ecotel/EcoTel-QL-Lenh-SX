@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:soft/providers/user_provider.dart';
+import 'package:soft/routes/app_routes.dart';
 import 'package:soft/services/user_service.dart';
 
 class Changepass extends StatefulWidget {
@@ -29,7 +33,7 @@ class _Changepass extends State<Changepass> {
       repass,
     );
     if (!mounted) return;
-    if (result['status']=='error') {
+    if (result['status'] == 'error') {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result['message']),
@@ -37,12 +41,30 @@ class _Changepass extends State<Changepass> {
         ),
       );
     } else {
-      Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result['message']),
+          content: Text(
+              "Đổi mật khẩu thành công. Quay lại đăng nhập."),
           backgroundColor: Colors.green,
         ),
+      );
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('user');
+      await prefs.remove('token');
+
+      // Lấy context để gọi Provider
+      final userProvider = Provider.of<UserProvider>(
+        context,
+        listen: false,
+      );
+      await userProvider.clearUser();
+
+      // Điều hướng về login (chỉ khi đang ở trang khác)
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(
+        AppRoute.signin,
+        (route) => false,
       );
     }
   }

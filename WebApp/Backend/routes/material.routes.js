@@ -13,7 +13,7 @@ const { ROLE } = require('../config/config');
 
 router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
-        const { name, density, dryDensity, acceptedProduct } = req.body
+        const { name, valueHistory, acceptedProduct } = req.body
         const existingMaterial = await Material.findOne({ name });
         if (existingMaterial) {
             req.logger.error("❌ Tên vật liệu đã tồn tại");
@@ -21,11 +21,8 @@ router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, 
         }
         const newMaterial = new Material({
             name: name,
-            density: density,
-            dryDensity: dryDensity,
+            valueHistory,
             acceptedProduct: acceptedProduct,
-            densityHistory: [],
-            dryDensityHistory: []
         });
         await newMaterial.save();
         req.logger.info(`🔥 Tạo thành công`);
@@ -67,37 +64,13 @@ router.delete('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req
 router.put('/:id', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
         const user = req.user
-        const { density, dryDensity, ...updateFields } = req.body;
-        const material = await Material.findById(req.params.id);
+
+        const material = await Material.findByIdAndUpdate(req.params.id, req.body, { new: true })
         if (!material) {
             req.logger.error('❌ Không tìm thấy vật liệu');
             return res.status(404).json({ status: 'error', message: 'Không tìm thấy vật liệu' });
         }
 
-        if (req.body.hasOwnProperty('density')) {
-            // Nếu khác giá trị hiện tại (kể cả khác giữa null và số)
-            if (density !== material.density) {
-                material.densityHistory.push({
-                    value: material.density,
-                    effectiveDate: new Date(),
-                });
-                material.density = density;
-            }
-        }
-
-        // 🟢 Xử lý TỶ TRỌNG KHÔNG QUY ẨM
-        if (req.body.hasOwnProperty('dryDensity')) {
-            if (dryDensity !== material.dryDensity) {
-                material.dryDensityHistory.push({
-                    value: material.dryDensity ? material.dryDensity : null,
-                    effectiveDate: new Date(),
-                });
-                material.dryDensity = dryDensity;
-            }
-        }
-        Object.assign(material, updateFields);
-
-        await material.save();
         req.logger.info(`🔥 ${user?.username} Sửa vật liệu thành công`);
 
         res.status(200).json({
@@ -113,14 +86,59 @@ router.put('/:id', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req
 router.get('/', verifyToken, async (req, res) => {
     try {
         const query = {}
-
+        const now = new Date();
         if (req.query.name) {
             const regex = new RegExp(req.query.name, 'i');
             query.name = regex;
         }
 
-        const materials = await Material.find(query).collation({ locale: "vi", strength: 1 })
-            .sort({ name: 1 });
+        const materials = await Material.aggregate([
+            { $match: query },
+            {
+                $addFields: {
+                    currentHistory: {
+                        $filter: {
+                            input: '$valueHistory',
+                            as: 'h',
+                            cond: {
+                                $and: [
+                                    { $lte: ['$$h.startTime', now] },
+                                    { $gte: ['$$h.endTime', now] }
+                                ]
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                $addFields: {
+                    density: {
+                        $ifNull: [
+                            { $arrayElemAt: ['$currentHistory.density', 0] },
+                            null
+                        ]
+                    },
+                    dryDensity: {
+                        $ifNull: [
+                            { $arrayElemAt: ['$currentHistory.dryDensity', 0] },
+                            null
+                        ]
+                    }
+                }
+            },
+            {
+                $project: {
+                    name: 1,
+                    acceptedProduct: 1,
+                    valueHistory: 1,
+                    density: 1,
+                    dryDensity: 1,
+                    createdAt: 1,
+                    updatedAt: 1
+                }
+            },
+            { $sort: { name: 1 } }
+        ]);
         req.logger.info(`🔥 Load thành công`);
         res.status(200).send({ status: 'success', data: materials });
     } catch (err) {

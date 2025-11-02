@@ -6,27 +6,19 @@ const Material = new mongoose.Schema({
         required: [true, 'Material name is required'],
         trim: true
     },
-    // ty trong quy am
-    density: {
-        type: Number
-    },
-    // ty trong khong quy am
-    dryDensity: {
-        type: Number
-    },
-    // Lịch sử thay đổi tỷ trọng quy ẩm
+    // san pham nghiem thu
     acceptedProduct: {
         type: String
     },
-    // Lịch sử thay đổi tỷ trọng không quy ẩm
-    densityHistory: [{
-        value: Number,
-        effectiveDate: Date,
-    }],
-    dryDensityHistory: [
+    valueHistory: [
         {
-            value: Number,
-            effectiveDate: {
+            density: Number,
+            dryDensity: Number,
+            startTime: {
+                type: Date,
+                default: Date.now,
+            },
+            endTime: {
                 type: Date,
                 default: Date.now,
             },

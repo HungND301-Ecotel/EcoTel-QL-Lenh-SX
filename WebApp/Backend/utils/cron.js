@@ -176,25 +176,14 @@ async function production_van_hanh_xe(t) {
     let totalDistance = 0;
     const travelLog = await TravelLog.findOne({
         excavator: t.excavator?._id,
+        location: t.toLocation?._id,
         workingDate: t.workingDate,
         shift: t.shift?._id
     }).lean();
 
-    let routeMatched = null;
-
-    if (travelLog?.routes?.length > 0 && t.toLocation) {
-        // 🔍 Tìm route khớp location
-        routeMatched = travelLog.routes.find(r => {
-            const routeLocId = typeof r.location === 'object' ? r.location._id?.toString() : r.location?.toString();
-            const tripLocId = typeof t.toLocation === 'object' ? t.toLocation._id?.toString() : t.toLocation?.toString();
-            return routeLocId === tripLocId;
-        });
-
-    }
+    const distance = travelLog ? travelLog.fullDistanceKm || 0 : 0;
 
     const timeLogPromises = timesArray.map(async (time) => {
-
-        const distance = routeMatched ? (routeMatched.fullDistanceKm || 0) : 0;
 
         return {
             time: time,

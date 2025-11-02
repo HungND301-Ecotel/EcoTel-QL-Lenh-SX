@@ -419,7 +419,7 @@ async function caculatorWeight(materialId, deviceModel, quantity, totalDistance,
     let production = 0
 
     const data = await Model.findOne({ material: materialId, deviceModel: deviceModel })
-        .populate('material', 'name dryDensity acceptedProduct dryDensityHistory');
+        .populate('material', 'name acceptedProduct valueHistory');
 
     if (!data || !data.material) return { cubicMeter, ton, production };
     const material = data?.material;
@@ -427,7 +427,6 @@ async function caculatorWeight(materialId, deviceModel, quantity, totalDistance,
     // 🧠 Tính tỷ trọng tại thời điểm `date`
     const dryDensity = getTyTrongAtDate(material, normalizeDateToUTC(date))
     const valueModel = getMohinhAtDate(data, normalizeDateToUTC(date))
-
 
 
     if (data && data.material?.acceptedProduct === ACCEPTED_PRODUCT.COAL) {
@@ -445,85 +444,53 @@ async function caculatorWeight(materialId, deviceModel, quantity, totalDistance,
 }
 
 function getTyTrongAtDate(material, date) {
-
     if (!material) return 0;
 
-    const histories = Array.isArray(material.dryDensityHistory)
-        ? material.dryDensityHistory
-        : [];
-
-    // Nếu không có lịch sử thì lấy current
-    if (histories.length === 0) return material?.dryDensity || 0;
-
+    const histories = Array.isArray(material.valueHistory) ? material.valueHistory : [];
     const target = new Date(date);
 
-    // sắp xếp tăng dần theo ngày hiệu lực
-    const sorted = histories.sort((a, b) => new Date(a.effectiveDate) - new Date(b.effectiveDate));
+    if (histories.length === 0) return 0;
 
-    // nếu ngày cần tính < mốc đầu tiên -> dùng giá trị đầu tiên
-    if (target < new Date(sorted[0].effectiveDate)) {
-        return sorted[0]?.value || 0;
-    }
+    // sắp xếp theo thời gian bắt đầu tăng dần
+    const sorted = histories.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
 
-    // duyệt qua các mốc để tìm giá trị phù hợp
-    for (let i = 0; i < sorted.length; i++) {
-        const current = sorted[i];
-        const next = sorted[i + 1];
+    // duyệt để tìm mốc chứa ngày target
+    for (const h of sorted) {
+        const start = new Date(h.startTime);
+        const end = new Date(h.endTime);
 
-        // Nếu không có mốc tiếp theo → bản cuối cùng trước currentTyTrong
-        if (!next) {
-            return material?.dryDensity || current?.value || 0;
-        }
-
-        // Nếu date nằm giữa current và next
-        if (target >= new Date(current.effectiveDate) && target < new Date(next.effectiveDate)) {
-            return next?.value || 0; // giá trị mới bắt đầu có hiệu lực tại next.effectiveDate
+        if (target >= start && target <= end) {
+            return h.dryDensity ?? 0;
         }
     }
 
-    // nếu sau tất cả -> currentTyTrong
-    return material?.dryDensity || 0;
+    return 0;
 }
 function getMohinhAtDate(model, date) {
-
     if (!model) return 0;
 
-    const histories = Array.isArray(model.valueHistory)
-        ? model.valueHistory
-        : [];
-
-    // Nếu không có lịch sử thì lấy current
-    if (histories.length === 0) return model?.value || 0;
-
+    const histories = Array.isArray(model.valueHistory) ? model.valueHistory : [];
     const target = new Date(date);
 
-    // sắp xếp tăng dần theo ngày hiệu lực
-    const sorted = histories.sort((a, b) => new Date(a.effectiveDate) - new Date(b.effectiveDate));
+    if (histories.length === 0) return 0;
 
-    // nếu ngày cần tính < mốc đầu tiên -> dùng giá trị đầu tiên
-    if (target < new Date(sorted[0].effectiveDate)) {
-        return sorted[0]?.value || 0;
-    }
+    // sắp xếp theo thời gian bắt đầu tăng dần
+    const sorted = histories.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
 
-    // duyệt qua các mốc để tìm giá trị phù hợp
-    for (let i = 0; i < sorted.length; i++) {
-        const current = sorted[i];
-        const next = sorted[i + 1];
+    // duyệt để tìm mốc chứa ngày target
+    for (const h of sorted) {
+        const start = new Date(h.startTime);
+        const end = new Date(h.endTime);
 
-        // Nếu không có mốc tiếp theo → bản cuối cùng trước currentTyTrong
-        if (!next) {
-            return model?.value || current?.value || 0;
-        }
-
-        // Nếu date nằm giữa current và next
-        if (target >= new Date(current.effectiveDate) && target < new Date(next.effectiveDate)) {
-            return next?.value || 0; // giá trị mới bắt đầu có hiệu lực tại next.effectiveDate
+        if (target >= start && target <= end) {
+            return h.value ?? 0;
         }
     }
 
-    // nếu sau tất cả -> currentTyTrong
-    return model?.value || 0;
+    return 0;
 }
+
+
 
 function normalizeDateToUTC(date) {
     const d = new Date(date);
