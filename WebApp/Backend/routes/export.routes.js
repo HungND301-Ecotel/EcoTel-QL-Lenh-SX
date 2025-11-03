@@ -5871,6 +5871,13 @@ router.post('/worklog', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.D
         const start = new Date(startDate);
         const end = new Date(endDate);
 
+        let dep;
+        if (department) {
+            dep = await Department.findById(department).select('code')
+        } else {
+            dep = user?.department
+        }
+
         // Đảm bảo end không nhỏ hơn start
         if (end < start) return res.status(400).json({ message: "Ngày kết thúc phải sau ngày bắt đầu" });
 
@@ -5881,7 +5888,7 @@ router.post('/worklog', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.D
                     workingDate: d,
                     shift: ca._id,
                     status: { $in: [STATUS_ORDER.INPROGRESS, STATUS_ORDER.COMPLETED, STATUS_ORDER.WARNING] },
-                    department: user?.role === ROLE.ADMIN ? new mongoose.Types.ObjectId(department) : new mongoose.Types.ObjectId(user.department?._id)
+                    department: new mongoose.Types.ObjectId(dep?._id)
                 })
                     .populate('assignedTo', 'fullName salaryCode department')
                     .populate('job', 'name')
@@ -6071,6 +6078,13 @@ router.post('/meal_request', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, R
         const start = new Date(startDate);
         const end = new Date(endDate);
 
+        let dep;
+        if (department) {
+            dep = await Department.findById(department).select('code')
+        } else {
+            dep = user?.department
+        }
+
         // Đảm bảo end không nhỏ hơn start
         if (end < start) return res.status(400).json({ message: "Ngày kết thúc phải sau ngày bắt đầu" });
 
@@ -6080,7 +6094,7 @@ router.post('/meal_request', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, R
                 const orders = await Order.find({
                     workingDate: d,
                     shift: ca._id,
-                    department: user?.role === ROLE.ADMIN ? new mongoose.Types.ObjectId(department) : new mongoose.Types.ObjectId(user.department?._id),
+                    department: new mongoose.Types.ObjectId(dep?._id),
                     status: { $in: [STATUS_ORDER.INPROGRESS, STATUS_ORDER.COMPLETED, STATUS_ORDER.WARNING] }
                 })
                     .populate('assignedTo', 'fullName salaryCode department')
