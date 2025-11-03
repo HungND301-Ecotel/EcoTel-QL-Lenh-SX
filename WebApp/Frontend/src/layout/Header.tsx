@@ -63,6 +63,12 @@ export default function Header() {
         queryFn: () => api.get('/notifications/unread/count').then(res => res.data.data),
     });
 
+    const { data: url } = useQuery({
+        queryKey: ['url', user?.avatar],
+        queryFn: () => api.get(`/uploads/get?key=${user?.avatar}`).then(res => res.data.data),
+        enabled: !!user?.avatar
+    });
+
     const handleLogout = () => {
         localStorage.removeItem('token');
         setUser(null);
@@ -289,7 +295,7 @@ export default function Header() {
                         </Tooltip>
                         <Tooltip title="Tài khoản">
                             <IconButton onClick={(e) => setAvatarAnchorEl(e.currentTarget)}>
-                                <Avatar src={user?.avatar} sx={{ bgcolor: 'white' }} />
+                                <Avatar src={url} sx={{ bgcolor: 'white' }} />
                             </IconButton>
                         </Tooltip>
                         <Popover

@@ -23,13 +23,14 @@ import CarTripReport from './CarTripReport';
 import WorkLogReport from './WorkLogReport';
 import mealRequestReport from './MealRepuestReport';
 import { Close, Edit } from '@mui/icons-material';
-import { showErrorAlert } from '../../components/Alert';
+import { showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import ExcavatorReport from './ExcavatorReport';
 import DozerReport from './DozerReport';
 import DrillReport from './DrillReport';
 import { RoleEnum } from '../../enums';
+import { parseAxiosError } from '../../utils/handleApiError';
 
 
 function Reports() {
@@ -54,21 +55,30 @@ function Reports() {
         queryKey: ['departments'],
         queryFn: () => api.get('/departments').then(res => res.data.data),
     });
-    const getSignatureUrl = useMutation({
+    const getSignatureAndS3Url = useMutation({
         mutationFn: async () => {
-            const res = await api.get("/auth/me");
-            const userData = res.data.data;
-            return userData.user?.signature;
+            // Bước 1: Lấy key chữ ký
+            const userRes = await api.get("/auth/me");
+            const signatureKey = userRes.data.data.user?.signature;
+
+            if (!signatureKey) {
+                // Nếu không có key, bạn có thể throw error hoặc return null
+                throw new Error("Không tìm thấy key chữ kí.");
+            }
+
+            // Bước 2: Dùng key để lấy S3 URL
+            const s3UrlRes = await api.get(`/uploads/get?key=${signatureKey}`);
+            return s3UrlRes.data.data as string;
         },
-        onSuccess: (signature: string) => {
-            if (!signature || signature === "") {
-                showErrorAlert("Bạn không có chữ kí")
+        onSuccess: (s3Url) => {
+            if (!s3Url) {
+                showErrorAlert("Lỗi lấy URL chữ kí");
             } else {
-                setSignatureUrl(signature);
+                setSignatureUrl(s3Url);
             }
         },
         onError: (error: any) => {
-            showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
+            showErrorAlert(error.message || error.response?.data?.message || 'Lỗi');
         }
     });
     const reportNames = [
@@ -222,9 +232,10 @@ function Reports() {
             setProgress(0); // Reset tiến trình khi bắt đầu
         },
         onSuccess: () => { setIsUploading(false); },
-        onError: (error: any) => {
+        onError: async (error: any) => {
             setIsUploading(false)
-            showErrorAlert(error.response?.data?.message || error.message || 'Lỗi');
+            const message = await parseAxiosError(error)
+            showErrorAlert(message);
         }
     });
 
@@ -351,7 +362,7 @@ function Reports() {
                             component="label"
                             startIcon={<Edit />}
                             onClick={() => {
-                                getSignatureUrl.mutate()
+                                getSignatureAndS3Url.mutate()
                             }}
                         >
                             Thêm chữ kí

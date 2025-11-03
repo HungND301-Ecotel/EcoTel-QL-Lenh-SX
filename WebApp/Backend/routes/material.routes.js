@@ -85,60 +85,81 @@ router.put('/:id', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req
 // Get device usage history
 router.get('/', verifyToken, async (req, res) => {
     try {
+        const { startTime, endTime } = req.query;
         const query = {}
-        const now = new Date();
         if (req.query.name) {
             const regex = new RegExp(req.query.name, 'i');
             query.name = regex;
         }
+        let materials;
 
-        const materials = await Material.aggregate([
-            { $match: query },
-            {
-                $addFields: {
-                    currentHistory: {
-                        $filter: {
-                            input: '$valueHistory',
-                            as: 'h',
-                            cond: {
-                                $and: [
-                                    { $lte: ['$$h.startTime', now] },
-                                    { $gte: ['$$h.endTime', now] }
-                                ]
+        if (startTime && endTime) {
+            const filterStartTime = new Date(startTime);
+            const filterEndTime = new Date(endTime);
+            materials = await Material.aggregate([
+                { $match: query },
+                {
+                    $addFields: {
+                        currentHistory: {
+                            $filter: {
+                                input: '$valueHistory',
+                                as: 'h',
+                                cond: {
+                                    $and: [
+                                        { $eq: ['$$h.startTime', filterStartTime] },
+                                        { $eq: ['$$h.endTime', filterEndTime] }
+                                    ]
+                                }
                             }
                         }
                     }
-                }
-            },
-            {
-                $addFields: {
-                    density: {
-                        $ifNull: [
-                            { $arrayElemAt: ['$currentHistory.density', 0] },
-                            null
-                        ]
-                    },
-                    dryDensity: {
-                        $ifNull: [
-                            { $arrayElemAt: ['$currentHistory.dryDensity', 0] },
-                            null
-                        ]
+                },
+                {
+                    $addFields: {
+                        density: {
+                            $ifNull: [
+                                { $arrayElemAt: ['$currentHistory.density', 0] },
+                                null
+                            ]
+                        },
+                        dryDensity: {
+                            $ifNull: [
+                                { $arrayElemAt: ['$currentHistory.dryDensity', 0] },
+                                null
+                            ]
+                        },
+                        startTime: {
+                            $ifNull: [
+                                { $arrayElemAt: ['$currentHistory.startTime', 0] },
+                                null
+                            ]
+                        },
+                        endTime: {
+                            $ifNull: [
+                                { $arrayElemAt: ['$currentHistory.endTime', 0] },
+                                null
+                            ]
+                        }
                     }
-                }
-            },
-            {
-                $project: {
-                    name: 1,
-                    acceptedProduct: 1,
-                    valueHistory: 1,
-                    density: 1,
-                    dryDensity: 1,
-                    createdAt: 1,
-                    updatedAt: 1
-                }
-            },
-            { $sort: { name: 1 } }
-        ]);
+                },
+                {
+                    $project: {
+                        name: 1,
+                        acceptedProduct: 1,
+                        valueHistory: 1,
+                        density: 1,
+                        dryDensity: 1,
+                        startTime: 1,
+                        endTime: 1,
+                        createdAt: 1,
+                        updatedAt: 1
+                    }
+                },
+                { $sort: { name: 1 } }
+            ]);
+        } else {
+            materials = await Material.find(query);
+        }
         req.logger.info(`🔥 Load thành công`);
         res.status(200).send({ status: 'success', data: materials });
     } catch (err) {

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     Box,
@@ -19,6 +19,8 @@ import {
     Breadcrumbs,
     InputAdornment,
     LinearProgress,
+    FormControlLabel,
+    Checkbox,
 } from "@mui/material";
 import {
     Add as AddIcon,
@@ -48,7 +50,11 @@ import dayjs from "dayjs";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
-
+interface HistoryTimeSlot {
+    id: string;
+    startTime: Date | null;
+    endTime: Date | null;
+}
 const Materials: React.FC = () => {
     const [open, setOpen] = useState(false);
     const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(
@@ -60,6 +66,9 @@ const Materials: React.FC = () => {
     const [expanded, setExpanded] = useState(false);
     const [user] = useAtom(userAtom);
 
+    const [selectedTimeSlot, setSelectedTimeSlot] = useState<HistoryTimeSlot | null>(null);
+    const [timeSlots, setTimeSlots] = useState<HistoryTimeSlot[]>([]);
+
     const formRef = useRef<HTMLDivElement>(null);
 
     const defaultColumns = [
@@ -67,6 +76,14 @@ const Materials: React.FC = () => {
         { id: "density", label: "Tỷ trọng quy ẩm" },
         { id: "dryDensity", label: "Tỷ trọng không quy ẩm" },
         { id: "acceptedProduct", label: "Sản phẩm nghiệm thu" },
+        {
+            id: "startTime", label: "Thời gian bắt đầu",
+            renderCell: (params: { row: any }) => params.row?.startTime ? dayjs(params.row?.startTime).format("DD/MM/YYYY") : ''
+        },
+        {
+            id: "endTime", label: "Thời gian kết thúc",
+            renderCell: (params: { row: any }) => params.row?.endTime ? dayjs(params.row?.endTime).format("DD/MM/YYYY") : ''
+        },
         {
             id: "edit",
             label: "Sửa",
@@ -111,9 +128,49 @@ const Materials: React.FC = () => {
     };
 
     const { data: materials = [], isLoading } = useQuery({
-        queryKey: ["materials", value],
-        queryFn: () => MaterialService.getAll({ name: value }),
+        queryKey: ["materials", value, selectedTimeSlot],
+        queryFn: () => MaterialService.getAll({ name: value, startTime: selectedTimeSlot?.startTime ? selectedTimeSlot?.startTime.toISOString() : '', endTime: selectedTimeSlot?.endTime ? selectedTimeSlot?.endTime.toISOString() : '' }),
     });
+
+    useEffect(() => {
+        if (materials.length > 0) {
+            const allHistory: HistoryTimeSlot[] = [];
+            const seen = new Set();
+
+            materials.forEach((material: any) => {
+                material.valueHistory?.forEach((h: any) => {
+                    const key = `${h.startTime}-${h.endTime}`;
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        allHistory.push({
+                            id: key,
+                            startTime: h.startTime ? new Date(h.startTime) : null,
+                            endTime: h.endTime ? new Date(h.endTime) : null,
+                        });
+                    }
+                });
+            });
+
+            // sắp xếp giảm dần
+            allHistory.sort((a, b) => {
+                // b.startTime ?? 0: Nếu b.startTime là null/undefined, dùng 0.
+                const timeB = new Date(b.startTime ?? 0).getTime();
+                const timeA = new Date(a.startTime ?? 0).getTime();
+
+                // Thực hiện phép trừ giữa hai timestamp (kiểu number)
+                return timeB - timeA;
+            });
+            setTimeSlots(allHistory);
+            if (selectedTimeSlot === null) {
+                setSelectedTimeSlot(allHistory[0]);
+            }
+        }
+    }, [materials, selectedTimeSlot]);
+
+    // Hàm xử lý khi chọn một slot lịch sử
+    const handleSelectSlot = (slot: HistoryTimeSlot) => {
+        setSelectedTimeSlot(slot);
+    };
 
     const createMutation = useMutation({
         mutationFn: MaterialService.create,
@@ -345,6 +402,10 @@ const Materials: React.FC = () => {
                         <Box
                             flex={2}
                             sx={{
+                                display: 'flex',
+                                flexGrow: 1, // Chiếm hết phần còn lại của không gian
+                                gap: 2,
+                                alignItems: 'center',
                                 flexDirection: {
                                     xs: "column",
                                     md: "row",
@@ -369,6 +430,24 @@ const Materials: React.FC = () => {
                                     ),
                                 }}
                             ></TextField>
+                            <TextField
+                                fullWidth
+                                select
+                                size="small"
+                                value={selectedTimeSlot?.id || ""}
+                                label="Lọc theo thời gian"
+                                onChange={(e) => {
+                                    const slot = timeSlots.find((s) => s.id === e.target.value);
+                                    if (slot) handleSelectSlot(slot);
+                                }}
+                            >
+                                {timeSlots.map((slot) => (
+                                    <MenuItem key={slot.id} value={slot.id}>
+                                        {`Từ ${dayjs(slot.startTime).format("DD/MM/YYYY")} - Đến ${dayjs(slot.endTime).format("DD/MM/YYYY")}`}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+
                         </Box>
                         {user?.role === RoleEnum.ADMIN && (
                             <Box

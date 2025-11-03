@@ -20,7 +20,7 @@ router.post('/order/bulk', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
 
         if (!Array.isArray(ids) || ids.length === 0) {
             req.logger.error("❌ Chọn bản ghi tải xuống");
-            return res.status(400).send({ status: 'error', message: 'Chọn bản ghi cần tải xuống' });
+            return res.status(400).json({ status: 'error', message: 'Chọn bản ghi cần tải xuống' });
         }
 
         const orders = await Order.find({ _id: { $in: ids } })
@@ -103,7 +103,7 @@ router.post('/order/bulk', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
         req.logger.info(`✅ Export excel thành công`);
     } catch (err) {
         req.logger.error("❌ Lỗi khi export", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
 })
 
@@ -2548,10 +2548,10 @@ router.post('/vehicleShiftReport/view', verifyToken, restrictTo(ROLE.MANAGER, RO
                     };
                 });
         });
-        res.status(200).send({ status: 'success', data: formattedData })
+        res.status(200).json({ status: 'success', data: formattedData })
     } catch (err) {
         req.logger.error("❌ Lỗi khi load", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
 })
 router.post('/vehicleShiftReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
@@ -2728,7 +2728,7 @@ router.post('/vehicleShiftReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.AD
 
     } catch (err) {
         req.logger.error("❌ Lỗi khi export", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
 });
 
@@ -2832,10 +2832,10 @@ router.post('/carReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN,
             });
         }
 
-        res.status(200).send({ status: 'success', data: result })
+        res.status(200).json({ status: 'success', data: result })
     } catch (err) {
         req.logger.error("❌ Lỗi khi load", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
 })
 
@@ -3211,7 +3211,7 @@ router.post('/carReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE
 
     } catch (err) {
         req.logger.error("❌ Lỗi khi export", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
 })
 
@@ -3312,10 +3312,10 @@ router.post('/excavatorReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.
             });
         }
 
-        res.status(200).send({ status: 'success', data: result })
+        res.status(200).json({ status: 'success', data: result })
     } catch (err) {
         req.logger.error("❌ Lỗi khi load", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
 })
 router.post('/excavatorReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
@@ -3680,7 +3680,7 @@ router.post('/excavatorReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN
 
     } catch (err) {
         req.logger.error("❌ Lỗi khi export", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
 });
 // báo tổng hợp máy gạt
@@ -3775,10 +3775,10 @@ router.post('/dozerReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMI
             });
         }
 
-        res.status(200).send({ status: 'success', data: result })
+        res.status(200).json({ status: 'success', data: result })
     } catch (err) {
         req.logger.error("❌ Lỗi khi load", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
 })
 router.post('/dozerReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
@@ -4124,7 +4124,7 @@ router.post('/dozerReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, RO
 
     } catch (err) {
         req.logger.error("❌ Lỗi khi export", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
 });
 
@@ -4223,7 +4223,7 @@ router.post('/drillReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMI
         res.status(200).send({ status: 'success', data: result })
     } catch (err) {
         req.logger.error("❌ Lỗi khi load", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
 })
 router.post('/drillReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
@@ -4574,7 +4574,7 @@ router.post('/drillReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, RO
 
     } catch (err) {
         req.logger.error("❌ Lỗi khi export", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
 });
 
@@ -4684,7 +4684,7 @@ router.post('/excavatorTripReport/view', verifyToken, restrictTo(ROLE.MANAGER, R
 
         res.status(200).send({ status: 'success', data: result, materials, maxTrips })
     } catch (err) {
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
 })
 
@@ -5043,7 +5043,7 @@ router.post('/excavatorTripReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.A
 
     } catch (err) {
         console.log(err)
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
 })
 
@@ -5168,7 +5168,7 @@ router.post('/carTripReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.AD
         res.status(200).send({ status: 'success', data: result, maxTrips, materials })
     } catch (err) {
         req.logger.error("❌ Lỗi khi load", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
 })
 
@@ -5580,7 +5580,7 @@ router.post('/carTripReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, 
 
     } catch (err) {
         req.logger.error("❌ Lỗi khi export", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
 })
 
@@ -5651,7 +5651,7 @@ router.post('/productReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.AD
         res.status(200).send({ status: 'success', data: formattedData })
     } catch (err) {
         req.logger.error("❌ Lỗi khi load", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
 })
 
@@ -5812,7 +5812,7 @@ router.post('/productReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, 
 
     } catch (err) {
         req.logger.error("❌ Lỗi khi export", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
 })
 
@@ -5859,7 +5859,7 @@ router.post('/worklog/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, R
         res.status(200).send({ status: 'success', data: formattedData })
     } catch (err) {
         req.logger.error("❌ Lỗi khi load", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
 })
 
@@ -6009,7 +6009,7 @@ router.post('/worklog', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.D
 
     } catch (err) {
         req.logger.error("❌ Lỗi khi export", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
 })
 
@@ -6059,7 +6059,7 @@ router.post('/meal_request/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADM
         res.status(200).send({ status: 'success', data: formattedData })
     } catch (err) {
         req.logger.error("❌ Lỗi khi load", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
 })
 
@@ -6205,7 +6205,7 @@ router.post('/meal_request', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, R
 
     } catch (err) {
         req.logger.error("❌ Lỗi khi export", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
 })
 
@@ -6426,7 +6426,7 @@ router.post('/assignmentTo', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, R
     }
     catch (err) {
         req.logger.error("❌ Lỗi khi export", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
 })
 router.post('/assignmentManager', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
@@ -6609,7 +6609,7 @@ router.post('/assignmentManager', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADM
     }
     catch (err) {
         req.logger.error("❌ Lỗi khi export", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
 
     }
 })

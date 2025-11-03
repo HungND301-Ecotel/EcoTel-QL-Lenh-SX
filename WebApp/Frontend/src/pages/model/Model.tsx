@@ -60,7 +60,7 @@ const Models: React.FC = () => {
             const seen = new Set();
 
             models.forEach((model: any) => {
-                model.valueHistory.forEach((h: any) => {
+                model.valueHistory?.forEach((h: any) => {
                     const key = `${h.startTime}-${h.endTime}`;
                     if (!seen.has(key)) {
                         seen.add(key);

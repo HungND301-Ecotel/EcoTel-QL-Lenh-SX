@@ -60,3 +60,25 @@ exports.getPresignedUrl = async (req, res) => {
     res.status(500).json({ status: 'error', message: 'Error generating URL' });
   }
 };
+
+exports.getDownloadUrl = async (req, res) => {
+  try {
+    const { key } = req.query; // FE gửi key = "checkin/abc.webp"
+    if (!key) return res.status(400).json({ message: "Missing key" });
+
+    const params = {
+      Bucket: process.env.S3_BUCKET_NAME,
+      Key: key,
+      Expires: 60 * 30, // 5 phút
+    };
+
+    const downloadURL = await s3.getSignedUrlPromise("getObject", params);
+    res.json({
+      status: "success",
+      data: downloadURL,
+    });
+  } catch (err) {
+    console.error("Error generating download URL:", err);
+    res.status(500).json({ message: "Error generating URL" });
+  }
+};
