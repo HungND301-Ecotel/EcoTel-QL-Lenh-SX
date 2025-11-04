@@ -7210,7 +7210,7 @@ router.post(
             // Gửi file
             const buffer = await workbook.xlsx.writeBuffer();
             res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-            res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${sheetName}.xlsx`);
+            res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''*.xlsx`);
             res.send(buffer);
             req.logger.info(`✅ Export excel thành công`);
         } catch (err) {
