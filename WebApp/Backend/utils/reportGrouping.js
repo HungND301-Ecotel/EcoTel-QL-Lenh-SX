@@ -1,19 +1,19 @@
-const TravelLog = require('../models/TravelLog')
-const Model = require('../models/Model');
-const { ACCEPTED_PRODUCTS, ACCEPTED_PRODUCT } = require('../config/config');
-let pLimit = require('p-limit');
+const TravelLog = require("../models/TravelLog");
+const Model = require("../models/Model");
+const { ACCEPTED_PRODUCTS, ACCEPTED_PRODUCT } = require("../config/config");
+let pLimit = require("p-limit");
 if (pLimit.default) pLimit = pLimit.default;
 
 async function safeQuery(fn, retries = 3, delay = 300) {
-    for (let i = 0; i < retries; i++) {
-        try {
-            return await fn();
-        } catch (err) {
-            if (err.code === 18 && i < retries - 1) {
-                await new Promise(r => setTimeout(r, delay));
-            } else throw err;
-        }
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (err.code === 18 && i < retries - 1) {
+        await new Promise((r) => setTimeout(r, delay));
+      } else throw err;
     }
+  }
 }
 
 // giới hạn 100 query song song
@@ -21,496 +21,537 @@ const limit = pLimit(20);
 
 // lenh sx vh xe
 async function groupTripsVehicle(trips, date, shift) {
-    // Sử dụng Promise.all với map để xử lý bất đồng bộ song song (tăng tốc độ)
-    const formattedTrips = await Promise.all(trips.map(async (t) => {
+  // Sử dụng Promise.all với map để xử lý bất đồng bộ song song (tăng tốc độ)
+  const formattedTrips = await Promise.all(
+    trips.map(async (t) => {
+      // Chuyển quantityUpdateTimes thành mảng để lặp
+      const timesArray = (t.quantityUpdateTimes || []).map((i) => i?.time);
 
-        // Chuyển quantityUpdateTimes thành mảng để lặp
-        const timesArray = (t.quantityUpdateTimes || []).map(i => i?.time)
+      // 1. TÍNH TOÁN VÀ GOM timeLogs
+      // Sử dụng Promise.all để tìm TravelLog song song cho mỗi mốc thời gian
+      let totalDistance = 0;
+      const travelLog = await TravelLog.findOne({
+        excavator: t.excavator?._id,
+        location: t.toLocation?._id,
+        workingDate: date,
+        shift: shift?._id,
+      }).lean();
 
-        // 1. TÍNH TOÁN VÀ GOM timeLogs
-        // Sử dụng Promise.all để tìm TravelLog song song cho mỗi mốc thời gian
-        let totalDistance = 0;
-        const travelLog = await TravelLog.findOne({
-            excavator: t.excavator?._id,
-            location: t.toLocation?._id,
-            workingDate: date,
-            shift: shift?._id
-        }).lean();
+      const timeLogPromises = timesArray.map(async (time) => {
+        const distance = travelLog ? travelLog.fullDistanceKm || 0 : 0;
 
-        const timeLogPromises = timesArray.map(async (time) => {
-
-            const distance = travelLog ? (travelLog.fullDistanceKm || 0) : 0;
-
-            return {
-                time: time,
-                distance: distance
-            };
-        });
-
-        const timeLogs = await Promise.all(timeLogPromises);
-
-        totalDistance = timeLogs.reduce((sum, log) => sum + log.distance, 0);
-
-        // 2. TÍNH TOÁN KHỐI LƯỢNG VÀ TẤN
-        const value = await caculatorWeight(t.material?._id, t.device?.material, t.quantity, totalDistance, date);
-
-        // 3. TRẢ VỀ ĐỐI TƯỢNG CHUYẾN ĐI MỚI (PHẲNG)
         return {
-            device: t.device,
-            excavator: t.excavator,
-            location: t.toLocation,
-            material: t.material,
-            quantity: t.quantity,
-            workingDate: t.workingDate,
-            shift: t.shift?.name || 1,
-            // Thông tin đã tính toán
-            totalCubicMeter: value.cubicMeter, // Đổi tên thành totalCubicMeter để nhất quán, nhưng nó là của chuyến đi này
-            totalTon: value.ton,
-            production: value.production,
-            timeLogs: timeLogs                 // Mảng chứa {time, distance}
+          time: time,
+          distance: distance,
         };
-    }));
+      });
 
-    return formattedTrips;
+      const timeLogs = await Promise.all(timeLogPromises);
+
+      totalDistance = timeLogs.reduce((sum, log) => sum + log.distance, 0);
+
+      // 2. TÍNH TOÁN KHỐI LƯỢNG VÀ TẤN
+      const value = await caculatorWeight(
+        t.material?._id,
+        t.device?.material,
+        t.quantity,
+        totalDistance,
+        date
+      );
+
+      // 3. TRẢ VỀ ĐỐI TƯỢNG CHUYẾN ĐI MỚI (PHẲNG)
+      return {
+        device: t.device,
+        excavator: t.excavator,
+        location: t.toLocation,
+        material: t.material,
+        quantity: t.quantity,
+        workingDate: t.workingDate,
+        shift: t.shift?.name || 1,
+        // Thông tin đã tính toán
+        totalCubicMeter: value.cubicMeter, // Đổi tên thành totalCubicMeter để nhất quán, nhưng nó là của chuyến đi này
+        totalTon: value.ton,
+        production: value.production,
+        timeLogs: timeLogs, // Mảng chứa {time, distance}
+      };
+    })
+  );
+
+  return formattedTrips;
 }
 
 // san luong tkm
 async function groupTripsVehicleProduction(trips) {
-    return Promise.all(
-        trips.map(t =>
-            limit(async () => {
-                const travelLog = await safeQuery(() =>
-                    TravelLog.findOne({
-                        excavator: t.excavator?._id,
-                        location: t.toLocation?._id,
-                        workingDate: t.workingDate,
-                        shift: t.shift?._id
-                    }).lean()
-                );
+  return Promise.all(
+    trips.map((t) =>
+      limit(async () => {
+        const travelLog = await safeQuery(() =>
+          TravelLog.findOne({
+            excavator: t.excavator?._id,
+            location: t.toLocation?._id,
+            workingDate: t.workingDate,
+            shift: t.shift?._id,
+          }).lean()
+        );
 
-                let totalDistance = 0;
+        let totalDistance = 0;
 
-                const distance = travelLog ? travelLog.fullDistanceKm || 0 : 0;
-                totalDistance = distance * (Array.isArray(t.quantityUpdateTimes) ? t.quantityUpdateTimes.length : 1);
+        const distance = travelLog ? travelLog.fullDistanceKm || 0 : 0;
+        totalDistance =
+          distance *
+          (Array.isArray(t.quantityUpdateTimes)
+            ? t.quantityUpdateTimes.length
+            : 1);
 
-                const value = await safeQuery(() =>
-                    caculatorWeight(
-                        t.material?._id,
-                        t.device?.material,
-                        t.quantity,
-                        totalDistance,
-                        t.workingDate
-                    )
-                );
-
-                return {
-                    device: t.device,
-                    excavator: t.excavator,
-                    location: t.toLocation,
-                    material: t.material,
-                    quantity: t.quantity,
-                    workingDate: t.workingDate,
-                    shift: t.shift?.name || 1,
-                    production: value.production,
-                };
-            })
-        )
-    );
-}
-
-async function groupExcavator(trips, date) {
-    const groups = {};
-
-    for (const t of trips) {
-        const key = `${t.device}`;
-        if (!groups[key]) {
-            groups[key] = {
-                device: t.device,
-                materials: [],
-                workingDate: t.workingDate,
-                shift: t.shift || 1,
-                totalCubicMeter: 0,
-                totalTon: 0
-            };
-        }
-        const value = await caculatorWeight(t.material?._id, t.device?.material, t.quantity, 0, date)
-        groups[key].totalCubicMeter += value.cubicMeter;
-        groups[key].totalTon += value.ton;
-
-        groups[key].materials.push({
-            material: t.material,
-            quantity: t.quantity,
-            cubicMeter: value.cubicMeter,
-            ton: value.ton,
-            times: (t.quantityUpdateTimes || []).map(i => i?.time)
-        });
-    };
-
-    return Object.values(groups);
-}
-async function groupProduction(trips, date) {
-    const groups = {};
-
-    for (const t of trips) {
-        if (!t.workingDate) continue;
-
-        const dayKey = new Date(t.workingDate).toISOString().slice(0, 10);
-        const shift = t.shift || 1;
-
-        // ✅ KHÓA CHUẨN — gồm thiết bị, ngày, ca
-        const key = `${t.device}_${dayKey}_${shift}`;
-
-        if (!groups[key]) {
-            groups[key] = {
-                device: t.device,
-                materials: [],
-                workingDate: t.workingDate,
-                shift,
-                totalCubicMeter: 0,
-                totalTon: 0
-            };
-        }
-
-        const value = await caculatorWeight(
+        const value = await safeQuery(() =>
+          caculatorWeight(
             t.material?._id,
             t.device?.material,
             t.quantity,
-            0,
-            date
+            totalDistance,
+            t.workingDate
+          )
         );
 
-        groups[key].totalCubicMeter += value.cubicMeter;
-        groups[key].totalTon += value.ton;
+        return {
+          device: t.device,
+          excavator: t.excavator,
+          location: t.toLocation,
+          material: t.material,
+          quantity: t.quantity,
+          workingDate: t.workingDate,
+          shift: t.shift?.name || 1,
+          production: value.production,
+        };
+      })
+    )
+  );
+}
 
-        groups[key].materials.push({
-            material: t.material,
-            quantity: t.quantity,
-            cubicMeter: value.cubicMeter,
-            ton: value.ton,
-            times: (t.quantityUpdateTimes || []).map(i => i?.time)
-        });
+async function groupExcavator(trips, date) {
+  const groups = {};
+
+  for (const t of trips) {
+    const key = `${t.device}`;
+    if (!groups[key]) {
+      groups[key] = {
+        device: t.device,
+        materials: [],
+        workingDate: t.workingDate,
+        shift: t.shift || 1,
+        totalCubicMeter: 0,
+        totalTon: 0,
+      };
+    }
+    const value = await caculatorWeight(
+      t.material?._id,
+      t.device?.material,
+      t.quantity,
+      0,
+      date
+    );
+    groups[key].totalCubicMeter += value.cubicMeter;
+    groups[key].totalTon += value.ton;
+
+    groups[key].materials.push({
+      material: t.material,
+      quantity: t.quantity,
+      cubicMeter: value.cubicMeter,
+      ton: value.ton,
+      times: (t.quantityUpdateTimes || []).map((i) => i?.time),
+    });
+  }
+
+  return Object.values(groups);
+}
+async function groupProduction(trips, date) {
+  const groups = {};
+
+  for (const t of trips) {
+    if (!t.workingDate) continue;
+
+    const dayKey = new Date(t.workingDate).toISOString().slice(0, 10);
+    const shift = t.shift || 1;
+
+    // ✅ KHÓA CHUẨN — gồm thiết bị, ngày, ca
+    const key = `${t.device}_${dayKey}_${shift}`;
+
+    if (!groups[key]) {
+      groups[key] = {
+        device: t.device,
+        materials: [],
+        workingDate: t.workingDate,
+        shift,
+        totalCubicMeter: 0,
+        totalTon: 0,
+      };
     }
 
-    return Object.values(groups);
+    const value = await caculatorWeight(
+      t.material?._id,
+      t.device?.material,
+      t.quantity,
+      0,
+      date
+    );
+
+    groups[key].totalCubicMeter += value.cubicMeter;
+    groups[key].totalTon += value.ton;
+
+    groups[key].materials.push({
+      material: t.material,
+      quantity: t.quantity,
+      cubicMeter: value.cubicMeter,
+      ton: value.ton,
+      times: (t.quantityUpdateTimes || []).map((i) => i?.time),
+    });
+  }
+
+  return Object.values(groups);
 }
+
 function groupTripsExcavator(trips) {
-    const groups = {};
+  const groups = {};
 
-    trips.forEach(t => {
-        const key = `${t.device}`;
-        if (!groups[key]) {
-            groups[key] = {
-                device: t.device,
-                trips: [],
-                summary: {},
-                totalTrips: 0
-            };
-        }
-        const timesArray = (t.quantityUpdateTimes || []).map(i => i?.time)
-        timesArray.forEach((time) => {
-            groups[key].trips.push({
-                material: t.material,
-                time: time
-            });
+  trips.forEach((t) => {
+    const key = `${t.device?._id || t.device?.code}_${t.material?._id}`;
+
+    if (!groups[key]) {
+      groups[key] = {
+        device: t.device,
+        trips: [],
+        summary: {},
+        totalTrips: 0,
+      };
+    }
+
+    const timesArray = (t?.quantityUpdateTimes || []).map((i) => i?.time);
+    timesArray.forEach((time) => {
+      // 🔹 Chỉ thêm nếu chưa có cùng material + time trong trips
+      const alreadyExists = groups[key].trips.some(
+        (trip) =>
+          trip.material?._id?.toString() === t.material?._id?.toString() &&
+          new Date(trip.time).getTime() === new Date(time).getTime()
+      );
+
+      if (!alreadyExists) {
+        groups[key].trips.push({
+          material: t.material,
+          time,
         });
-        if (!groups[key].summary[t.material.name]) {
-            groups[key].summary[t.material.name] = 0;
-        }
-        groups[key].summary[t.material.name] += times.length;
-
-        groups[key].totalTrips += times.length;
+      }
     });
 
-    Object.values(groups).forEach((g) => {
-        g.trips.sort((a, b) => new Date(a.time) - new Date(b.time));
-    });
+    const materialName =
+      typeof t.material === "string"
+        ? t.material
+        : t.material?.name || "Không rõ";
 
-    return Object.values(groups);
+    if (!groups[key].summary[materialName]) {
+      groups[key].summary[materialName] = 0;
+    }
+    groups[key].summary[materialName] += t.quantity;
+    groups[key].totalTrips += t.quantity;
+  });
+
+  Object.values(groups).forEach((g) => {
+    g.trips.sort((a, b) => new Date(a.time) - new Date(b.time));
+  });
+
+  return Object.values(groups);
 }
 
 // nhóm báo chuyến ô tô
 async function groupTripsCar(trips) {
-    const groups = {};
+  const groups = {};
 
-    for (const t of trips) {
-        const key = `${t.device}-${t.excavator}-${t.toLocation}`;
-        if (!groups[key]) {
-            groups[key] = {
-                device: t.device,
-                excavator: t.excavator,
-                toLocation: t.toLocation,
-                trips: [],
-                summary: {},
-                totalTrips: 0,
-                totalDistance: 0
-            };
-        }
-        const timesArray = (t.quantityUpdateTimes || []).map(i => i?.time)
-        for (const time of timesArray) {
-            const travelLog = await TravelLog.findOne({
-                excavator: t.excavator,        // lọc theo máy xúc
-                location: t.toLocation,       // lọc theo điểm đổ tải
-                startTime: { $lte: time },    // bắt đầu <= time
-                endTime: { $gte: time }       // kết thúc >= time
-            }).lean();
+  for (const t of trips) {
+    const key = `${t.device}-${t.excavator}-${t.toLocation}`;
+    if (!groups[key]) {
+      groups[key] = {
+        device: t.device,
+        excavator: t.excavator,
+        toLocation: t.toLocation,
+        trips: [],
+        summary: {},
+        totalTrips: 0,
+        totalDistance: 0,
+      };
+    }
+    const timesArray = (t.quantityUpdateTimes || []).map((i) => i?.time);
+    for (const time of timesArray) {
+      const travelLog = await TravelLog.findOne({
+        excavator: t.excavator, // lọc theo máy xúc
+        location: t.toLocation, // lọc theo điểm đổ tải
+        startTime: { $lte: time }, // bắt đầu <= time
+        endTime: { $gte: time }, // kết thúc >= time
+      }).lean();
 
-            const distance = travelLog ? travelLog.fullDistanceKm : 0
-            groups[key].trips.push({
-                material: t.material,
-                time,
-                distance
-            });
-            if (!groups[key].summary[t.material.name]) {
-                groups[key].summary[t.material.name] = { count: 0, distance: 0 }
-            }
-            groups[key].summary[t.material.name].count += 1;
-            groups[key].summary[t.material.name].distance += distance;
+      const distance = travelLog ? travelLog.fullDistanceKm : 0;
+      groups[key].trips.push({
+        material: t.material,
+        time,
+        distance,
+      });
+      if (!groups[key].summary[t.material.name]) {
+        groups[key].summary[t.material.name] = { count: 0, distance: 0 };
+      }
+      groups[key].summary[t.material.name].count += 1;
+      groups[key].summary[t.material.name].distance += distance;
 
+      groups[key].totalTrips += 1;
+      groups[key].totalDistance += distance;
+    }
+  }
 
-            groups[key].totalTrips += 1;
-            groups[key].totalDistance += distance;
-        }
+  Object.values(groups).forEach((g) => {
+    g.trips.sort((a, b) => new Date(a.time) - new Date(b.time));
+  });
 
-    };
-
-    Object.values(groups).forEach((g) => {
-        g.trips.sort((a, b) => new Date(a.time) - new Date(b.time));
-    });
-
-    return Object.values(groups);
+  return Object.values(groups);
 }
 
 // nhóm tổng hợp ô tô
 async function groupCar(trips) {
-    const groups = {};
+  const groups = {};
 
-    for (const t of trips) {
-        const key = `${t.excavator}-${t.toLocation}`;
-        if (!groups[key]) {
-            groups[key] = {
-                excavator: t.excavator,
-                toLocation: t.toLocation,
-                materials: {},   // thay vì trips
-            };
-        }
-
-        const timesArray = (t.quantityUpdateTimes || []).map(i => i?.time)
-
-        for (const time of timesArray) {
-            const travelLog = await TravelLog.findOne({
-                excavator: t.excavator,
-                location: t.toLocation,
-                startTime: { $lte: time },
-                endTime: { $gte: time }
-            }).lean();
-
-            const distance = travelLog ? travelLog.fullDistanceKm : 0;
-
-            if (!groups[key].materials[t.material.name]) {
-                groups[key].materials[t.material.name] = {
-                    material: t.material,
-                    times: [],        // danh sách thời gian
-                    distances: [],    // danh sách cung độ theo index
-                    count: 0,
-                    totalDistance: 0
-                };
-            }
-
-            groups[key].materials[t.material.name].times.push(time);
-            groups[key].materials[t.material.name].distances.push(distance);
-            groups[key].materials[t.material.name].count += 1;
-            groups[key].materials[t.material.name].totalDistance += distance;
-
-            groups[key].totalTrips += 1;
-            groups[key].totalDistance += distance;
-        }
+  for (const t of trips) {
+    const key = `${t.excavator}-${t.toLocation}`;
+    if (!groups[key]) {
+      groups[key] = {
+        excavator: t.excavator,
+        toLocation: t.toLocation,
+        materials: {}, // thay vì trips
+      };
     }
 
-    // sort times cho từng material
-    Object.values(groups).forEach((g) => {
-        Object.values(g.materials).forEach((m) => {
-            const combined = m.times.map((time, i) => ({
-                time,
-                distance: m.distances[i]
-            }));
-            combined.sort((a, b) => new Date(a.time) - new Date(b.time));
-            m.times = combined.map(c => c.time);
-            m.distances = combined.map(c => c.distance);
-        });
+    const timesArray = (t.quantityUpdateTimes || []).map((i) => i?.time);
+
+    for (const time of timesArray) {
+      const travelLog = await TravelLog.findOne({
+        excavator: t.excavator,
+        location: t.toLocation,
+        startTime: { $lte: time },
+        endTime: { $gte: time },
+      }).lean();
+
+      const distance = travelLog ? travelLog.fullDistanceKm : 0;
+
+      if (!groups[key].materials[t.material.name]) {
+        groups[key].materials[t.material.name] = {
+          material: t.material,
+          times: [], // danh sách thời gian
+          distances: [], // danh sách cung độ theo index
+          count: 0,
+          totalDistance: 0,
+        };
+      }
+
+      groups[key].materials[t.material.name].times.push(time);
+      groups[key].materials[t.material.name].distances.push(distance);
+      groups[key].materials[t.material.name].count += 1;
+      groups[key].materials[t.material.name].totalDistance += distance;
+
+      groups[key].totalTrips += 1;
+      groups[key].totalDistance += distance;
+    }
+  }
+
+  // sort times cho từng material
+  Object.values(groups).forEach((g) => {
+    Object.values(g.materials).forEach((m) => {
+      const combined = m.times.map((time, i) => ({
+        time,
+        distance: m.distances[i],
+      }));
+      combined.sort((a, b) => new Date(a.time) - new Date(b.time));
+      m.times = combined.map((c) => c.time);
+      m.distances = combined.map((c) => c.distance);
     });
+  });
 
-    return Object.values(groups).map(g => ({
-        ...g,
-        materials: Object.values(g.materials) // trả về mảng cho FE
-    }));
+  return Object.values(groups).map((g) => ({
+    ...g,
+    materials: Object.values(g.materials), // trả về mảng cho FE
+  }));
 }
-
 
 // nhóm người nhận, phụ máy
 function getCombinedUsers(order) {
-    const combined = [];
+  const combined = [];
 
-    if (order.assignedTo) {
-        combined.push({
-            fullName: order.assignedTo.fullName,
-            salaryCode: order.assignedTo.salaryCode,
-        });
-    }
+  if (order.assignedTo) {
+    combined.push({
+      fullName: order.assignedTo.fullName,
+      salaryCode: order.assignedTo.salaryCode,
+    });
+  }
 
-    if (order.assistants && order.assistants.length > 0) {
-        order.assistants.forEach((ast) => {
-            combined.push({
-                fullName: `- ${ast.fullName}`,
-                salaryCode: ast.salaryCode,
-            });
-        });
-    }
+  if (order.assistants && order.assistants.length > 0) {
+    order.assistants.forEach((ast) => {
+      combined.push({
+        fullName: `- ${ast.fullName}`,
+        salaryCode: ast.salaryCode,
+      });
+    });
+  }
 
-    return combined;
+  return combined;
 }
 
 // nhóm theo máy gạt
 function groupDozer(trips) {
-    const groups = {};
+  const groups = {};
 
-    trips.forEach(t => {
-        const key = `${t.device}`;
-        if (!groups[key]) {
-            groups[key] = {
-                device: t.device,
-                materials: []
-            };
-        }
-        groups[key].materials.push({
-            material: t.material,
-            workingMinutes: t.workingMinutes,
-        });
+  trips.forEach((t) => {
+    const key = `${t.device}`;
+    if (!groups[key]) {
+      groups[key] = {
+        device: t.device,
+        materials: [],
+      };
+    }
+    groups[key].materials.push({
+      material: t.material,
+      workingMinutes: t.workingMinutes,
     });
+  });
 
-    return Object.values(groups);
+  return Object.values(groups);
 }
 // nhóm theo máy khoan
 function groupDrill(trips) {
-    const groups = {};
+  const groups = {};
 
-    trips.forEach(t => {
-        const key = `${t.device}`;
-        if (!groups[key]) {
-            groups[key] = {
-                device: t.device,
-                materials: []
-            };
-        }
-        groups[key].materials.push({
-            material: t.material,
-            drillDepth: t.drillDepth,
-            hardnessF: t.hardnessF
-        });
+  trips.forEach((t) => {
+    const key = `${t.device}`;
+    if (!groups[key]) {
+      groups[key] = {
+        device: t.device,
+        materials: [],
+      };
+    }
+    groups[key].materials.push({
+      material: t.material,
+      drillDepth: t.drillDepth,
+      hardnessF: t.hardnessF,
     });
+  });
 
-    return Object.values(groups);
+  return Object.values(groups);
 }
 
 // khoi luong, trong luong tam tinh
 
-async function caculatorWeight(materialId, deviceModel, quantity, totalDistance, date) {
-    let cubicMeter = 0
-    let ton = 0
-    let production = 0
+async function caculatorWeight(
+  materialId,
+  deviceModel,
+  quantity,
+  totalDistance,
+  date
+) {
+  let cubicMeter = 0;
+  let ton = 0;
+  let production = 0;
 
-    const data = await Model.findOne({ material: materialId, deviceModel: deviceModel })
-        .populate('material', 'name acceptedProduct valueHistory');
+  const data = await Model.findOne({
+    material: materialId,
+    deviceModel: deviceModel,
+  }).populate("material", "name acceptedProduct valueHistory");
 
-    if (!data || !data.material) return { cubicMeter, ton, production };
-    const material = data?.material;
+  if (!data || !data.material) return { cubicMeter, ton, production };
+  const material = data?.material;
 
-    // 🧠 Tính tỷ trọng tại thời điểm `date`
-    const dryDensity = getTyTrongAtDate(material, normalizeDateToUTC(date))
-    const valueModel = getMohinhAtDate(data, normalizeDateToUTC(date))
+  // 🧠 Tính tỷ trọng tại thời điểm `date`
+  const dryDensity = getTyTrongAtDate(material, normalizeDateToUTC(date));
+  const valueModel = getMohinhAtDate(data, normalizeDateToUTC(date));
 
-
-    if (data && data.material?.acceptedProduct === ACCEPTED_PRODUCT.COAL) {
-        ton = valueModel * (quantity || 0) * dryDensity
-        production = valueModel * (totalDistance || 0) * dryDensity
-    } else if (data && data.material?.acceptedProduct === ACCEPTED_PRODUCT.LAND) {
-        cubicMeter = valueModel * (quantity || 0)
-        production = (totalDistance || 0) * valueModel * dryDensity
-    }
-    return {
-        cubicMeter: Number(cubicMeter.toFixed(1)),
-        ton: Number(ton.toFixed(1)),
-        production: Number(production.toFixed(1)),
-    };
+  if (data && data.material?.acceptedProduct === ACCEPTED_PRODUCT.COAL) {
+    ton = valueModel * (quantity || 0) * dryDensity;
+    production = valueModel * (totalDistance || 0) * dryDensity;
+  } else if (data && data.material?.acceptedProduct === ACCEPTED_PRODUCT.LAND) {
+    cubicMeter = valueModel * (quantity || 0);
+    production = (totalDistance || 0) * valueModel * dryDensity;
+  }
+  return {
+    cubicMeter: Number(cubicMeter.toFixed(1)),
+    ton: Number(ton.toFixed(1)),
+    production: Number(production.toFixed(1)),
+  };
 }
 
 function getTyTrongAtDate(material, date) {
-    if (!material) return 0;
+  if (!material) return 0;
 
-    const histories = Array.isArray(material.valueHistory) ? material.valueHistory : [];
-    const target = new Date(date);
+  const histories = Array.isArray(material.valueHistory)
+    ? material.valueHistory
+    : [];
+  const target = new Date(date);
 
-    if (histories.length === 0) return 0;
+  if (histories.length === 0) return 0;
 
-    // sắp xếp theo thời gian bắt đầu tăng dần
-    const sorted = histories.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+  // sắp xếp theo thời gian bắt đầu tăng dần
+  const sorted = histories.sort(
+    (a, b) => new Date(a.startTime) - new Date(b.startTime)
+  );
 
-    // duyệt để tìm mốc chứa ngày target
-    for (const h of sorted) {
-        const start = new Date(h.startTime);
-        const end = new Date(h.endTime);
+  // duyệt để tìm mốc chứa ngày target
+  for (const h of sorted) {
+    const start = new Date(h.startTime);
+    const end = new Date(h.endTime);
 
-        if (target >= start && target <= end) {
-            return h.dryDensity ?? 0;
-        }
+    if (target >= start && target <= end) {
+      return h.dryDensity ?? 0;
     }
+  }
 
-    return 0;
+  return 0;
 }
 function getMohinhAtDate(model, date) {
-    if (!model) return 0;
+  if (!model) return 0;
 
-    const histories = Array.isArray(model.valueHistory) ? model.valueHistory : [];
-    const target = new Date(date);
+  const histories = Array.isArray(model.valueHistory) ? model.valueHistory : [];
+  const target = new Date(date);
 
-    if (histories.length === 0) return 0;
+  if (histories.length === 0) return 0;
 
-    // sắp xếp theo thời gian bắt đầu tăng dần
-    const sorted = histories.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+  // sắp xếp theo thời gian bắt đầu tăng dần
+  const sorted = histories.sort(
+    (a, b) => new Date(a.startTime) - new Date(b.startTime)
+  );
 
-    // duyệt để tìm mốc chứa ngày target
-    for (const h of sorted) {
-        const start = new Date(h.startTime);
-        const end = new Date(h.endTime);
+  // duyệt để tìm mốc chứa ngày target
+  for (const h of sorted) {
+    const start = new Date(h.startTime);
+    const end = new Date(h.endTime);
 
-        if (target >= start && target <= end) {
-            return h.value ?? 0;
-        }
+    if (target >= start && target <= end) {
+      return h.value ?? 0;
     }
+  }
 
-    return 0;
+  return 0;
 }
-
-
 
 function normalizeDateToUTC(date) {
-    const d = new Date(date);
-    // bỏ phần giờ/phút/giây để chỉ so sánh theo ngày
-    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const d = new Date(date);
+  // bỏ phần giờ/phút/giây để chỉ so sánh theo ngày
+  return new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+  );
 }
 
-
-
 module.exports = {
-    groupTripsVehicle,
-    getCombinedUsers,
-    groupTripsExcavator,
-    groupTripsCar,
-    groupExcavator,
-    groupDozer,
-    groupDrill,
-    groupCar,
-    groupProduction,
-    groupTripsVehicleProduction,
-    safeQuery,
-    caculatorWeight
+  groupTripsVehicle,
+  getCombinedUsers,
+  groupTripsExcavator,
+  groupTripsCar,
+  groupExcavator,
+  groupDozer,
+  groupDrill,
+  groupCar,
+  groupProduction,
+  groupTripsVehicleProduction,
+  safeQuery,
+  caculatorWeight,
 };
