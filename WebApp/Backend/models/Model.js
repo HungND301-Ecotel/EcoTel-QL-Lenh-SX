@@ -9,9 +9,6 @@ const Model = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'DeviceModel',
     },
-    // value: {
-    //     type: Number
-    // },
     valueHistory: [
         {
             value: Number,
