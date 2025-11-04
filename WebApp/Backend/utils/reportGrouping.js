@@ -193,32 +193,49 @@ async function groupProduction(trips, date) {
 
     return Object.values(groups);
 }
+
 function groupTripsExcavator(trips) {
     const groups = {};
 
-    trips.forEach(t => {
-        const key = `${t.device}`;
+    trips.forEach((t) => {
+        const key = `${t.device?._id || t.device?.code}_${t.material?._id}`;
+
         if (!groups[key]) {
             groups[key] = {
                 device: t.device,
                 trips: [],
                 summary: {},
-                totalTrips: 0
+                totalTrips: 0,
             };
         }
-        const timesArray = (t.quantityUpdateTimes || []).map(i => i?.time)
-        timesArray.forEach((time) => {
-            groups[key].trips.push({
-                material: t.material,
-                time: time
-            });
-        });
-        if (!groups[key].summary[t.material.name]) {
-            groups[key].summary[t.material.name] = 0;
-        }
-        groups[key].summary[t.material.name] += times.length;
 
-        groups[key].totalTrips += times.length;
+        const timesArray = (t?.quantityUpdateTimes || []).map((i) => i?.time);
+        timesArray.forEach((time) => {
+            // 🔹 Chỉ thêm nếu chưa có cùng material + time trong trips
+            const alreadyExists = groups[key].trips.some(
+                (trip) =>
+                    trip.material?._id?.toString() === t.material?._id?.toString() &&
+                    new Date(trip.time).getTime() === new Date(time).getTime()
+            );
+
+            if (!alreadyExists) {
+                groups[key].trips.push({
+                    material: t.material,
+                    time,
+                });
+            }
+        });
+
+        const materialName =
+            typeof t.material === "string"
+                ? t.material
+                : t.material?.name || "Không rõ";
+
+        if (!groups[key].summary[materialName]) {
+            groups[key].summary[materialName] = 0;
+        }
+        groups[key].summary[materialName] += t.quantity;
+        groups[key].totalTrips += t.quantity;
     });
 
     Object.values(groups).forEach((g) => {
@@ -227,7 +244,6 @@ function groupTripsExcavator(trips) {
 
     return Object.values(groups);
 }
-
 // nhóm báo chuyến ô tô
 async function groupTripsCar(trips) {
     const groups = {};
@@ -245,7 +261,7 @@ async function groupTripsCar(trips) {
                 totalDistance: 0
             };
         }
-        const timesArray = (t.quantityUpdateTimes || []).map(i => i?.time)
+        const timesArray = (t.quantityUpdateTimes || [])
         for (const time of timesArray) {
             const travelLog = await TravelLog.findOne({
                 excavator: t.excavator,        // lọc theo máy xúc
@@ -257,17 +273,17 @@ async function groupTripsCar(trips) {
             const distance = travelLog ? travelLog.fullDistanceKm : 0
             groups[key].trips.push({
                 material: t.material,
-                time,
+                time: time?.time,
                 distance
             });
             if (!groups[key].summary[t.material.name]) {
                 groups[key].summary[t.material.name] = { count: 0, distance: 0 }
             }
-            groups[key].summary[t.material.name].count += 1;
+            groups[key].summary[t.material.name].count += time?.quantity;
             groups[key].summary[t.material.name].distance += distance;
 
 
-            groups[key].totalTrips += 1;
+            groups[key].totalTrips += time?.quantity;
             groups[key].totalDistance += distance;
         }
 
@@ -294,7 +310,7 @@ async function groupCar(trips) {
             };
         }
 
-        const timesArray = (t.quantityUpdateTimes || []).map(i => i?.time)
+        const timesArray = (t.quantityUpdateTimes || [])
 
         for (const time of timesArray) {
             const travelLog = await TravelLog.findOne({
@@ -316,12 +332,12 @@ async function groupCar(trips) {
                 };
             }
 
-            groups[key].materials[t.material.name].times.push(time);
+            groups[key].materials[t.material.name].times.push(time?.time);
             groups[key].materials[t.material.name].distances.push(distance);
-            groups[key].materials[t.material.name].count += 1;
+            groups[key].materials[t.material.name].count += time?.quantity;
             groups[key].materials[t.material.name].totalDistance += distance;
 
-            groups[key].totalTrips += 1;
+            groups[key].totalTrips += time?.quantity;
             groups[key].totalDistance += distance;
         }
     }

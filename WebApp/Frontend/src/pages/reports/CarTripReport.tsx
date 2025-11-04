@@ -51,7 +51,20 @@ export default function CarTripReport({
                     <Table stickyHeader size="small" aria-label="car-trip-report" sx={{
                         '& th, & td': { border: '1px solid black', padding: "2px 8px" }
                     }}>
-                        <TableHead>
+                        <TableHead sx={{
+                            position: "sticky",
+                            top: 0,
+                            backgroundColor: "white",
+                            zIndex: 2,
+                            "& th": {
+                                backgroundColor: "white",
+                                zIndex: 3,
+                            },
+                            "& tr:nth-of-type(2) th": {
+                                top: 27, // chỉnh khoảng cách đúng bằng chiều cao hàng đầu tiên
+                                position: "sticky",
+                            },
+                        }}>
                             <TableRow>
                                 <TableCell align='center' rowSpan={2} sx={{ width: 60 }}>STT</TableCell>
                                 <TableCell align='center' rowSpan={2}>Người nhận lệnh</TableCell>
@@ -62,7 +75,7 @@ export default function CarTripReport({
                                 <TableCell align='center' colSpan={maxTrip > 0 ? maxTrip + 1 : 2}>Cung độ - Thời điểm xúc tải - Loại vật liệu</TableCell>
                                 <TableCell align='center' colSpan={materials.length > 0 ? materials.length + 1 : 1}>Tổng hợp</TableCell>
                             </TableRow>
-                            <TableRow>
+                            <TableRow sx={{ top: 27 }}>
                                 <TableCell align='center'>Chuyến</TableCell>
                                 {Array.from({ length: maxTrip || 1 }).map((_, i) => (
                                     <TableCell align='center'>{i + 1}</TableCell>

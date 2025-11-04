@@ -431,19 +431,23 @@ async function buildVehicle(order, workbook) {
     worksheet.getCell(`I${totalRow + 6 + deviceRow}`).font = { bold: true };
     worksheet.getCell(`I${totalRow + 6 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
     if (order.createdBy?.signature) {
-        const response = await axios.get(order.createdBy.signature, { responseType: 'arraybuffer' });
-        const extension = response.headers['content-type'].split('/')[1];
-        const imageBuffer = Buffer.from(response.data, 'binary');
+        const res = await axios.get(`${process.env.API_URL}/uploads/get?key=${order.createdBy?.signature}`);
+        const url = res.data.data
+        if (url) {
+            const response = await axios.get(url, { responseType: 'arraybuffer' });
+            const extension = response.headers['content-type'].split('/')[1];
+            const imageBuffer = Buffer.from(response.data, 'binary');
 
-        const imageId = workbook.addImage({
-            buffer: imageBuffer,
-            extension
-        });
+            const imageId = workbook.addImage({
+                buffer: imageBuffer,
+                extension
+            });
 
-        worksheet.mergeCells(`J${totalRow + 7 + deviceRow}:K${totalRow + 9 + deviceRow}`);
+            worksheet.mergeCells(`J${totalRow + 7 + deviceRow}:K${totalRow + 9 + deviceRow}`);
 
-        // gán ảnh trực tiếp vào range
-        worksheet.addImage(imageId, `J${totalRow + 7 + deviceRow}:K${totalRow + 9 + deviceRow}`);
+            // gán ảnh trực tiếp vào range
+            worksheet.addImage(imageId, `J${totalRow + 7 + deviceRow}:K${totalRow + 9 + deviceRow}`);
+        }
     }
 
     worksheet.mergeCells(`I${totalRow + 10 + deviceRow}:L${totalRow + 10 + deviceRow}`)
@@ -685,19 +689,23 @@ async function buildVehicleService(order, workbook) {
     worksheet.getCell(`I${fuelEndRow + 1}`).font = { bold: true };
     worksheet.getCell(`I${fuelEndRow + 1}`).alignment = { horizontal: 'center', vertical: 'middle' };
     if (order.createdBy?.signature) {
-        const response = await axios.get(order.createdBy.signature, { responseType: 'arraybuffer' });
-        const extension = response.headers['content-type'].split('/')[1];
-        const imageBuffer = Buffer.from(response.data, 'binary');
+        const res = await axios.get(`${process.env.API_URL}/uploads/get?key=${order.createdBy?.signature}`);
+        const url = res.data.data
+        if (url) {
+            const response = await axios.get(url, { responseType: 'arraybuffer' });
+            const extension = response.headers['content-type'].split('/')[1];
+            const imageBuffer = Buffer.from(response.data, 'binary');
 
-        const imageId = workbook.addImage({
-            buffer: imageBuffer,
-            extension
-        });
+            const imageId = workbook.addImage({
+                buffer: imageBuffer,
+                extension
+            });
 
-        worksheet.mergeCells(`J${fuelEndRow + 2}:K${fuelEndRow + 4}`);
+            worksheet.mergeCells(`J${fuelEndRow + 2}:K${fuelEndRow + 4}`);
 
-        // gán ảnh trực tiếp vào range
-        worksheet.addImage(imageId, `J${fuelEndRow + 2}:K${fuelEndRow + 4}`);
+            // gán ảnh trực tiếp vào range
+            worksheet.addImage(imageId, `J${fuelEndRow + 2}:K${fuelEndRow + 4}`);
+        }
     }
 
     worksheet.mergeCells(`I${fuelEndRow + 5}:L${fuelEndRow + 5}`)
@@ -748,7 +756,7 @@ async function buildVehicleService(order, workbook) {
 async function buildExcavator(order, workbook) {
     const reports = await Report.find({ orderId: order._id })
         .populate("device", "code material")
-        .populate("material", "name density")
+        .populate("material", "name")
         .populate("excavator", "code")
         .populate("fromLocation", "name")
         .populate("toLocation", "name")
@@ -1058,19 +1066,23 @@ async function buildExcavator(order, workbook) {
     worksheet.getCell(`I${totalRow + 6 + deviceRow}`).font = { bold: true };
     worksheet.getCell(`I${totalRow + 6 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
     if (order.createdBy?.signature) {
-        const response = await axios.get(order.createdBy.signature, { responseType: 'arraybuffer' });
-        const extension = response.headers['content-type'].split('/')[1];
-        const imageBuffer = Buffer.from(response.data, 'binary');
+        const res = await axios.get(`${process.env.API_URL}/uploads/get?key=${order.createdBy?.signature}`);
+        const url = res.data.data
+        if (url) {
+            const response = await axios.get(url, { responseType: 'arraybuffer' });
+            const extension = response.headers['content-type'].split('/')[1];
+            const imageBuffer = Buffer.from(response.data, 'binary');
 
-        const imageId = workbook.addImage({
-            buffer: imageBuffer,
-            extension
-        });
+            const imageId = workbook.addImage({
+                buffer: imageBuffer,
+                extension
+            });
 
-        worksheet.mergeCells(`I${totalRow + 7 + deviceRow}:J${totalRow + 9 + deviceRow}`);
+            worksheet.mergeCells(`I${totalRow + 7 + deviceRow}:J${totalRow + 9 + deviceRow}`);
 
-        // gán ảnh trực tiếp vào range
-        worksheet.addImage(imageId, `I${totalRow + 7 + deviceRow}:J${totalRow + 9 + deviceRow}`);
+            // gán ảnh trực tiếp vào range
+            worksheet.addImage(imageId, `I${totalRow + 7 + deviceRow}:J${totalRow + 9 + deviceRow}`);
+        }
     }
 
     worksheet.mergeCells(`I${totalRow + 10 + deviceRow}:J${totalRow + 10 + deviceRow}`)
@@ -1251,19 +1263,23 @@ async function buildOther(order, workbook) {
     worksheet.getCell(`I23`).font = { bold: true };
     worksheet.getCell(`I23`).alignment = { horizontal: 'center', vertical: 'middle' };
     if (order.createdBy?.signature) {
-        const response = await axios.get(order.createdBy.signature, { responseType: 'arraybuffer' });
-        const extension = response.headers['content-type'].split('/')[1];
-        const imageBuffer = Buffer.from(response.data, 'binary');
+        const res = await axios.get(`${process.env.API_URL}/uploads/get?key=${order.createdBy?.signature}`);
+        const url = res.data.data
+        if (url) {
+            const response = await axios.get(url, { responseType: 'arraybuffer' });
+            const extension = response.headers['content-type'].split('/')[1];
+            const imageBuffer = Buffer.from(response.data, 'binary');
 
-        const imageId = workbook.addImage({
-            buffer: imageBuffer,
-            extension
-        });
+            const imageId = workbook.addImage({
+                buffer: imageBuffer,
+                extension
+            });
 
-        worksheet.mergeCells(`J24:K26`);
+            worksheet.mergeCells(`J24:K26`);
 
-        // gán ảnh trực tiếp vào range
-        worksheet.addImage(imageId, `J24:K26`);
+            // gán ảnh trực tiếp vào range
+            worksheet.addImage(imageId, `J24:K26`);
+        }
     }
 
     worksheet.mergeCells(`I27:L27`)
@@ -1569,19 +1585,23 @@ async function buildMaintence(order, workbook) {
     worksheet.getCell(`I${fuelEndRow + 2}`).font = { bold: true };
     worksheet.getCell(`I${fuelEndRow + 2}`).alignment = { horizontal: 'center', vertical: 'middle' };
     if (order.createdBy?.signature) {
-        const response = await axios.get(order.createdBy.signature, { responseType: 'arraybuffer' });
-        const extension = response.headers['content-type'].split('/')[1];
-        const imageBuffer = Buffer.from(response.data, 'binary');
+        const res = await axios.get(`${process.env.API_URL}/uploads/get?key=${order.createdBy?.signature}`);
+        const url = res.data.data
+        if (url) {
+            const response = await axios.get(url, { responseType: 'arraybuffer' });
+            const extension = response.headers['content-type'].split('/')[1];
+            const imageBuffer = Buffer.from(response.data, 'binary');
 
-        const imageId = workbook.addImage({
-            buffer: imageBuffer,
-            extension
-        });
+            const imageId = workbook.addImage({
+                buffer: imageBuffer,
+                extension
+            });
 
-        worksheet.mergeCells(`I${fuelEndRow + 3}:J${fuelEndRow + 5}`);
+            worksheet.mergeCells(`I${fuelEndRow + 3}:J${fuelEndRow + 5}`);
 
-        // gán ảnh trực tiếp vào range
-        worksheet.addImage(imageId, `I${fuelEndRow + 3}:J${fuelEndRow + 5}`);
+            // gán ảnh trực tiếp vào range
+            worksheet.addImage(imageId, `I${fuelEndRow + 3}:J${fuelEndRow + 5}`);
+        }
     }
 
     worksheet.mergeCells(`I${fuelEndRow + 6}:I${fuelEndRow + 6}`)
@@ -1914,19 +1934,23 @@ async function buildDrill(order, workbook) {
     worksheet.getCell(`I${totalRow + 6 + deviceRow}`).font = { bold: true };
     worksheet.getCell(`I${totalRow + 6 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
     if (order.createdBy?.signature) {
-        const response = await axios.get(order.createdBy.signature, { responseType: 'arraybuffer' });
-        const extension = response.headers['content-type'].split('/')[1];
-        const imageBuffer = Buffer.from(response.data, 'binary');
+        const res = await axios.get(`${process.env.API_URL}/uploads/get?key=${order.createdBy?.signature}`);
+        const url = res.data.data
+        if (url) {
+            const response = await axios.get(url, { responseType: 'arraybuffer' });
+            const extension = response.headers['content-type'].split('/')[1];
+            const imageBuffer = Buffer.from(response.data, 'binary');
 
-        const imageId = workbook.addImage({
-            buffer: imageBuffer,
-            extension
-        });
+            const imageId = workbook.addImage({
+                buffer: imageBuffer,
+                extension
+            });
 
-        worksheet.mergeCells(`J${totalRow + 7 + deviceRow}:K${totalRow + 9 + deviceRow}`);
+            worksheet.mergeCells(`J${totalRow + 7 + deviceRow}:K${totalRow + 9 + deviceRow}`);
 
-        // gán ảnh trực tiếp vào range
-        worksheet.addImage(imageId, `J${totalRow + 7 + deviceRow}:K${totalRow + 9 + deviceRow}`);
+            // gán ảnh trực tiếp vào range
+            worksheet.addImage(imageId, `J${totalRow + 7 + deviceRow}:K${totalRow + 9 + deviceRow}`);
+        }
     }
 
     worksheet.mergeCells(`I${totalRow + 10 + deviceRow}:L${totalRow + 10 + deviceRow}`)
@@ -2260,19 +2284,23 @@ async function buildDozer(order, workbook) {
     worksheet.getCell(`I${totalRow + 6 + deviceRow}`).font = { bold: true };
     worksheet.getCell(`I${totalRow + 6 + deviceRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
     if (order.createdBy?.signature) {
-        const response = await axios.get(order.createdBy.signature, { responseType: 'arraybuffer' });
-        const extension = response.headers['content-type'].split('/')[1];
-        const imageBuffer = Buffer.from(response.data, 'binary');
+        const res = await axios.get(`${process.env.API_URL}/uploads/get?key=${order.createdBy?.signature}`);
+        const url = res.data.data
+        if (url) {
+            const response = await axios.get(url, { responseType: 'arraybuffer' });
+            const extension = response.headers['content-type'].split('/')[1];
+            const imageBuffer = Buffer.from(response.data, 'binary');
 
-        const imageId = workbook.addImage({
-            buffer: imageBuffer,
-            extension
-        });
+            const imageId = workbook.addImage({
+                buffer: imageBuffer,
+                extension
+            });
 
-        worksheet.mergeCells(`J${totalRow + 7 + deviceRow}:K${totalRow + 9 + deviceRow}`);
+            worksheet.mergeCells(`J${totalRow + 7 + deviceRow}:K${totalRow + 9 + deviceRow}`);
 
-        // gán ảnh trực tiếp vào range
-        worksheet.addImage(imageId, `J${totalRow + 7 + deviceRow}:K${totalRow + 9 + deviceRow}`);
+            // gán ảnh trực tiếp vào range
+            worksheet.addImage(imageId, `J${totalRow + 7 + deviceRow}:K${totalRow + 9 + deviceRow}`);
+        }
     }
 
     worksheet.mergeCells(`I${totalRow + 10 + deviceRow}:L${totalRow + 10 + deviceRow}`)
@@ -2429,19 +2457,23 @@ async function buildDispatcher(order, workbook) {
     worksheet.getCell(`I19`).font = { bold: true };
     worksheet.getCell(`I19`).alignment = { horizontal: 'center', vertical: 'middle' };
     if (order.createdBy?.signature) {
-        const response = await axios.get(order.createdBy.signature, { responseType: 'arraybuffer' });
-        const extension = response.headers['content-type'].split('/')[1];
-        const imageBuffer = Buffer.from(response.data, 'binary');
+        const res = await axios.get(`${process.env.API_URL}/uploads/get?key=${order.createdBy?.signature}`);
+        const url = res.data.data
+        if (url) {
+            const response = await axios.get(url, { responseType: 'arraybuffer' });
+            const extension = response.headers['content-type'].split('/')[1];
+            const imageBuffer = Buffer.from(response.data, 'binary');
 
-        const imageId = workbook.addImage({
-            buffer: imageBuffer,
-            extension
-        });
+            const imageId = workbook.addImage({
+                buffer: imageBuffer,
+                extension
+            });
 
-        worksheet.mergeCells(`J20:K22`);
+            worksheet.mergeCells(`J20:K22`);
 
-        // gán ảnh trực tiếp vào range
-        worksheet.addImage(imageId, `J20:K22`);
+            // gán ảnh trực tiếp vào range
+            worksheet.addImage(imageId, `J20:K22`);
+        }
     }
 
     worksheet.mergeCells(`I23:L23`)
@@ -4580,472 +4612,608 @@ router.post('/drillReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, RO
 
 // báo chuyến máy xúc
 
-router.post('/excavatorTripReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
-    try {
-        const { shift, startDate, endDate, department } = req.body
-        const user = req.user
-        let query = {}
-        if (user?.role === ROLE.ADMIN) {
-            query.department = new mongoose.Types.ObjectId(department)
-        } else {
-            query.department = new mongoose.Types.ObjectId(user.department?._id)
-        }
-        if (Array.isArray(shift) && shift.length > 0) {
-            query.shift = { $in: shift };
-        }
+router.post(
+    "/excavatorTripReport/view",
+    verifyToken,
+    restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER),
+    async (req, res, next) => {
+        try {
+            const { shift, startDate, endDate, department } = req.body;
+            const user = req.user;
+            let query = {};
+            if (user?.role === ROLE.ADMIN) {
+                query.department = new mongoose.Types.ObjectId(department);
+            } else {
+                query.department = new mongoose.Types.ObjectId(user.department?._id);
+            }
+            if (Array.isArray(shift) && shift.length > 0) {
+                query.shift = { $in: shift };
+            }
 
-        if (startDate && endDate) {
-            query.workingDate = {
-                $gte: new Date(startDate),
-                $lte: new Date(endDate),
-            };
-        }
-        const orders = await Order.find(query)
-            .populate({
-                path: 'assignedTo',
-                select: 'fullName salaryCode department',
-                populate: ('department')
-            })
-            .populate({
-                path: 'assistants',
-                select: 'fullName salaryCode',
-            })
-            .populate({
-                path: 'createdBy',
-                select: 'fullName',
-            })
-            .populate({
-                path: "device",
-                select: "code category",
-                populate: {
-                    path: 'category',
-                    select: "name"
-                }
-            })
-            .populate({
-                path: 'job',
-                select: 'type',
-            })
-        const filteredOrders = orders.filter(order =>
-            order.device?.some(d =>
-                d.category?.name?.toLowerCase().includes("máy xúc")
-            ) &&
-            order.job?.type === JOB_TYPE.VAN_HANH_XUC
-        );
-
-        let result = []
-        for (const order of filteredOrders) {
-            const combined = getCombinedUsers(order);
-
-            let reports = await Report.find({ orderId: order._id })
+            if (startDate && endDate) {
+                query.workingDate = {
+                    $gte: new Date(startDate),
+                    $lte: new Date(endDate),
+                };
+            }
+            const orders = await Order.find(query)
                 .populate({
-                    path: 'device',
-                    select: 'code category',
+                    path: "assignedTo",
+                    select: "fullName salaryCode department",
+                    populate: "department",
+                })
+                .populate({
+                    path: "assistants",
+                    select: "fullName salaryCode",
+                })
+                .populate({
+                    path: "createdBy",
+                    select: "fullName",
+                })
+                .populate({
+                    path: "device",
+                    select: "code category",
                     populate: {
-                        path: 'category',
-                        select: 'name'
-                    }
+                        path: "category",
+                        select: "name",
+                    },
                 })
-                .populate('material', 'name')
-            if (!reports.length) continue;
-
-            const grouped = groupTripsExcavator(reports)
-
-            result.push({
-                _id: order._id,
-                assignedTo: combined,
-                excavator: (order.device || []).map(d => d?.code) || "",
-                reports: grouped.map(g => ({
-                    code: g.device?.code || '',
-                    trips: g.trips || '',
-                    summary: g?.summary || '',
-                    totalTrips: g?.totalTrips || ''
-                }))
-            });
-        }
-        let maxTrips = 0;
-        const materialSet = new Set();
-
-        result.forEach(order => {
-            order.reports.forEach(rep => {
-                // cập nhật maxTrips
-                maxTrips = Math.max(maxTrips, rep.trips.length);
-
-                // gom tất cả material
-                rep.trips.forEach(trip => {
-                    if (trip.material) {
-                        materialSet.add(trip.material);
-                    }
+                .populate({
+                    path: "job",
+                    select: "type",
                 });
-            });
-        });
+            const filteredOrders = orders.filter(
+                (order) =>
+                    order.device?.some((d) =>
+                        d.category?.name?.toLowerCase().includes("máy xúc")
+                    ) && order.job?.type === JOB_TYPE.VAN_HANH_XUC
+            );
 
-        const materials = Array.from(materialSet);
+            let result = [];
+            for (const order of filteredOrders) {
+                const combined = getCombinedUsers(order);
 
-        res.status(200).send({ status: 'success', data: result, materials, maxTrips })
-    } catch (err) {
-        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
-    }
-})
-
-router.post('/excavatorTripReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
-    try {
-        const { shift, startDate, endDate, title, signature, department } = req.body
-        const shiftList = await Shift.find({ _id: { $in: shift } });
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const user = req.user
-        let dep;
-        if (department) {
-            dep = await Department.findById(department).select('code')
-        } else {
-            dep = user?.department
-        }
-
-        // Đảm bảo end không nhỏ hơn start
-        if (end < start) return res.status(400).json({ message: "Ngày kết thúc phải sau ngày bắt đầu" });
-
-        const workbook = new ExcelJS.Workbook();
-        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-            for (const ca of shiftList) {
-                const orders = await Order.find({
-                    workingDate: d,
-                    shift: ca._id,
-                    department: new mongoose.Types.ObjectId(dep?._id)
-                })
-                    .populate({
-                        path: 'assignedTo',
-                        select: 'fullName salaryCode department',
-                        populate: ('department')
-                    })
-                    .populate({
-                        path: 'createdBy',
-                        select: 'fullName',
-                    })
-                    .populate({
-                        path: 'assistants',
-                        select: 'fullName salaryCode',
-                    })
+                let reports = await Report.find({ orderId: order._id })
                     .populate({
                         path: "device",
                         select: "code category",
                         populate: {
-                            path: 'category',
-                            select: "name"
-                        }
+                            path: "category",
+                            select: "name",
+                        },
                     })
-                    .populate({
-                        path: 'job',
-                        select: 'type',
-                    })
-                const filteredOrders = orders.filter(order =>
-                    order.device?.some(d =>
-                        d.category?.name?.toLowerCase().includes("máy xúc")
-                    ) &&
-                    order.job?.type?.toLowerCase().includes("vận hành xúc".toLowerCase())
-                );
+                    .populate("material", "name");
+                if (!reports.length) continue;
+                console.log("✍✍✍✍✍✍", reports);
 
-                let result = []
-                for (const order of filteredOrders) {
-                    const combined = getCombinedUsers(order);
+                const grouped = groupTripsExcavator(reports);
 
-                    let reports = await Report.find({ orderId: order._id })
-                        .populate({
-                            path: 'device',
-                            select: 'code category',
-                            populate: {
-                                path: 'category',
-                                select: 'name'
-                            }
-                        })
-                        .populate('material', 'name')
-                    if (!reports.length) continue;
-
-                    const grouped = groupTripsExcavator(reports)
-
-                    result.push({
-                        _id: order._id,
-                        assignedTo: combined,
-                        excavator: (order.device || []).map(d => d?.code) || "",
-                        reports: grouped.map(g => ({
-                            code: g.device?.code || '',
-                            trips: g.trips || '',
-                            summary: g?.summary || '',
-                            totalTrips: g?.totalTrips || ''
-                        }))
-                    });
-                }
-                let maxTrips = 0;
-                const materialSet = new Set();
-
-                result.forEach(order => {
-                    order.reports.forEach(rep => {
-                        // cập nhật maxTrips
-                        maxTrips = Math.max(maxTrips, rep.trips.length);
-
-                        // gom tất cả material
-                        rep.trips.forEach(trip => {
-                            if (trip.material) {
-                                materialSet.add(trip.material);
-                            }
-                        });
-                    });
-                });
-
-                const materials = Array.from(materialSet);
-
-                const sheetName = `${formatDate(d)}_${ca.name}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
-
-                const worksheet = workbook.addWorksheet(sheetName);
-
-                const totalColumn = materials.length + (maxTrips || 1) + 6
-                const colLetter = getColumnLetter(totalColumn);
-                worksheet.mergeCells(`B1:${colLetter}1`);
-                const infoRow = worksheet.getCell('B1');
-                infoRow.value = "CÔNG TY CỔ PHẦN THAN CAO SƠN-TKV";
-                infoRow.font = { italic: true, size: 18 };
-                // Tiêu đề bảng
-                worksheet.mergeCells(`A3:${colLetter}3`);
-                const header = worksheet.getCell('A3');
-                header.value = 'BÁO CÁO SỐ CHUYẾN MÁY XÚC';
-                header.font = { bold: true, size: 16 };
-                header.alignment = { horizontal: 'center', vertical: 'middle' };
-
-                worksheet.getCell('B4').value = "Ngày";
-                worksheet.getCell('C4').value = formatDate(d);
-                worksheet.getCell('E4').value = "Ca";
-                worksheet.getCell('F4').value = ca?.name || '';
-
-                worksheet.getCell('B5').value = "Đơn vị";
-                worksheet.getCell('C5').value = dep?.code || '';
-                worksheet.getCell('E5').value = "Giờ hệ thống";
-                worksheet.getCell('F5').value = new Date().toLocaleTimeString('vi-VN', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false,
-                });
-
-                worksheet.getCell('B6').value = "Người ra lệnh";
-                worksheet.mergeCells(`C6:D6`);
-                worksheet.getCell('C6').value = user?.fullName || '';
-                worksheet.getCell('E6').value = "Số thẻ";
-                worksheet.getCell('F6').value = user?.salaryCode || '';
-                worksheet.getCell('G6').value = "Chức vụ";
-                worksheet.mergeCells(`H6:${colLetter}5`)
-                worksheet.getCell('H6').value = user?.position?.name || '';
-
-                const headerRow = 8;
-
-                // ==== HÀNG 1 ==== (STT, Người nhận lệnh, ... cố định 5-6 cột đầu)
-                worksheet.mergeCells(headerRow, 1, headerRow + 1, 1); // STT
-                worksheet.getCell(headerRow, 1).value = "STT";
-                worksheet.getCell(headerRow, 1).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
-                worksheet.getCell(headerRow, 1).font = { bold: true, }
-
-                worksheet.mergeCells(headerRow, 2, headerRow + 1, 2); // Người nhận lệnh
-                worksheet.getCell(headerRow, 2).value = "Người nhận lệnh";
-                worksheet.getCell(headerRow, 2).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
-                worksheet.getCell(headerRow, 2).font = { bold: true, }
-
-                worksheet.mergeCells(headerRow, 3, headerRow + 1, 3); // Số thẻ
-                worksheet.getCell(headerRow, 3).value = "Số thẻ";
-                worksheet.getCell(headerRow, 3).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
-                worksheet.getCell(headerRow, 3).font = { bold: true, }
-
-                worksheet.mergeCells(headerRow, 4, headerRow + 1, 4); // Máy xúc
-                worksheet.getCell(headerRow, 4).value = "Máy xúc";
-                worksheet.getCell(headerRow, 4).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
-                worksheet.getCell(headerRow, 4).font = { bold: true, }
-
-                worksheet.mergeCells(headerRow, 5, headerRow + 1, 5); // Xe nhận tải
-                worksheet.getCell(headerRow, 5).value = "Xe nhận tải";
-                worksheet.getCell(headerRow, 5).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
-                worksheet.getCell(headerRow, 5).font = { bold: true, }
-
-
-                // ==== HÀNG 1 ==== (Thời điểm xúc tải - Loại vật liệu, colSpan = maxTrips)
-                const startTripsCol = 6;
-                const endTripsCol = startTripsCol + (maxTrips || 1) - 1;
-                worksheet.mergeCells(headerRow, startTripsCol, headerRow, endTripsCol);
-                worksheet.getCell(headerRow, startTripsCol).value = "Thời điểm xúc tải - Loại vật liệu";
-                worksheet.getCell(headerRow, startTripsCol).alignment = { horizontal: 'center', vertical: 'middle', }
-                worksheet.getCell(headerRow, startTripsCol).font = { bold: true, }
-
-                // ==== HÀNG 2 ==== (1..maxTrips)
-                for (let i = 0; i < (maxTrips || 1); i++) {
-                    worksheet.getCell(headerRow + 1, startTripsCol + i).value = i + 1;
-                    worksheet.getCell(headerRow + 1, startTripsCol + i).alignment = { horizontal: 'center', vertical: 'middle', }
-                    worksheet.getCell(headerRow + 1, startTripsCol + i).font = { bold: true, }
-                }
-
-                // ==== HÀNG 1 ==== (Tổng hợp, colSpan = materials.length + 1 cho Tổng chuyến)
-                const startSummaryCol = endTripsCol + 1;
-                const endSummaryCol = startSummaryCol + materials.length;
-                worksheet.mergeCells(headerRow, startSummaryCol, headerRow, endSummaryCol);
-                worksheet.getCell(headerRow, startSummaryCol).value = "Tổng hợp";
-                worksheet.getCell(headerRow, startSummaryCol).alignment = { horizontal: 'center', vertical: 'middle', }
-                worksheet.getCell(headerRow, startSummaryCol).font = { bold: true, }
-
-                // ==== HÀNG 2 ==== (tên vật liệu + Tổng chuyến)
-                materials.forEach((m, idx) => {
-                    worksheet.getCell(headerRow + 1, startSummaryCol + idx).value = m?.name || '';
-                    worksheet.getCell(headerRow + 1, startSummaryCol + idx).alignment = { horizontal: 'center', vertical: 'middle', }
-                    worksheet.getCell(headerRow + 1, startSummaryCol + idx).font = { bold: true, }
-                });
-                worksheet.getCell(headerRow + 1, endSummaryCol).value = "Tổng chuyến";
-                worksheet.getCell(headerRow + 1, endSummaryCol).alignment = { horizontal: 'center', vertical: 'middle', }
-                worksheet.getCell(headerRow + 1, endSummaryCol).font = { bold: true, }
-
-                let currentRow = headerRow + 2
-                result.forEach((item, idx) => {
-                    const reps = (item.reports && item.reports.length)
-                        ? item.reports
-                        : [{ code: '', trips: [], summary: {}, totalTrips: 0 }];
-
-                    const spanReps = reps.length;
-                    const startRow = currentRow;
-                    reps.forEach((r, i) => {
-                        const row = worksheet.getRow(currentRow);
-
-                        if (i === 0) {
-                            // STT
-                            row.getCell(1).value = idx + 1;
-
-                            // Người nhận lệnh
-                            row.getCell(2).value = (item.assignedTo || [])
-                                .map((u) => u?.fullName)
-                                .join('\n');
-
-                            // Số thẻ
-                            row.getCell(3).value = (item.assignedTo || [])
-                                .map((u) => u?.salaryCode)
-                                .join('\n');
-
-                            // Máy xúc
-                            row.getCell(4).value = item.excavator.join(', ');
-
-                        }
-
-                        // Xe nhận tải
-                        row.getCell(5).value = r.code || '';
-
-                        // Các chuyến (1..maxTrips)
-                        for (let t = 0; t < maxTrips; t++) {
-                            const trip = r.trips[t];
-                            if (trip) {
-                                row.getCell(6 + t).value =
-                                    `${new Date(trip.time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}\n${trip.material?.name || ''}`;
-                            } else {
-                                row.getCell(6 + t).value = "";
-                            }
-                        }
-
-                        // Tổng hợp vật liệu
-                        materials.forEach((m, mIdx) => {
-                            row.getCell(6 + maxTrips + mIdx).value = r.summary[m?.name] || 0;
-                        });
-
-                        // Tổng chuyến
-                        row.getCell(6 + maxTrips + materials.length).value = r.totalTrips || 0;
-
-                        // Căn giữa + wrapText
-                        row.eachCell((cell, cellNumber) => {
-                            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-                        });
-                        row.getCell(2).alignment = { horizontal: 'left', vertical: 'top', wrapText: true };
-                        row.getCell(3).alignment = { horizontal: 'center', vertical: 'top', wrapText: true };
-
-                        currentRow++;
-                    });
-
-                    // merge cho các cột STT, Người nhận lệnh, Số thẻ, Máy xúc
-                    if (spanReps > 1) {
-                        ['A', 'B', 'C', 'D'].forEach(col => {
-                            worksheet.mergeCells(`${col}${currentRow - spanReps}:${col}${currentRow - 1}`);
-                        });
-                    }
-                    const numUsers = (item.assignedTo?.length || 1);
-                    const numReports = reps.length;
-                    const maxLines = Math.max(numUsers, numReports);
-                    worksheet.getRow(startRow).height = maxLines * 15;
-                });
-
-                addTableBorders(worksheet, 8, currentRow - 1, 1, totalColumn);
-
-                const startSignature = getColumnLetter(totalColumn - 3);
-                const endSignature = getColumnLetter(totalColumn - 1);
-
-                worksheet.mergeCells(`${startSignature}${currentRow + 1}:${endSignature}${currentRow + 1}`)
-                worksheet.getCell(`${startSignature}${currentRow + 1}`).value = 'Cán bộ CT kiểm tra trong ca';
-                worksheet.getCell(`${startSignature}${currentRow + 1}`).font = { bold: true };
-                worksheet.getCell(`${startSignature}${currentRow + 1}`).alignment = { horizontal: 'center', vertical: 'middle' };
-                worksheet.mergeCells(`${startSignature}${currentRow + 2}:${endSignature}${currentRow + 2}`)
-                worksheet.getCell(`${startSignature}${currentRow + 2}`).value = '( Ký, ghi rõ họ tên)';
-                worksheet.getCell(`${startSignature}${currentRow + 2}`).alignment = { horizontal: 'center', vertical: 'middle' };
-                if (signature) {
-                    const response = await axios.get(signature, { responseType: 'arraybuffer' });
-                    const extension = response.headers['content-type'].split('/')[1];
-                    const imageBuffer = Buffer.from(response.data, 'binary');
-
-                    const imageId = workbook.addImage({
-                        buffer: imageBuffer,
-                        extension
-                    });
-
-                    worksheet.mergeCells(`${startSignature}${currentRow + 4}:${endSignature}${currentRow + 7}`);
-
-                    // gán ảnh trực tiếp vào range
-                    worksheet.addImage(imageId, `${startSignature}${currentRow + 4}:${endSignature}${currentRow + 7}`);
-                }
-
-                worksheet.pageSetup = {
-                    paperSize: 9,                // A4
-                    orientation: 'landscape',    // ngang
-                    fitToPage: true,
-                    fitToWidth: 1,               // vừa 1 trang theo chiều ngang
-                    fitToHeight: 0,              // không ép theo chiều dọc
-                    margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } // inch
-                };
-
-
-                const fixedWidths = [6, 20, 10, 12, 12]; // 5 cột đầu
-
-                // gán width
-                fixedWidths.forEach((w, i) => worksheet.getColumn(i + 1).width = w);
-                for (let col = fixedWidths.length + 1; col <= totalColumn; col++) {
-                    worksheet.getColumn(col).width = 120 / (Math.max(totalColumn - fixedWidths.length, 2));
-                }
-
-                worksheet.eachRow((row, rowNumber) => {
-                    row.eachCell((cell) => {
-                        if (!cell.font) cell.font = {};
-                        cell.font = {
-                            ...cell.font,            // giữ lại các thuộc tính khác (bold, italic,…)
-                            name: 'Times New Roman', // đổi font chữ
-                            ...(rowNumber > 3 ? { size: 12 } : {})            // kích thước chữ
-                        };
-                    });
+                result.push({
+                    _id: order._id,
+                    assignedTo: combined,
+                    excavator: (order.device || []).map((d) => d?.code) || "",
+                    reports: grouped.map((g) => ({
+                        code: g.device?.code || "",
+                        trips: g.trips || "",
+                        summary: g?.summary || "",
+                        totalTrips: g?.totalTrips || "",
+                    })),
                 });
             }
+            let maxTrips = 0;
+            // 🔹 Gom vật liệu duy nhất (dựa trên _id)
+            const materialMap = new Map();
+
+            result.forEach((order) => {
+                order.reports.forEach((rep) => {
+                    maxTrips = Math.max(maxTrips, rep.trips.length);
+
+                    rep.trips.forEach((trip) => {
+                        const mat = trip.material;
+                        if (mat && !materialMap.has(mat._id?.toString())) {
+                            materialMap.set(mat._id?.toString(), {
+                                _id: mat._id,
+                                name: mat.name,
+                            });
+                        }
+                    });
+                });
+            });
+
+            const materials = Array.from(materialMap.values());
+
+            res
+                .status(200)
+                .send({ status: "success", data: result, materials, maxTrips });
+        } catch (err) {
+            res
+                .status(500)
+                .json({ status: "error", message: err.message, stack: err.stack });
         }
-
-        // Xuất file
-        const buffer = await workbook.xlsx.writeBuffer();
-
-        // Thiết lập header để tải file về
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader(
-            'Content-Disposition',
-            "attachment; filename*=UTF-8''*.xlsx"
-        );   // Gửi buffer về client
-        res.send(buffer);
-        req.logger.info(`✅ Export excel thành công`);
-
-    } catch (err) {
-        console.log(err)
-        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
-})
+);
+
+router.post(
+    "/excavatorTripReport",
+    verifyToken,
+    restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER),
+    async (req, res, next) => {
+        try {
+            console.log("✍✍✍✍✍✍");
+            const { shift, startDate, endDate, title, signature, department } =
+                req.body;
+            const shiftList = await Shift.find({ _id: { $in: shift } });
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const user = req.user;
+            let dep;
+            if (department) {
+                dep = await Department.findById(department).select("code");
+            } else {
+                dep = user?.department;
+            }
+
+            // Đảm bảo end không nhỏ hơn start
+            if (end < start)
+                return res
+                    .status(400)
+                    .json({ message: "Ngày kết thúc phải sau ngày bắt đầu" });
+
+            const workbook = new ExcelJS.Workbook();
+            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                for (const ca of shiftList) {
+                    const orders = await Order.find({
+                        workingDate: d,
+                        shift: ca._id,
+                        department: new mongoose.Types.ObjectId(dep?._id),
+                    })
+                        .populate({
+                            path: "assignedTo",
+                            select: "fullName salaryCode department",
+                            populate: "department",
+                        })
+                        .populate({
+                            path: "createdBy",
+                            select: "fullName",
+                        })
+                        .populate({
+                            path: "assistants",
+                            select: "fullName salaryCode",
+                        })
+                        .populate({
+                            path: "device",
+                            select: "code category",
+                            populate: {
+                                path: "category",
+                                select: "name",
+                            },
+                        })
+                        .populate({
+                            path: "job",
+                            select: "type",
+                        });
+                    const filteredOrders = orders.filter(
+                        (order) =>
+                            order.device?.some((d) =>
+                                d.category?.name?.toLowerCase().includes("máy xúc")
+                            ) &&
+                            order.job?.type
+                                ?.toLowerCase()
+                                .includes("vận hành xúc".toLowerCase())
+                    );
+
+                    let result = [];
+                    for (const order of filteredOrders) {
+                        const combined = getCombinedUsers(order);
+
+                        let reports = await Report.find({ orderId: order._id })
+                            .populate({
+                                path: "device",
+                                select: "code category",
+                                populate: {
+                                    path: "category",
+                                    select: "name",
+                                },
+                            })
+                            .populate("material", "name");
+                        if (!reports.length) continue;
+
+                        const grouped = groupTripsExcavator(reports);
+
+                        result.push({
+                            _id: order._id,
+                            assignedTo: combined,
+                            excavator: (order.device || []).map((d) => d?.code) || "",
+                            reports: grouped.map((g) => ({
+                                code: g.device?.code || "",
+                                trips: g.trips || "",
+                                summary: g?.summary || "",
+                                totalTrips: g?.totalTrips || "",
+                            })),
+                        });
+                    }
+                    let maxTrips = 0;
+                    const materialSet = new Set();
+
+                    result.forEach((order) => {
+                        order.reports.forEach((rep) => {
+                            // cập nhật maxTrips
+                            maxTrips = Math.max(maxTrips, rep.trips.length);
+
+                            // gom tất cả material
+                            rep.trips.forEach((trip) => {
+                                if (trip.material) {
+                                    materialSet.add(trip.material);
+                                }
+                            });
+                        });
+                    });
+
+                    const materials = Array.from(materialSet);
+
+                    const sheetName = `${formatDate(d)}_${ca.name}`
+                        .replace(/[\\\/:*?\[\]]/g, "-")
+                        .substring(0, 31);
+
+                    const worksheet = workbook.addWorksheet(sheetName);
+
+                    const totalColumn = materials.length + (maxTrips || 1) + 6;
+                    const colLetter = getColumnLetter(totalColumn);
+                    worksheet.mergeCells(`B1:${colLetter}1`);
+                    const infoRow = worksheet.getCell("B1");
+                    infoRow.value = "CÔNG TY CỔ PHẦN THAN CAO SƠN-TKV";
+                    infoRow.font = { italic: true, size: 18 };
+                    // Tiêu đề bảng
+                    worksheet.mergeCells(`A3:${colLetter}3`);
+                    const header = worksheet.getCell("A3");
+                    header.value = "BÁO CÁO SỐ CHUYẾN MÁY XÚC";
+                    header.font = { bold: true, size: 16 };
+                    header.alignment = { horizontal: "center", vertical: "middle" };
+
+                    worksheet.getCell("B4").value = "Ngày";
+                    worksheet.getCell("C4").value = formatDate(d);
+                    worksheet.getCell("E4").value = "Ca";
+                    worksheet.getCell("F4").value = ca?.name || "";
+
+                    worksheet.getCell("B5").value = "Đơn vị";
+                    worksheet.getCell("C5").value = dep?.code || "";
+                    worksheet.getCell("E5").value = "Giờ hệ thống";
+                    worksheet.getCell("F5").value = new Date().toLocaleTimeString(
+                        "vi-VN",
+                        {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: false,
+                        }
+                    );
+
+                    worksheet.getCell("B6").value = "Người ra lệnh";
+                    worksheet.mergeCells(`C6:D6`);
+                    worksheet.getCell("C6").value = user?.fullName || "";
+                    worksheet.getCell("E6").value = "Số thẻ";
+                    worksheet.getCell("F6").value = user?.salaryCode || "";
+                    worksheet.getCell("G6").value = "Chức vụ";
+                    worksheet.mergeCells(`H6:${colLetter}5`);
+                    worksheet.getCell("H6").value = user?.position?.name || "";
+
+                    const headerRow = 8;
+
+                    // ==== HÀNG 1 ==== (STT, Người nhận lệnh, ... cố định 5-6 cột đầu)
+                    worksheet.mergeCells(headerRow, 1, headerRow + 1, 1); // STT
+                    worksheet.getCell(headerRow, 1).value = "STT";
+                    worksheet.getCell(headerRow, 1).alignment = {
+                        horizontal: "center",
+                        vertical: "middle",
+                        wrapText: true,
+                    };
+                    worksheet.getCell(headerRow, 1).font = { bold: true };
+
+                    worksheet.mergeCells(headerRow, 2, headerRow + 1, 2); // Người nhận lệnh
+                    worksheet.getCell(headerRow, 2).value = "Người nhận lệnh";
+                    worksheet.getCell(headerRow, 2).alignment = {
+                        horizontal: "center",
+                        vertical: "middle",
+                        wrapText: true,
+                    };
+                    worksheet.getCell(headerRow, 2).font = { bold: true };
+
+                    worksheet.mergeCells(headerRow, 3, headerRow + 1, 3); // Số thẻ
+                    worksheet.getCell(headerRow, 3).value = "Số thẻ";
+                    worksheet.getCell(headerRow, 3).alignment = {
+                        horizontal: "center",
+                        vertical: "middle",
+                        wrapText: true,
+                    };
+                    worksheet.getCell(headerRow, 3).font = { bold: true };
+
+                    worksheet.mergeCells(headerRow, 4, headerRow + 1, 4); // Máy xúc
+                    worksheet.getCell(headerRow, 4).value = "Máy xúc";
+                    worksheet.getCell(headerRow, 4).alignment = {
+                        horizontal: "center",
+                        vertical: "middle",
+                        wrapText: true,
+                    };
+                    worksheet.getCell(headerRow, 4).font = { bold: true };
+
+                    worksheet.mergeCells(headerRow, 5, headerRow + 1, 5); // Xe nhận tải
+                    worksheet.getCell(headerRow, 5).value = "Xe nhận tải";
+                    worksheet.getCell(headerRow, 5).alignment = {
+                        horizontal: "center",
+                        vertical: "middle",
+                        wrapText: true,
+                    };
+                    worksheet.getCell(headerRow, 5).font = { bold: true };
+
+                    // ==== HÀNG 1 ==== (Thời điểm xúc tải - Loại vật liệu, colSpan = maxTrips)
+                    const startTripsCol = 6;
+                    const endTripsCol = startTripsCol + (maxTrips || 1) - 1;
+                    worksheet.mergeCells(
+                        headerRow,
+                        startTripsCol,
+                        headerRow,
+                        endTripsCol
+                    );
+                    worksheet.getCell(headerRow, startTripsCol).value =
+                        "Thời điểm xúc tải - Loại vật liệu";
+                    worksheet.getCell(headerRow, startTripsCol).alignment = {
+                        horizontal: "center",
+                        vertical: "middle",
+                    };
+                    worksheet.getCell(headerRow, startTripsCol).font = { bold: true };
+
+                    // ==== HÀNG 2 ==== (1..maxTrips)
+                    for (let i = 0; i < (maxTrips || 1); i++) {
+                        worksheet.getCell(headerRow + 1, startTripsCol + i).value = i + 1;
+                        worksheet.getCell(headerRow + 1, startTripsCol + i).alignment = {
+                            horizontal: "center",
+                            vertical: "middle",
+                        };
+                        worksheet.getCell(headerRow + 1, startTripsCol + i).font = {
+                            bold: true,
+                        };
+                    }
+
+                    // ==== HÀNG 1 ==== (Tổng hợp, colSpan = materials.length + 1 cho Tổng chuyến)
+                    const startSummaryCol = endTripsCol + 1;
+                    const endSummaryCol = startSummaryCol + materials.length;
+                    worksheet.mergeCells(
+                        headerRow,
+                        startSummaryCol,
+                        headerRow,
+                        endSummaryCol
+                    );
+                    worksheet.getCell(headerRow, startSummaryCol).value = "Tổng hợp";
+                    worksheet.getCell(headerRow, startSummaryCol).alignment = {
+                        horizontal: "center",
+                        vertical: "middle",
+                    };
+                    worksheet.getCell(headerRow, startSummaryCol).font = { bold: true };
+
+                    // ==== HÀNG 2 ==== (tên vật liệu + Tổng chuyến)
+                    materials.forEach((m, idx) => {
+                        worksheet.getCell(headerRow + 1, startSummaryCol + idx).value =
+                            m?.name || "";
+                        worksheet.getCell(headerRow + 1, startSummaryCol + idx).alignment =
+                            { horizontal: "center", vertical: "middle" };
+                        worksheet.getCell(headerRow + 1, startSummaryCol + idx).font = {
+                            bold: true,
+                        };
+                    });
+                    worksheet.getCell(headerRow + 1, endSummaryCol).value = "Tổng chuyến";
+                    worksheet.getCell(headerRow + 1, endSummaryCol).alignment = {
+                        horizontal: "center",
+                        vertical: "middle",
+                    };
+                    worksheet.getCell(headerRow + 1, endSummaryCol).font = { bold: true };
+
+                    let currentRow = headerRow + 2;
+                    result.forEach((item, idx) => {
+                        const reps =
+                            item.reports && item.reports.length
+                                ? item.reports
+                                : [{ code: "", trips: [], summary: {}, totalTrips: 0 }];
+
+                        const spanReps = reps.length;
+                        const startRow = currentRow;
+                        reps.forEach((r, i) => {
+                            const row = worksheet.getRow(currentRow);
+
+                            if (i === 0) {
+                                // STT
+                                row.getCell(1).value = idx + 1;
+
+                                // Người nhận lệnh
+                                row.getCell(2).value = (item.assignedTo || [])
+                                    .map((u) => u?.fullName)
+                                    .join("\n");
+
+                                // Số thẻ
+                                row.getCell(3).value = (item.assignedTo || [])
+                                    .map((u) => u?.salaryCode)
+                                    .join("\n");
+
+                                // Máy xúc
+                                row.getCell(4).value = item.excavator.join(", ");
+                            }
+
+                            // Xe nhận tải
+                            row.getCell(5).value = r.code || "";
+
+                            // Các chuyến (1..maxTrips)
+                            for (let t = 0; t < maxTrips; t++) {
+                                const trip = r.trips[t];
+                                if (trip) {
+                                    row.getCell(6 + t).value = `${new Date(
+                                        trip.time
+                                    ).toLocaleTimeString("vi-VN", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        second: "2-digit",
+                                    })}\n${trip.material?.name || ""}`;
+                                } else {
+                                    row.getCell(6 + t).value = "";
+                                }
+                            }
+
+                            // Tổng hợp vật liệu
+                            materials.forEach((m, mIdx) => {
+                                row.getCell(6 + maxTrips + mIdx).value =
+                                    r.summary[m?.name] || 0;
+                            });
+
+                            // Tổng chuyến
+                            row.getCell(6 + maxTrips + materials.length).value =
+                                r.totalTrips || 0;
+
+                            // Căn giữa + wrapText
+                            row.eachCell((cell, cellNumber) => {
+                                cell.alignment = {
+                                    horizontal: "center",
+                                    vertical: "middle",
+                                    wrapText: true,
+                                };
+                            });
+                            row.getCell(2).alignment = {
+                                horizontal: "left",
+                                vertical: "top",
+                                wrapText: true,
+                            };
+                            row.getCell(3).alignment = {
+                                horizontal: "center",
+                                vertical: "top",
+                                wrapText: true,
+                            };
+
+                            currentRow++;
+                        });
+
+                        // merge cho các cột STT, Người nhận lệnh, Số thẻ, Máy xúc
+                        if (spanReps > 1) {
+                            ["A", "B", "C", "D"].forEach((col) => {
+                                worksheet.mergeCells(
+                                    `${col}${currentRow - spanReps}:${col}${currentRow - 1}`
+                                );
+                            });
+                        }
+                        const numUsers = item.assignedTo?.length || 1;
+                        const numReports = reps.length;
+                        const maxLines = Math.max(numUsers, numReports);
+                        worksheet.getRow(startRow).height = maxLines * 15;
+                    });
+
+                    addTableBorders(worksheet, 8, currentRow - 1, 1, totalColumn);
+
+                    const startSignature = getColumnLetter(totalColumn - 3);
+                    const endSignature = getColumnLetter(totalColumn - 1);
+
+                    worksheet.mergeCells(
+                        `${startSignature}${currentRow + 1}:${endSignature}${currentRow + 1
+                        }`
+                    );
+                    worksheet.getCell(`${startSignature}${currentRow + 1}`).value =
+                        "Cán bộ CT kiểm tra trong ca";
+                    worksheet.getCell(`${startSignature}${currentRow + 1}`).font = {
+                        bold: true,
+                    };
+                    worksheet.getCell(`${startSignature}${currentRow + 1}`).alignment = {
+                        horizontal: "center",
+                        vertical: "middle",
+                    };
+                    worksheet.mergeCells(
+                        `${startSignature}${currentRow + 2}:${endSignature}${currentRow + 2
+                        }`
+                    );
+                    worksheet.getCell(`${startSignature}${currentRow + 2}`).value =
+                        "( Ký, ghi rõ họ tên)";
+                    worksheet.getCell(`${startSignature}${currentRow + 2}`).alignment = {
+                        horizontal: "center",
+                        vertical: "middle",
+                    };
+                    if (signature) {
+                        const response = await axios.get(signature, {
+                            responseType: "arraybuffer",
+                        });
+                        const extension = response.headers["content-type"].split("/")[1];
+                        const imageBuffer = Buffer.from(response.data, "binary");
+
+                        const imageId = workbook.addImage({
+                            buffer: imageBuffer,
+                            extension,
+                        });
+
+                        worksheet.mergeCells(
+                            `${startSignature}${currentRow + 4}:${endSignature}${currentRow + 7
+                            }`
+                        );
+
+                        // gán ảnh trực tiếp vào range
+                        worksheet.addImage(
+                            imageId,
+                            `${startSignature}${currentRow + 4}:${endSignature}${currentRow + 7
+                            }`
+                        );
+                    }
+
+                    worksheet.pageSetup = {
+                        paperSize: 9, // A4
+                        orientation: "landscape", // ngang
+                        fitToPage: true,
+                        fitToWidth: 1, // vừa 1 trang theo chiều ngang
+                        fitToHeight: 0, // không ép theo chiều dọc
+                        margins: {
+                            left: 0.3,
+                            right: 0.3,
+                            top: 0.5,
+                            bottom: 0.5,
+                            header: 0.2,
+                            footer: 0.2,
+                        }, // inch
+                    };
+
+                    const fixedWidths = [6, 20, 10, 12, 12]; // 5 cột đầu
+
+                    // gán width
+                    fixedWidths.forEach((w, i) => (worksheet.getColumn(i + 1).width = w));
+                    for (let col = fixedWidths.length + 1; col <= totalColumn; col++) {
+                        worksheet.getColumn(col).width =
+                            120 / Math.max(totalColumn - fixedWidths.length, 2);
+                    }
+
+                    worksheet.eachRow((row, rowNumber) => {
+                        row.eachCell((cell) => {
+                            if (!cell.font) cell.font = {};
+                            cell.font = {
+                                ...cell.font, // giữ lại các thuộc tính khác (bold, italic,…)
+                                name: "Times New Roman", // đổi font chữ
+                                ...(rowNumber > 3 ? { size: 12 } : {}), // kích thước chữ
+                            };
+                        });
+                    });
+                }
+            }
+
+            // Xuất file
+            const buffer = await workbook.xlsx.writeBuffer();
+
+            // Thiết lập header để tải file về
+            res.setHeader(
+                "Content-Type",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            );
+            res.setHeader(
+                "Content-Disposition",
+                "attachment; filename*=UTF-8''*.xlsx"
+            ); // Gửi buffer về client
+            res.send(buffer);
+            req.logger.info(`✅ Export excel thành công`);
+        } catch (err) {
+            console.log(err);
+            res
+                .status(500)
+                .json({ status: "error", message: err.message, stack: err.stack });
+        }
+    }
+);
 
 // báo chuyến ô tô
 
