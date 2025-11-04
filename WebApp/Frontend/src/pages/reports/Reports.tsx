@@ -29,13 +29,15 @@ import { userAtom } from '../../atoms/userAtoms';
 import ExcavatorReport from './ExcavatorReport';
 import DozerReport from './DozerReport';
 import DrillReport from './DrillReport';
-import { RoleEnum } from '../../enums';
+import { ReportEnum, RoleEnum } from '../../enums';
 import { parseAxiosError } from '../../utils/handleApiError';
-
+import AttendanceReport from './AttendanceReport';
+import 'dayjs/locale/vi';
 
 function Reports() {
     const [startDate, setStartDate] = useState<dayjs.Dayjs | null>(null);
     const [endDate, setEndDate] = useState<dayjs.Dayjs | null>(null);
+    const [date, setDate] = useState<dayjs.Dayjs | null>(null);
     const [title, setTitle] = useState("");
     const [shift, setShift] = useState<Shift[]>([]);
     const [department, setDepartment] = useState<Department | null>(null);
@@ -82,101 +84,100 @@ function Reports() {
         }
     });
     const reportNames = [
-        { name: 'Xe không hoạt động', },
-        { name: 'Danh sách chuyến máy xúc', },
-        { name: 'Danh sách chuyến ô tô', },
-        { name: 'Phiếu báo công', },
-        { name: 'Phiếu báo ăn', },
-        { name: 'Giao nhận ca', },
-        { name: 'Giao ca cán bộ', },
-        // { name: 'Phiếu bồi dưỡng hiện vật', },
-        // { name: 'Phiếu lĩnh dầu', },
-        { name: 'Tổng hợp số liệu trong ca (Máy gạt)', },
-        { name: 'Tổng hợp số liệu trong ca (Máy khoan)', },
-        { name: 'Tổng hợp số liệu trong ca (Máy xúc)', },
-        { name: 'Tổng hợp số liệu trong ca (Ô tô)', },
-        // { name: 'Theo dõi sản lượng, nhiên liệu, dầu mỡ' }
+        { name: ReportEnum.INACTIVE_VEHICLES },
+        { name: ReportEnum.EXCAVATOR_TRIP_LIST },
+        { name: ReportEnum.CAR_TRIP_LIST },
+        { name: ReportEnum.WORK_REPORT_SLIP },
+        { name: ReportEnum.TIMESHEET },
+        { name: ReportEnum.MEAL_REPORT_SLIP },
+        { name: ReportEnum.SHIFT_HANDOVER },
+        { name: ReportEnum.STAFF_SHIFT_HANDOVER },
+        { name: ReportEnum.SHIFT_SUMMARY_GRADER },
+        { name: ReportEnum.SHIFT_SUMMARY_DRILL },
+        { name: ReportEnum.SHIFT_SUMMARY_EXCAVATOR },
+        { name: ReportEnum.SHIFT_SUMMARY_CAR },
     ];
-    const reportsMap = {
-        'Xe không hoạt động': {
+    const reportsMap: Record<ReportEnum, { viewUrl: string, exportUrl: string, PreviewComponent: React.ComponentType<any> }> = {
+        [ReportEnum.INACTIVE_VEHICLES]: {
             viewUrl: '/exports/vehicleShiftReport/view',
             exportUrl: '/exports/vehicleShiftReport',
             PreviewComponent: VehicleShiftReport,
         },
-        'Danh sách chuyến máy xúc': {
+        [ReportEnum.EXCAVATOR_TRIP_LIST]: {
             viewUrl: '/exports/excavatorTripReport/view',
             exportUrl: '/exports/excavatorTripReport',
             PreviewComponent: ExcavatorTripReport,
         },
-        'Danh sách chuyến ô tô': {
+        [ReportEnum.CAR_TRIP_LIST]: {
             viewUrl: '/exports/carTripReport/view',
             exportUrl: '/exports/carTripReport',
             PreviewComponent: CarTripReport,
         },
-        'Phiếu báo công': {
+        [ReportEnum.WORK_REPORT_SLIP]: {
             viewUrl: '/exports/worklog/view',
             exportUrl: '/exports/worklog',
             PreviewComponent: WorkLogReport,
         },
-        'Phiếu báo ăn': {
+        [ReportEnum.TIMESHEET]: {
+            viewUrl: '/exports/attendance/view',
+            exportUrl: '/exports/attendance',
+            PreviewComponent: AttendanceReport,
+        },
+        [ReportEnum.MEAL_REPORT_SLIP]: {
             viewUrl: '/exports/meal_request/view',
             exportUrl: '/exports/meal_request',
             PreviewComponent: mealRequestReport,
         },
-        'Giao nhận ca': {
+        [ReportEnum.SHIFT_HANDOVER]: {
             viewUrl: '',
             exportUrl: '/exports/assignmentTo',
-            PreviewComponent: mealRequestReport,
+            PreviewComponent: mealRequestReport, // Giả sử dùng tạm component này
         },
-        'Giao ca cán bộ': {
+        [ReportEnum.STAFF_SHIFT_HANDOVER]: {
             viewUrl: '',
             exportUrl: '/exports/assignmentManager',
-            PreviewComponent: mealRequestReport,
+            PreviewComponent: mealRequestReport, // Giả sử dùng tạm component này
         },
-        // 'Theo dõi sản lượng, nhiên liệu, dầu mỡ': {
-        //     viewUrl: '/exports/productReport/view',
-        //     exportUrl: '/exports/productReport',
-        //     PreviewComponent: ProductionReport,
-        // },
-        'Tổng hợp số liệu trong ca (Máy gạt)': {
+        [ReportEnum.SHIFT_SUMMARY_GRADER]: {
             viewUrl: '/exports/dozerReport/view',
             exportUrl: '/exports/dozerReport',
             PreviewComponent: DozerReport,
         },
-        'Tổng hợp số liệu trong ca (Máy khoan)': {
+        [ReportEnum.SHIFT_SUMMARY_DRILL]: {
             viewUrl: '/exports/drillReport/view',
             exportUrl: '/exports/drillReport',
             PreviewComponent: DrillReport,
         },
-        'Tổng hợp số liệu trong ca (Ô tô)': {
+        [ReportEnum.SHIFT_SUMMARY_CAR]: {
             viewUrl: '/exports/carReport/view',
             exportUrl: '/exports/carReport',
             PreviewComponent: CarReport,
         },
-        'Tổng hợp số liệu trong ca (Máy xúc)': {
+        [ReportEnum.SHIFT_SUMMARY_EXCAVATOR]: {
             viewUrl: '/exports/excavatorReport/view',
             exportUrl: '/exports/excavatorReport',
             PreviewComponent: ExcavatorReport,
         },
-
     };
 
-    const config = title ? reportsMap[title as keyof typeof reportsMap] : undefined;
+    const config = title ? reportsMap[title as ReportEnum] : undefined;
     const PreviewComponent = config?.PreviewComponent;
 
 
     const reportView = useMutation({
         mutationFn: () => {
             if (!config) throw new Error('Chưa chọn loại báo cáo');
-            if (!startDate || !endDate) throw new Error('Chọn thời gian bắt đầu và kết thúc');
-            if (shift.length === 0) throw new Error('Chọn ca làm việc');
+            if ((!startDate || !endDate) && title !== ReportEnum.TIMESHEET) throw new Error('Chọn thời gian bắt đầu và kết thúc');
+            if (shift.length === 0 && title !== ReportEnum.TIMESHEET) throw new Error('Chọn ca làm việc');
+            if (title === ReportEnum.TIMESHEET && !date) throw new Error('Chọn tháng');
             return api.post(config.viewUrl, {
                 startDate: startDate?.format('YYYY-MM-DD') || '',
                 endDate: endDate?.format('YYYY-MM-DD') || '',
                 shift: shift.map(s => s._id),
                 title,
                 signature: signatureUrl || null,
-                department: department?._id || ''
+                department: department?._id || '',
+                date: date ? date.format('MM/YYYY') : ''
             }).then(res => {
                 setData(res.data.data);
                 setMaxTrip(res.data.maxTrips)
@@ -194,15 +195,17 @@ function Reports() {
     const reportExcel = useMutation({
         mutationFn: () => {
             if (!config) throw new Error('Chưa chọn loại báo cáo');
-            if (!startDate || !endDate) throw new Error('Chọn thời gian bắt đầu và kết thúc');
-            if (shift.length === 0) throw new Error('Chọn ca làm việc');
+            if ((!startDate || !endDate) && title !== ReportEnum.TIMESHEET) throw new Error('Chọn thời gian bắt đầu và kết thúc');
+            if (shift.length === 0 && title !== ReportEnum.TIMESHEET) throw new Error('Chọn ca làm việc');
+            if (title === ReportEnum.TIMESHEET && !date) throw new Error('Chọn tháng');
             return api.post(config.exportUrl, {
                 startDate: startDate?.format('YYYY-MM-DD') || '',
                 endDate: endDate?.format('YYYY-MM-DD') || '',
                 shift,
                 title,
                 signature: signatureUrl || null,
-                department
+                department,
+                date: date ? date.format('MM/YYYY') : ''
             }, {
                 responseType: 'blob',
                 onUploadProgress: (progressEvent) => {
@@ -290,7 +293,7 @@ function Reports() {
                         </TextField>
                     </Grid>
                     {/* Từ ngày - Thời gian bắt đầu */}
-                    <Grid item xs={6}>
+                    {title !== ReportEnum.TIMESHEET && <Grid item xs={6}>
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
                             <DatePicker
                                 label="Từ ngày"
@@ -306,9 +309,9 @@ function Reports() {
                                 )}
                             />
                         </LocalizationProvider>
-                    </Grid>
+                    </Grid>}
                     {/* Từ ngày - Thời gian bắt đầu */}
-                    <Grid item xs={6}>
+                    {title !== ReportEnum.TIMESHEET && <Grid item xs={6}>
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
                             <DatePicker
                                 label="Đến ngày"
@@ -324,8 +327,8 @@ function Reports() {
                                 )}
                             />
                         </LocalizationProvider>
-                    </Grid>
-                    <Grid item xs={12}>
+                    </Grid>}
+                    {title !== ReportEnum.TIMESHEET && <Grid item xs={12}>
                         <Autocomplete
                             multiple
                             fullWidth
@@ -344,7 +347,26 @@ function Reports() {
                                 />
                             )}
                         />
-                    </Grid>
+                    </Grid>}
+                    {title === ReportEnum.TIMESHEET && <Grid item xs={12}>
+                        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="vi">
+                            <DatePicker
+                                label="Chọn tháng"
+                                inputFormat="MM/YYYY" // v5 vẫn hỗ trợ
+                                views={['year', 'month']}
+                                openTo="month"
+                                value={date ? dayjs(date) : null}
+                                onChange={(value) => setDate(value)}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        fullWidth
+                                        size="small"
+                                    />
+                                )}
+                            />
+                        </LocalizationProvider>
+                    </Grid>}
                     {/* Buttons */}
                     <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
                         <Button variant="contained" onClick={() => {
@@ -405,7 +427,7 @@ function Reports() {
                         </Grid>
                     )}
                     <Grid item xs={12}>
-                        {preview && PreviewComponent ? <PreviewComponent data={data} signatureUrl={signatureUrl} maxTrip={maxTrip} materials={materials} startDate={startDate} endDate={endDate} shifts={shift} department={department} /> : null}
+                        {preview && PreviewComponent ? <PreviewComponent data={data} signatureUrl={signatureUrl} maxTrip={maxTrip} materials={materials} startDate={startDate} endDate={endDate} shifts={shift} department={department} date={date} /> : null}
                         {signatureUrl && !preview && (
                             <Box mt={2} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                                 <img src={signatureUrl} alt="Chữ ký" style={{ maxWidth: 200, maxHeight: 100 }} />

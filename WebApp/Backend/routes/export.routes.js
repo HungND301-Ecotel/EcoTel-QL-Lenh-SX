@@ -6,6 +6,10 @@ const Order = require('../models/Order');
 const Shift = require('../models/Shift');
 const Report = require('../models/Report');
 const Department = require('../models/Department');
+const User = require('../models/User');
+const dayjs = require('dayjs');
+require('dayjs/locale/vi');
+dayjs.locale('vi');
 
 
 
@@ -6795,6 +6799,430 @@ router.post('/assignmentManager', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADM
 
     }
 })
+
+router.post(
+    "/attendance/view",
+    verifyToken,
+    restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER),
+    async (req, res) => {
+        try {
+            const { date, department } = req.body;
+            const user = req.user;
+
+            // Bước 1: xác định department
+            let dep = department
+                ? await Department.findById(department).select("_id")
+                : user?.department?._id;
+
+            const inputDate = dayjs(date, "MM/YYYY");
+
+            // Ngày đầu tháng (00:00:00.000)
+            const startDate = inputDate.startOf('month').toDate();
+
+            // Ngày cuối tháng (23:59:59.999)
+            const endDate = inputDate.endOf('month').toDate();
+
+            // Bước 2: lấy danh sách nhân viên trong phòng ban
+            const users = await User.find({ department: dep })
+                .select("_id fullName salaryCode")
+                .lean();
+
+            // Bước 3: lấy tất cả order trong range ngày
+            const orders = await Order.find({
+                department: dep,
+                status: STATUS_ORDER.COMPLETED,
+                workingDate: {
+                    $gte: new Date(startDate),
+                    $lte: new Date(endDate),
+                },
+            })
+                .populate("assignedTo", "fullName salaryCode")
+                .populate("shift", "name")
+                .lean();
+
+            // Bước 4: group theo user + ngày + ca
+            const attendanceMap = {};
+            orders.forEach((o) => {
+                const userId = o.assignedTo?._id?.toString();
+                if (!userId) return;
+                const date = dayjs(o.workingDate).format("YYYY-MM-DD");
+                const shiftName = o.shift?.name || "N"; // VD: '1', '2', '3'
+                attendanceMap[userId] ??= {};
+                attendanceMap[userId][date] ??= { 1: 0, 2: 0, 3: 0 };
+                attendanceMap[userId][date][shiftName] = 1; // chỉ cần có lệnh là 1
+            });
+
+            // Bước 5: chuyển thành format cho bảng
+            const dateRange = [];
+            let current = dayjs(startDate);
+            const end = dayjs(endDate);
+            while (current.isBefore(end) || current.isSame(end)) {
+                dateRange.push(current.format("YYYY-MM-DD"));
+                current = current.add(1, "day");
+            }
+
+            const result = users.map((u) => {
+                const days = {};
+                let totalCa1 = 0,
+                    totalCa2 = 0,
+                    totalCa3 = 0,
+                    totalDay = 0;
+
+                dateRange.forEach((d) => {
+                    const dayData = attendanceMap[u._id]?.[d];
+                    if (!dayData) {
+                        days[d] = "N";
+                    } else {
+                        // Lấy danh sách ca có lệnh
+                        const caList = Object.entries(dayData)
+                            .filter(([_, v]) => v === 1)
+                            .map(([ca]) => ca);
+
+                        if (caList.length === 0) days[d] = "N";
+                        else days[d] = caList.length
+
+                        // Tổng số ca
+                        if (dayData[1]) totalCa1++;
+                        if (dayData[2]) totalCa2++;
+                        if (dayData[3]) totalCa3++;
+                        totalDay += caList.length; // ✅ cộng đúng số lượng ca
+                    }
+                });
+
+                return {
+                    userId: u._id,
+                    fullName: u.fullName,
+                    days,
+                    totalDay,
+                    totalCa1,
+                    totalCa2,
+                    totalCa3,
+                };
+            });
+
+
+            res.status(200).json({
+                status: "success",
+                data: [{
+                    data: result,
+                    dateRange: dateRange,
+                }]
+            });
+        } catch (err) {
+            req.logger.error("❌ Lỗi khi load bảng chấm công", err);
+            res
+                .status(500)
+                .json({ status: "error", message: err.message, stack: err.stack });
+        }
+    }
+);
+router.post(
+    "/attendance",
+    verifyToken,
+    restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER),
+    async (req, res) => {
+        try {
+            const { date, department, signature } = req.body;
+            const user = req.user;
+
+            // Bước 1: xác định department
+            // ... (Logic xác định dep giữ nguyên)
+            let depId = department
+                ? await Department.findById(department).select("_id")
+                : user?.department?._id;
+
+            const depInfo = await Department.findById(depId).select("code");
+
+            const inputDate = dayjs(date, "MM/YYYY");
+            const startDate = inputDate.startOf('month').toDate();
+            const endDate = inputDate.endOf('month').toDate();
+
+            // Bước 2 & 3: Lấy danh sách nhân viên và Orders
+            // ... (Logic lấy users và orders giữ nguyên)
+            const users = await User.find({ department: depId })
+                .select("_id fullName salaryCode")
+                .lean();
+
+            const orders = await Order.find({
+                department: depId,
+                status: STATUS_ORDER.COMPLETED,
+                workingDate: {
+                    $gte: new Date(startDate),
+                    $lte: new Date(endDate),
+                },
+            })
+                .populate("assignedTo", "fullName salaryCode")
+                .populate("shift", "name")
+                .lean();
+
+
+            // Bước 4: group theo user + ngày + ca (Giữ nguyên)
+            const attendanceMap = {};
+            orders.forEach((o) => {
+                const userId = o.assignedTo?._id?.toString();
+                if (!userId) return;
+                const date = dayjs(o.workingDate).format("YYYY-MM-DD");
+                const shiftName = o.shift?.name || "N";
+                attendanceMap[userId] ??= {};
+                attendanceMap[userId][date] ??= { 1: 0, 2: 0, 3: 0 };
+                attendanceMap[userId][date][shiftName] = 1;
+            });
+
+            // Bước 5: Tạo dateRange và Result
+            const dateRange = [];
+            let current = dayjs(startDate);
+            const end = dayjs(endDate);
+            while (current.isBefore(end) || current.isSame(end)) {
+                dateRange.push(current); // Lưu Dayjs object để lấy Thứ và Ngày
+                current = current.add(1, "day");
+            }
+
+            // Chuyển dateRange sang chuỗi định dạng (YYYY-MM-DD) cho logic map
+            const dateRangeKeys = dateRange.map(d => d.format("YYYY-MM-DD"));
+
+            const result = users.map((u) => {
+                const days = {};
+                let totalCa1 = 0, totalCa2 = 0, totalCa3 = 0, totalDay = 0;
+
+                dateRangeKeys.forEach((d) => {
+                    const dayData = attendanceMap[u._id]?.[d];
+                    if (!dayData) {
+                        days[d] = "N";
+                    } else {
+                        const caList = Object.entries(dayData)
+                            .filter(([_, v]) => v === 1)
+                            .map(([ca]) => ca);
+
+                        if (caList.length === 0) days[d] = "N";
+                        else days[d] = caList.length;
+
+                        if (dayData[1]) totalCa1++;
+                        if (dayData[2]) totalCa2++;
+                        if (dayData[3]) totalCa3++;
+                        totalDay += caList.length;
+                    }
+                });
+
+                return {
+                    userId: u._id,
+                    fullName: u.fullName,
+                    days,
+                    totalDay,
+                    totalCa1,
+                    totalCa2,
+                    totalCa3,
+                };
+            });
+
+            // --- TẠO DÒNG TỔNG CỘNG (Summary Row) ---
+            let grandTotalDay = 0, grandTotalCa1 = 0, grandTotalCa2 = 0, grandTotalCa3 = 0;
+            result.forEach((r) => {
+                grandTotalDay += r.totalDay;
+                grandTotalCa1 += r.totalCa1;
+                grandTotalCa2 += r.totalCa2;
+                grandTotalCa3 += r.totalCa3;
+            });
+
+            const summaryRow = {
+                fullName: 'TỔNG CỘNG',
+                totalDay: grandTotalDay,
+                totalCa1: grandTotalCa1,
+                totalCa2: grandTotalCa2,
+                totalCa3: grandTotalCa3,
+            };
+
+            // --- BƯỚC 6: TẠO FILE EXCEL ---
+
+            const workbook = new ExcelJS.Workbook();
+            // Đảm bảo bạn đã cài đặt locale 'vi' cho Dayjs ở BE nếu cần
+            const depCode = depInfo?.code ? depInfo.code.toString() : ''; // Ép về chuỗi
+            const sheetName = `ChamCong_${depCode}`;
+            const worksheet = workbook.addWorksheet(sheetName);
+
+            // 1. Dòng Tiêu đề Báo cáo
+            const startCol = 1; // A
+            const endCol = 2 + dateRange.length + 4; // STT, Họ tên + Cột ngày + 4 cột tổng
+
+            // Dòng 2: Tiêu đề chính
+            worksheet.mergeCells(1, startCol, 1, endCol);
+            const headerCell = worksheet.getCell(1, startCol);
+            headerCell.value = `BẢNG CHẤM CÔNG`;
+            headerCell.font = { bold: true, size: 16 };
+            headerCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+            // Dòng 3: Thời gian
+            worksheet.mergeCells(2, startCol, 2, endCol);
+            worksheet.getCell(2, startCol).value = `Tháng ${inputDate.format('MM')} năm ${inputDate.format('YYYY')}`;
+            worksheet.getCell(2, startCol).alignment = { horizontal: 'center' };
+
+
+            // Dòng 5: Tiêu đề Cột chính (STT, Họ Tên, Tổng)
+            const headerRowNumber = 4;
+            let colIndex = 1;
+
+            // Header 1: STT
+            worksheet.mergeCells(headerRowNumber, colIndex, headerRowNumber + 1, colIndex);
+            worksheet.getCell(headerRowNumber, colIndex).value = 'TT';
+            worksheet.getColumn(colIndex).width = 5;
+            colIndex++;
+
+            // Header 2: Họ và tên
+            worksheet.mergeCells(headerRowNumber, colIndex, headerRowNumber + 1, colIndex);
+            worksheet.getCell(headerRowNumber, colIndex).value = 'Họ và tên';
+            worksheet.getColumn(colIndex).width = 25;
+            colIndex++;
+
+            // Header 3: Cột Ngày (Cần xử lý phức tạp hơn)
+            const startDayCol = colIndex;
+            dateRange.forEach((dayjsObject) => {
+                const day = dayjsObject.format('DD'); // Ngày
+                const dayOfWeek = dayjsObject.format('dd'); // Thứ (T2, T3, CN,...)
+
+                // Dòng 5: Ngày
+                worksheet.getCell(headerRowNumber, colIndex).value = day;
+                worksheet.getColumn(colIndex).width = 4;
+
+                // Dòng 6: Thứ
+                worksheet.getCell(headerRowNumber + 1, colIndex).value = dayOfWeek;
+
+                colIndex++;
+            });
+
+            // Header 4: Cột Tổng Hợp
+            // Merge tiêu đề "Tổng Hợp"
+            const startTotalCol = colIndex;
+            const endTotalCol = colIndex + 3;
+            worksheet.mergeCells(headerRowNumber, startTotalCol, headerRowNumber, endTotalCol);
+            worksheet.getCell(headerRowNumber, startTotalCol).value = 'Tổng Cộng';
+
+            // Dòng 6: Các cột con (Tổng, Ca1, Ca2, Ca3)
+            worksheet.getCell(headerRowNumber + 1, colIndex++).value = 'Tổng';
+            worksheet.getCell(headerRowNumber + 1, colIndex++).value = 'Ca1';
+            worksheet.getCell(headerRowNumber + 1, colIndex++).value = 'Ca2';
+            worksheet.getCell(headerRowNumber + 1, colIndex++).value = 'Ca3';
+
+
+            // --- ĐIỀN DỮ LIỆU CỦA TỪNG NHÂN VIÊN ---
+            let dataRowNumber = headerRowNumber + 2; // Bắt đầu từ dòng 7
+
+            const allRows = [...result, summaryRow];
+
+            allRows.forEach((row, rowIndex) => {
+                let cellColIndex = 1;
+
+                // 1. TT / Bỏ trống cho dòng Tổng Cộng
+                const sttValue = row.fullName === 'TỔNG CỘNG' ? '' : rowIndex + 1;
+                worksheet.getCell(dataRowNumber, cellColIndex++).value = sttValue;
+
+                // 2. Họ và tên
+                worksheet.getCell(dataRowNumber, cellColIndex++).value = row.fullName;
+
+                // 3. Dữ liệu ngày
+                dateRange.forEach((dayjsObject) => {
+                    const dateKey = dayjsObject.format("YYYY-MM-DD");
+                    let cellValue = '';
+
+                    if (row.fullName !== 'TỔNG CỘNG') {
+                        cellValue = row.days?.[dateKey] || 'N';
+                    }
+                    // Nếu là dòng Tổng Cộng, ô ngày để trống.
+
+                    worksheet.getCell(dataRowNumber, cellColIndex++).value = cellValue;
+                });
+
+                // 4. Tổng ca
+                worksheet.getCell(dataRowNumber, cellColIndex++).value = row.totalDay;
+                worksheet.getCell(dataRowNumber, cellColIndex++).value = row.totalCa1;
+                worksheet.getCell(dataRowNumber, cellColIndex++).value = row.totalCa2;
+                worksheet.getCell(dataRowNumber, cellColIndex++).value = row.totalCa3;
+
+                dataRowNumber++;
+            });
+            const signatureStartRow = dataRowNumber + 1;
+            const signatureEndRow = signatureStartRow + 3;
+            if (signature) {
+                const response = await axios.get(signature, { responseType: 'arraybuffer' });
+                const extension = response.headers['content-type'].split('/')[1];
+                const imageBuffer = Buffer.from(response.data, 'binary');
+
+                const imageId = workbook.addImage({
+                    buffer: imageBuffer,
+                    extension
+                });
+
+                worksheet.mergeCells(`${startTotalCol}${signatureStartRow}:${endTotalCol}${signatureEndRow}`);
+
+                // Gán ảnh trực tiếp vào range
+                worksheet.addImage(imageId, {
+                    tl: { col: startTotalCol - 1 + 0.1, row: signatureStartRow - 1 + 0.1 }, // Đặt tl (top-left) có offset nhỏ
+                    br: { col: endTotalCol - 0.1, row: signatureEndRow - 0.1 }, // Đặt br (bottom-right) có offset nhỏ
+                });
+            }
+            worksheet.pageSetup = {
+                paperSize: 9,                // A4
+                orientation: 'landscape',    // ngang
+                fitToPage: true,
+                fitToWidth: 1,               // vừa 1 trang theo chiều ngang
+                fitToHeight: 0,              // không ép theo chiều dọc
+                margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } // inch
+            };
+
+            // --- ÁP DỤNG STYLES CHO BẢNG DỮ LIỆU ---
+            const finalRow = dataRowNumber - 1;
+            const finalCol = colIndex - 1;
+
+            const headerStyle = {
+                font: { bold: true },
+                alignment: { vertical: 'middle', horizontal: 'center', wrapText: true },
+                fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD3D3D3' } },
+                border: {
+                    top: { style: 'thin' }, bottom: { style: 'thin' },
+                    left: { style: 'thin' }, right: { style: 'thin' }
+                }
+            };
+
+            const dataStyle = {
+                alignment: { vertical: 'middle', horizontal: 'center' },
+                border: {
+                    top: { style: 'thin' }, bottom: { style: 'thin' },
+                    left: { style: 'thin' }, right: { style: 'thin' }
+                }
+            };
+
+            // Apply style cho header (Dòng 5 và 6)
+            worksheet.getRows(headerRowNumber, 2).forEach(row => {
+                row.eachCell((cell) => {
+                    Object.assign(cell, headerStyle);
+                });
+            });
+
+            // Apply style cho data (Dòng 7 đến finalRow)
+            worksheet.getRows(headerRowNumber + 2, finalRow - (headerRowNumber + 1)).forEach(row => {
+                row.eachCell((cell, colNum) => {
+                    Object.assign(cell, dataStyle);
+                    // Cột Họ tên (Cột 2) căn trái
+                    if (colNum === 2) {
+                        cell.alignment = { vertical: 'middle', horizontal: 'left' };
+                    }
+                });
+            });
+
+            // Gửi file
+            const buffer = await workbook.xlsx.writeBuffer();
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${sheetName}.xlsx`);
+            res.send(buffer);
+            req.logger.info(`✅ Export excel thành công`);
+        } catch (err) {
+            req.logger.error("❌ Lỗi khi export bảng chấm công", err);
+            res
+                .status(500)
+                .json({ status: "error", message: err.message, stack: err.stack });
+        }
+    }
+);
+
+
 function setCell(ws, range, value) {
     ws.mergeCells(range);
     const cell = ws.getCell(range.split(':')[0]);

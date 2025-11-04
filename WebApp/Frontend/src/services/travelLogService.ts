@@ -35,8 +35,9 @@ const TravelLogService = {
         return res.data
     },
     exportFile: async (
+        type: string
     ) => {
-        const res = await api.post('/travellogs/exportFile', {}, {
+        const res = await api.post('/travellogs/exportFile', { type }, {
             responseType: 'blob',
         });
         const blob = new Blob([res.data], {
