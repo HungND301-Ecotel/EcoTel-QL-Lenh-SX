@@ -6932,7 +6932,7 @@ router.post(
                         days[d] = caList.join(',');
 
                         // TỔNG CÔNG: Nếu có bất kỳ ca nào, tính là 1 công
-                        totalDay++;
+                        totalDay += caList.length;
 
                         // TỔNG SỐ CA ĐÃ THỰC HIỆN
                         if (shiftSet.has('1')) totalCa1++;
@@ -7053,7 +7053,7 @@ router.post(
                         days[d] = caList.join(',');
 
                         // TỔNG CÔNG: Nếu có bất kỳ ca nào, tính là 1 công
-                        totalDay++;
+                        totalDay += caList.length;
 
                         // TỔNG SỐ CA ĐÃ THỰC HIỆN
                         if (shiftSet.has('1')) totalCa1++;
