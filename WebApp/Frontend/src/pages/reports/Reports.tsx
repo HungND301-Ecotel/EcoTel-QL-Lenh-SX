@@ -395,7 +395,7 @@ function Reports() {
                                 startIcon={<Close />}
                                 onClick={() => setSignatureUrl(null)}
                             >
-                                bỏ chữ kí
+                                Bỏ chữ kí
                             </Button>}
                         <Button variant="contained" onClick={() => {
                             if (!title) {

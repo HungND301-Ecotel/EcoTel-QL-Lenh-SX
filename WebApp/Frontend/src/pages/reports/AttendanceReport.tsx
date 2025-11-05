@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { Box } from '@mui/material';
+import { Box, Paper } from '@mui/material';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
 import { Department, Shift } from '../../types';
@@ -161,6 +161,7 @@ export default function AttendanceReportAntd({
 
     return (
         <Box sx={{ p: 2 }}>
+            <i style={{ fontSize: 20 }}>CÔNG TY CỔ PHẦN THAN CAO SƠN-TKV</i>
             <Typography
                 style={{
                     textAlign: 'center',
@@ -175,33 +176,36 @@ export default function AttendanceReportAntd({
             <Typography style={{ textAlign: 'center' }}>
                 Tháng {date?.format('MM')} năm {date?.format('YYYY')}
             </Typography>
+            <Typography>Đơn vị: {department ? department.code : user?.department?.code}</Typography>
 
-            <Table
-                bordered
-                dataSource={rowsWithTotal}
-                columns={columns}
-                pagination={false}
-                scroll={{ x: 'max-content', y: 600 }}
-                rowClassName={(record) =>
-                    record.id === 'summary' ? 'summary-row' : ''
-                }
-                style={{ marginTop: 20 }}
-            />
+            <Paper>
+                <Table
+                    bordered
+                    dataSource={rowsWithTotal}
+                    columns={columns}
+                    pagination={false}
+                    scroll={{ x: 'max-content', y: 600 }}
+                    rowClassName={(record) =>
+                        record.id === 'summary' ? 'summary-row' : ''
+                    }
+                    style={{ marginTop: 20 }}
+                />
 
-            {signatureUrl && (
-                <div
-                    style={{
-                        marginTop: 20,
-                        textAlign: 'right',
-                    }}
-                >
-                    <img
-                        src={signatureUrl}
-                        alt="Chữ ký"
-                        style={{ maxWidth: 200, maxHeight: 100 }}
-                    />
-                </div>
-            )}
+                {signatureUrl && (
+                    <div
+                        style={{
+                            marginTop: 20,
+                            textAlign: 'right',
+                        }}
+                    >
+                        <img
+                            src={signatureUrl}
+                            alt="Chữ ký"
+                            style={{ maxWidth: 200, maxHeight: 100 }}
+                        />
+                    </div>
+                )}
+            </Paper>
 
             {/* CSS inline hoặc global */}
             <style>

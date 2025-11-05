@@ -156,7 +156,7 @@ const ModelEditor: React.FC<Props> = ({ materials, devicemodels, initialSlot, on
       </Box>
 
       <Box display="flex" justifyContent="flex-end" gap={2}>
-        <Button variant="outlined" startIcon={<Cancel />} onClick={() => {
+        <Button onClick={() => {
           setRows(generateEmptyRows());
           onCancel()
         }}>
@@ -164,12 +164,10 @@ const ModelEditor: React.FC<Props> = ({ materials, devicemodels, initialSlot, on
         </Button>
         <Button
           variant="contained"
-          startIcon={<Save />}
-          color="success"
           disabled={saveMutation.isPending}
           onClick={() => saveMutation.mutate()}
         >
-          Lưu
+          {initValue.length ? 'Cập nhật' : 'Thêm mới'}
         </Button>
       </Box>
     </Box>

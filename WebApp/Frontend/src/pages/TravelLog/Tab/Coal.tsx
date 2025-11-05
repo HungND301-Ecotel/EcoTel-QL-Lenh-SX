@@ -92,12 +92,6 @@ const Coals: React.FC<props> = ({ type }) => {
             render: (_: any, record: any) => record.excavator?.code
         },
         {
-            title: 'Ngày',
-            dataIndex: 'workingDate',
-            key: 'workingDate',
-            render: (_: any, record: any) => record.workingDate ? dayjs(record.workingDate).format("DD-MM-YYYY") : ''
-        },
-        {
             title: 'Khu vực',
             dataIndex: 'area',
             key: 'area',
@@ -183,6 +177,12 @@ const Coals: React.FC<props> = ({ type }) => {
             width: 50,
             align: 'center',
             render: (_: any, record: any) => record.shift?.name
+        },
+        {
+            title: 'Ngày',
+            dataIndex: 'workingDate',
+            key: 'workingDate',
+            render: (_: any, record: any) => record.workingDate ? dayjs(record.workingDate).format("DD-MM-YYYY") : ''
         },
         {
             title: 'Sửa',

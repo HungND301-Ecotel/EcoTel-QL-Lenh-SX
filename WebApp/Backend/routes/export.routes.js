@@ -266,7 +266,7 @@ async function buildVehicle(order, workbook) {
     worksheet.getCell(`D${rowHeader1 + 1}`).value = 'Điểm đổ tải';
     worksheet.getCell(`E${rowHeader1 + 1}`).value = 'Vật liệu';
     worksheet.getCell(`F${rowHeader1 + 1}`).value = 'Số chuyến thực hiện';
-    worksheet.getCell(`G${rowHeader1 + 1}`).value = 'Cung độ \n tạm tính';
+    worksheet.getCell(`G${rowHeader1 + 1}`).value = 'Cung độ \n tạm tính (km)';
     worksheet.getCell(`H${rowHeader1 + 1}`).value = 'Thời gian';
     worksheet.getCell(`I${rowHeader1 + 1}`).value = 'Khối lượng \n tạm tính \n(m3)';
     worksheet.getCell(`J${rowHeader1 + 1}`).value = 'Trọng lượng \n tạm tính \n (tấn)';
@@ -2743,7 +2743,7 @@ router.post('/vehicleShiftReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.AD
                     const lastCol = worksheet.columnCount;
                     worksheet.addImage(imageId, {
                         tl: { col: lastCol - 2, row: index + 7 }, // H30
-                        ext: { width: 150, height: 150 },
+                        ext: { width: 120, height: 50 },
                     });
                 }
 
@@ -5957,7 +5957,7 @@ router.post('/productReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, 
                     const lastCol = worksheet.columnCount;
                     worksheet.addImage(imageId, {
                         tl: { col: lastCol - 2, row: length + 7 }, // H30
-                        ext: { width: 150, height: 150 },
+                        ext: { width: 120, height: 50 },
                     });
                 }
 
@@ -6080,15 +6080,20 @@ router.post('/worklog', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.D
 
                 // --- HEADER ---
                 worksheet.mergeCells('A1:I1');
-                worksheet.getCell('A1').value = `Ca: ${ca.name}, ngày: ${formatDate(d)}         Tên cán bộ: ${req.user?.fullName}`;
-                worksheet.getCell('A1').font = { italic: true, size: 12 };
-                worksheet.getCell('A1').alignment = { horizontal: 'left', vertical: 'middle' };
+                const infoRow = worksheet.getCell('B1');
+                infoRow.value = "CÔNG TY CỔ PHẦN THAN CAO SƠN-TKV";
+                infoRow.font = { italic: true, size: 18 };
+                infoRow.alignment = { horizontal: 'left', vertical: 'middle' };
 
-                worksheet.mergeCells('A2:I2');
-                worksheet.getCell('A2').value = "Báo công hàng ngày";
-                worksheet.getCell('A2').font = { bold: true, size: 14 };
-                worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
-                const headerRow = worksheet.getRow(3);
+                worksheet.mergeCells('A3:I3');
+                worksheet.getCell('A3').value = `Đơn vị: ${dep?.code}.  Ca: ${ca.name}, ngày: ${formatDate(d)}         Tên cán bộ: ${req.user?.fullName}`;
+                worksheet.getCell('A3').font = { italic: true, size: 12 };
+
+                worksheet.mergeCells('A4:I4');
+                worksheet.getCell('A4').value = "Báo công hàng ngày";
+                worksheet.getCell('A4').font = { bold: true, size: 14 };
+                worksheet.getCell('A4').alignment = { horizontal: 'center', vertical: 'middle' };
+                const headerRow = worksheet.getRow(6);
                 headerRow.values = [
                     "STT",
                     "Họ và tên",
@@ -6122,33 +6127,33 @@ router.post('/worklog', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.D
                         ''
                     ]);
                 }
-                addTableBorders(worksheet, 3, formattedData.length + 3, 1, 9);
+                addTableBorders(worksheet, 6, formattedData.length + 6, 1, 9);
 
 
                 worksheet.getColumn(1).width = 6;
                 worksheet.getColumn(1).alignment = { horizontal: 'center' }
-                worksheet.getColumn(2).width = 20;
+                worksheet.getColumn(2).width = 25;
                 worksheet.getColumn(2).alignment = { horizontal: 'center' }
                 worksheet.getColumn(3).width = 10;
                 worksheet.getColumn(3).alignment = { horizontal: 'center' }
-                worksheet.getColumn(4).width = 15;
+                worksheet.getColumn(4).width = 20;
                 worksheet.getColumn(5).width = 10;
                 worksheet.getColumn(6).width = 15
                 worksheet.getColumn(7).width = 10;
                 worksheet.getColumn(8).width = 25;
-                worksheet.getColumn(9).width = 10;
+                worksheet.getColumn(9).width = 20;
 
                 const length = formattedData.length
-                worksheet.mergeCells(`C${length + 7}:D${length + 7}`);
-                worksheet.getCell(`C${length + 7}`).value = "TỔ TRƯỞNG";
-                worksheet.getCell(`C${length + 7}`).alignment = { horizontal: 'center', vertical: 'middle' };
-                worksheet.getCell(`C${length + 7}`).font = { bold: true };
+                worksheet.mergeCells(`C${length + 8}:D${length + 8}`);
+                worksheet.getCell(`C${length + 8}`).value = "TỔ TRƯỞNG";
+                worksheet.getCell(`C${length + 8}`).alignment = { horizontal: 'center', vertical: 'middle' };
+                worksheet.getCell(`C${length + 8}`).font = { bold: true };
 
                 // Merge ô H..I và ghi "QUẢN ĐỐC"
-                worksheet.mergeCells(`H${length + 7}:I${length + 7}`);
-                worksheet.getCell(`H${length + 7}`).value = "QUẢN ĐỐC";
-                worksheet.getCell(`H${length + 7}`).alignment = { horizontal: 'center', vertical: 'middle' };
-                worksheet.getCell(`H${length + 7}`).font = { bold: true };
+                worksheet.mergeCells(`H${length + 8}:I${length + 8}`);
+                worksheet.getCell(`H${length + 8}`).value = "QUẢN ĐỐC";
+                worksheet.getCell(`H${length + 8}`).alignment = { horizontal: 'center', vertical: 'middle' };
+                worksheet.getCell(`H${length + 8}`).font = { bold: true };
 
 
                 if (signature) {
@@ -6167,10 +6172,31 @@ router.post('/worklog', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.D
                     const lastCol = worksheet.columnCount;
                     worksheet.addImage(imageId, {
                         tl: { col: lastCol - 2, row: length + 8 }, // H30
-                        ext: { width: 150, height: 150 },
+                        ext: { width: 120, height: 50 },
                     });
                 }
 
+                worksheet.pageSetup = {
+                    paperSize: 9,                // A4
+                    orientation: 'landscape',    // ngang
+                    fitToPage: true,
+                    fitToWidth: 1,               // vừa 1 trang theo chiều ngang
+                    fitToHeight: 0,              // không ép theo chiều dọc
+                    margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } // inch
+                };
+                worksheet.eachRow((row, rowNumber) => {
+                    row.eachCell((cell) => {
+                        if (!cell.font) cell.font = {};
+                        cell.font = {
+                            ...cell.font,            // giữ lại các thuộc tính khác (bold, italic,…)
+                            name: 'Times New Roman', // đổi font chữ
+                            ...(rowNumber > 4 ? { size: 12 } : {})            // kích thước chữ
+                        };
+                        if (rowNumber === 1) {
+                            cell.alignment = { horizontal: 'left', vertical: 'middle' };
+                        }
+                    });
+                });
             }
         }
 
@@ -6292,26 +6318,31 @@ router.post('/meal_request', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, R
 
                 const worksheet = workbook.addWorksheet(sheetName);
 
-
                 worksheet.mergeCells('A1:G1');
-                const infoRow = worksheet.getCell('A1');
-                infoRow.value = `Ca: ${ca.name}, ngày: ${formatDate(d)}         Tên cán bộ:`;
+                const titleRow = worksheet.getCell('B1');
+                titleRow.value = "CÔNG TY CỔ PHẦN THAN CAO SƠN-TKV";
+                titleRow.font = { italic: true, size: 18 };
+                titleRow.alignment = { horizontal: 'left', vertical: 'middle' };
+
+                worksheet.mergeCells('A3:G3');
+                const infoRow = worksheet.getCell('A3');
+                infoRow.value = `Đơn vị: ${dep?.code},  Ca: ${ca.name}, ngày: ${formatDate(d)}         Tên cán bộ:`;
                 infoRow.font = { italic: true, size: 12 };
-                infoRow.alignment = { horizontal: 'left', vertical: 'middle' };
+                infoRow.alignment = { horizontal: 'center', vertical: 'middle' };
                 // Tiêu đề bảng
-                worksheet.mergeCells('A2:G2');
-                const header = worksheet.getCell('A2');
+                worksheet.mergeCells('A4:G4');
+                const header = worksheet.getCell('A4');
                 header.value = "PHIẾU BÁO ĂN";
                 header.font = { bold: true, size: 14 };
                 header.alignment = { horizontal: 'center', vertical: 'middle' };
 
-                setCell(worksheet, 'A3', 'STT')
-                setCell(worksheet, 'B3', 'Họ và tên')
-                setCell(worksheet, 'C3', 'Số thẻ')
-                setCell(worksheet, 'D3', 'Số xe')
-                setCell(worksheet, 'E3', 'Công việc')
-                setCell(worksheet, 'F3', 'Vị trí báo ăn')
-                setCell(worksheet, 'G3', 'Ghi chú')
+                setCell(worksheet, 'A6', 'STT')
+                setCell(worksheet, 'B6', 'Họ và tên')
+                setCell(worksheet, 'C6', 'Số thẻ')
+                setCell(worksheet, 'D6', 'Số xe')
+                setCell(worksheet, 'E6', 'Công việc')
+                setCell(worksheet, 'F6', 'Vị trí báo ăn')
+                setCell(worksheet, 'G6', 'Ghi chú')
 
 
                 let index = 1;
@@ -6326,25 +6357,23 @@ router.post('/meal_request', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, R
                         ''
                     ]);
                 }
-                addTableBorders(worksheet, 3, formattedData.length + 3, 1, 7);
+                addTableBorders(worksheet, 6, formattedData.length + 6, 1, 7);
 
                 worksheet.columns = [
                     { key: 'A', width: 10 },
                     { key: 'B', width: 25 },
                     { key: 'C', width: 10 },
                     { key: 'D', width: 15 },
-                    { key: 'E', width: 25 },
-                    { key: 'F', width: 15 },
-                    { key: 'G', width: 15 },
+                    { key: 'E', width: 30 },
+                    { key: 'F', width: 25 },
+                    { key: 'G', width: 25 },
                 ];
 
-
-
                 const length = formattedData.length
-                worksheet.mergeCells(`E${length + 7}:G${length + 7}`);
-                worksheet.getCell(`E${length + 7}`).value = "CÁN BỘ ĐI CA";
-                worksheet.getCell(`E${length + 7}`).alignment = { horizontal: 'center', vertical: 'middle' };
-                worksheet.getCell(`E${length + 7}`).font = { bold: true };
+                worksheet.mergeCells(`E${length + 8}:G${length + 8}`);
+                worksheet.getCell(`E${length + 8}`).value = "CÁN BỘ ĐI CA";
+                worksheet.getCell(`E${length + 8}`).alignment = { horizontal: 'center', vertical: 'middle' };
+                worksheet.getCell(`E${length + 8}`).font = { bold: true };
 
 
                 if (signature) {
@@ -6363,15 +6392,29 @@ router.post('/meal_request', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, R
                     const lastCol = worksheet.columnCount;
                     worksheet.addImage(imageId, {
                         tl: { col: lastCol - 2, row: length + 8 }, // H30
-                        ext: { width: 150, height: 150 },
+                        ext: { width: 120, height: 50 },
                     });
                 }
 
-                worksheet.eachRow((row) => {
+                worksheet.pageSetup = {
+                    paperSize: 9,                // A4
+                    orientation: 'landscape',    // ngang
+                    fitToPage: true,
+                    fitToWidth: 1,               // vừa 1 trang theo chiều ngang
+                    fitToHeight: 0,              // không ép theo chiều dọc
+                    margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } // inch
+                };
+                worksheet.eachRow((row, rowNumber) => {
                     row.eachCell((cell) => {
-                        // Nếu chưa có font, tạo font mới
                         if (!cell.font) cell.font = {};
-                        cell.font.size = 10; // hoặc 8, tuỳ theo bạn muốn nhỏ đến đâu
+                        cell.font = {
+                            ...cell.font,            // giữ lại các thuộc tính khác (bold, italic,…)
+                            name: 'Times New Roman', // đổi font chữ
+                            ...(rowNumber > 4 ? { size: 12 } : {})            // kích thước chữ
+                        };
+                        if (rowNumber === 1) {
+                            cell.alignment = { horizontal: 'left', vertical: 'middle' };
+                        }
                     });
                 });
             }
@@ -6583,7 +6626,7 @@ router.post('/assignmentTo', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, R
                         const lastCol = worksheet.columnCount;
                         worksheet.addImage(imageId, {
                             tl: { col: lastCol - 2, row: 8 }, // H30
-                            ext: { width: 150, height: 150 },
+                            ext: { width: 120, height: 50 },
                         });
                     }
 
@@ -6765,7 +6808,7 @@ router.post('/assignmentManager', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADM
                         const lastCol = worksheet.columnCount;
                         worksheet.addImage(imageId, {
                             tl: { col: lastCol - 2, row: 8 }, // H30
-                            ext: { width: 150, height: 150 },
+                            ext: { width: 120, height: 50 },
                         });
                     }
 
@@ -7043,21 +7086,31 @@ router.post(
             const startCol = 1; // A
             const endCol = 2 + dateRange.length + 4; // STT, Họ tên + Cột ngày + 4 cột tổng
 
-            // Dòng 2: Tiêu đề chính
             worksheet.mergeCells(1, startCol, 1, endCol);
-            const headerCell = worksheet.getCell(1, startCol);
+            const infoRow = worksheet.getCell(1, startCol);
+            infoRow.value = "CÔNG TY CỔ PHẦN THAN CAO SƠN-TKV";
+            infoRow.font = { italic: true, size: 18 };
+            infoRow.alignment = { horizontal: 'left', vertical: 'middle' };
+
+            // Dòng 2: Tiêu đề chính
+            worksheet.mergeCells(3, startCol, 3, endCol);
+            const headerCell = worksheet.getCell(3, startCol);
             headerCell.value = `BẢNG CHẤM CÔNG`;
             headerCell.font = { bold: true, size: 16 };
             headerCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
             // Dòng 3: Thời gian
-            worksheet.mergeCells(2, startCol, 2, endCol);
-            worksheet.getCell(2, startCol).value = `Tháng ${inputDate.format('MM')} năm ${inputDate.format('YYYY')}`;
-            worksheet.getCell(2, startCol).alignment = { horizontal: 'center' };
+            worksheet.mergeCells(4, startCol, 4, endCol);
+            worksheet.getCell(4, startCol).value = `Tháng ${inputDate.format('MM')} năm ${inputDate.format('YYYY')}`;
+            worksheet.getCell(4, startCol).alignment = { horizontal: 'center' };
+
+            worksheet.mergeCells(5, startCol, 5, endCol);
+            worksheet.getCell(5, startCol).value = `Đơn vị: ${depCode}`;
+            worksheet.getCell(5, startCol).alignment = { horizontal: 'center' };
 
 
             // Dòng 5: Tiêu đề Cột chính (STT, Họ Tên, Tổng)
-            const headerRowNumber = 4;
+            const headerRowNumber = 7;
             let colIndex = 1;
 
             // Header 1: STT

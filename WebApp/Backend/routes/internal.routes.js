@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const TravelLog = require('../models/TravelLog');
 const Device = require('../models/Device');
 const Location = require('../models/Location');
 const Material = require('../models/material');
@@ -12,34 +11,17 @@ const ExcelJS = require('exceljs');
 const xlsx = require('xlsx');
 const dayjs = require('dayjs');
 const { ROLE } = require('../config/config');
-const { paginateQuery } = require('../utils/pagination')
+const { paginateQuery } = require('../utils/pagination');
+const Internal = require('../models/Internal');
 
 
 router.post('/', verifyToken, async (req, res, next) => {
     try {
-        const { excavator, workingDate, shift, area, excavationLevel,
-            location,
-            material,
-            dumpHeightActual,
-            fullDistanceKm,
-            fullLiftHeightM,
-            localMinHeightM,
-            localMaxHeightM,
-            localDistanceKm,
-            localLiftHeightM } = req.body
-        const newTravelLog = new TravelLog({
-            excavator, workingDate, shift, area, excavationLevel,
-            location,
-            material,
-            dumpHeightActual,
-            fullDistanceKm,
-            fullLiftHeightM,
-            localMinHeightM,
-            localMaxHeightM,
-            localDistanceKm,
-            localLiftHeightM
+        const { month, area, fromLevel, toLevel, distanceKm, liftHight, route, note, addedAt } = req.body
+        const newInternal = new Internal({
+            month, area, fromLevel, toLevel, distanceKm, liftHight, route, note, addedAt
         });
-        await newTravelLog.save();
+        await newInternal.save();
         req.logger.info(`🔥 Tạo thành công cung độ`);
 
         res.status(200).send({ status: 'success', message: "Tạo thành công" });
@@ -58,7 +40,7 @@ router.delete('/', verifyToken, async (req, res, next) => {
             return res.status(400).send({ status: 'error', message: 'Vui lòng chọn bản ghi cần xóa' });
         }
 
-        const result = await TravelLog.deleteMany({ _id: { $in: ids } });
+        const result = await Internal.deleteMany({ _id: { $in: ids } });
         if (result.deletedCount === 0) {
             req.logger.error("❌ không tìm thấy bản ghi cần xóa");
 
@@ -79,9 +61,9 @@ router.delete('/', verifyToken, async (req, res, next) => {
 router.put('/:id', verifyToken, async (req, res, next) => {
     try {
         const user = req.user
-        const travellog = await TravelLog.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const internal = await Internal.findByIdAndUpdate(req.params.id, req.body, { new: true });
 
-        if (!travellog) {
+        if (!internal) {
             req.logger.error("❌ Sửa thất bại");
 
             return res.status(404).send({ status: 'error', message: 'Sửa thất bại ' });
@@ -101,63 +83,27 @@ router.get('/', verifyToken, async (req, res) => {
     try {
         const match = {};
 
-        // --- Lọc theo ngày ---
-        if (req.query.startTime && req.query.endTime) {
-            const endTime = new Date(req.query.endTime);
-            endTime.setHours(23, 59, 59, 999);
-            match.workingDate = { $gte: new Date(req.query.startTime), $lte: endTime };
-        } else if (req.query.startTime) {
-            match.workingDate = { $gte: new Date(req.query.startTime) };
-        } else if (req.query.endTime) {
-            const endTime = new Date(req.query.endTime);
-            endTime.setHours(23, 59, 59, 999);
-            match.workingDate = { $lte: endTime };
-        }
-
-        // --- Lọc theo acceptedProduct (type) ---
-        if (req.query.type) {
-            match["material.acceptedProduct"] = req.query.type;
-        }
-
         // --- Aggregation ---
         const result = await TravelLog.aggregate([
-            {
-                $lookup: {
-                    from: "materials",
-                    localField: "material",
-                    foreignField: "_id",
-                    as: "material"
-                }
-            },
-            { $unwind: "$material" },
             { $match: match },
             {
                 $lookup: {
-                    from: "devices",
-                    localField: "excavator",
+                    from: "locations",
+                    localField: "area",
                     foreignField: "_id",
-                    as: "excavator"
+                    as: "area"
                 }
             },
-            { $unwind: { path: "$excavator", preserveNullAndEmptyArrays: true } },
-            {
-                $lookup: {
-                    from: "shifts",
-                    localField: "shift",
-                    foreignField: "_id",
-                    as: "shift"
-                }
-            },
-            { $unwind: { path: "$shift", preserveNullAndEmptyArrays: true } },
+            { $unwind: { path: "$area", preserveNullAndEmptyArrays: true } },
             {
                 $lookup: {
                     from: "locations",
-                    localField: "location",
+                    localField: "route",
                     foreignField: "_id",
-                    as: "location"
+                    as: "route"
                 }
             },
-            { $unwind: { path: "$location", preserveNullAndEmptyArrays: true } },
+            { $unwind: { path: "$route", preserveNullAndEmptyArrays: true } },
             { $sort: { workingDate: -1 } }
         ]);
 
@@ -173,20 +119,14 @@ router.get('/', verifyToken, async (req, res) => {
 
 
 const columnMapping = {
-    'Máy xúc': 'excavator',
+    'Tháng': 'month',
     'Khu vực': 'area',
-    'Tầng xúc': 'excavationLevel',
-    'Độ cao thực tế nơi đổ': 'dumpHeightActual',
-    'C.độ (km) toàn tuyến': 'fullDistanceKm',
-    'Chiều cao N.tải (m) toàn tuyến': 'fullLiftHeightM',
-    'H min': 'localMinHeightM',
-    'H max': 'localMaxHeightM',
-    'C. độ (km) cục bộ': 'localDistanceKm',
-    'Chiều cao N.tải (m) cục bộ': 'localLiftHeightM', // tránh trùng key
-    'Điểm đổ tải': 'location',
-    'Vật liệu': 'material',
-    'Ca': 'shift',
-    'Ngày (mm/dd/yyyy)': 'workingDate',
+    'Từ mức': 'fromLevel',
+    'Đến mức': 'toLevel',
+    'Cung độ (km)': 'distanceKm',
+    'Chiều cao N.tải (m)': 'liftHight',
+    'Tuyến đường': 'route',
+    'GHi chú': 'note',
 };
 
 router.post('/importFile', upload.single('file'), verifyToken, async (req, res) => {
@@ -237,7 +177,6 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
             defval: null,
         });
 
-        console.log(data)
 
         // 👉 Lọc bỏ dòng trống hoặc dòng dropdown
         const dataImport = data.filter(row => row.excavator && row.workingDate && row.shift);
@@ -247,57 +186,28 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
             return res.status(400).json({ status: 'error', message: 'Không tìm thấy dữ liệu hợp lệ trong file.' });
         }
 
+        // 👉 Chuẩn hóa ngày (Excel -> Date -> 00:00:00)
         dataImport.forEach(row => {
-            if (!row.workingDate) return; // bỏ qua nếu trống
-
-            // 1️⃣ Excel serial number (ví dụ: 45700)
             if (typeof row.workingDate === 'number') {
+                // Excel serial number → JS Date
                 const excelEpoch = new Date(1899, 11, 30);
                 const date = new Date(excelEpoch.getTime() + row.workingDate * 86400000);
+
+                // 👇 reset hoàn toàn về 00:00:00.000 local
                 date.setHours(0, 0, 0, 0);
 
+                // 👇 cộng ngược offset để khi lưu UTC không bị lệch (ví dụ VN +7)
                 const offset = date.getTimezoneOffset();
-                row.workingDate = new Date(date.getTime() - offset * 60000);
-            }
+                const fixedDate = new Date(date.getTime() - offset * 60000);
 
-            // 2️⃣ JS Date object
+                row.workingDate = fixedDate;
+            }
             else if (row.workingDate instanceof Date) {
                 row.workingDate.setHours(0, 0, 0, 0);
                 const offset = row.workingDate.getTimezoneOffset();
                 row.workingDate = new Date(row.workingDate.getTime() - offset * 60000);
             }
-
-            // 3️⃣ Text string (ví dụ: "05/11/2025" hoặc "5/11/2025")
-            else if (typeof row.workingDate === 'string') {
-                const normalized = row.workingDate.trim();
-
-                // kiểm tra xem có phải dạng "DD/MM/YYYY"
-                const parts = normalized.split('/');
-                if (parts.length === 3) {
-                    const [day, month, year] = parts.map(p => parseInt(p, 10));
-                    if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
-                        const date = new Date(year, month - 1, day);
-                        date.setHours(0, 0, 0, 0);
-
-                        const offset = date.getTimezoneOffset();
-                        row.workingDate = new Date(date.getTime() - offset * 60000);
-                    } else {
-                        row.workingDate = null; // sai định dạng
-                    }
-                } else {
-                    // fallback: thử parse tự động (nếu người dùng gõ lạ)
-                    const parsed = dayjs(normalized, ["DD/MM/YYYY", "YYYY-MM-DD"], true);
-                    if (parsed.isValid()) {
-                        const date = parsed.toDate();
-                        date.setHours(0, 0, 0, 0);
-                        const offset = date.getTimezoneOffset();
-                        row.workingDate = new Date(date.getTime() - offset * 60000);
-                    } else {
-                        row.workingDate = null;
-                    }
-                }
-            }
-        });
+        })
 
 
         // 👉 Lấy danh sách unique để map ID
@@ -465,31 +375,31 @@ router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
 
         // 1️⃣ Ghi header tầng 1
         worksheet.addRow([
-            'Máy xúc', 'Khu vực',
+            'Máy xúc', 'Ngày', 'Khu vực',
             'Tầng xúc', 'Độ cao thực tế nơi đổ',
             'Toàn tuyến', '',
             'Trong đó cục bộ', '', '', '',
-            'Điểm đổ tải', 'Vật liệu', 'Ca', 'Ngày (mm/dd/yyyy)',
+            'Điểm đổ tải', 'Vật liệu', 'Ca'
         ]);
 
         // 2️⃣ Ghi header tầng 2
         worksheet.addRow([
-            '', '', '', '',
-            'C.độ (km) toàn tuyến', 'Chiều cao N.tải (m) toàn tuyến',
-            'H min', 'H max', 'C. độ (km) cục bộ', 'Chiều cao N.tải (m) cục bộ', '', '', '', ''
+            '', '', '', '', '',
+            'C.độ (km)_1', 'Chiều cao N.tải (m)_1',
+            'H min', 'H max', 'C. độ (km)_2', 'Chiều cao N.tải (m)_2', '', '', ''
         ]);
 
         // 3️⃣ Merge các cột tầng 1
         worksheet.mergeCells('A1:A2'); // Máy xúc
-        worksheet.mergeCells('B1:B2'); //Khu vực
-        worksheet.mergeCells('C1:C2'); // Tầng xúc
-        worksheet.mergeCells('D1:D2'); // Độ cao thực tế nơi đổ
-        worksheet.mergeCells('E1:F1'); //Toàn tuyến
-        worksheet.mergeCells('G1:J1'); // Trong đó cục bộ
-        worksheet.mergeCells('K1:K2'); // Điểm đổ tải
-        worksheet.mergeCells('L1:L2'); // Vật liệu
-        worksheet.mergeCells('M1:M2'); // ca
-        worksheet.mergeCells('N1:N2'); // ngày
+        worksheet.mergeCells('B1:B2'); //Ngày
+        worksheet.mergeCells('C1:C2'); // Khu vực
+        worksheet.mergeCells('D1:D2'); // Tâng xúc
+        worksheet.mergeCells('E1:E2'); // Độ cao thực tế nơi đổ
+        worksheet.mergeCells('F1:G1'); // Toàn tuyến
+        worksheet.mergeCells('H1:K1'); // Trong đó cục bộ
+        worksheet.mergeCells('L1:L2'); // Điểm đổ tải
+        worksheet.mergeCells('M1:M2'); // Vật liệu
+        worksheet.mergeCells('N1:N2'); // ca
 
 
         // 4️⃣ Đặt style cho header
@@ -503,6 +413,7 @@ router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
         data.forEach(item => {
             worksheet.addRow([
                 item.excavator?.code || '',
+                item.workingDate ? new Date(item.workingDate) : '',
                 item.area || '',
                 item.excavationLevel || '',
                 item.dumpHeightActual || '',
@@ -515,12 +426,12 @@ router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
                 item.location?.name || '',
                 item.material?.name || '',
                 item.shift?.name || '',
-                item.workingDate ? new Date(item.workingDate) : '',
             ]);
         });
 
         worksheet.columns = [
             { key: 'excavator', width: 12 },
+            { key: 'workingDate', width: 12 },
             { key: 'area', width: 10 },
             { key: 'excavationLevel', width: 10 },
             { key: 'dumpHeightActual', width: 15 },
@@ -533,7 +444,6 @@ router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
             { key: 'location', width: 15 },
             { key: 'material', width: 12 },
             { key: 'shift', width: 5 },
-            { key: 'workingDate', width: 12 },
         ];
 
         const dateCol = worksheet.getColumn('B'); // giả sử cột C là Ngày
@@ -562,21 +472,21 @@ router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
             showErrorMessage: true,
             errorTitle: 'Giá trị không hợp lệ',
         });
-        worksheet.dataValidations.add(`K2:K${MAX}`, {
+        worksheet.dataValidations.add(`L2:L${MAX}`, {
             type: 'list',
             allowBlank: true,
             formulae: [`=$Y$2:$Y$${locationList.length + 1}`],
             showErrorMessage: true,
             errorTitle: 'Giá trị không hợp lệ',
         });
-        worksheet.dataValidations.add(`L2:L${MAX}`, {
+        worksheet.dataValidations.add(`M2:M${MAX}`, {
             type: 'list',
             allowBlank: true,
             formulae: [`=$Z$2:$Z$${materialList.length + 1}`],
             showErrorMessage: true,
             errorTitle: 'Giá trị không hợp lệ',
         });
-        worksheet.dataValidations.add(`M2:M${MAX}`, {
+        worksheet.dataValidations.add(`N2:N${MAX}`, {
             type: 'list',
             allowBlank: true,
             formulae: [`=$W$2:$W$${shiftList.length + 1}`],

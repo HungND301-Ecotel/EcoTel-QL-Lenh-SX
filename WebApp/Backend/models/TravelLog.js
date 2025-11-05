@@ -42,5 +42,5 @@ travelLogSchema.index({ workingDate: 1 });
 travelLogSchema.index({ shift: 1 });
 
 
-const Order = mongoose.model('TravelLog', travelLogSchema);
-module.exports = Order;
+const TravelLog = mongoose.model('TravelLog', travelLogSchema);
+module.exports = TravelLog;

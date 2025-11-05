@@ -8,6 +8,7 @@ import {
 
 import Lands from "./Tab/Land";
 import Coals from "./Tab/Coal";
+import Internals from "./Tab/Internal";
 
 
 const TravelLogs: React.FC = () => {
@@ -32,14 +33,14 @@ const TravelLogs: React.FC = () => {
                     onChange={handleChange}
                     aria-label="wrapped label tabs example"
                 >
-                    <Tab value="Đất" label={<b>Cung độ vận chuyển đất</b>} />
-                    <Tab value="Than" label={<b>Cung độ vận chuyển than và SPNT</b>} />
+                    <Tab value="Đất" label={<b style={{ fontSize: 17 }}>Cung độ vận chuyển đất</b>} />
+                    <Tab value="Than" label={<b style={{ fontSize: 17 }}>Cung độ vận chuyển than và SPNT</b>} />
                     {/* <Tab value="Nội bộ" label={<b>Cung độ nội bộ</b>} /> */}
                 </Tabs>
             </Box>
             {value === "Đất" && <Lands type={value} />}
             {value === "Than" && <Coals type={value} />}
-            {/* {value === "Nội bộ" && <Coals type={value} />} */}
+            {/* {value === "Nội bộ" && <Internals type={value} />} */}
         </Box >
     );
 };

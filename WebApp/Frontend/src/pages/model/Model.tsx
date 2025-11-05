@@ -23,6 +23,9 @@ import {
     Add as AddIcon,
     Delete,
     Edit,
+    Height,
+    Visibility,
+    VisibilityOff,
 } from '@mui/icons-material';
 import api from '../../config/api.config';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
@@ -100,6 +103,7 @@ const Models: React.FC = () => {
         setExpanded(true)
         setSelectedTimeSlot(null)
         setEditorKey(Date.now());
+        setExpandedRowKeys([])
     };
 
 
@@ -149,7 +153,25 @@ const Models: React.FC = () => {
             },
         },
         {
-            title: 'Sửa', dataIndex: 'edit', key: 'edit',
+            title: 'Xem',
+            dataIndex: 'view',
+            key: 'view',
+            align: 'center',
+            width: 80,
+            render: (_, record) => {
+                const isExpanded = expandedRowKeys.includes(record.id);
+                return (
+                    <IconButton
+                        color="primary"
+                        onClick={() => handleExpand(!isExpanded, record)} // 👈 gọi lại logic expand
+                    >
+                        {isExpanded ? <VisibilityOff color='secondary' /> : <Visibility color='secondary' />}
+                    </IconButton>
+                );
+            },
+        },
+        {
+            title: 'Sửa', dataIndex: 'edit', key: 'edit', width: 50,
             render: (value, record, index) => (
                 <IconButton
                     color="primary"
@@ -160,10 +182,12 @@ const Models: React.FC = () => {
                             );
                             if (result.isConfirmed) {
                                 setSelectedTimeSlot(record);
+                                setExpandedRowKeys([])
                             }
                         } else {
                             setExpanded(true);
                             setSelectedTimeSlot(record);
+                            setExpandedRowKeys([])
                         }
                     }}
                 >
@@ -273,6 +297,7 @@ const Models: React.FC = () => {
                             onCancel={() => {
                                 setSelectedTimeSlot(null)
                                 setExpanded(false)
+                                setExpandedRowKeys([])
                             }}
                             initValue={selectedTimeSlot ? models : []}
                         />
@@ -286,65 +311,82 @@ const Models: React.FC = () => {
                             expandable={{
                                 expandedRowKeys,
                                 onExpand: handleExpand,
+                                showExpandColumn: false,
                                 expandedRowRender: (record) => (
-                                    <CustomDataGrid
-                                        rows={rows}
-                                        defaultColumns={defaultColumns}
-                                        isLoading={false}
-                                        onSelectionChange={() => { }}
+                                    <Box
                                         sx={{
-                                            '& .MuiDataGrid-columnHeader[data-field="material"]': {
-                                                position: 'sticky',
-                                                left: 0,
-                                                zIndex: 20,
-                                                backgroundColor: 'inherit',
-                                            },
-                                            '& .MuiDataGrid-cell[data-field="material"]': {
-                                                position: 'sticky',
-                                                left: 0,
-                                                zIndex: 19,
-                                                backgroundColor: "inherit !important",
-                                            },
-                                            '& .MuiDataGrid-columnHeader[data-field="acceptedProduct"]': {
-                                                position: 'sticky',
-                                                left: 100,
-                                                zIndex: 20,
-                                                backgroundColor: 'inherit',
-                                            },
-                                            '& .MuiDataGrid-cell[data-field="acceptedProduct"]': {
-                                                position: 'sticky',
-                                                left: 100,
-                                                zIndex: 19,
-                                                backgroundColor: "inherit !important",
-                                            },
-                                            '& .MuiDataGrid-columnHeader[data-field="density"]': {
-                                                position: 'sticky',
-                                                left: 200,
-                                                zIndex: 20,
-                                                backgroundColor: 'inherit',
-                                            },
-                                            '& .MuiDataGrid-cell[data-field="density"]': {
-                                                position: 'sticky',
-                                                left: 200,
-                                                zIndex: 19,
-                                                backgroundColor: "inherit !important",
-                                            },
-                                            '& .MuiDataGrid-columnHeader[data-field="dryDensity"]': {
-                                                position: 'sticky',
-                                                left: 300,
-                                                zIndex: 20,
-                                                backgroundColor: 'inherit',
-                                                boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
-                                            },
-                                            '& .MuiDataGrid-cell[data-field="dryDensity"]': {
-                                                position: 'sticky',
-                                                left: 300,
-                                                zIndex: 19,
-                                                backgroundColor: "inherit !important",
-                                                boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
-                                            },
+                                            maxWidth: '92vw',
+                                            border: '1px solid #eee',
+                                            borderRadius: 1,
                                         }}
-                                    />
+                                    >
+                                        <CustomDataGrid
+                                            rows={rows}
+                                            defaultColumns={defaultColumns}
+                                            isLoading={false}
+                                            onSelectionChange={() => { }}
+                                            sx={{
+                                                height: 400,
+                                                '& .MuiDataGrid-columnHeader, & .MuiDataGrid-cell': {
+                                                    whiteSpace: 'nowrap',
+                                                },
+                                                '& .MuiDataGrid-virtualScroller': {
+                                                    overflowX: 'auto !important',
+                                                    overflowY: 'auto !important',
+                                                },
+                                                '& .MuiDataGrid-columnHeader[data-field="material"]': {
+                                                    position: 'sticky',
+                                                    left: 0,
+                                                    zIndex: 20,
+                                                    backgroundColor: 'inherit',
+                                                },
+                                                '& .MuiDataGrid-cell[data-field="material"]': {
+                                                    position: 'sticky',
+                                                    left: 0,
+                                                    zIndex: 19,
+                                                    backgroundColor: "inherit !important",
+                                                },
+                                                '& .MuiDataGrid-columnHeader[data-field="acceptedProduct"]': {
+                                                    position: 'sticky',
+                                                    left: 100,
+                                                    zIndex: 20,
+                                                    backgroundColor: 'inherit',
+                                                },
+                                                '& .MuiDataGrid-cell[data-field="acceptedProduct"]': {
+                                                    position: 'sticky',
+                                                    left: 100,
+                                                    zIndex: 19,
+                                                    backgroundColor: "inherit !important",
+                                                },
+                                                '& .MuiDataGrid-columnHeader[data-field="density"]': {
+                                                    position: 'sticky',
+                                                    left: 200,
+                                                    zIndex: 20,
+                                                    backgroundColor: 'inherit',
+                                                },
+                                                '& .MuiDataGrid-cell[data-field="density"]': {
+                                                    position: 'sticky',
+                                                    left: 200,
+                                                    zIndex: 19,
+                                                    backgroundColor: "inherit !important",
+                                                },
+                                                '& .MuiDataGrid-columnHeader[data-field="dryDensity"]': {
+                                                    position: 'sticky',
+                                                    left: 300,
+                                                    zIndex: 20,
+                                                    backgroundColor: 'inherit',
+                                                    boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
+                                                },
+                                                '& .MuiDataGrid-cell[data-field="dryDensity"]': {
+                                                    position: 'sticky',
+                                                    left: 300,
+                                                    zIndex: 19,
+                                                    backgroundColor: "inherit !important",
+                                                    boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
+                                                },
+                                            }}
+                                        />
+                                    </Box>
                                 ),
                                 rowExpandable: (record) => !!record.startTime,
                             }}

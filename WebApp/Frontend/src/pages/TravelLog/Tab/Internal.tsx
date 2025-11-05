@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     Box,
@@ -9,28 +9,21 @@ import {
     Grid,
     IconButton,
     Typography,
-    Checkbox,
     TextField,
     Autocomplete,
     Accordion,
     AccordionSummary,
     AccordionDetails,
-    TablePagination,
-    Stack,
     Paper,
-    Tabs,
-    Tab,
 } from "@mui/material";
-import { format } from "date-fns";
 import {
     Add as AddIcon,
     Edit as EditIcon,
     Delete as DeleteIcon,
-    Delete,
     Download,
     UploadFile,
 } from "@mui/icons-material";
-import { FieldArray, FormikProvider, useFormik } from "formik";
+import { FormikProvider, useFormik } from "formik";
 import api from "../../../config/api.config";
 import { Device, Location, Material, Shift, TravelLog } from "../../../types";
 import {
@@ -54,6 +47,7 @@ import { StyledPopper } from "../../../ui/poppers";
 import { parseAxiosError } from "../../../utils/handleApiError";
 import CustomDataGrid from "../../../components/Table/CustomDataGrid";
 import { Table, TableColumnsType, TableColumnType } from "antd";
+import 'dayjs/locale/vi';
 
 interface props {
     type: string
@@ -109,78 +103,25 @@ const Internals: React.FC<props> = ({ type }) => {
         },
         {
             title: 'Chiều cao nâng tải (m)',
+            align: 'center',
             dataIndex: 'dumpHeightActual',
             key: 'dumpHeightActual',
         },
         {
-            title: 'Toàn tuyến',
-            children: [
-                {
-                    title: 'C.độ (km)',
-                    dataIndex: 'fullDistanceKm',
-                    key: 'fullDistanceKm',
-                    align: 'center',
-                    width: 80,
-                },
-                {
-                    title: 'Chiều cao N.tải(m)',
-                    dataIndex: 'fullLiftHeightM',
-                    key: 'fullLiftHeightM',
-                    align: 'center',
-                    width: 80,
-                }
-            ]
-        },
-        {
-            title: 'Trong đó cục bộ',
-            children: [
-                {
-                    title: 'H min',
-                    dataIndex: 'localMinHeightM',
-                    key: 'localMinHeightM',
-                    align: 'center',
-                    width: 70,
-                },
-                {
-                    title: 'H max',
-                    dataIndex: 'localMaxHeightM',
-                    key: 'localMaxHeightM',
-                    align: 'center',
-                    width: 70,
-                },
-                {
-                    title: 'C. độ (km)',
-                    dataIndex: 'localDistanceKm',
-                    key: 'localDistanceKm',
-                    align: 'center',
-                    width: 80,
-                },
-                {
-                    title: 'Chiều cao N.tải (m)',
-                    dataIndex: 'localLiftHeightM',
-                    key: 'localLiftHeightM',
-                    align: 'center',
-                    width: 80,
-                }
-            ]
-        },
-        {
-            title: 'Điểm đổ tải',
+            title: 'Tuyến đường',
             dataIndex: 'location',
             key: 'location',
             render: (_: any, record: any) => record.location?.name
         },
         {
-            title: 'Vật liệu',
-            dataIndex: 'material',
-            key: 'material',
-            render: (_: any, record: any) => record.material?.name
+            title: 'Ghi chú',
+            dataIndex: 'note',
+            key: 'note',
         },
         {
-            title: 'Ca',
-            dataIndex: 'shift',
-            key: 'shift',
-            width: 50,
+            title: 'TG bổ sung',
+            dataIndex: 'additionalTime',
+            key: 'additionalTime',
             align: 'center',
             render: (_: any, record: any) => record.shift?.name
         },
@@ -217,21 +158,6 @@ const Internals: React.FC<props> = ({ type }) => {
         }
     ]
 
-    const { data: excavators = [] } = useQuery({
-        queryKey: ["excavators"],
-        queryFn: () =>
-            api.get("/devices/excavators/all").then((res) => res.data.data),
-    });
-    const { data: shifts = [] } = useQuery({
-        queryKey: ["shifts"],
-        queryFn: () =>
-            api.get("/shifts").then((res) => res.data.data),
-    });
-    const { data: materials = [] } = useQuery({
-        queryKey: ["materials"],
-        queryFn: () =>
-            api.get("/materials").then((res) => res.data.data),
-    });
     const { data: locations = [] } = useQuery({
         queryKey: ["locations"],
         queryFn: () => api.get("/locations").then((res) => res.data.data),
@@ -644,10 +570,11 @@ const Internals: React.FC<props> = ({ type }) => {
                                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                                     <Grid container spacing={2}>
                                         <Grid item xs={12} sm={6}>
-                                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="vi">
                                                 <DatePicker
-                                                    label="Ngày làm việc"
-                                                    inputFormat="DD/MM/YYYY" // v5 vẫn hỗ trợ
+                                                    label="Tháng"
+                                                    inputFormat="MM/YYYY" // v5 vẫn hỗ trợ
+                                                    views={['month', 'year']}
                                                     value={formik.values.workingDate ? dayjs(formik.values.workingDate) : null}
                                                     onChange={(value) => {
                                                         formik.setFieldValue('workingDate', value ? value : '');
@@ -665,66 +592,6 @@ const Internals: React.FC<props> = ({ type }) => {
                                         <Grid item xs={12} sm={6}>
                                             <Autocomplete
                                                 fullWidth
-                                                options={shifts}
-                                                getOptionLabel={(option: Shift) => `Ca ${option.name}` || ""}
-                                                value={
-                                                    shifts.find(
-                                                        (p: any) => p._id === formik.values.shift
-                                                    ) || null
-                                                }
-                                                onChange={(event, newValue) => {
-                                                    formik.setFieldValue("shift", newValue?._id || "");
-                                                }}
-                                                PopperComponent={StyledPopper}
-                                                renderInput={(params) => (
-                                                    <TextField
-                                                        {...params}
-                                                        label="Ca làm việc"
-                                                        {...getFormikFieldProps(formik, "shift")}
-                                                    />
-                                                )}
-                                            />
-                                        </Grid>
-                                        <Grid item xs={6}>
-                                            <Autocomplete
-                                                fullWidth
-                                                options={excavators}
-                                                getOptionLabel={(option: Device) => option.code || ""}
-                                                value={
-                                                    excavators.find(
-                                                        (p: any) => p._id === formik.values.excavator
-                                                    ) || null
-                                                }
-                                                onChange={(event, newValue) => {
-                                                    formik.setFieldValue("excavator", newValue?._id || "");
-                                                }}
-                                                PopperComponent={StyledPopper}
-                                                renderInput={(params) => (
-                                                    <TextField
-                                                        {...params}
-                                                        label="Máy xúc"
-                                                        {...getFormikFieldProps(formik, "excavator")}
-                                                    />
-                                                )}
-                                            />
-                                        </Grid>
-                                        <Grid item xs={6}>
-                                            <TextField
-                                                fullWidth
-                                                id="area"
-                                                name="area"
-                                                label="Khu vực"
-                                                value={formik.values.area ?? ""}
-                                                onChange={formik.handleChange}
-                                                {...getFormikFieldProps(formik, "area")}
-                                            />
-                                        </Grid>
-                                    </Grid>
-                                    <Grid container spacing={2}>
-                                        {/* --- Nhóm 1: Chọn địa điểm & vật liệu --- */}
-                                        <Grid item xs={12} sm={6} md={3}>
-                                            <Autocomplete
-                                                fullWidth
                                                 options={locations}
                                                 getOptionLabel={(option: Location) => option.name || ""}
                                                 value={locations.find((p: any) => p._id === formik.values.location) || null}
@@ -734,60 +601,34 @@ const Internals: React.FC<props> = ({ type }) => {
                                                 renderInput={(params) => (
                                                     <TextField
                                                         {...params}
-                                                        label="Điểm đổ"
+                                                        label="Khu vực"
                                                         {...getFormikFieldProps(formik, `location`)}
                                                     />
                                                 )}
                                             />
                                         </Grid>
-
-                                        <Grid item xs={12} sm={6} md={3}>
-                                            <Autocomplete
-                                                fullWidth
-                                                options={materials}
-                                                getOptionLabel={(option: Material) => option.name || ""}
-                                                value={materials.find((p: any) => p._id === formik.values.material) || null}
-                                                onChange={(e, newValue) =>
-                                                    formik.setFieldValue(`material`, newValue?._id || "")
-                                                }
-                                                renderInput={(params) => (
-                                                    <TextField
-                                                        {...params}
-                                                        label="Vật liệu"
-                                                        {...getFormikFieldProps(formik, `material`)}
-                                                    />
-                                                )}
-                                            />
-                                        </Grid>
-
-                                        <Grid item xs={12} sm={6} md={3}>
+                                        <Grid item xs={6}>
                                             <TextField
                                                 fullWidth
-                                                label="Tầng xúc"
-                                                name={`excavationLevel`}
-                                                value={formik.values.excavationLevel}
+                                                id="area"
+                                                name="area"
+                                                label="Từ mức"
+                                                value={formik.values.area ?? ""}
                                                 onChange={formik.handleChange}
-                                                {...getFormikFieldProps(formik, `excavationLevel`)}
+                                                {...getFormikFieldProps(formik, "area")}
                                             />
                                         </Grid>
 
-                                        <Grid item xs={12} sm={6} md={3}>
+                                        <Grid item xs={6}>
                                             <TextField
                                                 fullWidth
-                                                type="number"
-                                                label="Độ cao thực tế điểm đổ"
-                                                name={`dumpHeightActual`}
-                                                value={formik.values.dumpHeightActual}
+                                                id="area"
+                                                name="area"
+                                                label="Đến mức"
+                                                value={formik.values.area ?? ""}
                                                 onChange={formik.handleChange}
-                                                {...getFormikFieldProps(formik, `dumpHeightActual`)}
+                                                {...getFormikFieldProps(formik, "area")}
                                             />
-                                        </Grid>
-
-                                        {/* --- Nhóm 2: Thông số toàn tuyến --- */}
-                                        <Grid item xs={12}>
-                                            <Typography variant="subtitle2" sx={{ mt: 1, fontWeight: 600 }}>
-                                                Thông số toàn tuyến
-                                            </Typography>
                                         </Grid>
 
                                         <Grid item xs={12} sm={6}>
@@ -815,32 +656,47 @@ const Internals: React.FC<props> = ({ type }) => {
                                                 {...getFormikFieldProps(formik, `fullLiftHeightM`)}
                                             />
                                         </Grid>
-
-                                        {/* --- Nhóm 3: Thông số cục bộ --- */}
-                                        <Grid item xs={12}>
-                                            <Typography variant="subtitle2" sx={{ mt: 1, fontWeight: 600 }}>
-                                                Thông số cục bộ
-                                            </Typography>
-                                        </Grid>
-
-                                        <Grid item xs={12} sm={6} md={3}>
-                                            <TextField
+                                        <Grid item xs={12} sm={6}>
+                                            <Autocomplete
                                                 fullWidth
-                                                type="number"
-                                                label="Chiều cao tối thiểu (m)"
-                                                name={`localMinHeightM`}
-                                                value={formik.values.localMinHeightM ?? ''}
-                                                onChange={formik.handleChange}
-                                                InputLabelProps={{ shrink: true }}
-                                                {...getFormikFieldProps(formik, `localMinHeightM`)}
+                                                options={locations}
+                                                getOptionLabel={(option: Location) => option.name || ""}
+                                                value={locations.find((p: any) => p._id === formik.values.location) || null}
+                                                onChange={(e, newValue) =>
+                                                    formik.setFieldValue(`location`, newValue?._id || "")
+                                                }
+                                                renderInput={(params) => (
+                                                    <TextField
+                                                        {...params}
+                                                        label="Tuyến đường"
+                                                        {...getFormikFieldProps(formik, `location`)}
+                                                    />
+                                                )}
                                             />
                                         </Grid>
-
-                                        <Grid item xs={12} sm={6} md={3}>
+                                        <Grid item xs={12} sm={6}>
+                                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                                <DatePicker
+                                                    label="Thời gian bổ sung"
+                                                    inputFormat="DD/MM/YYYY" // v5 vẫn hỗ trợ
+                                                    value={formik.values.workingDate ? dayjs(formik.values.workingDate) : null}
+                                                    onChange={(value) => {
+                                                        formik.setFieldValue('workingDate', value ? value : '');
+                                                    }}
+                                                    renderInput={(params) => (
+                                                        <TextField
+                                                            {...params}
+                                                            fullWidth
+                                                            {...getFormikFieldProps(formik, "workingDate")}
+                                                        />
+                                                    )}
+                                                />
+                                            </LocalizationProvider>
+                                        </Grid>
+                                        <Grid item xs={12}>
                                             <TextField
                                                 fullWidth
-                                                type="number"
-                                                label="Chiều cao tối đa (m)"
+                                                label="Ghi chú"
                                                 name={`localMaxHeightM`}
                                                 value={formik.values.localMaxHeightM ?? ''}
                                                 onChange={formik.handleChange}
@@ -849,31 +705,6 @@ const Internals: React.FC<props> = ({ type }) => {
                                             />
                                         </Grid>
 
-                                        <Grid item xs={12} sm={6} md={3}>
-                                            <TextField
-                                                fullWidth
-                                                type="number"
-                                                label="Cung độ (km)"
-                                                name={`localDistanceKm`}
-                                                value={formik.values.localDistanceKm ?? ''}
-                                                onChange={formik.handleChange}
-                                                InputLabelProps={{ shrink: true }}
-                                                {...getFormikFieldProps(formik, `localDistanceKm`)}
-                                            />
-                                        </Grid>
-
-                                        <Grid item xs={12} sm={6} md={3}>
-                                            <TextField
-                                                fullWidth
-                                                type="number"
-                                                label="Chiều cao nâng tải (m)"
-                                                name={`localLiftHeightM`}
-                                                value={formik.values.localLiftHeightM ?? ''}
-                                                onChange={formik.handleChange}
-                                                InputLabelProps={{ shrink: true }}
-                                                {...getFormikFieldProps(formik, `localLiftHeightM`)}
-                                            />
-                                        </Grid>
                                     </Grid>
                                 </Box>
                             </Box>
