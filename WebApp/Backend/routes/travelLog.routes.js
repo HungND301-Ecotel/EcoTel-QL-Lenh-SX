@@ -186,7 +186,7 @@ const columnMapping = {
     'Điểm đổ tải': 'location',
     'Vật liệu': 'material',
     'Ca': 'shift',
-    'Ngày (mm/dd/yyyy)': 'workingDate',
+    'Ngày (tháng/ngày/năm)': 'workingDate',
 };
 
 router.post('/importFile', upload.single('file'), verifyToken, async (req, res) => {
@@ -469,7 +469,7 @@ router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
             'Tầng xúc', 'Độ cao thực tế nơi đổ',
             'Toàn tuyến', '',
             'Trong đó cục bộ', '', '', '',
-            'Điểm đổ tải', 'Vật liệu', 'Ca', 'Ngày (mm/dd/yyyy)',
+            'Điểm đổ tải', 'Vật liệu', 'Ca', 'Ngày (tháng/ngày/năm)',
         ]);
 
         // 2️⃣ Ghi header tầng 2

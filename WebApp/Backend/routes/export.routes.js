@@ -6873,7 +6873,7 @@ router.post(
             // Bước 3: lấy tất cả order trong range ngày
             const orders = await Order.find({
                 department: dep,
-                status: STATUS_ORDER.COMPLETED,
+                status: { $in: [STATUS_ORDER.INPROGRESS, STATUS_ORDER.COMPLETED] },
                 workingDate: {
                     $gte: new Date(startDate),
                     $lte: new Date(endDate),
@@ -6889,10 +6889,16 @@ router.post(
                 const userId = o.assignedTo?._id?.toString();
                 if (!userId) return;
                 const date = dayjs(o.workingDate).format("YYYY-MM-DD");
-                const shiftName = o.shift?.name || "N"; // VD: '1', '2', '3'
+                const shiftName = (o.shift?.name || "N").toString();
+
                 attendanceMap[userId] ??= {};
-                attendanceMap[userId][date] ??= { 1: 0, 2: 0, 3: 0 };
-                attendanceMap[userId][date][shiftName] = 1; // chỉ cần có lệnh là 1
+                // Sử dụng Set để đảm bảo các ca trong ngày không bị lặp lại
+                attendanceMap[userId][date] ??= new Set();
+
+                // Thêm tên ca vào Set
+                if (shiftName !== "N") {
+                    attendanceMap[userId][date].add(shiftName);
+                }
             });
 
             // Bước 5: chuyển thành format cho bảng
@@ -6912,23 +6918,27 @@ router.post(
                     totalDay = 0;
 
                 dateRange.forEach((d) => {
-                    const dayData = attendanceMap[u._id]?.[d];
-                    if (!dayData) {
+                    // Lấy Set chứa danh sách tên ca đã làm trong ngày 'd'
+                    const shiftSet = attendanceMap[u._id]?.[d];
+
+                    if (!shiftSet || shiftSet.size === 0) {
+                        // Không có lệnh/ca nào
                         days[d] = "N";
                     } else {
-                        // Lấy danh sách ca có lệnh
-                        const caList = Object.entries(dayData)
-                            .filter(([_, v]) => v === 1)
-                            .map(([ca]) => ca);
+                        // Chuyển Set thành mảng, sắp xếp, và nối thành chuỗi
+                        const caList = Array.from(shiftSet).sort();
 
-                        if (caList.length === 0) days[d] = "N";
-                        else days[d] = caList.length
+                        // HIỂN THỊ: Ghi ra danh sách các ca đã làm (ví dụ: "1" hoặc "1,2")
+                        days[d] = caList.join(',');
 
-                        // Tổng số ca
-                        if (dayData[1]) totalCa1++;
-                        if (dayData[2]) totalCa2++;
-                        if (dayData[3]) totalCa3++;
-                        totalDay += caList.length; // ✅ cộng đúng số lượng ca
+                        // TỔNG CÔNG: Nếu có bất kỳ ca nào, tính là 1 công
+                        totalDay++;
+
+                        // TỔNG SỐ CA ĐÃ THỰC HIỆN
+                        if (shiftSet.has('1')) totalCa1++;
+                        if (shiftSet.has('2')) totalCa2++;
+                        if (shiftSet.has('3')) totalCa3++;
+                        // Có thể thêm logic xử lý các ca khác nếu có
                     }
                 });
 
@@ -6988,7 +6998,7 @@ router.post(
 
             const orders = await Order.find({
                 department: depId,
-                status: STATUS_ORDER.COMPLETED,
+                status: { $in: [STATUS_ORDER.INPROGRESS, STATUS_ORDER.COMPLETED] },
                 workingDate: {
                     $gte: new Date(startDate),
                     $lte: new Date(endDate),
@@ -7004,11 +7014,15 @@ router.post(
             orders.forEach((o) => {
                 const userId = o.assignedTo?._id?.toString();
                 if (!userId) return;
-                const date = dayjs(o.workingDate).format("YYYY-MM-DD");
-                const shiftName = o.shift?.name || "N";
+                const dateKey = dayjs(o.workingDate).format("YYYY-MM-DD");
+                const shiftName = (o.shift?.name || "N").toString();
+
                 attendanceMap[userId] ??= {};
-                attendanceMap[userId][date] ??= { 1: 0, 2: 0, 3: 0 };
-                attendanceMap[userId][date][shiftName] = 1;
+                attendanceMap[userId][dateKey] ??= new Set();
+
+                if (shiftName !== "N") {
+                    attendanceMap[userId][dateKey].add(shiftName);
+                }
             });
 
             // Bước 5: Tạo dateRange và Result
@@ -7025,24 +7039,26 @@ router.post(
 
             const result = users.map((u) => {
                 const days = {};
-                let totalCa1 = 0, totalCa2 = 0, totalCa3 = 0, totalDay = 0;
+                let totalCa1 = 0, totalCa2 = 0, totalCa3 = 0, totalDay = 0; // totalDay = Tổng số ngày công
 
                 dateRangeKeys.forEach((d) => {
-                    const dayData = attendanceMap[u._id]?.[d];
-                    if (!dayData) {
+                    const shiftSet = attendanceMap[u._id]?.[d]; // Lấy Set ca
+
+                    if (!shiftSet || shiftSet.size === 0) {
                         days[d] = "N";
                     } else {
-                        const caList = Object.entries(dayData)
-                            .filter(([_, v]) => v === 1)
-                            .map(([ca]) => ca);
+                        // Lấy danh sách ca đã làm trong ngày
+                        const caList = Array.from(shiftSet).sort();
+                        // HIỂN THỊ: Ghi ra danh sách các ca đã làm (ví dụ: "1" hoặc "1,2")
+                        days[d] = caList.join(',');
 
-                        if (caList.length === 0) days[d] = "N";
-                        else days[d] = caList.length;
+                        // TỔNG CÔNG: Nếu có bất kỳ ca nào, tính là 1 công
+                        totalDay++;
 
-                        if (dayData[1]) totalCa1++;
-                        if (dayData[2]) totalCa2++;
-                        if (dayData[3]) totalCa3++;
-                        totalDay += caList.length;
+                        // TỔNG SỐ CA ĐÃ THỰC HIỆN
+                        if (shiftSet.has('1')) totalCa1++;
+                        if (shiftSet.has('2')) totalCa2++;
+                        if (shiftSet.has('3')) totalCa3++;
                     }
                 });
 
@@ -7050,7 +7066,7 @@ router.post(
                     userId: u._id,
                     fullName: u.fullName,
                     days,
-                    totalDay,
+                    totalDay, // 1 công/ngày
                     totalCa1,
                     totalCa2,
                     totalCa3,

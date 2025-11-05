@@ -294,6 +294,7 @@ const Models: React.FC = () => {
                             initialSlot={
                                 selectedTimeSlot
                             }
+                            timeSlots={timeSlots}
                             onCancel={() => {
                                 setSelectedTimeSlot(null)
                                 setExpanded(false)

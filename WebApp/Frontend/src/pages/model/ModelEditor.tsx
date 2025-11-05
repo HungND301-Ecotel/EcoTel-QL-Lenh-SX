@@ -5,23 +5,26 @@ import dayjs, { Dayjs } from 'dayjs';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { showErrorAlert, showSuccessAlert } from '../../components/Alert';
+import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import api from '../../config/api.config';
 import CustomDataGrid from '../../components/Table/CustomDataGrid';
+import { on } from 'node:stream';
 
+interface HistoryTimeSlot {
+  id: string; // Dùng UUID hoặc một giá trị duy nhất
+  startTime: Date | null;
+  endTime: Date | null;
+}
 interface Props {
   materials: any[];
   devicemodels: any[];
-  initialSlot: {
-    id: string;
-    startTime: Date | null;
-    endTime: Date | null;
-  } | null;
+  initialSlot: HistoryTimeSlot | null;
+  timeSlots: HistoryTimeSlot[];
   onCancel: () => void;
   initValue: any[]
 }
 
-const ModelEditor: React.FC<Props> = ({ materials, devicemodels, initialSlot, onCancel, initValue }) => {
+const ModelEditor: React.FC<Props> = ({ materials, devicemodels, initialSlot, timeSlots, onCancel, initValue }) => {
   const [slot, setSlot] = useState<any | null>({ id: Date.now().toString(), startTime: new Date(), endTime: new Date(), });
   const [rows, setRows] = useState<any[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -165,12 +168,24 @@ const ModelEditor: React.FC<Props> = ({ materials, devicemodels, initialSlot, on
         <Button
           variant="contained"
           disabled={saveMutation.isPending}
-          onClick={() => saveMutation.mutate()}
+          onClick={async () => {
+            const key = `${dayjs.utc(dayjs(slot.startTime).format('YYYY-MM-DD')).toISOString()}-${dayjs.utc(dayjs(slot.endTime).format('YYYY-MM-DD')).toISOString()}`
+            const keyMap = timeSlots.map(i => i.id)
+
+            if (keyMap.includes(key) && initValue.length === 0) {
+              const confirm = await showConfirmAlert('Khoảng thời gian đã tồn tại. Nếu tiếp tục dữ liệu sẽ bị ghi đè, bạn có muốn tiếp tục?')
+              if (confirm) {
+                saveMutation.mutate()
+              }
+              onCancel()
+            }
+            saveMutation.mutate()
+          }}
         >
           {initValue.length ? 'Cập nhật' : 'Thêm mới'}
         </Button>
       </Box>
-    </Box>
+    </Box >
   );
 };
 
