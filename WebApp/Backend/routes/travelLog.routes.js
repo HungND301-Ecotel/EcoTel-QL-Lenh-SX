@@ -245,19 +245,29 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         }
 
         dataImport.forEach(row => {
+            const millisecondsPerDay = 86400000;
+            const excelEpochOffset = 25569; // Số ngày từ 1899-12-30 đến 1970-01-01
+            console.log('Original workingDate value:', row.workingDate);
+
             if (typeof row.workingDate === 'number') {
-                // Excel serial number → JS Date
-                const excelEpoch = new Date(1899, 11, 30);
-                const date = new Date(excelEpoch.getTime() + row.workingDate * 86400000);
+                // 1. Chuyển Excel serial number sang milliseconds tính từ epoch 1970-01-01
+                // (row.workingDate - excelEpochOffset) là số ngày từ 1970-01-01.
+                const dateInMilliseconds = (row.workingDate - excelEpochOffset) * millisecondsPerDay;
 
-                // 👇 reset hoàn toàn về 00:00:00.000 local
-                date.setHours(0, 0, 0, 0);
+                // 2. Tạo Date object. Khi khởi tạo bằng milliseconds (ko có TimeZone),
+                // nó sẽ đại diện cho thời điểm đó theo UTC (00:00:00.000Z của ngày đó).
+                const fixedDateUTC = new Date(dateInMilliseconds);
 
+                // Ví dụ: Nhập 1/11 (Serial 45230)
+                // 45230 - 25569 = 19661 ngày
+                // fixedDateUTC = 19661 * 86400000 ms = 2023-11-01T00:00:00.000Z.
 
-                const fixedDate = new Date(date.getTime()+7*60*60000); // điều chỉnh về GMT+7
-                console.log('Converted Date:', fixedDate);
+                // Lưu ý: Đối với file Excel chỉ có ngày, khi đọc lên, giá trị serial number
+                // không bị ảnh hưởng bởi múi giờ, nên cách này là chính xác nhất.
 
-                row.workingDate = fixedDate;
+                row.workingDate = fixedDateUTC;
+                console.log('Converted Date UTC (00:00:00Z):', row.workingDate);
+
             }
             else if (row.workingDate instanceof Date) {
                 row.workingDate.setHours(0, 0, 0, 0);
