@@ -237,8 +237,6 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
             defval: null,
         });
 
-        console.log(data)
-
         // 👉 Lọc bỏ dòng trống hoặc dòng dropdown
         const dataImport = data.filter(row => row.excavator && row.workingDate && row.shift);
 
@@ -256,8 +254,7 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
                 const date = new Date(excelEpoch.getTime() + row.workingDate * 86400000);
                 date.setHours(0, 0, 0, 0);
 
-                const offset = date.getTimezoneOffset();
-                row.workingDate = new Date(date.getTime() - offset * 60000);
+                row.workingDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
             }
 
             // 2️⃣ JS Date object
