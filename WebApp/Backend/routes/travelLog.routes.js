@@ -239,7 +239,6 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
 
         // 👉 Lọc bỏ dòng trống hoặc dòng dropdown
         const dataImport = data.filter(row => row.excavator && row.workingDate && row.shift);
-
         if (dataImport.length === 0) {
             req.logger.warn("⚠️ Import file thất bại - Không tìm thấy dữ liệu hợp lệ.");
             return res.status(400).json({ status: 'error', message: 'Không tìm thấy dữ liệu hợp lệ trong file.' });
@@ -254,9 +253,9 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
                 // 👇 reset hoàn toàn về 00:00:00.000 local
                 date.setHours(0, 0, 0, 0);
 
-                // 👇 cộng ngược offset để khi lưu UTC không bị lệch (ví dụ VN +7)
-                const offset = date.getTimezoneOffset();
-                const fixedDate = new Date(date.getTime() - offset * 60000);
+
+                const fixedDate = new Date(date.getTime()+7*60*60000); // điều chỉnh về GMT+7
+                console.log('Converted Date:', fixedDate);
 
                 row.workingDate = fixedDate;
             }
