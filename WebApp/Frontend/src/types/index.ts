@@ -117,9 +117,15 @@ export interface Order {
 export interface Material {
     _id: string;
     name: string;
-    density?: number;
-    dryDensity?: number;
     acceptedProduct?: string;
+    density?: number,
+    dryDensity?: number,
+    valueHistory: {
+        density?: number,
+        dryDensity?: number,
+        startTime: Date,
+        endTime: Date,
+    }[],
     createdAt?: string;
     updatedAt?: string;
 }
@@ -135,18 +141,16 @@ export interface TravelLog {
     workingDate?: Date,
     shift?: String,
     area?: String,
-    routes: {
-        location?: String,
-        material?: String,
-        excavationLevel?: String,
-        dumpHeightActual?: String,
-        fullDistanceKm?: Number,
-        fullLiftHeightM?: Number,
-        localMinHeightM?: Number,
-        localMaxHeightM?: Number,
-        localDistanceKm?: Number,
-        localLiftHeightM?: Number,
-    }[]
+    location?: String,
+    material?: String,
+    excavationLevel?: String,
+    dumpHeightActual?: String,
+    fullDistanceKm?: Number,
+    fullLiftHeightM?: Number,
+    localMinHeightM?: Number,
+    localMaxHeightM?: Number,
+    localDistanceKm?: Number,
+    localLiftHeightM?: Number,
     createdAt?: string;
     updatedAt?: string;
 }
@@ -201,7 +205,10 @@ export interface Report {
     hardnessF?: number,
     workingMinutes?: number,
     quantity?: number,
-    quantityUpdateTimes?: Date[]
+    quantityUpdateTimes?: {
+        time?: Date,
+        quantity?: number
+    }[]
 }
 export interface Location {
     _id: string;

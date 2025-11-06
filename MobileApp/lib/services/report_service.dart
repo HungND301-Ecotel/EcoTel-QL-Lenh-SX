@@ -10,6 +10,14 @@ class ReportService {
     return await _apiService.post('/reports', data);
   }
 
+  Future<Map<String, dynamic>> updateReport(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
+    return await _apiService.put(
+        '/reports/update/$id', data);
+  }
+
   Future<Map<String, dynamic>> getByOrder(String id) async {
     return await _apiService.get('/reports/getByOrder/$id');
   }

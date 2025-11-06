@@ -50,7 +50,20 @@ export default function ExcavatorTripReport({
                     <Table stickyHeader size="small" aria-label="car-trip-report" sx={{
                         '& th, & td': { border: '1px solid black', padding: "2px 8px" }
                     }}>
-                        <TableHead>
+                        <TableHead sx={{
+                            position: "sticky",
+                            top: 0,
+                            backgroundColor: "white",
+                            zIndex: 2,
+                            "& th": {
+                                backgroundColor: "white",
+                                zIndex: 3,
+                            },
+                            "& tr:nth-of-type(2) th": {
+                                top: 27, // chỉnh khoảng cách đúng bằng chiều cao hàng đầu tiên
+                                position: "sticky",
+                            },
+                        }}>
                             <TableRow>
                                 <TableCell align='center' rowSpan={2} sx={{ width: 60 }}>STT</TableCell>
                                 <TableCell align='center' rowSpan={2}>Người nhận lệnh</TableCell>

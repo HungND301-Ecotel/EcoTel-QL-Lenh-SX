@@ -45,3 +45,22 @@ export enum DeviceTypeEnum {
     VEHICLE = 'Xe',
     MACHINE = 'Máy',
 };
+
+export enum ReportEnum {
+    INACTIVE_VEHICLES = 'Xe không hoạt động',
+    EXCAVATOR_TRIP_LIST = 'Danh sách chuyến máy xúc',
+    CAR_TRIP_LIST = 'Danh sách chuyến ô tô',
+    WORK_REPORT_SLIP = 'Phiếu báo công',
+    TIMESHEET = 'Bảng chấm công',
+    MEAL_REPORT_SLIP = 'Phiếu báo ăn',
+    SHIFT_HANDOVER = 'Giao nhận ca',
+    STAFF_SHIFT_HANDOVER = 'Giao ca cán bộ',
+    SHIFT_SUMMARY_GRADER = 'Tổng hợp số liệu trong ca (Máy gạt)',
+    SHIFT_SUMMARY_DRILL = 'Tổng hợp số liệu trong ca (Máy khoan)',
+    SHIFT_SUMMARY_EXCAVATOR = 'Tổng hợp số liệu trong ca (Máy xúc)',
+    SHIFT_SUMMARY_CAR = 'Tổng hợp số liệu trong ca (Ô tô)',
+    // Các báo cáo bị comment:
+    // IN_KIND_ALLOWANCE_SLIP: 'Phiếu bồi dưỡng hiện vật',
+    // OIL_RECEIPT_SLIP: 'Phiếu lĩnh dầu',
+    // PRODUCTION_FUEL_MONITORING: 'Theo dõi sản lượng, nhiên liệu, dầu mỡ'
+};

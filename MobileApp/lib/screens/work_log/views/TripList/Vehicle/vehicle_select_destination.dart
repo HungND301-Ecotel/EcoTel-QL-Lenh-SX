@@ -1,5 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:soft/models/location_model.dart';
+import 'package:hive/hive.dart';
+import 'package:soft/local/LocalSyncService.dart';
+import 'package:soft/local/location_hive.dart';
+import 'package:soft/local/location_hive_extension.dart';
 import 'package:soft/providers/report_provider.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
 import 'package:soft/screens/work_log/widgets/location_item.dart';
@@ -16,105 +21,124 @@ class VehicleSelectDestination extends StatefulWidget {
 
 class _VehicleSelectDestination
     extends State<VehicleSelectDestination> {
-  bool _isLoading = true;
-  final List<LocationModel> locations = [];
   final LocationService _locationService =
       LocationService();
-  void getAllLocation() async {
-    var result = await _locationService.getAllLocation();
+  final LocalSyncService _localSyncService =
+      LocalSyncService();
+
+  bool _isLoading = false;
+  List<LocationHive> locations = [];
+  LocationHive? _selectedLocation;
+  String _searchText = '';
+  Timer? _searchDebounce;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _initPage());
+  }
+
+  /// 🚀 Load dữ liệu nhẹ & đồng bộ nền
+  Future<void> _initPage() async {
+    setState(() => _isLoading = true);
+    final box = Hive.box<LocationHive>("locations");
+
+    // 1️⃣ Đọc cache sau khi UI render (không block)
+    final cached = await Future.delayed(
+      const Duration(milliseconds: 100),
+      () => box.values.toList(),
+    );
 
     if (!mounted) return;
-    if (result['status'] == 'error') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message']),
-          backgroundColor: Colors.red,
-        ),
+    setState(() {
+      locations = cached;
+      _isLoading = false;
+    });
+
+    // 2️⃣ Sync nền (non-blocking)
+    unawaited(Future.delayed(
+        const Duration(milliseconds: 300), () async {
+      await _syncLocations(box);
+    }));
+  }
+
+  /// 🔄 Sync dữ liệu từ server về Hive
+  Future<void> _syncLocations(Box<LocationHive> box) async {
+    try {
+      await _localSyncService
+          .fetchAndSyncHive<LocationHive>(
+        box: box,
+        prefix: "LOCATION",
+        fetch: _locationService.getAllLocation,
+        fromJson: (item) => LocationHive.fromJson(item),
       );
-    } else {
-      var data = result['data'];
-      setState(() {
-        locations
-            .clear(); // Nếu cần làm sạch danh sách trước
-        locations.addAll(
-          (data as List)
-              .map((e) => LocationModel.fromJson(e))
-              .toList(),
-        );
-      });
-      final order =
-          Provider.of<ReportDraftProvider>(
-            context,
-            listen: false,
-          ).order;
+
+      final updated = box.values.toList();
+
+      final order = Provider.of<ReportDraftProvider>(
+              context,
+              listen: false)
+          .order;
+
+      List<String> selectedIds = [];
+      LocationHive? selected;
+
       if (order?.location != null &&
           order!.location!.isNotEmpty) {
-        final selectedIds =
+        selectedIds =
             order.location!.map((m) => m.id).toList();
-        _selectedLocation = selectedIds.last;
-        setState(() {
-          _onSelectLocation(order.location!.last.id);
+        selected = order.location!.last.toHive();
+      }
+
+      if (!mounted) return;
+      setState(() {
+        locations = updated;
+        _selectedLocation = selected;
+
+        if (selected != null) {
+          _onSelectedLocation(selected);
           locations.sort((a, b) {
             if (selectedIds.contains(a.id) &&
                 !selectedIds.contains(b.id)) {
               return -1;
-            } else if (!selectedIds.contains(a.id) &&
+            }
+            if (!selectedIds.contains(a.id) &&
                 selectedIds.contains(b.id)) {
               return 1;
             }
             return 0;
           });
-        });
-      }
+        }
+      });
+      debugPrint("✅ Synced ${updated.length} materials.");
+    } catch (e, stack) {
+      debugPrint("❌ Sync material error: $e");
+      debugPrint(stack.toString());
     }
-    setState(() {
-      _isLoading = false;
-    });
+  }
+
+  void _onSelectedLocation(LocationHive selectedLocation) {
+    _selectedLocation = selectedLocation;
+    Provider.of<ReportDraftProvider>(context, listen: false)
+        .setToLocation(selectedLocation);
   }
 
   @override
-  void initState() {
-    super.initState();
-    getAllLocation();
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   final order =
-    //       Provider.of<ReportDraftProvider>(
-    //         context,
-    //         listen: false,
-    //       ).order;
-    //   if (order?.location != null) {
-    //     _selectedLocation = order!.location!.first.id;
-    //     setState(() {
-    //       _onSelectLocation(order.location!.first.id);
-    //     });
-    //   }
-    // });
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
   }
-
-  String? _selectedLocation;
-  void _onSelectLocation(String selectedLocation) {
-    setState(() {
-      _selectedLocation = selectedLocation;
-    });
-
-    Provider.of<ReportDraftProvider>(
-      context,
-      listen: false,
-    ).setToLocation(selectedLocation);
-  }
-
-  String _searchText = '';
 
   @override
   Widget build(BuildContext context) {
-    List<LocationModel> filteredItems =
-        locations
-            .where(
-              (item) => item.name.toLowerCase().contains(
+    List<LocationHive> filteredItems = locations
+        .where(
+          (item) => item.name.toLowerCase().contains(
                 _searchText.toLowerCase(),
               ),
-            )
-            .toList();
+        )
+        .toList();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
@@ -136,53 +160,49 @@ class _VehicleSelectDestination
             child: TextField(
               decoration: InputDecoration(
                 labelText: 'Tìm kiếm',
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.grey[200],
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(32),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: EdgeInsets.symmetric(
-                  vertical: 0,
-                ),
                 floatingLabelBehavior:
                     FloatingLabelBehavior.never,
               ),
               onChanged: (value) {
-                setState(() {
-                  _searchText = value;
-                });
+                _searchDebounce?.cancel();
+                _searchDebounce = Timer(
+                  const Duration(milliseconds: 300),
+                  () => setState(() => _searchText = value),
+                );
               },
             ),
           ),
           Divider(height: 1),
           Expanded(
-            child:
-                _isLoading
-                    ? Center(
-                      child: CircularProgressIndicator(),
-                    )
-                    : SingleChildScrollView(
-                      child: Column(
-                        children:
-                            filteredItems
-                                .map(
-                                  (item) => LocationItem(
-                                    data: item,
-                                    selected:
-                                        _selectedLocation ==
-                                        item.id,
-                                    onTap: () {
-                                      _onSelectLocation(
-                                        item.id,
-                                      );
-                                    },
-                                  ),
-                                )
-                                .toList(),
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator())
+                : locations.isEmpty
+                    ? const Center(
+                        child: Text("Không có dữ liệu"))
+                    : ListView.builder(
+                        physics:
+                            const AlwaysScrollableScrollPhysics(),
+                        itemCount: filteredItems.length,
+                        itemBuilder: (context, index) {
+                          final item = filteredItems[index];
+                          return LocationItem(
+                            data: item,
+                            selected: _selectedLocation?.id ==
+                                item.id,
+                            onTap: () => setState(() {
+                              _onSelectedLocation(item);
+                            }),
+                          );
+                        },
                       ),
-                    ),
           ),
           Container(
             padding: const EdgeInsets.all(8.0),
@@ -205,16 +225,15 @@ class _VehicleSelectDestination
                 SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed:
-                        _selectedLocation == null
-                            ? null
-                            : () {
-                              Navigator.pushNamed(
-                                context,
-                                WorkLogRoutes
-                                    .vehicleSelectMaterial,
-                              );
-                            },
+                    onPressed: _selectedLocation == null
+                        ? null
+                        : () {
+                            Navigator.pushNamed(
+                              context,
+                              WorkLogRoutes
+                                  .vehicleSelectMaterial,
+                            );
+                          },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,

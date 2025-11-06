@@ -56,10 +56,10 @@ class _ServiceVehicleTripInput
     );
     var result = await _reportService.createReport({
       "orderId": provider.orderId,
-      "device": provider.device,
-      "material": provider.material,
-      "fromLocation":provider.fromLocation,
-      "toLocation":provider.toLocation,
+      "device": provider.device?.id,
+      "material": provider.material?.id,
+      "fromLocation":provider.fromLocation?.id,
+      "toLocation":provider.toLocation?.id,
       "quantity": provider.quantity,
       "distanceKm": provider.distanceKm,
       "workingMinutes": provider.workingMinutes,

@@ -9,6 +9,7 @@ const adminUser = {
     password: '123456',
     role: 'admin',
     fullName: 'admin',
+    salaryCode: '0000'
 };
 
 const deviceTypes = [

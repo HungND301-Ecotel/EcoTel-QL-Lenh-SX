@@ -13,6 +13,7 @@ import { Department, User } from '../../types'
 import { showErrorAlert, showSuccessAlert } from '../Alert'
 import { RoleEnum } from '../../enums'
 import { ROLE_TYPE_OPTIONS } from '../../utils/const'
+import ImageUploadBox from '../ImageUploadBox'
 
 export default function Profile({ open, setOpen }: { open: boolean, setOpen: Dispatch<SetStateAction<boolean>> }) {
     const [avatar, setAvatar] = useState('')
@@ -107,59 +108,22 @@ export default function Profile({ open, setOpen }: { open: boolean, setOpen: Dis
         const resizedFile = await imageCompression(file, { maxWidthOrHeight: 300, maxSizeMB: 1 })
         const ext = 'webp'
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`
-        const res = await api.get(`/uploads`, { params: { fileName, type } })
+        const res = await api.get(`/uploads/put`, { params: { fileName, type } })
         const url = res.data?.data
         await fetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'image/webp' },
             body: resizedFile
         })
-        const publicUrl = url.split('?')[0]
+        const key = url.split('.amazonaws.com/')[1].split('?')[0]
         if (type === 'avatar') {
-            setAvatar(publicUrl)
-            formik.setFieldValue('avatar', publicUrl)
+            setAvatar(key)
+            formik.setFieldValue('avatar', key)
         } else {
-            setSignatureUrl(publicUrl)
-            formik.setFieldValue('signature', publicUrl)
+            setSignatureUrl(key)
+            formik.setFieldValue('signature', key)
         }
     }
-
-    const renderImageUploadBox = (type: 'avatar' | 'signature', currentUrl: string) => (
-        <Box sx={{ position: 'relative', width: 200, height: 200 }}>
-            {currentUrl && (
-                <IconButton
-                    onClick={() => {
-                        if (type === 'avatar') {
-                            setAvatar('')
-                            formik.setFieldValue('avatar', '')
-                        } else {
-                            setSignatureUrl('')
-                            formik.setFieldValue('signature', '')
-                        }
-                    }}
-                    sx={{ position: 'absolute', top: 0, right: 0, zIndex: 1000 }}
-                >
-                    <Close />
-                </IconButton>
-            )}
-            <Button
-                component="label"
-                sx={{
-                    width: '100%', height: '100%',
-                    border: '1px solid grey',
-                    display: 'flex', flexDirection: 'column', justifyContent: 'center'
-                }}
-            >
-                {!currentUrl && <Typography>Thêm {type === 'avatar' ? 'ảnh' : 'chữ ký'}</Typography>}
-                <img src={currentUrl || '/image/camera.png'} width={currentUrl ? 200 : 30} />
-                <input type="file" accept="image/*" hidden onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file) handleImageUpload(file, type)
-                    e.target.value = ''
-                }} />
-            </Button>
-        </Box>
-    )
 
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
@@ -214,8 +178,29 @@ export default function Profile({ open, setOpen }: { open: boolean, setOpen: Dis
                         </TextField>
 
                         <Grid container spacing={2}>
-                            <Grid item>{renderImageUploadBox('avatar', avatar)}</Grid>
-                            <Grid item>{renderImageUploadBox('signature', signatureUrl)}</Grid>
+                            <Grid item>
+                                <ImageUploadBox
+                                    type="avatar"
+                                    currentKey={avatar}
+                                    onClear={() => {
+                                        setAvatar('');
+                                        formik.setFieldValue('avatar', '');
+                                    }}
+                                    onUpload={handleImageUpload}
+                                />
+                            </Grid>
+
+                            <Grid item>
+                                <ImageUploadBox
+                                    type="signature"
+                                    currentKey={signatureUrl}
+                                    onClear={() => {
+                                        setSignatureUrl('');
+                                        formik.setFieldValue('signature', '');
+                                    }}
+                                    onUpload={handleImageUpload}
+                                />
+                            </Grid>
                         </Grid>
                     </Box>
                 </Box>

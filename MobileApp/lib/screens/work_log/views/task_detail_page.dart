@@ -60,6 +60,11 @@ class _TaskDetailPage extends State<TaskDetailPage> {
         cachedOrderString,
       );
       final cachedOrder = OrderModel.fromJson(jsonMap);
+      final provider = Provider.of<ReportDraftProvider>(
+        context,
+        listen: false,
+      );
+      provider.setOrder(cachedOrder);
 
       setState(() {
         data = cachedOrder;

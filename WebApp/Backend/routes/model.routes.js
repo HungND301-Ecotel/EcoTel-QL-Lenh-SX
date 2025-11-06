@@ -1,152 +1,211 @@
 const express = require('express');
 const router = express.Router();
-const { AppError } = require('../utils/errorHandler');
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 const Model = require('../models/Model');
-const multer = require('multer');
-const upload = multer({ storage: multer.memoryStorage() });
-const ExcelJS = require('exceljs');
-const xlsx = require('xlsx');
 const { ROLE } = require('../config/config');
 
 
 router.post('/bulk-upsert', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res) => {
     try {
         const user = req.user;
-        const { rows } = req.body;
+        const { rows, startTime: rawStartTime, endTime: rawEndTime, initSlot } = req.body;
 
-        const ops = []; // chứa các thao tác bulkWrite
+        const startTime = rawStartTime ? new Date(rawStartTime) : new Date();
+        const endTime = rawEndTime ? new Date(rawEndTime) : new Date(Date.now() + 315360000000); // 10 năm
 
-        // Duyệt từng vật liệu (material)
+        if (startTime.getTime() >= endTime.getTime()) {
+            return res.status(400).send({ status: 'error', message: 'Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc.' });
+        }
+
+        const oldStartTime = initSlot?.startTime ? new Date(initSlot.startTime) : null;
+        const oldEndTime = initSlot?.endTime ? new Date(initSlot.endTime) : null;
+
+        const ops = [];
+
         for (const row of rows) {
             const materialId = row.id;
-
-            // Lấy toàn bộ model hiện có của material để so sánh
             const existingModels = await Model.find({ material: materialId });
             const mapExisting = new Map(existingModels.map(m => [m.deviceModel.toString(), m]));
 
-            // Duyệt từng field của dòng
             for (const [field, rawValue] of Object.entries(row)) {
                 if (['id', 'material', 'acceptedProduct', 'density', 'dryDensity'].includes(field)) continue;
 
                 const deviceModelId = field;
                 const newValue = rawValue === '' || rawValue === null || rawValue === undefined ? null : Number(rawValue);
-
                 const existing = mapExisting.get(deviceModelId);
 
-                if (existing) {
-                    // Nếu có rồi -> chỉ cập nhật nếu khác giá trị
-                    if (existing.value !== newValue) {
-                        ops.push({
-                            updateOne: {
-                                filter: { _id: existing._id },
-                                update: {
-                                    $set: { value: newValue },
-                                    $push: {
-                                        valueHistory: {
-                                            value: existing.value ?? null,
-                                            effectiveDate: new Date(),
-                                        },
-                                    },
-                                },
-                            },
-                        });
-                    }
-                } else {
-                    // Nếu chưa có -> tạo mới
+                if (!existing && newValue !== null) {
                     ops.push({
                         insertOne: {
                             document: {
                                 material: materialId,
                                 deviceModel: deviceModelId,
                                 value: newValue,
-                                valueHistory: [],
+                                valueHistory: [{
+                                    value: newValue,
+                                    startTime,
+                                    endTime,
+                                }],
                             },
                         },
                     });
+                    continue;
+                }
+
+                if (existing) {
+                    let targetIndex = existing.valueHistory.findIndex(
+                        (h) => new Date(h.startTime).toISOString() === startTime.toISOString() &&
+                            new Date(h.endTime).toISOString() === endTime.toISOString()
+                    );
+
+                    // ✅ Nếu có initSlot → sửa time range cũ
+                    if (targetIndex === -1 && oldStartTime && oldEndTime) {
+                        targetIndex = existing.valueHistory.findIndex(
+                            (h) => new Date(h.startTime).toISOString() === oldStartTime.toISOString() &&
+                                new Date(h.endTime).toISOString() === oldEndTime.toISOString()
+                        );
+                    }
+
+                    if (targetIndex !== -1) {
+                        const updatePath = `valueHistory.${targetIndex}`;
+                        ops.push({
+                            updateOne: {
+                                filter: { _id: existing._id },
+                                update: {
+                                    $set: {
+                                        [`${updatePath}.value`]: newValue,
+                                        [`${updatePath}.startTime`]: startTime,
+                                        [`${updatePath}.endTime`]: endTime,
+                                    },
+                                },
+                            },
+                        });
+                    } else {
+                        ops.push({
+                            updateOne: {
+                                filter: { _id: existing._id },
+                                update: {
+                                    $push: {
+                                        valueHistory: { value: newValue, startTime, endTime },
+                                    },
+                                },
+                            },
+                        });
+                    }
                 }
             }
         }
 
-        // Nếu có thao tác -> thực hiện bulkWrite
-        if (ops.length > 0) {
-            await Model.bulkWrite(ops);
-        }
+        if (ops.length > 0) await Model.bulkWrite(ops);
 
-        req.logger.info(`🔥 ${user?.username} thực hiện bulk upsert ${ops.length} thay đổi`);
-        res.status(200).send({
-            status: 'success',
-            message: `Cập nhật mô hình thành công (${ops.length} thay đổi)`,
-        });
-
+        req.logger.info(`🔥 ${user?.username} bulk upsert ${ops.length} thay đổi`);
+        res.status(200).send({ status: 'success', message: `Cập nhật mô hình thành công (${ops.length} thay đổi)` });
     } catch (err) {
-        req.logger.error("❌ Lỗi khi bulk upsert", err);
-        res.status(500).send({
-            status: 'error',
-            message: err.message,
-            stack: err.stack,
-        });
+        req.logger.error("❌ Lỗi bulk upsert", err);
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
     }
 });
 
 
-router.delete('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
-    try {
-        const user = req.user
-        const { ids } = req.body;
-        if (!ids || !Array.isArray(ids) || ids.length === 0) {
-            req.logger.error("❌ Vui lòng chọn bản ghi cần xóa");
-            return res.status(400).send({ status: 'error', message: 'Vui lòng chọn bản ghi cần xóa' });
-        }
-
-        const result = await Model.deleteMany({ _id: { $in: ids } });
-        if (result.deletedCount === 0) {
-            req.logger.error("❌ không tìm thấy bản ghi cần xóa");
-
-            return res.status(200).send({ status: 'error', message: 'Không tìm thấy bản ghi để xóa' });
-        }
-        req.logger.info(`🔥 ${user?.username}  Đã xóa ${result.deletedCount} bản ghi`);
-
-        res.status(200).json({
-            status: 'success',
-            message: `Đã xóa ${result.deletedCount} bản ghi`
-        });
-    } catch (err) {
-        req.logger.error("❌ Lỗi khi xóa", err);
-
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
-    }
-});
-router.put('/:material/:deviceModel', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
-    try {
-        const user = req.user
-        const model = await Model.One({ material: req.body.material, deviceModel: req.body.deviceModel, });
-        if (!model) {
-            req.logger.error("❌ Sửa thất bại");
-
-            return res.status(404).send({ status: 'error', message: 'Sửa thất bại ' });
-        }
-        model.value = req.body.value
-        await model.save()
-        req.logger.info(`🔥 ${user?.username} Sửa mô hình thành công`);
-
-        res.status(200).json({
-            status: 'success',
-            message: 'Sửa thành công'
-        });
-    } catch (err) {
-        req.logger.error("❌ Lỗi", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
-    }
-});
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const models = await Model.find()
-        req.logger.info(`🔥 Load thành công`);
+        const { startTime, endTime } = req.query;
+
+        let models;
+
+        if (startTime && endTime) {
+            // Chuẩn hóa thời gian (BẮT BUỘC)
+            const filterStartTime = new Date(startTime);
+            const filterEndTime = new Date(endTime);
+
+            models = await Model.aggregate([
+                {
+                    // Bước 1: Lọc ra phần tử trong valueHistory khớp với startTime và endTime
+                    $addFields: {
+                        filteredHistory: {
+                            $filter: {
+                                input: '$valueHistory',
+                                as: 'history',
+                                cond: {
+                                    $and: [
+                                        // Sử dụng $eq để so sánh chính xác trường Date
+                                        { $eq: ['$$history.startTime', filterStartTime] },
+                                        { $eq: ['$$history.endTime', filterEndTime] }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    // Bước 2: Trích xuất giá trị (value) từ lịch sử đã lọc và ghi đè trường 'value'
+                    $project: {
+                        material: 1,
+                        deviceModel: 1,
+                        valueHistory: 1,
+                        createdAt: 1,
+                        updatedAt: 1,
+
+                        // GHI ĐÈ TRƯỜNG 'value' BẰNG GIÁ TRỊ LỊCH SỬ
+                        value: {
+                            $cond: {
+                                // Kiểm tra nếu filteredHistory có ít nhất 1 phần tử
+                                if: { $gt: [{ $size: '$filteredHistory' }, 0] },
+                                // Lấy ra trường 'value' của phần tử đầu tiên
+                                then: { $arrayElemAt: ['$filteredHistory.value', 0] },
+                                // Nếu không tìm thấy, trả về giá trị null
+                                else: null
+                            }
+                        }
+                    }
+                }
+            ]);
+
+        } else {
+            models = await Model.find();
+        }
+
+        req.logger.info(`🔥 Load models thành công. Filter: ${startTime && endTime ? 'YES' : 'NO'}`);
         res.status(200).send({ status: 'success', data: models });
+
     } catch (err) {
         req.logger.error("❌ Lỗi", err);
-        res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
+    }
+});
+// DELETE /models
+router.delete('/', verifyToken, async (req, res) => {
+    try {
+        const user = req.user
+        const { slots } = req.body; // [{ startTime, endTime }, ...]
+
+        if (!Array.isArray(slots) || slots.length === 0) {
+            req.logger.error(`🔥 Không có bản ghi cần xóa}`);
+            return res.status(400).json({ status: 'error', message: "Không có bản ghi cần xóa" });
+        }
+
+        const pullConditions = slots.map(s => ({
+            startTime: new Date(s.startTime),
+            endTime: new Date(s.endTime),
+        }));
+
+        const result = await Model.updateMany(
+            {},
+            {
+                $pull: {
+                    valueHistory: { $or: pullConditions },
+                },
+            }
+        );
+        req.logger.info(`🔥 ${user?.username} Xóa mô hình thành công`);
+
+        res.status(200).json({
+            status: 'success',
+            message: `Đã xóa ${slots.length} bản ghi`,
+        });
+    } catch (error) {
+        req.logger.error(`🔥${user?.username} Xóa mô hình thất bại`, error);
+        res.status(500).send({ status: 'error', message: err.message, stack: err.stack });
     }
 });
 

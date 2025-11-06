@@ -59,7 +59,7 @@ const CustomDataGrid: React.FC<CustomDataGridProps> = ({
     ];
 
     return (
-        <Paper sx={{ width: "100%", overflowX: "auto", mt: 3 }}>
+        <Paper sx={{ width: "100%", overflowX: "auto",}}>
             <DataGrid
                 rows={rows}
                 columns={columns}
@@ -97,7 +97,7 @@ const CustomDataGrid: React.FC<CustomDataGridProps> = ({
                         "& .MuiDataGrid-columnHeaderTitle": {
                             textAlign: "center",
                             fontWeight: "bold",
-                            fontSize: 18,
+                            fontSize: 16,
                         },
                         "& .MuiDataGrid-row:nth-of-type(odd)": {
                             backgroundColor: "#e3f2fd",

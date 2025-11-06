@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     Box,
@@ -19,6 +19,8 @@ import {
     Breadcrumbs,
     InputAdornment,
     LinearProgress,
+    FormControlLabel,
+    Checkbox,
 } from "@mui/material";
 import {
     Add as AddIcon,
@@ -29,7 +31,7 @@ import {
     UploadFile,
     Download,
 } from "@mui/icons-material";
-import { useFormik } from "formik";
+import { FieldArray, FormikProvider, useFormik } from "formik";
 import { Material } from "../../types";
 import {
     showConfirmAlert,
@@ -44,8 +46,15 @@ import { RoleEnum } from "../../enums";
 import { ACCEPTED_PRODUCT_OPTIONS } from "../../utils/const";
 import CustomDataGrid from "../../components/Table/CustomDataGrid";
 import { parseAxiosError } from '../../utils/handleApiError';
+import dayjs from "dayjs";
+import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
-
+interface HistoryTimeSlot {
+    id: string;
+    startTime: Date | null;
+    endTime: Date | null;
+}
 const Materials: React.FC = () => {
     const [open, setOpen] = useState(false);
     const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(
@@ -57,6 +66,9 @@ const Materials: React.FC = () => {
     const [expanded, setExpanded] = useState(false);
     const [user] = useAtom(userAtom);
 
+    const [selectedTimeSlot, setSelectedTimeSlot] = useState<HistoryTimeSlot | null>(null);
+    const [timeSlots, setTimeSlots] = useState<HistoryTimeSlot[]>([]);
+
     const formRef = useRef<HTMLDivElement>(null);
 
     const defaultColumns = [
@@ -64,6 +76,14 @@ const Materials: React.FC = () => {
         { id: "density", label: "Tỷ trọng quy ẩm" },
         { id: "dryDensity", label: "Tỷ trọng không quy ẩm" },
         { id: "acceptedProduct", label: "Sản phẩm nghiệm thu" },
+        {
+            id: "startTime", label: "Thời gian bắt đầu",
+            renderCell: (params: { row: any }) => params.row?.startTime ? dayjs(params.row?.startTime).format("DD/MM/YYYY") : ''
+        },
+        {
+            id: "endTime", label: "Thời gian kết thúc",
+            renderCell: (params: { row: any }) => params.row?.endTime ? dayjs(params.row?.endTime).format("DD/MM/YYYY") : ''
+        },
         {
             id: "edit",
             label: "Sửa",
@@ -94,11 +114,23 @@ const Materials: React.FC = () => {
         },
     ];
 
-    const [visibleColumns, setVisibleColumns] = useState<string[]>(
-        user?.role === RoleEnum.ADMIN
-            ? defaultColumns.map((i) => i.id)
-            : defaultColumns.filter((i) => i.id !== "edit").map((i) => i.id)
-    );
+    const [visibleColumns, setVisibleColumns] = useState<string[]>([])
+    useEffect(() => {
+        if (user) {
+            let initialColumns: string[];
+
+            if (user.role === RoleEnum.ADMIN) {
+                initialColumns = defaultColumns.map((i) => i.id);
+            } else {
+                initialColumns = defaultColumns
+                    .filter((i) => i.id !== "edit")
+                    .map((i) => i.id);
+            }
+
+            setVisibleColumns(initialColumns);
+        }
+
+    }, [user, defaultColumns]);
     const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
 
     const handleToggleColumn = (id: string) => {
@@ -108,9 +140,49 @@ const Materials: React.FC = () => {
     };
 
     const { data: materials = [], isLoading } = useQuery({
-        queryKey: ["materials", value],
-        queryFn: () => MaterialService.getAll({ name: value }),
+        queryKey: ["materials", value, selectedTimeSlot],
+        queryFn: () => MaterialService.getAll({ name: value, startTime: selectedTimeSlot?.startTime ? selectedTimeSlot?.startTime.toISOString() : '', endTime: selectedTimeSlot?.endTime ? selectedTimeSlot?.endTime.toISOString() : '' }),
     });
+
+    useEffect(() => {
+        if (materials.length > 0) {
+            const allHistory: HistoryTimeSlot[] = [];
+            const seen = new Set();
+
+            materials.forEach((material: any) => {
+                material.valueHistory?.forEach((h: any) => {
+                    const key = `${h.startTime}-${h.endTime}`;
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        allHistory.push({
+                            id: key,
+                            startTime: h.startTime ? new Date(h.startTime) : null,
+                            endTime: h.endTime ? new Date(h.endTime) : null,
+                        });
+                    }
+                });
+            });
+
+            // sắp xếp giảm dần
+            allHistory.sort((a, b) => {
+                // b.startTime ?? 0: Nếu b.startTime là null/undefined, dùng 0.
+                const timeB = new Date(b.startTime ?? 0).getTime();
+                const timeA = new Date(a.startTime ?? 0).getTime();
+
+                // Thực hiện phép trừ giữa hai timestamp (kiểu number)
+                return timeB - timeA;
+            });
+            setTimeSlots(allHistory);
+            if (selectedTimeSlot === null) {
+                setSelectedTimeSlot(allHistory[0]);
+            }
+        }
+    }, [materials, selectedTimeSlot]);
+
+    // Hàm xử lý khi chọn một slot lịch sử
+    const handleSelectSlot = (slot: HistoryTimeSlot) => {
+        setSelectedTimeSlot(slot);
+    };
 
     const createMutation = useMutation({
         mutationFn: MaterialService.create,
@@ -181,17 +253,32 @@ const Materials: React.FC = () => {
     const formik = useFormik({
         initialValues: {
             name: '',
-            density: undefined as number | undefined,
-            dryDensity: undefined as number | undefined,
-            acceptedProduct: ''
+            acceptedProduct: '',
+            valueHistory: [{
+                density: undefined as number | undefined,
+                dryDensity: undefined as number | undefined,
+                startTime: new Date(),
+                endTime: new Date(),
+            }]
         },
-        enableReinitialize: true,
+        // enableReinitialize: true,
         validationSchema: materialValidationSchema,
         onSubmit: (values) => {
+            const material: Partial<Material> = {
+                name: values.name,
+                acceptedProduct: values.acceptedProduct,
+                valueHistory: values.valueHistory.map((h: any) => ({
+                    density: h.density,
+                    dryDensity: h.dryDensity,
+                    startTime: dayjs.utc(dayjs(h.startTime).format('YYYY-MM-DD')).toDate(),
+                    endTime: dayjs.utc(dayjs(h.endTime).format('YYYY-MM-DD')).toDate(),
+
+                }))
+            }
             if (selectedMaterial) {
-                updateMutation.mutate({ ...values, _id: selectedMaterial._id });
+                updateMutation.mutate({ ...material, _id: selectedMaterial._id });
             } else {
-                createMutation.mutate({ ...values });
+                createMutation.mutate({ ...material });
             }
         },
     });
@@ -201,9 +288,22 @@ const Materials: React.FC = () => {
             setSelectedMaterial(material);
             formik.setValues({
                 name: material.name,
-                density: material.density,
-                dryDensity: material.dryDensity,
                 acceptedProduct: material.acceptedProduct ?? '',
+                valueHistory: (material.valueHistory || [{
+                    density: undefined as number | undefined,
+                    dryDensity: undefined as number | undefined,
+                    startTime: new Date(),
+                    endTime: new Date(),
+                }]).map((h: any) => ({
+                    density: h.density,
+                    dryDensity: h.dryDensity,
+                    startTime: h.startTime
+                        ? dayjs(h.startTime).startOf('day').toDate()
+                        : new Date(),
+                    endTime: h.endTime
+                        ? dayjs(h.endTime).startOf('day').toDate()
+                        : new Date(),
+                }))
             });
         } else {
             setSelectedMaterial(null);
@@ -314,6 +414,10 @@ const Materials: React.FC = () => {
                         <Box
                             flex={2}
                             sx={{
+                                display: 'flex',
+                                flexGrow: 1, // Chiếm hết phần còn lại của không gian
+                                gap: 2,
+                                alignItems: 'center',
                                 flexDirection: {
                                     xs: "column",
                                     md: "row",
@@ -338,6 +442,24 @@ const Materials: React.FC = () => {
                                     ),
                                 }}
                             ></TextField>
+                            <TextField
+                                fullWidth
+                                select
+                                size="small"
+                                value={selectedTimeSlot?.id || ""}
+                                label="Lọc theo thời gian"
+                                onChange={(e) => {
+                                    const slot = timeSlots.find((s) => s.id === e.target.value);
+                                    if (slot) handleSelectSlot(slot);
+                                }}
+                            >
+                                {timeSlots.map((slot) => (
+                                    <MenuItem key={slot.id} value={slot.id}>
+                                        {`Từ ${dayjs(slot.startTime).format("DD/MM/YYYY")} - Đến ${dayjs(slot.endTime).format("DD/MM/YYYY")}`}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+
                         </Box>
                         {user?.role === RoleEnum.ADMIN && (
                             <Box
@@ -397,58 +519,128 @@ const Materials: React.FC = () => {
                         {selectedMaterial ? "Sửa vật liệu" : "Thêm vật liệu"}
                     </DialogTitle>
                     <DialogContent>
-                        <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                <TextField
-                                    fullWidth
-                                    id="name"
-                                    name="name"
-                                    label="Tên vật liệu"
-                                    value={formik.values.name}
-                                    onChange={formik.handleChange}
-                                    error={formik.touched.name && Boolean(formik.errors.name)}
-                                    helperText={formik.touched.name && formik.errors.name}
-                                />
-                                <TextField
-                                    type="number"
-                                    fullWidth
-                                    id="density"
-                                    name="density"
-                                    label="Tỷ trọng quy ẩm"
-                                    value={formik.values.density?.toString() ?? ''}
-                                    onChange={formik.handleChange}
-                                    error={formik.touched.density && Boolean(formik.errors.density)}
-                                    helperText={formik.touched.density && formik.errors.density}
-                                    inputProps={{ shrink: true }}
-                                />
-                                <TextField
-                                    type="number"
-                                    fullWidth
-                                    id="dryDensity"
-                                    name="dryDensity"
-                                    label="Tỷ trọng không quy ẩm"
-                                    value={formik.values.dryDensity?.toString() ?? ''}
-                                    onChange={formik.handleChange}
-                                    error={formik.touched.dryDensity && Boolean(formik.errors.dryDensity)}
-                                    helperText={formik.touched.dryDensity && formik.errors.dryDensity}
-                                    inputProps={{ shrink: true }}
-                                />
-                                <TextField
-                                    fullWidth
-                                    select
-                                    id="acceptedProduct"
-                                    name="acceptedProduct"
-                                    label="Sản phẩm nghiệm thu"
-                                    value={formik.values.acceptedProduct ?? ''}
-                                    onChange={formik.handleChange}
-                                    error={formik.touched.acceptedProduct && Boolean(formik.errors.acceptedProduct)}
-                                    helperText={formik.touched.acceptedProduct && formik.errors.acceptedProduct}
-                                >
-                                    <MenuItem value="Đất">Đất</MenuItem>
-                                    <MenuItem value="Than">Than</MenuItem>
-                                </TextField>
+                        <FormikProvider value={formik}>
+                            <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                    <TextField
+                                        fullWidth
+                                        id="name"
+                                        name="name"
+                                        label="Tên vật liệu"
+                                        value={formik.values.name}
+                                        onChange={formik.handleChange}
+                                        error={formik.touched.name && Boolean(formik.errors.name)}
+                                        helperText={formik.touched.name && formik.errors.name}
+                                    />
+                                    <TextField
+                                        fullWidth
+                                        select
+                                        id="acceptedProduct"
+                                        name="acceptedProduct"
+                                        label="Sản phẩm nghiệm thu"
+                                        value={formik.values.acceptedProduct ?? ''}
+                                        onChange={formik.handleChange}
+                                        error={formik.touched.acceptedProduct && Boolean(formik.errors.acceptedProduct)}
+                                        helperText={formik.touched.acceptedProduct && formik.errors.acceptedProduct}
+                                    >
+                                        <MenuItem value="Đất">Đất</MenuItem>
+                                        <MenuItem value="Than">Than</MenuItem>
+                                    </TextField>
+                                    <FieldArray
+                                        name="valueHistory"
+                                        render={({ push, remove }) => (
+                                            <>
+                                                {formik.values.valueHistory.map((h, index) => (
+                                                    <Box
+                                                        key={index}
+                                                        sx={{
+                                                            display: "grid",
+                                                            gridTemplateColumns: "repeat(4, 1fr) auto",
+                                                            gap: 2,
+                                                            alignItems: "center",
+                                                            mb: 1
+                                                        }}
+                                                    >
+                                                        <TextField
+                                                            type="number"
+                                                            name={`valueHistory.${index}.density`}
+                                                            label="Tỷ trọng quy ẩm"
+                                                            value={h.density ?? ''}
+                                                            onChange={formik.handleChange}
+                                                            fullWidth
+                                                        />
+
+                                                        <TextField
+                                                            type="number"
+                                                            name={`valueHistory.${index}.dryDensity`}
+                                                            label="Tỷ trọng không quy ẩm"
+                                                            value={h.dryDensity ?? ''}
+                                                            onChange={formik.handleChange}
+                                                            fullWidth
+                                                        />
+
+                                                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                                            <DatePicker
+                                                                label="Bắt đầu"
+                                                                inputFormat="DD/MM/YYYY" // v5 vẫn hỗ trợ
+                                                                value={h.startTime ? dayjs(h.startTime) : null}
+                                                                onChange={(newValue) =>
+                                                                    formik.setFieldValue(`valueHistory.${index}.startTime`, newValue)
+                                                                }
+                                                                renderInput={(params) => (
+                                                                    <TextField
+                                                                        {...params}
+                                                                        fullWidth
+                                                                    />
+                                                                )}
+                                                            />
+                                                        </LocalizationProvider>
+                                                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                                            <DatePicker
+                                                                label="Kết thúc"
+                                                                inputFormat="DD/MM/YYYY" // v5 vẫn hỗ trợ
+                                                                value={h.endTime ? dayjs(h.endTime) : null}
+                                                                onChange={(newValue) =>
+                                                                    formik.setFieldValue(`valueHistory.${index}.endTime`, newValue)
+                                                                } renderInput={(params) => (
+                                                                    <TextField
+                                                                        {...params}
+                                                                        fullWidth
+                                                                    />
+                                                                )}
+                                                            />
+                                                        </LocalizationProvider>
+
+                                                        <IconButton
+                                                            color="error"
+                                                            onClick={() => remove(index)}
+                                                            disabled={formik.values.valueHistory.length === 1}
+                                                        >
+                                                            <DeleteIcon />
+                                                        </IconButton>
+                                                    </Box>
+                                                ))}
+
+                                                <Button
+                                                    variant="outlined"
+                                                    startIcon={<AddIcon />}
+                                                    onClick={() =>
+                                                        push({
+                                                            density: undefined,
+                                                            dryDensity: undefined,
+                                                            startTime: new Date(),
+                                                            endTime: new Date(),
+                                                        })
+                                                    }
+                                                >
+                                                    Thêm dòng
+                                                </Button>
+                                            </>
+                                        )}
+                                    />
+                                </Box>
                             </Box>
-                        </Box>
+                        </FormikProvider>
                     </DialogContent>
                     <DialogActions>
                         <Button onClick={handleClose}>Hủy</Button>

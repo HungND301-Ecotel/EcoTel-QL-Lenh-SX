@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:soft/models/material_model.dart';
+import 'package:hive/hive.dart';
+import 'package:soft/local/LocalSyncService.dart';
+import 'package:soft/local/material_hive.dart';
 import 'package:soft/providers/report_provider.dart';
 import 'package:soft/screens/work_log/routes/routes.dart';
 import 'package:soft/screens/work_log/widgets/material_item.dart';
@@ -17,10 +19,17 @@ class ServiceVehicleSelectMaterial extends StatefulWidget {
 class _ServiceVehicleSelectMaterial
     extends State<ServiceVehicleSelectMaterial> {
   bool _isLoading = true;
-  final List<MaterialModel> materials = [];
+  List<MaterialHive> materials = [];
   final MaterialService _materialService =
       MaterialService();
+  final LocalSyncService _localSyncService =
+      LocalSyncService();
   void getAllMaterial() async {
+    final box = Hive.box<MaterialHive>("materials");
+    final localMaterials = box.values.toList();
+    setState(() {
+      materials = localMaterials;
+    });
     var result = await _materialService.getAllMaterial();
 
     if (!mounted) return;
@@ -32,15 +41,18 @@ class _ServiceVehicleSelectMaterial
         ),
       );
     } else {
-      var data = result['data'];
+      final List data = result['data'] ?? [];
+      await _localSyncService.syncHive<MaterialHive>(
+          box: box,
+          data: data,
+          prefix: "MATERIAL",
+          fromJson: (item) => MaterialHive.fromJson(item));
+
+      // 🟢 4. Reload lại danh sách
+      final updated = box.values.toList();
       setState(() {
-        materials
-            .clear(); // Nếu cần làm sạch danh sách trước
-        materials.addAll(
-          (data as List)
-              .map((e) => MaterialModel.fromJson(e))
-              .toList(),
-        );
+        materials = updated;
+        _isLoading = false;
       });
     }
     setState(() {
@@ -54,8 +66,8 @@ class _ServiceVehicleSelectMaterial
     getAllMaterial();
   }
 
-  String? _selectedMaterial;
-  void _onSelectedMaterial(String selectedMaterial) {
+  MaterialHive? _selectedMaterial;
+  void _onSelectedMaterial(MaterialHive selectedMaterial) {
     setState(() {
       _selectedMaterial = selectedMaterial;
     });
@@ -68,14 +80,13 @@ class _ServiceVehicleSelectMaterial
   String _searchText = '';
   @override
   Widget build(BuildContext context) {
-    List<MaterialModel> filteredItems =
-        materials
-            .where(
-              (item) => item.name.toLowerCase().contains(
+    List<MaterialHive> filteredItems = materials
+        .where(
+          (item) => item.name.toLowerCase().contains(
                 _searchText.toLowerCase(),
               ),
-            )
-            .toList();
+        )
+        .toList();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
@@ -119,31 +130,29 @@ class _ServiceVehicleSelectMaterial
           ),
           Divider(height: 1),
           Expanded(
-            child:
-                _isLoading
-                    ? Center(
-                      child: CircularProgressIndicator(),
-                    )
-                    : SingleChildScrollView(
-                      child: Column(
-                        children:
-                            filteredItems
-                                .map(
-                                  (item) => MaterialItem(
-                                    data: item,
-                                    selected:
-                                        _selectedMaterial ==
-                                        item.id,
-                                    onTap: () {
-                                      _onSelectedMaterial(
-                                        item.id,
-                                      );
-                                    },
-                                  ),
-                                )
-                                .toList(),
-                      ),
+            child: _isLoading
+                ? Center(
+                    child: CircularProgressIndicator(),
+                  )
+                : SingleChildScrollView(
+                    child: Column(
+                      children: filteredItems
+                          .map(
+                            (item) => MaterialItem(
+                              data: item,
+                              selected:
+                                  _selectedMaterial?.id ==
+                                      item.id,
+                              onTap: () {
+                                _onSelectedMaterial(
+                                  item,
+                                );
+                              },
+                            ),
+                          )
+                          .toList(),
                     ),
+                  ),
           ),
           Container(
             padding: const EdgeInsets.all(8.0),
@@ -166,16 +175,15 @@ class _ServiceVehicleSelectMaterial
                 SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed:
-                        _selectedMaterial == null
-                            ? null
-                            : () {
-                              Navigator.pushNamed(
-                                context,
-                                WorkLogRoutes
-                                    .serviceVehicleTripInput,
-                              );
-                            },
+                    onPressed: _selectedMaterial == null
+                        ? null
+                        : () {
+                            Navigator.pushNamed(
+                              context,
+                              WorkLogRoutes
+                                  .serviceVehicleTripInput,
+                            );
+                          },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,

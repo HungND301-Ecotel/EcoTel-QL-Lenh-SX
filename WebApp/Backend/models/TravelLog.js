@@ -15,24 +15,22 @@ const travelLogSchema = new mongoose.Schema({
     area: {
         type: String
     },
-    routes: [{
-        location: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Location',
-        },
-        material: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Material',
-        },
-        excavationLevel: String,
-        dumpHeightActual: String,
-        fullDistanceKm: Number,
-        fullLiftHeightM: Number,
-        localMinHeightM: Number,
-        localMaxHeightM: Number,
-        localDistanceKm: Number,
-        localLiftHeightM: Number,
-    }],
+    location: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Location',
+    },
+    material: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Material',
+    },
+    excavationLevel: String,
+    dumpHeightActual: String,
+    fullDistanceKm: Number,
+    fullLiftHeightM: Number,
+    localMinHeightM: Number,
+    localMaxHeightM: Number,
+    localDistanceKm: Number,
+    localLiftHeightM: Number,
 }, {
     timestamps: true
 });
@@ -44,5 +42,5 @@ travelLogSchema.index({ workingDate: 1 });
 travelLogSchema.index({ shift: 1 });
 
 
-const Order = mongoose.model('TravelLog', travelLogSchema);
-module.exports = Order;
+const TravelLog = mongoose.model('TravelLog', travelLogSchema);
+module.exports = TravelLog;

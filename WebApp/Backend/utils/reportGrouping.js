@@ -25,34 +25,21 @@ async function groupTripsVehicle(trips, date, shift) {
     const formattedTrips = await Promise.all(trips.map(async (t) => {
 
         // Chuyển quantityUpdateTimes thành mảng để lặp
-        const timesArray = Array.isArray(t.quantityUpdateTimes)
-            ? t.quantityUpdateTimes
-            : [t.quantityUpdateTimes];
+        const timesArray = (t.quantityUpdateTimes || []).map(i => i?.time)
 
         // 1. TÍNH TOÁN VÀ GOM timeLogs
         // Sử dụng Promise.all để tìm TravelLog song song cho mỗi mốc thời gian
         let totalDistance = 0;
         const travelLog = await TravelLog.findOne({
             excavator: t.excavator?._id,
+            location: t.toLocation?._id,
             workingDate: date,
             shift: shift?._id
         }).lean();
 
-        let routeMatched = null;
-
-        if (travelLog?.routes?.length > 0 && t.toLocation) {
-            // 🔍 Tìm route khớp location
-            routeMatched = travelLog.routes.find(r => {
-                const routeLocId = typeof r.location === 'object' ? r.location._id?.toString() : r.location?.toString();
-                const tripLocId = typeof t.toLocation === 'object' ? t.toLocation._id?.toString() : t.toLocation?.toString();
-                return routeLocId === tripLocId;
-            });
-
-        }
-
         const timeLogPromises = timesArray.map(async (time) => {
 
-            const distance = routeMatched ? (routeMatched.fullDistanceKm || 0) : 0;
+            const distance = travelLog ? (travelLog.fullDistanceKm || 0) : 0;
 
             return {
                 time: time,
@@ -95,29 +82,15 @@ async function groupTripsVehicleProduction(trips) {
                 const travelLog = await safeQuery(() =>
                     TravelLog.findOne({
                         excavator: t.excavator?._id,
+                        location: t.toLocation?._id,
                         workingDate: t.workingDate,
                         shift: t.shift?._id
                     }).lean()
                 );
 
                 let totalDistance = 0;
-                let routeMatched = null;
 
-                if (travelLog?.routes?.length && t.toLocation) {
-                    const tripLocId =
-                        typeof t.toLocation === 'object'
-                            ? t.toLocation._id?.toString()
-                            : t.toLocation?.toString();
-                    routeMatched = travelLog.routes.find(r => {
-                        const routeLocId =
-                            typeof r.location === 'object'
-                                ? r.location._id?.toString()
-                                : r.location?.toString();
-                        return routeLocId === tripLocId;
-                    });
-                }
-
-                const distance = routeMatched ? routeMatched.fullDistanceKm || 0 : 0;
+                const distance = travelLog ? travelLog.fullDistanceKm || 0 : 0;
                 totalDistance = distance * (Array.isArray(t.quantityUpdateTimes) ? t.quantityUpdateTimes.length : 1);
 
                 const value = await safeQuery(() =>
@@ -169,7 +142,7 @@ async function groupExcavator(trips, date) {
             quantity: t.quantity,
             cubicMeter: value.cubicMeter,
             ton: value.ton,
-            times: t.quantityUpdateTimes
+            times: (t.quantityUpdateTimes || []).map(i => i?.time)
         });
     };
 
@@ -214,40 +187,55 @@ async function groupProduction(trips, date) {
             quantity: t.quantity,
             cubicMeter: value.cubicMeter,
             ton: value.ton,
-            times: t.quantityUpdateTimes
+            times: (t.quantityUpdateTimes || []).map(i => i?.time)
         });
     }
 
     return Object.values(groups);
 }
+
 function groupTripsExcavator(trips) {
     const groups = {};
 
-    trips.forEach(t => {
-        const key = `${t.device}`;
+    trips.forEach((t) => {
+        const key = `${t.device?._id || t.device?.code}_${t.material?._id}`;
+
         if (!groups[key]) {
             groups[key] = {
                 device: t.device,
                 trips: [],
                 summary: {},
-                totalTrips: 0
+                totalTrips: 0,
             };
         }
-        const times = Array.isArray(t.quantityUpdateTimes)
-            ? t.quantityUpdateTimes
-            : [t.quantityUpdateTimes];
-        times.forEach((time) => {
-            groups[key].trips.push({
-                material: t.material,
-                time: time
-            });
-        });
-        if (!groups[key].summary[t.material.name]) {
-            groups[key].summary[t.material.name] = 0;
-        }
-        groups[key].summary[t.material.name] += times.length;
 
-        groups[key].totalTrips += times.length;
+        const timesArray = (t?.quantityUpdateTimes || []).map((i) => i?.time);
+        timesArray.forEach((time) => {
+            // 🔹 Chỉ thêm nếu chưa có cùng material + time trong trips
+            const alreadyExists = groups[key].trips.some(
+                (trip) =>
+                    trip.material?._id?.toString() === t.material?._id?.toString() &&
+                    new Date(trip.time).getTime() === new Date(time).getTime()
+            );
+
+            if (!alreadyExists) {
+                groups[key].trips.push({
+                    material: t.material,
+                    time,
+                });
+            }
+        });
+
+        const materialName =
+            typeof t.material === "string"
+                ? t.material
+                : t.material?.name || "Không rõ";
+
+        if (!groups[key].summary[materialName]) {
+            groups[key].summary[materialName] = 0;
+        }
+        groups[key].summary[materialName] += t.quantity;
+        groups[key].totalTrips += t.quantity;
     });
 
     Object.values(groups).forEach((g) => {
@@ -256,7 +244,6 @@ function groupTripsExcavator(trips) {
 
     return Object.values(groups);
 }
-
 // nhóm báo chuyến ô tô
 async function groupTripsCar(trips) {
     const groups = {};
@@ -274,10 +261,8 @@ async function groupTripsCar(trips) {
                 totalDistance: 0
             };
         }
-        const times = Array.isArray(t.quantityUpdateTimes)
-            ? t.quantityUpdateTimes
-            : [t.quantityUpdateTimes];
-        for (const time of times) {
+        const timesArray = (t.quantityUpdateTimes || [])
+        for (const time of timesArray) {
             const travelLog = await TravelLog.findOne({
                 excavator: t.excavator,        // lọc theo máy xúc
                 location: t.toLocation,       // lọc theo điểm đổ tải
@@ -285,20 +270,20 @@ async function groupTripsCar(trips) {
                 endTime: { $gte: time }       // kết thúc >= time
             }).lean();
 
-            const distance = travelLog ? travelLog.distance : 0
+            const distance = travelLog ? travelLog.fullDistanceKm : 0
             groups[key].trips.push({
                 material: t.material,
-                time,
+                time: time?.time,
                 distance
             });
             if (!groups[key].summary[t.material.name]) {
                 groups[key].summary[t.material.name] = { count: 0, distance: 0 }
             }
-            groups[key].summary[t.material.name].count += 1;
+            groups[key].summary[t.material.name].count += time?.quantity;
             groups[key].summary[t.material.name].distance += distance;
 
 
-            groups[key].totalTrips += 1;
+            groups[key].totalTrips += time?.quantity;
             groups[key].totalDistance += distance;
         }
 
@@ -325,11 +310,9 @@ async function groupCar(trips) {
             };
         }
 
-        const times = Array.isArray(t.quantityUpdateTimes)
-            ? t.quantityUpdateTimes
-            : [t.quantityUpdateTimes];
+        const timesArray = (t.quantityUpdateTimes || [])
 
-        for (const time of times) {
+        for (const time of timesArray) {
             const travelLog = await TravelLog.findOne({
                 excavator: t.excavator,
                 location: t.toLocation,
@@ -337,7 +320,7 @@ async function groupCar(trips) {
                 endTime: { $gte: time }
             }).lean();
 
-            const distance = travelLog ? travelLog.distance : 0;
+            const distance = travelLog ? travelLog.fullDistanceKm : 0;
 
             if (!groups[key].materials[t.material.name]) {
                 groups[key].materials[t.material.name] = {
@@ -349,12 +332,12 @@ async function groupCar(trips) {
                 };
             }
 
-            groups[key].materials[t.material.name].times.push(time);
+            groups[key].materials[t.material.name].times.push(time?.time);
             groups[key].materials[t.material.name].distances.push(distance);
-            groups[key].materials[t.material.name].count += 1;
+            groups[key].materials[t.material.name].count += time?.quantity;
             groups[key].materials[t.material.name].totalDistance += distance;
 
-            groups[key].totalTrips += 1;
+            groups[key].totalTrips += time?.quantity;
             groups[key].totalDistance += distance;
         }
     }
@@ -452,7 +435,7 @@ async function caculatorWeight(materialId, deviceModel, quantity, totalDistance,
     let production = 0
 
     const data = await Model.findOne({ material: materialId, deviceModel: deviceModel })
-        .populate('material', 'name dryDensity acceptedProduct dryDensityHistory');
+        .populate('material', 'name acceptedProduct valueHistory');
 
     if (!data || !data.material) return { cubicMeter, ton, production };
     const material = data?.material;
@@ -477,85 +460,53 @@ async function caculatorWeight(materialId, deviceModel, quantity, totalDistance,
 }
 
 function getTyTrongAtDate(material, date) {
-
     if (!material) return 0;
 
-    const histories = Array.isArray(material.dryDensityHistory)
-        ? material.dryDensityHistory
-        : [];
-
-    // Nếu không có lịch sử thì lấy current
-    if (histories.length === 0) return material?.dryDensity || 0;
-
+    const histories = Array.isArray(material.valueHistory) ? material.valueHistory : [];
     const target = new Date(date);
 
-    // sắp xếp tăng dần theo ngày hiệu lực
-    const sorted = histories.sort((a, b) => new Date(a.effectiveDate) - new Date(b.effectiveDate));
+    if (histories.length === 0) return 0;
 
-    // nếu ngày cần tính < mốc đầu tiên -> dùng giá trị đầu tiên
-    if (target < new Date(sorted[0].effectiveDate)) {
-        return sorted[0]?.value || 0;
-    }
+    // sắp xếp theo thời gian bắt đầu tăng dần
+    const sorted = histories.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
 
-    // duyệt qua các mốc để tìm giá trị phù hợp
-    for (let i = 0; i < sorted.length; i++) {
-        const current = sorted[i];
-        const next = sorted[i + 1];
+    // duyệt để tìm mốc chứa ngày target
+    for (const h of sorted) {
+        const start = new Date(h.startTime);
+        const end = new Date(h.endTime);
 
-        // Nếu không có mốc tiếp theo → bản cuối cùng trước currentTyTrong
-        if (!next) {
-            return material?.dryDensity || current?.value || 0;
-        }
-
-        // Nếu date nằm giữa current và next
-        if (target >= new Date(current.effectiveDate) && target < new Date(next.effectiveDate)) {
-            return next?.value || 0; // giá trị mới bắt đầu có hiệu lực tại next.effectiveDate
+        if (target >= start && target <= end) {
+            return h.dryDensity ?? 0;
         }
     }
 
-    // nếu sau tất cả -> currentTyTrong
-    return material?.dryDensity || 0;
+    return 0;
 }
 function getMohinhAtDate(model, date) {
-
     if (!model) return 0;
 
-    const histories = Array.isArray(model.valueHistory)
-        ? model.valueHistory
-        : [];
-
-    // Nếu không có lịch sử thì lấy current
-    if (histories.length === 0) return model?.value || 0;
-
+    const histories = Array.isArray(model.valueHistory) ? model.valueHistory : [];
     const target = new Date(date);
 
-    // sắp xếp tăng dần theo ngày hiệu lực
-    const sorted = histories.sort((a, b) => new Date(a.effectiveDate) - new Date(b.effectiveDate));
+    if (histories.length === 0) return 0;
 
-    // nếu ngày cần tính < mốc đầu tiên -> dùng giá trị đầu tiên
-    if (target < new Date(sorted[0].effectiveDate)) {
-        return sorted[0]?.value || 0;
-    }
+    // sắp xếp theo thời gian bắt đầu tăng dần
+    const sorted = histories.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
 
-    // duyệt qua các mốc để tìm giá trị phù hợp
-    for (let i = 0; i < sorted.length; i++) {
-        const current = sorted[i];
-        const next = sorted[i + 1];
+    // duyệt để tìm mốc chứa ngày target
+    for (const h of sorted) {
+        const start = new Date(h.startTime);
+        const end = new Date(h.endTime);
 
-        // Nếu không có mốc tiếp theo → bản cuối cùng trước currentTyTrong
-        if (!next) {
-            return model?.value || current?.value || 0;
-        }
-
-        // Nếu date nằm giữa current và next
-        if (target >= new Date(current.effectiveDate) && target < new Date(next.effectiveDate)) {
-            return next?.value || 0; // giá trị mới bắt đầu có hiệu lực tại next.effectiveDate
+        if (target >= start && target <= end) {
+            return h.value ?? 0;
         }
     }
 
-    // nếu sau tất cả -> currentTyTrong
-    return model?.value || 0;
+    return 0;
 }
+
+
 
 function normalizeDateToUTC(date) {
     const d = new Date(date);

@@ -9,13 +9,14 @@ const Model = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'DeviceModel',
     },
-    value: {
-        type: Number
-    },
     valueHistory: [
         {
             value: Number,
-            effectiveDate: {
+            startTime: {
+                type: Date,
+                default: Date.now,
+            },
+            endTime: {
                 type: Date,
                 default: Date.now,
             },

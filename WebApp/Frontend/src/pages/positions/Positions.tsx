@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     Box,
@@ -89,11 +89,23 @@ const Positions: React.FC = () => {
             filterable: false,
         },
     ];
-    const [visibleColumns, setVisibleColumns] = useState<string[]>(
-        user?.role === RoleEnum.ADMIN
-            ? defaultColumns.map((i) => i.id)
-            : defaultColumns.filter((i) => i.id !== "edit").map((i) => i.id)
-    );
+    const [visibleColumns, setVisibleColumns] = useState<string[]>([])
+    useEffect(() => {
+        if (user) {
+            let initialColumns: string[];
+
+            if (user.role === RoleEnum.ADMIN) {
+                initialColumns = defaultColumns.map((i) => i.id);
+            } else {
+                initialColumns = defaultColumns
+                    .filter((i) => i.id !== "edit")
+                    .map((i) => i.id);
+            }
+
+            setVisibleColumns(initialColumns);
+        }
+
+    }, [user, defaultColumns]);
 
     const handleToggleColumn = (id: string) => {
         setVisibleColumns((prev) =>

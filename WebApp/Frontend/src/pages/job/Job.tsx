@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     Box,
@@ -40,10 +40,10 @@ import { useAtom } from "jotai";
 import { userAtom } from "../../atoms/userAtoms";
 import { jobValidationSchema } from "../../utils/validation";
 import { JOB_TYPE_OPTIONS } from "../../utils/const";
-import JobService from "../../services/locationService copy";
 import { RoleEnum } from "../../enums";
 import CustomDataGrid from "../../components/Table/CustomDataGrid";
 import { parseAxiosError } from '../../utils/handleApiError';
+import JobService from '../../services/jobService'
 
 
 const Jobs: React.FC = () => {
@@ -91,11 +91,23 @@ const Jobs: React.FC = () => {
         },
     ];
 
-    const [visibleColumns, setVisibleColumns] = useState<string[]>(
-        user?.role === RoleEnum.ADMIN
-            ? defaultColumns.map((i) => i.id)
-            : defaultColumns.filter((i) => i.id !== "edit").map((i) => i.id)
-    );
+    const [visibleColumns, setVisibleColumns] = useState<string[]>([])
+    useEffect(() => {
+        if (user) {
+            let initialColumns: string[];
+
+            if (user.role === RoleEnum.ADMIN) {
+                initialColumns = defaultColumns.map((i) => i.id);
+            } else {
+                initialColumns = defaultColumns
+                    .filter((i) => i.id !== "edit")
+                    .map((i) => i.id);
+            }
+
+            setVisibleColumns(initialColumns);
+        }
+
+    }, [user, defaultColumns]);
 
     const handleToggleColumn = (id: string) => {
         setVisibleColumns((prev) =>

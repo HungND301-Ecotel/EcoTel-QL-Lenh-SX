@@ -3,121 +3,116 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Box,
     Button,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    IconButton,
-    Paper,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
     Typography,
-    TextField,
-    MenuItem,
-    Alert,
-    Switch,
-    ListItemText,
-    Menu,
+    Checkbox,
     Accordion,
     AccordionSummary,
     AccordionDetails,
-    Checkbox,
     TablePagination,
-    InputAdornment,
-    Breadcrumbs,
     LinearProgress,
+    FormControlLabel, // Thêm FormControlLabel
+    TextField,
+    Breadcrumbs,
+    AccordionActions,
+    Paper,
+    IconButton, // Thêm TextField để nhập Date/Time
 } from '@mui/material';
 import {
-    Add as AddIcon,
-    Edit as EditIcon,
-    Delete as DeleteIcon,
-    Settings,
-    ExpandMore,
-    Search,
-    Download,
-    UploadFile,
     Save,
+    ExpandMore,
+    Add as AddIcon,
+    Delete,
+    Edit,
+    Height,
+    Visibility,
+    VisibilityOff,
 } from '@mui/icons-material';
-import { useFormik } from 'formik';
-import * as yup from 'yup';
 import api from '../../config/api.config';
-import { Job } from '../../types';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
-import { useAtom } from 'jotai';
-import { userAtom } from '../../atoms/userAtoms';
-import { jobValidationSchema } from '../../utils/validation';
-import { JOB_TYPE_OPTIONS } from '../../utils/const';
-import { DataGrid, GridRowModel } from '@mui/x-data-grid';
 import CustomDataGrid from '../../components/Table/CustomDataGrid';
+import { GridRowModel } from '@mui/x-data-grid';
+import dayjs, { Dayjs } from 'dayjs';
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import ModelEditor from './ModelEditor';
+import { Table, TableColumnsType } from 'antd';
 
+// Định nghĩa kiểu dữ liệu cho một khoảng thời gian lịch sử
+interface HistoryTimeSlot {
+    id: string; // Dùng UUID hoặc một giá trị duy nhất
+    startTime: Date | null;
+    endTime: Date | null;
+}
 
 const Models: React.FC = () => {
 
-    const { data: materials = [] } = useQuery({
-        queryKey: ['materials'],
-        queryFn: () => api.get(`/materials`).then(res => res.data.data),
-    });
+    const [expanded, setExpanded] = useState(false);
+    // --- State Mới ---
+    const [selectedTimeSlot, setSelectedTimeSlot] = useState<HistoryTimeSlot | null>(null);
+    const [selectedTimeSlots, setSelectedTimeSlots] = useState<HistoryTimeSlot[]>([]);
+    const [timeSlots, setTimeSlots] = useState<HistoryTimeSlot[]>([]);
+    const [editorKey, setEditorKey] = useState(Date.now());
 
-    const { data: devicemodels = [] } = useQuery({
-        queryKey: ['devicemodels'],
-        queryFn: () => api.get(`/devicemodels`).then(res => res.data.data),
-    });
+    const { data: materials = [] } = useQuery({ queryKey: ['materials'], queryFn: () => api.get(`/materials`).then(res => res.data.data), });
+    const { data: devicemodels = [] } = useQuery({ queryKey: ['devicemodels'], queryFn: () => api.get(`/devicemodels`).then(res => res.data.data), });
 
+
+    const queryClient = useQueryClient()
+
+    // Lấy tất cả models để tạo các khoảng thời gian duy nhất
     const { data: models = [] } = useQuery({
-        queryKey: ['models'],
-        queryFn: () => api.get(`/models`).then(res => res.data.data),
+        queryKey: ['models', selectedTimeSlot],
+        queryFn: () => api.get(`/models?startTime=${selectedTimeSlot?.startTime ? selectedTimeSlot?.startTime.toISOString() : ''}&endTime=${selectedTimeSlot?.endTime ? selectedTimeSlot?.endTime.toISOString() : ''}`).then(res => res.data.data),
     });
+
+    useEffect(() => {
+        if (models.length > 0) {
+            const allHistory: HistoryTimeSlot[] = [];
+            const seen = new Set();
+
+            models.forEach((model: any) => {
+                model.valueHistory.forEach((h: any) => {
+                    const key = `${h.startTime}-${h.endTime}`;
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        allHistory.push({
+                            id: key,
+                            startTime: h.startTime ? new Date(h.startTime) : null,
+                            endTime: h.endTime ? new Date(h.endTime) : null,
+                        });
+                    }
+                });
+            });
+
+            // sắp xếp giảm dần
+            allHistory.sort((a, b) => {
+                // b.startTime ?? 0: Nếu b.startTime là null/undefined, dùng 0.
+                const timeB = new Date(b.startTime ?? 0).getTime();
+                const timeA = new Date(a.startTime ?? 0).getTime();
+
+                // Thực hiện phép trừ giữa hai timestamp (kiểu number)
+                return timeB - timeA;
+            });
+            setTimeSlots(allHistory);
+        }
+    }, [models, selectedTimeSlot]);
+
+
+    // Hàm xử lý khi tạo slot mới
+    const handleCreateNewSlot = () => {
+        setExpanded(true)
+        setSelectedTimeSlot(null)
+        setEditorKey(Date.now());
+        setExpandedRowKeys([])
+    };
+
 
     const defaultColumns = useMemo(() => {
         const staticCols = [
-            {
-                id: "material",
-                label: "Vật liệu",
-                width: 100,
-                headerAlign: "center",
-                align: "left",
-                sortable: true,
-                filterable: true,
-                sticky: true,
-                resizable: false,
-            },
-            {
-                id: "acceptedProduct",
-                label: "Sản phẩm nghiệm thu",
-                width: 100,
-                headerAlign: "center",
-                align: "center",
-                sortable: true,
-                filterable: true,
-                sticky: true,
-                resizable: false,
-            },
-            {
-                id: "density",
-                label: "Tỷ trọng quy ẩm",
-                width: 100,
-                headerAlign: "center",
-                align: "center",
-                sortable: true,
-                filterable: false,
-                sticky: true,
-                resizable: false,
-            },
-            {
-                id: "dryDensity",
-                label: "Tỷ trọng không quy ẩm",
-                width: 100,
-                headerAlign: "center",
-                align: "center",
-                sortable: true,
-                filterable: false,
-                sticky: true,
-                resizable: false,
-            },
+            { id: "material", label: "Vật liệu", width: 100, headerAlign: "center", align: "left", sortable: true, filterable: true, sticky: true, resizable: false, },
+            { id: "acceptedProduct", label: "Sản phẩm nghiệm thu", width: 100, headerAlign: "center", align: "center", sortable: true, filterable: true, sticky: true, resizable: false, },
+            { id: "density", label: "Tỷ trọng quy ẩm", width: 100, headerAlign: "center", align: "center", sortable: true, filterable: false, sticky: true, resizable: false, },
+            { id: "dryDensity", label: "Tỷ trọng không quy ẩm", width: 100, headerAlign: "center", align: "center", sortable: true, filterable: false, sticky: true, resizable: false, },
         ];
 
         const dynamicCols = devicemodels.map((d: any) => ({
@@ -128,36 +123,14 @@ const Models: React.FC = () => {
             align: "center",
             sortable: false,
             filterable: false,
-            renderCell: (params: any) => {
-                return (
-                    <input
-                        type="number"
-                        style={{
-                            width: "100%",
-                            border: "none",
-                            textAlign: "center",
-                            outline: "none",
-                            background: "transparent",
-                        }}
-                        value={params.value ?? ""}
-                        onChange={(e) => {
-                            const newValue = e.target.value;
-                            setTableRows((prev) =>
-                                prev.map((r) =>
-                                    r.id === params.row.id
-                                        ? { ...r, [params.field]: newValue }
-                                        : r
-                                )
-                            );
-                        }}
-                    />
-                );
-            },
+            renderCell: (params: any) => params?.value || ''
         }));
 
         return [...staticCols, ...dynamicCols];
-    }, [devicemodels]);
+    }, [devicemodels, selectedTimeSlot]);
 
+
+    // --- Logic Tạo Rows Dữ liệu theo Time Slot đã chọn ---
     const rows = useMemo(() => {
         if (!materials.length || !devicemodels.length) return [];
         return materials.map((m: any) => {
@@ -172,44 +145,106 @@ const Models: React.FC = () => {
         });
     }, [materials, devicemodels, models]);
 
-    const [tableRows, setTableRows] = useState<any[]>([]);
-
-    useEffect(() => {
-        // Chỉ cập nhật nếu rows mới khác rows hiện tại
-        const isSame = JSON.stringify(rows) === JSON.stringify(tableRows);
-        if (!isSame) setTableRows(rows);
-    }, [rows]);
-
-    const processRowUpdate = (newRow: GridRowModel, oldRow: GridRowModel) => {
-        setTableRows((prev: any) =>
-            prev.map((r: any) => (r.id === newRow.id ? newRow : r))
-        );
-        return newRow;
-    };
-
-    const queryClient = useQueryClient();
-    const [isUploading, setIsUploading] = useState(false);
-
-    const saveMutation = useMutation({
-        mutationFn: async (rowsToSave: GridRowModel[]) => {
-            // gửi tất cả rows lên API 1 lần
-            await api.post('/models/bulk-upsert', { rows: rowsToSave },
-            );
+    const columnParent: TableColumnsType<HistoryTimeSlot> = [
+        {
+            title: 'Thời gian', dataIndex: 'name', key: 'name',
+            render(value, record, index) {
+                return <Typography>Từ: {dayjs(record.startTime).format("DD-MM-YYYY")} Đến: {dayjs(record.endTime).format("DD-MM-YYYY")}</Typography>
+            },
         },
-        onMutate: () => {
-            setIsUploading(true);
+        {
+            title: 'Xem',
+            dataIndex: 'view',
+            key: 'view',
+            align: 'center',
+            width: 80,
+            render: (_, record) => {
+                const isExpanded = expandedRowKeys.includes(record.id);
+                return (
+                    <IconButton
+                        color="primary"
+                        onClick={() => handleExpand(!isExpanded, record)} // 👈 gọi lại logic expand
+                    >
+                        {isExpanded ? <VisibilityOff color='secondary' /> : <Visibility color='secondary' />}
+                    </IconButton>
+                );
+            },
         },
-        onSuccess: (data) => {
-            showSuccessAlert("Lưu thành công");
-            setIsUploading(false);
-            queryClient.invalidateQueries({ queryKey: ['models'] });
+        {
+            title: 'Sửa', dataIndex: 'edit', key: 'edit', width: 50,
+            render: (value, record, index) => (
+                <IconButton
+                    color="primary"
+                    onClick={async () => {
+                        if (expanded) {
+                            const result = await showConfirmAlert(
+                                "Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?"
+                            );
+                            if (result.isConfirmed) {
+                                setSelectedTimeSlot(record);
+                                setExpandedRowKeys([])
+                            }
+                        } else {
+                            setExpanded(true);
+                            setSelectedTimeSlot(record);
+                            setExpandedRowKeys([])
+                        }
+                    }}
+                >
+                    <Edit />
+                </IconButton>
+            ),
+        }
+    ]
+
+
+    const deleteMutation = useMutation({
+        mutationFn: (slots: { startTime: string; endTime: string }[]) =>
+            api
+                .delete(`/models`, { data: { slots } })
+                .then((res) => res.data.message),
+        onSuccess: (message) => {
+            queryClient.invalidateQueries({ queryKey: ["models"] });
+            setSelectedTimeSlots([]);
+            showSuccessAlert(message || "Xóa thành công");
         },
         onError: (error: any) => {
-            setIsUploading(false);
-            showErrorAlert(error.response?.data?.message || "Lưu thất bại");
-        }
+            showErrorAlert(error.response?.data?.message || error.message || "Lỗi");
+        },
     });
 
+
+    const handleDelete = () => {
+        if (selectedTimeSlots.length === 0) {
+            return showErrorAlert("Vui lòng chọn ít nhất một khoảng thời gian cần xóa");
+        }
+
+        showConfirmAlert("Bạn có chắc muốn xóa các khoảng thời gian đã chọn?").then(
+            (result) => {
+                if (result.isConfirmed) {
+                    const slotsToDelete = selectedTimeSlots.map((slot) => ({
+                        startTime: dayjs(slot.startTime).toISOString(),
+                        endTime: dayjs(slot.endTime).toISOString(),
+                    }));
+                    deleteMutation.mutate(slotsToDelete);
+                }
+            }
+        );
+    };
+
+    // đóng mở bảng
+    const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
+
+    const handleExpand = (expanded: boolean, record: HistoryTimeSlot) => {
+        if (expanded) {
+            // Mở đúng 1 slot tại 1 thời điểm
+            setExpandedRowKeys([record.id]);
+            setSelectedTimeSlot(record);
+        } else {
+            setExpandedRowKeys([]);
+            setSelectedTimeSlot(null);
+        }
+    };
 
     return (
         <Box>
@@ -217,90 +252,153 @@ const Models: React.FC = () => {
                 <Typography>Danh mục</Typography>
                 <Typography>Mô hình xe</Typography>
             </Breadcrumbs>
+
+            {/* Nút Lưu và Bảng Dữ liệu */}
             <Box sx={{ mb: 2, mt: 2 }}>
                 <Typography variant="h4">Mô hình xe</Typography>
-                <Box display="flex" justifyContent={"flex-end"}>
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={async () => {
-                            const result = await showConfirmAlert('Bạn có chắc muốn lưu thay đổi?');
-                            if (result.isConfirmed) {
-                                saveMutation.mutate(tableRows)
-                            }
-                        }
-                        }
-                        startIcon={<Save />}
-                    >
-                        Lưu thay đổi
-                    </Button>
-                </Box>
-                {isUploading && (
-                    <Box sx={{ mt: 2 }}>
-                        <Typography variant="body2" align="center">
-                            Đang xử lý dữ liệu...
-                        </Typography>
-                        <LinearProgress />
-                    </Box>
-                )}
-                <Box sx={{ height: '60vh' }}>
-                    <CustomDataGrid
-                        rows={tableRows}
-                        defaultColumns={defaultColumns}
-                        isLoading={false}
-                        onSelectionChange={() => { }}
+                <Accordion sx={{ mb: 2 }} expanded={expanded}>
+                    <AccordionSummary
+                        expandIcon={<></>}
+                        aria-controls="panel1-content"
+                        id="panel1-header"
                         sx={{
-                            '& .MuiDataGrid-columnHeader[data-field="material"]': {
-                                position: 'sticky',
-                                left: 0,
-                                zIndex: 20,
-                                backgroundColor: 'inherit',
+                            backgroundColor: "white",
+                            "&.Mui-focusVisible": {
+                                backgroundColor: "white",
                             },
-                            '& .MuiDataGrid-cell[data-field="material"]': {
-                                position: 'sticky',
-                                left: 0,
-                                zIndex: 19,
-                                backgroundColor: "inherit !important",
-                            },
-                            '& .MuiDataGrid-columnHeader[data-field="acceptedProduct"]': {
-                                position: 'sticky',
-                                left: 100,
-                                zIndex: 20,
-                                backgroundColor: 'inherit',
-                            },
-                            '& .MuiDataGrid-cell[data-field="acceptedProduct"]': {
-                                position: 'sticky',
-                                left: 100,
-                                zIndex: 19,
-                                backgroundColor: "inherit !important",
-                            },
-                            '& .MuiDataGrid-columnHeader[data-field="density"]': {
-                                position: 'sticky',
-                                left: 200,
-                                zIndex: 20,
-                                backgroundColor: 'inherit',
-                            },
-                            '& .MuiDataGrid-cell[data-field="density"]': {
-                                position: 'sticky',
-                                left: 200,
-                                zIndex: 19,
-                                backgroundColor: "inherit !important",
-                            },
-                            '& .MuiDataGrid-columnHeader[data-field="dryDensity"]': {
-                                position: 'sticky',
-                                left: 300,
-                                zIndex: 20,
-                                backgroundColor: 'inherit',
-                                boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
-                            },
-                            '& .MuiDataGrid-cell[data-field="dryDensity"]': {
-                                position: 'sticky',
-                                left: 300,
-                                zIndex: 19,
-                                backgroundColor: "inherit !important",
-                                boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
-                            },
-                        }} />
+                        }}
+                    >
+                        <Box display="flex" gap={2}>
+                            <Button
+                                variant="contained"
+                                onClick={handleCreateNewSlot}
+                                startIcon={<AddIcon />}
+                            >
+                                Tạo mới
+                            </Button>
+                            <Button
+                                variant="contained"
+                                startIcon={<Delete />}
+                                color="error"
+                                onClick={handleDelete}
+                            >
+                                Xóa
+                            </Button>
+                        </Box>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                        <ModelEditor
+                            key={editorKey}
+                            materials={materials}
+                            devicemodels={devicemodels}
+                            initialSlot={
+                                selectedTimeSlot
+                            }
+                            timeSlots={timeSlots}
+                            onCancel={() => {
+                                setSelectedTimeSlot(null)
+                                setExpanded(false)
+                                setExpandedRowKeys([])
+                            }}
+                            initValue={selectedTimeSlot ? models : []}
+                        />
+                    </AccordionDetails>
+                </Accordion>
+                <Box sx={{ height: '60vh' }}>
+                    <Paper>
+                        <Table<HistoryTimeSlot>
+                            columns={columnParent}
+                            rowKey="id"
+                            expandable={{
+                                expandedRowKeys,
+                                onExpand: handleExpand,
+                                showExpandColumn: false,
+                                expandedRowRender: (record) => (
+                                    <Box
+                                        sx={{
+                                            maxWidth: '92vw',
+                                            border: '1px solid #eee',
+                                            borderRadius: 1,
+                                        }}
+                                    >
+                                        <CustomDataGrid
+                                            rows={rows}
+                                            defaultColumns={defaultColumns}
+                                            isLoading={false}
+                                            onSelectionChange={() => { }}
+                                            sx={{
+                                                height: 400,
+                                                '& .MuiDataGrid-columnHeader, & .MuiDataGrid-cell': {
+                                                    whiteSpace: 'nowrap',
+                                                },
+                                                '& .MuiDataGrid-virtualScroller': {
+                                                    overflowX: 'auto !important',
+                                                    overflowY: 'auto !important',
+                                                },
+                                                '& .MuiDataGrid-columnHeader[data-field="material"]': {
+                                                    position: 'sticky',
+                                                    left: 0,
+                                                    zIndex: 20,
+                                                    backgroundColor: 'inherit',
+                                                },
+                                                '& .MuiDataGrid-cell[data-field="material"]': {
+                                                    position: 'sticky',
+                                                    left: 0,
+                                                    zIndex: 19,
+                                                    backgroundColor: "inherit !important",
+                                                },
+                                                '& .MuiDataGrid-columnHeader[data-field="acceptedProduct"]': {
+                                                    position: 'sticky',
+                                                    left: 100,
+                                                    zIndex: 20,
+                                                    backgroundColor: 'inherit',
+                                                },
+                                                '& .MuiDataGrid-cell[data-field="acceptedProduct"]': {
+                                                    position: 'sticky',
+                                                    left: 100,
+                                                    zIndex: 19,
+                                                    backgroundColor: "inherit !important",
+                                                },
+                                                '& .MuiDataGrid-columnHeader[data-field="density"]': {
+                                                    position: 'sticky',
+                                                    left: 200,
+                                                    zIndex: 20,
+                                                    backgroundColor: 'inherit',
+                                                },
+                                                '& .MuiDataGrid-cell[data-field="density"]': {
+                                                    position: 'sticky',
+                                                    left: 200,
+                                                    zIndex: 19,
+                                                    backgroundColor: "inherit !important",
+                                                },
+                                                '& .MuiDataGrid-columnHeader[data-field="dryDensity"]': {
+                                                    position: 'sticky',
+                                                    left: 300,
+                                                    zIndex: 20,
+                                                    backgroundColor: 'inherit',
+                                                    boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
+                                                },
+                                                '& .MuiDataGrid-cell[data-field="dryDensity"]': {
+                                                    position: 'sticky',
+                                                    left: 300,
+                                                    zIndex: 19,
+                                                    backgroundColor: "inherit !important",
+                                                    boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
+                                                },
+                                            }}
+                                        />
+                                    </Box>
+                                ),
+                                rowExpandable: (record) => !!record.startTime,
+                            }}
+                            dataSource={timeSlots}
+                            rowSelection={{
+                                type: 'checkbox', // chỉ chọn 1 slot tại 1 thời điểm
+                                selectedRowKeys: selectedTimeSlots.map((s) => s.id),
+                                onChange: (keys, rows) => setSelectedTimeSlots(rows),
+                            }}
+                        />
+                    </Paper>
                 </Box>
             </Box>
 

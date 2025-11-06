@@ -148,11 +148,11 @@ export default function ExcavatorReport({
                                 <TableCell colSpan={8} sx={{ fontWeight: 'bold' }}>Tổng</TableCell>
                                 <TableCell align='center' sx={{ fontWeight: 'bold' }}>{data
                                     .flatMap(d => d.reports)
-                                    .reduce((sum, r) => sum + (r.totalTon || 0), 0)
+                                    .reduce((sum, r) => sum + (r.totalTon || 0), 0).toFixed(1)
                                 }</TableCell>
                                 <TableCell align='center' sx={{ fontWeight: 'bold' }}>{data
                                     .flatMap(d => d.reports)
-                                    .reduce((sum, r) => sum + (r.totalCubicMeter || 0), 0)
+                                    .reduce((sum, r) => sum + (r.totalCubicMeter || 0), 0).toFixed(1)
                                 }</TableCell>
                                 <TableCell colSpan={12}></TableCell>
                             </TableRow>

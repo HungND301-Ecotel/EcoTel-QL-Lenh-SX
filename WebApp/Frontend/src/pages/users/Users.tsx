@@ -52,6 +52,7 @@ import DepartmentService from '../../services/departmentService';
 import { RoleEnum } from '../../enums';
 import { ROLE_TYPE_OPTIONS } from '../../utils/const';
 import { parseAxiosError } from '../../utils/handleApiError';
+import ImageUploadBox from '../../components/ImageUploadBox';
 
 
 const Users: React.FC = () => {
@@ -274,40 +275,17 @@ const Users: React.FC = () => {
         });
     };
 
-    const handleImageUpload = async (file: File, type: 'avatar') => {
+    const handleImageUpload = async (file: File, type: 'avatar' | 'signature') => {
         const resizedFile = await imageCompression(file, { maxWidthOrHeight: 300, maxSizeMB: 1, initialQuality: 0.8, useWebWorker: true });
         const ext = 'webp';
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-        const res = await api.get(`/uploads`, { params: { fileName, type } });
+        const res = await api.get(`/uploads/put`, { params: { fileName, type } });
         const url = res.data?.data;
         await fetch(url, { method: 'PUT', headers: { 'Content-Type': 'image/webp' }, body: resizedFile });
-        const publicUrl = url.split('?')[0];
-        setAvatar(publicUrl);
-        formik.setFieldValue('avatar', publicUrl);
+        const key = url.split('.amazonaws.com/')[1].split('?')[0]
+        setAvatar(key);
+        formik.setFieldValue('avatar', key);
     };
-
-    const renderImageUploadBox = (type: 'avatar', currentUrl: string) => (
-        <Box sx={{ position: 'relative', width: 200, height: 200 }}>
-            {currentUrl && (
-                <IconButton onClick={() => {
-                    setAvatar('')
-                    formik.setFieldValue('avatar', null);
-                }}
-                    sx={{ position: 'absolute', top: 0, right: 0, zIndex: 1000 }}>
-                    <Close />
-                </IconButton>
-            )}
-            <Button component="label" sx={{ width: '100%', height: '100%', border: '1px solid grey', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                {!currentUrl && <Typography>Thêm ảnh</Typography>}
-                <img src={currentUrl || '/image/camera.png'} width={currentUrl ? 200 : 30} />
-                <input type="file" accept="image/*" hidden onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleImageUpload(file, type);
-                    e.target.value = '';
-                }} />
-            </Button>
-        </Box>
-    );
 
     const userColumns: GridColDef[] = [
         { field: 'fullName', headerName: 'Họ tên', flex: 1, minWidth: 150, headerAlign: 'center', },
@@ -719,7 +697,17 @@ const Users: React.FC = () => {
                                 </TextField>
 
                                 <Grid container spacing={2}>
-                                    <Grid item>{renderImageUploadBox('avatar', avatar)}</Grid>
+                                    <Grid item>
+                                        <ImageUploadBox
+                                            type="avatar"
+                                            currentKey={avatar}
+                                            onClear={() => {
+                                                setAvatar('');
+                                                formik.setFieldValue('avatar', '');
+                                            }}
+                                            onUpload={handleImageUpload}
+                                        />
+                                    </Grid>
                                 </Grid>
                             </Box>
                         </Box>
