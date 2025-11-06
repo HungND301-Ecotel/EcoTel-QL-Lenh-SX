@@ -246,55 +246,26 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         }
 
         dataImport.forEach(row => {
-            if (!row.workingDate) return; // bỏ qua nếu trống
-
-            // 1️⃣ Excel serial number (ví dụ: 45700)
             if (typeof row.workingDate === 'number') {
+                // Excel serial number → JS Date
                 const excelEpoch = new Date(1899, 11, 30);
                 const date = new Date(excelEpoch.getTime() + row.workingDate * 86400000);
+
+                // 👇 reset hoàn toàn về 00:00:00.000 local
                 date.setHours(0, 0, 0, 0);
 
-                row.workingDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-            }
+                // 👇 cộng ngược offset để khi lưu UTC không bị lệch (ví dụ VN +7)
+                const offset = date.getTimezoneOffset();
+                const fixedDate = new Date(date.getTime() - offset * 60000);
 
-            // 2️⃣ JS Date object
+                row.workingDate = fixedDate;
+            }
             else if (row.workingDate instanceof Date) {
                 row.workingDate.setHours(0, 0, 0, 0);
                 const offset = row.workingDate.getTimezoneOffset();
                 row.workingDate = new Date(row.workingDate.getTime() - offset * 60000);
             }
-
-            // 3️⃣ Text string (ví dụ: "05/11/2025" hoặc "5/11/2025")
-            else if (typeof row.workingDate === 'string') {
-                const normalized = row.workingDate.trim();
-
-                // kiểm tra xem có phải dạng "DD/MM/YYYY"
-                const parts = normalized.split('/');
-                if (parts.length === 3) {
-                    const [day, month, year] = parts.map(p => parseInt(p, 10));
-                    if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
-                        const date = new Date(year, month - 1, day);
-                        date.setHours(0, 0, 0, 0);
-
-                        const offset = date.getTimezoneOffset();
-                        row.workingDate = new Date(date.getTime() - offset * 60000);
-                    } else {
-                        row.workingDate = null; // sai định dạng
-                    }
-                } else {
-                    // fallback: thử parse tự động (nếu người dùng gõ lạ)
-                    const parsed = dayjs(normalized, ["DD/MM/YYYY", "YYYY-MM-DD"], true);
-                    if (parsed.isValid()) {
-                        const date = parsed.toDate();
-                        date.setHours(0, 0, 0, 0);
-                        const offset = date.getTimezoneOffset();
-                        row.workingDate = new Date(date.getTime() - offset * 60000);
-                    } else {
-                        row.workingDate = null;
-                    }
-                }
-            }
-        });
+        })
 
 
         // 👉 Lấy danh sách unique để map ID
