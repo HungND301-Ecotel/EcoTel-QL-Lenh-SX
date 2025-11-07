@@ -4991,23 +4991,25 @@ router.post(
                         });
                     }
                     let maxTrips = 0;
-                    const materialSet = new Set();
+                    const materialMap = new Map();
 
                     result.forEach((order) => {
                         order.reports.forEach((rep) => {
-                            // cập nhật maxTrips
                             maxTrips = Math.max(maxTrips, rep.trips.length);
 
-                            // gom tất cả material
                             rep.trips.forEach((trip) => {
-                                if (trip.material) {
-                                    materialSet.add(trip.material);
+                                const mat = trip.material;
+                                if (mat && !materialMap.has(mat._id?.toString())) {
+                                    materialMap.set(mat._id?.toString(), {
+                                        _id: mat._id,
+                                        name: mat.name,
+                                    });
                                 }
                             });
                         });
                     });
 
-                    const materials = Array.from(materialSet);
+                    const materials = Array.from(materialMap.values());
 
                     const sheetName = `${formatDate(d)}_${ca.name}`
                         .replace(/[\\\/:*?\[\]]/g, "-")
