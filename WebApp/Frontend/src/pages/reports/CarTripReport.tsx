@@ -42,7 +42,7 @@ export default function CarTripReport({
         <Grid item xs={12}>
             <Paper sx={{ p: 1 }}>
                 <i style={{ fontSize: 20 }}>CÔNG TY CỔ PHẦN THAN CAO SƠN-TKV</i>
-                <Typography textAlign={'center'} mb={2} variant='h3' sx={{ fontWeight: 'bold' }}>Báo cáo số chuyến của ô tô</Typography>
+                <Typography textAlign={'center'} mb={2} variant='h3' sx={{ fontWeight: 'bold' }}>Biểu chấm chuyến xe</Typography>
                 <Typography>Đơn vị: {department ? department.code : user?.department?.code}</Typography>
                 <Typography>Từ ngày: {startDate?.format('DD-MM-YYYY')}</Typography>
                 <Typography>Đến ngày: {endDate?.format('DD-MM-YYYY')}</Typography>
