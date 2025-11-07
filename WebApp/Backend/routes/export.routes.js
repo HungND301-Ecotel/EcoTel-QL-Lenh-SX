@@ -7451,7 +7451,7 @@ router.post(
 //  bao cao chuyen theo ngay oto mau 03
 router.post('/carTripReportByDay/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
-        const { startDate, department } = req.body;
+        const { day, department } = req.body;
         const user = req.user;
         let query = {};
 
@@ -7462,8 +7462,8 @@ router.post('/carTripReportByDay/view', verifyToken, restrictTo(ROLE.MANAGER, RO
             query.department = new mongoose.Types.ObjectId(user.department?._id);
         }
 
-        if (startDate) {
-            query.workingDate = new Date(startDate);
+        if (day) {
+            query.workingDate = new Date(day);
         } else {
             return res.status(400).json({ status: 'error', message: 'Ngày là bắt buộc' });
         }
@@ -7608,7 +7608,7 @@ router.post('/carTripReportByDay/view', verifyToken, restrictTo(ROLE.MANAGER, RO
 
 router.post('/carTripReportByDay', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
-        const { startDate, department } = req.body;
+        const { day, department, signature } = req.body;
         const user = req.user;
         let query = {};
 
@@ -7620,8 +7620,8 @@ router.post('/carTripReportByDay', verifyToken, restrictTo(ROLE.MANAGER, ROLE.AD
             dep = user?.department
         }
 
-        if (startDate) {
-            query.workingDate = new Date(startDate);
+        if (day) {
+            query.workingDate = new Date(day);
         } else {
             return res.status(400).json({ status: 'error', message: 'Ngày là bắt buộc' });
         }
@@ -7758,143 +7758,320 @@ router.post('/carTripReportByDay', verifyToken, restrictTo(ROLE.MANAGER, ROLE.AD
 
 
         const workbook = new ExcelJS.Workbook();
-        const sheet = workbook.addWorksheet('Báo cáo ca');
+        const sheet = workbook.addWorksheet('bao_chuyen');
 
-        // === 2️⃣ Định nghĩa style dùng chung ===
-        const border = {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' }
-        };
+        // === 3️⃣ Header đa tầng (chuẩn form PDF) ===
         const center = { vertical: 'middle', horizontal: 'center' };
 
-        // === 3️⃣ Header đa tầng ===
-        // Hàng 1
-        sheet.mergeCells('A1', 'A2'); sheet.getCell('A1').value = 'CA';
-        sheet.mergeCells('B1', 'B2'); sheet.getCell('B1').value = 'SỐ XE';
-
-        // Nhóm ĐẤT
+        // === Tính toán các chỉ số cột (ĐƯA LÊN ĐẦU) ===
         const landStart = 3;
-        const landColCount = uniqueHeadersDat.length || 1;
-        const landEnd = landStart + landColCount;
-        sheet.mergeCells(1, landStart, 1, landEnd); sheet.getCell(1, landStart).value = 'ĐẤT, SPNT, BÙN ĐẶC, BÙN LOÃNG...';
-
-        uniqueHeadersDat.forEach((h, i) => {
-            const col = landStart + i;
-            sheet.getCell(2, col).value = `Máy xúc: ${h.excavator}\nNơi đổ: ${h.toLocation}`;
-            sheet.getCell(2, col).alignment = { wrapText: true, ...center };
-        });
-
-        // Cột tổng đất
-        const totalDatCol = landEnd + 1;
-        sheet.mergeCells(1, totalDatCol, 2, totalDatCol);
-        sheet.getCell(1, totalDatCol).value = 'TỔNG CHUYẾN ĐẤT';
-
-        // Nhóm THAN
+        const landColCount = Math.max(uniqueHeadersDat.length, 1);
+        const landEnd = landStart + landColCount - 1;
+        const totalDatCol = landEnd + 1; // TỔNG CHUYẾN ĐẤT
         const coalStart = totalDatCol + 1;
-        const coalColCount = uniqueHeadersThan.length || 1;
-        const coalEnd = coalStart + coalColCount;
-        sheet.mergeCells(1, coalStart, 1, coalEnd);
-        sheet.getCell(1, coalStart).value = 'THAN';
+        const coalColCount = Math.max(uniqueHeadersThan.length, 1);
+        const coalEnd = coalStart + coalColCount - 1;
+        const totalThanCol = coalEnd + 1; // TỔNG CHUYẾN THAN
+        const grandCol = totalThanCol + 1; // TỔNG HỢP CHUYẾN
+        const totalCols = grandCol; // Tổng số cột cần thiết
 
-        uniqueHeadersThan.forEach((h, i) => {
-            const col = coalStart + i;
-            sheet.getCell(2, col).value = `Máy xúc: ${h.excavator}\nNơi đổ: ${h.toLocation}`;
-            sheet.getCell(2, col).alignment = { wrapText: true, ...center };
+        // --- NEW TOP TITLE ROWS (1-4) ---
+
+        // HÀNG 1: Tên công ty
+        sheet.mergeCells(1, 1, 1, totalCols);
+        const infoRow = sheet.getCell('A1');
+        infoRow.value = "CÔNG TY CỔ PHẦN THAN CAO SƠN-TKV";
+        infoRow.font = { italic: true, size: 18 };
+        sheet.getRow(1).eachCell((cell) => {
+            cell.alignment = { horizontal: 'left', vertical: 'middle' };
         });
 
-        // Cột tổng than
-        const totalThanCol = coalEnd + 1;
-        sheet.mergeCells(1, totalThanCol, 2, totalThanCol);
-        sheet.getCell(1, totalThanCol).value = 'TỔNG CHUYẾN THAN';
+        // HÀNG 2: Tiêu đề bảng
+        sheet.mergeCells(2, 1, 2, totalCols);
+        const header2 = sheet.getCell('A2');
+        header2.value = `BÁO CÁO CHUYẾN: ${day ? dayjs(day).format('DD/MM/YYYY') : ''}`; // Đã sửa từ 'date' sang 'day'
+        header2.font = { bold: true, size: 14 };
+        header2.alignment = center;
 
-        // Tổng hợp chuyến
-        const grandCol = totalThanCol + 1;
-        sheet.mergeCells(1, grandCol, 2, grandCol);
-        sheet.getCell(1, grandCol).value = 'TỔNG HỢP CHUYẾN';
 
-        // === 4️⃣ Ghi dữ liệu theo Ca ===
-        let currentRow = 3;
-        const totalCols = grandCol;
+        // HÀNG 4: Người báo cáo
+        sheet.mergeCells(3, 1, 3, totalCols);
+        const header3 = sheet.getCell('A3');
+        header3.value = `Họ tên người báo cáo: ${user?.fullName || ''}`;
+        header3.font = { bold: true, size: 10 };
+        header3.alignment = center;
 
-        finalResult?.shifts.forEach(shift => {
+
+        // HÀNG 3: Phân Xưởng
+        sheet.mergeCells(4, 1, 4, totalCols);
+        const header4 = sheet.getCell('A4');
+        header4.value = `PHÂN XƯỞNG VẬN TẢI: ${dep?.code || ''}`;
+        header4.font = { bold: true, size: 12 };
+        sheet.getRow(4).eachCell((cell) => {
+            cell.alignment = { horizontal: 'left', vertical: 'middle' };
+        });
+
+        // Dòng 5 sẽ trống để làm dải phân cách
+
+        // --- MAIN TABLE HEADERS (ROWS 6 & 7) ---
+
+        // CA (Hàng 6 & 7, Cột 1)
+        sheet.mergeCells('A6', 'A7');
+        sheet.getCell('A6').value = 'CA';
+        sheet.getCell('A6').alignment = center;
+
+        // SỐ XE (Hàng 6 & 7, Cột 2)
+        sheet.mergeCells('B6', 'B7');
+        sheet.getCell('B6').value = 'SỐ XE';
+        sheet.getCell('B6').alignment = center;
+
+        // --- NHÓM ĐẤT ---
+        sheet.mergeCells(6, landStart, 6, totalDatCol); // Merge đến totalDatCol
+        sheet.getCell(6, landStart).value = 'ĐẤT, SPNT, BÙN ĐẶC, BÙN LOÃNG...';
+        sheet.getCell(6, landStart).alignment = center;
+
+        // Header con ĐẤT (Hàng 7)
+        if (uniqueHeadersDat.length > 0) {
+            uniqueHeadersDat.forEach((h, i) => {
+                const col = landStart + i;
+                sheet.getCell(7, col).value = `Máy xúc: ${h.excavator}\nNơi đổ: ${h.toLocation}`; // Đã sửa từ Hàng 2 -> Hàng 7
+                sheet.getCell(7, col).alignment = { wrapText: true, vertical: 'middle', horizontal: 'center' };
+            });
+        } else {
+            sheet.getCell(7, landStart).value = '-'; // Đã sửa từ Hàng 2 -> Hàng 7
+            sheet.getCell(7, landStart).alignment = center;
+        }
+
+        // TỔNG CHUYẾN ĐẤT (Hàng 7)
+        sheet.getCell(7, totalDatCol).value = 'TỔNG CHUYẾN ĐẤT'; // Đã sửa từ Hàng 2 -> Hàng 7
+        sheet.getCell(7, totalDatCol).alignment = center;
+
+        // --- NHÓM THAN ---
+        sheet.mergeCells(6, coalStart, 6, totalThanCol); // Merge đến totalThanCol
+        sheet.getCell(6, coalStart).value = 'THAN';
+        sheet.getCell(6, coalStart).alignment = center;
+
+        // Header con THAN (Hàng 7)
+        if (uniqueHeadersThan.length > 0) {
+            uniqueHeadersThan.forEach((h, i) => {
+                const col = coalStart + i;
+                sheet.getCell(7, col).value = `Máy xúc: ${h.excavator}\nNơi đổ: ${h.toLocation}`; // Đã sửa từ Hàng 7
+                sheet.getCell(7, col).alignment = { wrapText: true, vertical: 'middle', horizontal: 'center' };
+            });
+        } else {
+            sheet.getCell(7, coalStart).value = '-'; // Đã sửa từ Hàng 7
+            sheet.getCell(7, coalStart).alignment = center;
+        }
+
+        // TỔNG CHUYẾN THAN (Hàng 7)
+        sheet.getCell(7, totalThanCol).value = 'TỔNG CHUYẾN THAN'; // Đã sửa từ Hàng 7
+        sheet.getCell(7, totalThanCol).alignment = center;
+
+        // --- TỔNG HỢP CHUYẾN (merge 2 hàng) ---
+        sheet.mergeCells(6, grandCol, 7, grandCol);
+        sheet.getCell(6, grandCol).value = 'TỔNG HỢP CHUYẾN';
+        sheet.getCell(6, grandCol).alignment = center;
+
+
+        // BẮT ĐẦU: Logic Bolding chọn lọc cho Header (Hàng 6 và 7)
+
+        // 1. Áp dụng Bolding cho các tiêu đề chính/tổng
+        sheet.getCell('A6').font = { bold: true }; // CA
+        sheet.getCell('B6').font = { bold: true }; // SỐ XE
+        sheet.getCell(6, landStart).font = { bold: true }; // ĐẤT, SPNT...
+        sheet.getCell(7, totalDatCol).font = { bold: true }; // TỔNG CHUYẾN ĐẤT
+        sheet.getCell(6, coalStart).font = { bold: true }; // THAN
+        sheet.getCell(7, totalThanCol).font = { bold: true }; // TỔNG CHUYẾN THAN
+        sheet.getCell(6, grandCol).font = { bold: true }; // TỔNG HỢP CHUYẾN
+
+        // === 4️⃣ DỮ LIỆU THEO CA ===
+        let currentRow = 8; // Dữ liệu bắt đầu từ hàng 8
+
+        finalResult.shifts.forEach(shift => {
+            const startRow = currentRow; // Ghi nhớ dòng bắt đầu của ca
             const shiftLabel = `CA ${shift.shiftName}`;
+
             if (shift.cars.length === 0) {
                 // Không có xe
-                sheet.getCell(currentRow, 1).value = shiftLabel;
                 sheet.getCell(currentRow, 2).value = 'Không có xe';
                 for (let i = 3; i <= totalCols; i++) sheet.getCell(currentRow, i).value = 0;
                 currentRow++;
             } else {
-                sheet.getCell(currentRow, 1).value = shiftLabel;
-                currentRow++;
+                // Có xe
                 for (const car of shift.cars) {
                     sheet.getCell(currentRow, 2).value = car.carCode;
 
-                    // Đất chi tiết
+                    // Đất
                     uniqueHeadersDat.forEach((h, i) => {
                         const val = car.datDetailsMap[h.key]?.trips || 0;
                         sheet.getCell(currentRow, landStart + i).value = val;
                     });
                     sheet.getCell(currentRow, totalDatCol).value = car.totalDat;
 
-                    // Than chi tiết
+                    // Than
                     uniqueHeadersThan.forEach((h, i) => {
                         const val = car.thanDetailsMap[h.key]?.trips || 0;
                         sheet.getCell(currentRow, coalStart + i).value = val;
                     });
                     sheet.getCell(currentRow, totalThanCol).value = car.totalThan;
                     sheet.getCell(currentRow, grandCol).value = car.totalCarTrips;
+
                     currentRow++;
                 }
             }
 
-            // Tổng ca
+            // --- TỔNG CA ---
             sheet.getCell(currentRow, 2).value = `Tổng ca ${shift.shiftName}`;
             sheet.getCell(currentRow, totalDatCol).value = shift.cars.reduce((a, b) => a + b.totalDat, 0);
             sheet.getCell(currentRow, totalThanCol).value = shift.cars.reduce((a, b) => a + b.totalThan, 0);
             sheet.getCell(currentRow, grandCol).value = shift.totalTripsInShift;
+
             sheet.getRow(currentRow).eachCell(c => {
-                c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'D9D9D9' } };
                 c.font = { bold: true };
             });
+
+            const endRow = currentRow; // Dòng cuối của ca này
+            sheet.mergeCells(startRow, 1, endRow, 1); // merge cột CA
+            sheet.getCell(startRow, 1).value = shiftLabel;
+            sheet.getCell(startRow, 1).alignment = { vertical: 'middle', horizontal: 'center' };
+            sheet.getCell(startRow, 1).font = { bold: true }; // BOLD CA LABEL
+
             currentRow++;
         });
 
-        // Tổng cả ngày
-        sheet.getCell(currentRow, 1).value = 'TỔNG CẢ NGÀY';
-        sheet.mergeCells(currentRow, 1, currentRow, 2);
-        sheet.getCell(currentRow, totalDatCol).value = finalResult?.grandTotal.grandTotalDat;
-        sheet.getCell(currentRow, totalThanCol).value = finalResult?.grandTotal.grandTotalThan;
-        sheet.getCell(currentRow, grandCol).value = finalResult?.grandTotal.grandTotalAll;
-        sheet.getRow(currentRow).eachCell(c => {
-            c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'A6A6A6' } };
-            c.font = { bold: true, color: { argb: 'FFFFFF' } };
-        });
 
-        // === 5️⃣ Kẻ khung, căn chỉnh ===
+        // --- TỔNG CẢ NGÀY ---
+        sheet.mergeCells(currentRow, 1, currentRow, 2);
+        sheet.getCell(currentRow, 1).value = 'TỔNG CẢ NGÀY';
+        sheet.getCell(currentRow, totalDatCol).value = finalResult.grandTotal.grandTotalDat;
+        sheet.getCell(currentRow, totalThanCol).value = finalResult.grandTotal.grandTotalThan;
+        sheet.getCell(currentRow, grandCol).value = finalResult.grandTotal.grandTotalAll;
+        sheet.getRow(currentRow).eachCell(c => {
+            c.font = { bold: true };
+        });
+        currentRow++;
+
+        // === 5️⃣ KẺ KHUNG ===
+        addTableBorders(sheet, 6, currentRow - 1, 1, totalCols); // Kẻ khung từ hàng 1 đến hết
+
+        currentRow += 1; // để cách ra 1 dòng trắng
+
+        // Khối Người lập (bên trái)
+        const leftCol = 2; // Bắt đầu từ cột 2
+        const leftEnd = leftCol + 1; // Kết thúc ở cột 4 (3 cột)
+
+        sheet.mergeCells(currentRow, leftCol, currentRow, leftEnd);
+        sheet.getCell(currentRow, leftCol).value = 'Người lập';
+        sheet.getCell(currentRow, leftCol).font = { bold: true };
+        sheet.getCell(currentRow, leftCol).alignment = { horizontal: 'center', vertical: 'middle' };
+
+        sheet.mergeCells(currentRow + 1, leftCol, currentRow + 1, leftEnd);
+        sheet.getCell(currentRow + 1, leftCol).value = '(Ký, ghi rõ họ tên)';
+        sheet.getCell(currentRow + 1, leftCol).font = { italic: true, size: 11 };
+        sheet.getCell(currentRow + 1, leftCol).alignment = { horizontal: 'center', vertical: 'middle' };
+
+        if (signature) {
+            const response = await axios.get(signature, { responseType: 'arraybuffer' });
+            const extension = response.headers['content-type'].split('/')[1];
+            const imageBuffer = Buffer.from(response.data, 'binary');
+
+            const imageId = workbook.addImage({
+                buffer: imageBuffer,
+                extension
+            });
+
+            sheet.mergeCells(currentRow + 2, leftCol, currentRow + 4, leftEnd);
+
+            // gán ảnh trực tiếp vào range
+            sheet.addImage(imageId, {
+                tl: { col: leftCol, row: currentRow + 1.2 }, // vị trí góc trên trái
+                ext: { width: 120, height: 50 },              // kích thước ảnh (px)
+            });
+        }
+
+
+        // === Quản đốc (bên phải) - ĐÃ SỬA LỖI MERGE ===
+        // SỬA: Đảm bảo Quản Đốc cũng rộng 4 cột (như Người lập) và căn sát vào cột cuối của bảng (totalCols)
+        const rightEnd = totalCols;
+        const rightStart = totalCols - 2; // 4 cột: totalCols - 3, totalCols - 2, totalCols - 1, totalCols
+
+        sheet.mergeCells(currentRow, rightStart, currentRow, rightEnd);
+        sheet.getCell(currentRow, rightStart).value = 'Quản Đốc';
+        sheet.getCell(currentRow, rightStart).font = { bold: true };
+        sheet.getCell(currentRow, rightStart).alignment = { horizontal: 'center', vertical: 'middle' };
+
+        sheet.mergeCells(currentRow + 1, rightStart, currentRow + 1, rightEnd);
+        sheet.getCell(currentRow + 1, rightStart).value = '(Ký, ghi rõ họ tên)';
+        sheet.getCell(currentRow + 1, rightStart).font = { italic: true, size: 11 };
+        sheet.getCell(currentRow + 1, rightStart).alignment = { horizontal: 'center', vertical: 'middle' };
+
+        sheet.pageSetup = {
+            paperSize: 9, // A4
+            orientation: 'landscape', // ngang
+            fitToPage: true,
+            fitToWidth: 1, // vừa 1 trang theo chiều ngang
+            fitToHeight: 0, // không ép theo chiều dọc
+            margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } // inch
+        };
         sheet.eachRow((row, rowNumber) => {
-            row.eachCell(cell => {
-                cell.border = border;
-                if (rowNumber <= 2) {
-                    cell.font = { bold: true };
-                    cell.alignment = { ...center, wrapText: true };
-                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'EDEDED' } };
+            row.eachCell((cell) => {
+                if (!cell.font) cell.font = {};
+                cell.font = {
+                    ...cell.font, // giữ lại các thuộc tính khác (bold, italic,…)
+                    name: 'Times New Roman', // đổi font chữ
+                    // Cập nhật kích thước chữ cho khối tiêu đề mới
+                    ...(rowNumber >= 6 ?? { size: 11 } // Dữ liệu/Header bảng
+                    ),
+                };
+                if (rowNumber <= 4) return;
+                // Logic căn chỉnh
+                if (rowNumber > 4 && rowNumber <= 7) {
+                    // Căn giữa toàn bộ header bảng (hàng 6-7)
+                    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
                 } else {
-                    cell.alignment = center;
+                    // Dữ liệu (hàng 8 trở đi)
+                    if (cell.col === 1) {
+                        // Cột CA và SỐ XE (cột 1 & 2) - Căn giữa
+                        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                    } else if (cell.col === 2) {
+                        cell.alignment = { horizontal: 'left', vertical: 'middle' };
+                    } else if (cell.col >= 3) {
+                        // Cột số liệu (cột 3 trở đi) - Căn giữa
+                        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                    }
                 }
             });
         });
+        const fixedCols = {
+            1: 7, // CA
+            2: 15, // SỐ XE
+            [totalCols]: 12, // TỔNG HỢP CHUYẾN
+            [totalThanCol]: 12,  // ✅ TỔNG CHUYẾN THAN
+            [totalDatCol]: 12// ✅ TỔNG CHUYẾN ĐẤT
+        };
 
-        // Auto width
-        sheet.columns.forEach(col => {
-            col.width = 16;
-        });
+        // Giả sử muốn tổng width ~150
+        const totalTargetWidth = 150;
+
+        // Tính tổng width đã fix
+        const fixedWidthSum = Object.values(fixedCols).reduce((a, b) => a + b, 0);
+
+        // Còn lại chia đều cho các cột giữa
+        const dynamicCols = totalCols - Object.keys(fixedCols).length;
+        const dynamicWidth = Math.max(10, (totalTargetWidth - fixedWidthSum) / dynamicCols);
+
+        // Áp dụng width
+        for (let i = 1; i <= totalCols; i++) {
+            if (fixedCols[i]) {
+                sheet.getColumn(i).width = fixedCols[i];
+            } else {
+                sheet.getColumn(i).width = dynamicWidth;
+            }
+        }
 
         // === 6️⃣ Trả file về client ===
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', `attachment; filename=BaoCaoChuyenXe_${startDate}.xlsx`);
+        res.setHeader('Content-Disposition', `attachment; filename=BaoCaoChuyenXe_${day}.xlsx`);
         await workbook.xlsx.write(res);
         res.end();
     } catch (err) {

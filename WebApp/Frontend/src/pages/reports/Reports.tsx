@@ -39,6 +39,7 @@ function Reports() {
     const [startDate, setStartDate] = useState<dayjs.Dayjs | null>(null);
     const [endDate, setEndDate] = useState<dayjs.Dayjs | null>(null);
     const [date, setDate] = useState<dayjs.Dayjs | null>(null);
+    const [day, setDay] = useState<dayjs.Dayjs | null>(null);
     const [title, setTitle] = useState("");
     const [shift, setShift] = useState<Shift[]>([]);
     const [department, setDepartment] = useState<Department | null>(null);
@@ -97,7 +98,7 @@ function Reports() {
         { name: ReportEnum.SHIFT_SUMMARY_DRILL },
         { name: ReportEnum.SHIFT_SUMMARY_EXCAVATOR },
         { name: ReportEnum.SHIFT_SUMMARY_CAR },
-        // { name: ReportEnum.DATE_TRIP_CAR },
+        { name: ReportEnum.DATE_TRIP_CAR },
     ];
     const reportsMap: Record<ReportEnum, { viewUrl: string, exportUrl: string, PreviewComponent: React.ComponentType<any> }> = {
         [ReportEnum.INACTIVE_VEHICLES]: {
@@ -174,9 +175,10 @@ function Reports() {
     const reportView = useMutation({
         mutationFn: () => {
             if (!config) throw new Error('Chưa chọn loại báo cáo');
-            if ((!startDate || !endDate) && title !== ReportEnum.TIMESHEET) throw new Error('Chọn thời gian bắt đầu và kết thúc');
-            if (shift.length === 0 && title !== ReportEnum.TIMESHEET) throw new Error('Chọn ca làm việc');
+            if ((!startDate || !endDate) && title !== ReportEnum.TIMESHEET && title !== ReportEnum.DATE_TRIP_CAR) throw new Error('Chọn thời gian bắt đầu và kết thúc');
+            if (shift.length === 0 && title !== ReportEnum.TIMESHEET && title !== ReportEnum.DATE_TRIP_CAR) throw new Error('Chọn ca làm việc');
             if (title === ReportEnum.TIMESHEET && !date) throw new Error('Chọn tháng');
+            if (title === ReportEnum.DATE_TRIP_CAR && !day) throw new Error('Chọn ngày');
             return api.post(config.viewUrl, {
                 startDate: startDate?.format('YYYY-MM-DD') || '',
                 endDate: endDate?.format('YYYY-MM-DD') || '',
@@ -184,7 +186,8 @@ function Reports() {
                 title,
                 signature: signatureUrl || null,
                 department: department?._id || '',
-                date: date ? date.format('MM/YYYY') : ''
+                date: date ? date.format('MM/YYYY') : '',
+                day: day?.format('YYYY-MM-DD') || '',
             }).then(res => {
                 setData(res.data.data);
                 setMaxTrip(res.data.maxTrips)
@@ -202,9 +205,10 @@ function Reports() {
     const reportExcel = useMutation({
         mutationFn: () => {
             if (!config) throw new Error('Chưa chọn loại báo cáo');
-            if ((!startDate || !endDate) && title !== ReportEnum.TIMESHEET) throw new Error('Chọn thời gian bắt đầu và kết thúc');
-            if (shift.length === 0 && title !== ReportEnum.TIMESHEET) throw new Error('Chọn ca làm việc');
+            if ((!startDate || !endDate) && title !== ReportEnum.TIMESHEET && title !== ReportEnum.DATE_TRIP_CAR) throw new Error('Chọn thời gian bắt đầu và kết thúc');
+            if (shift.length === 0 && title !== ReportEnum.TIMESHEET && title !== ReportEnum.DATE_TRIP_CAR) throw new Error('Chọn ca làm việc');
             if (title === ReportEnum.TIMESHEET && !date) throw new Error('Chọn tháng');
+            if (title === ReportEnum.DATE_TRIP_CAR && !day) throw new Error('Chọn ngày');
             return api.post(config.exportUrl, {
                 startDate: startDate?.format('YYYY-MM-DD') || '',
                 endDate: endDate?.format('YYYY-MM-DD') || '',
@@ -212,7 +216,8 @@ function Reports() {
                 title,
                 signature: signatureUrl || null,
                 department,
-                date: date ? date.format('MM/YYYY') : ''
+                date: date ? date.format('MM/YYYY') : '',
+                day: day?.format('YYYY-MM-DD') || '',
             }, {
                 responseType: 'blob',
                 onUploadProgress: (progressEvent) => {
@@ -300,7 +305,7 @@ function Reports() {
                         </TextField>
                     </Grid>
                     {/* Từ ngày - Thời gian bắt đầu */}
-                    {title !== ReportEnum.TIMESHEET && <Grid item xs={6}>
+                    {title !== ReportEnum.TIMESHEET && title !== ReportEnum.DATE_TRIP_CAR && <Grid item xs={6}>
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
                             <DatePicker
                                 label="Từ ngày"
@@ -318,7 +323,7 @@ function Reports() {
                         </LocalizationProvider>
                     </Grid>}
                     {/* Từ ngày - Thời gian bắt đầu */}
-                    {title !== ReportEnum.TIMESHEET && <Grid item xs={6}>
+                    {title !== ReportEnum.TIMESHEET && title !== ReportEnum.DATE_TRIP_CAR && <Grid item xs={6}>
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
                             <DatePicker
                                 label="Đến ngày"
@@ -335,7 +340,7 @@ function Reports() {
                             />
                         </LocalizationProvider>
                     </Grid>}
-                    {title !== ReportEnum.TIMESHEET && <Grid item xs={12}>
+                    {title !== ReportEnum.TIMESHEET && title !== ReportEnum.DATE_TRIP_CAR && <Grid item xs={12}>
                         <Autocomplete
                             multiple
                             fullWidth
@@ -360,10 +365,26 @@ function Reports() {
                             <DatePicker
                                 label="Chọn tháng"
                                 inputFormat="MM/YYYY" // v5 vẫn hỗ trợ
-                                views={['year', 'month']}
                                 openTo="month"
                                 value={date ? dayjs(date) : null}
                                 onChange={(value) => setDate(value)}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        fullWidth
+                                        size="small"
+                                    />
+                                )}
+                            />
+                        </LocalizationProvider>
+                    </Grid>}
+                    {title === ReportEnum.DATE_TRIP_CAR && <Grid item xs={12}>
+                        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="vi">
+                            <DatePicker
+                                label="Chọn ngày"
+                                inputFormat="DD/MM/YYYY" // v5 vẫn hỗ trợ
+                                value={day ? dayjs(day) : null}
+                                onChange={(value) => setDay(value)}
                                 renderInput={(params) => (
                                     <TextField
                                         {...params}
@@ -434,7 +455,7 @@ function Reports() {
                         </Grid>
                     )}
                     <Grid item xs={12}>
-                        {preview && PreviewComponent ? <PreviewComponent data={data} signatureUrl={signatureUrl} maxTrip={maxTrip} materials={materials} startDate={startDate} endDate={endDate} shifts={shift} department={department} date={date} /> : null}
+                        {preview && PreviewComponent ? <PreviewComponent data={data} signatureUrl={signatureUrl} maxTrip={maxTrip} materials={materials} startDate={startDate} endDate={endDate} shifts={shift} department={department} date={date} day={day} /> : null}
                         {signatureUrl && !preview && (
                             <Box mt={2} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                                 <img src={signatureUrl} alt="Chữ ký" style={{ maxWidth: 200, maxHeight: 100 }} />
