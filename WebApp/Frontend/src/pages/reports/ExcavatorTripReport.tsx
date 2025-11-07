@@ -41,7 +41,7 @@ export default function ExcavatorTripReport({
         <Grid item xs={12}>
             <Paper sx={{ p: 1 }}>
                 <i style={{ fontSize: 20 }}>CÔNG TY CỔ PHẦN THAN CAO SƠN-TKV</i>
-                <Typography textAlign={'center'} mb={2} variant='h3' fontWeight={'bold'}>Báo cáo số chuyến của máy xúc</Typography>
+                <Typography textAlign={'center'} mb={2} variant='h3' fontWeight={'bold'}>Biểu chấm chuyến máy xúc</Typography>
                 <Typography>Đơn vị: {department ? department.code : user?.department?.code}</Typography>
                 <Typography>Từ ngày: {startDate?.format('DD-MM-YYYY')}</Typography>
                 <Typography>Đến ngày: {endDate?.format('DD-MM-YYYY')}</Typography>

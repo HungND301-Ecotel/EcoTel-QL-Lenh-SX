@@ -48,8 +48,8 @@ export enum DeviceTypeEnum {
 
 export enum ReportEnum {
     INACTIVE_VEHICLES = 'Xe không hoạt động',
-    EXCAVATOR_TRIP_LIST = 'Danh sách chuyến máy xúc',
-    CAR_TRIP_LIST = 'Danh sách chuyến ô tô',
+    EXCAVATOR_TRIP_LIST = 'Biểu chấm chuyến máy xúc',
+    CAR_TRIP_LIST = 'Biểu chấm chuyến xe',
     WORK_REPORT_SLIP = 'Phiếu báo công',
     TIMESHEET = 'Bảng chấm công',
     MEAL_REPORT_SLIP = 'Phiếu báo ăn',
@@ -59,6 +59,7 @@ export enum ReportEnum {
     SHIFT_SUMMARY_DRILL = 'Tổng hợp số liệu trong ca (Máy khoan)',
     SHIFT_SUMMARY_EXCAVATOR = 'Tổng hợp số liệu trong ca (Máy xúc)',
     SHIFT_SUMMARY_CAR = 'Tổng hợp số liệu trong ca (Ô tô)',
+    DATE_TRIP_CAR = 'Báo cáo chuyến xe theo ngày',
     // Các báo cáo bị comment:
     // IN_KIND_ALLOWANCE_SLIP: 'Phiếu bồi dưỡng hiện vật',
     // OIL_RECEIPT_SLIP: 'Phiếu lĩnh dầu',

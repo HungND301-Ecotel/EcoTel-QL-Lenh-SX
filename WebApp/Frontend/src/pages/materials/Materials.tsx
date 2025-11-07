@@ -149,8 +149,8 @@ const Materials: React.FC = () => {
             const allHistory: HistoryTimeSlot[] = [];
             const seen = new Set();
 
-            materials.forEach((material: any) => {
-                material.valueHistory?.forEach((h: any) => {
+            materials.forEach((m: any) => {
+                m.valueHistory?.forEach((h: any) => {
                     const key = `${h.startTime}-${h.endTime}`;
                     if (!seen.has(key)) {
                         seen.add(key);
@@ -165,19 +165,57 @@ const Materials: React.FC = () => {
 
             // sắp xếp giảm dần
             allHistory.sort((a, b) => {
-                // b.startTime ?? 0: Nếu b.startTime là null/undefined, dùng 0.
-                const timeB = new Date(b.startTime ?? 0).getTime();
-                const timeA = new Date(a.startTime ?? 0).getTime();
-
-                // Thực hiện phép trừ giữa hai timestamp (kiểu number)
-                return timeB - timeA;
+                const aTime = a.startTime ? a.startTime.getTime() : 0;
+                const bTime = b.startTime ? b.startTime.getTime() : 0;
+                return bTime - aTime;
             });
+
+            const normalizeTime = (slot: HistoryTimeSlot) => {
+                const start = slot.startTime ? slot.startTime.getTime() : 0;
+                let end = slot.endTime ? slot.endTime.getTime() : Infinity;
+
+                if (slot.endTime) {
+                    const endDate = new Date(end);
+                    if (endDate.getHours() === 0 && endDate.getMinutes() === 0) {
+                        end += 24 * 60 * 60 * 1000 - 1;
+                    }
+                }
+                return { start, end };
+            };
+
             setTimeSlots(allHistory);
+
             if (selectedTimeSlot === null) {
-                setSelectedTimeSlot(allHistory[0]);
+                const now = Date.now();
+                let nearest: HistoryTimeSlot | null = null;
+
+                // 1️⃣ lấy tất cả slot bao phủ now
+                const active = allHistory.filter(s => {
+                    const { start, end } = normalizeTime(s);
+                    return now >= start && now <= end;
+                });
+
+                if (active.length > 0) {
+                    // 2️⃣ chọn slot có start gần nhất
+                    nearest = active.reduce((latest, s) => {
+                        const start = s.startTime?.getTime() ?? 0;
+                        const latestStart = latest?.startTime?.getTime() ?? 0;
+                        return start > latestStart ? s : latest;
+                    });
+                } else {
+                    // 3️⃣ chọn slot gần nhất về thời gian
+                    nearest = allHistory.reduce((closest, s) => {
+                        const diff = Math.abs(now - (s.startTime?.getTime() ?? 0));
+                        const closestDiff = Math.abs(now - (closest?.startTime?.getTime() ?? 0));
+                        return diff < closestDiff ? s : closest;
+                    }, null as HistoryTimeSlot | null);
+                }
+
+                if (nearest) setSelectedTimeSlot(nearest);
             }
         }
     }, [materials, selectedTimeSlot]);
+
 
     // Hàm xử lý khi chọn một slot lịch sử
     const handleSelectSlot = (slot: HistoryTimeSlot) => {

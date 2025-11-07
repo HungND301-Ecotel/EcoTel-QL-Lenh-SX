@@ -33,6 +33,7 @@ import { ReportEnum, RoleEnum } from '../../enums';
 import { parseAxiosError } from '../../utils/handleApiError';
 import AttendanceReport from './AttendanceReport';
 import 'dayjs/locale/vi';
+import CarTripDateReport from './CarTripDateReport';
 
 function Reports() {
     const [startDate, setStartDate] = useState<dayjs.Dayjs | null>(null);
@@ -96,6 +97,7 @@ function Reports() {
         { name: ReportEnum.SHIFT_SUMMARY_DRILL },
         { name: ReportEnum.SHIFT_SUMMARY_EXCAVATOR },
         { name: ReportEnum.SHIFT_SUMMARY_CAR },
+        // { name: ReportEnum.DATE_TRIP_CAR },
     ];
     const reportsMap: Record<ReportEnum, { viewUrl: string, exportUrl: string, PreviewComponent: React.ComponentType<any> }> = {
         [ReportEnum.INACTIVE_VEHICLES]: {
@@ -157,6 +159,11 @@ function Reports() {
             viewUrl: '/exports/excavatorReport/view',
             exportUrl: '/exports/excavatorReport',
             PreviewComponent: ExcavatorReport,
+        },
+        [ReportEnum.DATE_TRIP_CAR]: {
+            viewUrl: '/exports/carTripReportByDay/view',
+            exportUrl: '/exports/carTripReportByDay',
+            PreviewComponent: CarTripDateReport,
         },
     };
 
