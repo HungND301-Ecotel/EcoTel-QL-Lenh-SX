@@ -60,6 +60,7 @@ export enum ReportEnum {
     SHIFT_SUMMARY_EXCAVATOR = 'Tổng hợp số liệu trong ca (Máy xúc)',
     SHIFT_SUMMARY_CAR = 'Tổng hợp số liệu trong ca (Ô tô)',
     DATE_TRIP_CAR = 'Báo cáo chuyến xe theo ngày',
+    DAILY_PRODUCTION_REPORT = 'Bản tổng hợp thống kê than, đất',
     // Các báo cáo bị comment:
     // IN_KIND_ALLOWANCE_SLIP: 'Phiếu bồi dưỡng hiện vật',
     // OIL_RECEIPT_SLIP: 'Phiếu lĩnh dầu',
