@@ -35,6 +35,8 @@ import AttendanceReport from './AttendanceReport';
 import 'dayjs/locale/vi';
 import CarTripDateReport from './CarTripDateReport';
 import ExcavatorProductReport from './ExcavatorProductReport';
+import CarProductReport from './CarProductReport';
+import CarProductivityReport from './CarProductivityReport';
 
 function Reports() {
     const [startDate, setStartDate] = useState<dayjs.Dayjs | null>(null);
@@ -100,7 +102,9 @@ function Reports() {
         { name: ReportEnum.SHIFT_SUMMARY_EXCAVATOR },
         { name: ReportEnum.SHIFT_SUMMARY_CAR },
         { name: ReportEnum.DATE_TRIP_CAR },
-        { name: ReportEnum.DAILY_PRODUCTION_REPORT },
+        { name: ReportEnum.DAILY_PRODUCTION_EXCAVATOR_REPORT },
+        { name: ReportEnum.DAILY_PRODUCTION_CAR_REPORT },
+        { name: ReportEnum.PRODUCTIVITY_CAR_REPORT },
     ];
     const reportsMap: Record<ReportEnum, { viewUrl: string, exportUrl: string, PreviewComponent: React.ComponentType<any> }> = {
         [ReportEnum.INACTIVE_VEHICLES]: {
@@ -168,10 +172,20 @@ function Reports() {
             exportUrl: '/exports/carTripReportByDay',
             PreviewComponent: CarTripDateReport,
         },
-        [ReportEnum.DAILY_PRODUCTION_REPORT]: {
+        [ReportEnum.DAILY_PRODUCTION_EXCAVATOR_REPORT]: {
             viewUrl: '/exports/excavatorProductReport/view',
             exportUrl: '/exports/excavatorProductReport',
             PreviewComponent: ExcavatorProductReport,
+        },
+        [ReportEnum.DAILY_PRODUCTION_CAR_REPORT]: {
+            viewUrl: '/exports/carProductReport/view',
+            exportUrl: '/exports/carProductReport',
+            PreviewComponent: CarProductReport,
+        },
+        [ReportEnum.PRODUCTIVITY_CAR_REPORT]: {
+            viewUrl: '/exports/carProductivityReport/view',
+            exportUrl: '/exports/carProductivityReport',
+            PreviewComponent: CarProductivityReport,
         },
     };
 
@@ -182,10 +196,10 @@ function Reports() {
     const reportView = useMutation({
         mutationFn: () => {
             if (!config) throw new Error('Chưa chọn loại báo cáo');
-            if ((!startDate || !endDate) && ![ReportEnum.TIMESHEET, ReportEnum.DATE_TRIP_CAR, ReportEnum.DAILY_PRODUCTION_REPORT].includes(title as ReportEnum)) throw new Error('Chọn thời gian bắt đầu và kết thúc');
-            if (shift.length === 0 && ![ReportEnum.TIMESHEET, ReportEnum.DATE_TRIP_CAR, ReportEnum.DAILY_PRODUCTION_REPORT].includes(title as ReportEnum)) throw new Error('Chọn ca làm việc');
-            if (title === ReportEnum.TIMESHEET && !date) throw new Error('Chọn tháng');
-            if ([ReportEnum.DATE_TRIP_CAR, ReportEnum.DAILY_PRODUCTION_REPORT].includes(title as ReportEnum) && !day) throw new Error('Chọn ngày');
+            if ((!startDate || !endDate) && ![ReportEnum.TIMESHEET, ReportEnum.DATE_TRIP_CAR, ReportEnum.DAILY_PRODUCTION_EXCAVATOR_REPORT, ReportEnum.DAILY_PRODUCTION_CAR_REPORT, ReportEnum.PRODUCTIVITY_CAR_REPORT].includes(title as ReportEnum)) throw new Error('Chọn thời gian bắt đầu và kết thúc');
+            if (shift.length === 0 && ![ReportEnum.TIMESHEET, ReportEnum.DATE_TRIP_CAR, ReportEnum.DAILY_PRODUCTION_EXCAVATOR_REPORT, ReportEnum.DAILY_PRODUCTION_CAR_REPORT, ReportEnum.PRODUCTIVITY_CAR_REPORT].includes(title as ReportEnum)) throw new Error('Chọn ca làm việc');
+            if ([ReportEnum.PRODUCTIVITY_CAR_REPORT, ReportEnum.TIMESHEET].includes(title as ReportEnum) && !date) throw new Error('Chọn tháng');
+            if ([ReportEnum.DATE_TRIP_CAR, ReportEnum.DAILY_PRODUCTION_EXCAVATOR_REPORT, ReportEnum.DAILY_PRODUCTION_CAR_REPORT].includes(title as ReportEnum) && !day) throw new Error('Chọn ngày');
             return api.post(config.viewUrl, {
                 startDate: startDate?.format('YYYY-MM-DD') || '',
                 endDate: endDate?.format('YYYY-MM-DD') || '',
@@ -212,10 +226,10 @@ function Reports() {
     const reportExcel = useMutation({
         mutationFn: () => {
             if (!config) throw new Error('Chưa chọn loại báo cáo');
-            if ((!startDate || !endDate) && ![ReportEnum.TIMESHEET, ReportEnum.DATE_TRIP_CAR, ReportEnum.DAILY_PRODUCTION_REPORT].includes(title as ReportEnum)) throw new Error('Chọn thời gian bắt đầu và kết thúc');
-            if (shift.length === 0 && ![ReportEnum.TIMESHEET, ReportEnum.DATE_TRIP_CAR, ReportEnum.DAILY_PRODUCTION_REPORT].includes(title as ReportEnum)) throw new Error('Chọn ca làm việc');
-            if (title === ReportEnum.TIMESHEET && !date) throw new Error('Chọn tháng');
-            if ([ReportEnum.DATE_TRIP_CAR, ReportEnum.DAILY_PRODUCTION_REPORT].includes(title as ReportEnum) && !day) throw new Error('Chọn ngày');
+            if ((!startDate || !endDate) && ![ReportEnum.TIMESHEET, ReportEnum.DATE_TRIP_CAR, ReportEnum.DAILY_PRODUCTION_EXCAVATOR_REPORT, ReportEnum.DAILY_PRODUCTION_CAR_REPORT, ReportEnum.PRODUCTIVITY_CAR_REPORT].includes(title as ReportEnum)) throw new Error('Chọn thời gian bắt đầu và kết thúc');
+            if (shift.length === 0 && ![ReportEnum.TIMESHEET, ReportEnum.DATE_TRIP_CAR, ReportEnum.DAILY_PRODUCTION_EXCAVATOR_REPORT, ReportEnum.DAILY_PRODUCTION_CAR_REPORT, ReportEnum.PRODUCTIVITY_CAR_REPORT].includes(title as ReportEnum)) throw new Error('Chọn ca làm việc');
+            if ([ReportEnum.PRODUCTIVITY_CAR_REPORT, ReportEnum.TIMESHEET].includes(title as ReportEnum) && !date) throw new Error('Chọn tháng');
+            if ([ReportEnum.DATE_TRIP_CAR, ReportEnum.DAILY_PRODUCTION_EXCAVATOR_REPORT, ReportEnum.DAILY_PRODUCTION_CAR_REPORT].includes(title as ReportEnum) && !day) throw new Error('Chọn ngày');
             return api.post(config.exportUrl, {
                 startDate: startDate?.format('YYYY-MM-DD') || '',
                 endDate: endDate?.format('YYYY-MM-DD') || '',
@@ -312,7 +326,7 @@ function Reports() {
                         </TextField>
                     </Grid>
                     {/* Từ ngày - Thời gian bắt đầu */}
-                    {![ReportEnum.DAILY_PRODUCTION_REPORT, ReportEnum.DATE_TRIP_CAR, ReportEnum.TIMESHEET].includes(title as ReportEnum) && <Grid item xs={6}>
+                    {![ReportEnum.DAILY_PRODUCTION_EXCAVATOR_REPORT, ReportEnum.DATE_TRIP_CAR, ReportEnum.TIMESHEET, ReportEnum.DAILY_PRODUCTION_CAR_REPORT, ReportEnum.PRODUCTIVITY_CAR_REPORT].includes(title as ReportEnum) && <Grid item xs={6}>
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
                             <DatePicker
                                 label="Từ ngày"
@@ -330,7 +344,7 @@ function Reports() {
                         </LocalizationProvider>
                     </Grid>}
                     {/* Từ ngày - Thời gian bắt đầu */}
-                    {![ReportEnum.DAILY_PRODUCTION_REPORT, ReportEnum.DATE_TRIP_CAR, ReportEnum.TIMESHEET].includes(title as ReportEnum) && <Grid item xs={6}>
+                    {![ReportEnum.DAILY_PRODUCTION_EXCAVATOR_REPORT, ReportEnum.DATE_TRIP_CAR, ReportEnum.TIMESHEET, ReportEnum.DAILY_PRODUCTION_CAR_REPORT, ReportEnum.PRODUCTIVITY_CAR_REPORT].includes(title as ReportEnum) && <Grid item xs={6}>
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
                             <DatePicker
                                 label="Đến ngày"
@@ -347,7 +361,7 @@ function Reports() {
                             />
                         </LocalizationProvider>
                     </Grid>}
-                    {![ReportEnum.DAILY_PRODUCTION_REPORT, ReportEnum.DATE_TRIP_CAR, ReportEnum.TIMESHEET].includes(title as ReportEnum) && <Grid item xs={12}>
+                    {![ReportEnum.DAILY_PRODUCTION_EXCAVATOR_REPORT, ReportEnum.DATE_TRIP_CAR, ReportEnum.TIMESHEET, ReportEnum.DAILY_PRODUCTION_CAR_REPORT, ReportEnum.PRODUCTIVITY_CAR_REPORT].includes(title as ReportEnum) && <Grid item xs={12}>
                         <Autocomplete
                             multiple
                             fullWidth
@@ -367,11 +381,12 @@ function Reports() {
                             )}
                         />
                     </Grid>}
-                    {[ReportEnum.TIMESHEET].includes(title as ReportEnum) && <Grid item xs={12}>
+                    {[ReportEnum.TIMESHEET, ReportEnum.PRODUCTIVITY_CAR_REPORT].includes(title as ReportEnum) && <Grid item xs={12}>
                         <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="vi">
                             <DatePicker
                                 label="Chọn tháng"
                                 inputFormat="MM/YYYY" // v5 vẫn hỗ trợ
+                                views={['year', 'month']}
                                 openTo="month"
                                 value={date ? dayjs(date) : null}
                                 onChange={(value) => setDate(value)}
@@ -385,7 +400,7 @@ function Reports() {
                             />
                         </LocalizationProvider>
                     </Grid>}
-                    {[ReportEnum.DATE_TRIP_CAR, ReportEnum.DAILY_PRODUCTION_REPORT].includes(title as ReportEnum) && <Grid item xs={12}>
+                    {[ReportEnum.DATE_TRIP_CAR, ReportEnum.DAILY_PRODUCTION_EXCAVATOR_REPORT, ReportEnum.DAILY_PRODUCTION_CAR_REPORT].includes(title as ReportEnum) && <Grid item xs={12}>
                         <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="vi">
                             <DatePicker
                                 label="Chọn ngày"

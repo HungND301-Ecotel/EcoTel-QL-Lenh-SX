@@ -9,7 +9,7 @@ const { ROLE, JOB_TYPE } = require('../config/config');
 
 // cron
 
-cron.schedule('20 17 * * *', async () => {
+cron.schedule('20 14 * * *', async () => {
     console.log('Bắt đầu tiến hành tính sản lượng...')
 
     try {
@@ -29,7 +29,10 @@ cron.schedule('20 17 * * *', async () => {
                 else if (order.job?.type === JOB_TYPE.VAN_HANH_XE) {
                     // Gọi hàm tính toán ASYNC, việc này sẽ chạy song song
                     // với các report khác trong cùng một Order
-                    totalProduction = await production_van_hanh_xe(report);
+                    const value = await production_van_hanh_xe(report);
+                    totalProduction = value.production
+                    totalCubicMeter = value.cubicMeter
+                    totalTon = value.ton
                 } else if (order.job?.type === JOB_TYPE.VAN_HANH_XUC) {
                     // Gọi hàm tính toán ASYNC, việc này sẽ chạy song song
                     // với các report khác trong cùng một Order
@@ -198,7 +201,7 @@ async function production_van_hanh_xe(t) {
     // 2. TÍNH TOÁN KHỐI LƯỢNG VÀ TẤN
     const value = await caculatorWeight(t.material?._id, t.device?.material, t.quantity, totalDistance, t.workingDate);
 
-    return value.production
+    return value
 }
 async function production_van_hanh_xuc(t) {
 
