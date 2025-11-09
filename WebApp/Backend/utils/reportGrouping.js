@@ -128,7 +128,7 @@ async function groupTripsVehicleProductivity(trips) {
         const carCode = t.device?.code || "Không rõ xe";
         const productType = t.material?.acceptedProduct; // LAND / COAL
         const workingDate = dayjs(t.workingDate).format("YYYY-MM-DD");
-        const shift = t.shift?.name || "1";
+        const shift = t.shift?.name || 1;
         const key = `${carCode}_${workingDate}_${shift}`;
 
         // Lấy sản lượng TKM (t.totalProduction)
@@ -198,7 +198,7 @@ async function groupTripsVehicleProductivity(trips) {
             // 1. Sắp xếp chính: workingDate (chuỗi YYYY-MM-DD so sánh được)
             const dateComparison = a.workingDate.localeCompare(b.workingDate);
             if (dateComparison !== 0) return dateComparison;
-            return a.shift.localeCompare(b.shift);
+            return (a.shift || 0) - (b.shift || 0);
         }),
     }));
 }
