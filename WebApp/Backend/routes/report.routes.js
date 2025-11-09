@@ -261,7 +261,10 @@ async function caculate(report) {
     }
     const jobType = order.job?.type;
     if (jobType === JOB_TYPE.VAN_HANH_XE) {
-        totalProduction = await production_van_hanh_xe(report);
+        const value = await production_van_hanh_xe(report);
+        totalProduction = value.production
+        totalCubicMeter = value.cubicMeter
+        totalTon = value.ton
     } else if (jobType === JOB_TYPE.VAN_HANH_XUC) {
         const value = await production_van_hanh_xuc(report);
         totalCubicMeter = value.cubicMeter;
