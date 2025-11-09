@@ -78,7 +78,7 @@ async function groupTripsVehicle(trips, date, shift) {
 
 // san luong tkm
 async function groupTripsVehicleProduction(trips) {
-    return Promise.all(
+    const enrichedTrips = await Promise.all(
         trips.map(t =>
             limit(async () => {
                 const travelLog = await safeQuery(() =>
@@ -90,26 +90,11 @@ async function groupTripsVehicleProduction(trips) {
                     }).lean()
                 );
 
-                let totalDistance = 0;
-
-                const distance = travelLog ? travelLog.fullDistanceKm || 0 : 0;
-                totalDistance = distance * (Array.isArray(t.quantityUpdateTimes) ? t.quantityUpdateTimes.length : 1);
-
-                // const value = await safeQuery(() =>
-                //     caculatorWeight(
-                //         t.material?._id,
-                //         t.device?.material,
-                //         t.quantity,
-                //         totalDistance,
-                //         t.workingDate
-                //     )
-                // );
-
                 return {
                     device: t.device, //xe
                     excavator: t.excavator, // máy xúc
                     location: t.toLocation, //đổ tải
-                    distance: distance, // cung độ
+                    distance: travelLog?.fullDistanceKm || '', // cung độ
                     excavationLevel: travelLog?.excavationLevel || '', // tầng xúc
                     fullLiftHeightM: travelLog?.fullLiftHeightM || '', // độ cao nâng tải
                     material: t.material, // vật liệu
@@ -123,6 +108,14 @@ async function groupTripsVehicleProduction(trips) {
             })
         )
     );
+    enrichedTrips.sort((a, b) => {
+        const shiftA = a.shift || 1;
+        const shiftB = b.shift || 1;
+
+        return shiftA - shiftB;
+    });
+
+    return enrichedTrips;
 }
 
 // nang suat dau xe
@@ -573,7 +566,7 @@ function getTyTrongAtDate(material, date) {
         const end = new Date(h.endTime);
 
         if (target >= start && target <= end) {
-            console.log("a",h.dryDensity)
+            console.log("a", h.dryDensity)
             return h.dryDensity ?? 0;
         }
     }

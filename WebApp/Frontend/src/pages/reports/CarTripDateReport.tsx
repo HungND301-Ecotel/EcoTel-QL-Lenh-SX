@@ -119,7 +119,7 @@ export default function CarTripReport({
     <Grid item xs={12}>
       <Paper sx={{ p: 1 }}>
         <i style={{ fontSize: 20 }}>CÔNG TY CỔ PHẦN THAN CAO SƠN-TKV</i>
-        <Typography textAlign={'center'} mb={2} variant='h3' sx={{ fontWeight: 'bold' }}>Báo cáo chuyến xe theo ngày</Typography>
+        <Typography textAlign={'center'} mb={2} variant='h3' sx={{ fontWeight: 'bold' }}>Báo cáo chuyến</Typography>
         <Typography>Đơn vị: {department ? department.code : user?.department?.code}</Typography>
         <Typography>Ngày: {day?.format('DD-MM-YYYY')}</Typography>
 
@@ -173,7 +173,7 @@ export default function CarTripReport({
                   <TableCell align='center' sx={{ minWidth: 80 }}>-</TableCell>
                 )}
 
-                <TableCell align='center' sx={{ width: 100, fontWeight: 'bold'}}>TỔNG CHUYẾN ĐẤT</TableCell>
+                <TableCell align='center' sx={{ width: 100, fontWeight: 'bold' }}>TỔNG CHUYẾN ĐẤT</TableCell>
 
                 {/* Header cho THAN */}
                 {uniqueHeadersThan.map((h: Header) => (
@@ -241,7 +241,7 @@ export default function CarTripReport({
 
                       <TableCell align='center' sx={{ fontWeight: 'bold' }}>0</TableCell>
 
-                      <TableCell align='center' sx={{ fontWeight: 'bold',}}>0</TableCell>
+                      <TableCell align='center' sx={{ fontWeight: 'bold', }}>0</TableCell>
                     </TableRow>
                   );
 
@@ -302,7 +302,7 @@ export default function CarTripReport({
                 const totalThanCa = shiftData.cars.reduce((acc, car) => acc + car.totalThan, 0);
 
                 shiftRows.push(
-                  <TableRow key={`total-${shiftName}`} sx={{ }}>
+                  <TableRow key={`total-${shiftName}`} sx={{}}>
                     {/* Cột Số Xe: Đặt thành "Tổng ca X" */}
                     <TableCell align="center" sx={{ fontWeight: 'bold' }}>
                       Tổng ca {shiftName}
@@ -346,7 +346,7 @@ export default function CarTripReport({
               })}
 
               {/* Dòng TỔNG CẢ NGÀY */}
-              <TableRow sx={{  }}>
+              <TableRow sx={{}}>
                 {/* Đảm bảo colSpan=2 */}
                 <TableCell align="center" colSpan={2} sx={{ fontWeight: 'bold' }}>
                   TỔNG CẢ NGÀY

@@ -59,7 +59,7 @@ export enum ReportEnum {
     SHIFT_SUMMARY_DRILL = 'Tổng hợp số liệu trong ca (Máy khoan)',
     SHIFT_SUMMARY_EXCAVATOR = 'Tổng hợp số liệu trong ca (Máy xúc)',
     SHIFT_SUMMARY_CAR = 'Tổng hợp số liệu trong ca (Ô tô)',
-    DATE_TRIP_CAR = 'Báo cáo chuyến xe theo ngày',
+    DATE_TRIP_CAR = 'Báo cáo chuyến',
     DAILY_PRODUCTION_EXCAVATOR_REPORT = 'Bản tổng hợp thống kê than, đất',
     DAILY_PRODUCTION_CAR_REPORT = 'Báo cáo sản lượng ngày',
     PRODUCTIVITY_CAR_REPORT = 'Báo cáo năng suất đầu xe',
