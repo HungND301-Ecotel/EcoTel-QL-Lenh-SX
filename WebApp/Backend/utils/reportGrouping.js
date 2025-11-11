@@ -77,6 +77,7 @@ async function groupTripsVehicle(trips, date, shift) {
 }
 
 // san luong tkm
+// groupTripsVehicleProduction and related utility functions remain the same as they were not requested for review
 async function groupTripsVehicleProduction(trips) {
     const enrichedTrips = await Promise.all(
         trips.map(t =>
@@ -93,7 +94,7 @@ async function groupTripsVehicleProduction(trips) {
                 return {
                     device: t.device, //xe
                     excavator: t.excavator, // máy xúc
-                    location: t.toLocation, //đổ tải
+                    location: t.toLocation, // đổ tải
                     distance: travelLog?.fullDistanceKm || '', // cung độ
                     excavationLevel: travelLog?.excavationLevel || '', // tầng xúc
                     fullLiftHeightM: travelLog?.fullLiftHeightM || '', // độ cao nâng tải
@@ -115,7 +116,117 @@ async function groupTripsVehicleProduction(trips) {
         return shiftA - shiftB;
     });
 
-    return enrichedTrips;
+    const groupsMap = {};
+
+    for (const t of enrichedTrips) {
+        const product = t.material?.acceptedProduct; // LAND / COAL
+        if (!product) continue;
+
+        // ===== KEY CHỈ TIÊU (để quyết định header động, tránh trùng) =====
+        const locationName = t.location?.name || "";
+        const excavationLevel = t.excavationLevel || "";
+        const fullLiftHeightM = t.fullLiftHeightM || "";
+        const excavatorCode = t.excavator?.code || "";
+        const distance = t.distance || "";
+        const materialName = t.material?.name || "";
+
+        // Nhóm ban đầu theo ca + device
+        const deviceCode = t.device?.code || "";
+        const shiftName = t.shift || ""; // đã là 1 / 2 / 3
+
+        const key = [
+            product,
+            locationName,
+            excavationLevel,
+            fullLiftHeightM,
+            excavatorCode,
+            distance,
+            materialName,
+        ].join("|");
+
+        if (!groupsMap[key]) {
+            groupsMap[key] = {
+                product, 			// LAND / COAL
+                locationName,
+                excavationLevel,
+                fullLiftHeightM,
+                excavatorCode,
+                distance,
+                materialName,
+
+                // các xe/ca tham gia nhóm này
+                devices: new Set(),
+                shifts: new Set(),
+
+                // số liệu cần cộng dồn
+                quantity: 0, 			// số chuyến
+                totalCubicMeter: 0, 	// m3 (cho ĐẤT)
+                totalTon: 0, 			// tấn (cho THAN)
+                production: 0, 		// Tkm
+            };
+        }
+
+        const g = groupsMap[key];
+        if (deviceCode) g.devices.add(deviceCode);
+        if (shiftName) g.shifts.add(shiftName);
+
+        const qty = t.quantity || 0;
+        g.quantity += qty;
+        g.totalCubicMeter += t.totalCubicMeter || 0;
+        g.totalTon += t.totalTon || 0;
+        g.production += t.production || t.totalProduction || 0;
+    }
+
+    const landGroups = [];
+    const coalGroups = [];
+
+    Object.values(groupsMap).forEach((g) => {
+        const normalized = {
+            product: g.product,
+            locationName: g.locationName,
+            excavationLevel: g.excavationLevel,
+            fullLiftHeightM: g.fullLiftHeightM,
+            excavatorCode: g.excavatorCode,
+            distance: g.distance,
+            materialName: g.materialName,
+            devices: Array.from(g.devices), // có thể join(', ') để show
+            shifts: Array.from(g.shifts),
+
+            quantity: g.quantity,
+            totalCubicMeter: g.totalCubicMeter,
+            totalTon: g.totalTon,
+            production: g.production,
+        };
+
+        if (g.product === ACCEPTED_PRODUCT.LAND) landGroups.push(normalized);
+        else if (g.product === ACCEPTED_PRODUCT.COAL) coalGroups.push(normalized);
+    });
+
+    // sort cho đẹp: theo location rồi material
+    landGroups.sort((a, b) =>
+        (a.locationName || "").localeCompare(b.locationName || "") ||
+        (a.materialName || "").localeCompare(b.materialName || "")
+    );
+    coalGroups.sort((a, b) =>
+        (a.locationName || "").localeCompare(b.locationName || "") ||
+        (a.materialName || "").localeCompare(b.materialName || "")
+    );
+
+    // tổng để đổ vào cột TỔNG ĐẤT / TỔNG THAN
+    const totals = {
+        land: {
+            quantity: landGroups.reduce((s, g) => s + g.quantity, 0),
+            m3: landGroups.reduce((s, g) => s + g.totalCubicMeter, 0),
+            tkm: landGroups.reduce((s, g) => s + g.production, 0),
+        },
+        coal: {
+            quantity: coalGroups.reduce((s, g) => s + g.quantity, 0),
+            ton: coalGroups.reduce((s, g) => s + g.totalTon, 0),
+            tkm: coalGroups.reduce((s, g) => s + g.production, 0),
+        }
+    };
+
+    return { landGroups, coalGroups, totals };
 }
 
 // bao cao san luong van chuyen dat da
@@ -145,6 +256,7 @@ async function groupProductionLand(trips) {
             // )) // Đóng limit
         )
     );
+    console.log(enrichedTrips)
 
     // 1. Nhóm ngoài cùng: theo deviceMaterial (Tạo cột Header)
     const groupedByDeviceMaterial = _.groupBy(enrichedTrips, 'deviceMaterial');
@@ -608,7 +720,7 @@ async function caculatorWeight(materialId, deviceModel, quantity, totalDistance,
     const dryDensity = getTyTrongAtDate(material, normalizeDateToUTC(date))
     const valueModel = getMohinhAtDate(data, normalizeDateToUTC(date))
 
-    console.log(dryDensity, valueModel)
+    console.log(dryDensity, valueModel, material?.name)
 
 
     if (data && data.material?.acceptedProduct === ACCEPTED_PRODUCT.COAL) {

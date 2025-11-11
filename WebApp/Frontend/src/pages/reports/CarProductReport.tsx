@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React from "react";
 import {
   Box,
   Grid,
@@ -13,12 +13,8 @@ import {
 } from "@mui/material";
 import dayjs from "dayjs";
 import { Department } from "../../types";
-import { AcceptedProductEnum } from "../../enums";
-import { userAtom } from "../../atoms/userAtoms";
 import { useAtom } from "jotai";
-
-const formatNumber = (num?: number) =>
-  num ? num.toFixed(2).replace(/\.00$/, "") : "";
+import { userAtom } from "../../atoms/userAtoms";
 
 export default function CarProductReport({
   data,
@@ -31,37 +27,51 @@ export default function CarProductReport({
   department: Department | null;
   day: dayjs.Dayjs | null;
 }) {
-  // 🔹 Tính tổng các cột
-  const totals = useMemo(() => {
-    const totalTrips = data.reduce((s, d) => s + (d.quantity || 0), 0);
-    const totalM3 = data
-      .filter((d) => d.material?.acceptedProduct === AcceptedProductEnum.LAND)
-      .reduce((s, d) => s + (d.totalCubicMeter || 0), 0);
-    const totalTkmLand = data
-      .filter((d) => d.material?.acceptedProduct === AcceptedProductEnum.LAND)
-      .reduce((s, d) => s + (d.production || 0), 0);
-    const totalTonCoal = data
-      .filter((d) => d.material?.acceptedProduct === AcceptedProductEnum.COAL)
-      .reduce((s, d) => s + (d.totalTon || 0), 0);
-    const totalTkmCoal = data
-      .filter((d) => d.material?.acceptedProduct === AcceptedProductEnum.COAL)
-      .reduce((s, d) => s + (d.production || 0), 0);
-
-    return {
-      totalTrips,
-      totalM3,
-      totalTkmLand,
-      totalTonCoal,
-      totalTkmCoal,
-    };
-  }, [data]);
-
   const [user] = useAtom(userAtom);
+  const report = data?.[0];
+  if (!report) return <Typography>Không có dữ liệu</Typography>;
+
+  // Luôn có ít nhất mảng rỗng để render đủ header
+  const landGroups = report.landGroups || [];
+  const coalGroups = report.coalGroups || [];
+  const totals = report.totals || {
+    land: { m3: 0, tkm: 0 },
+    coal: { ton: 0, tkm: 0 },
+  };
+
+  // === Header động ===
+  const landHeaders = Array.from(
+    new Set<string>(
+      landGroups.map(
+        (g: any) =>
+          `${g.locationName}|${g.excavationLevel}|${g.fullLiftHeightM}|${g.excavatorCode}|${g.distance}|${g.materialName}`
+      )
+    )
+  ).map((k) => k.split("|"));
+
+  const coalHeaders = Array.from(
+    new Set<string>(
+      coalGroups.map(
+        (g: any) =>
+          `${g.locationName}|${g.excavationLevel}|${g.fullLiftHeightM}|${g.excavatorCode}|${g.distance}|${g.materialName}`
+      )
+    )
+  ).map((k) => k.split("|"));
+
+  // Nếu không có dữ liệu, vẫn hiển thị 1 cột trống
+  const safeLandHeaders = landHeaders.length ? landHeaders : [["-", "-", "-", "-", "-", "-"]];
+  const safeCoalHeaders = coalHeaders.length ? coalHeaders : [["-", "-", "-", "-", "-", "-"]];
+
+  const allDevices = Array.from(
+    new Set([...landGroups, ...coalGroups].flatMap((g: any) => g.devices || []))
+  );
+  const allShifts = Array.from(
+    new Set([...landGroups, ...coalGroups].flatMap((g: any) => g.shifts || []))
+  ).sort((a, b) => parseInt(a) - parseInt(b));
 
   return (
     <Grid item xs={12}>
-      <Paper
-      >
+      <Paper>
         {/* ===== Header ===== */}
         <Typography sx={{ fontSize: 15, fontWeight: "bold" }}>
           CÔNG TY CP THAN CAO SƠN - TKV
@@ -72,8 +82,9 @@ export default function CarProductReport({
         >
           BÁO CÁO SẢN LƯỢNG XE Ô TÔ THỰC HIỆN
         </Typography>
-        <Typography>Đơn vị: {department ? department.code : user?.department?.code}</Typography>
-
+        <Typography>
+          Đơn vị: {department ? department.code : user?.department?.code}
+        </Typography>
         <Typography sx={{ mb: 1 }}>
           Ngày: {day ? day.format("DD/MM/YYYY") : ""}
         </Typography>
@@ -90,113 +101,215 @@ export default function CarProductReport({
                 padding: "4px 6px",
                 fontSize: 12,
               },
-              "& th": { fontWeight: "bold", background: "#f8f8f8" },
             }}
           >
             <TableHead>
+              {/* === Hàng 1: nhóm chính === */}
               <TableRow>
-                <TableCell rowSpan={2}>Ca</TableCell>
-                <TableCell rowSpan={2}>Nơi đổ tải</TableCell>
-                <TableCell rowSpan={2}>Tầng xúc</TableCell>
-                <TableCell rowSpan={2}>Chiều cao nâng tải</TableCell>
-                <TableCell rowSpan={2}>Máy xúc</TableCell>
-                <TableCell rowSpan={2}>Cung độ v/c (Km)</TableCell>
-                <TableCell rowSpan={2}>SX/CN</TableCell>
-                <TableCell rowSpan={2}>Số xe</TableCell>
-                <TableCell rowSpan={2}>Số chuyến</TableCell>
-                <TableCell colSpan={2}>TỔNG ĐẤT</TableCell>
-                <TableCell colSpan={2}>TỔNG THAN</TableCell>
+                <TableCell rowSpan={3} sx={{ fontWeight: "bold", }}>CÁC CHỈ TIÊU</TableCell>
+                <TableCell rowSpan={3}></TableCell>
+                <TableCell colSpan={safeLandHeaders.length + 2} sx={{ fontWeight: "bold", }}>
+                  CHUYỂN VẬN CHUYỂN ĐẤT, SPNT, BÙN...
+                </TableCell>
+                <TableCell colSpan={safeCoalHeaders.length + 2} sx={{ fontWeight: "bold", }}>
+                  CHUYỂN VẬN CHUYỂN THAN
+                </TableCell>
               </TableRow>
+
+              {/* === Hàng 2: tiêu đề phụ === */}
               <TableRow>
-                <TableCell>m³</TableCell>
-                <TableCell>Tkm</TableCell>
-                <TableCell>Tấn</TableCell>
-                <TableCell>Tkm</TableCell>
+                {safeLandHeaders.map((h, i) => (
+                  <TableCell key={`lh-${i}`}>{h[0] || "-"}</TableCell>
+                ))}
+                <TableCell colSpan={2} sx={{ fontWeight: "bold" }}>
+                  TỔNG ĐẤT
+                </TableCell>
+
+                {safeCoalHeaders.map((h, i) => (
+                  <TableCell key={`ch-${i}`}>{h[0] || "-"}</TableCell>
+                ))}
+                <TableCell colSpan={2} sx={{ fontWeight: "bold" }}>
+                  TỔNG THAN
+                </TableCell>
+              </TableRow>
+
+              {/* === Hàng 3: đơn vị đo === */}
+              <TableRow>
+                {safeLandHeaders.map((_, i) => (
+                  <TableCell key={`lh-unit-${i}`}></TableCell>
+                ))}
+                <TableCell>(M³)</TableCell>
+                <TableCell>(Tkm)</TableCell>
+
+                {safeCoalHeaders.map((_, i) => (
+                  <TableCell key={`ch-unit-${i}`}></TableCell>
+                ))}
+                <TableCell>(Tấn)</TableCell>
+                <TableCell>(Tkm)</TableCell>
               </TableRow>
             </TableHead>
 
             <TableBody>
-              {data?.length ? (
-                <>
-                  {data.map((row: any, idx: number) => (
-                    <TableRow key={idx}>
-                      <TableCell>{row.shift}</TableCell>
-                      <TableCell>{row.location?.name}</TableCell>
-                      <TableCell>{row.excavationLevel}</TableCell>
-                      <TableCell>{row.fullLiftHeightM}</TableCell>
-                      <TableCell>{row.excavator?.code}</TableCell>
-                      <TableCell>{row.distance}</TableCell>
-                      <TableCell>{row.material?.name}</TableCell>
-                      <TableCell>{row.device?.code}</TableCell>
-                      <TableCell>{row.quantity}</TableCell>
-
-                      {/* Tổng Đất */}
-                      <TableCell>
-                        {row.material?.acceptedProduct === AcceptedProductEnum.LAND
-                          ? formatNumber(row.totalCubicMeter)
-                          : ""}
-                      </TableCell>
-                      <TableCell>
-                        {row.material?.acceptedProduct === AcceptedProductEnum.LAND
-                          ? formatNumber(row.production)
-                          : ""}
-                      </TableCell>
-
-                      {/* Tổng Than */}
-                      <TableCell>
-                        {row.material?.acceptedProduct === AcceptedProductEnum.COAL
-                          ? formatNumber(row.totalTon)
-                          : ""}
-                      </TableCell>
-                      <TableCell>
-                        {row.material?.acceptedProduct === AcceptedProductEnum.COAL
-                          ? formatNumber(row.production)
-                          : ""}
-                      </TableCell>
-                    </TableRow>
+              {/* === Tiêu chí cố định === */}
+              {[
+                "Nơi đổ tải",
+                "Tầng xúc",
+                "Chiều cao nâng tải",
+                "Máy xúc",
+                "Cung độ v/c (Km)",
+                "Vật liệu",
+              ].map((label, rowIdx) => (
+                <TableRow key={label}>
+                  <TableCell align="left" sx={{ fontWeight: "bold", }}>{label}</TableCell>
+                  {rowIdx === 0 && (
+                    <TableCell
+                      rowSpan={6}
+                      sx={{
+                        verticalAlign: "middle",
+                      }}
+                    >
+                      Ca xe /đ trong ngày
+                    </TableCell>
+                  )}
+                  {safeLandHeaders.map((h, i) => (
+                    <TableCell key={`l-${label}-${i}`}>{h[rowIdx] || "-"}</TableCell>
                   ))}
-
-                  {/* --- Dòng TỔNG CỘNG --- */}
-                  <TableRow sx={{ backgroundColor: "#f1f1f1" }}>
-                    <TableCell colSpan={8} align="center" sx={{ fontWeight: "bold" }}>
-                      TỔNG CỘNG
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: "bold" }}>
-                      {formatNumber(totals.totalTrips)}
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: "bold" }}>
-                      {formatNumber(totals.totalM3)}
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: "bold" }}>
-                      {formatNumber(totals.totalTkmLand)}
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: "bold" }}>
-                      {formatNumber(totals.totalTonCoal)}
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: "bold" }}>
-                      {formatNumber(totals.totalTkmCoal)}
-                    </TableCell>
-                  </TableRow>
-                </>
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={13}>Không có dữ liệu</TableCell>
+                  {rowIdx === 0 && (
+                    <>
+                      <TableCell rowSpan={6}></TableCell>
+                      <TableCell rowSpan={6}></TableCell>
+                    </>
+                  )}
+                  {safeCoalHeaders.map((h, i) => (
+                    <TableCell key={`c-${label}-${i}`}>{h[rowIdx] || "-"}</TableCell>
+                  ))}
+                  {rowIdx === 0 && (
+                    <>
+                      <TableCell rowSpan={6}></TableCell>
+                      <TableCell rowSpan={6}></TableCell>
+                    </>
+                  )}
                 </TableRow>
+              ))}
+
+              {/* === Danh sách xe/ca === */}
+              {allDevices.map((device) =>
+                allShifts.map((shift) => {
+                  const landCells = safeLandHeaders.map((h, i) => {
+                    const matched = landGroups.find(
+                      (g: any) =>
+                        g.devices?.includes(device) &&
+                        g.shifts?.includes(shift) &&
+                        g.locationName === h[0] &&
+                        g.excavatorCode === h[3] &&
+                        String(g.distance || "") === String(h[4] || "") &&
+                        g.materialName === h[5]
+                    );
+                    return matched?.quantity ?? "";
+                  });
+
+                  const coalCells = safeCoalHeaders.map((h, i) => {
+                    const matched = coalGroups.find(
+                      (g: any) =>
+                        g.devices?.includes(device) &&
+                        g.shifts?.includes(shift) &&
+                        g.locationName === h[0] &&
+                        g.excavatorCode === h[3] &&
+                        String(g.distance || "") === String(h[4] || "") &&
+                        g.materialName === h[5]
+                    );
+                    return matched?.quantity ?? "";
+                  });
+
+                  const totalLand = landGroups
+                    .filter(
+                      (g: any) =>
+                        g.devices?.includes(device) && g.shifts?.includes(shift)
+                    )
+                    .reduce(
+                      (acc: any, g: any) => ({
+                        m3: acc.m3 + (g.totalCubicMeter || 0),
+                        tkm: acc.tkm + (g.production || 0),
+                      }),
+                      { m3: 0, tkm: 0 }
+                    );
+
+                  const totalCoal = coalGroups
+                    .filter(
+                      (g: any) =>
+                        g.devices?.includes(device) && g.shifts?.includes(shift)
+                    )
+                    .reduce(
+                      (acc: any, g: any) => ({
+                        ton: acc.ton + (g.totalTon || 0),
+                        tkm: acc.tkm + (g.production || 0),
+                      }),
+                      { ton: 0, tkm: 0 }
+                    );
+
+                  return (
+                    <TableRow key={`${device}-${shift}`}>
+                      <TableCell>{device}</TableCell>
+                      <TableCell>{shift}</TableCell>
+                      {landCells.map((v, i) => (
+                        <TableCell key={`v-${device}-${i}`}>{v}</TableCell>
+                      ))}
+                      <TableCell>{totalLand.m3.toFixed(1)}</TableCell>
+                      <TableCell>{totalLand.tkm.toFixed(1)}</TableCell>
+                      {coalCells.map((v, i) => (
+                        <TableCell key={`c-${device}-${i}`}>{v}</TableCell>
+                      ))}
+                      <TableCell>{totalCoal.ton.toFixed(1)}</TableCell>
+                      <TableCell>{totalCoal.tkm.toFixed(1)}</TableCell>
+                    </TableRow>
+                  );
+                })
               )}
+
+              {/* === Tổng cộng === */}
+              <TableRow sx={{ fontWeight: "bold" }}>
+                <TableCell colSpan={2}>TỔNG CỘNG</TableCell>
+                {safeLandHeaders.map((h, i) => {
+                  const sum = landGroups
+                    .filter(
+                      (g: any) =>
+                        g.locationName === h[0] &&
+                        g.excavatorCode === h[3] &&
+                        String(g.distance || "") === String(h[4] || "") &&
+                        g.materialName === h[5]
+                    )
+                    .reduce((s: any, g: any) => s + (g.quantity || 0), 0);
+                  return <TableCell key={`sum-l-${i}`}>{sum.toFixed(1)}</TableCell>;
+                })}
+                <TableCell>{totals.land.m3.toFixed(1)}</TableCell>
+                <TableCell>{totals.land.tkm.toFixed(1)}</TableCell>
+                {safeCoalHeaders.map((h, i) => {
+                  const sum = coalGroups
+                    .filter(
+                      (g: any) =>
+                        g.locationName === h[0] &&
+                        g.excavatorCode === h[3] &&
+                        String(g.distance || "") === String(h[4] || "") &&
+                        g.materialName === h[5]
+                    )
+                    .reduce((s: any, g: any) => s + (g.quantity || 0), 0);
+                  return <TableCell key={`sum-c-${i}`}>{sum.toFixed(1)}</TableCell>;
+                })}
+                <TableCell>{totals.coal.ton.toFixed(1)}</TableCell>
+                <TableCell>{totals.coal.tkm.toFixed(1)}</TableCell>
+              </TableRow>
             </TableBody>
           </Table>
         </TableContainer>
 
-        {/* Chữ ký hình ảnh */}
-        {signatureUrl && (
-          <Box mt={3} sx={{ display: "flex", justifyContent: "flex-end" }}>
-            <img
-              src={signatureUrl}
-              alt="Chữ ký"
-              style={{ width: 120, height: 50, objectFit: "contain" }}
-            />
-          </Box>
-        )}
+        {/* === Chữ ký === */}
+        {
+          signatureUrl && (
+            <Box mt={2} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <img src={signatureUrl} alt="Chữ ký" style={{ maxWidth: 200, maxHeight: 100 }} />
+            </Box>
+          )
+        }
       </Paper>
     </Grid>
   );
