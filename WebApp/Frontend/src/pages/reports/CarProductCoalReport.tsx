@@ -39,7 +39,7 @@ export default function CarProductCoalReport({
         hierarchy: [],
         overallTotals: {
           totalTrips: 0,
-          totalM3: 0,
+          totalTon: 0,
           totalTkm: 0,
           materialTotals: {},
         },
@@ -72,7 +72,7 @@ export default function CarProductCoalReport({
                 excavator: code,
                 // tổng số (I+II+III…) của máy này cho nhóm hiện tại
                 totalTrips: _.sumBy(items, "totalTrips"),
-                totalM3: _.sumBy(items, "totalM3"),
+                totalTon: _.sumBy(items, "totalTon"),
                 totalTkm: _.sumBy(items, "totalTkm"),
                 // chi tiết theo material của device
                 materials: {} as Record<string, any>,
@@ -81,7 +81,7 @@ export default function CarProductCoalReport({
               items.forEach((i: any) => {
                 row.materials[i.deviceMaterial] = {
                   totalTrips: i.totalTrips,
-                  totalM3: i.totalM3,
+                  totalTon: i.totalTon,
                   totalTkm: i.totalTkm,
                 };
               });
@@ -98,12 +98,12 @@ export default function CarProductCoalReport({
     // 🧩 tổng toàn bảng + tổng từng deviceMaterial
     const overallTotals = {
       totalTrips: _.sumBy(data, "totalTrips"),
-      totalM3: _.sumBy(data, "totalM3"),
+      totalTon: _.sumBy(data, "totalTon"),
       totalTkm: _.sumBy(data, "totalTkm"),
       materialTotals: data.reduce((acc, group) => {
         acc[group.deviceMaterial] = {
           totalTrips: group.totalTrips,
-          totalM3: group.totalM3,
+          totalTon: group.totalTon,
           totalTkm: group.totalTkm,
         };
         return acc;
@@ -160,13 +160,13 @@ export default function CarProductCoalReport({
                 ))}
               </TableRow>
               <TableRow>
-                {["Chuyến", "M³", "Tkm"].map((l, i) => (
+                {["Chuyến", "Tấn", "Tkm"].map((l, i) => (
                   <TableCell key={i} sx={borderStyle}>
                     {l}
                   </TableCell>
                 ))}
                 {headerColumns.flatMap((col) =>
-                  ["Chuyến", "M³", "Tkm"].map((l, i) => (
+                  ["Chuyến", "Tấn", "Tkm"].map((l, i) => (
                     <TableCell key={`${col}-${i}`} sx={borderStyle}>
                       {l}
                     </TableCell>
@@ -186,7 +186,7 @@ export default function CarProductCoalReport({
                   {formatNumber(overallTotals.totalTrips)}
                 </TableCell>
                 <TableCell sx={borderStyle}>
-                  {formatNumber(overallTotals.totalM3)}
+                  {formatNumber(overallTotals.totalTon)}
                 </TableCell>
                 <TableCell sx={borderStyle}>
                   {formatNumber(overallTotals.totalTkm)}
@@ -198,7 +198,7 @@ export default function CarProductCoalReport({
                       {formatNumber(totals.totalTrips)}
                     </TableCell>,
                     <TableCell key={`${col}-t2`} sx={borderStyle}>
-                      {formatNumber(totals.totalM3)}
+                      {formatNumber(totals.totalTon)}
                     </TableCell>,
                     <TableCell key={`${col}-t3`} sx={borderStyle}>
                       {formatNumber(totals.totalTkm)}
@@ -242,7 +242,7 @@ export default function CarProductCoalReport({
                               {formatNumber(row.totalTrips)}
                             </TableCell>
                             <TableCell sx={borderStyle}>
-                              {formatNumber(row.totalM3)}
+                              {formatNumber(row.totalTon)}
                             </TableCell>
                             <TableCell sx={borderStyle}>
                               {formatNumber(row.totalTkm)}
@@ -254,7 +254,7 @@ export default function CarProductCoalReport({
                                   {formatNumber(materialData.totalTrips)}
                                 </TableCell>,
                                 <TableCell key={`${col}-2`} sx={borderStyle}>
-                                  {formatNumber(materialData.totalM3)}
+                                  {formatNumber(materialData.totalTon)}
                                 </TableCell>,
                                 <TableCell key={`${col}-3`} sx={borderStyle}>
                                   {formatNumber(materialData.totalTkm)}

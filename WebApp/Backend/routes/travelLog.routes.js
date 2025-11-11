@@ -326,12 +326,15 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
             updateData.location = locationId;
 
             // Gán ID vật liệu
-            const materialId = materialMap.get(material);
-            if (!materialId) {
-                invalidRows.push({ row, error: `Vật liệu không hợp lệ: ${material}` });
-                continue;
+            if(material){
+                const materialId = materialMap.get(material);
+                if (!materialId) {
+                    invalidRows.push({ row, error: `Vật liệu không hợp lệ: ${material}` });
+                    continue;
+                }
+                updateData.material = materialId;
+
             }
-            updateData.material = materialId;
 
             // Gán ngày
             if (!workingDate) {
