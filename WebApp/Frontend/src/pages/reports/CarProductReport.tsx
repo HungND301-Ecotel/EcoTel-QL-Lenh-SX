@@ -168,7 +168,7 @@ export default function CarProductReport({
                         verticalAlign: "middle",
                       }}
                     >
-                      Ca xe /đ trong ngày
+                      Ca xe h/đ trong ngày
                     </TableCell>
                   )}
                   {safeLandHeaders.map((h, i) => (
@@ -193,8 +193,8 @@ export default function CarProductReport({
               ))}
 
               {/* === Danh sách xe/ca === */}
-              {allDevices.map((device) =>
-                allShifts.map((shift) => {
+              {allShifts.map((shift) =>
+                allDevices.map((device) => {
                   const landCells = safeLandHeaders.map((h, i) => {
                     const matched = landGroups.find(
                       (g: any) =>
@@ -222,10 +222,7 @@ export default function CarProductReport({
                   });
 
                   const totalLand = landGroups
-                    .filter(
-                      (g: any) =>
-                        g.devices?.includes(device) && g.shifts?.includes(shift)
-                    )
+                    .filter((g: any) => g.devices?.includes(device) && g.shifts?.includes(shift))
                     .reduce(
                       (acc: any, g: any) => ({
                         m3: acc.m3 + (g.totalCubicMeter || 0),
@@ -235,10 +232,7 @@ export default function CarProductReport({
                     );
 
                   const totalCoal = coalGroups
-                    .filter(
-                      (g: any) =>
-                        g.devices?.includes(device) && g.shifts?.includes(shift)
-                    )
+                    .filter((g: any) => g.devices?.includes(device) && g.shifts?.includes(shift))
                     .reduce(
                       (acc: any, g: any) => ({
                         ton: acc.ton + (g.totalTon || 0),
@@ -247,8 +241,17 @@ export default function CarProductReport({
                       { ton: 0, tkm: 0 }
                     );
 
+                  // Nếu xe không có dữ liệu cho ca này thì bỏ qua
+                  const hasData =
+                    landCells.some((v) => v) ||
+                    coalCells.some((v) => v) ||
+                    totalLand.m3 > 0 ||
+                    totalCoal.ton > 0;
+
+                  if (!hasData) return null;
+
                   return (
-                    <TableRow key={`${device}-${shift}`}>
+                    <TableRow key={`${shift}-${device}`}>
                       <TableCell>{device}</TableCell>
                       <TableCell>{shift}</TableCell>
                       {landCells.map((v, i) => (
@@ -265,6 +268,7 @@ export default function CarProductReport({
                   );
                 })
               )}
+
 
               {/* === Tổng cộng === */}
               <TableRow sx={{ fontWeight: "bold" }}>

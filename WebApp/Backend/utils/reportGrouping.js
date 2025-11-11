@@ -311,21 +311,19 @@ async function groupTripsVehicleProductivity(trips) {
     const result = {};
 
     for (const t of trips) {
-        // Lấy thông tin cơ bản
         const modelName = t.device?.material?.name || "Không rõ loại xe";
         const carCode = t.device?.code || "Không rõ xe";
         const productType = t.material?.acceptedProduct; // LAND / COAL
         const workingDate = dayjs(t.workingDate).format("YYYY-MM-DD");
         const shift = t.shift?.name || 1;
-        const key = `${carCode}_${workingDate}_${shift}`;
 
-        // Lấy sản lượng TKM (t.totalProduction)
+        // 🔑 GỘP THEO XE + NGÀY (bỏ shift)
+        const key = `${carCode}_${workingDate}`;
+
         const cubic = t.totalCubicMeter || 0;
         const ton = t.totalTon || 0;
         const tkm = t.totalProduction || 0;
 
-
-        // --- Khởi tạo nhóm theo loại xe (Model) ---
         if (!result[modelName]) {
             result[modelName] = {
                 modelName,
@@ -333,63 +331,73 @@ async function groupTripsVehicleProductivity(trips) {
                 summary: {
                     land: { trips: 0, m3: 0, tkm: 0 },
                     coal: { trips: 0, ton: 0, tkm: 0 },
-                    totalTkm: 0, // Tổng TKM của tất cả các xe thuộc model này
+                    totalTkm: 0,
                 },
             };
         }
+
         const modelGroup = result[modelName];
 
-        // --- Khởi tạo dòng tổng hợp của xe/ngày/ca ---
+        // 🔹 Tạo nhóm xe/ngày
         if (!modelGroup.vehicles[key]) {
             modelGroup.vehicles[key] = {
                 carCode,
                 workingDate,
-                shift,
+                shiftSet: new Set(), // để theo dõi số ca khác nhau
+                totalShifts: 0,
                 land: { trips: 0, m3: 0, tkm: 0 },
                 coal: { trips: 0, ton: 0, tkm: 0 },
-                totalTkm: 0, // Tổng TKM của riêng xe/ngày/ca này
+                totalTkm: 0,
             };
         }
 
         const record = modelGroup.vehicles[key];
 
+        // Ghi nhận ca
+        record.shiftSet.add(shift);
+        record.totalShifts = record.shiftSet.size;
+
         // --- Cộng dồn dữ liệu ---
         if (productType === ACCEPTED_PRODUCT.LAND) {
             record.land.trips += 1;
             record.land.m3 += cubic;
-            record.land.tkm += tkm; // <--- TKM cho Đất
+            record.land.tkm += tkm;
 
             modelGroup.summary.land.trips += 1;
             modelGroup.summary.land.m3 += cubic;
-            modelGroup.summary.land.tkm += tkm; // <--- TKM Summary cho Đất
+            modelGroup.summary.land.tkm += tkm;
         } else if (productType === ACCEPTED_PRODUCT.COAL) {
             record.coal.trips += 1;
             record.coal.ton += ton;
-            record.coal.tkm += tkm; // <--- TKM cho Than
+            record.coal.tkm += tkm;
 
             modelGroup.summary.coal.trips += 1;
             modelGroup.summary.coal.ton += ton;
-            modelGroup.summary.coal.tkm += tkm; // <--- TKM Summary cho Than
+            modelGroup.summary.coal.tkm += tkm;
         }
 
-        // Tính toán tổng TKM
         record.totalTkm = record.land.tkm + record.coal.tkm;
         modelGroup.summary.totalTkm =
             modelGroup.summary.land.tkm + modelGroup.summary.coal.tkm;
     }
 
-    // --- Chuẩn hóa ra mảng ---
     return Object.values(result).map((m) => ({
         modelName: m.modelName,
-        summary: m.summary, // Chứa { land: {..., tkm}, coal: {..., tkm}, totalTkm }
-        vehicles: Object.values(m.vehicles).sort((a, b) => {
-            // 1. Sắp xếp chính: workingDate (chuỗi YYYY-MM-DD so sánh được)
-            const dateComparison = a.workingDate.localeCompare(b.workingDate);
-            if (dateComparison !== 0) return dateComparison;
-            return (a.shift || 0) - (b.shift || 0);
-        }),
+        summary: m.summary,
+        vehicles: Object.values(m.vehicles)
+            .map((v) => ({
+                carCode: v.carCode,
+                workingDate: v.workingDate,
+                shift: v.totalShifts, // 👉 số ca làm trong ngày
+                land: v.land,
+                coal: v.coal,
+                totalTkm: v.totalTkm,
+            }))
+            .sort((a, b) => a.workingDate.localeCompare(b.workingDate)),
     }));
 }
+
+
 
 
 

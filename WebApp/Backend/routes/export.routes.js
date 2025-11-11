@@ -8888,24 +8888,28 @@ router.post(
 
 
             // === Body: danh sách xe/ca (Starts Row 10) ===
-            let rowIdx = criteriaEndRow + 1; // Starts data at Row 10
-            const allDevices = new Set();
-            [...landGroups, ...coalGroups].forEach((g) => {
-                g.devices.forEach((d) => allDevices.add(d));
-            });
+            // === Body: danh sách xe/ca (Ca trước → Xe sau) ===
+            let rowIdx = criteriaEndRow + 1;
 
-            for (const device of allDevices) {
-                const shifts = new Set();
-                [...landGroups, ...coalGroups].forEach((g) => {
-                    if (g.devices.includes(device)) {
-                        g.shifts.forEach((s) => shifts.add(s));
-                    }
-                });
+            // Lấy toàn bộ danh sách ca xuất hiện
+            const allShifts = Array.from(
+                new Set([...landGroups, ...coalGroups].flatMap(g => g.shifts))
+            ).sort((a, b) => parseInt(a) - parseInt(b));
 
-                // Sort shifts (e.g., 1, 2, 3) for clean display
-                const sortedShifts = Array.from(shifts).sort((a, b) => parseInt(a) - parseInt(b));
+            // Lấy danh sách xe, sắp xếp tăng dần
+            const allDevices = Array.from(
+                new Set([...landGroups, ...coalGroups].flatMap(g => g.devices))
+            ).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
-                sortedShifts.forEach((shift) => {
+            // Lặp theo từng ca, rồi từng xe trong ca đó
+            for (const shift of allShifts) {
+                for (const device of allDevices) {
+                    // Kiểm tra xem xe này có dữ liệu trong ca hiện tại không
+                    const hasData = [...landGroups, ...coalGroups].some(
+                        g => g.devices.includes(device) && g.shifts.includes(shift)
+                    );
+                    if (!hasData) continue; // Bỏ qua nếu không có dữ liệu trong ca này
+
                     const row = sheet.getRow(rowIdx++);
 
                     // Cột A: Xe
@@ -8916,8 +8920,7 @@ router.post(
                     row.getCell(shiftCol).value = shift;
                     row.getCell(shiftCol).alignment = center;
 
-
-                    // Land cells (Starts Col C)
+                    // --- LAND ---
                     landHeaders.forEach((h, idx) => {
                         const matched = landGroups.find(
                             (g) =>
@@ -8930,17 +8933,14 @@ router.post(
                                 String(g.distance || "") === String(h[4] || "") &&
                                 g.materialName === h[5]
                         );
-                        // Quantity (Số chuyến) - Raw number + NumFmt
                         const cell = row.getCell(landQuantityStartCol + idx);
                         cell.value = matched?.quantity || "";
                         cell.numFmt = '#,##0.0';
                     });
 
-                    // Totals Land
+                    // Tổng Đất
                     const totalLandForDeviceShift = landGroups
-                        .filter(
-                            (g) => g.devices.includes(device) && g.shifts.includes(shift)
-                        )
+                        .filter((g) => g.devices.includes(device) && g.shifts.includes(shift))
                         .reduce(
                             (acc, g) => ({
                                 m3: acc.m3 + g.totalCubicMeter,
@@ -8953,8 +8953,7 @@ router.post(
                     row.getCell(totalLandTkm).value = totalLandForDeviceShift.tkm;
                     row.getCell(totalLandTkm).numFmt = '#,##0.0';
 
-
-                    // Coal cells
+                    // --- COAL ---
                     coalHeaders.forEach((h, idx) => {
                         const matched = coalGroups.find(
                             (g) =>
@@ -8967,17 +8966,13 @@ router.post(
                                 String(g.distance || "") === String(h[4] || "") &&
                                 g.materialName === h[5]
                         );
-                        // Quantity (Số chuyến) - Raw number + NumFmt
                         const cell = row.getCell(coalQuantityStartCol + idx);
                         cell.value = matched?.quantity || "";
                         cell.numFmt = '#,##0.0';
                     });
 
-                    // Totals Coal
                     const totalCoalForDeviceShift = coalGroups
-                        .filter(
-                            (g) => g.devices.includes(device) && g.shifts.includes(shift)
-                        )
+                        .filter((g) => g.devices.includes(device) && g.shifts.includes(shift))
                         .reduce(
                             (acc, g) => ({
                                 ton: acc.ton + g.totalTon,
@@ -8989,8 +8984,9 @@ router.post(
                     row.getCell(totalCoalTon).numFmt = '#,##0.0';
                     row.getCell(totalCoalTkm).value = totalCoalForDeviceShift.tkm;
                     row.getCell(totalCoalTkm).numFmt = '#,##0.0';
-                });
+                }
             }
+
 
             // === Dòng tổng cuối (Footer) ===
             const totalRow = sheet.getRow(rowIdx++);
