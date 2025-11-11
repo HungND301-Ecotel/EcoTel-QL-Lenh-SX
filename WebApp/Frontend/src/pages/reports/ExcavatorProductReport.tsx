@@ -13,6 +13,8 @@ import {
 } from '@mui/material';
 import dayjs from 'dayjs';
 import { Department } from '../../types';
+import { useAtom } from 'jotai';
+import { userAtom } from '../../atoms/userAtoms';
 
 // Format số gọn (bỏ .00 nếu là số nguyên)
 const formatNumber = (num?: number) =>
@@ -33,7 +35,7 @@ export default function ExcavatorProductReport({
   department: Department | null;
   day: dayjs.Dayjs | null;
 }) {
-  const unitCode = department?.code || 'N/A';
+  const [user] = useAtom(userAtom);
 
   // 🧠 Phân loại vật liệu theo loại sản phẩm (Đất / Than)
   const { landList, coalList } = useMemo(() => {
@@ -93,7 +95,7 @@ export default function ExcavatorProductReport({
           BẢNG TỔNG HỢP THỐNG KÊ THAN, ĐẤT
         </Typography>
 
-        <Typography>Đơn vị: {unitCode}</Typography>
+        <Typography>Đơn vị: {department ? department.code : user?.department?.code}</Typography>
         <Typography>Ngày: {day?.format('DD-MM-YYYY')}</Typography>
 
         {/* Table */}

@@ -116,35 +116,35 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
     const formik = useFormik({
         initialValues: {
             assignedTo: typeof initialValues.assignedTo === 'object'
-                ? initialValues.assignedTo._id
+                ? initialValues.assignedTo?._id
                 : initialValues.assignedTo || '',
             device: Array.isArray(initialValues.device)
-                ? initialValues.device.map((d: any) => typeof d === 'object' ? d._id : d)
+                ? initialValues.device.map((d: any) => typeof d === 'object' ? d?._id : d)
                 : initialValues.device
-                    ? [typeof initialValues.device === 'object' ? initialValues.device._id : initialValues.device]
+                    ? [typeof initialValues.device === 'object' ? initialValues.device?._id : initialValues.device]
                     : [],
             assignedVehicles: Array.isArray(initialValues.assignedVehicles)
-                ? initialValues.assignedVehicles.map((d: any) => typeof d === 'object' ? d._id : d)
+                ? initialValues.assignedVehicles.map((d: any) => typeof d === 'object' ? d?._id : d)
                 : initialValues.assignedVehicles
-                    ? [typeof initialValues.assignedVehicles === 'object' ? initialValues.assignedVehicles._id : initialValues.assignedVehicles]
+                    ? [typeof initialValues.assignedVehicles === 'object' ? initialValues.assignedVehicles?._id : initialValues.assignedVehicles]
                     : [],
             repairDepartment: typeof initialValues.repairDepartment === 'object'
-                ? initialValues.repairDepartment._id
+                ? initialValues.repairDepartment?._id
                 : initialValues.repairDepartment || undefined,
             repairVehicles: (initialValues.repairVehicles || [{ device: undefined, note: '' }]).map((d: any) => (
                 {
-                    device: d.device !== null && typeof d.device === 'object' ? d.device?._id : d._id,
+                    device: d.device !== null && typeof d.device === 'object' ? d.device?._id : d?._id,
                     note: d.note || ''
                 }
             )),
             job: initialValues.job !== null && typeof initialValues.job === 'object'
-                ? initialValues.job._id
+                ? initialValues.job?._id
                 : initialValues.job || '',
             workingDate: initialValues.workingDate
                 ? dayjs(initialValues.workingDate).startOf('day').toDate()
                 : '',
             shift: initialValues.shift !== null && typeof initialValues.shift === 'object'
-                ? initialValues.shift._id
+                ? initialValues.shift?._id
                 : initialValues.shift || '',
             shiftHour: initialValues.shiftHour || '',
             safetyMeasure: initialValues.safetyMeasure || '',
@@ -156,14 +156,14 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
                 }
             )),
             location: Array.isArray(initialValues.location)
-                ? initialValues.location.map((d: any) => typeof d === 'object' ? d._id : d)
+                ? initialValues.location.map((d: any) => typeof d === 'object' ? d?._id : d)
                 : initialValues.location
                     ? [typeof initialValues.location === 'object' ? initialValues.location._id : initialValues.location]
                     : [],
             material: Array.isArray(initialValues.material)
-                ? initialValues.material.map((d: any) => typeof d === 'object' ? d._id : d)
+                ? initialValues.material.map((d: any) => typeof d === 'object' ? d?._id : d)
                 : initialValues.material
-                    ? [typeof initialValues.material === 'object' ? initialValues.material._id : initialValues.material]
+                    ? [typeof initialValues.material === 'object' ? initialValues.material?._id : initialValues.material]
                     : [],
             workContent: initialValues.workContent || '',
             status: initialValues.status,

@@ -118,6 +118,82 @@ async function groupTripsVehicleProduction(trips) {
     return enrichedTrips;
 }
 
+// bao cao san luong van chuyen dat da
+const _ = require('lodash');
+
+async function groupProductionLand(trips) {
+    // Lưu ý: Giả định hàm 'limit' đã được định nghĩa trong môi trường của bạn.
+    const enrichedTrips = await Promise.all(
+        trips.map(t =>
+        // Sử dụng limit nếu cần, nếu không thì bỏ qua async/limit
+        // limit(async () => ({ 
+        ({
+            deviceMaterial: t.device?.material?.name || "Khác", // Vật liệu gắn với xe (Header)
+            excavatorCode: t.excavator?.code || "Không rõ",      // Mã máy xúc (Dòng chi tiết)
+
+            // --- NHÓM CẤP CAO (I, II) ---
+            mainGroup: t.material?.name?.trim() || "Vật liệu khác",   // Vật liệu thực tế (Cấp I/II)
+
+            // --- NHÓM CẤP CON (1, 2, 3) ---
+            subGroup: t.excavator?.material?.name?.trim() || "Máy xúc khác", // Chủng loại máy xúc
+
+            quantity: t.quantity,
+            totalCubicMeter: t.totalCubicMeter,
+            production: t.totalProduction, // Tkm
+            totalTon: t.totalTon || 0
+        })
+            // )) // Đóng limit
+        )
+    );
+
+    // 1. Nhóm ngoài cùng: theo deviceMaterial (Tạo cột Header)
+    const groupedByDeviceMaterial = _.groupBy(enrichedTrips, 'deviceMaterial');
+
+    const result = Object.entries(groupedByDeviceMaterial).map(([deviceMaterial, items]) => {
+
+        // Nhóm tất cả các mục theo mã máy xúc để tính tổng chuyến/M3/Tkm cho từng máy
+        const groupedByExcavatorCode = _.groupBy(items, 'excavatorCode');
+
+        const allExcavators = Object.entries(groupedByExcavatorCode).map(([excavatorCode, list]) => {
+            // Lấy thông tin nhóm cấp I/II và cấp con từ item đầu tiên
+            const firstItem = list[0];
+
+            return {
+                excavator: excavatorCode,
+                deviceMaterial,
+
+                // Thêm thông tin nhóm cấp I/II và cấp con vào dữ liệu chi tiết
+                mainGroup: firstItem.mainGroup,
+                subGroup: firstItem.subGroup,
+
+                totalTrips: _.sumBy(list, "quantity"),
+                totalM3: _.sumBy(list, "totalCubicMeter"),
+                totalTkm: _.sumBy(list, "production"),
+                totalTon: _.sumBy(list, "totalTon"),
+            };
+        });
+
+        // 🧩 Tổng toàn nhóm vật liệu (Cấp ngoài cùng)
+        const totalTrips = _.sumBy(items, "quantity");
+        const totalM3 = _.sumBy(items, "totalCubicMeter");
+        const totalTkm = _.sumBy(items, "production");
+        const totalTon = _.sumBy(items, "totalTon");
+
+        return {
+            deviceMaterial,
+            totalTrips,
+            totalM3,
+            totalTkm,
+            totalTon,
+            // Trả về danh sách máy xúc chi tiết đã được tính tổng và gắn nhóm
+            excavators: allExcavators,
+        };
+    });
+
+    return result;
+}
+
+
 // nang suat dau xe
 async function groupTripsVehicleProductivity(trips) {
     const result = {};
@@ -620,5 +696,6 @@ module.exports = {
     groupTripsVehicleProduction,
     safeQuery,
     caculatorWeight,
-    groupTripsVehicleProductivity
+    groupTripsVehicleProductivity,
+    groupProductionLand
 };
