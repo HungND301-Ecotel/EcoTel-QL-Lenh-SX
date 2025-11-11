@@ -14,6 +14,8 @@ import {
 import dayjs from "dayjs";
 import { Department } from "../../types";
 import { AcceptedProductEnum } from "../../enums";
+import { userAtom } from "../../atoms/userAtoms";
+import { useAtom } from "jotai";
 
 const formatNumber = (num?: number) =>
   num ? num.toFixed(2).replace(/\.00$/, "") : "";
@@ -54,6 +56,8 @@ export default function CarProductReport({
     };
   }, [data]);
 
+  const [user] = useAtom(userAtom);
+
   return (
     <Grid item xs={12}>
       <Paper
@@ -66,11 +70,9 @@ export default function CarProductReport({
           textAlign="center"
           sx={{ fontWeight: "bold", fontSize: 18, mt: 2, mb: 2 }}
         >
-          BÁO CÁO SẢN LƯỢNG CHUYẾN VẬN CHUYỂN
+          BÁO CÁO SẢN LƯỢNG XE Ô TÔ THỰC HIỆN
         </Typography>
-        <Typography sx={{ mb: 1 }}>
-          Đơn vị: {department?.code || ""}
-        </Typography>
+        <Typography>Đơn vị: {department ? department.code : user?.department?.code}</Typography>
 
         <Typography sx={{ mb: 1 }}>
           Ngày: {day ? day.format("DD/MM/YYYY") : ""}

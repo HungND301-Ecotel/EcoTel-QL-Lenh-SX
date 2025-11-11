@@ -13,6 +13,8 @@ import {
 } from '@mui/material';
 import dayjs from 'dayjs';
 import { Department } from '../../types';
+import { userAtom } from '../../atoms/userAtoms';
+import { useAtom } from 'jotai';
 
 const formatNumber = (num?: number) =>
   num ? num.toFixed(2).replace(/\.00$/, '') : '';
@@ -52,7 +54,7 @@ export default function CarProductivityReport({
     });
     return total;
   }, [data]);
-
+  const [user] = useAtom(userAtom);
   return (
     <Grid item xs={12}>
       <Paper sx={{ p: 2 }}>
@@ -69,7 +71,7 @@ export default function CarProductivityReport({
           BÁO CÁO NĂNG SUẤT ĐẦU XE
         </Typography>
 
-        <Typography>Đơn vị: {department?.code}</Typography>
+        <Typography>Đơn vị: {department ? department.code : user?.department?.code}</Typography>
         <Typography>Tháng: {date?.format('MM/YYYY')}</Typography>
 
         {/* Table */}

@@ -48,8 +48,8 @@ export enum DeviceTypeEnum {
 
 export enum ReportEnum {
     INACTIVE_VEHICLES = 'Xe không hoạt động',
-    EXCAVATOR_TRIP_LIST = 'Biểu chấm chuyến máy xúc',
-    CAR_TRIP_LIST = 'Biểu chấm chuyến xe',
+    EXCAVATOR_TRIP_LIST = 'Biểu chấm chuyến máy xúc (Mẫu 01)',
+    CAR_TRIP_LIST = 'Biểu chấm chuyến xe (Mẫu 03)',
     WORK_REPORT_SLIP = 'Phiếu báo công',
     TIMESHEET = 'Bảng chấm công',
     MEAL_REPORT_SLIP = 'Phiếu báo ăn',
@@ -60,9 +60,11 @@ export enum ReportEnum {
     SHIFT_SUMMARY_EXCAVATOR = 'Tổng hợp số liệu trong ca (Máy xúc)',
     SHIFT_SUMMARY_CAR = 'Tổng hợp số liệu trong ca (Ô tô)',
     DATE_TRIP_CAR = 'Báo cáo chuyến',
-    DAILY_PRODUCTION_EXCAVATOR_REPORT = 'Bản tổng hợp thống kê than, đất',
-    DAILY_PRODUCTION_CAR_REPORT = 'Báo cáo sản lượng ngày',
-    PRODUCTIVITY_CAR_REPORT = 'Báo cáo năng suất đầu xe',
+    DAILY_PRODUCTION_EXCAVATOR_REPORT = 'Bản tổng hợp thống kê than, đất (Mẫu 02)',
+    DAILY_PRODUCTION_CAR_REPORT = 'Báo cáo sản lượng xe ô tô thực hiện (Mẫu 04)',
+    PRODUCTIVITY_CAR_REPORT = 'Báo cáo năng suất đầu xe (Mẫu 05)',
+    PRODUCTION_LAND_CAR_REPORT = 'Báo cáo sản lượng vận chuyển đất đá (Mẫu 06)',
+    PRODUCTION_COAL_CAR_REPORT = 'Báo cáo sản lượng vận chuyển than (Mẫu 07)',
     // Các báo cáo bị comment:
     // IN_KIND_ALLOWANCE_SLIP: 'Phiếu bồi dưỡng hiện vật',
     // OIL_RECEIPT_SLIP: 'Phiếu lĩnh dầu',

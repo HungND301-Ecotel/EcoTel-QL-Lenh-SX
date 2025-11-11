@@ -398,17 +398,42 @@ router.delete('/', verifyToken, async (req, res) => {
             req.logger.warn("⚠️ Yêu cầu xóa không có IDs hợp lệ.");
             return res.status(400).send({ status: 'error', message: 'Vui lòng chọn bản ghi cần xóa' });
         }
+        const usersToDelete = await User.find({ _id: { $in: ids } })
+            .select('_id username');
 
-        const result = await User.deleteMany({ _id: { $in: ids } });
-        if (result.deletedCount === 0) {
-            req.logger.info("ℹ️ Không tìm thấy bản ghi để xóa.");
+        if (!usersToDelete.length) {
+            req.logger.info("ℹ️ Không tìm thấy user để xóa.");
             return res.status(200).send({ status: 'error', message: 'Không tìm thấy bản ghi để xóa' });
         }
 
-        req.logger.info(`✅ ${user?.username}  Đã xóa thành công ${result.deletedCount} người dùng.`);
+        // Log danh sách tài khoản
+        req.logger.info(
+            `👤 ${user?.username} yêu cầu xóa (soft delete) các tài khoản: ${JSON.stringify(usersToDelete)}`
+        );
+
+        // const result = await User.deleteMany({ _id: { $in: ids } });
+        const result = await User.updateMany(
+            { _id: { $in: ids } },
+            {
+                $set: {
+                    active: false,
+                }
+            }, { new: true }
+        );
+
+        if (result.matchedCount === 0) {
+            req.logger.info("ℹ️ Không tìm thấy bản ghi để cập nhật.");
+            return res.status(200).send({ status: 'error', message: 'Không tìm thấy bản ghi để xóa' });
+        }
+        // if (result.deletedCount === 0) {
+        //     req.logger.info("ℹ️ Không tìm thấy bản ghi để xóa.");
+        //     return res.status(200).send({ status: 'error', message: 'Không tìm thấy bản ghi để xóa' });
+        // }
+
+        req.logger.info(`✅ ${user?.username}  Đã xóa thành công ${result.matchedCount} người dùng.`);
         res.status(200).json({
             status: 'success',
-            message: `Đã xóa ${result.deletedCount} bản ghi`
+            message: `Đã xóa ${result.matchedCount} bản ghi`
         });
     } catch (error) {
         req.logger.error("❌ Lỗi khi xóa người dùng", error);
@@ -422,7 +447,20 @@ router.delete('/', verifyToken, async (req, res) => {
 router.delete('/me', verifyToken, async (req, res) => {
     try {
         const user = req.user;
-        const result = await User.findByIdAndDelete(req.userId);
+        const usersToDelete = await User.findById(req.userId)
+            .select('_id username');
+        req.logger.info(
+            `👤 ${user?.username} yêu cầu xóa (soft delete) tài khoản: ${JSON.stringify(usersToDelete)}`
+        );
+
+        const result = await User.findByIdAndUpdate(
+            req.userId,
+            {
+                $set: {
+                    active: false,
+                }
+            }, { new: true }
+        );
         if (!result) {
             req.logger.info("ℹ️ Không tìm thấy người dùng để xóa.");
             return res.status(200).send({ status: 'error', message: 'Không tìm thấy người dùng để xóa' });
