@@ -182,13 +182,13 @@ const Machines: React.FC = () => {
         if (user) {
             let initialColumns: string[];
 
-            if (user.role === RoleEnum.ADMIN) {
-                initialColumns = defaultColumns.map((i) => i.id);
-            } else {
-                initialColumns = defaultColumns
-                    .filter((i) => i.id !== "edit")
-                    .map((i) => i.id);
-            }
+            // if (user.role === RoleEnum.ADMIN) {
+            initialColumns = defaultColumns.map((i) => i.id);
+            // } else {
+            //     initialColumns = defaultColumns
+            //         .filter((i) => i.id !== "edit")
+            //         .map((i) => i.id);
+            // }
 
             setVisibleColumns(initialColumns);
         }
@@ -720,7 +720,7 @@ const Machines: React.FC = () => {
                                     helperText={formik.touched.status && formik.errors.status}
                                 >
                                     {STATUS_DEVICE_OPTIONS.map(o => (
-                                        <MenuItem key={o.label} value={o.label} hidden={o.label === StatusDeviceEnum.IN_USE && user?.role === RoleEnum.MANAGER}>{o.value}</MenuItem>
+                                        <MenuItem key={o.label} value={o.label} disabled={o.label === StatusDeviceEnum.IN_USE && user?.role === RoleEnum.MANAGER}>{o.value}</MenuItem>
                                     ))}
                                 </TextField>
                                 <Autocomplete
