@@ -77,6 +77,7 @@ async function groupTripsVehicle(trips, date, shift) {
 }
 
 // san luong tkm
+// groupTripsVehicleProduction and related utility functions remain the same as they were not requested for review
 async function groupTripsVehicleProduction(trips) {
     const enrichedTrips = await Promise.all(
         trips.map(t =>
@@ -93,7 +94,7 @@ async function groupTripsVehicleProduction(trips) {
                 return {
                     device: t.device, //xe
                     excavator: t.excavator, // máy xúc
-                    location: t.toLocation, //đổ tải
+                    location: t.toLocation, // đổ tải
                     distance: travelLog?.fullDistanceKm || '', // cung độ
                     excavationLevel: travelLog?.excavationLevel || '', // tầng xúc
                     fullLiftHeightM: travelLog?.fullLiftHeightM || '', // độ cao nâng tải
@@ -115,29 +116,214 @@ async function groupTripsVehicleProduction(trips) {
         return shiftA - shiftB;
     });
 
-    return enrichedTrips;
+    const groupsMap = {};
+
+    for (const t of enrichedTrips) {
+        const product = t.material?.acceptedProduct; // LAND / COAL
+        if (!product) continue;
+
+        // ===== KEY CHỈ TIÊU (để quyết định header động, tránh trùng) =====
+        const locationName = t.location?.name || "";
+        const excavationLevel = t.excavationLevel || "";
+        const fullLiftHeightM = t.fullLiftHeightM || "";
+        const excavatorCode = t.excavator?.code || "";
+        const distance = t.distance || "";
+        const materialName = t.material?.name || "";
+
+        // Nhóm ban đầu theo ca + device
+        const deviceCode = t.device?.code || "";
+        const shiftName = t.shift || ""; // đã là 1 / 2 / 3
+
+        const key = [
+            product,
+            locationName,
+            excavationLevel,
+            fullLiftHeightM,
+            excavatorCode,
+            distance,
+            materialName,
+        ].join("|");
+
+        if (!groupsMap[key]) {
+            groupsMap[key] = {
+                product, 			// LAND / COAL
+                locationName,
+                excavationLevel,
+                fullLiftHeightM,
+                excavatorCode,
+                distance,
+                materialName,
+
+                // các xe/ca tham gia nhóm này
+                devices: new Set(),
+                shifts: new Set(),
+
+                // số liệu cần cộng dồn
+                quantity: 0, 			// số chuyến
+                totalCubicMeter: 0, 	// m3 (cho ĐẤT)
+                totalTon: 0, 			// tấn (cho THAN)
+                production: 0, 		// Tkm
+            };
+        }
+
+        const g = groupsMap[key];
+        if (deviceCode) g.devices.add(deviceCode);
+        if (shiftName) g.shifts.add(shiftName);
+
+        const qty = t.quantity || 0;
+        g.quantity += qty;
+        g.totalCubicMeter += t.totalCubicMeter || 0;
+        g.totalTon += t.totalTon || 0;
+        g.production += t.production || t.totalProduction || 0;
+    }
+
+    const landGroups = [];
+    const coalGroups = [];
+
+    Object.values(groupsMap).forEach((g) => {
+        const normalized = {
+            product: g.product,
+            locationName: g.locationName,
+            excavationLevel: g.excavationLevel,
+            fullLiftHeightM: g.fullLiftHeightM,
+            excavatorCode: g.excavatorCode,
+            distance: g.distance,
+            materialName: g.materialName,
+            devices: Array.from(g.devices), // có thể join(', ') để show
+            shifts: Array.from(g.shifts),
+
+            quantity: g.quantity,
+            totalCubicMeter: g.totalCubicMeter,
+            totalTon: g.totalTon,
+            production: g.production,
+        };
+
+        if (g.product === ACCEPTED_PRODUCT.LAND) landGroups.push(normalized);
+        else if (g.product === ACCEPTED_PRODUCT.COAL) coalGroups.push(normalized);
+    });
+
+    // sort cho đẹp: theo location rồi material
+    landGroups.sort((a, b) =>
+        (a.locationName || "").localeCompare(b.locationName || "") ||
+        (a.materialName || "").localeCompare(b.materialName || "")
+    );
+    coalGroups.sort((a, b) =>
+        (a.locationName || "").localeCompare(b.locationName || "") ||
+        (a.materialName || "").localeCompare(b.materialName || "")
+    );
+
+    // tổng để đổ vào cột TỔNG ĐẤT / TỔNG THAN
+    const totals = {
+        land: {
+            quantity: landGroups.reduce((s, g) => s + g.quantity, 0),
+            m3: landGroups.reduce((s, g) => s + g.totalCubicMeter, 0),
+            tkm: landGroups.reduce((s, g) => s + g.production, 0),
+        },
+        coal: {
+            quantity: coalGroups.reduce((s, g) => s + g.quantity, 0),
+            ton: coalGroups.reduce((s, g) => s + g.totalTon, 0),
+            tkm: coalGroups.reduce((s, g) => s + g.production, 0),
+        }
+    };
+
+    return { landGroups, coalGroups, totals };
 }
+
+// bao cao san luong van chuyen dat da
+const _ = require('lodash');
+
+async function groupProductionLand(trips) {
+    // Lưu ý: Giả định hàm 'limit' đã được định nghĩa trong môi trường của bạn.
+    const enrichedTrips = await Promise.all(
+        trips.map(t =>
+        // Sử dụng limit nếu cần, nếu không thì bỏ qua async/limit
+        // limit(async () => ({ 
+        ({
+            deviceMaterial: t.device?.material?.name || "Khác", // Vật liệu gắn với xe (Header)
+            excavatorCode: t.excavator?.code || "Không rõ",      // Mã máy xúc (Dòng chi tiết)
+
+            // --- NHÓM CẤP CAO (I, II) ---
+            mainGroup: t.material?.name?.trim() || "Vật liệu khác",   // Vật liệu thực tế (Cấp I/II)
+
+            // --- NHÓM CẤP CON (1, 2, 3) ---
+            subGroup: t.excavator?.material?.name?.trim() || "Máy xúc khác", // Chủng loại máy xúc
+
+            quantity: t.quantity,
+            totalCubicMeter: t.totalCubicMeter,
+            production: t.totalProduction, // Tkm
+            totalTon: t.totalTon || 0
+        })
+            // )) // Đóng limit
+        )
+    );
+    console.log(enrichedTrips)
+
+    // 1. Nhóm ngoài cùng: theo deviceMaterial (Tạo cột Header)
+    const groupedByDeviceMaterial = _.groupBy(enrichedTrips, 'deviceMaterial');
+
+    const result = Object.entries(groupedByDeviceMaterial).map(([deviceMaterial, items]) => {
+
+        // Nhóm tất cả các mục theo mã máy xúc để tính tổng chuyến/M3/Tkm cho từng máy
+        const groupedByExcavatorCode = _.groupBy(items, 'excavatorCode');
+
+        const allExcavators = Object.entries(groupedByExcavatorCode).map(([excavatorCode, list]) => {
+            // Lấy thông tin nhóm cấp I/II và cấp con từ item đầu tiên
+            const firstItem = list[0];
+
+            return {
+                excavator: excavatorCode,
+                deviceMaterial,
+
+                // Thêm thông tin nhóm cấp I/II và cấp con vào dữ liệu chi tiết
+                mainGroup: firstItem.mainGroup,
+                subGroup: firstItem.subGroup,
+
+                totalTrips: _.sumBy(list, "quantity"),
+                totalM3: _.sumBy(list, "totalCubicMeter"),
+                totalTkm: _.sumBy(list, "production"),
+                totalTon: _.sumBy(list, "totalTon"),
+            };
+        });
+
+        // 🧩 Tổng toàn nhóm vật liệu (Cấp ngoài cùng)
+        const totalTrips = _.sumBy(items, "quantity");
+        const totalM3 = _.sumBy(items, "totalCubicMeter");
+        const totalTkm = _.sumBy(items, "production");
+        const totalTon = _.sumBy(items, "totalTon");
+
+        return {
+            deviceMaterial,
+            totalTrips,
+            totalM3,
+            totalTkm,
+            totalTon,
+            // Trả về danh sách máy xúc chi tiết đã được tính tổng và gắn nhóm
+            excavators: allExcavators,
+        };
+    });
+
+    return result;
+}
+
 
 // nang suat dau xe
 async function groupTripsVehicleProductivity(trips) {
     const result = {};
 
     for (const t of trips) {
-        // Lấy thông tin cơ bản
         const modelName = t.device?.material?.name || "Không rõ loại xe";
         const carCode = t.device?.code || "Không rõ xe";
         const productType = t.material?.acceptedProduct; // LAND / COAL
         const workingDate = dayjs(t.workingDate).format("YYYY-MM-DD");
         const shift = t.shift?.name || 1;
-        const key = `${carCode}_${workingDate}_${shift}`;
 
-        // Lấy sản lượng TKM (t.totalProduction)
+        // 🔑 GỘP THEO XE + NGÀY (bỏ shift)
+        const key = `${carCode}_${workingDate}`;
+
         const cubic = t.totalCubicMeter || 0;
         const ton = t.totalTon || 0;
         const tkm = t.totalProduction || 0;
 
-
-        // --- Khởi tạo nhóm theo loại xe (Model) ---
         if (!result[modelName]) {
             result[modelName] = {
                 modelName,
@@ -145,63 +331,73 @@ async function groupTripsVehicleProductivity(trips) {
                 summary: {
                     land: { trips: 0, m3: 0, tkm: 0 },
                     coal: { trips: 0, ton: 0, tkm: 0 },
-                    totalTkm: 0, // Tổng TKM của tất cả các xe thuộc model này
+                    totalTkm: 0,
                 },
             };
         }
+
         const modelGroup = result[modelName];
 
-        // --- Khởi tạo dòng tổng hợp của xe/ngày/ca ---
+        // 🔹 Tạo nhóm xe/ngày
         if (!modelGroup.vehicles[key]) {
             modelGroup.vehicles[key] = {
                 carCode,
                 workingDate,
-                shift,
+                shiftSet: new Set(), // để theo dõi số ca khác nhau
+                totalShifts: 0,
                 land: { trips: 0, m3: 0, tkm: 0 },
                 coal: { trips: 0, ton: 0, tkm: 0 },
-                totalTkm: 0, // Tổng TKM của riêng xe/ngày/ca này
+                totalTkm: 0,
             };
         }
 
         const record = modelGroup.vehicles[key];
 
+        // Ghi nhận ca
+        record.shiftSet.add(shift);
+        record.totalShifts = record.shiftSet.size;
+
         // --- Cộng dồn dữ liệu ---
         if (productType === ACCEPTED_PRODUCT.LAND) {
             record.land.trips += 1;
             record.land.m3 += cubic;
-            record.land.tkm += tkm; // <--- TKM cho Đất
+            record.land.tkm += tkm;
 
             modelGroup.summary.land.trips += 1;
             modelGroup.summary.land.m3 += cubic;
-            modelGroup.summary.land.tkm += tkm; // <--- TKM Summary cho Đất
+            modelGroup.summary.land.tkm += tkm;
         } else if (productType === ACCEPTED_PRODUCT.COAL) {
             record.coal.trips += 1;
             record.coal.ton += ton;
-            record.coal.tkm += tkm; // <--- TKM cho Than
+            record.coal.tkm += tkm;
 
             modelGroup.summary.coal.trips += 1;
             modelGroup.summary.coal.ton += ton;
-            modelGroup.summary.coal.tkm += tkm; // <--- TKM Summary cho Than
+            modelGroup.summary.coal.tkm += tkm;
         }
 
-        // Tính toán tổng TKM
         record.totalTkm = record.land.tkm + record.coal.tkm;
         modelGroup.summary.totalTkm =
             modelGroup.summary.land.tkm + modelGroup.summary.coal.tkm;
     }
 
-    // --- Chuẩn hóa ra mảng ---
     return Object.values(result).map((m) => ({
         modelName: m.modelName,
-        summary: m.summary, // Chứa { land: {..., tkm}, coal: {..., tkm}, totalTkm }
-        vehicles: Object.values(m.vehicles).sort((a, b) => {
-            // 1. Sắp xếp chính: workingDate (chuỗi YYYY-MM-DD so sánh được)
-            const dateComparison = a.workingDate.localeCompare(b.workingDate);
-            if (dateComparison !== 0) return dateComparison;
-            return (a.shift || 0) - (b.shift || 0);
-        }),
+        summary: m.summary,
+        vehicles: Object.values(m.vehicles)
+            .map((v) => ({
+                carCode: v.carCode,
+                workingDate: v.workingDate,
+                shift: v.totalShifts, // 👉 số ca làm trong ngày
+                land: v.land,
+                coal: v.coal,
+                totalTkm: v.totalTkm,
+            }))
+            .sort((a, b) => a.workingDate.localeCompare(b.workingDate)),
     }));
 }
+
+
 
 
 
@@ -532,7 +728,7 @@ async function caculatorWeight(materialId, deviceModel, quantity, totalDistance,
     const dryDensity = getTyTrongAtDate(material, normalizeDateToUTC(date))
     const valueModel = getMohinhAtDate(data, normalizeDateToUTC(date))
 
-    console.log(dryDensity, valueModel)
+    console.log(dryDensity, valueModel, material?.name)
 
 
     if (data && data.material?.acceptedProduct === ACCEPTED_PRODUCT.COAL) {
@@ -620,5 +816,6 @@ module.exports = {
     groupTripsVehicleProduction,
     safeQuery,
     caculatorWeight,
-    groupTripsVehicleProductivity
+    groupTripsVehicleProductivity,
+    groupProductionLand
 };
