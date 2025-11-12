@@ -142,6 +142,8 @@ async function groupTripsVehicleProduction(trips) {
             excavatorCode,
             distance,
             materialName,
+            deviceCode,
+            shiftName
         ].join("|");
 
         if (!groupsMap[key]) {
@@ -155,8 +157,8 @@ async function groupTripsVehicleProduction(trips) {
                 materialName,
 
                 // các xe/ca tham gia nhóm này
-                devices: new Set(),
-                shifts: new Set(),
+                deviceCode,
+                shiftName,
 
                 // số liệu cần cộng dồn
                 quantity: 0, 			// số chuyến
@@ -167,8 +169,8 @@ async function groupTripsVehicleProduction(trips) {
         }
 
         const g = groupsMap[key];
-        if (deviceCode) g.devices.add(deviceCode);
-        if (shiftName) g.shifts.add(shiftName);
+        g.deviceCode = deviceCode;
+        g.shiftName = shiftName;
 
         const qty = t.quantity || 0;
         g.quantity += qty;
@@ -189,8 +191,10 @@ async function groupTripsVehicleProduction(trips) {
             excavatorCode: g.excavatorCode,
             distance: g.distance,
             materialName: g.materialName,
-            devices: Array.from(g.devices), // có thể join(', ') để show
-            shifts: Array.from(g.shifts),
+            // devices: Array.from(g.devices), // có thể join(', ') để show
+            // shifts: Array.from(g.shifts),
+            deviceCode: g.deviceCode,
+            shift: g.shiftName,
 
             quantity: g.quantity,
             totalCubicMeter: g.totalCubicMeter,
@@ -246,7 +250,7 @@ async function groupProductionLand(trips) {
             mainGroup: t.material?.name?.trim() || "Vật liệu khác",   // Vật liệu thực tế (Cấp I/II)
 
             // --- NHÓM CẤP CON (1, 2, 3) ---
-            subGroup: t.excavator?.material?.name?.trim() || "Máy xúc khác", // Chủng loại máy xúc
+            subGroup: t.excavator?.material?.name?.trim() || "", // Chủng loại máy xúc
 
             quantity: t.quantity,
             totalCubicMeter: t.totalCubicMeter,

@@ -24,11 +24,15 @@ export default function CarProductCoalReport({
   data,
   signatureUrl,
   department,
+  startDate,
+  endDate,
   date,
 }: {
   data: any[];
   signatureUrl: string | null;
   department: Department | null;
+  startDate: dayjs.Dayjs | null,
+  endDate: dayjs.Dayjs | null,
   date: dayjs.Dayjs | null;
 }) {
   const [user] = useAtom(userAtom);
@@ -128,7 +132,8 @@ export default function CarProductCoalReport({
         <i style={{ fontSize: 20 }}>CÔNG TY CỔ PHẦN THAN CAO SƠN-TKV</i>
         <Typography textAlign={'center'} mb={2} variant='h3' fontWeight={'bold'}>Báo cáo sản lượng vận chuyển than</Typography>
         <Typography>Đơn vị: {department ? department.code : user?.department?.code}</Typography>
-        <Typography>Tháng: {date?.format('MM-YYYY')}</Typography>
+        <Typography>Từ ngày: {startDate?.format('DD-MM-YYYY')}</Typography>
+        <Typography>Đến ngày: {endDate?.format('DD-MM-YYYY')}</Typography>
         <TableContainer>
           <Table size="small" sx={{
             border: '1px solid black',
