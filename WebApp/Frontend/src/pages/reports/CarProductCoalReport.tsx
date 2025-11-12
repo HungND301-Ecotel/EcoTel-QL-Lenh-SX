@@ -20,7 +20,7 @@ import { userAtom } from "../../atoms/userAtoms";
 const formatNumber = (num?: number) =>
   num ? num.toFixed(2).replace(/\.00$/, "") : "";
 
-export default function CarProductLandReport({
+export default function CarProductCoalReport({
   data,
   signatureUrl,
   department,

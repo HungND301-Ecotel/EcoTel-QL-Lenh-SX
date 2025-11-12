@@ -72,7 +72,8 @@ export default function CarProductivityReport({
         </Typography>
 
         <Typography>Đơn vị: {department ? department.code : user?.department?.code}</Typography>
-        <Typography>Tháng: {date?.format('MM/YYYY')}</Typography>
+        <Typography>Từ ngày: {startDate?.format('DD-MM-YYYY')}</Typography>
+        <Typography>Đến ngày: {endDate?.format('DD-MM-YYYY')}</Typography>
 
         {/* Table */}
         <TableContainer sx={{ mt: 2 }}>
