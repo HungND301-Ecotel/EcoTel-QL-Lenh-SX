@@ -8800,7 +8800,7 @@ router.post(
 
             // Merge B4:B9 cho "Ca xe /đ trong ngày"
             sheet.mergeCells(criteriaStartRow - 1, shiftCol, criteriaEndRow, shiftCol); // B4:B9
-            sheet.getCell(criteriaStartRow - 1, shiftCol).value = "Ca xe /đ trong ngày";
+            sheet.getCell(criteriaStartRow - 1, shiftCol).value = "Ca xe h/đ trong ngày";
             sheet.getCell(criteriaStartRow - 1, shiftCol).alignment = center;
 
             // Tiêu đề ĐẤT (Columns landQuantityStartCol ... landQuantityEndCol)
@@ -8889,43 +8889,38 @@ router.post(
 
             // === Body: danh sách xe/ca (Starts Row 10) ===
             // === Body: danh sách xe/ca (Ca trước → Xe sau) ===
+            // === Body: danh sách xe/ca ===
             let rowIdx = criteriaEndRow + 1;
 
-            // Lấy toàn bộ danh sách ca xuất hiện
+            // Danh sách ca, xe
             const allShifts = Array.from(
-                new Set([...landGroups, ...coalGroups].flatMap(g => g.shifts))
+                new Set([...landGroups, ...coalGroups].map(g => g.shift))
             ).sort((a, b) => parseInt(a) - parseInt(b));
 
-            // Lấy danh sách xe, sắp xếp tăng dần
             const allDevices = Array.from(
-                new Set([...landGroups, ...coalGroups].flatMap(g => g.devices))
+                new Set([...landGroups, ...coalGroups].map(g => g.deviceCode))
             ).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
-            // Lặp theo từng ca, rồi từng xe trong ca đó
             for (const shift of allShifts) {
                 for (const device of allDevices) {
-                    // Kiểm tra xem xe này có dữ liệu trong ca hiện tại không
+                    // Kiểm tra có dữ liệu không
                     const hasData = [...landGroups, ...coalGroups].some(
-                        g => g.devices.includes(device) && g.shifts.includes(shift)
+                        g => g.deviceCode === device && g.shift === shift
                     );
-                    if (!hasData) continue; // Bỏ qua nếu không có dữ liệu trong ca này
+                    if (!hasData) continue;
 
                     const row = sheet.getRow(rowIdx++);
-
-                    // Cột A: Xe
                     row.getCell(criteriaCol).value = device;
                     row.getCell(criteriaCol).alignment = center;
-
-                    // Cột B: Ca
                     row.getCell(shiftCol).value = shift;
                     row.getCell(shiftCol).alignment = center;
 
-                    // --- LAND ---
+                    // === ĐẤT ===
                     landHeaders.forEach((h, idx) => {
                         const matched = landGroups.find(
-                            (g) =>
-                                g.devices.includes(device) &&
-                                g.shifts.includes(shift) &&
+                            g =>
+                                g.deviceCode === device &&
+                                g.shift === shift &&
                                 g.locationName === h[0] &&
                                 g.excavationLevel === h[1] &&
                                 g.fullLiftHeightM === h[2] &&
@@ -8933,32 +8928,28 @@ router.post(
                                 String(g.distance || "") === String(h[4] || "") &&
                                 g.materialName === h[5]
                         );
-                        const cell = row.getCell(landQuantityStartCol + idx);
-                        cell.value = matched?.quantity || "";
-                        cell.numFmt = '#,##0.0';
+                        row.getCell(landQuantityStartCol + idx).value = matched?.quantity || "";
                     });
 
-                    // Tổng Đất
-                    const totalLandForDeviceShift = landGroups
-                        .filter((g) => g.devices.includes(device) && g.shifts.includes(shift))
+                    const totalLand = landGroups
+                        .filter(g => g.deviceCode === device && g.shift === shift)
                         .reduce(
                             (acc, g) => ({
-                                m3: acc.m3 + g.totalCubicMeter,
-                                tkm: acc.tkm + g.production,
+                                m3: acc.m3 + (g.totalCubicMeter || 0),
+                                tkm: acc.tkm + (g.production || 0),
                             }),
                             { m3: 0, tkm: 0 }
                         );
-                    row.getCell(totalLandM3).value = totalLandForDeviceShift.m3;
-                    row.getCell(totalLandM3).numFmt = '#,##0.0';
-                    row.getCell(totalLandTkm).value = totalLandForDeviceShift.tkm;
-                    row.getCell(totalLandTkm).numFmt = '#,##0.0';
 
-                    // --- COAL ---
+                    row.getCell(totalLandM3).value = totalLand.m3;
+                    row.getCell(totalLandTkm).value = totalLand.tkm;
+
+                    // === THAN ===
                     coalHeaders.forEach((h, idx) => {
                         const matched = coalGroups.find(
-                            (g) =>
-                                g.devices.includes(device) &&
-                                g.shifts.includes(shift) &&
+                            g =>
+                                g.deviceCode === device &&
+                                g.shift === shift &&
                                 g.locationName === h[0] &&
                                 g.excavationLevel === h[1] &&
                                 g.fullLiftHeightM === h[2] &&
@@ -8966,26 +8957,24 @@ router.post(
                                 String(g.distance || "") === String(h[4] || "") &&
                                 g.materialName === h[5]
                         );
-                        const cell = row.getCell(coalQuantityStartCol + idx);
-                        cell.value = matched?.quantity || "";
-                        cell.numFmt = '#,##0.0';
+                        row.getCell(coalQuantityStartCol + idx).value = matched?.quantity || "";
                     });
 
-                    const totalCoalForDeviceShift = coalGroups
-                        .filter((g) => g.devices.includes(device) && g.shifts.includes(shift))
+                    const totalCoal = coalGroups
+                        .filter(g => g.deviceCode === device && g.shift === shift)
                         .reduce(
                             (acc, g) => ({
-                                ton: acc.ton + g.totalTon,
-                                tkm: acc.tkm + g.production,
+                                ton: acc.ton + (g.totalTon || 0),
+                                tkm: acc.tkm + (g.production || 0),
                             }),
                             { ton: 0, tkm: 0 }
                         );
-                    row.getCell(totalCoalTon).value = totalCoalForDeviceShift.ton;
-                    row.getCell(totalCoalTon).numFmt = '#,##0.0';
-                    row.getCell(totalCoalTkm).value = totalCoalForDeviceShift.tkm;
-                    row.getCell(totalCoalTkm).numFmt = '#,##0.0';
+
+                    row.getCell(totalCoalTon).value = totalCoal.ton;
+                    row.getCell(totalCoalTkm).value = totalCoal.tkm;
                 }
             }
+
 
 
             // === Dòng tổng cuối (Footer) ===
@@ -9025,7 +9014,7 @@ router.post(
             // Coal Totals (Quantity)
             coalHeaders.forEach((h, idx) => {
                 const totalQuantity = coalGroups
-                    .filter(g => h[0] === g.locationName === h[0] &&
+                    .filter(g => g.locationName === h[0] &&
                         g.excavationLevel === h[1] &&
                         g.fullLiftHeightM === h[2] &&
                         g.excavatorCode === h[3] &&
@@ -9108,6 +9097,74 @@ router.post(
             sheet.getCell(currentRow + 1, rightStart).value = '(Ký, ghi rõ họ tên)';
             sheet.getCell(currentRow + 1, rightStart).font = { italic: true, size: 11 };
             sheet.getCell(currentRow + 1, rightStart).alignment = center;
+
+            // === Khối tổng theo ca ===
+            let rowPtr = totalRow.number + 5;
+            const shifts = [1, 2, 3];
+
+            // === Helper ===
+            const sumByShift = (arr, shift, field) =>
+                arr.filter(g => g.shift === shift).reduce((s, g) => s + (g[field] || 0), 0);
+
+            // === Tổng chuyến ===
+            let r = sheet.getRow(rowPtr++);
+            r.getCell(1).value = "Tổng chuyến:";
+            r.font = { bold: true };
+            r.alignment = { horizontal: "left" };
+
+            shifts.forEach(s => {
+                const val = sumByShift([...landGroups, ...coalGroups], s, "quantity") || 0;
+                sheet.getRow(rowPtr++).getCell(1).value = `Ca ${s}: ${val}`;
+            });
+
+            // khoảng cách 2 dòng
+            rowPtr += 2;
+
+            // === Tổng đất (m³) ===
+            let r2 = sheet.getRow(rowPtr++);
+            r2.getCell(1).value = "Tổng đất (m³):";
+            r2.font = { bold: true };
+
+            shifts.forEach(s => {
+                const val = sumByShift(landGroups, s, "totalCubicMeter") || 0;
+                sheet.getRow(rowPtr++).getCell(1).value = `Ca ${s}: ${val.toFixed(1)}`;
+            });
+
+            rowPtr += 2;
+
+            // === Tổng đất (Tkm) ===
+            let r3 = sheet.getRow(rowPtr++);
+            r3.getCell(1).value = "Tổng đất (Tkm):";
+            r3.font = { bold: true };
+
+            shifts.forEach(s => {
+                const val = sumByShift(landGroups, s, "production") || 0;
+                sheet.getRow(rowPtr++).getCell(1).value = `Ca ${s}: ${val.toFixed(1)}`;
+            });
+
+            rowPtr += 2;
+
+            // === Tổng than (tấn) ===
+            let r4 = sheet.getRow(rowPtr++);
+            r4.getCell(1).value = "Tổng than (tấn):";
+            r4.font = { bold: true };
+
+            shifts.forEach(s => {
+                const val = sumByShift(coalGroups, s, "totalTon") || 0;
+                sheet.getRow(rowPtr++).getCell(1).value = `Ca ${s}: ${val.toFixed(1)}`;
+            });
+
+            rowPtr += 2;
+
+            // === Tổng than (Tkm) ===
+            let r5 = sheet.getRow(rowPtr++);
+            r5.getCell(1).value = "Tổng than (Tkm):";
+            r5.font = { bold: true };
+
+            shifts.forEach(s => {
+                const val = sumByShift(coalGroups, s, "production") || 0;
+                sheet.getRow(rowPtr++).getCell(1).value = `Ca ${s}: ${val.toFixed(1)}`;
+            });
 
 
             // === A4 Landscape and Final Styling ===
@@ -9221,7 +9278,7 @@ router.post(
     restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER),
     async (req, res, next) => {
         try {
-            const { date, department } = req.body;
+            const { startDate, endDate, department } = req.body;
             const user = req.user;
             let query = {};
 
@@ -9232,22 +9289,17 @@ router.post(
                 dep = user?.department
             }
 
-            const inputDate = dayjs(date, "MM/YYYY");
-
-            // Ngày đầu tháng (00:00:00.00)
-            const startDate = inputDate.startOf('month').toDate();
-
-            // Ngày cuối tháng (23:59:59.999)
-            const endDate = inputDate.endOf('month').toDate();
+            if (startDate && endDate) {
+                query.workingDate = {
+                    $gte: new Date(startDate),
+                    $lte: new Date(endDate),
+                };
+            }
 
             // Lấy Orders
             const orders = await Order.find({
                 ...query,
                 department: dep?._id,
-                workingDate: {
-                    $gte: new Date(startDate),
-                    $lte: new Date(endDate),
-                },
             })
                 .populate({
                     path: "device",
@@ -9313,7 +9365,7 @@ router.post(
     restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER),
     async (req, res, next) => {
         try {
-            const { date, department, signature } = req.body;
+            const { startDate, endDate, department, signature } = req.body;
             const user = req.user;
             let query = {};
 
@@ -9324,22 +9376,17 @@ router.post(
                 dep = user?.department
             }
 
-            const inputDate = dayjs(date, "MM/YYYY");
-
-            // Ngày đầu tháng (00:00:00.00)
-            const startDate = inputDate.startOf('month').toDate();
-
-            // Ngày cuối tháng (23:59:59.999)
-            const endDate = inputDate.endOf('month').toDate();
+            if (startDate && endDate) {
+                query.workingDate = {
+                    $gte: new Date(startDate),
+                    $lte: new Date(endDate),
+                };
+            }
 
             // Lấy Orders
             const orders = await Order.find({
                 ...query,
                 department: dep?._id,
-                workingDate: {
-                    $gte: new Date(startDate),
-                    $lte: new Date(endDate),
-                },
             })
                 .populate({
                     path: "device",
@@ -9439,8 +9486,11 @@ router.post(
             sheet.getCell("A3").alignment = { horizontal: "left" };
             sheet.mergeCells(4, 1, 4, 2);
             // Sửa hiển thị ngày/tháng
-            sheet.getCell("A4").value = 'Tháng: ' + dayjs(date, "MM/YYYY").format("MM/YYYY");
+            sheet.getCell("A4").value = 'Từ ngày: ' + dayjs(startDate)?.format('DD-MM-YYYY');
             sheet.getCell("A4").alignment = { horizontal: "left" };
+
+            sheet.getCell("C4").value = 'Đến ngày: ' + dayjs(endDate)?.format('DD-MM-YYYY');
+            sheet.getCell("C4").alignment = { horizontal: "left" };
 
             // === Header bảng (Hàng 5 & 6) ===
             const headerRow5 = sheet.getRow(6);
@@ -9660,7 +9710,7 @@ router.post(
             );
             res.setHeader(
                 "Content-Disposition",
-                `attachment; filename=BaoCaoNangSuatDauXe_${inputDate.format('MM_YYYY')}.xlsx`
+                `attachment; filename=BaoCaoNangSuatDauXe_${dayjs(startDate).format('DD_MM_YYYY')}_${dayjs(endDate).format('DD_MM_YYYY')}.xlsx`
             );
             await workbook.xlsx.write(res);
             res.end();
@@ -9680,7 +9730,7 @@ router.post(
     restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER),
     async (req, res, next) => {
         try {
-            const { date, department } = req.body;
+            const { startDate, endDate, department } = req.body;
             const type = req.query.type
             const user = req.user;
             let query = {};
@@ -9692,22 +9742,17 @@ router.post(
                 dep = user?.department
             }
 
-            const inputDate = dayjs(date, "MM/YYYY");
-
-            // Ngày đầu tháng (00:00:00.00)
-            const startDate = inputDate.startOf('month').toDate();
-
-            // Ngày cuối tháng (23:59:59.999)
-            const endDate = inputDate.endOf('month').toDate();
+            if (startDate && endDate) {
+                query.workingDate = {
+                    $gte: new Date(startDate),
+                    $lte: new Date(endDate),
+                };
+            }
 
             // Lấy Orders
             const orders = await Order.find({
                 ...query,
                 department: dep?._id,
-                workingDate: {
-                    $gte: new Date(startDate),
-                    $lte: new Date(endDate),
-                },
             })
                 .populate({
                     path: "device",
@@ -9774,7 +9819,7 @@ router.post(
     restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER),
     async (req, res) => {
         try {
-            const { date, department, signature } = req.body;
+            const { startDate, endDate, department, signature } = req.body;
             const type = req.query.type
             const user = req.user;
 
@@ -9785,14 +9830,10 @@ router.post(
                 dep = user?.department;
             }
 
-            const inputDate = dayjs(date, "MM/YYYY");
-            const startDate = inputDate.startOf("month").toDate();
-            const endDate = inputDate.endOf("month").toDate();
-
             // Lấy orders giống route /view
             const orders = await Order.find({
                 department: dep?._id,
-                workingDate: { $gte: startDate, $lte: endDate },
+                workingDate: { $gte: new Date(startDate), $lte: new Date(endDate) },
             })
                 .populate({
                     path: "device",
@@ -9903,7 +9944,7 @@ router.post(
 
             // ===== Tạo Excel =====
             const workbook = new ExcelJS.Workbook();
-            const sheet = workbook.addWorksheet("BC vận chuyển sl", {
+            const sheet = workbook.addWorksheet("BC_SL_DAT_DA", {
                 // views: [{ showGridLines: false }],
             });
 
@@ -9929,10 +9970,14 @@ router.post(
             sheet.getCell(currentRow, 1).value = `Đơn vị: ${dep?.code || ""}`;
             currentRow++;
 
-            sheet.mergeCells(currentRow, 1, currentRow, totalColSpan);
-            sheet.getCell(currentRow, 1).value = `Tháng: ${inputDate.format(
-                "MM-YYYY"
+            sheet.getCell(currentRow, 1).value = `Từ ngày: ${dayjs(startDate).format(
+                "DD-MM-YYYY"
             )}`;
+
+            sheet.getCell(currentRow, 4).value = `Đến ngày: ${dayjs(startDate).format(
+                "DD-MM-YYYY"
+            )}`;
+
             currentRow += 2;
 
             const headerRow1 = currentRow;
@@ -10186,8 +10231,10 @@ router.post(
             );
             res.setHeader(
                 "Content-Disposition",
-                `attachment; filename="BC_van_chuyen_dat_da_${inputDate.format(
-                    "MM-YYYY"
+                `attachment; filename="BC_van_chuyen_dat_da_${dayjs(startDate).format(
+                    "DD-MM-YYYY"
+                )}_${dayjs(endDate).format(
+                    "DD-MM-YYYY"
                 )}.xlsx"`
             );
 
