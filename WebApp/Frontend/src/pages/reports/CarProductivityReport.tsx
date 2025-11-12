@@ -42,7 +42,10 @@ export default function CarProductivityReport({
       land: { trips: 0, m3: 0, tkm: 0 },
       coal: { trips: 0, ton: 0, tkm: 0 },
       totalTkm: 0,
+      totalShifts: 0,
     };
+
+    const allWorkingDates = new Set();
     data.forEach((m) => {
       total.land.trips += m.summary.land.trips;
       total.land.m3 += m.summary.land.m3;
@@ -51,8 +54,17 @@ export default function CarProductivityReport({
       total.coal.ton += m.summary.coal.ton;
       total.coal.tkm += m.summary.coal.tkm;
       total.totalTkm += m.summary.totalTkm;
+
+      const vehicles = m.vehicles || [];
+      vehicles.forEach((v: any) => {
+        if (dayjs(v.workingDate).isValid()) {
+          // Chuẩn hóa ngày về 'YYYY-MM-DD' để Set so sánh chính xác
+          allWorkingDates.add(dayjs(v.workingDate).format('YYYY-MM-DD'));
+        }
+      });
+      total.totalShifts += vehicles.reduce((acc: any, v: any) => acc + (v.shift || 0), 0);
     });
-    return total;
+    return { ...total, totalDays: allWorkingDates.size };
   }, [data]);
   const [user] = useAtom(userAtom);
   return (
@@ -203,8 +215,12 @@ export default function CarProductivityReport({
                 <TableCell sx={{ fontWeight: 'bold' }}>
                   {formatNumber(grandTotal.totalTkm)}
                 </TableCell>
-                <TableCell></TableCell>
-                <TableCell></TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>
+                  {formatNumber(grandTotal.totalShifts)}
+                </TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>
+                  {formatNumber(grandTotal.totalDays)}
+                </TableCell>
               </TableRow>
             </TableBody>
           </Table>

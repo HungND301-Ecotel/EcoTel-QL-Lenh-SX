@@ -198,84 +198,128 @@ export default function CarProductReport({
               ))}
 
               {/* === DỮ LIỆU THEO XE / CA === */}
-              {allShifts.map((shift) =>
-                allDevices.map((device) => {
-                  // --- Tìm các giá trị tương ứng từng cột đất ---
-                  const landCells = safeLandHeaders.map((h, i) => {
-                    const matched = landGroups.find(
-                      (g: any) =>
-                        g.deviceCode === device &&
-                        g.shift === shift &&
-                        g.locationName === h[0] &&
-                        g.excavatorCode === h[3] &&
-                        String(g.distance || "") === String(h[4] || "") &&
-                        g.materialName === h[5]
-                    );
-                    return matched?.quantity ?? "";
-                  });
+              {allShifts.map((shift) => {
+                const shiftDevices = allDevices.filter(device =>
+                  [...landGroups, ...coalGroups].some(g => g.deviceCode === device && g.shift === shift)
+                );
 
-                  // --- Tìm các giá trị tương ứng từng cột than ---
-                  const coalCells = safeCoalHeaders.map((h, i) => {
-                    const matched = coalGroups.find(
-                      (g: any) =>
-                        g.deviceCode === device &&
-                        g.shift === shift &&
-                        g.locationName === h[0] &&
-                        g.excavatorCode === h[3] &&
-                        String(g.distance || "") === String(h[4] || "") &&
-                        g.materialName === h[5]
-                    );
-                    return matched?.quantity ?? "";
-                  });
+                const shiftLand = landGroups.filter((g: any) => g.shift === shift);
+                const shiftCoal = coalGroups.filter((g: any) => g.shift === shift);
 
-                  // --- Tổng cộng riêng từng xe / ca ---
-                  const totalLand = landGroups
-                    .filter((g: any) => g.deviceCode === device && g.shift === shift)
-                    .reduce(
-                      (acc: any, g: any) => ({
-                        m3: acc.m3 + (g.totalCubicMeter || 0),
-                        tkm: acc.tkm + (g.production || 0),
-                      }),
-                      { m3: 0, tkm: 0 }
-                    );
+                return (
+                  <React.Fragment key={`shift-${shift}`}>
+                    {/* === Các dòng chi tiết xe trong ca === */}
+                    {shiftDevices.map((device) => {
+                      const landCells = safeLandHeaders.map((h, i) => {
+                        const matched = shiftLand.find(
+                          (g: any) =>
+                            g.deviceCode === device &&
+                            g.locationName === h[0] &&
+                            g.excavatorCode === h[3] &&
+                            String(g.distance || "") === String(h[4] || "") &&
+                            g.materialName === h[5]
+                        );
+                        return matched?.quantity ?? "";
+                      });
 
-                  const totalCoal = coalGroups
-                    .filter((g: any) => g.deviceCode === device && g.shift === shift)
-                    .reduce(
-                      (acc: any, g: any) => ({
-                        ton: acc.ton + (g.totalTon || 0),
-                        tkm: acc.tkm + (g.production || 0),
-                      }),
-                      { ton: 0, tkm: 0 }
-                    );
+                      const coalCells = safeCoalHeaders.map((h, i) => {
+                        const matched = shiftCoal.find(
+                          (g: any) =>
+                            g.deviceCode === device &&
+                            g.locationName === h[0] &&
+                            g.excavatorCode === h[3] &&
+                            String(g.distance || "") === String(h[4] || "") &&
+                            g.materialName === h[5]
+                        );
+                        return matched?.quantity ?? "";
+                      });
 
-                  // --- Nếu xe không có dữ liệu cho ca này thì bỏ qua ---
-                  const hasData =
-                    landCells.some((v) => v) ||
-                    coalCells.some((v) => v) ||
-                    totalLand.m3 > 0 ||
-                    totalCoal.ton > 0;
+                      const totalLand = shiftLand
+                        .filter((g: any) => g.deviceCode === device)
+                        .reduce(
+                          (acc: any, g: any) => ({
+                            m3: acc.m3 + (g.totalCubicMeter || 0),
+                            tkm: acc.tkm + (g.production || 0),
+                          }),
+                          { m3: 0, tkm: 0 }
+                        );
 
-                  if (!hasData) return null;
+                      const totalCoal = shiftCoal
+                        .filter((g: any) => g.deviceCode === device)
+                        .reduce(
+                          (acc: any, g: any) => ({
+                            ton: acc.ton + (g.totalTon || 0),
+                            tkm: acc.tkm + (g.production || 0),
+                          }),
+                          { ton: 0, tkm: 0 }
+                        );
 
-                  return (
-                    <TableRow key={`${shift}-${device}`}>
-                      <TableCell>{device}</TableCell>
-                      <TableCell>{shift}</TableCell>
-                      {landCells.map((v, i) => (
-                        <TableCell key={`land-${device}-${i}`}>{v}</TableCell>
-                      ))}
-                      <TableCell>{totalLand.m3.toFixed(1)}</TableCell>
-                      <TableCell>{totalLand.tkm.toFixed(1)}</TableCell>
-                      {coalCells.map((v, i) => (
-                        <TableCell key={`coal-${device}-${i}`}>{v}</TableCell>
-                      ))}
-                      <TableCell>{totalCoal.ton.toFixed(1)}</TableCell>
-                      <TableCell>{totalCoal.tkm.toFixed(1)}</TableCell>
+                      return (
+                        <TableRow key={`${shift}-${device}`}>
+                          <TableCell>{device}</TableCell>
+                          <TableCell>{shift}</TableCell>
+                          {landCells.map((v, i) => (
+                            <TableCell key={`land-${device}-${i}`}>{v}</TableCell>
+                          ))}
+                          <TableCell>{totalLand.m3.toFixed(1)}</TableCell>
+                          <TableCell>{totalLand.tkm.toFixed(1)}</TableCell>
+                          {coalCells.map((v, i) => (
+                            <TableCell key={`coal-${device}-${i}`}>{v}</TableCell>
+                          ))}
+                          <TableCell>{totalCoal.ton.toFixed(1)}</TableCell>
+                          <TableCell>{totalCoal.tkm.toFixed(1)}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+
+                    {/* === Dòng tổng ca === */}
+                    <TableRow sx={{ fontWeight: "bold", backgroundColor: "#f2f2f2" }}>
+                      <TableCell colSpan={2}>TỔNG CA {shift}</TableCell>
+
+                      {/* Tổng từng cột đất */}
+                      {safeLandHeaders.map((h, i) => {
+                        const sum = shiftLand
+                          .filter(
+                            (g: any) =>
+                              g.locationName === h[0] &&
+                              g.excavatorCode === h[3] &&
+                              String(g.distance || "") === String(h[4] || "") &&
+                              g.materialName === h[5]
+                          )
+                          .reduce((s: any, g: any) => s + (g.quantity || 0), 0);
+                        return <TableCell key={`sum-l-${shift}-${i}`}>{sum.toFixed(1)}</TableCell>;
+                      })}
+                      <TableCell>
+                        {shiftLand.reduce((s: any, g: any) => s + (g.totalCubicMeter || 0), 0).toFixed(1)}
+                      </TableCell>
+                      <TableCell>
+                        {shiftLand.reduce((s: any, g: any) => s + (g.production || 0), 0).toFixed(1)}
+                      </TableCell>
+
+                      {/* Tổng từng cột than */}
+                      {safeCoalHeaders.map((h, i) => {
+                        const sum = shiftCoal
+                          .filter(
+                            (g: any) =>
+                              g.locationName === h[0] &&
+                              g.excavatorCode === h[3] &&
+                              String(g.distance || "") === String(h[4] || "") &&
+                              g.materialName === h[5]
+                          )
+                          .reduce((s: any, g: any) => s + (g.quantity || 0), 0);
+                        return <TableCell key={`sum-c-${shift}-${i}`}>{sum.toFixed(1)}</TableCell>;
+                      })}
+                      <TableCell>
+                        {shiftCoal.reduce((s: any, g: any) => s + (g.totalTon || 0), 0).toFixed(1)}
+                      </TableCell>
+                      <TableCell>
+                        {shiftCoal.reduce((s: any, g: any) => s + (g.production || 0), 0).toFixed(1)}
+                      </TableCell>
                     </TableRow>
-                  );
-                })
-              )}
+                  </React.Fragment>
+                );
+              })}
+
 
               {/* === TỔNG CỘNG TOÀN BỘ === */}
               <TableRow sx={{ fontWeight: "bold" }}>

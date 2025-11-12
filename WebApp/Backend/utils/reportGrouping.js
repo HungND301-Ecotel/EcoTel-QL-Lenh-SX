@@ -237,14 +237,10 @@ async function groupTripsVehicleProduction(trips) {
 const _ = require('lodash');
 
 async function groupProductionLand(trips) {
-    // Lưu ý: Giả định hàm 'limit' đã được định nghĩa trong môi trường của bạn.
     const enrichedTrips = await Promise.all(
-        trips.map(t =>
-        // Sử dụng limit nếu cần, nếu không thì bỏ qua async/limit
-        // limit(async () => ({ 
-        ({
+        trips.map(t => ({
             deviceMaterial: t.device?.material?.name || "Khác", // Vật liệu gắn với xe (Header)
-            excavatorCode: t.excavator?.code || "Không rõ",      // Mã máy xúc (Dòng chi tiết)
+            excavatorCode: t.excavator?.code || "Không rõ",       // Mã máy xúc (Dòng chi tiết)
 
             // --- NHÓM CẤP CAO (I, II) ---
             mainGroup: t.material?.name?.trim() || "Vật liệu khác",   // Vật liệu thực tế (Cấp I/II)
@@ -256,32 +252,34 @@ async function groupProductionLand(trips) {
             totalCubicMeter: t.totalCubicMeter,
             production: t.totalProduction, // Tkm
             totalTon: t.totalTon || 0
-        })
-            // )) // Đóng limit
-        )
+        }))
     );
-    console.log(enrichedTrips)
 
     // 1. Nhóm ngoài cùng: theo deviceMaterial (Tạo cột Header)
     const groupedByDeviceMaterial = _.groupBy(enrichedTrips, 'deviceMaterial');
 
     const result = Object.entries(groupedByDeviceMaterial).map(([deviceMaterial, items]) => {
 
-        // Nhóm tất cả các mục theo mã máy xúc để tính tổng chuyến/M3/Tkm cho từng máy
-        const groupedByExcavatorCode = _.groupBy(items, 'excavatorCode');
+        // 🎯 THAY ĐỔI: Nhóm theo khóa tổng hợp (mainGroup + subGroup + excavatorCode)
+        // Thay vì nhóm theo 'excavatorCode', chúng ta nhóm theo cả 3 cấp phân cấp.
+        const groupedByHierarchy = _.groupBy(items, item => {
+            return `${item.mainGroup}|${item.subGroup}|${item.excavatorCode}`;
+        });
 
-        const allExcavators = Object.entries(groupedByExcavatorCode).map(([excavatorCode, list]) => {
-            // Lấy thông tin nhóm cấp I/II và cấp con từ item đầu tiên
+        // Bây giờ, 'list' sẽ là một nhóm các chuyến xe có cùng MainGroup, SubGroup, và Excavator
+        const allExcavators = Object.values(groupedByHierarchy).map(list => {
+            // Lấy thông tin nhóm từ item đầu tiên (nay đã an toàn vì tất cả đều giống nhau)
             const firstItem = list[0];
 
             return {
-                excavator: excavatorCode,
-                deviceMaterial,
+                excavator: firstItem.excavatorCode, // Tên máy xúc
+                deviceMaterial, // Loại xe (từ vòng lặp bên ngoài)
 
-                // Thêm thông tin nhóm cấp I/II và cấp con vào dữ liệu chi tiết
+                // Các nhóm này giờ là duy nhất cho hàng này
                 mainGroup: firstItem.mainGroup,
                 subGroup: firstItem.subGroup,
 
+                // Tính tổng CHỈ cho nhóm cụ thể này
                 totalTrips: _.sumBy(list, "quantity"),
                 totalM3: _.sumBy(list, "totalCubicMeter"),
                 totalTkm: _.sumBy(list, "production"),
@@ -301,7 +299,7 @@ async function groupProductionLand(trips) {
             totalM3,
             totalTkm,
             totalTon,
-            // Trả về danh sách máy xúc chi tiết đã được tính tổng và gắn nhóm
+            // Trả về danh sách máy xúc chi tiết đã được nhóm đúng
             excavators: allExcavators,
         };
     });
