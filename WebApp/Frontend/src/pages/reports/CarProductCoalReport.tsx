@@ -20,7 +20,7 @@ import { userAtom } from "../../atoms/userAtoms";
 const formatNumber = (num?: number) =>
   num ? num.toFixed(2).replace(/\.00$/, "") : "";
 
-export default function CarProductCoalReport({
+export default function CarProductLandReport({
   data,
   signatureUrl,
   department,
@@ -64,9 +64,8 @@ export default function CarProductCoalReport({
     // 🧩 hierarchy: mainGroup (vật liệu) -> subGroup (material của excavator) -> excavator
     const hierarchy = Object.entries(
       _.groupBy(allExcavatorRecords, "mainGroup")
-    ).map(([mainGroup, mainItems]) => ({
-      mainGroup,
-      subGroups: Object.entries(_.groupBy(mainItems, "subGroup")).map(
+    ).map(([mainGroup, mainItems]) => {
+      const subGroups = Object.entries(_.groupBy(mainItems, "subGroup")).map(
         ([subGroup, subItems]) => {
           const groupedByExcavator = _.groupBy(subItems, "excavator");
 
@@ -94,12 +93,46 @@ export default function CarProductCoalReport({
             }
           );
 
-          return { subGroup, excavators };
-        }
-      ),
-    }));
+          // --- Tổng cho SubGroup (Nhóm Máy xúc) ---
+          const subGroupTotals = {
+            totalTrips: _.sumBy(excavators, "totalTrips"),
+            totalTon: _.sumBy(excavators, "totalTon"),
+            totalTkm: _.sumBy(excavators, "totalTkm"),
+            materials: headerColumns.reduce((acc, col) => {
+              acc[col] = {
+                totalTrips: _.sumBy(excavators, (e) => e.materials[col]?.totalTrips || 0),
+                totalTon: _.sumBy(excavators, (e) => e.materials[col]?.totalTon || 0),
+                totalTkm: _.sumBy(excavators, (e) => e.materials[col]?.totalTkm || 0),
+              };
+              return acc;
+            }, {} as Record<string, any>),
+          };
 
-    // 🧩 tổng toàn bảng + tổng từng deviceMaterial
+
+          return { subGroup, excavators, subGroupTotals };
+        }
+      );
+
+      // --- Tổng cho MainGroup (Nhóm Vật liệu) ---
+      const mainGroupTotals = {
+        totalTrips: _.sumBy(subGroups, (sg) => sg.subGroupTotals.totalTrips),
+        totalTon: _.sumBy(subGroups, (sg) => sg.subGroupTotals.totalTon),
+        totalTkm: _.sumBy(subGroups, (sg) => sg.subGroupTotals.totalTkm),
+        materials: headerColumns.reduce((acc, col) => {
+          acc[col] = {
+            totalTrips: _.sumBy(subGroups, (sg) => sg.subGroupTotals.materials[col]?.totalTrips || 0),
+            totalTon: _.sumBy(subGroups, (sg) => sg.subGroupTotals.materials[col]?.totalTon || 0),
+            totalTkm: _.sumBy(subGroups, (sg) => sg.subGroupTotals.materials[col]?.totalTkm || 0),
+          };
+          return acc;
+        }, {} as Record<string, any>),
+      };
+
+
+      return { mainGroup, subGroups, mainGroupTotals };
+    });
+
+    // 🧩 tổng toàn bảng + tổng từng deviceMaterial (Giữ nguyên)
     const overallTotals = {
       totalTrips: _.sumBy(data, "totalTrips"),
       totalTon: _.sumBy(data, "totalTon"),
@@ -184,28 +217,28 @@ export default function CarProductCoalReport({
             <TableBody>
               {/* dòng tổng trên cùng */}
               <TableRow>
-                <TableCell colSpan={2} sx={borderStyle}>
+                <TableCell colSpan={2} sx={{ ...borderStyle, fontWeight: 'bold' }}>
                   Tổng số
                 </TableCell>
-                <TableCell sx={borderStyle}>
+                <TableCell sx={{ ...borderStyle, fontWeight: 'bold' }}>
                   {formatNumber(overallTotals.totalTrips)}
                 </TableCell>
-                <TableCell sx={borderStyle}>
+                <TableCell sx={{ ...borderStyle, fontWeight: 'bold' }}>
                   {formatNumber(overallTotals.totalTon)}
                 </TableCell>
-                <TableCell sx={borderStyle}>
+                <TableCell sx={{ ...borderStyle, fontWeight: 'bold' }}>
                   {formatNumber(overallTotals.totalTkm)}
                 </TableCell>
                 {headerColumns.flatMap((col) => {
                   const totals = overallTotals.materialTotals[col] || {};
                   return [
-                    <TableCell key={`${col}-t1`} sx={borderStyle}>
+                    <TableCell key={`${col}-t1`} sx={{ ...borderStyle, fontWeight: 'bold' }}>
                       {formatNumber(totals.totalTrips)}
                     </TableCell>,
-                    <TableCell key={`${col}-t2`} sx={borderStyle}>
+                    <TableCell key={`${col}-t2`} sx={{ ...borderStyle, fontWeight: 'bold' }}>
                       {formatNumber(totals.totalTon)}
                     </TableCell>,
-                    <TableCell key={`${col}-t3`} sx={borderStyle}>
+                    <TableCell key={`${col}-t3`} sx={{ ...borderStyle, fontWeight: 'bold' }}>
                       {formatNumber(totals.totalTkm)}
                     </TableCell>,
                   ];
@@ -215,27 +248,73 @@ export default function CarProductCoalReport({
               {/* Nhóm theo mainGroup (vật liệu) -> subGroup (material của excavator) */}
               {hierarchy.map((main, mainIdx) => (
                 <React.Fragment key={mainIdx}>
-                  {/* dòng I, II, III... */}
+                  {/* dòng I, II, III... (Tiêu đề nhóm vật liệu) */}
                   <TableRow>
-                    <TableCell colSpan={totalColSpan} sx={{ ...borderStyle, textAlign: "left", fontWeight: "bold" }}>
+                    <TableCell colSpan={2} sx={{ ...borderStyle, textAlign: "left", fontWeight: "bold", }}>
                       {main.mainGroup}
                     </TableCell>
+
+                    <TableCell sx={{ ...borderStyle, fontWeight: 'bold' }}>
+                      {formatNumber(main.mainGroupTotals.totalTrips)}
+                    </TableCell>
+                    <TableCell sx={{ ...borderStyle, fontWeight: 'bold' }}>
+                      {formatNumber(main.mainGroupTotals.totalTon)}
+                    </TableCell>
+                    <TableCell sx={{ ...borderStyle, fontWeight: 'bold' }}>
+                      {formatNumber(main.mainGroupTotals.totalTkm)}
+                    </TableCell>
+                    {headerColumns.flatMap((col) => {
+                      const totals = main.mainGroupTotals.materials[col] || {};
+                      return [
+                        <TableCell key={`${col}-t1`} sx={{ ...borderStyle, fontWeight: 'bold' }}>
+                          {formatNumber(totals.totalTrips)}
+                        </TableCell>,
+                        <TableCell key={`${col}-t2`} sx={{ ...borderStyle, fontWeight: 'bold' }}>
+                          {formatNumber(totals.totalTon)}
+                        </TableCell>,
+                        <TableCell key={`${col}-t3`} sx={{ ...borderStyle, fontWeight: 'bold' }}>
+                          {formatNumber(totals.totalTkm)}
+                        </TableCell>,
+                      ];
+                    })}
                   </TableRow>
 
                   {main.subGroups.map((sub, subIdx) => (
                     <React.Fragment key={subIdx}>
-                      {/* dòng 1, 2, 3... (nhóm máy xúc) */}
+                      {/* dòng 1, 2, 3... (Tiêu đề nhóm máy xúc) */}
                       <TableRow>
                         <TableCell sx={borderStyle}>{subIdx + 1}</TableCell>
                         <TableCell
-                          colSpan={totalColSpan - 1}
-                          sx={{ ...borderStyle, textAlign: "left", fontStyle: "italic" }}
+                          sx={{ ...borderStyle, textAlign: "left", fontStyle: "italic", fontWeight: "bold" }}
                         >
                           Máy xúc {sub.subGroup}
                         </TableCell>
+                        <TableCell sx={{ ...borderStyle, fontWeight: 'bold' }}>
+                          {formatNumber(sub.subGroupTotals.totalTrips)}
+                        </TableCell>
+                        <TableCell sx={{ ...borderStyle, fontWeight: 'bold' }}>
+                          {formatNumber(sub.subGroupTotals.totalTon)}
+                        </TableCell>
+                        <TableCell sx={{ ...borderStyle, fontWeight: 'bold' }}>
+                          {formatNumber(sub.subGroupTotals.totalTkm)}
+                        </TableCell>
+                        {headerColumns.flatMap((col) => {
+                          const totals = sub.subGroupTotals.materials[col] || {};
+                          return [
+                            <TableCell key={`${col}-t1`} sx={{ ...borderStyle, fontWeight: 'bold' }}>
+                              {formatNumber(totals.totalTrips)}
+                            </TableCell>,
+                            <TableCell key={`${col}-t2`} sx={{ ...borderStyle, fontWeight: 'bold' }}>
+                              {formatNumber(totals.totalTon)}
+                            </TableCell>,
+                            <TableCell key={`${col}-t3`} sx={{ ...borderStyle, fontWeight: 'bold' }}>
+                              {formatNumber(totals.totalTkm)}
+                            </TableCell>,
+                          ];
+                        })}
                       </TableRow>
 
-                      {/* chi tiết từng máy xúc trong nhóm đó */}
+                      {/* chi tiết từng máy xúc trong nhóm đó (Giữ nguyên) */}
                       {
                         sub.excavators.map((row, idx) => (
                           <TableRow key={`${sub.subGroup}-${row.excavator}`}>

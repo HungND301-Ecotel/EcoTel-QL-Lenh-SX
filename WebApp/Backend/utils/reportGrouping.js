@@ -735,6 +735,7 @@ async function caculatorWeight(materialId, deviceModel, quantity, totalDistance,
     console.log(dryDensity, valueModel, material?.name)
 
 
+
     if (data && data.material?.acceptedProduct === ACCEPTED_PRODUCT.COAL) {
         ton = valueModel * (quantity || 0) * dryDensity
         production = valueModel * (totalDistance || 0) * dryDensity
