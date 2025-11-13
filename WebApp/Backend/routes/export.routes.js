@@ -3194,7 +3194,12 @@ router.post('/carReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN,
                 r.device?.category?.name?.toLowerCase().includes("vận tải".toLowerCase())
             );
             if (!reports.length) continue;
-            const grouped = await groupCar(reports)
+            const mapped = reports.map(r => ({
+                ...r.toObject(),
+                workingDate: r.workingDate || order.workingDate,
+                shift: r.shift || order.shift
+            }));
+            const grouped = await groupCar(mapped)
 
             result.push({
                 _id: order._id,
