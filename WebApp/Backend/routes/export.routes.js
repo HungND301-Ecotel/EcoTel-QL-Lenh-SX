@@ -9576,6 +9576,54 @@ const carProductivityReport = async (
 ) => {
     const grouped = await groupTripsVehicleProductivity(results)
 
+    const isSummarySheet = totalSheetName.startsWith("Tong_hop_");
+
+    let vehicleMapByModel = {};
+
+    if (isSummarySheet) {
+        grouped.forEach(model => {
+            const modelName = model.modelName || "Khác";
+
+            if (!vehicleMapByModel[modelName]) {
+                vehicleMapByModel[modelName] = {};
+            }
+
+            model.vehicles.forEach(v => {
+                const code = v.carCode;
+
+                if (!vehicleMapByModel[modelName][code]) {
+                    vehicleMapByModel[modelName][code] = {
+                        carCode: code,
+                        land: { trips: 0, m3: 0, tkm: 0 },
+                        coal: { trips: 0, ton: 0, tkm: 0 },
+                        totalTkm: 0,
+                        shifts: 0,
+                        days: new Set()
+                    };
+                }
+
+                const m = vehicleMapByModel[modelName][code];
+
+                m.land.trips += v.land.trips || 0;
+                m.land.m3 += v.land.m3 || 0;
+                m.land.tkm += v.land.tkm || 0;
+
+                m.coal.trips += v.coal.trips || 0;
+                m.coal.ton += v.coal.ton || 0;
+                m.coal.tkm += v.coal.tkm || 0;
+
+                m.totalTkm += v.totalTkm || 0;
+                m.shifts += v.shift || 0;
+
+                if (dayjs(v.workingDate).isValid()) {
+                    m.days.add(dayjs(v.workingDate).format("YYYY-MM-DD"));
+                }
+            });
+        });
+    }
+
+
+
     // --- 1. Tính Grand Total và Sắp xếp chi tiết xe theo ngày ---
     const grandTotal = {
         land: { trips: 0, m3: 0, tkm: 0 },
@@ -9703,26 +9751,54 @@ const carProductivityReport = async (
         modelRow.getCell(2).alignment = { horizontal: 'left', vertical: 'middle' };
 
         // Dòng chi tiết từng xe
-        model.vehicles.forEach(vehicle => {
-            currentRow++;
-            const vehicleRow = sheet.getRow(currentRow);
-            // Cột TT để trống cho chi tiết xe
-            vehicleRow.getCell(2).value = vehicle.carCode;
-            vehicleRow.getCell(3).value = formatNumber(vehicle.land.trips);
-            vehicleRow.getCell(4).value = formatNumber(vehicle.land.m3);
-            vehicleRow.getCell(5).value = formatNumber(vehicle.land.tkm);
-            vehicleRow.getCell(6).value = formatNumber(vehicle.coal.trips);
-            vehicleRow.getCell(7).value = formatNumber(vehicle.coal.ton);
-            vehicleRow.getCell(8).value = formatNumber(vehicle.coal.tkm);
-            vehicleRow.getCell(9).value = formatNumber(vehicle.totalTkm);
-            vehicleRow.getCell(10).value = vehicle.shift;
-            vehicleRow.getCell(11).value = dayjs(vehicle.workingDate).isValid() ? dayjs(vehicle.workingDate).format('DD/MM/YYYY') : '';
+        if (isSummarySheet) {
+            const cars = vehicleMapByModel[model.modelName] || {};
 
-            vehicleRow.eachCell({ includeEmpty: true }, cell => {
-                cell.alignment = center;
+            Object.values(cars).forEach(v => {
+                currentRow++;
+                const row = sheet.getRow(currentRow);
+
+                row.getCell(2).value = v.carCode;
+
+                row.getCell(3).value = formatNumber(v.land.trips);
+                row.getCell(4).value = formatNumber(v.land.m3);
+                row.getCell(5).value = formatNumber(v.land.tkm);
+
+                row.getCell(6).value = formatNumber(v.coal.trips);
+                row.getCell(7).value = formatNumber(v.coal.ton);
+                row.getCell(8).value = formatNumber(v.coal.tkm);
+
+                row.getCell(9).value = formatNumber(v.totalTkm);
+
+                row.getCell(10).value = v.shifts;
+                row.getCell(11).value = v.days.size;
+
+                row.eachCell({ includeEmpty: true }, c => c.alignment = center);
+                row.getCell(2).alignment = { horizontal: "left" };
             });
-            vehicleRow.getCell(2).alignment = { horizontal: 'left', vertical: 'middle' };
-        });
+        }
+        else {
+            model.vehicles.forEach(vehicle => {
+                currentRow++;
+                const vehicleRow = sheet.getRow(currentRow);
+                // Cột TT để trống cho chi tiết xe
+                vehicleRow.getCell(2).value = vehicle.carCode;
+                vehicleRow.getCell(3).value = formatNumber(vehicle.land.trips);
+                vehicleRow.getCell(4).value = formatNumber(vehicle.land.m3);
+                vehicleRow.getCell(5).value = formatNumber(vehicle.land.tkm);
+                vehicleRow.getCell(6).value = formatNumber(vehicle.coal.trips);
+                vehicleRow.getCell(7).value = formatNumber(vehicle.coal.ton);
+                vehicleRow.getCell(8).value = formatNumber(vehicle.coal.tkm);
+                vehicleRow.getCell(9).value = formatNumber(vehicle.totalTkm);
+                vehicleRow.getCell(10).value = vehicle.shift;
+                vehicleRow.getCell(11).value = dayjs(vehicle.workingDate).isValid() ? dayjs(vehicle.workingDate).format('DD/MM/YYYY') : '';
+
+                vehicleRow.eachCell({ includeEmpty: true }, cell => {
+                    cell.alignment = center;
+                });
+                vehicleRow.getCell(2).alignment = { horizontal: 'left', vertical: 'middle' };
+            });
+        }
     });
 
     // --- Dòng Tổng Cộng Toàn Bộ ---
