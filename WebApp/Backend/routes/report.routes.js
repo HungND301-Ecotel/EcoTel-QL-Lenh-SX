@@ -4,7 +4,7 @@ const Report = require('../models/Report');
 const Order = require('../models/Order');
 const ReportHistory = require('../models/ReportHistory');
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
-const { production_van_hanh_xe, production_van_hanh_xuc } = require('../utils/cron');
+const { production_vehicle, production_excavator } = require('../utils/cron');
 const { JOB_TYPE } = require('../config/config');
 
 
@@ -261,12 +261,12 @@ async function caculate(report) {
     }
     const jobType = order.job?.type;
     if (jobType === JOB_TYPE.VAN_HANH_XE) {
-        const value = await production_van_hanh_xe(report);
+        const value = await production_vehicle(report);
         totalProduction = value.production
         totalCubicMeter = value.cubicMeter
         totalTon = value.ton
     } else if (jobType === JOB_TYPE.VAN_HANH_XUC) {
-        const value = await production_van_hanh_xuc(report);
+        const value = await production_excavator(report);
         totalCubicMeter = value.cubicMeter;
         totalTon = value.ton;
     } else if (jobType === JOB_TYPE.VAN_HANH_KHOAN) {

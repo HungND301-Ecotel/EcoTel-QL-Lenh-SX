@@ -564,11 +564,11 @@ async function groupTripsCar(trips) {
                 distance,
                 quantity: time?.quantity || 1
             });
-            if (!groups[key].summary[t.material.name]) {
-                groups[key].summary[t.material.name] = { count: 0, distance: 0 }
+            if (!groups[key].summary[t.material?.name]) {
+                groups[key].summary[t.material?.name] = { count: 0, distance: 0 }
             }
-            groups[key].summary[t.material.name].count += time?.quantity;
-            groups[key].summary[t.material.name].distance += distance;
+            groups[key].summary[t.material?.name].count += time?.quantity;
+            groups[key].summary[t.material?.name].distance += distance;
 
 
             groups[key].totalTrips += time?.quantity;
@@ -610,8 +610,8 @@ async function groupCar(trips) {
 
             const distance = travelLog ? travelLog.fullDistanceKm : 0;
 
-            if (!groups[key].materials[t.material.name]) {
-                groups[key].materials[t.material.name] = {
+            if (!groups[key].materials[t.material?.name]) {
+                groups[key].materials[t.material?.name] = {
                     material: t.material,
                     times: [],        // danh sách thời gian
                     distances: [],    // danh sách cung độ theo index
@@ -620,10 +620,10 @@ async function groupCar(trips) {
                 };
             }
 
-            groups[key].materials[t.material.name].times.push(time?.time);
-            groups[key].materials[t.material.name].distances.push(distance);
-            groups[key].materials[t.material.name].count += time?.quantity;
-            groups[key].materials[t.material.name].totalDistance += distance;
+            groups[key].materials[t.material?.name].times.push(time?.time);
+            groups[key].materials[t.material?.name].distances.push(distance);
+            groups[key].materials[t.material?.name].count += time?.quantity;
+            groups[key].materials[t.material?.name].totalDistance += distance;
 
             groups[key].totalTrips += time?.quantity;
             groups[key].totalDistance += distance;

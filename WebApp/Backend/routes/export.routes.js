@@ -1329,7 +1329,7 @@ async function buildTimeLogSheetExcavator(order, workbook, groupedData) {
     worksheet.getRow(1).height = 30;
 
     // 3. Tìm số chuyến tối đa (Để kiểm tra dữ liệu)
-    let MAX_TRIPS_DISPLAY = 0;
+    let maxTrips = 0;
     groupedData.forEach(g => {
         g.materials.forEach(m => {
             maxTrips = Math.max(maxTrips, m.times?.length || 0);
