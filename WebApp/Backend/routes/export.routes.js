@@ -504,89 +504,168 @@ async function buildVehicle(order, workbook) {
 async function buildTimeLogSheet(order, workbook, groupedData) {
     if (!groupedData || groupedData.length === 0) return;
 
-    // 1. Chuẩn bị Tên Sheet
-    const sheetName = `${order.assignedTo?.fullName}_${formatDate(order.workingDate)}_${order.shift?.name}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
-    const worksheet = workbook.addWorksheet(sheetName);
+    const TRIPS_PER_ROW = 15;
 
-    // 2. Tiêu đề
-    worksheet.mergeCells('A1:D1');
-    const header = worksheet.getCell('A1');
-    header.value = `LỆNH SẢN XUẤT - ${order.assignedTo?.fullName} - ${formatDate(order.workingDate)}`;
-    header.font = { bold: true, size: 14 };
-    header.alignment = { horizontal: 'left', vertical: 'middle' };
-    worksheet.getRow(1).height = 30;
+    // Đặt số cột chuyến đi tối đa cố định theo yêu cầu
+    const FIXED_TRIP_COLS = 15;
+    const totalCols = 3 + FIXED_TRIP_COLS; // Tổng cộng 18 cột (A đến R)
 
-    // 3. Tìm số chuyến tối đa
-    let maxTrips = 0;
-    groupedData.forEach(g => {
-        maxTrips = Math.max(maxTrips, g.timeLogs?.length || 0);
-    });
-
-    // Nếu không có chuyến nào, dừng lại
-    if (maxTrips === 0) {
-        worksheet.getCell('A2').value = 'Không có dữ liệu chuyến đi chi tiết trong ca này.';
-        return;
-    }
-
-    // 4. Ghi Header (Hàng 2)
-    const headerRowData = ['Thiết bị nhận tải/Máy xúc'];
-    for (let i = 1; i <= maxTrips; i++) {
-        headerRowData.push(`Giờ - Cung độ (km)`);
-    }
-    worksheet.addRow(headerRowData);
-
-    // Định dạng Header
-    const headerRow = worksheet.getRow(2);
-    headerRow.font = { bold: true };
-    headerRow.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-    headerRow.height = 30;
-
-    // 5. Ghi Dữ liệu (Hàng 3 trở đi)
-    let rowIndex = 3;
-    groupedData.forEach(g => {
-        const rowData = [
-            `${g?.device?.code || ''} / ${g.excavator?.code || ''} (${g.material?.name || ''})`
-        ];
-
-        // Lấy dữ liệu thời gian và cung độ cho từng chuyến
-        for (let i = 0; i < maxTrips; i++) {
-            const log = g.timeLogs ? g.timeLogs[i] : null;
-            if (log) {
-                // Định dạng: Giờ (hh:mm:ss) - Cung độ (km)
-                // log.time là một Date object. Cần chuyển nó sang định dạng giờ.
-                const timeString = log.time instanceof Date
-                    ? log.time.toLocaleTimeString('vi-VN', { hour12: false })
-                    : log.time || '';
-                rowData.push(`${timeString} - ${log.distance || 0} km`);
-            } else {
-                rowData.push('');
-            }
+    // Helper function để chuyển số cột sang chữ cái (Giữ nguyên)
+    const getColLetter = (colIndex) => {
+        let result = '';
+        while (colIndex > 0) {
+            const remainder = (colIndex - 1) % 26;
+            result = String.fromCharCode(65 + remainder) + result;
+            colIndex = Math.floor((colIndex - 1) / 26);
         }
-        worksheet.addRow(rowData);
-        rowIndex++;
-    });
+        return result;
+    };
 
-    // 6. Định dạng Cột & Border
-    worksheet.getColumn('A').width = 30;
-    for (let col = 2; col <= maxTrips + 1; col++) {
-        worksheet.getColumn(col).width = 20;
-        worksheet.getColumn(col).alignment = { horizontal: 'center', vertical: 'middle' };
+
+    // === 1️⃣ Tạo sheet mới với tên an toàn === (Giữ nguyên)
+    const sheetName = `${order.assignedTo?.fullName}_${dayjs(order.workingDate).format("DD-MM-YYYY")}_Ca${order.shift?.name}`
+        .replace(/[\\\/:*?\[\]]/g, "-")
+        .substring(0, 31);
+
+    const ws = workbook.addWorksheet(sheetName);
+
+    const borderStyle = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+    };
+    const center = { horizontal: "center", vertical: "middle", wrapText: true };
+
+    // === 2️⃣ Tiêu đề chính === (Giữ nguyên)
+    ws.mergeCells("A1:R1");
+    ws.getCell("A1").value = `${order.assignedTo?.fullName || ""} - ${dayjs(order.workingDate).format("DD/MM/YYYY")} - Chi tiết thời gian thực hiện chuyến`;
+    ws.getCell("A1").font = { bold: true, size: 14, name: "Times New Roman" };
+    ws.getCell("A1").alignment = { horizontal: "left", vertical: "middle" };
+    ws.getRow(1).height = 25;
+
+    // === 3️⃣ Header cột cố định === (Giữ nguyên - Dòng 2)
+    const fixedHeaders = ["Thiết bị nhận tải", "Máy xúc", "Vật liệu"];
+    ws.addRow(fixedHeaders);
+    const headerRow = ws.lastRow;
+    headerRow.font = { bold: true, name: "Times New Roman" };
+    headerRow.alignment = center;
+
+    // === 4️⃣ Ghi dữ liệu chi tiết === (Giữ nguyên logic tạo cặp hàng STT/Time cho mỗi block)
+    // Bắt đầu từ dòng 3
+    let currentRow = 3;
+
+    for (const g of groupedData) {
+        const logs = g.timeLogs || [];
+        const numLogs = logs.length;
+        const numBlocks = Math.ceil(numLogs / TRIPS_PER_ROW);
+
+        // Ghi lại dòng bắt đầu của thiết bị này
+        const startRowForDevice = currentRow;
+
+        for (let block = 0; block < numBlocks; block++) {
+            const startTripIndex = block * TRIPS_PER_ROW;
+
+            // --- Hàng 1 của block: STT chuyến ---
+            const sttRow = [];
+            if (block === 0) {
+                sttRow.push(g.device?.code || "", g.excavator?.code || "", g.material?.name || "");
+            } else {
+                sttRow.push("", "", "");
+            }
+
+            for (let i = startTripIndex; i < startTripIndex + TRIPS_PER_ROW; i++) {
+                // Chỉ điền STT nếu nhỏ hơn tổng số chuyến và nằm trong giới hạn 15 cột
+                sttRow.push(i < numLogs ? i + 1 : "");
+            }
+            ws.addRow(sttRow);
+            const sttRowNum = ws.lastRow.number;
+
+            // --- Hàng 2 của block: Thời gian - cung độ ---
+            const timeRow = ["", "", ""]; // 3 cột cố định luôn để trống
+            for (let i = startTripIndex; i < startTripIndex + TRIPS_PER_ROW; i++) {
+                if (i < numLogs) {
+                    const log = logs[i];
+                    const timeStr = log.time instanceof Date
+                        ? dayjs(log.time).format("HH:mm:ss")
+                        : log.time || "";
+                    timeRow.push(`${timeStr} - ${log.distance || 0} km`);
+                } else {
+                    timeRow.push("");
+                }
+            }
+            ws.addRow(timeRow);
+            const timeRowNum = ws.lastRow.number;
+
+
+            // --- Style (Áp dụng border) ---
+            [sttRowNum, timeRowNum].forEach(r => {
+                const row = ws.getRow(r);
+                row.alignment = center;
+                // Áp dụng style chỉ cho 18 cột (A đến R)
+                for (let c = 1; c <= totalCols; c++) {
+                    const cell = row.getCell(c);
+                    cell.border = borderStyle;
+                    cell.font = { name: "Times New Roman", size: 12 };
+                }
+            });
+
+            currentRow = timeRowNum + 1;
+        }
+
+        // --- MERGE TOÀN BỘ 3 CỘT ĐẦU CHO THIẾT BỊ NÀY ---
+        const endRowForDevice = currentRow - 1;
+
+        if (numBlocks > 0) {
+            // Gộp A
+            ws.mergeCells(`A${startRowForDevice}:A${endRowForDevice}`);
+            ws.getCell(`A${startRowForDevice}`).alignment = center;
+
+            // Gộp B
+            ws.mergeCells(`B${startRowForDevice}:B${endRowForDevice}`);
+            ws.getCell(`B${startRowForDevice}`).alignment = center;
+
+            // Gộp C
+            ws.mergeCells(`C${startRowForDevice}:C${endRowForDevice}`);
+            ws.getCell(`C${startRowForDevice}`).alignment = center;
+        }
     }
 
-    addTableBorders(worksheet, 2, rowIndex - 1, 1, maxTrips + 1);
+    // === 5️⃣ Merge header "Giờ đổ tải - Cung độ (km)" trên dòng 2 (Cố định D2:R2) ===
 
-    // Đặt font cho tất cả các dòng
-    worksheet.eachRow((row) => {
-        row.eachCell((cell) => {
-            if (!cell.font) cell.font = {};
-            cell.font = {
-                ...cell.font,
-                name: 'Times New Roman',
-                size: 12
-            };
+    // Cột bắt đầu là D (4), Cột kết thúc là R (18)
+    const startColLetter = getColLetter(4);
+    const endColLetter = getColLetter(totalCols);
+
+    // Gộp TẤT CẢ các cột từ cột 4 đến cột cuối cùng trên DÒNG 2
+    ws.mergeCells(`${startColLetter}2:${endColLetter}2`);
+
+    // Ghi lại giá trị và style vào ô đã gộp duy nhất này
+    ws.getCell(`${startColLetter}2`).value = "Giờ đổ tải - Cung độ (km)";
+    ws.getCell(`${startColLetter}2`).alignment = center;
+    ws.getCell(`${startColLetter}2`).font = { bold: true, name: "Times New Roman" };
+
+
+    // === 6️⃣ Kích thước cột === (Cố định từ cột 4 đến 18)
+    ws.getColumn(1).width = 18;
+    ws.getColumn(2).width = 15;
+    ws.getColumn(3).width = 15;
+    for (let col = 4; col <= totalCols; col++) {
+        ws.getColumn(col).width = 20;
+    }
+
+    // === 7️⃣ Border cho toàn bảng === (Cố định giới hạn ở 18 cột)
+    addTableBorders(ws, 2, currentRow - 1, 1, totalCols);
+
+    // === 8️⃣ Font toàn sheet === (Đã được điều chỉnh trong vòng lặp 4 để chỉ áp dụng cho 18 cột)
+    ws.eachRow(r => {
+        r.eachCell(c => {
+            if (!c.font) c.font = {};
+            c.font = { ...c.font, name: "Times New Roman", size: 12 };
         });
     });
 }
+
 async function buildVehicleService(order, workbook) {
 
     const sheetName = `${order.assignedTo?.username}_${formatDate(order.workingDate)}_${order.shift?.name}_${order._id}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
@@ -1214,19 +1293,42 @@ async function buildExcavator(order, workbook) {
 async function buildTimeLogSheetExcavator(order, workbook, groupedData) {
     if (!groupedData || groupedData.length === 0) return;
 
+    // Định nghĩa số cột thời gian tối đa theo yêu cầu
+    const MAX_TIME_COLS = 15;
+    const totalCols = 2 + MAX_TIME_COLS; // Cột A, B + 15 cột thời gian (tổng 17 cột)
+
+    // Helper function để chuyển số cột sang chữ cái
+    const getColLetter = (colIndex) => {
+        let result = '';
+        while (colIndex > 0) {
+            const remainder = (colIndex - 1) % 26;
+            result = String.fromCharCode(65 + remainder) + result;
+            colIndex = Math.floor((colIndex - 1) / 26);
+        }
+        return result;
+    };
+
     // 1. Chuẩn bị Tên Sheet
-    const sheetName = `${order.assignedTo?.fullName}_${formatDate(order.workingDate)}_${order.shift?.name}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
+    const sheetName = `${order.assignedTo?.fullName}_${formatDate(order.workingDate)}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
     const worksheet = workbook.addWorksheet(sheetName);
 
+    const borderStyle = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+    };
+    const center = { horizontal: 'center', vertical: 'middle', wrapText: true };
+
     // 2. Tiêu đề
-    worksheet.mergeCells('A1:D1');
+    worksheet.mergeCells('A1:Q1');
     const header = worksheet.getCell('A1');
-    header.value = `LỆNH SẢN XUẤT - ${order.assignedTo?.fullName} - ${formatDate(order.workingDate)}`;
+    header.value = `${order.assignedTo?.fullName} - ${formatDate(order.workingDate)} - Chi tiết thời gian thực hiện chuyến`;
     header.font = { bold: true, size: 14, name: 'Times New Roman' };
     header.alignment = { horizontal: 'left', vertical: 'middle' };
     worksheet.getRow(1).height = 30;
 
-    // 3. Tìm số chuyến tối đa
+    // 3. Tìm số chuyến tối đa (Để kiểm tra dữ liệu)
     let maxTrips = 0;
     groupedData.forEach(g => {
         g.materials.forEach(m => {
@@ -1239,57 +1341,134 @@ async function buildTimeLogSheetExcavator(order, workbook, groupedData) {
         return;
     }
 
-    // 4. Ghi Header (Hàng 2)
-    const headerRowData = ['Thiết bị nhận tải / Vật liệu'];
-    for (let i = 1; i <= maxTrips; i++) {
-        headerRowData.push(`Thời điểm xúc tải`);
+    // === 4. Xây dựng Header 2 Hàng (Dòng 2 & 3) - CỐ ĐỊNH ===
+
+    // 4a. Ghi Header cơ bản (Dòng 2)
+    const headerRowData = ['Thiết bị nhận tải', 'Vật liệu'];
+    for (let i = 1; i <= MAX_TIME_COLS; i++) {
+        headerRowData.push(null); // Các ô trống cho phần gộp
     }
     worksheet.addRow(headerRowData);
-
-    // Định dạng Header
     const headerRow = worksheet.getRow(2);
-    headerRow.font = { bold: true, name: 'Times New Roman', size: 12 };
-    headerRow.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
     headerRow.height = 30;
 
-    // 5. Ghi Dữ liệu (Hàng 3 trở đi)
-    let rowIndex = 3;
+    // 4b. Thêm hàng STT (Dòng 3)
+    const sttRowData = ['', '']; // Cột A, B trống
+    for (let i = 1; i <= MAX_TIME_COLS; i++) {
+        sttRowData.push(i);
+    }
+    worksheet.addRow(sttRowData);
+    const sttRow = worksheet.getRow(3);
+    sttRow.font = { bold: true, name: 'Times New Roman', size: 12 };
+    sttRow.alignment = center;
+
+
+    // 4c. Merge và Style Header
+
+    // Gộp cột A (A2:A3)
+    worksheet.mergeCells('A2:A3');
+    worksheet.getCell('A2').value = 'Thiết bị nhận tải';
+    worksheet.getCell('A2').font = { bold: true, name: 'Times New Roman', size: 12 };
+    worksheet.getCell('A2').alignment = center;
+
+    // Gộp cột B (B2:B3)
+    worksheet.mergeCells('B2:B3');
+    worksheet.getCell('B2').value = 'Vật liệu';
+    worksheet.getCell('B2').font = { bold: true, name: 'Times New Roman', size: 12 };
+    worksheet.getCell('B2').alignment = center;
+
+    // Gộp tiêu đề "Thời điểm xúc tải" (C2 đến Q2)
+    const startColLetter = getColLetter(3); // Cột C
+    const endColLetter = getColLetter(totalCols); // Cột Q
+
+    worksheet.mergeCells(`${startColLetter}2:${endColLetter}2`);
+    worksheet.getCell(`${startColLetter}2`).value = "Thời điểm xúc tải";
+    worksheet.getCell(`${startColLetter}2`).alignment = center;
+    worksheet.getCell(`${startColLetter}2`).font = { bold: true, name: 'Times New Roman', size: 12 };
+
+    // Áp dụng border cho 2 hàng header
+    for (let c = 1; c <= totalCols; c++) {
+        worksheet.getCell(getColLetter(c) + 2).border = borderStyle;
+        worksheet.getCell(getColLetter(c) + 3).border = borderStyle;
+    }
+
+
+    // === 5. Ghi Dữ liệu (Hàng 4 trở đi) - CÓ LOGIC BLOCK ===
+    let currentRow = 4;
+
     groupedData.forEach(g => {
         g.materials.forEach(m => {
-            const rowData = [
-                `${g?.device?.code || ''} / ${m.material?.name || ''}`
-            ];
+            const times = m.times || [];
+            const numLogs = times.length;
+            const numBlocks = Math.ceil(numLogs / MAX_TIME_COLS);
 
-            for (let i = 0; i < maxTrips; i++) {
-                const time = m.times ? m.times[i] : null;
-                if (time) {
-                    // ✅ Định dạng thời gian 24h: 00:00:00
-                    const timeString = time instanceof Date
-                        ? time.toLocaleTimeString('vi-VN', { hour12: false })
-                        : time || '';
-                    rowData.push(timeString);
+            const startRowForGroup = currentRow; // Dòng bắt đầu của nhóm này
+
+            for (let block = 0; block < numBlocks; block++) {
+                const startTripIndex = block * MAX_TIME_COLS;
+
+                const rowData = [];
+
+                // Cột A và B chỉ điền ở block đầu tiên
+                if (block === 0) {
+                    rowData.push(g?.device?.code || '', m.material?.name || '');
                 } else {
-                    rowData.push('');
+                    rowData.push('', ''); // Để trống để chuẩn bị cho việc merge
                 }
+
+                // Ghi dữ liệu thời gian, giới hạn ở 15 cột
+                for (let i = startTripIndex; i < startTripIndex + MAX_TIME_COLS; i++) {
+                    if (i < numLogs) {
+                        const time = times[i];
+                        const timeString = time instanceof Date
+                            ? time.toLocaleTimeString('vi-VN', { hour12: false })
+                            : time || '';
+                        rowData.push(timeString);
+                    } else {
+                        rowData.push('');
+                    }
+                }
+                worksheet.addRow(rowData);
+
+                const dataRow = worksheet.getRow(currentRow);
+
+                // Định dạng border và alignment cho hàng data vừa thêm
+                dataRow.eachCell((cell, colNumber) => {
+                    if (colNumber <= totalCols) {
+                        cell.border = borderStyle;
+                        cell.alignment = center;
+                    }
+                });
+
+                currentRow++;
+            } // Kết thúc vòng lặp block
+
+            // --- MERGE CỘT A VÀ B CHO CẢ NHÓM NÀY ---
+            const endRowForGroup = currentRow - 1; // Dòng kết thúc của nhóm này
+
+            if (numBlocks > 1) { // Chỉ merge nếu có nhiều hơn 1 hàng dữ liệu
+                // Gộp A
+                worksheet.mergeCells(`A${startRowForGroup}:A${endRowForGroup}`);
+                worksheet.getCell(`A${startRowForGroup}`).alignment = center;
+
+                // Gộp B
+                worksheet.mergeCells(`B${startRowForGroup}:B${endRowForGroup}`);
+                worksheet.getCell(`B${startRowForGroup}`).alignment = center;
             }
-            worksheet.addRow(rowData);
-            rowIndex++;
         });
     });
 
-    addTableBorders(worksheet, 2, rowIndex - 1, 1, maxTrips + 1);
-
     // 6. Định dạng Cột & Border
-    worksheet.getColumn('A').width = 30;
-    for (let col = 2; col <= maxTrips + 1; col++) {
-        worksheet.getColumn(col).width = 18;
-        worksheet.getColumn(col).alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getColumn('A').width = 20; // Thiết bị nhận tải
+    worksheet.getColumn('B').width = 20; // Vật liệu
+    for (let col = 3; col <= totalCols; col++) { // 15 cột thời gian (C đến Q)
+        worksheet.getColumn(col).width = 15;
     }
 
-    // Giả sử bạn có hàm addTableBorders(worksheet, startRow, endRow, startCol, endCol)
-    // Nếu không, cần bổ sung logic tạo border thủ công.
-    // addTableBorders(worksheet, 2, rowIndex - 1, 1, maxTrips + 1);
+    // Giả sử bạn có hàm addTableBorders
+    addTableBorders(worksheet, 2, currentRow - 1, 1, totalCols);
 
+    // Font toàn sheet
     worksheet.eachRow((row) => {
         row.eachCell((cell) => {
             if (!cell.font) cell.font = {};
