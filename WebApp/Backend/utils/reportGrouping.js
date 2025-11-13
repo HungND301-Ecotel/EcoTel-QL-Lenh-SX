@@ -550,17 +550,19 @@ async function groupTripsCar(trips) {
         const timesArray = (t.quantityUpdateTimes || [])
         for (const time of timesArray) {
             const travelLog = await TravelLog.findOne({
-                excavator: t.excavator,        // lọc theo máy xúc
-                location: t.toLocation,       // lọc theo điểm đổ tải
-                startTime: { $lte: time },    // bắt đầu <= time
-                endTime: { $gte: time }       // kết thúc >= time
-            }).lean();
+                excavator: t.excavator?._id,
+                location: t.toLocation?._id,
+                workingDate: t.workingDate,
+                shift: t.shift?._id
+            }).lean()
+
 
             const distance = travelLog ? travelLog.fullDistanceKm : 0
             groups[key].trips.push({
                 material: t.material,
                 time: time?.time,
-                distance
+                distance,
+                quantity: time?.quantity || 1
             });
             if (!groups[key].summary[t.material.name]) {
                 groups[key].summary[t.material.name] = { count: 0, distance: 0 }
@@ -600,11 +602,11 @@ async function groupCar(trips) {
 
         for (const time of timesArray) {
             const travelLog = await TravelLog.findOne({
-                excavator: t.excavator,
-                location: t.toLocation,
-                startTime: { $lte: time },
-                endTime: { $gte: time }
-            }).lean();
+                excavator: t.excavator?._id,
+                location: t.toLocation?._id,
+                workingDate: t.workingDate,
+                shift: t.shift?._id
+            }).lean()
 
             const distance = travelLog ? travelLog.fullDistanceKm : 0;
 

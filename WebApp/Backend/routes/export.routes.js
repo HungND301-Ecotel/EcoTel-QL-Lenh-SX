@@ -1329,7 +1329,7 @@ async function buildTimeLogSheetExcavator(order, workbook, groupedData) {
     worksheet.getRow(1).height = 30;
 
     // 3. Tìm số chuyến tối đa (Để kiểm tra dữ liệu)
-    let maxTrips = 0;
+    let MAX_TRIPS_DISPLAY = 0;
     groupedData.forEach(g => {
         g.materials.forEach(m => {
             maxTrips = Math.max(maxTrips, m.times?.length || 0);
@@ -3386,7 +3386,12 @@ router.post('/carReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE
                         r.device?.category?.name?.toLowerCase().includes("vận tải".toLowerCase())
                     );
                     if (!reports.length) continue;
-                    const grouped = await groupCar(reports)
+                    const mapped = reports.map(r => ({
+                        ...r.toObject(),
+                        workingDate: r.workingDate || order.workingDate,
+                        shift: r.shift || order.shift
+                    }));
+                    const grouped = await groupCar(mapped)
 
                     result.push({
                         _id: order._id,
@@ -5081,7 +5086,14 @@ router.post(
         }
     }
 );
-
+const chunkArray = (array, size) => {
+    if (!array || array.length === 0) return [[]];
+    const result = [];
+    for (let i = 0; i < array.length; i += size) {
+        result.push(array.slice(i, i + size));
+    }
+    return result;
+};
 router.post(
     "/excavatorTripReport",
     verifyToken,
@@ -5199,6 +5211,9 @@ router.post(
                             });
                         });
                     });
+                    const MAX_TRIPS_DISPLAY = maxTrips > 15
+                        ? 15
+                        : maxTrips || 1;
 
                     const materials = Array.from(materialMap.values());
 
@@ -5208,7 +5223,7 @@ router.post(
 
                     const worksheet = workbook.addWorksheet(sheetName);
 
-                    const totalColumn = materials.length + (maxTrips || 1) + 6;
+                    const totalColumn = materials.length + MAX_TRIPS_DISPLAY + 6;
                     const colLetter = getColumnLetter(totalColumn);
                     worksheet.mergeCells(`B1:${colLetter}1`);
                     const infoRow = worksheet.getCell("B1");
@@ -5297,7 +5312,7 @@ router.post(
 
                     // ==== HÀNG 1 ==== (Thời điểm xúc tải - Loại vật liệu, colSpan = maxTrips)
                     const startTripsCol = 6;
-                    const endTripsCol = startTripsCol + (maxTrips || 1) - 1;
+                    const endTripsCol = startTripsCol + MAX_TRIPS_DISPLAY - 1;
                     worksheet.mergeCells(
                         headerRow,
                         startTripsCol,
@@ -5326,135 +5341,139 @@ router.post(
 
                     // ==== HÀNG 1 ==== (Tổng hợp, colSpan = materials.length + 1 cho Tổng chuyến)
                     const startSummaryCol = endTripsCol + 1;
-                    const endSummaryCol = startSummaryCol + materials.length;
+                    const materialEndCol = startSummaryCol + materials.length - 1;
+                    const totalTripsCol = materialEndCol + 1;
+
+                    // merge header "Tổng hợp" bao FULL các cột
                     worksheet.mergeCells(
                         headerRow,
                         startSummaryCol,
                         headerRow,
-                        endSummaryCol
+                        totalTripsCol
                     );
+
                     worksheet.getCell(headerRow, startSummaryCol).value = "Tổng hợp";
                     worksheet.getCell(headerRow, startSummaryCol).alignment = {
                         horizontal: "center",
                         vertical: "middle",
+                        wrapText: true
                     };
                     worksheet.getCell(headerRow, startSummaryCol).font = { bold: true };
 
-                    // ==== HÀNG 2 ==== (tên vật liệu + Tổng chuyến)
+                    // ==== HÀNG 2 ==== vật liệu + Tổng chuyến
                     materials.forEach((m, idx) => {
-                        worksheet.getCell(headerRow + 1, startSummaryCol + idx).value =
-                            m?.name || "";
+                        worksheet.getCell(headerRow + 1, startSummaryCol + idx).value = m.name;
                         worksheet.getCell(headerRow + 1, startSummaryCol + idx).alignment =
-                            { horizontal: "center", vertical: "middle" };
-                        worksheet.getCell(headerRow + 1, startSummaryCol + idx).font = {
-                            bold: true,
-                        };
+                            { horizontal: "center", vertical: "middle", wrapText: true };
+                        worksheet.getCell(headerRow + 1, startSummaryCol + idx).font = { bold: true };
                     });
-                    worksheet.getCell(headerRow + 1, endSummaryCol).value = "Tổng chuyến";
-                    worksheet.getCell(headerRow + 1, endSummaryCol).alignment = {
+
+                    // thêm tiêu đề “Tổng chuyến”
+                    worksheet.getCell(headerRow + 1, totalTripsCol).value = "Tổng chuyến";
+                    worksheet.getCell(headerRow + 1, totalTripsCol).alignment = {
                         horizontal: "center",
                         vertical: "middle",
+                        wrapText: true
                     };
-                    worksheet.getCell(headerRow + 1, endSummaryCol).font = { bold: true };
+                    worksheet.getCell(headerRow + 1, totalTripsCol).font = { bold: true };
 
                     let currentRow = headerRow + 2;
                     result.forEach((item, idx) => {
-                        const reps =
-                            item.reports && item.reports.length
-                                ? item.reports
-                                : [{ code: "", trips: [], summary: {}, totalTrips: 0 }];
+                        const reps = item.reports.length
+                            ? item.reports
+                            : [{ code: "", trips: [], summary: {}, totalTrips: 0 }];
 
-                        const spanReps = reps.length;
-                        const startRow = currentRow;
-                        reps.forEach((r, i) => {
-                            const row = worksheet.getRow(currentRow);
-
-                            if (i === 0) {
-                                // STT
-                                row.getCell(1).value = idx + 1;
-
-                                // Người nhận lệnh
-                                row.getCell(2).value = (item.assignedTo || [])
-                                    .map((u) => u?.fullName)
-                                    .join("\n");
-
-                                // Số thẻ
-                                row.getCell(3).value = (item.assignedTo || [])
-                                    .map((u) => u?.salaryCode)
-                                    .join("\n");
-
-                                // Máy xúc
-                                row.getCell(4).value = item.excavator.join(", ");
-                            }
-
-                            // Xe nhận tải
-                            row.getCell(5).value = r.code || "";
-
-                            // Các chuyến (1..maxTrips)
-                            for (let t = 0; t < maxTrips; t++) {
-                                const trip = r.trips[t];
-                                if (trip) {
-                                    row.getCell(6 + t).value = `${new Date(
-                                        trip.time
-                                    ).toLocaleTimeString("vi-VN", {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                        second: "2-digit",
-                                    })}\n${trip.material?.name || ""}`;
-                                } else {
-                                    row.getCell(6 + t).value = "";
-                                }
-                            }
-
-                            // Tổng hợp vật liệu
-                            materials.forEach((m, mIdx) => {
-                                row.getCell(6 + maxTrips + mIdx).value =
-                                    r.summary[m?.name] || 0;
-                            });
-
-                            // Tổng chuyến
-                            row.getCell(6 + maxTrips + materials.length).value =
-                                r.totalTrips || 0;
-
-                            // Căn giữa + wrapText
-                            row.eachCell((cell, cellNumber) => {
-                                cell.alignment = {
-                                    horizontal: "center",
-                                    vertical: "middle",
-                                    wrapText: true,
-                                };
-                            });
-                            row.getCell(2).alignment = {
-                                horizontal: "left",
-                                vertical: "top",
-                                wrapText: true,
-                            };
-                            row.getCell(3).alignment = {
-                                horizontal: "center",
-                                vertical: "top",
-                                wrapText: true,
-                            };
-
-                            currentRow++;
+                        // Tính tổng số dòng của Order
+                        let totalOrderRows = 0;
+                        const repRows = reps.map(r => {
+                            const chunks = chunkArray(r.trips, MAX_TRIPS_DISPLAY);
+                            totalOrderRows += chunks.length;
+                            return { ...r, chunks, rowCount: chunks.length };
                         });
 
-                        // merge cho các cột STT, Người nhận lệnh, Số thẻ, Máy xúc
-                        if (spanReps > 1) {
-                            ["A", "B", "C", "D"].forEach((col) => {
+                        const startOrderRow = currentRow;
+
+                        repRows.forEach((r, rIndex) => {
+                            const startRepRow = currentRow;
+
+                            r.chunks.forEach((chunk, chunkIndex) => {
+                                const row = worksheet.getRow(currentRow);
+
+                                /** 4 cột đầu – chỉ dòng đầu tiên của Order */
+                                if (rIndex === 0 && chunkIndex === 0) {
+                                    row.getCell(1).value = idx + 1;
+                                    row.getCell(2).value = (item.assignedTo || []).map(u => u.fullName).join("\n");
+                                    row.getCell(3).value = (item.assignedTo || []).map(u => u.salaryCode).join("\n");
+                                    row.getCell(4).value = item.excavator.join(", ");
+                                }
+
+                                /** Xe nhận tải – chỉ merge sau */
+                                if (chunkIndex === 0) {
+                                    row.getCell(5).value = r.code;
+                                }
+
+                                /** Render chuyến */
+                                for (let t = 0; t < MAX_TRIPS_DISPLAY; t++) {
+                                    const trip = chunk[t];
+                                    if (trip) {
+                                        row.getCell(6 + t).value =
+                                            `${dayjs(trip.time).format("HH:mm:ss")}\n${trip.material?.name || ""}`;
+                                    }
+                                }
+
+                                /** Tổng hợp – chỉ dòng đầu của rep */
+                                if (chunkIndex === 0) {
+                                    // Cột tổng vật liệu
+                                    materials.forEach((m, mIdx) => {
+                                        row.getCell(startSummaryCol + mIdx).value =
+                                            r.summary[m.name] || 0;
+                                    });
+
+                                    // Cột Tổng chuyến
+                                    row.getCell(totalTripsCol).value = r.totalTrips || 0;
+                                }
+
+                                row.eachCell((cell) => {
+                                    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                                });
+
+                                currentRow++;
+                            });
+
+                            /** Merge cho Xe nhận tải – chỉ merge 1 lần */
+                            if (r.rowCount > 1) {
                                 worksheet.mergeCells(
-                                    `${col}${currentRow - spanReps}:${col}${currentRow - 1}`
+                                    startRepRow,
+                                    5,
+                                    startRepRow + r.rowCount - 1,
+                                    5
+                                );
+                            }
+
+                            /** Merge tổng hợp – chỉ merge 1 lần */
+                            if (r.rowCount > 1) {
+                                materials.forEach((_, mIdx) => {
+                                    const col = startSummaryCol + mIdx;
+                                    worksheet.mergeCells(startRepRow, col, startRepRow + r.rowCount - 1, col);
+                                });
+                                worksheet.mergeCells(startRepRow, totalTripsCol, startRepRow + r.rowCount - 1, totalTripsCol);
+                            }
+                        });
+
+                        /** Merge 4 cột đầu theo Order – chỉ 1 lần */
+                        if (totalOrderRows > 1) {
+                            ["A", "B", "C", "D"].forEach((letter) => {
+                                worksheet.mergeCells(
+                                    `${letter}${startOrderRow}:${letter}${startOrderRow + totalOrderRows - 1}`
                                 );
                             });
                         }
-                        const numUsers = item.assignedTo?.length || 1;
-                        const numReports = reps.length;
-                        const maxLines = Math.max(numUsers, numReports);
-                        worksheet.getRow(startRow).height = maxLines * 15;
                     });
+
 
                     addTableBorders(worksheet, 8, currentRow - 1, 1, totalColumn);
 
-                    const startSignature = getColumnLetter(totalColumn - 3);
+                    const startSignature = getColumnLetter(totalColumn - 4);
                     const endSignature = getColumnLetter(totalColumn - 1);
 
                     worksheet.mergeCells(
@@ -5492,17 +5511,21 @@ router.post(
                             extension,
                         });
 
-                        worksheet.mergeCells(
-                            `${startSignature}${currentRow + 4}:${endSignature}${currentRow + 7
-                            }`
-                        );
-
                         // gán ảnh trực tiếp vào range
-                        worksheet.addImage(
-                            imageId,
-                            `${startSignature}${currentRow + 4}:${endSignature}${currentRow + 7
-                            }`
-                        );
+                        const anchorRow = currentRow + 4;
+
+                        // tính col index từ chữ cái
+                        const startColIndex = worksheet.getColumn(startSignature).number;
+                        const endColIndex = worksheet.getColumn(endSignature).number;
+
+                        // Tính vị trí căn giữa
+                        const midCol = (startColIndex + endColIndex) / 2;
+
+
+                        worksheet.addImage(imageId, {
+                            tl: { col: midCol - 1.2, row: anchorRow - 1.2 }, // căn giữa theo chiều ngang
+                            ext: { width: 120, height: 50 },
+                        });
                     }
 
                     worksheet.pageSetup = {
@@ -5639,7 +5662,12 @@ router.post('/carTripReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.AD
                 r.device?.category?.name?.toLowerCase().includes("vận tải".toLowerCase())
             );
             if (!reports.length) continue;
-            const grouped = await groupTripsCar(reports)
+            const mapped = reports.map(r => ({
+                ...r.toObject(),
+                workingDate: order.workingDate,
+                shift: order.shift
+            }));
+            const grouped = await groupTripsCar(mapped)
 
             result.push({
                 _id: order._id,
@@ -5766,7 +5794,12 @@ router.post('/carTripReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, 
                         r.device?.category?.name?.toLowerCase().includes("vận tải".toLowerCase())
                     );
                     if (!reports.length) continue;
-                    const grouped = await groupTripsCar(reports)
+                    const mapped = reports.map(r => ({
+                        ...r.toObject(),
+                        workingDate: order.workingDate,
+                        shift: order.shift
+                    }));
+                    const grouped = await groupTripsCar(mapped)
 
                     result.push({
                         _id: order._id,
@@ -5794,14 +5827,13 @@ router.post('/carTripReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, 
                         rep.trips.forEach(trip => {
                             if (trip.material) {
                                 // tạo key duy nhất theo _id hoặc name
-                                const key = trip.material._id?.toString() || trip.material.name;
+                                const key = trip.material._id?.toString() || trip.material;
 
                                 // chỉ lưu 1 lần duy nhất
                                 if (!materialMap.has(key)) {
                                     materialMap.set(key, {
                                         _id: trip.material._id,
-                                        name: trip.material.name,
-                                        ...(trip.material.unit ? { unit: trip.material.unit } : {})
+                                        name: trip.material?.name,
                                     });
                                 }
                             }
@@ -5809,13 +5841,17 @@ router.post('/carTripReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, 
                     });
                 });
 
+                const MAX_TRIPS_DISPLAY = maxTrips > 15
+                    ? 15
+                    : maxTrips || 1;
+
                 const materials = Array.from(materialMap.values());
 
                 const sheetName = `${formatDate(d)}_${ca.name}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
 
                 const worksheet = workbook.addWorksheet(sheetName);
 
-                const totalColumn = materials.length + (maxTrips || 1) + 8
+                const totalColumn = materials.length + (MAX_TRIPS_DISPLAY || 1) + 8
                 const colLetter = getColumnLetter(totalColumn);
                 worksheet.mergeCells(`B1:${colLetter}1`);
                 const infoRow = worksheet.getCell('B1');
@@ -5885,19 +5921,19 @@ router.post('/carTripReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, 
                 worksheet.getCell(headerRow, 6).font = { bold: true, }
 
 
-                // ==== HÀNG 1 ==== (Thời điểm xúc tải - Loại vật liệu, colSpan = maxTrips)
+                // ==== HÀNG 1 ==== (Thời điểm xúc tải - Loại vật liệu, colSpan = MAX_TRIPS_DISPLAY)
                 const startTripsCol = 7;
-                const endTripsCol = startTripsCol + (maxTrips || 1);
+                const endTripsCol = startTripsCol + (MAX_TRIPS_DISPLAY || 1);
                 worksheet.mergeCells(headerRow, startTripsCol, headerRow, endTripsCol);
                 worksheet.getCell(headerRow, startTripsCol).value = "Cung độ - Thời điểm xúc tải - Loại vật liệu";
                 worksheet.getCell(headerRow, startTripsCol).alignment = { horizontal: 'center', vertical: 'middle', }
                 worksheet.getCell(headerRow, startTripsCol).font = { bold: true, }
 
-                // ==== HÀNG 2 ==== (1..maxTrips)
+                // ==== HÀNG 2 ==== (1..MAX_TRIPS_DISPLAY)
                 worksheet.getCell(headerRow + 1, startTripsCol).value = 'Chuyến';
                 worksheet.getCell(headerRow + 1, startTripsCol).alignment = { horizontal: 'center', vertical: 'middle', }
                 worksheet.getCell(headerRow + 1, startTripsCol).font = { bold: true, }
-                for (let i = 1; i < (maxTrips || 1) + 1; i++) {
+                for (let i = 1; i < (MAX_TRIPS_DISPLAY || 1) + 1; i++) {
                     worksheet.getCell(headerRow + 1, startTripsCol + i).value = i;
                     worksheet.getCell(headerRow + 1, startTripsCol + i).alignment = { horizontal: 'center', vertical: 'middle', }
                     worksheet.getCell(headerRow + 1, startTripsCol + i).font = { bold: true, }
@@ -5930,105 +5966,164 @@ router.post('/carTripReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, 
                     const startRow = currentRow;
                     reps.forEach((r, i) => {
                         const rowStart = currentRow;
-                        const row1 = worksheet.getRow(currentRow);
 
-                        if (i === 0) {
-                            // STT
-                            row1.getCell(1).value = idx + 1;
-
-                            // Người nhận lệnh
-                            row1.getCell(2).value = (item.assignedTo || [])
-                                .map((u) => u?.fullName)
-                                .join('\n');
-
-                            // Số thẻ
-                            row1.getCell(3).value = (item.assignedTo || [])
-                                .map((u) => u?.salaryCode)
-                                .join('\n');
-
-                            // Máy xúc
-                            row1.getCell(4).value = item.device || ''
-
+                        // --- CHIA CHUNK 15 CHUYẾN ---
+                        const chunks = [];
+                        for (let c = 0; c < r.trips.length; c += 15) {
+                            chunks.push(r.trips.slice(c, c + 15));
                         }
+                        if (chunks.length === 0) chunks.push([]); // vẫn phải có 1 chunk rỗng
 
-                        // Xe nhận tải
-                        row1.getCell(5).value = r.excavator || '';
-                        row1.getCell(6).value = r.toLocation || '';
-                        row1.getCell(7).value = 'Cung độ tạm tính(km)';
+                        chunks.forEach((chunkTrips, chunkIndex) => {
+                            // ──────────────────────────────────────────
+                            // 🔥 TÍNH TỔNG RIÊNG CHO TỪNG CHUNK
+                            // ──────────────────────────────────────────
+                            let chunkDistance = chunkTrips.reduce((s, t) => s + (t?.distance || 0), 0);
+                            let chunkTotalTrips = chunkTrips.reduce((s, t) => s + (t?.quantity || 0), 0);
 
-                        r.trips.forEach((trip, tIdx) => {
-                            row1.getCell(8 + tIdx).value = trip?.distance || '';
-                        });
-                        materials.forEach((m, mIdx) => {
-                            row1.getCell(8 + maxTrips + mIdx).value = r.summary?.[m?.name]?.distance || 0;
-                        });
+                            // Tổng theo vật liệu
+                            let chunkMaterialCount = {};
+                            let chunkMaterialDistance = {};
 
-                        // ✅ Tổng chuyến: cũng gộp 2 hàng
-                        row1.getCell(8 + maxTrips + materials.length).value = r.totalDistance || 0;
-                        currentRow++;
-
-                        let row2 = worksheet.getRow(currentRow);
-                        row2.getCell(7).value = 'Thời gian';
-                        r.trips.forEach((trip, tIdx) => {
-                            row2.getCell(8 + tIdx).value = trip?.time
-                                ? new Date(trip.time).toLocaleTimeString('vi-VN', {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                    second: '2-digit',
-                                })
-                                : '';
-                        });
-                        currentRow++;
-
-                        // --- Hàng 3: Loại vật liệu ---
-                        let row3 = worksheet.getRow(currentRow);
-                        row3.getCell(7).value = 'Loại vật liệu';
-                        r.trips.forEach((trip, tIdx) => {
-                            row3.getCell(8 + tIdx).value = trip?.material?.name || '';
-                        });
-
-                        // ✅ Tổng hợp vật liệu: ghi vào row2 và merge xuống row3
-                        materials.forEach((m, mIdx) => {
-                            const col = 8 + maxTrips + mIdx;
-                            row2.getCell(col).value = r.summary?.[m?.name]?.count || 0;
-                            worksheet.mergeCells(`${row2.getCell(col).address}:${row3.getCell(col).address}`);
-                        });
-
-                        // ✅ Tổng chuyến: cũng gộp 2 hàng
-                        const totalCol = 8 + maxTrips + materials.length;
-                        row2.getCell(totalCol).value = r.totalTrips || 0;
-                        worksheet.mergeCells(`${row2.getCell(totalCol).address}:${row3.getCell(totalCol).address}`);
-
-                        currentRow++;
-
-                        // --- Merge Máy xúc + Điểm đổ tải xuống 3 hàng ---
-                        worksheet.mergeCells(`E${rowStart}:E${rowStart + 2}`); // cột 5 (E)
-                        worksheet.mergeCells(`F${rowStart}:F${rowStart + 2}`);
-
-                        [row1, row2, row3].forEach(row => {
-                            row.eachCell(cell => {
-                                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                            materials.forEach(m => {
+                                chunkMaterialCount[m.name] = 0;
+                                chunkMaterialDistance[m.name] = 0;
                             });
+
+                            chunkTrips.forEach(t => {
+                                const mat = t.material?.name;
+                                if (mat) {
+                                    chunkMaterialCount[mat] += (t?.quantity || 0);
+                                    chunkMaterialDistance[mat] += (t?.distance || 0);
+                                }
+                            });
+
+                            // ──────────────────────────────────────────
+                            // 🔵 HÀNG 1 — CUNG ĐỘ
+                            // ──────────────────────────────────────────
+                            const row1 = worksheet.getRow(currentRow);
+
+                            if (i === 0 && chunkIndex === 0) {
+                                row1.getCell(1).value = idx + 1;
+                                row1.getCell(2).value = item.assignedTo.map(u => u.fullName).join("\n");
+                                row1.getCell(3).value = item.assignedTo.map(u => u.salaryCode).join("\n");
+                                row1.getCell(4).value = item.device || '';
+                            }
+
+                            if (chunkIndex === 0) {
+                                row1.getCell(5).value = r.excavator || '';
+                                row1.getCell(6).value = r.toLocation || '';
+                            }
+
+                            row1.getCell(7).value = "Cung độ tạm tính (km)";
+                            chunkTrips.forEach((trip, tIdx) => {
+                                row1.getCell(8 + tIdx).value = trip?.distance || "";
+                            });
+
+                            // Tổng theo vật liệu (tính theo chunk)
+                            materials.forEach((m, mIdx) => {
+                                row1.getCell(8 + MAX_TRIPS_DISPLAY + mIdx).value = chunkMaterialDistance[m.name];
+                            });
+
+                            // Tổng cung độ chunk
+                            row1.getCell(8 + MAX_TRIPS_DISPLAY + materials.length).value = chunkDistance;
+
+                            currentRow++;
+
+                            // ──────────────────────────────────────────
+                            // 🔵 HÀNG 2 — THỜI GIAN
+                            // ──────────────────────────────────────────
+                            const row2 = worksheet.getRow(currentRow);
+
+                            row2.getCell(7).value = "Thời gian";
+
+                            chunkTrips.forEach((trip, tIdx) => {
+                                row2.getCell(8 + tIdx).value = trip?.time
+                                    ? new Date(trip.time).toLocaleTimeString("vi-VN", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        second: "2-digit",
+                                    })
+                                    : "";
+                            });
+
+                            materials.forEach((m, mIdx) => {
+                                row2.getCell(8 + MAX_TRIPS_DISPLAY + mIdx).value = chunkMaterialCount[m.name];
+                            });
+
+                            // Tổng chuyến chunk
+                            row2.getCell(8 + MAX_TRIPS_DISPLAY + materials.length).value = chunkTotalTrips;
+
+                            currentRow++;
+
+                            // ──────────────────────────────────────────
+                            // 🔵 HÀNG 3 — VẬT LIỆU
+                            // ──────────────────────────────────────────
+                            const row3 = worksheet.getRow(currentRow);
+
+                            row3.getCell(7).value = "Loại vật liệu";
+
+                            chunkTrips.forEach((trip, tIdx) => {
+                                row3.getCell(8 + tIdx).value = trip?.material?.name || "";
+                            });
+
+                            // Merge vật liệu + tổng chuyến (row2 → row3)
+                            materials.forEach((m, mIdx) => {
+                                const col = 8 + MAX_TRIPS_DISPLAY + mIdx;
+                                worksheet.mergeCells(`${row2.getCell(col).address}:${row3.getCell(col).address}`);
+                            });
+
+                            const totalCol = 8 + MAX_TRIPS_DISPLAY + materials.length;
+                            worksheet.mergeCells(`${row2.getCell(totalCol).address}:${row3.getCell(totalCol).address}`);
+
+                            currentRow++;
+
+                            // Style
+                            [row1, row2, row3].forEach(row => {
+                                row.eachCell(cell => {
+                                    cell.alignment = {
+                                        horizontal: 'center',
+                                        vertical: 'middle',
+                                        wrapText: true
+                                    };
+                                });
+                            });
+
+                            row1.getCell(2).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
                         });
-                        row1.getCell(2).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+                        // Merge máy xúc + điểm đổ tải cho mỗi REPORT (không cho từng chunk)
+                        const numberOfChunks = Math.ceil((r.trips?.length || 0) / 15) || 1;
+                        const reportRowSpan = numberOfChunks * 3;
+                        const reportEndRow = rowStart + reportRowSpan - 1;
+
+                        // merge Máy xúc (E) và Điểm đổ tải (F)
+                        worksheet.mergeCells(`E${rowStart}:E${reportEndRow}`);
+                        worksheet.mergeCells(`F${rowStart}:F${reportEndRow}`);
                     });
 
 
+
                     // merge cho các cột STT, Người nhận lệnh, Số thẻ, Máy xúc
-                    if (reps.length > 1) {
-                        ['A', 'B', 'C', 'D'].forEach(col => {
-                            worksheet.mergeCells(`${col}${startRow}:${col}${currentRow - 1}`);
-                        });
-                    }
+                    const totalRowSpan = reps.reduce((sum, r) => {
+                        const numberOfChunks = Math.ceil((r.trips?.length || 0) / 15) || 1;
+                        return sum + numberOfChunks * 3;
+                    }, 0);
+
+                    const mergeEndRow = startRow + totalRowSpan - 1;
+
+                    // merge 4 cột đầu: A B C D
+                    ['A', 'B', 'C', 'D'].forEach(col => {
+                        worksheet.mergeCells(`${col}${startRow}:${col}${mergeEndRow}`);
+                    });
                     const numUsers = (item.assignedTo?.length || 1);
                     const numReports = reps.length;
                     const maxLines = Math.max(numUsers, numReports);
-                    worksheet.getRow(startRow).height = maxLines * 15;
+                    // worksheet.getRow(startRow).height = maxLines * 15;
                 });
 
                 addTableBorders(worksheet, 8, currentRow, 1, totalColumn);
 
-                const startSignature = getColumnLetter(totalColumn - 3);
+                const startSignature = getColumnLetter(totalColumn - 6);
                 const endSignature = getColumnLetter(totalColumn - 1);
 
                 worksheet.mergeCells(`${startSignature}${currentRow + 1}:${endSignature}${currentRow + 1}`)
@@ -6048,10 +6143,21 @@ router.post('/carTripReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, 
                         extension
                     });
 
-                    worksheet.mergeCells(`${startSignature}${currentRow + 4}:${endSignature}${currentRow + 7}`);
-
                     // gán ảnh trực tiếp vào range
-                    worksheet.addImage(imageId, `${startSignature}${currentRow + 4}:${endSignature}${currentRow + 7}`);
+                    const anchorRow = currentRow + 4;
+
+                    // tính col index từ chữ cái
+                    const startColIndex = worksheet.getColumn(startSignature).number;
+                    const endColIndex = worksheet.getColumn(endSignature).number;
+
+                    // Tính vị trí căn giữa
+                    const midCol = (startColIndex + endColIndex) / 2;
+
+
+                    worksheet.addImage(imageId, {
+                        tl: { col: midCol - 1.2, row: anchorRow - 1.2 }, // căn giữa theo chiều ngang
+                        ext: { width: 120, height: 50 },
+                    });
                 }
 
                 worksheet.pageSetup = {
