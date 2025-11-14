@@ -81,7 +81,7 @@ export default function ExcavatorProductReport({
 
   return (
     <Grid item xs={12}>
-      <Paper sx={{ p: 2, minWidth: 'max-content' }}>
+      <Paper sx={{ p: 2, }}>
         {/* Header */}
         <Typography sx={{ fontSize: 16, fontStyle: 'italic' }}>
           CÔNG TY CỔ PHẦN THAN CAO SƠN - TKV

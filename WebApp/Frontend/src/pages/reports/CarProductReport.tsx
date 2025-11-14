@@ -118,10 +118,10 @@ export default function CarProductReport({
                   CÁC CHỈ TIÊU
                 </TableCell>
                 <TableCell rowSpan={3}></TableCell>
-                <TableCell colSpan={safeLandHeaders.length + 2} sx={{ fontWeight: "bold" }}>
+                <TableCell colSpan={safeLandHeaders.length + 3} sx={{ fontWeight: "bold" }}>
                   CHUYỂN VẬN CHUYỂN ĐẤT, SPNT, BÙN...
                 </TableCell>
-                <TableCell colSpan={safeCoalHeaders.length + 2} sx={{ fontWeight: "bold" }}>
+                <TableCell colSpan={safeCoalHeaders.length + 3} sx={{ fontWeight: "bold" }}>
                   CHUYỂN VẬN CHUYỂN THAN
                 </TableCell>
               </TableRow>
@@ -163,13 +163,16 @@ export default function CarProductReport({
                   {/* Cột tổng đất */}
                   {rowIdx === 0 && (
                     <>
-                      <TableCell colSpan={2} sx={{ fontWeight: "bold" }}>
+                      <TableCell colSpan={3} sx={{ fontWeight: "bold" }}>
                         TỔNG ĐẤT
                       </TableCell>
                     </>
                   )}
                   {rowIdx === 1 && (
                     <>
+                      <TableCell rowSpan={5}>
+                        Chuyến
+                      </TableCell>
                       <TableCell rowSpan={5}>(M³)</TableCell>
                       <TableCell rowSpan={5}>(Tkm)</TableCell>
                     </>
@@ -183,13 +186,16 @@ export default function CarProductReport({
                   {/* Cột tổng than */}
                   {rowIdx === 0 && (
                     <>
-                      <TableCell colSpan={2} sx={{ fontWeight: "bold" }}>
+                      <TableCell colSpan={3} sx={{ fontWeight: "bold" }}>
                         TỔNG THAN
                       </TableCell>
                     </>
                   )}
                   {rowIdx === 1 && (
                     <>
+                      <TableCell rowSpan={5}>
+                        Chuyến
+                      </TableCell>
                       <TableCell rowSpan={5}>(Tấn)</TableCell>
                       <TableCell rowSpan={5}>(Tkm)</TableCell>
                     </>
@@ -266,11 +272,25 @@ export default function CarProductReport({
                           {landCells.map((v, i) => (
                             <TableCell key={`land-${device}-${i}`}>{v}</TableCell>
                           ))}
+                          <TableCell>
+                            {
+                              shiftLand
+                                .filter((g: any) => g.deviceCode === device)
+                                .reduce((s: any, g: any) => s + (g.quantity || 0), 0)
+                            }
+                          </TableCell>
                           <TableCell>{totalLand.m3.toFixed(1)}</TableCell>
                           <TableCell>{totalLand.tkm.toFixed(1)}</TableCell>
                           {coalCells.map((v, i) => (
                             <TableCell key={`coal-${device}-${i}`}>{v}</TableCell>
                           ))}
+                          <TableCell>
+                            {
+                              shiftCoal
+                                .filter((g: any) => g.deviceCode === device)
+                                .reduce((s: any, g: any) => s + (g.quantity || 0), 0)
+                            }
+                          </TableCell>
                           <TableCell>{totalCoal.ton.toFixed(1)}</TableCell>
                           <TableCell>{totalCoal.tkm.toFixed(1)}</TableCell>
                           <TableCell>
@@ -302,6 +322,9 @@ export default function CarProductReport({
                         return <TableCell key={`sum-l-${shift}-${i}`}>{sum.toFixed(1)}</TableCell>;
                       })}
                       <TableCell>
+                        {shiftLand.reduce((s: any, g: any) => s + (g.quantity || 0), 0).toFixed(1)}
+                      </TableCell>
+                      <TableCell>
                         {shiftLand.reduce((s: any, g: any) => s + (g.totalCubicMeter || 0), 0).toFixed(1)}
                       </TableCell>
                       <TableCell>
@@ -321,6 +344,9 @@ export default function CarProductReport({
                           .reduce((s: any, g: any) => s + (g.quantity || 0), 0);
                         return <TableCell key={`sum-c-${shift}-${i}`}>{sum.toFixed(1)}</TableCell>;
                       })}
+                      <TableCell>
+                        {shiftCoal.reduce((s: any, g: any) => s + (g.quantity || 0), 0).toFixed(1)}
+                      </TableCell>
                       <TableCell>
                         {shiftCoal.reduce((s: any, g: any) => s + (g.totalTon || 0), 0).toFixed(1)}
                       </TableCell>
@@ -355,6 +381,9 @@ export default function CarProductReport({
                     .reduce((s: any, g: any) => s + (g.quantity || 0), 0);
                   return <TableCell key={`sum-l-${i}`}>{sum.toFixed(1)}</TableCell>;
                 })}
+                <TableCell>
+                  {landGroups.reduce((s: any, g: any) => s + (g.quantity || 0), 0).toFixed(1)}
+                </TableCell>
                 <TableCell>{totals.land.m3.toFixed(1)}</TableCell>
                 <TableCell>{totals.land.tkm.toFixed(1)}</TableCell>
                 {safeCoalHeaders.map((h, i) => {
@@ -369,6 +398,9 @@ export default function CarProductReport({
                     .reduce((s: any, g: any) => s + (g.quantity || 0), 0);
                   return <TableCell key={`sum-c-${i}`}>{sum.toFixed(1)}</TableCell>;
                 })}
+                <TableCell>
+                  {coalGroups.reduce((s: any, g: any) => s + (g.quantity || 0), 0).toFixed(1)}
+                </TableCell>
                 <TableCell>{totals.coal.ton.toFixed(1)}</TableCell>
                 <TableCell>{totals.coal.tkm.toFixed(1)}</TableCell>
                 <TableCell>

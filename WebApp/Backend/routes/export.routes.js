@@ -8512,7 +8512,7 @@ router.post(
             }));
 
             finalResult.sort((a, b) =>
-                (a.excavatorCode || "").localeCompare(b.excavatorCode || "")
+                (a.excavatorCode || "").localeCompare(b.excavatorCode || "", undefined, { numeric: true })
             );
 
             res.status(200).send({ status: "success", data: finalResult });
@@ -8593,7 +8593,7 @@ const excavatorProductReport = async (
         ...d,
     }));
     finalData.sort((a, b) =>
-        (a.excavatorCode || "").localeCompare(b.excavatorCode || "")
+        (a.excavatorCode || "").localeCompare(b.excavatorCode || "", undefined, { numeric: true })
     );
 
 
@@ -9022,16 +9022,18 @@ router.post(
             const landQuantityEndCol = landQuantityStartCol + (landHeaders.length || 1) - 1;
 
             // Cột TỔNG ĐẤT (M3/Tkm)
-            const totalLandM3 = landQuantityEndCol + 1;
-            const totalLandTkm = landQuantityEndCol + 2;
+            const totalLandTrips = landQuantityEndCol + 1;
+            const totalLandM3 = landQuantityEndCol + 2;
+            const totalLandTkm = landQuantityEndCol + 3;
 
             // Cột Tiêu chí động THAN (chứa số chuyến)
             const coalQuantityStartCol = totalLandTkm + 1;
             const coalQuantityEndCol = coalQuantityStartCol + (coalHeaders.length || 1) - 1;
 
             // Cột TỔNG THAN (Tấn/Tkm)
-            const totalCoalTon = coalQuantityEndCol + 1;
-            const totalCoalTkm = coalQuantityEndCol + 2;
+            const totalCoalTrips = coalQuantityEndCol + 1;
+            const totalCoalTon = coalQuantityEndCol + 2;
+            const totalCoalTkm = coalQuantityEndCol + 3;
             const totalTripsCol = totalCoalTkm + 1;
             const totalCols = totalTripsCol;
 
@@ -9116,11 +9118,13 @@ router.post(
             // Chỉ hiển thị đơn vị, vì tên vật liệu đã được merge ở Row 3
 
             // TỔNG ĐẤT (M3, Tkm)
-            sheet.mergeCells(row4.number, totalLandM3, row4.number, totalLandTkm);
+            sheet.mergeCells(row4.number, totalLandTrips, row4.number, totalLandTkm);
             row4.getCell(totalLandM3).value = "TỔNG ĐẤT";
             row4.getCell(totalLandM3).alignment = center;
             row4.getCell(totalLandM3).font = { bold: true, };
 
+            row5.getCell(totalLandTrips).value = "Chuyến";
+            row5.getCell(totalLandTrips).alignment = center;
             row5.getCell(totalLandM3).value = "(M3)";
             row5.getCell(totalLandM3).alignment = center;
             row5.getCell(totalLandTkm).value = "(Tkm)";
@@ -9135,11 +9139,13 @@ router.post(
 
             // --- ĐIỀU CHỈNH HEADER TỔNG THAN (ROW 4) ---
             // Chỉ hiển thị đơn vị, vì tên vật liệu đã được merge ở Row 3
-            sheet.mergeCells(row4.number, totalCoalTon, row4.number, totalCoalTkm);
+            sheet.mergeCells(row4.number, totalCoalTrips, row4.number, totalCoalTkm);
             row4.getCell(totalCoalTon).value = "TỔNG THAN";
             row4.getCell(totalCoalTon).alignment = center;
             row4.getCell(totalCoalTon).font = { bold: true, };
 
+            row5.getCell(totalCoalTrips).value = "Chuyến";
+            row5.getCell(totalCoalTrips).alignment = center;
             row5.getCell(totalCoalTon).value = "(Tấn)";
             row5.getCell(totalCoalTon).alignment = center;
             row5.getCell(totalCoalTkm).value = "(Tkm)";
@@ -9153,7 +9159,7 @@ router.post(
 
             // Merge the Total Land and Total Coal columns from Row 5 to Row 9
             // for neatness, similar to the 'Ca xe' column
-            [totalLandM3, totalLandTkm, totalCoalTon, totalCoalTkm].forEach(col => {
+            [totalLandM3, totalLandTkm, totalCoalTon, totalCoalTkm, totalLandTrips, totalCoalTrips].forEach(col => {
                 // Merge rows 5:9 for each total column
                 sheet.mergeCells(criteriaStartRow + 1, col, criteriaEndRow, col);
             });
@@ -9249,6 +9255,10 @@ router.post(
                             { m3: 0, tkm: 0 }
                         );
 
+                    row.getCell(totalLandTrips).value =
+                        landGroups
+                            .filter(g => g.deviceCode === device && g.shift === shift)
+                            .reduce((s, g) => s + (g.quantity || 0), 0);
                     row.getCell(totalLandM3).value = totalLand.m3;
                     row.getCell(totalLandTkm).value = totalLand.tkm;
 
@@ -9278,6 +9288,10 @@ router.post(
                             { ton: 0, tkm: 0 }
                         );
 
+                    row.getCell(totalCoalTrips).value =
+                        coalGroups
+                            .filter(g => g.deviceCode === device && g.shift === shift)
+                            .reduce((s, g) => s + (g.quantity || 0), 0);
                     row.getCell(totalCoalTon).value = totalCoal.ton;
                     row.getCell(totalCoalTkm).value = totalCoal.tkm;
 
@@ -9312,6 +9326,8 @@ router.post(
                         cell.numFmt = "#,##0.0";
                     });
 
+                    totalShiftRow.getCell(totalLandTrips).value =
+                        shiftLand.reduce((s, g) => s + (g.quantity || 0), 0);
                     totalShiftRow.getCell(totalLandM3).value = shiftLand.reduce((s, g) => s + (g.totalCubicMeter || 0), 0);
                     totalShiftRow.getCell(totalLandTkm).value = shiftLand.reduce((s, g) => s + (g.production || 0), 0);
 
@@ -9331,6 +9347,8 @@ router.post(
                         cell.numFmt = "#,##0.0";
                     });
 
+                    totalShiftRow.getCell(totalCoalTrips).value =
+                        shiftCoal.reduce((s, g) => s + (g.quantity || 0), 0);
                     totalShiftRow.getCell(totalCoalTon).value = shiftCoal.reduce((s, g) => s + (g.totalTon || 0), 0);
                     totalShiftRow.getCell(totalCoalTkm).value = shiftCoal.reduce((s, g) => s + (g.production || 0), 0);
 
@@ -9380,6 +9398,8 @@ router.post(
             });
 
             // Tổng M3 và Tkm (Tổng Land)
+            totalRow.getCell(totalLandTrips).value =
+                landGroups.reduce((s, g) => s + (g.quantity || 0), 0);
             totalRow.getCell(totalLandM3).value = totals.land.m3;
             totalRow.getCell(totalLandM3).numFmt = '#,##0.0';
             totalRow.getCell(totalLandTkm).value = totals.land.tkm;
@@ -9402,6 +9422,8 @@ router.post(
             });
 
             // Tổng Tấn và Tkm (Tổng Coal)
+            totalRow.getCell(totalLandTrips).value =
+                landGroups.reduce((s, g) => s + (g.quantity || 0), 0);
             totalRow.getCell(totalCoalTon).value = totals.coal.ton;
             totalRow.getCell(totalCoalTon).numFmt = '#,##0.0';
             totalRow.getCell(totalCoalTkm).value = totals.coal.tkm;
