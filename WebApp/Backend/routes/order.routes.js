@@ -9,6 +9,7 @@ const History = require('../models/History');
 const User = require('../models/User')
 const Job = require('../models/Job')
 const Shift = require('../models/Shift')
+const Material = require('../models/material')
 const mongoose = require('mongoose')
 const { ROLE, JOB_TYPE, STATUS_DEVICE, STATUS_DEVICES, STATUS_ORDERS, STATUS_ORDER, STATUS_REPAIR } = require('../config/config');
 const ExcelJS = require('exceljs');
@@ -111,6 +112,16 @@ router.get('/', verifyToken, async (req, res, next) => {
             ).lean();
             const deviceIds = matchedDevices.map(u => u._id);
             query.device = { $in: deviceIds.map(id => new mongoose.Types.ObjectId(id)) };
+        }
+        if (req.query.material) {
+            const regex = new RegExp(req.query.material, 'i');
+
+            const matchedMaterials = await Material.find(
+                { name: regex },
+                { _id: 1 }
+            ).lean();
+            const materialIds = matchedMaterials.map(u => u._id);
+            query.material = { $in: materialIds.map(id => new mongoose.Types.ObjectId(id)) };
         }
         if (req.query.shift) {
             const matchedShifts = await Shift.find(

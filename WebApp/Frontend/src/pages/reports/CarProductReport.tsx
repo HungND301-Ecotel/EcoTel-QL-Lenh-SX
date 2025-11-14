@@ -194,6 +194,11 @@ export default function CarProductReport({
                       <TableCell rowSpan={5}>(Tkm)</TableCell>
                     </>
                   )}
+                  {rowIdx === 0 && (
+                    <TableCell rowSpan={6} sx={{ fontWeight: "bold" }}>
+                      TỔNG CHUYẾN
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
 
@@ -268,6 +273,13 @@ export default function CarProductReport({
                           ))}
                           <TableCell>{totalCoal.ton.toFixed(1)}</TableCell>
                           <TableCell>{totalCoal.tkm.toFixed(1)}</TableCell>
+                          <TableCell>
+                            {
+                              [...shiftLand, ...shiftCoal]
+                                .filter((g: any) => g.deviceCode === device)
+                                .reduce((s, g) => s + (g.quantity || 0), 0)
+                            }
+                          </TableCell>
                         </TableRow>
                       );
                     })}
@@ -315,6 +327,13 @@ export default function CarProductReport({
                       <TableCell>
                         {shiftCoal.reduce((s: any, g: any) => s + (g.production || 0), 0).toFixed(1)}
                       </TableCell>
+                      <TableCell>
+                        {
+                          [...shiftLand, ...shiftCoal]
+                            .reduce((s, g) => s + (g.quantity || 0), 0)
+                            .toFixed(1)
+                        }
+                      </TableCell>
                     </TableRow>
                   </React.Fragment>
                 );
@@ -352,6 +371,13 @@ export default function CarProductReport({
                 })}
                 <TableCell>{totals.coal.ton.toFixed(1)}</TableCell>
                 <TableCell>{totals.coal.tkm.toFixed(1)}</TableCell>
+                <TableCell>
+                  {
+                    [...landGroups, ...coalGroups]
+                      .reduce((s, g) => s + (g.quantity || 0), 0)
+                      .toFixed(1)
+                  }
+                </TableCell>
               </TableRow>
             </TableBody>
           </Table>

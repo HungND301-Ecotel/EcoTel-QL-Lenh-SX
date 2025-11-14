@@ -172,7 +172,7 @@ const Login = () => {
                     </Box>
                 </Container >
             </Box >
-            <Typography alignSelf={"flex-start"} padding={2} color="white">quanlyvadieuphoimaymocthietbi-Version: release_1.0.10</Typography>
+            <Typography alignSelf={"flex-start"} padding={2} color="white">quanlyvadieuphoimaymocthietbi-Version: release_2.0.2</Typography>
         </Box >
     );
 };

@@ -208,12 +208,15 @@ async function groupTripsVehicleProduction(trips) {
 
     // sort cho đẹp: theo location rồi material
     landGroups.sort((a, b) =>
-        (a.locationName || "").localeCompare(b.locationName || "") ||
-        (a.materialName || "").localeCompare(b.materialName || "")
+        (a.locationName || "").localeCompare(b.locationName || "")
+        || (a.materialName || "").localeCompare(b.materialName || "")
+        || (a.deviceCode || "").localeCompare(b.deviceCode || "", undefined, { numeric: true })
     );
+
     coalGroups.sort((a, b) =>
-        (a.locationName || "").localeCompare(b.locationName || "") ||
-        (a.materialName || "").localeCompare(b.materialName || "")
+        (a.locationName || "").localeCompare(b.locationName || "")
+        || (a.materialName || "").localeCompare(b.materialName || "")
+        || (a.deviceCode || "").localeCompare(b.deviceCode || "", undefined, { numeric: true })
     );
 
     // tổng để đổ vào cột TỔNG ĐẤT / TỔNG THAN
@@ -304,7 +307,20 @@ async function groupProductionLand(trips) {
         };
     });
 
-    return result;
+    return result
+        // Sắp xếp cấp ngoài cùng theo deviceMaterial
+        .sort((a, b) =>
+            (a.deviceMaterial || "").localeCompare(b.deviceMaterial || "")
+        )
+        .map(group => ({
+            ...group,
+            // Sắp xếp tiếp danh sách excavators trong mỗi group
+            excavators: group.excavators.sort((x, y) =>
+                (x.mainGroup || "").localeCompare(y.mainGroup || "")
+                || (x.subGroup || "").localeCompare(y.subGroup || "", undefined, { numeric: true })
+                || (x.excavator || "").localeCompare(y.excavator || "", undefined, { numeric: true })
+            )
+        }));
 }
 
 

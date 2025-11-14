@@ -13,6 +13,10 @@ const xlsx = require('xlsx');
 const dayjs = require('dayjs');
 const { ROLE } = require('../config/config');
 const { paginateQuery } = require('../utils/pagination')
+const Order = require('../models/Order')
+const {
+    runProductionUpdateBackground
+} = require('../utils/cron')
 
 
 router.post('/', verifyToken, async (req, res, next) => {
@@ -42,7 +46,14 @@ router.post('/', verifyToken, async (req, res, next) => {
         await newTravelLog.save();
         req.logger.info(`🔥 Tạo thành công cung độ`);
 
+
         res.status(200).send({ status: 'success', message: "Tạo thành công" });
+        let query = {
+            workingDate: newTravelLog?.workingDate,
+            shift: newTravelLog?.shift
+        }
+
+        runProductionUpdateBackground(req, query)
     } catch (err) {
         req.logger.error("❌ Lỗi khi tạo", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
@@ -92,6 +103,12 @@ router.put('/:id', verifyToken, async (req, res, next) => {
             status: 'success',
             message: 'Sửa thành công'
         });
+        let query = {
+            workingDate: travellog?.workingDate,
+            shift: travellog?.shift
+        }
+
+        runProductionUpdateBackground(req, query)
     } catch (err) {
         req.logger.error("❌ Lỗi", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
@@ -298,6 +315,7 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         const operations = [];
         const invalidRows = [];
 
+        const updateQueries = new Map()
         for (const row of dataImport) {
             const { excavator, location, workingDate, shift, material, ...updateData } = row;
 
@@ -326,7 +344,7 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
             updateData.location = locationId;
 
             // Gán ID vật liệu
-            if(material){
+            if (material) {
                 const materialId = materialMap.get(material);
                 if (!materialId) {
                     invalidRows.push({ row, error: `Vật liệu không hợp lệ: ${material}` });
@@ -342,6 +360,14 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
                 continue;
             }
             updateData.workingDate = workingDate;
+
+            const key = `${workingDate}_${shiftId}`;
+            if (!updateQueries.has(key)) {
+                updateQueries.set(key, {
+                    workingDate,
+                    shift: shiftId
+                });
+            }
 
             // Thêm vào batch upsert
             operations.push({
@@ -362,6 +388,16 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         let bulkResult = null;
         if (operations.length > 0) {
             bulkResult = await TravelLog.bulkWrite(operations);
+        }
+
+        for (const q of updateQueries.values()) {
+            console.log(q)
+            let query = {
+                workingDate: q?.workingDate,
+                shift: q?.shift
+            }
+
+            runProductionUpdateBackground(req, query)
         }
 
         req.logger.info(`✅ ${user?.username} Import file thành công. ${dataImport.length} bản ghi xử lý.`);

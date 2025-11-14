@@ -9,7 +9,7 @@ const { ROLE, JOB_TYPE } = require('../config/config');
 
 // cron
 
-cron.schedule('21 14 * * *', async () => {
+cron.schedule('* 14 * * *', async () => {
     console.log('Bắt đầu tiến hành tính sản lượng...')
 
     try {
@@ -222,10 +222,24 @@ async function production_excavator(t) {
     return value;
 }
 
+async function runProductionUpdateBackground(req, query) {
+    setImmediate(async () => {
+        try {
+            const orders = await getOrders(query);
+            await update_production_report(orders);
+
+            req?.logger?.info("✔ Background: sản lượng đã được cập nhật");
+        } catch (err) {
+            req?.logger?.error("❌ Background: lỗi khi cập nhật sản lượng", err);
+        }
+    });
+}
+
 
 module.exports = {
     production_vehicle,
     production_excavator,
     update_production_report,
-    getOrders
+    getOrders,
+    runProductionUpdateBackground
 }

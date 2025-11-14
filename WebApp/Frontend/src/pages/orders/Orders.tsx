@@ -155,6 +155,7 @@ const Orders: React.FC = () => {
                 shift: serverFilters.shift || undefined,
                 job: serverFilters.job || undefined,
                 device: serverFilters.device || undefined,
+                material: serverFilters.material || undefined,
             }
         )
     })
@@ -398,7 +399,6 @@ const Orders: React.FC = () => {
         {
             headerName: 'Vật liệu', field: 'material', width: 100,
             renderCell: (params: any) => params.row.material?.map((mat: any) => mat.name).join(', '),
-            filterable: false
         },
         {
             filterable: false,

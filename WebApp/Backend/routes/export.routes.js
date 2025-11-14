@@ -7403,7 +7403,8 @@ router.post(
 
                 return {
                     userId: u._id,
-                    fullName: u.fullName,
+                    fullName: u?.fullName,
+                    salaryCode: u?.salaryCode,
                     days,
                     totalDay,
                     totalCa1,
@@ -7523,7 +7524,8 @@ router.post(
 
                 return {
                     userId: u._id,
-                    fullName: u.fullName,
+                    fullName: u?.fullName,
+                    salaryCode: u?.salaryCode,
                     days,
                     totalDay, // 1 công/ngày
                     totalCa1,
@@ -7600,6 +7602,11 @@ router.post(
             worksheet.getColumn(colIndex).width = 25;
             colIndex++;
 
+            worksheet.mergeCells(headerRowNumber, colIndex, headerRowNumber + 1, colIndex);
+            worksheet.getCell(headerRowNumber, colIndex).value = 'Số thẻ';
+            worksheet.getColumn(colIndex).width = 15;
+            colIndex++;
+
             // Header 3: Cột Ngày (Cần xử lý phức tạp hơn)
             const startDayCol = colIndex;
             dateRange.forEach((dayjsObject) => {
@@ -7645,6 +7652,8 @@ router.post(
                 // 2. Họ và tên
                 worksheet.getCell(dataRowNumber, cellColIndex++).value = row.fullName;
 
+                worksheet.getCell(dataRowNumber, cellColIndex++).value = row.salaryCode;
+
                 // 3. Dữ liệu ngày
                 dateRange.forEach((dayjsObject) => {
                     const dateKey = dayjsObject.format("YYYY-MM-DD");
@@ -7666,6 +7675,8 @@ router.post(
 
                 dataRowNumber++;
             });
+
+            addTableBorders(worksheet, 7, dataRowNumber - 1, 1, endTotalCol)
             const signatureStartRow = dataRowNumber + 1;
             const signatureEndRow = signatureStartRow + 3;
             if (signature) {
@@ -8381,8 +8392,8 @@ router.post('/carTripReportByDay', verifyToken, restrictTo(ROLE.MANAGER, ROLE.AD
         res.status(500).json({ status: 'error', message: err.message, stack: err.stack });
     }
 });
-// san luong thuc hien trong ngay may xuc
 
+// tong hop thong ke than, dat mau 02
 
 
 router.post(
@@ -8391,7 +8402,7 @@ router.post(
     restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER),
     async (req, res, next) => {
         try {
-            const { day, department } = req.body;
+            const { startDate, endDate, department } = req.body;
             const user = req.user;
             let query = {};
 
@@ -8402,10 +8413,11 @@ router.post(
                 query.department = new mongoose.Types.ObjectId(user.department?._id);
             }
 
-            if (day) {
-                query.workingDate = new Date(day);
-            } else {
-                return res.status(400).json({ status: 'error', message: 'Ngày là bắt buộc' });
+            if (startDate && endDate) {
+                query.workingDate = {
+                    $gte: new Date(startDate),
+                    $lte: new Date(endDate),
+                };
             }
 
             // Lấy Orders
@@ -8499,6 +8511,10 @@ router.post(
                 materialDetails: data.materialDetails,
             }));
 
+            finalResult.sort((a, b) =>
+                (a.excavatorCode || "").localeCompare(b.excavatorCode || "")
+            );
+
             res.status(200).send({ status: "success", data: finalResult });
 
         } catch (err) {
@@ -8507,14 +8523,328 @@ router.post(
         }
     }
 );
+const excavatorProductReport = async (
+    workbook,
+    sheetName,
+    dep,
+    query,
+    signature
+) => {
+    const orders = await Order.find({ ...query, department: dep?._id })
+        .populate({
+            path: "device",
+            select: "code category",
+            populate: { path: "category", select: "name" },
+        })
+        .populate({ path: "job", select: "type" });
 
+    const filteredOrders = orders.filter(
+        (o) =>
+            o.device?.some((d) =>
+                d.category?.name?.toLowerCase().includes("máy xúc")
+            ) && o.job?.type === JOB_TYPE.VAN_HANH_XUC
+    );
+
+    // --- 3️⃣ Tổng hợp dữ liệu ---
+    const aggregated = {};
+    for (const order of filteredOrders) {
+        const exc = order.device?.find((d) =>
+            d.category?.name?.toLowerCase().includes("máy xúc")
+        );
+        if (!exc) continue;
+
+        const reports = await Report.find({ orderId: order._id }).populate(
+            "material",
+            "name acceptedProduct"
+        );
+        if (!reports.length) continue;
+
+        if (!aggregated[exc.code])
+            aggregated[exc.code] = {
+                totalDat: 0,
+                totalThan: 0,
+                materialDetails: {},
+            };
+
+        for (const r of reports) {
+            const { name, acceptedProduct } = r.material || {};
+            const m3 = r.totalCubicMeter || 0;
+            const ton = r.totalTon || 0;
+            let q = 0;
+            if (acceptedProduct === ACCEPTED_PRODUCT.LAND) {
+                aggregated[exc.code].totalDat += m3;
+                q = m3;
+            } else if (acceptedProduct === ACCEPTED_PRODUCT.COAL) {
+                aggregated[exc.code].totalThan += ton;
+                q = ton;
+            } else continue;
+
+            if (!aggregated[exc.code].materialDetails[name])
+                aggregated[exc.code].materialDetails[name] = {
+                    quantity: 0,
+                    acceptedProduct,
+                };
+            aggregated[exc.code].materialDetails[name].quantity += q;
+        }
+    }
+
+    const finalData = Object.entries(aggregated).map(([code, d]) => ({
+        excavatorCode: code,
+        ...d,
+    }));
+    finalData.sort((a, b) =>
+        (a.excavatorCode || "").localeCompare(b.excavatorCode || "")
+    );
+
+
+    const landList = [];
+    const coalList = [];
+    finalData.forEach((r) => {
+        Object.entries(r.materialDetails || {}).forEach(([name, detail]) => {
+            const qty = detail.quantity || 0;
+            if (qty === 0) return; // ✅ bỏ qua vật liệu 0
+
+            if (detail.acceptedProduct === ACCEPTED_PRODUCT.LAND && !landList.includes(name))
+                landList.push(name);
+            if (detail.acceptedProduct === ACCEPTED_PRODUCT.COAL && !coalList.includes(name))
+                coalList.push(name);
+        });
+    });
+
+    // === Tính tổng ==
+    const totalDat = finalData.reduce((s, r) => s + (r.totalDat || 0), 0);
+    const totalThan = finalData.reduce((s, r) => s + (r.totalThan || 0), 0);
+
+    const totalLandByName = Object.fromEntries(
+        landList.map((name) => [
+            name,
+            finalData.reduce((s, r) => s + (r.materialDetails?.[name]?.quantity || 0), 0)
+        ])
+    );
+
+    const totalCoalByName = Object.fromEntries(
+        coalList.map((name) => [
+            name,
+            finalData.reduce((s, r) => s + (r.materialDetails?.[name]?.quantity || 0), 0)
+        ])
+    );
+
+    // --- 4️⃣ Tạo Excel Workbook ---
+    const sheet = workbook.addWorksheet(sheetName);
+
+    const center = { horizontal: "center", vertical: "middle" };
+
+    // === Header 3 tầng ===
+    const totalCols = 2 + (landList.length + 1) + (coalList.length + 1) + 1;
+
+    sheet.mergeCells(1, 1, 1, totalCols);
+    sheet.getCell("A1").value = "CÔNG TY CỔ PHẦN THAN CAO SƠN - TKV";
+    sheet.getCell("A1").font = { italic: true, size: 18 };
+    sheet.getCell("A1").alignment = { horizontal: "left" };
+
+    sheet.mergeCells(2, 1, 2, totalCols);
+    sheet.getCell("A2").value = "BẢNG TỔNG HỢP THỐNG KÊ THAN, ĐẤT";
+    sheet.getCell("A2").font = { bold: true, size: 14 };
+    sheet.getCell("A2").alignment = center;
+
+    sheet.mergeCells(4, 1, 4, totalCols);
+    sheet.getCell("A4").value = `Đơn vị: ${dep?.code || ''}`;
+    sheet.getCell("A4").alignment = { horizontal: "left" };
+
+    // Hàng 4: tiêu đề bảng
+    sheet.mergeCells(6, 1, 8, 1);
+    sheet.getCell("A6").value = "TT";
+    sheet.mergeCells(6, 2, 8, 2);
+    sheet.getCell("B6").value = "MÁY XÚC";
+
+    const landStart = 3;
+    const landEnd = landStart + landList.length;
+    const coalStart = landEnd + 1;
+    const coalEnd = coalStart + coalList.length;
+    const noteCol = coalEnd + 1;
+
+    sheet.mergeCells(6, landStart, 6, coalEnd);
+    sheet.getCell(6, landStart).value = "SẢN LƯỢNG THỰC HIỆN TRONG NGÀY";
+    sheet.getCell(6, landStart).alignment = center;
+
+    // Hàng 5
+    sheet.mergeCells(7, landStart, 7, landEnd);
+    sheet.getCell(7, landStart).value = "Đất đá (m³)";
+    sheet.getCell(7, landStart).alignment = center;
+    sheet.mergeCells(7, coalStart, 7, coalEnd);
+    sheet.getCell(7, coalStart).value = "Than (tấn)";
+    sheet.getCell(7, coalStart).alignment = center;
+
+    // Hàng 6
+    sheet.getCell(8, landStart).value = "Tổng cộng";
+    landList.forEach((n, i) => {
+        sheet.getCell(8, landStart + 1 + i).value = n;
+    });
+    sheet.getCell(8, coalStart).value = "Tổng cộng";
+    coalList.forEach((n, i) => {
+        sheet.getCell(8, coalStart + 1 + i).value = n;
+    });
+
+    sheet.mergeCells(6, noteCol, 8, noteCol);
+    sheet.getCell(6, noteCol).value = "GHI CHÚ";
+
+    // === DỮ LIỆU ===
+    let currentRow = 9;
+    finalData.forEach((r, i) => {
+        const row = [
+            i + 1,
+            r.excavatorCode,
+            r.totalDat,
+            ...landList.map((n) => r.materialDetails[n]?.quantity || ""),
+            r.totalThan,
+            ...coalList.map((n) => r.materialDetails[n]?.quantity || ""),
+            "",
+        ];
+        sheet.addRow(row);
+        currentRow++;
+    });
+
+    const totalRow = [
+        "TỔNG CỘNG",
+        "", // cột Máy xúc để trống
+        totalDat,
+        ...landList.map((n) => totalLandByName[n] || ""),
+        totalThan,
+        ...coalList.map((n) => totalCoalByName[n] || ""),
+        "" // Ghi chú
+    ];
+
+    sheet.addRow(totalRow);
+    const totalRowIndex = sheet.lastRow.number;
+
+    // Merge 2 cột đầu
+    sheet.mergeCells(totalRowIndex, 1, totalRowIndex, 2);
+
+    // Style
+    sheet.getRow(totalRowIndex).eachCell((cell) => {
+        cell.font = { bold: true };
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+    });
+
+
+    // === Ký tên ===
+    addTableBorders(sheet, 6, currentRow, 1, totalCols); // Kẻ khung từ hàng 1 đến hết
+
+    currentRow += 2; // để cách ra 1 dòng trắng
+
+    // Khối Người lập (bên trái)
+    const leftCol = 1; // Bắt đầu từ cột 2
+    const leftEnd = leftCol + 1; // Kết thúc ở cột 4 (3 cột)
+
+    sheet.mergeCells(currentRow, leftCol, currentRow, leftEnd);
+    sheet.getCell(currentRow, leftCol).value = 'Người lập';
+    sheet.getCell(currentRow, leftCol).font = { bold: true };
+    sheet.getCell(currentRow, leftCol).alignment = { horizontal: 'center', vertical: 'middle' };
+
+    sheet.mergeCells(currentRow + 1, leftCol, currentRow + 1, leftEnd);
+    sheet.getCell(currentRow + 1, leftCol).value = '(Ký, ghi rõ họ tên)';
+    sheet.getCell(currentRow + 1, leftCol).font = { italic: true, size: 11 };
+    sheet.getCell(currentRow + 1, leftCol).alignment = { horizontal: 'center', vertical: 'middle' };
+
+    if (signature) {
+        const response = await axios.get(signature, { responseType: 'arraybuffer' });
+        const extension = response.headers['content-type'].split('/')[1];
+        const imageBuffer = Buffer.from(response.data, 'binary');
+
+        const imageId = workbook.addImage({
+            buffer: imageBuffer,
+            extension
+        });
+
+        sheet.mergeCells(currentRow + 2, leftCol, currentRow + 4, leftEnd);
+
+        // gán ảnh trực tiếp vào range
+        sheet.addImage(imageId, {
+            tl: { col: leftCol, row: currentRow + 1.2 }, // vị trí góc trên trái
+            ext: { width: 120, height: 50 },              // kích thước ảnh (px)
+        });
+    }
+
+
+    // === Quản đốc (bên phải) - ĐÃ SỬA LỖI MERGE ===
+    // SỬA: Đảm bảo Quản Đốc cũng rộng 4 cột (như Người lập) và căn sát vào cột cuối của bảng (totalCols)
+    const rightEnd = totalCols;
+    const rightStart = totalCols - 2; // 4 cột: totalCols - 3, totalCols - 2, totalCols - 1, totalCols
+
+    sheet.mergeCells(currentRow, rightStart, currentRow, rightEnd);
+    sheet.getCell(currentRow, rightStart).value = 'Quản Đốc';
+    sheet.getCell(currentRow, rightStart).font = { bold: true };
+    sheet.getCell(currentRow, rightStart).alignment = { horizontal: 'center', vertical: 'middle' };
+
+    sheet.mergeCells(currentRow + 1, rightStart, currentRow + 1, rightEnd);
+    sheet.getCell(currentRow + 1, rightStart).value = '(Ký, ghi rõ họ tên)';
+    sheet.getCell(currentRow + 1, rightStart).font = { italic: true, size: 11 };
+    sheet.getCell(currentRow + 1, rightStart).alignment = { horizontal: 'center', vertical: 'middle' };
+
+    sheet.pageSetup = {
+        paperSize: 9, // A4
+        orientation: 'landscape', // ngang
+        fitToPage: true,
+        fitToWidth: 1, // vừa 1 trang theo chiều ngang
+        fitToHeight: 0, // không ép theo chiều dọc
+        margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } // inch
+    };
+    sheet.eachRow((row, rowNumber) => {
+        row.eachCell((cell) => {
+            if (!cell.font) cell.font = {};
+            cell.font = {
+                ...cell.font, // giữ lại các thuộc tính khác (bold, italic,…)
+                name: 'Times New Roman', // đổi font chữ
+                // Cập nhật kích thước chữ cho khối tiêu đề mới
+                ...(rowNumber >= 6 ?? { size: 11 } // Dữ liệu/Header bảng
+                ),
+            };
+            if (rowNumber <= 4) return;
+            // Logic căn chỉnh
+            if (rowNumber > 4 && rowNumber <= 8) {
+                // Căn giữa toàn bộ header bảng (hàng 5-7)
+                cell.font = { bold: true };
+                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            } else {
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            }
+        });
+    });
+    const fixedCols = {
+        1: 5, // CA
+        2: 15, // SỐ XE
+        [totalCols]: 12, // ghi chú
+        // [coalStart]: 12, // ghi chú
+        // [landStart]: 12// ghi chú
+    };
+
+    // Giả sử muốn tổng width ~150
+    const totalTargetWidth = 150;
+
+    // Tính tổng width đã fix
+    const fixedWidthSum = Object.values(fixedCols).reduce((a, b) => a + b, 0);
+
+    // Còn lại chia đều cho các cột giữa
+    const dynamicCols = totalCols - Object.keys(fixedCols).length;
+    const dynamicWidth = Math.max(10, (totalTargetWidth - fixedWidthSum) / dynamicCols);
+
+    // Áp dụng width
+    for (let i = 1; i <= totalCols; i++) {
+        if (fixedCols[i]) {
+            sheet.getColumn(i).width = fixedCols[i];
+        } else {
+            sheet.getColumn(i).width = dynamicWidth;
+        }
+    }
+
+}
 router.post(
     "/excavatorProductReport",
     verifyToken,
     restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER),
     async (req, res, next) => {
         try {
-            const { day, department, signature } = req.body;
+            const { startDate, endDate, department, signature } = req.body;
             const user = req.user;
             let query = {};
 
@@ -8526,277 +8856,42 @@ router.post(
                 dep = user?.department
             }
 
-            if (!day)
-                return res.status(400).json({ status: "error", message: "Ngày là bắt buộc" });
+            const start = new Date(startDate)
+            const end = new Date(endDate)
 
-            query.workingDate = new Date(day);
+            query.workingDate = { $gte: start, $lte: end }
 
-            // --- 2️⃣ Lấy Order có job VAN_HANH_XUC ---
-            const orders = await Order.find({ ...query, department: dep?._id })
-                .populate({
-                    path: "device",
-                    select: "code category",
-                    populate: { path: "category", select: "name" },
-                })
-                .populate({ path: "job", select: "type" });
-
-            const filteredOrders = orders.filter(
-                (o) =>
-                    o.device?.some((d) =>
-                        d.category?.name?.toLowerCase().includes("máy xúc")
-                    ) && o.job?.type === JOB_TYPE.VAN_HANH_XUC
-            );
-
-            // --- 3️⃣ Tổng hợp dữ liệu ---
-            const aggregated = {};
-            for (const order of filteredOrders) {
-                const exc = order.device?.find((d) =>
-                    d.category?.name?.toLowerCase().includes("máy xúc")
-                );
-                if (!exc) continue;
-
-                const reports = await Report.find({ orderId: order._id }).populate(
-                    "material",
-                    "name acceptedProduct"
-                );
-                if (!reports.length) continue;
-
-                if (!aggregated[exc.code])
-                    aggregated[exc.code] = {
-                        totalDat: 0,
-                        totalThan: 0,
-                        materialDetails: {},
-                    };
-
-                for (const r of reports) {
-                    const { name, acceptedProduct } = r.material || {};
-                    const m3 = r.totalCubicMeter || 0;
-                    const ton = r.totalTon || 0;
-                    let q = 0;
-                    if (acceptedProduct === ACCEPTED_PRODUCT.LAND) {
-                        aggregated[exc.code].totalDat += m3;
-                        q = m3;
-                    } else if (acceptedProduct === ACCEPTED_PRODUCT.COAL) {
-                        aggregated[exc.code].totalThan += ton;
-                        q = ton;
-                    } else continue;
-
-                    if (!aggregated[exc.code].materialDetails[name])
-                        aggregated[exc.code].materialDetails[name] = {
-                            quantity: 0,
-                            acceptedProduct,
-                        };
-                    aggregated[exc.code].materialDetails[name].quantity += q;
-                }
-            }
-
-            const finalData = Object.entries(aggregated).map(([code, d]) => ({
-                excavatorCode: code,
-                ...d,
-            }));
-
-            const landList = [];
-            const coalList = [];
-            finalData.forEach((r) => {
-                Object.entries(r.materialDetails || {}).forEach(([name, detail]) => {
-                    const qty = detail.quantity || 0;
-                    if (qty === 0) return; // ✅ bỏ qua vật liệu 0
-
-                    if (detail.acceptedProduct === ACCEPTED_PRODUCT.LAND && !landList.includes(name))
-                        landList.push(name);
-                    if (detail.acceptedProduct === ACCEPTED_PRODUCT.COAL && !coalList.includes(name))
-                        coalList.push(name);
-                });
-            });
-
-            // --- 4️⃣ Tạo Excel Workbook ---
             const workbook = new ExcelJS.Workbook();
-            const sheet = workbook.addWorksheet("BaoCaoMayXuc");
 
-            const center = { horizontal: "center", vertical: "middle" };
-
-            // === Header 3 tầng ===
-            const totalCols = 2 + (landList.length + 1) + (coalList.length + 1) + 1;
-
-            sheet.mergeCells(1, 1, 1, totalCols);
-            sheet.getCell("A1").value = "CÔNG TY CỔ PHẦN THAN CAO SƠN - TKV";
-            sheet.getCell("A1").font = { italic: true, size: 18 };
-            sheet.getCell("A1").alignment = { horizontal: "left" };
-
-            sheet.mergeCells(2, 1, 2, totalCols);
-            sheet.getCell("A2").value = "BẢNG TỔNG HỢP THỐNG KÊ THAN, ĐẤT";
-            sheet.getCell("A2").font = { bold: true, size: 14 };
-            sheet.getCell("A2").alignment = center;
-
-            sheet.mergeCells(3, 1, 3, totalCols);
-            sheet.getCell("A3").value = `Ngày: ${dayjs(day).format("DD/MM/YYYY")}`;
-            sheet.getCell("A3").alignment = center
-
-            sheet.mergeCells(4, 1, 4, totalCols);
-            sheet.getCell("A4").value = `Đơn vị: ${dep?.code || ''}`;
-            sheet.getCell("A4").alignment = { horizontal: "left" };
-
-            // Hàng 4: tiêu đề bảng
-            sheet.mergeCells(6, 1, 8, 1);
-            sheet.getCell("A6").value = "TT";
-            sheet.mergeCells(6, 2, 8, 2);
-            sheet.getCell("B6").value = "MÁY XÚC";
-
-            const landStart = 3;
-            const landEnd = landStart + landList.length;
-            const coalStart = landEnd + 1;
-            const coalEnd = coalStart + coalList.length;
-            const noteCol = coalEnd + 1;
-
-            sheet.mergeCells(6, landStart, 6, coalEnd);
-            sheet.getCell(6, landStart).value = "SẢN LƯỢNG THỰC HIỆN TRONG NGÀY";
-            sheet.getCell(6, landStart).alignment = center;
-
-            // Hàng 5
-            sheet.mergeCells(7, landStart, 7, landEnd);
-            sheet.getCell(7, landStart).value = "Đất đá (m³)";
-            sheet.getCell(7, landStart).alignment = center;
-            sheet.mergeCells(7, coalStart, 7, coalEnd);
-            sheet.getCell(7, coalStart).value = "Than (tấn)";
-            sheet.getCell(7, coalStart).alignment = center;
-
-            // Hàng 6
-            sheet.getCell(8, landStart).value = "Tổng cộng";
-            landList.forEach((n, i) => {
-                sheet.getCell(8, landStart + 1 + i).value = n;
-            });
-            sheet.getCell(8, coalStart).value = "Tổng cộng";
-            coalList.forEach((n, i) => {
-                sheet.getCell(8, coalStart + 1 + i).value = n;
-            });
-
-            sheet.mergeCells(6, noteCol, 8, noteCol);
-            sheet.getCell(6, noteCol).value = "GHI CHÚ";
-
-            // === DỮ LIỆU ===
-            let currentRow = 9;
-            finalData.forEach((r, i) => {
-                const row = [
-                    i + 1,
-                    r.excavatorCode,
-                    r.totalDat,
-                    ...landList.map((n) => r.materialDetails[n]?.quantity || ""),
-                    r.totalThan,
-                    ...coalList.map((n) => r.materialDetails[n]?.quantity || ""),
-                    "",
-                ];
-                sheet.addRow(row);
-                currentRow++;
-            });
-
-
-            // === Ký tên ===
-            addTableBorders(sheet, 6, currentRow - 1, 1, totalCols); // Kẻ khung từ hàng 1 đến hết
-
-            currentRow += 1; // để cách ra 1 dòng trắng
-
-            // Khối Người lập (bên trái)
-            const leftCol = 2; // Bắt đầu từ cột 2
-            const leftEnd = leftCol + 1; // Kết thúc ở cột 4 (3 cột)
-
-            sheet.mergeCells(currentRow, leftCol, currentRow, leftEnd);
-            sheet.getCell(currentRow, leftCol).value = 'Người lập';
-            sheet.getCell(currentRow, leftCol).font = { bold: true };
-            sheet.getCell(currentRow, leftCol).alignment = { horizontal: 'center', vertical: 'middle' };
-
-            sheet.mergeCells(currentRow + 1, leftCol, currentRow + 1, leftEnd);
-            sheet.getCell(currentRow + 1, leftCol).value = '(Ký, ghi rõ họ tên)';
-            sheet.getCell(currentRow + 1, leftCol).font = { italic: true, size: 11 };
-            sheet.getCell(currentRow + 1, leftCol).alignment = { horizontal: 'center', vertical: 'middle' };
-
-            if (signature) {
-                const response = await axios.get(signature, { responseType: 'arraybuffer' });
-                const extension = response.headers['content-type'].split('/')[1];
-                const imageBuffer = Buffer.from(response.data, 'binary');
-
-                const imageId = workbook.addImage({
-                    buffer: imageBuffer,
-                    extension
-                });
-
-                sheet.mergeCells(currentRow + 2, leftCol, currentRow + 4, leftEnd);
-
-                // gán ảnh trực tiếp vào range
-                sheet.addImage(imageId, {
-                    tl: { col: leftCol, row: currentRow + 1.2 }, // vị trí góc trên trái
-                    ext: { width: 120, height: 50 },              // kích thước ảnh (px)
-                });
+            const totalSheetName = `Tong_hop_${dayjs(start).format("DD_MM")}_den_${dayjs(end).format("DD_MM")}`;
+            await excavatorProductReport(
+                workbook,
+                totalSheetName,
+                dep,
+                query,
+                signature
+            )
+            const totalSheet = workbook.getWorksheet(totalSheetName);
+            if (totalSheet) {
+                totalSheet.getCell(3, 1).value = `Từ ngày: ${dayjs(start).format("DD-MM-YYYY")}`;
+                totalSheet.getCell(3, 3).value = `Đến ngày: ${dayjs(end).format("DD-MM-YYYY")}`;
             }
 
+            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                query = { workingDate: d }
 
-            // === Quản đốc (bên phải) - ĐÃ SỬA LỖI MERGE ===
-            // SỬA: Đảm bảo Quản Đốc cũng rộng 4 cột (như Người lập) và căn sát vào cột cuối của bảng (totalCols)
-            const rightEnd = totalCols;
-            const rightStart = totalCols - 2; // 4 cột: totalCols - 3, totalCols - 2, totalCols - 1, totalCols
-
-            sheet.mergeCells(currentRow, rightStart, currentRow, rightEnd);
-            sheet.getCell(currentRow, rightStart).value = 'Quản Đốc';
-            sheet.getCell(currentRow, rightStart).font = { bold: true };
-            sheet.getCell(currentRow, rightStart).alignment = { horizontal: 'center', vertical: 'middle' };
-
-            sheet.mergeCells(currentRow + 1, rightStart, currentRow + 1, rightEnd);
-            sheet.getCell(currentRow + 1, rightStart).value = '(Ký, ghi rõ họ tên)';
-            sheet.getCell(currentRow + 1, rightStart).font = { italic: true, size: 11 };
-            sheet.getCell(currentRow + 1, rightStart).alignment = { horizontal: 'center', vertical: 'middle' };
-
-            sheet.pageSetup = {
-                paperSize: 9, // A4
-                orientation: 'landscape', // ngang
-                fitToPage: true,
-                fitToWidth: 1, // vừa 1 trang theo chiều ngang
-                fitToHeight: 0, // không ép theo chiều dọc
-                margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } // inch
-            };
-            sheet.eachRow((row, rowNumber) => {
-                row.eachCell((cell) => {
-                    if (!cell.font) cell.font = {};
-                    cell.font = {
-                        ...cell.font, // giữ lại các thuộc tính khác (bold, italic,…)
-                        name: 'Times New Roman', // đổi font chữ
-                        // Cập nhật kích thước chữ cho khối tiêu đề mới
-                        ...(rowNumber >= 6 ?? { size: 11 } // Dữ liệu/Header bảng
-                        ),
-                    };
-                    if (rowNumber <= 4) return;
-                    // Logic căn chỉnh
-                    if (rowNumber > 4 && rowNumber <= 8) {
-                        // Căn giữa toàn bộ header bảng (hàng 5-7)
-                        cell.font = { bold: true };
-                        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-                    } else {
-                        cell.alignment = { horizontal: 'center', vertical: 'middle' };
-                    }
-                });
-            });
-            const fixedCols = {
-                1: 5, // CA
-                2: 15, // SỐ XE
-                [totalCols]: 12, // ghi chú
-                [coalStart]: 12, // ghi chú
-                [landStart]: 12// ghi chú
-            };
-
-            // Giả sử muốn tổng width ~150
-            const totalTargetWidth = 150;
-
-            // Tính tổng width đã fix
-            const fixedWidthSum = Object.values(fixedCols).reduce((a, b) => a + b, 0);
-
-            // Còn lại chia đều cho các cột giữa
-            const dynamicCols = totalCols - Object.keys(fixedCols).length;
-            const dynamicWidth = Math.max(10, (totalTargetWidth - fixedWidthSum) / dynamicCols);
-
-            // Áp dụng width
-            for (let i = 1; i <= totalCols; i++) {
-                if (fixedCols[i]) {
-                    sheet.getColumn(i).width = fixedCols[i];
-                } else {
-                    sheet.getColumn(i).width = dynamicWidth;
+                const sheetName = `Ngay_${dayjs(d).format("DD_MM_YYYY")}`;
+                await excavatorProductReport(
+                    workbook,
+                    sheetName,
+                    dep,
+                    query,
+                    signature
+                )
+                const title = `Ngày ${dayjs(d).format("DD-MM-YYYY")}`;
+                const daySheet = workbook.getWorksheet(sheetName);
+                if (daySheet) {
+                    daySheet.getCell(3, 1).value = title;
                 }
             }
 
@@ -8807,7 +8902,7 @@ router.post(
             );
             res.setHeader(
                 "Content-Disposition",
-                `attachment; filename=BaoCaoMayXuc_${day}.xlsx`
+                `attachment; filename=ThongKeThanDat.xlsx`
             );
             await workbook.xlsx.write(res);
             res.end();
@@ -8937,7 +9032,8 @@ router.post(
             // Cột TỔNG THAN (Tấn/Tkm)
             const totalCoalTon = coalQuantityEndCol + 1;
             const totalCoalTkm = coalQuantityEndCol + 2;
-            const totalCols = totalCoalTkm;
+            const totalTripsCol = totalCoalTkm + 1;
+            const totalCols = totalTripsCol;
 
             sheet.mergeCells(1, 1, 1, totalCols);
             sheet.getCell("A1").value = "CÔNG TY CỔ PHẦN THAN CAO SƠN - TKV";
@@ -9005,6 +9101,11 @@ router.post(
             sheet.getCell(criteriaStartRow - 1, shiftCol).value = "Ca xe h/đ trong ngày";
             sheet.getCell(criteriaStartRow - 1, shiftCol).alignment = center;
 
+            sheet.mergeCells(criteriaStartRow - 1, totalTripsCol, criteriaEndRow, totalTripsCol); // B4:B9
+            sheet.getCell(criteriaStartRow - 1, totalTripsCol).value = "Tổng chuyến";
+            sheet.getCell(criteriaStartRow - 1, totalTripsCol).alignment = center;
+            sheet.getCell(criteriaStartRow - 1, totalTripsCol).font = { bold: true }
+
             // Tiêu đề ĐẤT (Columns landQuantityStartCol ... landQuantityEndCol)
             landHeaders.forEach((h, idx) => {
                 row4.getCell(landQuantityStartCol + idx).value = h[0] || "-"; // Nơi đổ tải (C4 onwards)
@@ -9044,6 +9145,11 @@ router.post(
             row5.getCell(totalCoalTkm).value = "(Tkm)";
             row5.getCell(totalCoalTkm).alignment = center;
             // ------------------------------------------
+
+
+
+            // // Merge theo chuẩn các cột Total (Rows 5–9)
+            // sheet.mergeCells(criteriaStartRow + 1, totalTripsCol, criteriaEndRow, totalTripsCol);
 
             // Merge the Total Land and Total Coal columns from Row 5 to Row 9
             // for neatness, similar to the 'Ca xe' column
@@ -9174,6 +9280,12 @@ router.post(
 
                     row.getCell(totalCoalTon).value = totalCoal.ton;
                     row.getCell(totalCoalTkm).value = totalCoal.tkm;
+
+                    const totalTrips = [...landGroups, ...coalGroups]
+                        .filter(g => g.deviceCode === device && g.shift === shift)
+                        .reduce((s, g) => s + (g.quantity || 0), 0);
+
+                    row.getCell(totalTripsCol).value = totalTrips;
                 }
                 const shiftLand = landGroups.filter(g => g.shift === shift);
                 const shiftCoal = coalGroups.filter(g => g.shift === shift);
@@ -9221,6 +9333,12 @@ router.post(
 
                     totalShiftRow.getCell(totalCoalTon).value = shiftCoal.reduce((s, g) => s + (g.totalTon || 0), 0);
                     totalShiftRow.getCell(totalCoalTkm).value = shiftCoal.reduce((s, g) => s + (g.production || 0), 0);
+
+                    const sumTripsShift = [...shiftLand, ...shiftCoal]
+                        .reduce((s, g) => s + (g.quantity || 0), 0);
+
+                    totalShiftRow.getCell(totalTripsCol).value = sumTripsShift;
+                    totalShiftRow.getCell(totalTripsCol).numFmt = '#,##0.0';
 
                     // Style dòng tổng ca
                     totalShiftRow.eachCell(c => {
@@ -9288,6 +9406,12 @@ router.post(
             totalRow.getCell(totalCoalTon).numFmt = '#,##0.0';
             totalRow.getCell(totalCoalTkm).value = totals.coal.tkm;
             totalRow.getCell(totalCoalTkm).numFmt = '#,##0.0';
+
+            const totalTripsAll = [...landGroups, ...coalGroups]
+                .reduce((s, g) => s + (g.quantity || 0), 0);
+
+            totalRow.getCell(totalTripsCol).value = totalTripsAll;
+            totalRow.getCell(totalTripsCol).numFmt = '#,##0.0';
 
             // Apply bold font and alignment to the total row
             totalRow.eachCell((c) => {
@@ -9556,7 +9680,95 @@ router.post(
             // Lấy Orders
             const allReports = await getAllReport(query, dep, _)
             const grouped = await groupTripsVehicleProductivity(allReports)
-            res.status(200).send({ status: "success", data: grouped });
+            const map = {};
+
+            grouped.forEach(model => {
+                const modelName = model.modelName || "Khác";
+
+                if (!map[modelName]) {
+                    map[modelName] = {
+                        modelName,
+                        summary: {
+                            land: { trips: 0, m3: 0, tkm: 0 },
+                            coal: { trips: 0, ton: 0, tkm: 0 },
+                            totalTkm: 0,
+                            shifts: 0,
+                            days: 0
+                        },
+                        vehicles: {}
+                    };
+                }
+
+                const m = map[modelName];
+
+                // accumulate summary
+                m.summary.land.trips += model.summary.land.trips;
+                m.summary.land.m3 += model.summary.land.m3;
+                m.summary.land.tkm += model.summary.land.tkm;
+
+                m.summary.coal.trips += model.summary.coal.trips;
+                m.summary.coal.ton += model.summary.coal.ton;
+                m.summary.coal.tkm += model.summary.coal.tkm;
+
+                m.summary.totalTkm += model.summary.totalTkm;
+
+                model.vehicles.forEach(v => {
+                    const code = v.carCode;
+
+                    if (!m.vehicles[code]) {
+                        m.vehicles[code] = {
+                            carCode: code,
+                            land: { trips: 0, m3: 0, tkm: 0 },
+                            coal: { trips: 0, ton: 0, tkm: 0 },
+                            totalTkm: 0,
+                            shifts: 0,
+                            days: 0
+                        };
+                    }
+
+                    const x = m.vehicles[code];
+                    x.land.trips += v.land.trips || 0;
+                    x.land.m3 += v.land.m3 || 0;
+                    x.land.tkm += v.land.tkm || 0;
+
+                    x.coal.trips += v.coal.trips || 0;
+                    x.coal.ton += v.coal.ton || 0;
+                    x.coal.tkm += v.coal.tkm || 0;
+
+                    x.totalTkm += v.totalTkm || 0;
+                    x.shifts += v.shift || 0;
+
+                    if (dayjs(v.workingDate).isValid()) {
+                        x.days += 1;
+                    }
+
+                    // Đếm ngày của tổng model
+                    if (dayjs(v.workingDate).isValid()) {
+                        m.summary.days = (m.summary.days || 0) + 1;
+                    }
+                    m.summary.shifts += v.shift || 0;
+                });
+            });
+
+
+            // Convert sets to numbers & object → array
+            const summary = Object.values(map).map(m => ({
+                ...m,
+                summary: {
+                    ...m.summary,
+                    days: m.summary.days
+                },
+                vehicles: Object.values(m.vehicles)
+                    .sort((a, b) =>
+                        (a.carCode || "").localeCompare(b.carCode || "", undefined, { numeric: true })
+                    )
+                    .map(v => ({
+                        ...v,
+                        days: v.days,
+                    }))
+            }));
+
+            res.status(200).send({ status: "success", data: summary });
 
         } catch (err) {
             req.logger.error("❌ Lỗi khi load excavator product report", err);
@@ -9598,7 +9810,7 @@ const carProductivityReport = async (
                         coal: { trips: 0, ton: 0, tkm: 0 },
                         totalTkm: 0,
                         shifts: 0,
-                        days: new Set()
+                        days: 0
                     };
                 }
 
@@ -9616,7 +9828,7 @@ const carProductivityReport = async (
                 m.shifts += v.shift || 0;
 
                 if (dayjs(v.workingDate).isValid()) {
-                    m.days.add(dayjs(v.workingDate).format("YYYY-MM-DD"));
+                    m.days += 1
                 }
             });
         });
@@ -9630,9 +9842,9 @@ const carProductivityReport = async (
         coal: { trips: 0, ton: 0, tkm: 0 },
         totalTkm: 0,
         totalShifts: 0,
+        totalDays: 0
     };
 
-    const allWorkingDates = new Set();
     grouped.forEach((model) => {
         // Sort the vehicles array within each model group for proper Excel display
 
@@ -9649,12 +9861,11 @@ const carProductivityReport = async (
         vehicles.forEach((v) => {
             if (dayjs(v.workingDate).isValid()) {
                 // Chuẩn hóa ngày về 'YYYY-MM-DD' để Set so sánh chính xác
-                allWorkingDates.add(dayjs(v.workingDate).format('YYYY-MM-DD'));
+                grandTotal.totalDays += 1
             }
         });
         grandTotal.totalShifts += vehicles.reduce((acc, v) => acc + (v.shift || 0), 0);
     });
-    grandTotal.totalDays = allWorkingDates.size
     // --- Kết thúc tính Grand Total ---
 
     const sheet = workbook.addWorksheet(totalSheetName);
@@ -9752,9 +9963,12 @@ const carProductivityReport = async (
 
         // Dòng chi tiết từng xe
         if (isSummarySheet) {
-            const cars = vehicleMapByModel[model.modelName] || {};
+            const cars = Object.values(vehicleMapByModel[model.modelName] || {})
+                .sort((a, b) =>
+                    (a.carCode || "").localeCompare(b.carCode || "", undefined, { numeric: true })
+                );
 
-            Object.values(cars).forEach(v => {
+            cars.forEach(v => {
                 currentRow++;
                 const row = sheet.getRow(currentRow);
 
@@ -9771,14 +9985,18 @@ const carProductivityReport = async (
                 row.getCell(9).value = formatNumber(v.totalTkm);
 
                 row.getCell(10).value = v.shifts;
-                row.getCell(11).value = v.days.size;
+                row.getCell(11).value = v.days;
 
                 row.eachCell({ includeEmpty: true }, c => c.alignment = center);
                 row.getCell(2).alignment = { horizontal: "left" };
             });
         }
         else {
-            model.vehicles.forEach(vehicle => {
+            const sortedVehicles = [...(model.vehicles || [])]
+                .sort((a, b) =>
+                    (a.carCode || "").localeCompare(b.carCode || "", undefined, { numeric: true })
+                );
+            sortedVehicles.forEach(vehicle => {
                 currentRow++;
                 const vehicleRow = sheet.getRow(currentRow);
                 // Cột TT để trống cho chi tiết xe
