@@ -9,81 +9,87 @@ const { ROLE, JOB_TYPE } = require('../config/config');
 
 // cron
 
-cron.schedule('20 14 * * *', async () => {
+cron.schedule('* 14 * * *', async () => {
     console.log('Bắt đầu tiến hành tính sản lượng...')
 
     try {
-        const orders = await getOrders()
-        let bulkOperations = [];
+        const selected = new Date();
+        // Các logic về ngày tháng giữ nguyên
+        const selectedDate = new Date(selected.getFullYear(), selected.getMonth(), selected.getDate(), 23, 59, 59, 999);
+        const startOfMonth = new Date(selected.getFullYear(), selected.getMonth(), 1, 0, 0, 0, 0);
+        let query = { workingDate: { $gte: startOfMonth, $lte: selectedDate } };
+        const orders = await getOrders(query)
+        await update_production_report(orders);
 
-        for (let order of orders) {
-            const reports = await getReports(order);
-            const reportPromises = reports.map(async (report) => {
-                let totalProduction = 0;
-                let totalCubicMeter = 0;
-                let totalTon = 0;
-
-                if (order.job?.type === JOB_TYPE.VAN_HANH_KHOAN) {
-                    totalProduction = report.drillDepth || 0;
-                }
-                else if (order.job?.type === JOB_TYPE.VAN_HANH_XE) {
-                    // Gọi hàm tính toán ASYNC, việc này sẽ chạy song song
-                    // với các report khác trong cùng một Order
-                    const value = await production_van_hanh_xe(report);
-                    totalProduction = value.production
-                    totalCubicMeter = value.cubicMeter
-                    totalTon = value.ton
-                } else if (order.job?.type === JOB_TYPE.VAN_HANH_XUC) {
-                    // Gọi hàm tính toán ASYNC, việc này sẽ chạy song song
-                    // với các report khác trong cùng một Order
-                    const value = await production_van_hanh_xuc(report);
-                    totalCubicMeter = value.cubicMeter
-                    totalTon = value.ton
-                }
-
-                if (totalProduction > 0 || totalCubicMeter > 0 || totalTon > 0) {
-                    return {
-                        updateOne: {
-                            filter: { _id: report._id },
-                            update: {
-                                $set: {
-                                    totalProduction: totalProduction,
-                                    totalCubicMeter: totalCubicMeter,
-                                    totalTon: totalTon,
-                                }
-                            }
-                        }
-                    };
-                }
-                return null; // Trả về null nếu không cần cập nhật
-            });
-
-            // 2. Chờ tất cả Promise hoàn thành (chạy song song)
-            const results = await Promise.all(reportPromises);
-
-            // 3. Gộp các thao tác update (không null) vào mảng chung
-            bulkOperations.push(...results.filter(op => op !== null));
-        }
-        if (bulkOperations.length > 0) {
-            console.log(`[CRON] Tổng cộng ${bulkOperations.length} Report cần được cập nhật.`);
-            const result = await Report.bulkWrite(bulkOperations);
-            console.log(`[CRON] Bulk Write hoàn tất. Updated: ${result.nModified || result.modifiedCount}`);
-        } else {
-            console.log('[CRON] Không có Report nào cần cập nhật.');
-        }
     } catch (error) {
         console.error('[CRON ERROR] Lỗi trong quá trình Cron Job:', error);
     }
     console.log('Kết thúc tính sản lượng...')
 })
 
+// ham tinh
+async function update_production_report(orders) {
+    let bulkOperations = [];
 
-async function getOrders() {
-    const selected = new Date();
-    // Các logic về ngày tháng giữ nguyên
-    const selectedDate = new Date(selected.getFullYear(), selected.getMonth(), selected.getDate(), 23, 59, 59, 999);
-    const startOfMonth = new Date(selected.getFullYear(), selected.getMonth(), 1, 0, 0, 0, 0);
-    let query = { workingDate: { $gte: startOfMonth, $lte: selectedDate } };
+    for (let order of orders) {
+        const reports = await getReports(order);
+        const reportPromises = reports.map(async (report) => {
+            let totalProduction = 0;
+            let totalCubicMeter = 0;
+            let totalTon = 0;
+
+            if (order.job?.type === JOB_TYPE.VAN_HANH_KHOAN) {
+                totalProduction = report.drillDepth || 0;
+            }
+            else if (order.job?.type === JOB_TYPE.VAN_HANH_XE) {
+                // Gọi hàm tính toán ASYNC, việc này sẽ chạy song song
+                // với các report khác trong cùng một Order
+                const value = await production_vehicle(report);
+                totalProduction = value.production
+                totalCubicMeter = value.cubicMeter
+                totalTon = value.ton
+            } else if (order.job?.type === JOB_TYPE.VAN_HANH_XUC) {
+                // Gọi hàm tính toán ASYNC, việc này sẽ chạy song song
+                // với các report khác trong cùng một Order
+                const value = await production_excavator(report);
+                totalCubicMeter = value.cubicMeter
+                totalTon = value.ton
+            }
+
+            if (totalProduction > 0 || totalCubicMeter > 0 || totalTon > 0) {
+                return {
+                    updateOne: {
+                        filter: { _id: report._id },
+                        update: {
+                            $set: {
+                                totalProduction: totalProduction,
+                                totalCubicMeter: totalCubicMeter,
+                                totalTon: totalTon,
+                            }
+                        }
+                    }
+                };
+            }
+            return null; // Trả về null nếu không cần cập nhật
+        });
+
+        // 2. Chờ tất cả Promise hoàn thành (chạy song song)
+        const results = await Promise.all(reportPromises);
+
+        // 3. Gộp các thao tác update (không null) vào mảng chung
+        bulkOperations.push(...results.filter(op => op !== null));
+    }
+    if (bulkOperations.length > 0) {
+        console.log(`Tổng cộng ${bulkOperations.length} Report cần được cập nhật.`);
+        const result = await Report.bulkWrite(bulkOperations);
+        console.log(`Bulk Write hoàn tất. Updated: ${result.nModified || result.modifiedCount}`);
+    } else {
+        console.log('Không có Report nào cần cập nhật.');
+    }
+}
+
+
+async function getOrders(query) {
 
     // 1. Lấy ra ID của các Job cần quan tâm
     const jobsVehicle = await Job.find({
@@ -168,7 +174,7 @@ async function getReports(order) {
     });
     return allVehicleReports
 }
-async function production_van_hanh_xe(t) {
+async function production_vehicle(t) {
     // Chuyển quantityUpdateTimes thành mảng để lặp
     const timesArray = Array.isArray(t.quantityUpdateTimes)
         ? t.quantityUpdateTimes
@@ -203,7 +209,7 @@ async function production_van_hanh_xe(t) {
 
     return value
 }
-async function production_van_hanh_xuc(t) {
+async function production_excavator(t) {
 
     const value = await caculatorWeight(
         t.material?._id,
@@ -216,8 +222,24 @@ async function production_van_hanh_xuc(t) {
     return value;
 }
 
+async function runProductionUpdateBackground(req, query) {
+    setImmediate(async () => {
+        try {
+            const orders = await getOrders(query);
+            await update_production_report(orders);
+
+            req?.logger?.info("✔ Background: sản lượng đã được cập nhật");
+        } catch (err) {
+            req?.logger?.error("❌ Background: lỗi khi cập nhật sản lượng", err);
+        }
+    });
+}
+
 
 module.exports = {
-    production_van_hanh_xe,
-    production_van_hanh_xuc
+    production_vehicle,
+    production_excavator,
+    update_production_report,
+    getOrders,
+    runProductionUpdateBackground
 }

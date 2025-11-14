@@ -42,16 +42,26 @@ export default function CarProductivityReport({
       land: { trips: 0, m3: 0, tkm: 0 },
       coal: { trips: 0, ton: 0, tkm: 0 },
       totalTkm: 0,
+      totalShifts: 0,
+      totalDays: 0,
     };
-    data.forEach((m) => {
+
+    data.forEach(m => {
       total.land.trips += m.summary.land.trips;
       total.land.m3 += m.summary.land.m3;
       total.land.tkm += m.summary.land.tkm;
+
       total.coal.trips += m.summary.coal.trips;
       total.coal.ton += m.summary.coal.ton;
       total.coal.tkm += m.summary.coal.tkm;
+
       total.totalTkm += m.summary.totalTkm;
+
+      total.totalShifts += m.summary.shifts;
+      total.totalDays += m.summary.days;
+
     });
+
     return total;
   }, [data]);
   const [user] = useAtom(userAtom);
@@ -72,7 +82,8 @@ export default function CarProductivityReport({
         </Typography>
 
         <Typography>Đơn vị: {department ? department.code : user?.department?.code}</Typography>
-        <Typography>Tháng: {date?.format('MM/YYYY')}</Typography>
+        <Typography>Từ ngày: {startDate?.format('DD-MM-YYYY')}</Typography>
+        <Typography>Đến ngày: {endDate?.format('DD-MM-YYYY')}</Typography>
 
         {/* Table */}
         <TableContainer sx={{ mt: 2 }}>
@@ -164,11 +175,9 @@ export default function CarProductivityReport({
                         <TableCell>{formatNumber(v.coal?.ton)}</TableCell>
                         <TableCell>{formatNumber(v.coal?.tkm)}</TableCell>
                         <TableCell>{formatNumber(v.totalTkm)}</TableCell>
-                        <TableCell>{v.shift}</TableCell>
+                        <TableCell>{v.shifts}</TableCell>
                         <TableCell>
-                          {dayjs(v.workingDate).isValid()
-                            ? dayjs(v.workingDate).format('DD/MM/YYYY')
-                            : ''}
+                          {v.days}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -202,8 +211,12 @@ export default function CarProductivityReport({
                 <TableCell sx={{ fontWeight: 'bold' }}>
                   {formatNumber(grandTotal.totalTkm)}
                 </TableCell>
-                <TableCell></TableCell>
-                <TableCell></TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>
+                  {formatNumber(grandTotal.totalShifts)}
+                </TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>
+                  {formatNumber(grandTotal.totalDays)}
+                </TableCell>
               </TableRow>
             </TableBody>
           </Table>

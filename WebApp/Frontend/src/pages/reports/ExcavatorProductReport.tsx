@@ -96,7 +96,8 @@ export default function ExcavatorProductReport({
         </Typography>
 
         <Typography>Đơn vị: {department ? department.code : user?.department?.code}</Typography>
-        <Typography>Ngày: {day?.format('DD-MM-YYYY')}</Typography>
+        <Typography>Từ ngày: {startDate?.format('DD-MM-YYYY')}</Typography>
+        <Typography>Đến ngày: {endDate?.format('DD-MM-YYYY')}</Typography>
 
         {/* Table */}
         <TableContainer sx={{ mt: 2, overflowX: 'auto' }}>
@@ -201,6 +202,39 @@ export default function ExcavatorProductReport({
                   <TableCell />
                 </TableRow>
               ))}
+              <TableRow
+                sx={{ background: '#f0f0f0', fontWeight: 'bold' }}
+              >
+                <TableCell colSpan={2} sx={{ fontWeight: 'bold' }}>
+                  TỔNG CỘNG
+                </TableCell>
+
+                {/* Tổng ĐẤT */}
+                <TableCell sx={{ fontWeight: 'bold' }}>
+                  {formatNumber(totalDat)}
+                </TableCell>
+
+                {/* Tổng chi tiết Đất theo tên */}
+                {landList.map((name) => (
+                  <TableCell key={`total-land-${name}`} sx={{ fontWeight: 'bold' }}>
+                    {formatNumber(totalLandByName[name])}
+                  </TableCell>
+                ))}
+
+                {/* Tổng THAN */}
+                <TableCell sx={{ fontWeight: 'bold' }}>
+                  {formatNumber(totalThan)}
+                </TableCell>
+
+                {/* Tổng chi tiết Than theo tên */}
+                {coalList.map((name) => (
+                  <TableCell key={`total-coal-${name}`} sx={{ fontWeight: 'bold' }}>
+                    {formatNumber(totalCoalByName[name])}
+                  </TableCell>
+                ))}
+
+                <TableCell />
+              </TableRow>
             </TableBody>
           </Table>
         </TableContainer>

@@ -142,6 +142,8 @@ async function groupTripsVehicleProduction(trips) {
             excavatorCode,
             distance,
             materialName,
+            deviceCode,
+            shiftName
         ].join("|");
 
         if (!groupsMap[key]) {
@@ -155,8 +157,8 @@ async function groupTripsVehicleProduction(trips) {
                 materialName,
 
                 // các xe/ca tham gia nhóm này
-                devices: new Set(),
-                shifts: new Set(),
+                deviceCode,
+                shiftName,
 
                 // số liệu cần cộng dồn
                 quantity: 0, 			// số chuyến
@@ -167,8 +169,8 @@ async function groupTripsVehicleProduction(trips) {
         }
 
         const g = groupsMap[key];
-        if (deviceCode) g.devices.add(deviceCode);
-        if (shiftName) g.shifts.add(shiftName);
+        g.deviceCode = deviceCode;
+        g.shiftName = shiftName;
 
         const qty = t.quantity || 0;
         g.quantity += qty;
@@ -189,8 +191,10 @@ async function groupTripsVehicleProduction(trips) {
             excavatorCode: g.excavatorCode,
             distance: g.distance,
             materialName: g.materialName,
-            devices: Array.from(g.devices), // có thể join(', ') để show
-            shifts: Array.from(g.shifts),
+            // devices: Array.from(g.devices), // có thể join(', ') để show
+            // shifts: Array.from(g.shifts),
+            deviceCode: g.deviceCode,
+            shift: g.shiftName,
 
             quantity: g.quantity,
             totalCubicMeter: g.totalCubicMeter,
@@ -204,12 +208,15 @@ async function groupTripsVehicleProduction(trips) {
 
     // sort cho đẹp: theo location rồi material
     landGroups.sort((a, b) =>
-        (a.locationName || "").localeCompare(b.locationName || "") ||
-        (a.materialName || "").localeCompare(b.materialName || "")
+        (a.locationName || "").localeCompare(b.locationName || "")
+        || (a.materialName || "").localeCompare(b.materialName || "")
+        || (a.deviceCode || "").localeCompare(b.deviceCode || "", undefined, { numeric: true })
     );
+
     coalGroups.sort((a, b) =>
-        (a.locationName || "").localeCompare(b.locationName || "") ||
-        (a.materialName || "").localeCompare(b.materialName || "")
+        (a.locationName || "").localeCompare(b.locationName || "")
+        || (a.materialName || "").localeCompare(b.materialName || "")
+        || (a.deviceCode || "").localeCompare(b.deviceCode || "", undefined, { numeric: true })
     );
 
     // tổng để đổ vào cột TỔNG ĐẤT / TỔNG THAN
@@ -233,51 +240,49 @@ async function groupTripsVehicleProduction(trips) {
 const _ = require('lodash');
 
 async function groupProductionLand(trips) {
-    // Lưu ý: Giả định hàm 'limit' đã được định nghĩa trong môi trường của bạn.
     const enrichedTrips = await Promise.all(
-        trips.map(t =>
-        // Sử dụng limit nếu cần, nếu không thì bỏ qua async/limit
-        // limit(async () => ({ 
-        ({
+        trips.map(t => ({
             deviceMaterial: t.device?.material?.name || "Khác", // Vật liệu gắn với xe (Header)
-            excavatorCode: t.excavator?.code || "Không rõ",      // Mã máy xúc (Dòng chi tiết)
+            excavatorCode: t.excavator?.code || "Không rõ",       // Mã máy xúc (Dòng chi tiết)
 
             // --- NHÓM CẤP CAO (I, II) ---
             mainGroup: t.material?.name?.trim() || "Vật liệu khác",   // Vật liệu thực tế (Cấp I/II)
 
             // --- NHÓM CẤP CON (1, 2, 3) ---
-            subGroup: t.excavator?.material?.name?.trim() || "Máy xúc khác", // Chủng loại máy xúc
+            subGroup: t.excavator?.material?.name?.trim() || "", // Chủng loại máy xúc
 
             quantity: t.quantity,
             totalCubicMeter: t.totalCubicMeter,
             production: t.totalProduction, // Tkm
             totalTon: t.totalTon || 0
-        })
-            // )) // Đóng limit
-        )
+        }))
     );
-    console.log(enrichedTrips)
 
     // 1. Nhóm ngoài cùng: theo deviceMaterial (Tạo cột Header)
     const groupedByDeviceMaterial = _.groupBy(enrichedTrips, 'deviceMaterial');
 
     const result = Object.entries(groupedByDeviceMaterial).map(([deviceMaterial, items]) => {
 
-        // Nhóm tất cả các mục theo mã máy xúc để tính tổng chuyến/M3/Tkm cho từng máy
-        const groupedByExcavatorCode = _.groupBy(items, 'excavatorCode');
+        // 🎯 THAY ĐỔI: Nhóm theo khóa tổng hợp (mainGroup + subGroup + excavatorCode)
+        // Thay vì nhóm theo 'excavatorCode', chúng ta nhóm theo cả 3 cấp phân cấp.
+        const groupedByHierarchy = _.groupBy(items, item => {
+            return `${item.mainGroup}|${item.subGroup}|${item.excavatorCode}`;
+        });
 
-        const allExcavators = Object.entries(groupedByExcavatorCode).map(([excavatorCode, list]) => {
-            // Lấy thông tin nhóm cấp I/II và cấp con từ item đầu tiên
+        // Bây giờ, 'list' sẽ là một nhóm các chuyến xe có cùng MainGroup, SubGroup, và Excavator
+        const allExcavators = Object.values(groupedByHierarchy).map(list => {
+            // Lấy thông tin nhóm từ item đầu tiên (nay đã an toàn vì tất cả đều giống nhau)
             const firstItem = list[0];
 
             return {
-                excavator: excavatorCode,
-                deviceMaterial,
+                excavator: firstItem.excavatorCode, // Tên máy xúc
+                deviceMaterial, // Loại xe (từ vòng lặp bên ngoài)
 
-                // Thêm thông tin nhóm cấp I/II và cấp con vào dữ liệu chi tiết
+                // Các nhóm này giờ là duy nhất cho hàng này
                 mainGroup: firstItem.mainGroup,
                 subGroup: firstItem.subGroup,
 
+                // Tính tổng CHỈ cho nhóm cụ thể này
                 totalTrips: _.sumBy(list, "quantity"),
                 totalM3: _.sumBy(list, "totalCubicMeter"),
                 totalTkm: _.sumBy(list, "production"),
@@ -297,12 +302,25 @@ async function groupProductionLand(trips) {
             totalM3,
             totalTkm,
             totalTon,
-            // Trả về danh sách máy xúc chi tiết đã được tính tổng và gắn nhóm
+            // Trả về danh sách máy xúc chi tiết đã được nhóm đúng
             excavators: allExcavators,
         };
     });
 
-    return result;
+    return result
+        // Sắp xếp cấp ngoài cùng theo deviceMaterial
+        .sort((a, b) =>
+            (a.deviceMaterial || "").localeCompare(b.deviceMaterial || "")
+        )
+        .map(group => ({
+            ...group,
+            // Sắp xếp tiếp danh sách excavators trong mỗi group
+            excavators: group.excavators.sort((x, y) =>
+                (x.mainGroup || "").localeCompare(y.mainGroup || "")
+                || (x.subGroup || "").localeCompare(y.subGroup || "", undefined, { numeric: true })
+                || (x.excavator || "").localeCompare(y.excavator || "", undefined, { numeric: true })
+            )
+        }));
 }
 
 
@@ -548,23 +566,25 @@ async function groupTripsCar(trips) {
         const timesArray = (t.quantityUpdateTimes || [])
         for (const time of timesArray) {
             const travelLog = await TravelLog.findOne({
-                excavator: t.excavator,        // lọc theo máy xúc
-                location: t.toLocation,       // lọc theo điểm đổ tải
-                startTime: { $lte: time },    // bắt đầu <= time
-                endTime: { $gte: time }       // kết thúc >= time
-            }).lean();
+                excavator: t.excavator?._id,
+                location: t.toLocation?._id,
+                workingDate: t.workingDate,
+                shift: t.shift?._id
+            }).lean()
+
 
             const distance = travelLog ? travelLog.fullDistanceKm : 0
             groups[key].trips.push({
                 material: t.material,
                 time: time?.time,
-                distance
+                distance,
+                quantity: time?.quantity || 1
             });
-            if (!groups[key].summary[t.material.name]) {
-                groups[key].summary[t.material.name] = { count: 0, distance: 0 }
+            if (!groups[key].summary[t.material?.name]) {
+                groups[key].summary[t.material?.name] = { count: 0, distance: 0 }
             }
-            groups[key].summary[t.material.name].count += time?.quantity;
-            groups[key].summary[t.material.name].distance += distance;
+            groups[key].summary[t.material?.name].count += time?.quantity;
+            groups[key].summary[t.material?.name].distance += distance;
 
 
             groups[key].totalTrips += time?.quantity;
@@ -598,16 +618,16 @@ async function groupCar(trips) {
 
         for (const time of timesArray) {
             const travelLog = await TravelLog.findOne({
-                excavator: t.excavator,
-                location: t.toLocation,
-                startTime: { $lte: time },
-                endTime: { $gte: time }
-            }).lean();
+                excavator: t.excavator?._id,
+                location: t.toLocation?._id,
+                workingDate: t.workingDate,
+                shift: t.shift?._id
+            }).lean()
 
             const distance = travelLog ? travelLog.fullDistanceKm : 0;
 
-            if (!groups[key].materials[t.material.name]) {
-                groups[key].materials[t.material.name] = {
+            if (!groups[key].materials[t.material?.name]) {
+                groups[key].materials[t.material?.name] = {
                     material: t.material,
                     times: [],        // danh sách thời gian
                     distances: [],    // danh sách cung độ theo index
@@ -616,10 +636,10 @@ async function groupCar(trips) {
                 };
             }
 
-            groups[key].materials[t.material.name].times.push(time?.time);
-            groups[key].materials[t.material.name].distances.push(distance);
-            groups[key].materials[t.material.name].count += time?.quantity;
-            groups[key].materials[t.material.name].totalDistance += distance;
+            groups[key].materials[t.material?.name].times.push(time?.time);
+            groups[key].materials[t.material?.name].distances.push(distance);
+            groups[key].materials[t.material?.name].count += time?.quantity;
+            groups[key].materials[t.material?.name].totalDistance += distance;
 
             groups[key].totalTrips += time?.quantity;
             groups[key].totalDistance += distance;
@@ -729,6 +749,7 @@ async function caculatorWeight(materialId, deviceModel, quantity, totalDistance,
     const valueModel = getMohinhAtDate(data, normalizeDateToUTC(date))
 
     console.log(dryDensity, valueModel, material?.name)
+
 
 
     if (data && data.material?.acceptedProduct === ACCEPTED_PRODUCT.COAL) {

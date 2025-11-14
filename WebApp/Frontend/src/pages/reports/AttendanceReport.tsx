@@ -13,7 +13,8 @@ dayjs.locale('vi');
 interface AttendanceRow {
     key: string;
     id: string;
-    fullName: string;
+    fullName?: string;
+    salaryCode?: string;
     days: Record<string, string>;
     totalDay: number;
     totalCa1: number;
@@ -50,7 +51,8 @@ export default function AttendanceReportAntd({
         return (data[0]?.data || []).map((u: any, i: number) => ({
             key: u.userId || u.fullName,
             id: u.userId || u.fullName,
-            fullName: u.fullName,
+            fullName: u?.fullName,
+            salaryCode: u?.salaryCode,
             totalDay: u.totalDay,
             totalCa1: u.totalCa1,
             totalCa2: u.totalCa2,
@@ -80,6 +82,7 @@ export default function AttendanceReportAntd({
             key: 'summary',
             id: 'summary',
             fullName: 'TỔNG CỘNG',
+            salaryCode: '',
             totalDay,
             totalCa1,
             totalCa2,
@@ -104,6 +107,12 @@ export default function AttendanceReportAntd({
                 dataIndex: 'fullName',
                 align: 'center',
                 width: 200,
+            },
+            {
+                title: 'Số thẻ',
+                dataIndex: 'salaryCode',
+                align: 'center',
+                width: 100,
             },
         ];
 
