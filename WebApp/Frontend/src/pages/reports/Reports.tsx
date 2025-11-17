@@ -39,6 +39,7 @@ import CarProductReport from './CarProductReport';
 import CarProductivityReport from './CarProductivityReport';
 import CarProductLandReport from './CarProductLandReport';
 import CarProductCoalReport from './CarProductCoalReport';
+import AssignmentManagerReport from './AssignmentManagerReport';
 
 function Reports() {
     const [startDate, setStartDate] = useState<dayjs.Dayjs | null>(null);
@@ -144,12 +145,12 @@ function Reports() {
         [ReportEnum.SHIFT_HANDOVER]: {
             viewUrl: '',
             exportUrl: '/exports/assignmentTo',
-            PreviewComponent: mealRequestReport, // Giả sử dùng tạm component này
+            PreviewComponent: AssignmentManagerReport, // Giả sử dùng tạm component này
         },
         [ReportEnum.STAFF_SHIFT_HANDOVER]: {
             viewUrl: '',
             exportUrl: '/exports/assignmentManager',
-            PreviewComponent: mealRequestReport, // Giả sử dùng tạm component này
+            PreviewComponent: AssignmentManagerReport, // Giả sử dùng tạm component này
         },
         [ReportEnum.SHIFT_SUMMARY_GRADER]: {
             viewUrl: '/exports/dozerReport/view',

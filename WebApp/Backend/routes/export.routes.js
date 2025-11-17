@@ -7116,190 +7116,172 @@ router.post('/assignmentTo', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, R
         res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
     }
 })
-router.post('/assignmentManager', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
-    try {
-        const { shift, startDate, endDate, signature } = req.body
-        const shiftList = await Shift.find({ _id: { $in: shift } });
-        const start = new Date(startDate);
-        const end = new Date(endDate);
+router.post('/assignmentManager',
+    verifyToken,
+    restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER),
+    async (req, res) => {
+        try {
+            const { shift, startDate, endDate } = req.body;
 
-        // Đảm bảo end không nhỏ hơn start
-        if (end < start) return res.status(400).json({ message: "Ngày kết thúc phải sau ngày bắt đầu" });
+            const shiftList = await Shift.find({ _id: { $in: shift } });
 
-        const workbook = new ExcelJS.Workbook();
-        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-            for (const ca of shiftList) {
-                const orders = await Order.find({
-                    workingDate: d,
-                    shift: ca._id,
-                    createdBy: req.userId,
-                    status: { $nin: [STATUS_ORDER.PENDING, STATUS_ORDER.CANCEL] }
-                })
-                    .populate('assignedTo', 'fullName salaryCode department')
-                    .populate('job', 'name')
-                    .populate('location', 'name')
-                    .populate('material', 'name')
-                    .populate('excavator.device', 'code')
-                    .populate('device', 'code')
-                    .populate('shift')
-                    .populate('createdBy', 'fullName salaryCode department')
+            const start = new Date(startDate);
+            const end = new Date(endDate);
 
+            if (end < start) return res.status(400).json({ message: "Ngày kết thúc phải sau ngày bắt đầu" });
 
+            const workbook = new ExcelJS.Workbook();
 
-                for (const order of orders) {
-                    const sheetName = `${formatDate(d)}_${ca.name}_${order?.assignedTo?.salaryCode}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
+            // ==== BORDER CONSTANTS (PHẢI ĐẶT TRƯỚC MỚI ĐƯỢC DÙNG) ====
+            const thin = { style: "thin" };
+            const fullBorder = { top: thin, bottom: thin, left: thin, right: thin };
 
-                    const worksheet = workbook.addWorksheet(sheetName, {
+            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+
+                for (const ca of shiftList) {
+
+                    const sheetName = `${formatDate(d)}_${ca.name}`.substring(0, 31).replace(/[\\\/:*?\[\]]/g, '-');
+
+                    const ws = workbook.addWorksheet(sheetName, {
                         views: [{ showGridLines: false }]
                     });
 
-                    worksheet.pageSetup = {
+                    // ===== PAGE SETUP =====
+                    ws.pageSetup = {
                         paperSize: 9,
-                        orientation: 'portrait',
-                        fitToPage: true,
+                        orientation: "landscape",
                         fitToWidth: 1,
                         fitToHeight: 1,
-                        margins: {
-                            top: 0.5, bottom: 0.5, left: 0.5, right: 0.5,
-                            header: 0.3, footer: 0.3
-                        }
                     };
 
-                    worksheet.columns = [
-                        { width: 25 }, // A
-                        { width: 30 }, // B
-                        { width: 40 }, // C
+                    // ===== COLUMN WIDTHS =====
+                    ws.columns = [
+                        { width: 5 }, { width: 10 }, { width: 18 }, { width: 14 }, { width: 14 },
+                        { width: 2 }, { width: 2 },
+                        { width: 5 }, { width: 10 }, { width: 25 }, { width: 18 }, { width: 18 },
+                        { width: 2 }, { width: 2 },
                     ];
 
-                    const generateDotLine = (totalLength, prefix = '') => {
-                        const lineLength = totalLength - prefix.length;
-                        return prefix + '.'.repeat(lineLength > 0 ? lineLength : 0);
-                    };
-                    const addRow = (values = [], options = {}) => {
-                        const row = worksheet.addRow(values);
-                        if (options.merge) worksheet.mergeCells(options.merge);
-                        if (options.bold) row.font = { bold: true };
-                        if (options.italic) row.font = { italic: true };
-                        return row;
-                    };
+                    let r = 1;
 
-                    // Tiêu đề dòng đầu
-                    addRow([`Ca: ${ca?.name}     Ngày: ${d.getDate()}     Tháng: ${d.getMonth() + 1}     Năm: ${d.getFullYear()}`], {
-                        merge: 'A1:C1',
-                    });
+                    // ===== TITLE =====
+                    ws.mergeCells(`A${r}:N${r}`);
+                    ws.getCell(`A${r}`).value = "SỔ GIAO CA CÁN BỘ";
+                    ws.getCell(`A${r}`).font = { bold: true, size: 16 };
+                    ws.getCell(`A${r}`).alignment = { horizontal: "center" };
+                    r += 2;
 
-                    addRow([`Người bàn giao: ${order?.createdBy?.fullName}       Người nhận bàn giao: ${order?.assignedTo?.fullName}`], {
-                        merge: 'A2:C2',
-                    });
+                    // ===== INFO =====
+                    ws.mergeCells(`A${r}:E${r}`);
+                    ws.getCell(`A${r}`).value = "Ca: ...............";
 
-                    worksheet.addRow([]);
+                    ws.mergeCells(`H${r}:N${r}`);
+                    ws.getCell(`H${r}`).value = "Ngày ..... tháng ..... năm ......";
+                    r += 2;
 
-                    // I. Hoạt động trong ca
-                    addRow(['I. Tình hình hoạt động trong ca:'], { bold: true });
-                    addRow(['- Số lượng thiết bị huy động/tổng số ............................  bao gồm:'], {
-                        merge: 'A5:C5',
-                    });
-                    worksheet.addRow([generateDotLine(200, '')]);
-                    worksheet.addRow([generateDotLine(200, '')]);
+                    // ===== LEFT TABLE TITLE =====
+                    ws.getCell(`A${r}`).value = "I – Tình hình hoạt động trong ca:";
+                    ws.getCell(`A${r}`).font = { bold: true };
+                    r += 2;
 
-                    addRow(['- Các thiết bị kiểm tu, bảo dưỡng bao gồm:'], { merge: 'A8:C8' });
-                    worksheet.addRow([generateDotLine(200, '')]);
-                    worksheet.addRow([generateDotLine(200, '')]);
+                    // ===== LEFT HEADER =====
+                    ws.getRow(r).values = [, "STT", "MÁY XÚC", "SỐ XE", "HÀNG V/C", "BÃI THẢI"];
+                    ["A", "B", "C", "D", "E"].forEach(col =>
+                        ws.getCell(`${col}${r}`).border = fullBorder
+                    );
+                    r++;
 
-                    // II. Những công việc đã thực hiện
-                    addRow(['II. Những công việc đã thực hiện trong ca (KT, bảo dưỡng, sửa chữa):'], { bold: true, merge: 'A12:C12' });
-                    worksheet.addRow([generateDotLine(200, '')]);
-                    worksheet.addRow([generateDotLine(200, '')]);
-
-                    worksheet.addRow([generateDotLine(194, '+ Kiểm tu: ')]);
-                    worksheet.addRow([generateDotLine(187, '+ Bảo dưỡng cấp 1: ')]);
-                    worksheet.addRow([generateDotLine(187, '+ Bảo dưỡng cấp 2: ')]);
-                    worksheet.addRow([generateDotLine(178, '+ Bảo dưỡng cấp 3(hoặc 1000 giờ): ')]);
-                    worksheet.addRow([generateDotLine(183, '+ Bảo dưỡng cấp 2000 giờ: ')]);
-                    worksheet.addRow([generateDotLine(185, '- Các thiết bị dừng để TĐT: ')]);
-                    worksheet.addRow([generateDotLine(180, '- Các thiết bị sửa chữa đột suất lớn: ')]);
-                    worksheet.addRow([generateDotLine(200, '')]);
-                    worksheet.addRow([generateDotLine(200, '')]);
-                    worksheet.addRow([generateDotLine(180, '- Các thiết bị dừng do các lý do khác: ')]);
-                    worksheet.addRow([generateDotLine(200, '')]);
-                    worksheet.addRow([generateDotLine(175, '- Nội dung công việc đã thực hiện trong ca: ')]);
-                    worksheet.addRow([generateDotLine(200, '')]);
-                    worksheet.addRow([generateDotLine(200, '')]);
-                    worksheet.addRow([generateDotLine(200, '')]);
-                    worksheet.addRow([generateDotLine(200, '')]);
-                    addRow(['II- Nội dung công việc giao lại ca sau:'], { bold: true, merge: 'A31:C31' });
-                    worksheet.addRow([generateDotLine(200, '')]);
-                    worksheet.addRow([generateDotLine(200, '')]);
-                    worksheet.addRow([generateDotLine(200, '')]);
-                    worksheet.addRow([generateDotLine(200, '')]);
-                    addRow(['III- Dự báo nguy cơ mất an toàn:'], { bold: true, merge: 'A36:C36' });
-                    worksheet.addRow([generateDotLine(200, '')]);
-                    worksheet.addRow([generateDotLine(200, '')]);
-
-                    for (let i = 0; i < 5; i++) {
-                        worksheet.addRow([]);
+                    // ===== 12 LEFT EMPTY ROWS =====
+                    for (let i = 0; i < 12; i++) {
+                        ws.getRow(r).values = [, i + 1, "", "", "", ""];
+                        ["A", "B", "C", "D", "E"].forEach(col =>
+                            ws.getCell(`${col}${r}`).border = fullBorder
+                        );
+                        r++;
                     }
 
-                    // Ký tên
-                    addRow(['NGƯỜI GIAO CA', '', '', 'NGƯỜI NHẬN'], { bold: true });
-                    addRow(['(Ký, ghi rõ họ tên)', '', '', '(Ký, ghi rõ họ tên)'], { bold: true });
+                    // ===== RIGHT TABLE TITLE =====
+                    ws.getCell(`H5`).value = "Các thiết bị dừng do các lý do khác nhau:";
+                    ws.getCell(`H5`).font = { bold: true };
 
+                    // ===== RIGHT HEADER =====
+                    ws.getRow(7).getCell("H").value = "STT";
+                    ws.getRow(7).getCell("I").value = "SỐ XE";
+                    ws.getRow(7).getCell("J").value = "TÌNH TRẠNG";
+                    ws.getRow(7).getCell("K").value = "KQ SC";
+                    ws.getRow(7).getCell("L").value = "GHI CHÚ";
 
-                    // Canh chỉnh lề trái cho tất cả
-                    worksheet.eachRow(row => {
-                        row.alignment = { vertical: 'middle', horizontal: 'left', };
+                    ["H", "I", "J", "K", "L"].forEach(col => {
+                        ws.getCell(`${col}7`).border = fullBorder;
+                        ws.getCell(`${col}7`).font = { bold: true };
                     });
 
-                    if (signature) {
-                        const response = await axios.get(signature, { responseType: 'arraybuffer' });
-                        const contentType = response.headers['content-type'];
-                        const extension = contentType.split('/')[1];
-                        const imageBuffer = Buffer.from(response.data, 'binary');
-
-                        // Thêm ảnh vào workbook
-                        const imageId = workbook.addImage({
-                            buffer: imageBuffer,
-                            extension
-                        });
-
-                        // Gán ảnh vào vị trí (dùng topleft + extents hoặc range)
-                        const lastCol = worksheet.columnCount;
-                        worksheet.addImage(imageId, {
-                            tl: { col: lastCol - 2, row: 8 }, // H30
-                            ext: { width: 120, height: 50 },
-                        });
+                    // ===== 20 RIGHT EMPTY ROWS =====
+                    for (let i = 0; i < 20; i++) {
+                        let rr = 8 + i;
+                        ws.getCell(`H${rr}`).value = i + 1;
+                        ["H", "I", "J", "K", "L"].forEach(col =>
+                            ws.getCell(`${col}${rr}`).border = fullBorder
+                        );
                     }
 
-                    worksheet.eachRow((row) => {
-                        row.eachCell((cell) => {
-                            // Nếu chưa có font, tạo font mới
-                            if (!cell.font) cell.font = {};
-                            cell.font.size = 14; // hoặc 8, tuỳ theo bạn muốn nhỏ đến đâu
-                        });
-                    });
+                    // ===== SECTION II =====
+                    r = 30;
+                    ws.mergeCells(`A${r}:N${r}`);
+                    ws.getCell(`A${r}`).value = "II – Nội dung công việc trong ca và bàn giao sau ca:";
+                    ws.getCell(`A${r}`).font = { bold: true };
+
+                    for (let i = 1; i <= 4; i++) {
+                        ws.mergeCells(`A${r + i}:N${r + i}`);
+                        ws.getCell(`A${r + i}`).value = ".".repeat(120);
+                    }
+
+                    // ===== SECTION III =====
+                    let r3 = 36;
+                    ws.mergeCells(`A${r3}:N${r3}`);
+                    ws.getCell(`A${r3}`).value = "III – Dự báo nguy cơ mất an toàn:";
+                    ws.getCell(`A${r3}`).font = { bold: true };
+
+                    ws.mergeCells(`A${r3 + 1}:N${r3 + 1}`);
+                    ws.getCell(`A${r3 + 1}`).value = ".".repeat(120);
+
+                    ws.mergeCells(`A${r3 + 2}:N${r3 + 2}`);
+                    ws.getCell(`A${r3 + 2}`).value = ".".repeat(120);
+
+                    // ===== SIGNATURES =====
+                    ws.mergeCells("A41:E41");
+                    ws.getCell("A41").value = "NGƯỜI GIAO CA";
+                    ws.getCell("A41").alignment = { horizontal: "center" };
+                    ws.getCell("A41").font = { bold: true };
+
+                    ws.mergeCells("H41:L41");
+                    ws.getCell("H41").value = "NGƯỜI NHẬN CA";
+                    ws.getCell("H41").alignment = { horizontal: "center" };
+                    ws.getCell("H41").font = { bold: true };
+
+                    ws.mergeCells("A42:E42");
+                    ws.getCell("A42").value = "(Ký, ghi rõ họ tên)";
+                    ws.getCell("A42").alignment = { horizontal: "center" };
+
+                    ws.mergeCells("H42:L42");
+                    ws.getCell("H42").value = "(Ký, ghi rõ họ tên)";
+                    ws.getCell("H42").alignment = { horizontal: "center" };
                 }
             }
+
+            const buffer = await workbook.xlsx.writeBuffer();
+
+            res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            res.setHeader("Content-Disposition", "attachment; filename*=UTF-8''GiaoCa.xlsx");
+
+            res.send(buffer);
         }
+        catch (err) {
+            console.log(err);
+            return res.status(500).json({ message: err.message });
+        }
+    });
 
-        // Xuất file
-        const buffer = await workbook.xlsx.writeBuffer();
-
-        // Thiết lập header để tải file về
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader(
-            'Content-Disposition',
-            "attachment; filename*=UTF-8''*.xlsx"
-        );   // Gửi buffer về client
-        res.send(buffer);
-        req.logger.info(`✅ Export excel thành công`);
-
-    }
-    catch (err) {
-        req.logger.error("❌ Lỗi khi export", err);
-        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
-
-    }
-})
 
 // cham cong
 router.post(

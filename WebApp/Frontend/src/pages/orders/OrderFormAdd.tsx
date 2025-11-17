@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FieldArray, FormikProvider, useFormik } from 'formik';
 import {
     Autocomplete,
@@ -27,6 +27,7 @@ import { addOrderValidationSchema } from '../../utils/validation';
 import { JobTypeEnum } from '../../enums/index';
 import { MultiSelectField } from '../../components/MultiSelectField';
 import DepartmentService from '../../services/departmentService';
+import OrderService from '../../services/orderService';
 dayjs.extend(utc);
 
 
@@ -106,6 +107,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
         queryKey: ['jobs'],
         queryFn: () => api.get('/jobs').then(res => res.data.data),
     });
+
 
     const updateSafetyMeasure = (jobText: string, userText: string) => {
         // Tách các biện pháp an toàn từ job và user thành mảng
@@ -200,6 +202,23 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
         },
     });
 
+    const [selectedExcavator, setSelectedExcavator] = useState('')
+    const { data } = useQuery({
+        queryKey: ['orders', selectedExcavator, formik.values.workingDate, formik.values.shift],
+        queryFn: () => OrderService.getAll(
+            {
+                workingDate: dayjs.utc(dayjs(formik.values.workingDate).format('YYYY-MM-DD')).toDate(),
+                excavator: selectedExcavator,
+                shift: shifts.find((s: Shift) => s._id === formik.values.shift)?.name
+            }
+        ),
+        enabled: !!selectedExcavator && !!formik.values.workingDate && !!formik.values.shift
+    })
+    useEffect(() => {
+        if (data) {
+            formik.setFieldValue("material", data.data[0]?.material[0]?._id);
+        }
+    }, [data])
 
     return (
 
@@ -254,6 +273,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                                             status: true,
                                         };
                                     });
+                                    setSelectedExcavator(mapped[0]?.device)
                                     formik.setFieldValue('excavator', mapped);
                                 }}
                                 PopperComponent={StyledPopper}
@@ -673,7 +693,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                             />
                         </Grid>}
 
-                        {selectedJob?.type === JobTypeEnum.VEHICLE && <Grid item xs={12} sm={6}>
+                        {[JobTypeEnum.VEHICLE, JobTypeEnum.EXCAVATOR].includes(selectedJob?.type) && <Grid item xs={12} sm={6}>
                             <Autocomplete
                                 fullWidth
                                 options={materials}

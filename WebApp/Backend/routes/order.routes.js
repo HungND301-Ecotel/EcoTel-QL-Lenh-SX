@@ -91,6 +91,17 @@ router.get('/', verifyToken, async (req, res, next) => {
             const userIds = matchedUsers.map(u => u._id);
             query.assignedTo = { $in: userIds.map(id => new mongoose.Types.ObjectId(id)) };
         }
+        if (req.query.excavator) {
+            const regex = new RegExp(req.query.device, 'i');
+
+            // tìm user theo salaryCode
+            const matchedDevices = await Device.find(
+                { _id: req.query.excavator },
+                { _id: 1 }
+            ).lean();
+            const deviceIds = matchedDevices.map(u => u._id);
+            query.device = { $in: deviceIds.map(id => new mongoose.Types.ObjectId(id)) };
+        }
         if (req.query.job) {
             const regex = new RegExp(req.query.job, 'i');
 
@@ -142,6 +153,8 @@ router.get('/', verifyToken, async (req, res, next) => {
             const endTime = new Date(req.query.endTime);
             endTime.setHours(23, 59, 59, 999);
             query.workingDate = { $lte: new Date(endTime) };
+        } else if (req.query.workingDate) {
+            query.workingDate = new Date(req.query.workingDate);
         }
 
         // ---- Bộ lọc role ----
