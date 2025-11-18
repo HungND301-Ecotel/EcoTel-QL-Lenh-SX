@@ -473,14 +473,6 @@ async function groupProduction(trips, date) {
             };
         }
 
-        // const value = await caculatorWeight(
-        //     t.material?._id,
-        //     t.device?.material,
-        //     t.quantity,
-        //     0,
-        //     date
-        // );
-
         groups[key].totalCubicMeter += t?.totalCubicMeter || 0;
         groups[key].totalTon += t?.totalTon || 0;
 

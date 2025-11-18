@@ -37,7 +37,10 @@ const filter = [
     "QM",
     "TN An Bình",
     "TN Máy Việt Nam",
-    "TN Quang Minh"
+    "TN Quang Minh",
+    "TN AB",
+    "TN Máy Việt-Nam",
+    "TN QM"
 ]
 
 export default function DeviceAnalysic({ departments }: { departments: any[] }) {

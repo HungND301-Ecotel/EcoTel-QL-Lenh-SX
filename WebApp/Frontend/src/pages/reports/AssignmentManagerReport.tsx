@@ -11,69 +11,51 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
+import { Department, Shift } from "../../types";
+import dayjs from "dayjs";
+import { useAtom } from "jotai";
+import { userAtom } from "../../atoms/userAtoms";
 
 const MAX_LEFT_ROWS = 12;
 const MAX_RIGHT_ROWS = 20;
 
-const data = {
-  shift: 1,
-  day: 16,
-  month: 11,
-  year: 2025,
-  officer: "Đặng Hữu Tùng – TV",
-  section: "Phòng Kỹ thuật vận tải",
+export default function AssignmentManagerReport({
+  data,
+  signatureUrl,
+  startDate,
+  endDate,
+  shifts,
+  department,
+  date,
+  day
+}: {
+  data: any[];
+  signatureUrl: string | null;
+  startDate: dayjs.Dayjs | null;
+  endDate: dayjs.Dayjs | null;
+  shifts: Shift[];
+  department: Department | null;
+  date: dayjs.Dayjs | null;
+  day: dayjs.Dayjs | null;
+}) {
 
-  activeExcavators: [
-    { stt: 1, mayXuc: "EK1", soXe: "79K, 19K, 15B, 18B, 19T", hangVc: "BĐAT", baiThai: "B20 + BĐQT" },
-    { stt: 2, mayXuc: "EK2", soXe: "99T, 109T", hangVc: "Đổ đất", baiThai: "B20, 59" },
-    { stt: 3, mayXuc: "PC05", soXe: "98J, 115-79", hangVc: "Dọn dẹp", baiThai: "B20, 59" },
-    { stt: 4, mayXuc: "TT", soXe: "77J, 105", hangVc: "Đổ đất", baiThai: "R20, 51" },
-    { stt: 5, mayXuc: "EK3", soXe: "65, 97, 100, 112, 116, 17", hangVc: "Đổ đất", baiThai: "BĐQT, P62" }
-  ],
+  const [user] = useAtom(userAtom)
 
-  brokenVehicles: [
-    { stt: 1, soXe: "97", tinhTrang: "Hư cầu, bỏ giao hàng", ketQua: "Đề nghị" },
-    { stt: 2, soXe: "109", tinhTrang: "Số 2 yếu, phụ tùng mòn", ketQua: "Đề nghị" },
-    { stt: 3, soXe: "152", tinhTrang: "Bật hộp cầu trước, rung mạnh", ketQua: "Đề nghị" },
-    { stt: 4, soXe: "129", tinhTrang: "Gầm yếu, lò xo yếu", ketQua: "Đề nghị" },
-    { stt: 5, soXe: "820", tinhTrang: "Sốc trước yếu chạy chậm", ketQua: "Đề nghị" }
-  ],
-
-  workSummary:
-    "Đầu ca trực phối hợp điều hành, chỉ đạo xử lý phát sinh xe thiết bị đảm bảo mọi việc ổn định. Các thiết bị về nghỉ đúng tinh thần an toàn.",
-  safetySummary:
-    "Trong công việc cần chấp hành an toàn. Đảm bảo xe vận tải lưu thông đúng tốc độ, chú ý gầm cầu, điểm giao cắt, quan sát kỹ khi vào bãi thải.",
-
-  giao: "Phụ trách ca: Tùng – TV",
-  nhan: "Người nhận ca: ................................",
-};
-
-export default function AssignmentManagerReport() {
-
-  // ép đúng 12 hàng bên trái
-  const leftRows = [
-    ...data.activeExcavators.slice(0, MAX_LEFT_ROWS),
-    ...Array(Math.max(0, MAX_LEFT_ROWS - data.activeExcavators.length)).fill({
-      stt: "",
-      mayXuc: "",
-      soXe: "",
-      hangVc: "",
-      baiThai: "",
-    }),
+  const leftRows = data[0]?.activity || [];
+  const leftFilled = [
+    ...leftRows,
+    ...Array.from({ length: Math.max(0, MAX_LEFT_ROWS - leftRows.length) },
+      () => ({ excavator: "", vehicles: [], materials: [], locations: [] })
+    ),
   ];
 
-  // ép đúng 20 hàng bên phải
-  const rightRows = [
-    ...data.brokenVehicles.slice(0, MAX_RIGHT_ROWS),
-    ...Array(Math.max(0, MAX_RIGHT_ROWS - data.brokenVehicles.length)).fill({
-      stt: "",
-      soXe: "",
-      tinhTrang: "",
-      ketQua: "",
-      ghiChu: "",
-    }),
+  const rightRows = data[0]?.repairs || [];
+  const rightFilled = [
+    ...rightRows,
+    ...Array.from({ length: Math.max(0, MAX_RIGHT_ROWS - rightRows.length) },
+      () => ({ vehicle: "", status: "", result: "", note: "" })
+    ),
   ];
-
   return (
     <Grid item xs={12}>
       <Paper
@@ -94,11 +76,11 @@ export default function AssignmentManagerReport() {
         </Typography>
 
         <Box display={'flex'} justifyContent={'center'} gap={5}>
-          <Typography>Ca: {data.shift}</Typography>
+          <Typography>Ca: {shifts[0]?.name}</Typography>
           <Typography>
-            Ngày {data.day} tháng {data.month} năm {data.year}
+            Ngày {day?.date()} tháng {day ? day?.month() + 1 : ''} năm {day?.year()}
           </Typography>
-          <Typography>Cán bộ: {data.officer}</Typography>
+          <Typography>Cán bộ: {user?.fullName}</Typography>
         </Box>
 
         <Grid container spacing={2} sx={{ mt: 1 }}>
@@ -113,20 +95,20 @@ export default function AssignmentManagerReport() {
                 <TableHead>
                   <TableRow>
                     <TableCell sx={cell}>STT</TableCell>
-                    <TableCell sx={cell}>MÁY XÚC</TableCell>
+                    <TableCell sx={{ ...cell, width: 100 }}>MÁY XÚC</TableCell>
                     <TableCell sx={cell}>SỐ XE</TableCell>
                     <TableCell sx={cell}>HÀNG V/C</TableCell>
                     <TableCell sx={cell}>BÃI THẢI</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {leftRows.map((row, idx) => (
+                  {leftFilled.map((row: any, idx: number) => (
                     <TableRow key={idx}>
-                      <TableCell sx={cell}>{row.stt || idx + 1}</TableCell>
-                      <TableCell sx={cell}>{row.mayXuc}</TableCell>
-                      <TableCell sx={cell}>{row.soXe}</TableCell>
-                      <TableCell sx={cell}>{row.hangVc}</TableCell>
-                      <TableCell sx={cell}>{row.baiThai}</TableCell>
+                      <TableCell sx={cell} align="center">{idx + 1}</TableCell>
+                      <TableCell sx={cell}>{row?.excavator}</TableCell>
+                      <TableCell sx={cell}>{row?.vehicles?.join(", ")}</TableCell>
+                      <TableCell sx={cell}>{row?.materials?.join(", ")}</TableCell>
+                      <TableCell sx={cell}>{row?.locations?.join(", ")}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -163,13 +145,13 @@ export default function AssignmentManagerReport() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {rightRows.map((row, idx) => (
+                  {rightFilled.map((row: any, idx: number) => (
                     <TableRow key={idx}>
                       <TableCell sx={cell}>{idx + 1}</TableCell>
-                      <TableCell sx={cell}>{row.soXe}</TableCell>
-                      <TableCell sx={cell}>{row.tinhTrang}</TableCell>
-                      <TableCell sx={cell}>{row.ketQua}</TableCell>
-                      <TableCell sx={cell}></TableCell>
+                      <TableCell sx={cell}>{row?.vehicle}</TableCell>
+                      <TableCell sx={cell}>{row?.status}</TableCell>
+                      <TableCell sx={cell}>{row?.result}</TableCell>
+                      <TableCell sx={cell}>{row?.note}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -184,7 +166,7 @@ export default function AssignmentManagerReport() {
             <Typography sx={{ fontWeight: "bold", mt: 3 }} align="center">
               II – Nội dung công việc trong ca và bàn giao sau ca:
             </Typography>
-            <Typography sx={{ mt: 1 }}>{data.workSummary}</Typography>
+            <Typography sx={{ mt: 1 }}></Typography>
 
           </Grid>
           <Grid item xs={6}>
@@ -192,23 +174,23 @@ export default function AssignmentManagerReport() {
             <Typography sx={{ fontWeight: "bold", mt: 3 }} align="center">
               III – Dự báo nguy cơ mất an toàn:
             </Typography>
-            <Typography sx={{ mt: 1 }}>{data.safetySummary}</Typography>
+            <Typography sx={{ mt: 1 }}></Typography>
           </Grid>
         </Grid>
-
-        {/* ===== SIGN =====
-        <Grid container sx={{ mt: 4 }}>
-          <Grid item xs={6} textAlign="center">
-            <Typography sx={{ fontWeight: "bold" }}>NGƯỜI GIAO</Typography>
-            <Typography sx={{ fontWeight: "bold" }}>(ký và</Typography>
-            <Typography sx={{ mt: 6 }}>{data.giao}</Typography>
-          </Grid>
-
-          <Grid item xs={6} textAlign="center">
-            <Typography sx={{ fontWeight: "bold" }}>NGƯỜI NHẬN</Typography>
-            <Typography sx={{ mt: 6 }}>{data.nhan}</Typography>
-          </Grid>
-        </Grid> */}
+        {signatureUrl && (
+          <div
+            style={{
+              marginTop: 20,
+              textAlign: 'right',
+            }}
+          >
+            <img
+              src={signatureUrl}
+              alt="Chữ ký"
+              style={{ maxWidth: 200, maxHeight: 100 }}
+            />
+          </div>
+        )}
       </Paper>
     </Grid>
   );

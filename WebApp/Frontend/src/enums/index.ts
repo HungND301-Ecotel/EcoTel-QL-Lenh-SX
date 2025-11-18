@@ -65,8 +65,8 @@ export enum ReportEnum {
     PRODUCTIVITY_CAR_REPORT = 'Báo cáo năng suất đầu xe (Mẫu 05)',
     PRODUCTION_LAND_CAR_REPORT = 'Báo cáo sản lượng vận chuyển đất đá (Mẫu 06)',
     PRODUCTION_COAL_CAR_REPORT = 'Báo cáo sản lượng vận chuyển than (Mẫu 07)',
+    PRODUCTION_FUEL_MONITORING= 'Theo dõi sản lượng, nhiên liệu, dầu mỡ'
     // Các báo cáo bị comment:
     // IN_KIND_ALLOWANCE_SLIP: 'Phiếu bồi dưỡng hiện vật',
     // OIL_RECEIPT_SLIP: 'Phiếu lĩnh dầu',
-    // PRODUCTION_FUEL_MONITORING: 'Theo dõi sản lượng, nhiên liệu, dầu mỡ'
 };

@@ -202,23 +202,6 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
         },
     });
 
-    const [selectedExcavator, setSelectedExcavator] = useState('')
-    const { data } = useQuery({
-        queryKey: ['orders', selectedExcavator, formik.values.workingDate, formik.values.shift],
-        queryFn: () => OrderService.getAll(
-            {
-                workingDate: dayjs.utc(dayjs(formik.values.workingDate).format('YYYY-MM-DD')).toDate(),
-                excavator: selectedExcavator,
-                shift: shifts.find((s: Shift) => s._id === formik.values.shift)?.name
-            }
-        ),
-        enabled: !!selectedExcavator && !!formik.values.workingDate && !!formik.values.shift
-    })
-    useEffect(() => {
-        if (data) {
-            formik.setFieldValue("material", data.data[0]?.material[0]?._id);
-        }
-    }, [data])
 
     return (
 
@@ -273,7 +256,6 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                                             status: true,
                                         };
                                     });
-                                    setSelectedExcavator(mapped[0]?.device)
                                     formik.setFieldValue('excavator', mapped);
                                 }}
                                 PopperComponent={StyledPopper}
@@ -693,7 +675,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                             />
                         </Grid>}
 
-                        {[JobTypeEnum.VEHICLE, JobTypeEnum.EXCAVATOR].includes(selectedJob?.type) && <Grid item xs={12} sm={6}>
+                        {[JobTypeEnum.VEHICLE].includes(selectedJob?.type) && <Grid item xs={12} sm={6}>
                             <Autocomplete
                                 fullWidth
                                 options={materials}
