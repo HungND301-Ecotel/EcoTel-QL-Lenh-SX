@@ -6216,296 +6216,259 @@ router.post('/carTripReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, 
 })
 
 // báo sản lượng
+async function getProductReport(query) {
+    const orders = await Order.find(query)
+        .populate({
+            path: "shiftReport",
+            populate: [{ path: "vehicleSummaries.vehicle", select: "code" }]
+        })
+        .populate("assignedTo", "fullName salaryCode")
+        .populate("device", "code")
+        .populate("job", "type");
 
-router.post('/productReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
+    const result = [];
+
+    for (const order of orders) {
+        if (order.job?.type !== JOB_TYPE.VAN_HANH_XE) continue;
+
+        // Lấy report theo order
+        let reports = await Report.find({ orderId: order._id })
+            .populate({
+                path: "device",
+                select: "code category",
+                populate: { path: "category", select: "name" }
+            })
+            .populate("material", "name acceptedProduct")
+            .populate("excavator", "code")
+            .populate("toLocation", "name");
+
+        // Lọc xe vận tải
+        reports = reports.filter(r =>
+            r.device?.category?.name?.toLowerCase().includes("vận tải")
+        );
+
+        if (!reports.length) continue;
+        const mapped = reports.map(r => ({
+            ...r.toObject(),
+            workingDate: order.workingDate,
+            shift: order.shift
+        }));
+
+        // Gom theo từng xe
+        const vehicles = await groupProduction(mapped, order.shiftReport);
+
+        result.push({
+            assignedTo: order.assignedTo?.fullName || "",
+            vehicles
+        });
+    }
+    return result;
+}
+router.post('/productReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res) => {
     try {
-        const { shift, startDate, endDate, signature, department } = req.body
-        const user = req.user
+        const { shift, day, department } = req.body;
+        const user = req.user;
+
+        let query = {};
+        query.department = user.role === ROLE.ADMIN ? department : user.department?._id;
+
+        if (shift?.length) query.shift = { $in: shift };
+        if (day) query.workingDate = new Date(day);
+
+        const result = await getProductReport(query)
+        return res.status(200).json({ status: "success", data: result });
+
+    } catch (err) {
+        console.error("❌ Lỗi khi load", err);
+        res.status(500).json({ status: "error", message: err.message });
+    }
+});
+
+
+router.post('/productReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
+    try {
+        const { shift, day, department, signature } = req.body;
+        const user = req.user;
+
+        let query = {};
         let dep;
         if (department) {
             dep = await Department.findById(department).select('code')
         } else {
             dep = user?.department
         }
-        if (Array.isArray(shift) && shift.length > 0) {
-            query.shift = { $in: shift };
-        }
+        query.department = dep?._id
 
-        if (startDate && endDate) {
-            query.workingDate = {
-                $gte: new Date(startDate),
-                $lte: new Date(endDate),
-            };
-        }
-        const orders = await Order.find(query)
-            .populate({
-                path: "shiftReport",
-                populate: [
-                    {
-                        path: "vehicleSummaries.vehicle",
-                        select: "code"
-                    },
-                ]
-            })
-            .populate({
-                path: 'assignedTo',
-                select: 'fullName salaryCode department',
-                populate: ('department')
-            })
-            .populate({
-                path: 'createdBy',
-                select: 'fullName',
-            })
-            .populate({
-                path: 'device',
-                select: 'code',
-            })
-            .populate({
-                path: 'assistants',
-                select: 'fullName salaryCode',
-            })
-            .populate({
-                path: 'createdBy',
-                select: 'fullName',
-            })
-            .populate({
-                path: 'job',
-                select: 'type',
-            })
-        const filterOrders = orders.filter(r =>
-            r.job?.type === JOB_TYPE.VAN_HANH_XE
-        );
+        if (shift?.length) query.shift = { $in: shift };
+        if (day) query.workingDate = new Date(day);
 
-        let result = []
-        for (const order of filterOrders) {
+        const result = await getProductReport(query)
 
-            let reports = await Report.find({ orderId: order._id })
-                .populate({
-                    path: 'device',
-                    select: 'code category',
-                    populate: {
-                        path: 'category',
-                        select: 'name'
-                    }
-                })
-                .populate('material', 'name')
-                .populate('excavator', 'code')
-                .populate('toLocation', 'name')
+        const workbook = new ExcelJS.Workbook()
 
-            reports = reports.filter(r =>
-                r.device?.category?.name?.toLowerCase().includes("vận tải".toLowerCase())
-            );
-            if (!reports.length) continue;
-            const mapped = reports.map(r => ({
-                ...r.toObject(),
-                workingDate: r.workingDate || order.workingDate,
-                shift: r.shift || order.shift
-            }));
-            const grouped = await groupProduction(mapped)
+        const sheetName = `${dep?.code}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
 
-            result.push({
-                _id: order._id,
-                device: (order.device || []).map(d => d?.code) || [],
-                assignedTo: combined,
-                reports: grouped.map(g => ({
-                    excavator: g.excavator?.code || '',
-                    toLocation: g.toLocation?.name || '',
-                    materials: g.materials || {},
-                })),
-                fuelRemain: (order?.shiftReport?.vehicleSummaries || []).map(i => i?.fuelRemain),
-                fuelReceived: (order?.shiftReport?.vehicleSummaries || []).map(i => i?.fuelReceived),
-                fuelRemainEnd: (order?.shiftReport?.vehicleSummaries || []).map(i => i?.fuelRemainEnd),
-                fuelRemainUsed: (order?.shiftReport?.vehicleSummaries || []).map(i => (i?.fuelRemain || 0) + (i?.fuelReceived || 0) - (i?.fuelRemainEnd || 0)),
-                travelHours: (order?.shiftReport?.vehicleSummaries || []).map(i => i?.travelHours),
+        const worksheet = workbook.addWorksheet(sheetName);
+
+        // --- 2. DÒNG NGÀY, THÁNG ---
+        worksheet.mergeCells('A1:P1');
+        const infoRow = worksheet.getCell('A1');
+        infoRow.value = `SỔ THEO DÕI SẢN LƯỢNG, NHIÊN LIỆU, GPS, NIÊM PHONG KẸP CHÌ`;
+        infoRow.font = { size: 16 };
+        infoRow.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        // --- 3. TIÊU ĐỀ CÁC CỘT ---
+        setCell(worksheet, 'A3:A4', 'SỐ TT');
+        setCell(worksheet, 'B3:B4', 'HỌ VÀ TÊN LÁI XE');
+        setCell(worksheet, 'C3:C4', 'SỐ XE');
+        setCell(worksheet, 'D3:D4', 'MÁY XÚC');
+
+        setCell(worksheet, 'E3:G3', 'CHUYẾN');
+        setCell(worksheet, 'H3:K3', 'NHIÊN LIỆU');
+
+        setCell(worksheet, 'L3:L3', 'GIỜ HĐ');
+        setCell(worksheet, 'M3:N3', 'KẸP CHÌ, NIÊM PHONG');
+        setCell(worksheet, 'O3:P3', 'JPS');
+
+        worksheet.getCell('E4').value = 'Than';
+        worksheet.getCell('F4').value = 'Đất';
+        worksheet.getCell('G4').value = 'Cung độ (km)';
+
+        worksheet.getCell('H4').value = 'Tồn đầu ca';
+        worksheet.getCell('I4').value = 'Lĩnh thêm';
+        worksheet.getCell('J4').value = 'Tiêu hao';
+        worksheet.getCell('K4').value = 'Tồn cuối ca';
+
+        worksheet.getCell('L4').value = 'Trong ca';
+        worksheet.getCell('M4').value = 'Tốt';
+        worksheet.getCell('N4').value = 'Hỏng';
+        worksheet.getCell('O4').value = 'HĐBT';
+        worksheet.getCell('P4').value = 'Mất tín hiệu';
+
+
+        // --- 5. GÁN DỮ LIỆU (GIỐNG Y FE) ---
+        let startRow = 5; // Dữ liệu bắt đầu từ dòng 5 + 1 = dòng 6
+
+        result.forEach((driver, driverIndex) => {
+            const vehicleCount = driver.vehicles.length;
+
+            driver.vehicles.forEach((v, vIndex) => {
+                const row = worksheet.getRow(startRow);
+
+                // STT: merge nếu nhiều xe
+                if (vIndex === 0) {
+                    worksheet.mergeCells(`A${startRow}:A${startRow + vehicleCount - 1}`);
+                    worksheet.mergeCells(`B${startRow}:B${startRow + vehicleCount - 1}`);
+
+                    row.getCell('A').value = driverIndex + 1;
+                    row.getCell('B').value = driver.assignedTo;
+                }
+
+                // Số xe
+                row.getCell('C').value = v.device;
+
+                // Máy xúc
+                row.getCell('D').value = v.excavators.join(", ");
+
+                // Chuyến
+                row.getCell('E').value = v.coalTrip;
+                row.getCell('F').value = v.landTrip;
+                row.getCell('G').value = v.distances.join(", ");
+
+                // Nhiên liệu
+                row.getCell('H').value = v.fuelRemain;
+                row.getCell('I').value = v.fuelReceived;
+                row.getCell('J').value = v.fuelRemainUsed;
+                row.getCell('K').value = v.fuelRemainEnd;
+
+                // Giờ HĐ
+                row.getCell('L').value = v.travelHours;
+
+                // Kẹp chì (Tốt/Hỏng)
+                row.getCell('M').value = v.sealStatus ? "✘" : "";
+                row.getCell('N').value = !v.sealStatus ? "✘" : "";
+
+                // GPS (HĐBT / Mất tín hiệu)
+                row.getCell('O').value = v.gpsStatus ? "✘" : "";
+                row.getCell('P').value = !v.gpsStatus ? "✘" : "";
+
+                startRow++;
+            });
+        });
+        worksheet.getCell(`B${startRow}`).value = "Cộng"
+        worksheet.getCell(`B${startRow}`).font = { bold: true }
+        worksheet.getCell(`B${startRow}`).alignment = { horizontal: 'center', vertical: 'middle' }
+
+        addTableBorders(worksheet, 3, startRow, 1, 16)
+        worksheet.columns = [
+            { width: 5 }, // A
+            { width: 25 }, // B 
+            { width: 10 }, // C
+            { width: 20 },  // D
+            { width: 10 },  // D
+            { width: 10 },  // D
+            { width: 25 },  // D
+            { width: 10 },  // D
+            { width: 10 },  // D
+            { width: 10 },  // D
+            { width: 10 },  // D
+            { width: 10 },  // D
+            { width: 10 },  // D
+            { width: 10 },  // D
+            { width: 10 },  // D
+            { width: 10 },  // D
+        ];
+
+        if (signature) {
+            const response = await axios.get(signature, { responseType: 'arraybuffer' });
+            const contentType = response.headers['content-type'];
+            const extension = contentType.split('/')[1];
+            const imageBuffer = Buffer.from(response.data, 'binary');
+
+            // Thêm ảnh vào workbook
+            const imageId = workbook.addImage({
+                buffer: imageBuffer,
+                extension
+            });
+
+            // Gán ảnh vào vị trí (dùng topleft + extents hoặc range)
+            const lastCol = worksheet.columnCount;
+            worksheet.addImage(imageId, {
+                tl: { col: lastCol - 2, row: startRow + 1 }, // H30
+                ext: { width: 100, height: 30 },
             });
         }
 
-
-        res.status(200).send({ status: 'success', data: formattedData })
-    } catch (err) {
-        req.logger.error("❌ Lỗi khi load", err);
-        res.status(500).json({ status: 'error', message: err.message, stack: err.stack })
-    }
-})
-
-router.post('/productReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
-    try {
-        const { shift, startDate, endDate, title, signature } = req.body
-        const shiftList = await Shift.find({ _id: { $in: shift } });
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-
-        // Đảm bảo end không nhỏ hơn start
-        if (end < start) return res.status(400).json({ message: "Ngày kết thúc phải sau ngày bắt đầu" });
-
-        const workbook = new ExcelJS.Workbook();
-        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-            for (const ca of shiftList) {
-                const orders = await Order.find({
-                    workingDate: d,
-                    shift: ca._id,
-                    createdBy: req.userId
-                })
-                    .populate({
-                        path: "shiftReport",
-                        populate: [
-                            {
-                                path: "vehicleSummaries.vehicle",
-                                select: "code vehicleNumber"
-                            },
-                        ]
-                    })
-                    .populate('assignedTo', 'fullName salaryCode department')
-                    .populate('job', 'name')
-                    .populate('location', 'name')
-                    .populate('material', 'name')
-                    .populate('excavator.device', 'code')
-                    .populate({
-                        path: 'device',
-                        select: 'code category',
-                        populate: {
-                            path: 'category',
-                            select: 'name'
-                        }
-                    })
-                    .populate('shift')
-                const filteredOrders = orders.filter(order =>
-                    order.device?.category?.name === "Vận tải"
-                );
-                const formattedData = filteredOrders.flatMap((order, orderIndex) => {
-                    if (!order.shiftReport || !order.shiftReport.vehicleReports) return [];
-
-                    return order.shiftReport.vehicleReports
-                        .map(summary => {
-
-                            return {
-                                _id: summary?.vehicle?._id,
-                                fullName: order?.assignedTo?.fullName,
-                                salaryCode: order?.assignedTo?.salaryCode,
-                                department: order?.assignedTo?.department?.name,
-                                shift: `${order?.shiftReport._id}`,
-                                code: summary?.vehicle?.code || '',
-                                material: summary?.materialType?.name || '',
-                                tripCount: summary?.tripCount || '',
-                            };
-                        });
-                });
-                const sheetName = `${formatDate(d)}_${ca.name}`.replace(/[\\\/:*?\[\]]/g, '-').substring(0, 31);
-
-                const worksheet = workbook.addWorksheet(sheetName);
-
-                // --- 2. DÒNG NGÀY, THÁNG ---
-                worksheet.mergeCells('A1:T3');
-                const infoRow = worksheet.getCell('A1');
-                infoRow.value = `Ca: ${ca.name}, ngày: ${formatDate(d)}`;
-                infoRow.font = { italic: true, size: 16 };
-                infoRow.alignment = { horizontal: 'left', vertical: 'middle' };
-
-                // --- 3. TIÊU ĐỀ CÁC CỘT ---
-                setCell(worksheet, 'D4:E5', 'TUYẾN VẬN TẢI')
-                setCell(worksheet, 'F4:H5', 'SẢN LƯỢNG THỰC HIỆN - THAN')
-                setCell(worksheet, 'I4:K5', 'SẢN LƯỢNG THỰC HIỆN - ĐẤT, ĐÁ')
-                setCell(worksheet, 'O4:Q5', 'GA DOAN (LÍT)')
-
-                // Hàng 5
-                worksheet.getRow(5).values = [, , , , 'Cung độ', 'Độ cao', 'Số chuyến', 'Số tấn', 'T.Km', 'Số chuyến', 'Số m3', 'T.Km', , , , 'Tổng đầu ca', 'Cấp trong ca', 'Tiêu thụ trong ca'];
-                worksheet.getRow(5).eachCell(cell => {
-                    cell.alignment = { horizontal: 'center', vertical: 'middle' };
-                });
-
-                // Hàng 6 - số thứ tự
-                worksheet.getRow(6).values = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20'];
-
-                // --- 4. Style: căn giữa, border ---
-                for (let rowIndex = 4; rowIndex <= 6; rowIndex++) {
-                    const row = worksheet.getRow(rowIndex);
-                    row.eachCell(cell => {
-                        cell.font = { bold: true, size: 11 };
-                        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-                    });
-                }
-                setCell(worksheet, 'A4:A5', 'SỐ TT')
-                setCell(worksheet, 'B4:B5', 'SỐ ĐĂNG KÝ THIẾT BỊ')
-                setCell(worksheet, 'C4:C5', 'HỌ VÀ TÊN CÔNG NHÂN VẬN HÀNH')
-                setCell(worksheet, 'L4:L5', 'T.Km phục vụ')
-                setCell(worksheet, 'M4:M5', 'Tổng sản lượng T.Km')
-                setCell(worksheet, 'N4:N5', 'Giờ hoạt động ra sản phẩm')
-                setCell(worksheet, 'R4:R5', 'Dầu nhờn (lít)')
-                setCell(worksheet, 'S4:S5', 'Mỡ máy (Kg)')
-                setCell(worksheet, 'T4:T5', 'CN VẬN HÀNH KÝ NHẬN')
-
-                const length = formattedData.length;
-
-                addTableBorders(worksheet, 4, 7, 1, 20)
-                worksheet.columns = [
-                    { width: 10 }, // A
-                    { width: 15 }, // B 
-                    { width: 20 }, // C
-                    { width: 10 },  // D
-                    { width: 10 },  // D
-                    { width: 10 },  // D
-                    { width: 10 },  // D
-                    { width: 10 },  // D
-                    { width: 10 },  // D
-                    { width: 10 },  // D
-                    { width: 10 },  // D
-                    { width: 12 },  // D
-                    { width: 12 },  // D
-                    { width: 12 },  // D
-                    { width: 10 },  // D
-                    { width: 10 },  // D
-                    { width: 10 },  // D
-                    { width: 10 },  // D
-                    { width: 10 },  // D
-                    { width: 10 },  // D
-                ];
-
-                if (signature) {
-                    const response = await axios.get(signature, { responseType: 'arraybuffer' });
-                    const contentType = response.headers['content-type'];
-                    const extension = contentType.split('/')[1];
-                    const imageBuffer = Buffer.from(response.data, 'binary');
-
-                    // Thêm ảnh vào workbook
-                    const imageId = workbook.addImage({
-                        buffer: imageBuffer,
-                        extension
-                    });
-
-                    // Gán ảnh vào vị trí (dùng topleft + extents hoặc range)
-                    const lastCol = worksheet.columnCount;
-                    worksheet.addImage(imageId, {
-                        tl: { col: lastCol - 2, row: length + 7 }, // H30
-                        ext: { width: 100, height: 30 },
-                    });
-                }
-
-                worksheet.pageSetup = {
-                    paperSize: 9,                // A4
-                    orientation: 'landscape',    // ngang
-                    fitToPage: true,
-                    fitToWidth: 1,               // vừa 1 trang theo chiều ngang
-                    fitToHeight: 0,              // không ép theo chiều dọc
-                    margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } // inch
+        worksheet.pageSetup = {
+            paperSize: 9,                // A4
+            orientation: 'landscape',    // ngang
+            fitToPage: true,
+            fitToWidth: 1,               // vừa 1 trang theo chiều ngang
+            fitToHeight: 0,              // không ép theo chiều dọc
+            margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } // inch
+        };
+        worksheet.eachRow((row, rowNumber) => {
+            row.eachCell((cell) => {
+                if (!cell.font) cell.font = {};
+                cell.font = {
+                    ...cell.font,            // giữ lại các thuộc tính khác (bold, italic,…)
+                    name: 'Times New Roman', // đổi font chữ
+                    ...(rowNumber > 4 ? { size: 10 } : {})            // kích thước chữ
                 };
-                worksheet.eachRow((row, rowNumber) => {
-                    row.eachCell((cell) => {
-                        if (!cell.font) cell.font = {};
-                        cell.font = {
-                            ...cell.font,            // giữ lại các thuộc tính khác (bold, italic,…)
-                            name: 'Times New Roman', // đổi font chữ
-                            ...(rowNumber > 4 ? { size: 10 } : {})            // kích thước chữ
-                        };
-                        if (rowNumber === 1) {
-                            cell.alignment = { horizontal: 'left', vertical: 'middle' };
-                        }
-                        if (rowNumber >= 4 && rowNumber <= 5) {
-                            row.height = 60
-                        }
-                    });
-                });
-            }
-        }
+
+                if (rowNumber >= 3 && rowNumber <= 4) {
+                    row.height = 40
+                    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: 'true' }
+                    cell.font = { bold: true }
+                } else if (rowNumber >= 5) {
+                    if (cell.col === 1) {
+                        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: 'true' }
+                    } else {
+                        cell.alignment = { vertical: 'middle', wrapText: 'true' }
+                    }
+                }
+            });
+        });
 
         // Xuất file
         const buffer = await workbook.xlsx.writeBuffer();

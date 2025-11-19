@@ -50,6 +50,15 @@ const ACCEPTED_PRODUCT = {
 };
 const ACCEPTED_PRODUCTS = Object.values(ACCEPTED_PRODUCT);
 
+const JPS_STATUS = {
+    GOOD: 'Hoạt động bình thường',
+    FAIL: 'Mất tín hiệu',
+};
+
+const SEAL_STATUS = {
+    GOOD: 'good',
+    FAIL: 'fail',
+};
 
 module.exports = {
     JOB_TYPE, JOB_TYPES,
@@ -57,5 +66,7 @@ module.exports = {
     ROLE, ROLES,
     STATUS_DEVICE, STATUS_DEVICES,
     STATUS_REPAIR, STATUS_REPAIRS,
-    ACCEPTED_PRODUCT,ACCEPTED_PRODUCTS
+    ACCEPTED_PRODUCT, ACCEPTED_PRODUCTS,
+    JPS_STATUS,
+    SEAL_STATUS
 };
