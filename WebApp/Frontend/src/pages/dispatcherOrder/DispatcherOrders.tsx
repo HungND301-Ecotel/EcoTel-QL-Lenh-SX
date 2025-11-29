@@ -907,7 +907,7 @@ const DispatcherOrders: React.FC = () => {
                                                                     label={order.status === StatusOrderEnum.PENDING ? 'Chưa nhận lệnh' :
                                                                         order.status === StatusOrderEnum.INPROGRESS ? 'Đã nhận lệnh' :
                                                                             order.status === StatusOrderEnum.COMPLETED ? 'Đã hoàn thành' :
-                                                                                order.status === StatusOrderEnum.WARNING ? 'Lỗi' : "Đã hủy"
+                                                                                order.status === StatusOrderEnum.WARNING ? 'Lệnh bổ sung' : "Đã hủy"
                                                                     }
                                                                     color={
                                                                         order.status === StatusOrderEnum.PENDING ? 'default' :

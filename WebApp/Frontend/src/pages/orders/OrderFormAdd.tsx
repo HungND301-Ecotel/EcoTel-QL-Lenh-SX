@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FieldArray, FormikProvider, useFormik } from 'formik';
 import {
     Autocomplete,
@@ -27,6 +27,7 @@ import { addOrderValidationSchema } from '../../utils/validation';
 import { JobTypeEnum } from '../../enums/index';
 import { MultiSelectField } from '../../components/MultiSelectField';
 import DepartmentService from '../../services/departmentService';
+import OrderService from '../../services/orderService';
 dayjs.extend(utc);
 
 
@@ -106,6 +107,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
         queryKey: ['jobs'],
         queryFn: () => api.get('/jobs').then(res => res.data.data),
     });
+
 
     const updateSafetyMeasure = (jobText: string, userText: string) => {
         // Tách các biện pháp an toàn từ job và user thành mảng
@@ -673,7 +675,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                             />
                         </Grid>}
 
-                        {selectedJob?.type === JobTypeEnum.VEHICLE && <Grid item xs={12} sm={6}>
+                        {[JobTypeEnum.VEHICLE].includes(selectedJob?.type) && <Grid item xs={12} sm={6}>
                             <Autocomplete
                                 fullWidth
                                 options={materials}

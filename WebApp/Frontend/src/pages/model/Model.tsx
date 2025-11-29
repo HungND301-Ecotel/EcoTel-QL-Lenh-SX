@@ -253,9 +253,9 @@ const Models: React.FC = () => {
                 <Typography>Mô hình xe</Typography>
             </Breadcrumbs>
 
+            <Typography variant="h3" color={"blue"} mt={3}>Mô hình xe</Typography>
             {/* Nút Lưu và Bảng Dữ liệu */}
-            <Box sx={{ mb: 2, mt: 2 }}>
-                <Typography variant="h4">Mô hình xe</Typography>
+            <Box sx={{ mb: 3, mt: 3 }}>
                 <Accordion sx={{ mb: 2 }} expanded={expanded}>
                     <AccordionSummary
                         expandIcon={<></>}

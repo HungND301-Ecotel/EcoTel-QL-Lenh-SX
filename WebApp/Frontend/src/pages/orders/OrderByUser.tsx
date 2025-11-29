@@ -163,7 +163,7 @@ const OrderByUsers: React.FC = () => {
                     label={params.row.status === StatusOrderEnum.PENDING ? 'Chưa nhận lệnh' :
                         params.row.status === StatusOrderEnum.INPROGRESS ? 'Đã nhận lệnh' :
                             params.row.status === StatusOrderEnum.COMPLETED ? 'Đã hoàn thành' :
-                                params.row.status === StatusOrderEnum.WARNING ? 'Lỗi' : "Đã hủy"
+                                params.row.status === StatusOrderEnum.WARNING ? 'Lệnh bổ sung' : "Đã hủy"
                     }
                     color={
                         params.row.status === StatusOrderEnum.PENDING ? 'default' :

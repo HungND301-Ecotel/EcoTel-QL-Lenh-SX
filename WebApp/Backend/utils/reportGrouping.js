@@ -1,6 +1,6 @@
 const TravelLog = require('../models/TravelLog')
 const Model = require('../models/Model');
-const { ACCEPTED_PRODUCT } = require('../config/config');
+const { ACCEPTED_PRODUCT, JPS_STATUS, SEAL_STATUS } = require('../config/config');
 const dayjs = require('dayjs');
 let pLimit = require('p-limit');
 if (pLimit.default) pLimit = pLimit.default;
@@ -450,51 +450,69 @@ async function groupExcavator(trips, date) {
 
     return Object.values(groups);
 }
-async function groupProduction(trips, date) {
-    const groups = {};
+async function groupProduction(reports, shiftReport) {
+    const vehicles = {};
 
-    for (const t of trips) {
-        if (!t.workingDate) continue;
+    for (const r of reports) {
+        const deviceCode = r.device?.code;
+        if (!deviceCode) continue;
 
-        const dayKey = new Date(t.workingDate).toISOString().slice(0, 10);
-        const shift = t.shift || 1;
+        if (!vehicles[deviceCode]) {
+            const fuelData = (shiftReport?.vehicleSummaries || []).find(v => v.vehicle?._id.toString() === r.device._id.toString());
+            console.log(shiftReport)
 
-        // ✅ KHÓA CHUẨN — gồm thiết bị, ngày, ca
-        const key = `${t.device}_${dayKey}_${shift}`;
-
-        if (!groups[key]) {
-            groups[key] = {
-                device: t.device,
-                materials: [],
-                workingDate: t.workingDate,
-                shift,
-                totalCubicMeter: 0,
-                totalTon: 0
+            vehicles[deviceCode] = {
+                device: deviceCode,
+                excavators: new Set(),
+                coalTrip: 0,
+                landTrip: 0,
+                distances: [],
+                fuelRemain: fuelData?.fuelRemain || '',
+                fuelReceived: fuelData?.fuelReceived || '',
+                fuelRemainEnd: fuelData?.fuelRemainEnd || '',
+                fuelRemainUsed: fuelData ? (fuelData.fuelRemain + fuelData.fuelReceived - fuelData.fuelRemainEnd) : '',
+                travelHours: fuelData?.travelHours || '',
+                gpsStatus: fuelData?.gpsStatus === JPS_STATUS.GOOD ? true : false,
+                sealStatus: fuelData?.sealStatus === SEAL_STATUS ? true : false
             };
         }
 
-        // const value = await caculatorWeight(
-        //     t.material?._id,
-        //     t.device?.material,
-        //     t.quantity,
-        //     0,
-        //     date
-        // );
+        const v = vehicles[deviceCode];
 
-        groups[key].totalCubicMeter += t?.totalCubicMeter || 0;
-        groups[key].totalTon += t?.totalTon || 0;
+        // Máy xúc
+        if (r.excavator?.code) v.excavators.add(r.excavator.code);
 
-        groups[key].materials.push({
-            material: t.material,
-            quantity: t.quantity,
-            cubicMeter: t?.totalCubicMeter || 0,
-            ton: t?.totalTon || 0,
-            times: (t.quantityUpdateTimes || []).map(i => i?.time)
+        // Than / đất
+        if (r.material?.acceptedProduct === ACCEPTED_PRODUCT.COAL) {
+            v.coalTrip += r.quantity || 0;
+        } else if (r.material?.acceptedProduct === ACCEPTED_PRODUCT.LAND) {
+            v.landTrip += r.quantity || 0;
+        }
+
+        // Cung độ
+        const distanceData = await TravelLog.findOne({
+            excavator: r.excavator?._id,
+            location: r.toLocation?._id,
+            workingDate: r.workingDate,
+            shift: r.shift
         });
+
+        const updateTimes = (r.quantityUpdateTimes || []).length;
+        const totalDistance = (distanceData?.fullDistanceKm || 0) * updateTimes;
+
+        if (totalDistance > 0) {
+            v.distances.push(totalDistance);
+        }
     }
 
-    return Object.values(groups);
+    // Convert Set → Array
+    for (const k in vehicles) {
+        vehicles[k].excavators = [...vehicles[k].excavators];
+    }
+
+    return Object.values(vehicles);
 }
+
 
 function groupTripsExcavator(trips) {
     const groups = {};

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Report = require('../models/Report');
+const Material = require('../models/material');
 const Order = require('../models/Order');
 const ReportHistory = require('../models/ReportHistory');
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
@@ -89,12 +90,13 @@ const trackedFieldsTrip = [
     'drillDepth',
     'hardnessF',
     'workingMinutes',
-    'distanceKm'
+    'distanceKm',
+    'material'
 ];
 router.put('/:id', verifyToken, async (req, res) => {
     try {
         const user = req.user;
-        const report = await Report.findById(req.params.id);
+        const report = await Report.findById(req.params.id).populate("material", "name");;
         if (!report) {
             req.logger.warn(`⚠️ Không tìm thấy báo cáo với ID: ${req.params.id}`);
             return res.status(404).send({ status: 'error', message: "Not found" });
@@ -105,12 +107,23 @@ router.put('/:id', verifyToken, async (req, res) => {
 
         // So sánh các field cần track
         for (let field of trackedFieldsTrip) {
-            if (updates[field] !== undefined && updates[field] !== report[field]) {
-                changes.push({
-                    field,
-                    oldValue: report[field],
-                    newValue: updates[field]
-                });
+            if (field === 'material') {
+                if (updates.material && updates.material !== report.material?._id.toString()) {
+                    const newMaterial = await Material.findById(updates.material).select("name");
+                    changes.push({
+                        field: 'material',
+                        oldValue: report.material?.name || '',
+                        newValue: newMaterial?.name || '' // nếu FE gửi name
+                    });
+                }
+            } else {
+                if (updates[field] !== undefined && updates[field] !== report[field]) {
+                    changes.push({
+                        field,
+                        oldValue: report[field],
+                        newValue: updates[field]
+                    });
+                }
             }
         }
 
@@ -126,6 +139,21 @@ router.put('/:id', verifyToken, async (req, res) => {
 
         // Ghi đè giá trị mới vào report
         Object.assign(report, updates);
+        await report.populate([
+            { path: 'device', select: 'code material' },
+            { path: 'excavator', select: 'code' },
+            { path: 'fromLocation', select: 'name' },
+            { path: 'toLocation', select: 'name' },
+            { path: 'material', select: 'name' }
+        ]);
+
+        // 4️⃣ Tính toán lại sau cập nhật
+        const { totalProduction, totalCubicMeter, totalTon } = await caculate(report);
+        report.totalProduction = totalProduction;
+        report.totalCubicMeter = totalCubicMeter;
+        report.totalTon = totalTon;
+
+        // 5️⃣ Lưu lại kết quả sau tính toán
         await report.save();
 
         req.logger.info(`✅ ${user?.username} Cập nhật báo cáo thành công cho ID: ${req.params.id}`);

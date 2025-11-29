@@ -4,23 +4,28 @@ import {
     Dialog,
     DialogActions,
     DialogContent,
-    Grid,
     MenuItem,
     TextField,
     Typography,
     Accordion,
     AccordionSummary,
     AccordionDetails,
+    Grid,
+    Autocomplete,
+    IconButton,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFormik } from 'formik';
 import React, { Dispatch, SetStateAction, useEffect, useMemo } from 'react';
 import api from '../../config/api.config';
-import { ShiftReportType, Report, Job } from '../../types';
+import { ShiftReportType, Report, Job, Material } from '../../types';
 import { showErrorAlert, showSuccessAlert } from '../Alert';
 import { format } from 'date-fns';
 import { JobTypeEnum } from '../../enums/index';
+import MaterialService from '../../services/materialService';
+import { StyledPopper } from '../../ui/poppers';
+import { Close } from '@mui/icons-material';
 
 export default function ShiftReport({
     open,
@@ -36,6 +41,10 @@ export default function ShiftReport({
     const { data: reports = [] } = useQuery({
         queryKey: ['reports', initialValues],
         queryFn: () => api.get(`/reports/getByOrder/${initialValues._id}`).then((res) => res.data.data),
+    });
+    const { data: materials = [] } = useQuery({
+        queryKey: ["materials"],
+        queryFn: () => MaterialService.getAll(),
     });
     const { data: shiftReportHistories = [] } = useQuery({
         queryKey: ['shiftReportHistories', initialValues?.shiftReport?._id],
@@ -122,7 +131,7 @@ export default function ShiftReport({
                     hardnessF: undefined,
                     workingMinutes: undefined,
                     quantity: undefined,
-                    quantityUpdateTimes: []
+                    quantityUpdateTimes: [] as { time: string | Date; quantity: number }[],
                 },
             ],
         },
@@ -342,6 +351,54 @@ export default function ShiftReport({
 
     // ====== RENDER ======
 
+    const renderHistoryField = (
+        historyArr: any[],
+        fieldName: string,
+        index: number | null,
+        label: string
+    ) => {
+        if (!historyArr?.length) return null;
+
+        return historyArr
+            .filter((h: any) =>
+                h.changes.some(
+                    (c: any) =>
+                        c.field === fieldName &&
+                        (index === null || c.index === index)
+                )
+            )
+            .map((h: any, i: number) => {
+                const changesText = h.changes
+                    .filter(
+                        (c: any) =>
+                            c.field === fieldName &&
+                            (index === null || c.index === index)
+                    )
+                    .map(
+                        (c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`
+                    )
+                    .join(', ');
+
+                return (
+                    <Typography key={i} variant="caption" color="secondary" display="block">
+                        Nội dung: {label}: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
+                        {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
+                    </Typography>
+                );
+            });
+    }
+
+    useEffect(() => {
+        reportFormik.values.vehicleReports?.forEach((vr, index) => {
+            if (!vr) return;
+            const list = vr.quantityUpdateTimes || [];
+            const total = list.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0);
+
+            // luôn cập nhật đúng
+            reportFormik.setFieldValue(`vehicleReports[${index}].quantity`, total);
+        });
+    }, [reportFormik.values.vehicleReports]);
+
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
             <DialogContent>
@@ -415,6 +472,33 @@ export default function ShiftReport({
                                                                         : '—'}
                                                                 </Typography>
                                                             </Grid>
+                                                            {[JobTypeEnum.DRILL, JobTypeEnum.DOZER, JobTypeEnum.VEHICLE, JobTypeEnum.EXCAVATOR, JobTypeEnum.SERVICE_VEHICLE].includes(jobType) && <>
+                                                                <Grid item xs={3}>
+                                                                    <Typography>Vật liệu:</Typography>
+                                                                </Grid>
+                                                                <Grid item xs={9}>
+                                                                    <Autocomplete
+                                                                        fullWidth
+                                                                        size='small'
+                                                                        options={materials}
+                                                                        getOptionLabel={(option: Material) =>
+                                                                            option.name || ''
+                                                                        }
+                                                                        value={materials.find((p: any) => p._id === reportFormik.values.vehicleReports[formIndex]?.material) || null}
+                                                                        onChange={(event, newValue) => {
+                                                                            reportFormik.setFieldValue(`vehicleReports[${formIndex}].material`, newValue?._id || '');
+                                                                        }}
+                                                                        PopperComponent={StyledPopper}
+                                                                        renderInput={(params) => (
+                                                                            <TextField
+                                                                                {...params}
+                                                                                label="Vật liệu"
+                                                                            />
+                                                                        )}
+                                                                    />
+                                                                    {renderHistoryField(history, 'material', null, 'Vật liệu')}
+                                                                </Grid>
+                                                            </>}
                                                             {/* KHOAN: drillDepth + hardnessF */}
                                                             {jobType === JobTypeEnum.DRILL && (
                                                                 <>
@@ -430,20 +514,7 @@ export default function ShiftReport({
                                                                             value={reportFormik.values.vehicleReports[formIndex]?.drillDepth || ''}
                                                                             onChange={reportFormik.handleChange}
                                                                         />
-                                                                        {history
-                                                                            .filter((h: any) => h.changes.some((c: any) => c.field === 'drillDepth'))
-                                                                            .map((h: any, i: number) => {
-                                                                                const changesText = h.changes
-                                                                                    .filter((c: any) => c.field === 'drillDepth')
-                                                                                    .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
-                                                                                    .join(', ');
-                                                                                return (
-                                                                                    <Typography key={i} variant="caption" color="secondary" display="block">
-                                                                                        Nội dung: Mét khoan sâu: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
-                                                                                        {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
-                                                                                    </Typography>
-                                                                                );
-                                                                            })}
+                                                                        {renderHistoryField(history, 'drillDepth', null, 'Mét khoan sâu')}
                                                                     </Grid>
 
                                                                     <Grid item xs={3}>
@@ -458,20 +529,7 @@ export default function ShiftReport({
                                                                             value={reportFormik.values.vehicleReports[formIndex]?.hardnessF || ''}
                                                                             onChange={reportFormik.handleChange}
                                                                         />
-                                                                        {history
-                                                                            .filter((h: any) => h.changes.some((c: any) => c.field === 'hardnessF'))
-                                                                            .map((h: any, i: number) => {
-                                                                                const changesText = h.changes
-                                                                                    .filter((c: any) => c.field === 'hardnessF')
-                                                                                    .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
-                                                                                    .join(', ');
-                                                                                return (
-                                                                                    <Typography key={i} variant="caption" color="secondary" display="block">
-                                                                                        Nội dung: Độ cứng: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
-                                                                                        {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
-                                                                                    </Typography>
-                                                                                );
-                                                                            })}
+                                                                        {renderHistoryField(history, 'hardnessF', null, 'Độ cứng')}
                                                                     </Grid>
                                                                 </>
                                                             )}
@@ -491,32 +549,62 @@ export default function ShiftReport({
                                                                             value={reportFormik.values.vehicleReports[formIndex]?.quantity || ''}
                                                                             onChange={reportFormik.handleChange}
                                                                         />
-                                                                        {history
-                                                                            .filter((h: any) => h.changes.some((c: any) => c.field === 'quantity'))
-                                                                            .map((h: any, i: number) => {
-                                                                                const changesText = h.changes
-                                                                                    .filter((c: any) => c.field === 'quantity')
-                                                                                    .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
-                                                                                    .join(', ');
-                                                                                return (
-                                                                                    <Typography key={i} variant="caption" color="secondary" display="block">
-                                                                                        Nội dung: Số chuyến: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
-                                                                                        {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
-                                                                                    </Typography>
-                                                                                );
-                                                                            })}
+                                                                        {renderHistoryField(history, 'quantity', null, 'Số chuyến')}
                                                                     </Grid>
                                                                 </>
                                                             )}
                                                             {[JobTypeEnum.VEHICLE, JobTypeEnum.EXCAVATOR,].includes(jobType) && (
                                                                 <>
                                                                     <Grid item xs={3}>
-                                                                        <Typography>Thời gian:</Typography>
+                                                                        <Typography>Số chuyến:</Typography>
                                                                     </Grid>
                                                                     <Grid item xs={9}>
-                                                                        {report.quantityUpdateTimes?.map((d: any) => (
-                                                                            <Typography>{d.time ? format(new Date(d.time), 'dd-MM-yyyy HH:mm:ss') : ''}</Typography>
+                                                                        <Button
+                                                                            variant="outlined"
+                                                                            size="small"
+                                                                            onClick={() => {
+                                                                                const oldList =
+                                                                                    reportFormik.values.vehicleReports[formIndex].quantityUpdateTimes || [];
+
+                                                                                const newList = [
+                                                                                    ...oldList,
+                                                                                    { time: new Date(), quantity: 1 }
+                                                                                ];
+
+                                                                                reportFormik.setFieldValue(
+                                                                                    `vehicleReports[${formIndex}].quantityUpdateTimes`,
+                                                                                    newList
+                                                                                );
+                                                                            }}
+                                                                        >
+                                                                            + Thêm chuyến
+                                                                        </Button>
+                                                                        {reportFormik.values.vehicleReports[formIndex]?.quantityUpdateTimes?.map((item: any, idx: number) => (
+                                                                            <Box key={idx} display="flex" alignItems="center">
+
+                                                                                {/* HIỂN THỊ THỜI GIAN + HỆ SỐ */}
+                                                                                <Typography sx={{ flexGrow: 1, fontSize: 14 }}>
+                                                                                    {item.time ? format(new Date(item.time), 'dd-MM-yyyy HH:mm:ss') : ''}
+                                                                                    {' '} - Hệ số: {item.quantity}
+                                                                                </Typography>
+
+                                                                                {/* NÚT XOÁ */}
+                                                                                <IconButton
+                                                                                    color="error"
+                                                                                    onClick={() => {
+                                                                                        const list = [...reportFormik.values.vehicleReports[formIndex].quantityUpdateTimes];
+                                                                                        list.splice(idx, 1);
+                                                                                        reportFormik.setFieldValue(
+                                                                                            `vehicleReports[${formIndex}].quantityUpdateTimes`,
+                                                                                            list
+                                                                                        );
+                                                                                    }}
+                                                                                >
+                                                                                    <Close />
+                                                                                </IconButton>
+                                                                            </Box>
                                                                         ))}
+                                                                        {renderHistoryField(history, 'quantity', null, 'Chuyến')}
                                                                     </Grid>
                                                                 </>
                                                             )}
@@ -535,54 +623,17 @@ export default function ShiftReport({
                                                                             value={reportFormik.values.vehicleReports[formIndex]?.distanceKm || ''}
                                                                             onChange={reportFormik.handleChange}
                                                                         />
-                                                                        {history
-                                                                            .filter((h: any) => h.changes.some((c: any) => c.field === 'distanceKm'))
-                                                                            .map((h: any, i: number) => {
-                                                                                const changesText = h.changes
-                                                                                    .filter((c: any) => c.field === 'distanceKm')
-                                                                                    .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
-                                                                                    .join(', ');
-                                                                                return (
-                                                                                    <Typography key={i} variant="caption" color="secondary" display="block">
-                                                                                        Nội dung: Km di chuyển: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
-                                                                                        {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
-                                                                                    </Typography>
-                                                                                );
-                                                                            })}
+                                                                        {renderHistoryField(history, 'distanceKm', null, 'Km di chuyển')}
                                                                     </Grid>
 
                                                                     <Grid item xs={3}>
                                                                         <Typography>Giờ sản phẩm (phút):</Typography>
                                                                     </Grid>
-                                                                    <Grid item xs={9}>
-                                                                        <TextField
-                                                                            fullWidth
-                                                                            type="number"
-                                                                            size="small"
-                                                                            name={`vehicleReports[${formIndex}].workingMinutes`}
-                                                                            value={reportFormik.values.vehicleReports[formIndex]?.workingMinutes || ''}
-                                                                            onChange={reportFormik.handleChange}
-                                                                        />
-                                                                        {history
-                                                                            .filter((h: any) => h.changes.some((c: any) => c.field === 'workingMinutes'))
-                                                                            .map((h: any, i: number) => {
-                                                                                const changesText = h.changes
-                                                                                    .filter((c: any) => c.field === 'workingMinutes')
-                                                                                    .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
-                                                                                    .join(', ');
-                                                                                return (
-                                                                                    <Typography key={i} variant="caption" color="secondary" display="block">
-                                                                                        Nội dung: Giờ sản phẩm: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
-                                                                                        {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
-                                                                                    </Typography>
-                                                                                );
-                                                                            })}
-                                                                    </Grid>
                                                                 </>
                                                             )}
 
                                                             {/* GẠT: workingMinutes */}
-                                                            {jobType === JobTypeEnum.DOZER && (
+                                                            {(jobType === JobTypeEnum.DOZER || jobType === JobTypeEnum.SERVICE_VEHICLE) && (
                                                                 <>
                                                                     <Grid item xs={3}>
                                                                         <Typography>Giờ sản phẩm (phút):</Typography>
@@ -610,6 +661,7 @@ export default function ShiftReport({
                                                                                     </Typography>
                                                                                 );
                                                                             })}
+                                                                        {renderHistoryField(history, 'workingMinutes', null, 'Giờ sản phẩm')}
                                                                     </Grid>
                                                                 </>
                                                             )}
@@ -649,20 +701,7 @@ export default function ShiftReport({
                                                 value={shiftReportFormik.values.vehicleSummaries[index]?.repairHours || ''}
                                                 onChange={shiftReportFormik.handleChange}
                                             />
-                                            {shiftReportHistories
-                                                .filter((h: any) => h.changes.some((c: any) => c.field === 'repairHours'))
-                                                .map((h: any, i: number) => {
-                                                    const changesText = h.changes
-                                                        .filter((c: any) => c.field === 'repairHours' && c.index === index)
-                                                        .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
-                                                        .join(', ');
-                                                    return (
-                                                        <Typography key={i} variant="caption" color="secondary" display="block">
-                                                            Nội dung: Giờ sửa chữa: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
-                                                            {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
-                                                        </Typography>
-                                                    );
-                                                })}
+                                            {renderHistoryField(shiftReportHistories, 'repairHours', index, 'Giờ sửa chữa')}
                                         </Grid>
                                         <Grid item xs={3}>
                                             <Typography>Km hoạt động trên đồng hồ:</Typography>
@@ -676,20 +715,7 @@ export default function ShiftReport({
                                                 value={shiftReportFormik.values.vehicleSummaries[index]?.distanceKm || ''}
                                                 onChange={shiftReportFormik.handleChange}
                                             />
-                                            {shiftReportHistories
-                                                .filter((h: any) => h.changes.some((c: any) => c.field === 'distanceKm'))
-                                                .map((h: any, i: number) => {
-                                                    const changesText = h.changes
-                                                        .filter((c: any) => c.field === 'distanceKm' && c.index === index)
-                                                        .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
-                                                        .join(', ');
-                                                    return (
-                                                        <Typography key={i} variant="caption" color="secondary" display="block">
-                                                            Nội dung: Km hoạt động trên đồng hồ: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
-                                                            {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
-                                                        </Typography>
-                                                    );
-                                                })}
+                                            {renderHistoryField(shiftReportHistories, 'distanceKm', index, 'Km hoạt động trên đồng hồ')}
                                         </Grid>
                                         <Grid item xs={3}>
                                             <Typography>Giờ hoạt động trên đồng hồ:</Typography>
@@ -703,20 +729,7 @@ export default function ShiftReport({
                                                 value={shiftReportFormik.values.vehicleSummaries[index]?.travelHours || ''}
                                                 onChange={shiftReportFormik.handleChange}
                                             />
-                                            {shiftReportHistories
-                                                .filter((h: any) => h.changes.some((c: any) => c.field === 'travelHours'))
-                                                .map((h: any, i: number) => {
-                                                    const changesText = h.changes
-                                                        .filter((c: any) => c.field === 'travelHours' && c.index === index)
-                                                        .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
-                                                        .join(', ');
-                                                    return (
-                                                        <Typography key={i} variant="caption" color="secondary" display="block">
-                                                            Nội dung: Giờ hoạt động trên đồng hồ: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
-                                                            {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
-                                                        </Typography>
-                                                    );
-                                                })}
+                                            {renderHistoryField(shiftReportHistories, 'travelHours', index, 'Giờ hoạt động trên đồng hồ')}
                                         </Grid>
 
                                         <Grid item xs={3}>
@@ -731,20 +744,7 @@ export default function ShiftReport({
                                                 value={shiftReportFormik.values.vehicleSummaries[index]?.fuelRemain || ''}
                                                 onChange={shiftReportFormik.handleChange}
                                             />
-                                            {shiftReportHistories
-                                                .filter((h: any) => h.changes.some((c: any) => c.field === 'fuelRemain'))
-                                                .map((h: any, i: number) => {
-                                                    const changesText = h.changes
-                                                        .filter((c: any) => c.field === 'fuelRemain' && c.index === index)
-                                                        .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
-                                                        .join(', ');
-                                                    return (
-                                                        <Typography key={i} variant="caption" color="secondary" display="block">
-                                                            Nội dung: Tồn dầu: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
-                                                            {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
-                                                        </Typography>
-                                                    );
-                                                })}
+                                            {renderHistoryField(shiftReportHistories, 'fuelRemain', index, 'Tồn dầu')}
                                         </Grid>
 
                                         <Grid item xs={3}>
@@ -759,20 +759,7 @@ export default function ShiftReport({
                                                 value={shiftReportFormik.values.vehicleSummaries[index]?.fuelReceived || ''}
                                                 onChange={shiftReportFormik.handleChange}
                                             />
-                                            {shiftReportHistories
-                                                .filter((h: any) => h.changes.some((c: any) => c.field === 'fuelReceived'))
-                                                .map((h: any, i: number) => {
-                                                    const changesText = h.changes
-                                                        .filter((c: any) => c.field === 'fuelReceived' && c.index === index)
-                                                        .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
-                                                        .join(', ');
-                                                    return (
-                                                        <Typography key={i} variant="caption" color="secondary" display="block">
-                                                            Nội dung: Lĩnh trong ca: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
-                                                            {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
-                                                        </Typography>
-                                                    );
-                                                })}
+                                            {renderHistoryField(shiftReportHistories, 'fuelReceived', index, 'Lĩnh trong ca')}
                                         </Grid>
 
                                         <Grid item xs={3}>
@@ -787,20 +774,7 @@ export default function ShiftReport({
                                                 value={shiftReportFormik.values.vehicleSummaries[index]?.fuelRemainEnd || ''}
                                                 onChange={shiftReportFormik.handleChange}
                                             />
-                                            {shiftReportHistories
-                                                .filter((h: any) => h.changes.some((c: any) => c.field === 'fuelRemainEnd'))
-                                                .map((h: any, i: number) => {
-                                                    const changesText = h.changes
-                                                        .filter((c: any) => c.field === 'fuelRemainEnd' && c.index === index)
-                                                        .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
-                                                        .join(', ');
-                                                    return (
-                                                        <Typography key={i} variant="caption" color="secondary" display="block">
-                                                            Nội dung: Tồn cuối ca: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
-                                                            {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
-                                                        </Typography>
-                                                    );
-                                                })}
+                                            {renderHistoryField(shiftReportHistories, 'fuelRemainEnd', index, 'Tồn cuối ca')}
                                         </Grid>
 
                                         <Grid item xs={3}>
@@ -817,20 +791,7 @@ export default function ShiftReport({
                                                 <MenuItem value="fail">Hỏng</MenuItem>
                                                 <MenuItem value="good">Tốt</MenuItem>
                                             </TextField>
-                                            {shiftReportHistories
-                                                .filter((h: any) => h.changes.some((c: any) => c.field === 'status'))
-                                                .map((h: any, i: number) => {
-                                                    const changesText = h.changes
-                                                        .filter((c: any) => c.field === 'status' && c.index === index)
-                                                        .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
-                                                        .join(', ');
-                                                    return (
-                                                        <Typography key={i} variant="caption" color="secondary" display="block">
-                                                            Nội dung: Tình trạng xe: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
-                                                            {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
-                                                        </Typography>
-                                                    );
-                                                })}
+                                            {renderHistoryField(shiftReportHistories, 'status', index, 'Tình trạng xe')}
                                         </Grid>
                                     </Grid>
 
@@ -848,20 +809,7 @@ export default function ShiftReport({
                                                     value={shiftReportFormik.values.vehicleSummaries[index]?.note || ''}
                                                     onChange={shiftReportFormik.handleChange}
                                                 />
-                                                {shiftReportHistories
-                                                    .filter((h: any) => h.changes.some((c: any) => c.field === 'note'))
-                                                    .map((h: any, i: number) => {
-                                                        const changesText = h.changes
-                                                            .filter((c: any) => c.field === 'note' && c.index === index)
-                                                            .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
-                                                            .join(', ');
-                                                        return (
-                                                            <Typography key={i} variant="caption" color="secondary" display="block">
-                                                                Nội dung: Lý do hỏng: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
-                                                                {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
-                                                            </Typography>
-                                                        );
-                                                    })}
+                                                {renderHistoryField(shiftReportHistories, 'note', index, 'Lý do hỏng')}
                                             </Grid>
                                         </Grid>
                                     )}
@@ -881,20 +829,7 @@ export default function ShiftReport({
                                                 <MenuItem value="Hoạt động bình thường">Hoạt động bình thường</MenuItem>
                                                 <MenuItem value="Mất tín hiệu">Mất tín hiệu</MenuItem>
                                             </TextField>
-                                            {shiftReportHistories
-                                                .filter((h: any) => h.changes.some((c: any) => c.field === 'gpsStatus'))
-                                                .map((h: any, i: number) => {
-                                                    const changesText = h.changes
-                                                        .filter((c: any) => c.field === 'gpsStatus' && c.index === index)
-                                                        .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
-                                                        .join(', ');
-                                                    return (
-                                                        <Typography key={i} variant="caption" color="secondary" display="block">
-                                                            Nội dung: GPS: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
-                                                            {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
-                                                        </Typography>
-                                                    );
-                                                })}
+                                            {renderHistoryField(shiftReportHistories, 'gpsStatus', index, 'GPS')}
                                         </Grid>
 
                                         <Grid item xs={3}>
@@ -911,20 +846,7 @@ export default function ShiftReport({
                                                 <MenuItem value="Tốt">Tốt</MenuItem>
                                                 <MenuItem value="Hỏng">Hỏng</MenuItem>
                                             </TextField>
-                                            {shiftReportHistories
-                                                .filter((h: any) => h.changes.some((c: any) => c.field === 'sealStatus'))
-                                                .map((h: any, i: number) => {
-                                                    const changesText = h.changes
-                                                        .filter((c: any) => c.field === 'sealStatus' && c.index === index)
-                                                        .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
-                                                        .join(', ');
-                                                    return (
-                                                        <Typography key={i} variant="caption" color="secondary" display="block">
-                                                            Nội dung: kẹp chì/Niêm phong: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
-                                                            {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
-                                                        </Typography>
-                                                    );
-                                                })}
+                                            {renderHistoryField(shiftReportHistories, 'sealStatus', index, 'kẹp chì/Niêm phong')}
                                         </Grid>
                                     </Grid>
                                 </Box>
@@ -961,20 +883,7 @@ export default function ShiftReport({
                                             <MenuItem value="Đã sửa xong">Đã sửa xong</MenuItem>
                                             <MenuItem value="Chưa sửa xong">Chưa sửa xong</MenuItem>
                                         </TextField>
-                                        {shiftReportHistories
-                                            .filter((h: any) => h.changes.some((c: any) => c.field === 'status'))
-                                            .map((h: any, i: number) => {
-                                                const changesText = h.changes
-                                                    .filter((c: any) => c.field === 'status' && c.index === index)
-                                                    .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
-                                                    .join(', ');
-                                                return (
-                                                    <Typography key={i} variant="caption" color="secondary" display="block">
-                                                        Nội dung: Trạng thái sửa chữa: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
-                                                        {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
-                                                    </Typography>
-                                                );
-                                            })}
+                                        {renderHistoryField(shiftReportHistories, 'status', index, 'Trạng thái sửa chữa')}
                                     </Grid>
                                 </Grid>
 
@@ -992,20 +901,7 @@ export default function ShiftReport({
                                                 value={shiftReportFormik.values.vehicleRepair[index]?.noteRepair || ''}
                                                 onChange={shiftReportFormik.handleChange}
                                             />
-                                            {shiftReportHistories
-                                                .filter((h: any) => h.changes.some((c: any) => c.field === 'noteRepair'))
-                                                .map((h: any, i: number) => {
-                                                    const changesText = h.changes
-                                                        .filter((c: any) => c.field === 'noteRepair' && c.index === index)
-                                                        .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
-                                                        .join(', ');
-                                                    return (
-                                                        <Typography key={i} variant="caption" color="secondary" display="block">
-                                                            Nội dung: Tình trạng sửa chữa: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
-                                                            {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
-                                                        </Typography>
-                                                    );
-                                                })}
+                                            {renderHistoryField(shiftReportHistories, 'noteRepair', index, 'Tình trạng sửa chữa')}
                                         </Grid>
                                     </Grid>
                                 )}
@@ -1029,20 +925,7 @@ export default function ShiftReport({
                                 value={shiftReportFormik.values.handoverHours || ''}
                                 onChange={shiftReportFormik.handleChange}
                             />
-                            {shiftReportHistories
-                                .filter((h: any) => h.changes.some((c: any) => c.field === 'handoverHours'))
-                                .map((h: any, i: number) => {
-                                    const changesText = h.changes
-                                        .filter((c: any) => c.field === 'handoverHours')
-                                        .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
-                                        .join(', ');
-                                    return (
-                                        <Typography key={i} variant="caption" color="secondary" display="block">
-                                            Nội dung: Giờ bàn giao ca: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
-                                            {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
-                                        </Typography>
-                                    );
-                                })}
+                            {renderHistoryField(shiftReportHistories, 'handoverHours', null, 'Giờ bàn giao ca')}
                         </Grid>
 
                         <Grid item xs={3}>
@@ -1058,20 +941,7 @@ export default function ShiftReport({
                                 value={shiftReportFormik.values.handoverNotes || ''}
                                 onChange={shiftReportFormik.handleChange}
                             />
-                            {shiftReportHistories
-                                .filter((h: any) => h.changes.some((c: any) => c.field === 'handoverNotes'))
-                                .map((h: any, i: number) => {
-                                    const changesText = h.changes
-                                        .filter((c: any) => c.field === 'handoverNotes')
-                                        .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
-                                        .join(', ');
-                                    return (
-                                        <Typography key={i} variant="caption" color="secondary" display="block">
-                                            Nội dung: Nội dung bàn giao ca: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
-                                            {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
-                                        </Typography>
-                                    );
-                                })}
+                            {renderHistoryField(shiftReportHistories, 'handoverNotes', null, 'Nội dung bàn giao ca')}
                         </Grid>
 
                         <Grid item xs={3}>
@@ -1087,20 +957,7 @@ export default function ShiftReport({
                                 value={shiftReportFormik.values.risks || ''}
                                 onChange={shiftReportFormik.handleChange}
                             />
-                            {shiftReportHistories
-                                .filter((h: any) => h.changes.some((c: any) => c.field === 'risks'))
-                                .map((h: any, i: number) => {
-                                    const changesText = h.changes
-                                        .filter((c: any) => c.field === 'risks')
-                                        .map((c: any) => `"${c.oldValue || ''}" → "${c.newValue || ''}"`)
-                                        .join(', ');
-                                    return (
-                                        <Typography key={i} variant="caption" color="secondary" display="block">
-                                            Nội dung: Kiến nghị, rủi ro: {changesText}, Thay đổi bởi: {h.changedBy?.username}{' '}
-                                            {format(new Date(h.createdAt), 'HH:mm dd/MM/yyyy')}
-                                        </Typography>
-                                    );
-                                })}
+                            {renderHistoryField(shiftReportHistories, 'risks', null, 'Kiến nghị, rủi ro')}
                         </Grid>
                     </Grid>
                 </Box>
@@ -1113,7 +970,7 @@ export default function ShiftReport({
                         <Button variant="contained" onClick={handleUpdateAll}>
                             Lưu lại
                         </Button>
-                    )}
+                    )} 
                 </DialogActions>
             )}
         </Dialog>

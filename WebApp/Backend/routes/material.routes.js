@@ -10,10 +10,10 @@ const ExcelJS = require('exceljs');
 const xlsx = require('xlsx');
 const { ROLE } = require('../config/config');
 
-
+// them vat lieu
 router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
-        const { name, valueHistory, acceptedProduct } = req.body
+        const { name, acceptedProduct } = req.body
         const existingMaterial = await Material.findOne({ name });
         if (existingMaterial) {
             req.logger.error("❌ Tên vật liệu đã tồn tại");
@@ -21,7 +21,6 @@ router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, 
         }
         const newMaterial = new Material({
             name: name,
-            valueHistory,
             acceptedProduct: acceptedProduct,
         });
         await newMaterial.save();
@@ -33,6 +32,121 @@ router.post('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, 
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
     }
 });
+// thêm thơi gian
+router.post("/save-timeslot", async (req, res) => {
+    try {
+        const { startTime, endTime, rows, initSlot, force } = req.body;
+
+        const newStart = new Date(startTime);
+        const newEnd = new Date(endTime);
+
+        // ====== 1. LẤY TẤT CẢ TIME SLOT HIỆN CÓ ======
+        const materials = await Material.find().lean();
+
+        const exists = materials.some(m =>
+            m.valueHistory?.some(h =>
+                new Date(h.startTime).getTime() === newStart.getTime() &&
+                new Date(h.endTime).getTime() === newEnd.getTime()
+            )
+        );
+
+        // ====== 2. CASE: TẠO MỚI (KHÔNG CÓ initSlot) ======
+        if (!initSlot) {
+
+            // Nếu trùng EXACT và chưa force → báo FE xác nhận ghi đè
+            if (exists && !force) {
+                return res.status(409).json({
+                    code: "EXISTS",
+                    message: "Khoảng thời gian đã tồn tại"
+                });
+            }
+
+            // Nếu trùng và force = true → xóa slot cũ
+            if (exists && force) {
+                await Material.updateMany(
+                    {},
+                    {
+                        $pull: {
+                            valueHistory: {
+                                startTime: newStart,
+                                endTime: newEnd
+                            }
+                        }
+                    }
+                );
+            }
+        }
+
+        // ====== 3. CASE: EDIT (CÓ initSlot) ======
+        if (initSlot) {
+            await Material.updateMany(
+                {},
+                {
+                    $pull: {
+                        valueHistory: {
+                            startTime: new Date(initSlot.startTime),
+                            endTime: new Date(initSlot.endTime)
+                        }
+                    }
+                }
+            );
+        }
+
+        // ====== 4. LƯU TỶ TRỌNG MỚI ======
+        for (const row of rows) {
+            await Material.updateOne(
+                { _id: row.id },
+                {
+                    $push: {
+                        valueHistory: {
+                            startTime: newStart,
+                            endTime: newEnd,
+                            density: row.density ? Number(row.density) : null,
+                            dryDensity: row.dryDensity ? Number(row.dryDensity) : null
+                        }
+                    }
+                }
+            );
+        }
+
+        return res.json({ message: "Lưu thành công" });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Lỗi server", error: err.message });
+    }
+});
+
+// DELETE /materials/timeslots
+router.delete("/timeslots", async (req, res) => {
+    try {
+        const { slots } = req.body;
+
+        if (!Array.isArray(slots) || slots.length === 0) {
+            return res.status(400).json({ message: "Không có slot để xóa" });
+        }
+
+        for (const s of slots) {
+            await Material.updateMany(
+                {},
+                {
+                    $pull: {
+                        valueHistory: {
+                            startTime: new Date(s.startTime),
+                            endTime: new Date(s.endTime),
+                        }
+                    }
+                }
+            );
+        }
+
+        return res.json({ message: "Xóa khoảng thời gian thành công" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Lỗi server", error: err.message });
+    }
+});
+
 
 router.delete('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res, next) => {
     try {
