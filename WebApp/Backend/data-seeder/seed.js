@@ -1,17 +1,23 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const Role = require('../models/Role');
+
 const DeviceType = require('../models/DeviceType'); // cần thêm model này
 const { connectDB } = require('../config/db.config');
 
 const adminUser = {
     username: 'admin',
     password: '123456',
-    role: 'admin',
     fullName: 'admin',
     salaryCode: '0000'
 };
-
+const roles = [
+    { name: 'admin', value: 'Quản trị hệ thống' },
+    { name: 'dispatcher', value: 'Điều hành sản xuất' },
+    { name: 'manager', value: 'Quản lý' },
+    { name: 'employee', value: 'Nhân viên' },
+];
 const deviceTypes = [
     { name: 'Vận tải', group: 'Xe' },
     { name: 'Máy xúc', group: 'Máy' },
@@ -24,12 +30,22 @@ const seedAdmin = async () => {
 
         await connectDB();// sửa lại URI nếu cần
 
+        const roleCount = await Role.countDocuments();
+        if (roleCount === 0) {
+            await Role.insertMany(roles);
+            console.log('✅ Roles seeded');
+        } else {
+            console.log('ℹ️ Roles already exist');
+        }
+
         // Seed admin
         const existingAdmin = await User.findOne({ username: adminUser.username });
         if (!existingAdmin) {
+            const existingRole = await Role.findOne({ name: 'admin' });
+
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(adminUser.password, salt);
-            await User.create({ ...adminUser, password: hashedPassword });
+            await User.create({ ...adminUser, password: hashedPassword, role: existingRole?._id });
             console.log('✅ Admin user created');
         } else {
             console.log('ℹ️ Admin user already exists');

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
     Box,
     Button,
@@ -9,58 +9,22 @@ import {
     Paper,
     IconButton,
     InputAdornment,
+    Tabs,
+    Tab,
 } from '@mui/material';
-import { VisibilityOff, Visibility } from '@mui/icons-material';
-import { useFormik } from 'formik';
-import * as yup from 'yup';
-import { useMutation } from '@tanstack/react-query';
-import api from '../../config/api.config';
-import { useAtom } from 'jotai';
-import { userAtom } from '../../atoms/userAtoms';
-import { showErrorAlert } from '../../components/Alert';
-import { RoleEnum } from '../../enums';
 
-const loginValidationSchema = yup.object({
-    username: yup.string().required('Vui lòng nhập tên đăng nhập'),
-    password: yup.string().required('Vui lòng nhập mật khẩu'),
-});
+import ResetPassword from './ResetPassword';
+import FormLogin from './FormLogin';
+
 
 
 const Login = () => {
-    const navigate = useNavigate();
-    const [, setUser] = useAtom(userAtom)
-    const [showPassword, setShowPassword] = useState(false);
 
-    const handleTogglePassword = () => {
-        setShowPassword((prev) => !prev);
+    const [tab, setTab] = useState(0);
+
+    const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+        setTab(newValue);
     };
-    const loginMutation = useMutation({
-        mutationFn: (credentials: { username: string; password: string }) =>
-            api.post('/auth/login', credentials).then(res => res.data),
-        onSuccess: (data) => {
-            if (data.data.user?.role.toLowerCase() === RoleEnum.EMPLOYEE) {
-                showErrorAlert('Bạn không có quyền truy cập hệ thống.');
-                return;
-            }
-            localStorage.setItem('token', data.data.token);
-            setUser(data.data.user)
-            navigate('/');
-        },
-        onError: (error: any) => {
-            showErrorAlert(error.response.data.message || error.message || 'Đăng nhập thất bại')
-        }
-    });
-
-    const loginFormik = useFormik({
-        initialValues: {
-            username: '',
-            password: '',
-        },
-        validationSchema: loginValidationSchema,
-        onSubmit: (values) => {
-            loginMutation.mutate(values);
-        },
-    });
 
     return (
         <Box
@@ -88,7 +52,7 @@ const Login = () => {
                     <Box>
                         <Typography variant="h6" sx={{
                             fontWeight: "bold",
-                             fontSize: {
+                            fontSize: {
                                 xl: 48,
                                 lg: 28,
                                 md: 24,
@@ -122,52 +86,19 @@ const Login = () => {
                     >
                         <Paper elevation={3} sx={{ p: 4, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
                             <img src="/image/logo.png" style={{ width: 150, height: 150, }} />
-                            <Typography component="h1" variant="h5" align="center" gutterBottom>
-                                Đăng nhập
-                            </Typography>
-                            <Box component="form" onSubmit={loginFormik.handleSubmit} sx={{ mt: 1 }}>
-                                <TextField
-                                    margin="normal"
-                                    fullWidth
-                                    id="username"
-                                    name="username"
-                                    label="Tên đăng nhập"
-                                    value={loginFormik.values.username}
-                                    onChange={loginFormik.handleChange}
-                                    error={loginFormik.touched.username && Boolean(loginFormik.errors.username)}
-                                    helperText={loginFormik.touched.username && loginFormik.errors.username}
-                                />
-                                <TextField
-                                    margin="normal"
-                                    fullWidth
-                                    id="password"
-                                    name="password"
-                                    label="Mật khẩu"
-                                    type={showPassword ? 'text' : 'password'}
-                                    InputProps={{
-                                        endAdornment: (
-                                            <InputAdornment position="end">
-                                                <IconButton onClick={handleTogglePassword} edge="end">
-                                                    {showPassword ? <Visibility /> : <VisibilityOff />}
-                                                </IconButton>
-                                            </InputAdornment>
-                                        )
-                                    }}
-                                    value={loginFormik.values.password}
-                                    onChange={loginFormik.handleChange}
-                                    error={loginFormik.touched.password && Boolean(loginFormik.errors.password)}
-                                    helperText={loginFormik.touched.password && loginFormik.errors.password}
-                                />
-                                <Button
-                                    type="submit"
-                                    fullWidth
-                                    variant="contained"
-                                    sx={{ mt: 3, mb: 2 }}
-                                    disabled={loginMutation.isPending}
+                            <Box sx={{ width: '100%', typography: 'body1' }}>
+                                <Tabs
+                                    value={tab}
+                                    onChange={handleChange}
+                                    aria-label="wrapped label tabs example"
+                                    variant="fullWidth"
                                 >
-                                    {loginMutation.isPending ? 'Đang đăng nhập...' : 'Đăng nhập'}
-                                </Button>
+                                    <Tab value={0} label={<b style={{ fontSize: 17 }}>Đăng nhập</b>} />
+                                    <Tab value={1} label={<b style={{ fontSize: 17 }}>Quên mật khẩu</b>} />
+                                </Tabs>
                             </Box>
+                            {tab === 0 && <FormLogin />}
+                            {tab === 1 && <ResetPassword />}
                         </Paper>
                     </Box>
                 </Container >

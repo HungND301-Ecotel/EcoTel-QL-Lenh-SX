@@ -53,6 +53,7 @@ import { RoleEnum } from '../../enums';
 import { ROLE_TYPE_OPTIONS } from '../../utils/const';
 import { parseAxiosError } from '../../utils/handleApiError';
 import ImageUploadBox from '../../components/ImageUploadBox';
+import RoleService from '../../services/roleService';
 
 
 const Users: React.FC = () => {
@@ -80,6 +81,11 @@ const Users: React.FC = () => {
             q: value,
             department: department,
         }),
+
+    });
+    const { data: roles = [] } = useQuery({
+        queryKey: ['roles'],
+        queryFn: RoleService.getAll,
 
     });
     const filteredOrders = React.useMemo(() => {
@@ -205,7 +211,7 @@ const Users: React.FC = () => {
             salaryCode: '',
             department: user?.role === RoleEnum.ADMIN ? user?.department?._id : '',
             position: undefined,
-            role: '',
+            role: undefined,
             ...selectedUser,
         },
         validationSchema: userValidationSchema,
@@ -237,6 +243,9 @@ const Users: React.FC = () => {
                 department: user.department !== null && typeof user.department === 'object'
                     ? user.department._id
                     : user.department || undefined,
+                role: user.role !== null && typeof user.role === 'object'
+                    ? user.role._id
+                    : user.role || '',
             });
             setAvatar(user.avatar)
         } else {
@@ -322,11 +331,7 @@ const Users: React.FC = () => {
         },
         {
             field: 'role', headerName: 'Phân quyền', width: 150, headerAlign: 'center',
-            renderCell: (params) => (
-                <Typography>
-                    {params.row.role === RoleEnum.ADMIN ? "Quản trị hệ thống" : params.row.role === RoleEnum.DISPATCHER ? "Điều hành sản xuất" : params.row.role === RoleEnum.MANAGER ? "Quản lý" : "Nhân viên"}
-                </Typography>
-            )
+            renderCell: (params) => params.row.role?.value
         },
         {
             field: 'active', headerName: 'Trạng thái', width: 100, headerAlign: 'center', align: 'center',
@@ -691,8 +696,8 @@ const Users: React.FC = () => {
                                     helperText={formik.touched.role && formik.errors.role}
                                     disabled={selectedUser?.role === RoleEnum.ADMIN}
                                 >
-                                    {ROLE_TYPE_OPTIONS.map(i => (
-                                        <MenuItem key={i.label} value={i.label} hidden={user?.role !== RoleEnum.ADMIN}>{i.value}</MenuItem>
+                                    {roles.map(i => (
+                                        <MenuItem key={i?._id} value={i?._id} hidden={user?.role !== RoleEnum.ADMIN}>{i.value}</MenuItem>
                                     ))}
                                 </TextField>
 

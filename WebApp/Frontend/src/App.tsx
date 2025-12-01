@@ -30,6 +30,8 @@ import DashBoard from './pages/dashboard/Dashboard';
 import DeviceModels from './pages/deviceModels/DeviceModels';
 import Models from './pages/model/Model';
 import { RoleEnum } from './enums';
+import Roles from './pages/role/Role';
+import ResetPassword from './pages/auth/ResetPassword';
 
 
 interface PrivateRouteProps {
@@ -232,6 +234,14 @@ const App = () => {
                     element={
                         <PrivateRoute>
                             <DeviceModels />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/roles"
+                    element={
+                        <PrivateRoute>
+                            <Roles />
                         </PrivateRoute>
                     }
                 />

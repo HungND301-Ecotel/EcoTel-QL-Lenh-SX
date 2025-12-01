@@ -14,6 +14,7 @@ import { showErrorAlert, showSuccessAlert } from '../Alert'
 import { RoleEnum } from '../../enums'
 import { ROLE_TYPE_OPTIONS } from '../../utils/const'
 import ImageUploadBox from '../ImageUploadBox'
+import RoleService from '../../services/roleService'
 
 export default function Profile({ open, setOpen }: { open: boolean, setOpen: Dispatch<SetStateAction<boolean>> }) {
     const [avatar, setAvatar] = useState('')
@@ -25,7 +26,11 @@ export default function Profile({ open, setOpen }: { open: boolean, setOpen: Dis
         queryKey: ['user'],
         queryFn: () => api.get(`/auth/me`).then(res => res.data.data.user),
     })
+    const { data: roles = [] } = useQuery({
+        queryKey: ['roles'],
+        queryFn: RoleService.getAll,
 
+    });
     const { data: positions = [] } = useQuery({
         queryKey: ['positions'],
         queryFn: () => api.get('/positions').then(res => res.data.data),
@@ -63,7 +68,7 @@ export default function Profile({ open, setOpen }: { open: boolean, setOpen: Dis
             salaryCode: '',
             department: '',
             position: '',
-            role: '',
+            // role: '',
         },
         enableReinitialize: true,
         onSubmit: (values) => {
@@ -92,9 +97,9 @@ export default function Profile({ open, setOpen }: { open: boolean, setOpen: Dis
                 avatar: user.avatar || '',
                 signature: user.signature || '',
                 salaryCode: user.salaryCode || '',
-                department: user.department?._id || '',
+                department: user.department?._id || undefined,
                 position: user.position?._id || '',
-                role: user.role || '',
+                // role: user.role || '',
             })
         }
     }, [user, open])
@@ -171,9 +176,9 @@ export default function Profile({ open, setOpen }: { open: boolean, setOpen: Dis
 
                         <TextField fullWidth select name="role" label="Phân quyền"
                             disabled
-                            value={formik.values.role} onChange={formik.handleChange}>
-                            {ROLE_TYPE_OPTIONS.map(i => (
-                                <MenuItem key={i.label} value={i.label} hidden={user?.role !== RoleEnum.ADMIN}>{i.value}</MenuItem>
+                            value={user?.role} onChange={formik.handleChange}>
+                            {roles.map(i => (
+                                <MenuItem key={i?._id} value={i?.name} hidden>{i.value}</MenuItem>
                             ))}
                         </TextField>
 

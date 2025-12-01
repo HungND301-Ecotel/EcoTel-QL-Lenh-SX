@@ -36,6 +36,10 @@ const TravelLogRoutes = require('./routes/travelLog.routes');
 const DeviceModelRoutes = require('./routes/deviceModel.routes');
 const ModelRoutes = require('./routes/model.routes');
 const AnalysicRoutes = require('./routes/analysic.routes');
+const RoleRoutes = require('./routes/role.routes');
+const PermissionRoutes = require('./routes/permission.routes');
+
+
 
 
 require('./utils/cron')
@@ -165,6 +169,10 @@ app.use('/api/travellogs', TravelLogRoutes);
 app.use('/api/devicemodels', DeviceModelRoutes);
 app.use('/api/models', ModelRoutes);
 app.use('/api/analysics', AnalysicRoutes);
+app.use('/api/roles', RoleRoutes);
+app.use('/api/permissions', PermissionRoutes);
+
+
 
 
 

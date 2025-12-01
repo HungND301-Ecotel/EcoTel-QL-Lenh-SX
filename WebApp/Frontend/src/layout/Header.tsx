@@ -115,6 +115,9 @@ export default function Header() {
         [RoleEnum.ADMIN, RoleEnum.MANAGER].includes(user?.role) && {
             text: 'Ca làm việc', path: '/shifts'
         },
+        [RoleEnum.ADMIN].includes(user?.role) && {
+            text: 'Chức vụ', path: '/roles'
+        },
     ].filter(Boolean);
     return (
         <>

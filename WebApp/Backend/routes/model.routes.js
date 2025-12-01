@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
+const { verifyToken, restrictTo, checkPermission } = require('../middleware/auth.middleware');
 const Model = require('../models/Model');
 const { ROLE } = require('../config/config');
 const {
@@ -8,7 +8,7 @@ const {
 } = require('../utils/cron')
 
 
-router.post('/bulk-upsert', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res) => {
+router.post('/bulk-upsert', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), checkPermission('user.create'), async (req, res) => {
     try {
         const user = req.user;
         const { rows, startTime: rawStartTime, endTime: rawEndTime, initSlot } = req.body;
@@ -185,7 +185,7 @@ router.get('/', verifyToken, async (req, res) => {
     }
 });
 // DELETE /models
-router.delete('/', verifyToken, async (req, res) => {
+router.delete('/', verifyToken,checkPermission('user.create'), async (req, res) => {
     try {
         const user = req.user
         const { slots } = req.body; // [{ startTime, endTime }, ...]

@@ -46,6 +46,13 @@ class AuthService {
     return await _apiService.put('/users/addphone', data);
   }
 
+  Future<Map<String, dynamic>> forgotPassword(
+    Map<String, dynamic> data,
+  ) async {
+    return await _apiService.post(
+        '/users/forgot_password', data);
+  }
+
   Future<Map<String, dynamic>> getUser(String q) async {
     return await _apiService.get(
       '/users/getOne/salaryCodeOrName?q=$q',
@@ -57,7 +64,7 @@ class AuthService {
   ) async {
     return await _apiService.post(
       '/users/save-token',
-      { "token": token },
+      {"token": token},
     );
   }
 
@@ -66,7 +73,7 @@ class AuthService {
   ) async {
     return await _apiService.post(
       '/users/remove-token',
-      { "token": token },
+      {"token": token},
     );
   }
 
