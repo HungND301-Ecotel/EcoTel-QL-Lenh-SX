@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const History = require('../models/History');
+const Role = require('../models/Role');
+const bcrypt = require('bcryptjs')
 
-const bcrypt = require('bcryptjs');
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 const xlsx = require('xlsx');
 const ExcelJS = require('exceljs');
@@ -42,9 +43,10 @@ router.get('/', verifyToken, async (req, res) => {
         else if (user?.role === ROLE.DISPATCHER) {
             if (req.query.type === "order") {
                 const userDeptId = user?.department?._id;
+                const role = await Role.findOne({ name: ROLE.MANAGER })
                 query.$or = [
                     { department: userDeptId }, // All users in their own department
-                    { role: ROLE.MANAGER } // All managers from other departments
+                    { role: role?._id } // All managers from other departments
                 ];
             } else {
                 query.department = user?.department?._id;
@@ -64,6 +66,11 @@ router.get('/', verifyToken, async (req, res) => {
         const users = await User.find(query)
             .populate('department', 'name code')
             .populate('position', 'name')
+            .populate({
+                path: 'role',
+                select: 'name value permission',
+                populate: { path: 'permission', select: 'code' }
+            })
             .collation({ locale: "vi", strength: 1 })
             .sort({ fullName: 1 });
         req.logger.info(`✅ Lấy thành công ${users.length} người dùng.`);
@@ -161,10 +168,11 @@ router.get('/getOne/salaryCodeOrName', verifyToken, async (req, res) => {
             }
             if (currentUser?.role === ROLE.DISPATCHER) {
                 const userDeptId = currentUser?.department?._id;
+                const role = await Role.findOne({ name: ROLE.MANAGER })
                 roleCondition = {
                     $or: [
                         { department: userDeptId },
-                        { role: ROLE.MANAGER }
+                        { role: role?._id }
                     ]
                 };
             }
@@ -480,7 +488,101 @@ router.delete('/me', verifyToken, async (req, res) => {
         });
     }
 });
+
+
+function generateRandomOTP() {
+    const min = 100000;
+    const max = 999999;
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+router.post('/forgot_password', async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email || typeof email !== 'string' || email.trim() === "") {
+            return res.status(400).send({
+                status: 'error',
+                message: 'Email không hợp lệ'
+            });
+        }
+        const userExit = await User.findOne({ email: email })
+        console.log('user', userExit)
+
+        if (!userExit) {
+            req.logger.info("ℹ️ Không tìm thấy người dùng");
+            return res.status(404).send({ status: 'error', message: 'Không tìm thấy người dùng' });
+        }
+
+        const newPass = generateRandomOTP()
+        const hashPass = await bcrypt.hash(newPass.toString(), 10)
+
+        userExit.password = hashPass
+        await userExit.save()
+        sendPasswordResetEmail(userExit, newPass)
+            .catch(err => req.logger.error("Email send error:", err));
+
+        req.logger.info(`✅  Đã gửi mật khẩu mới thành công người dùng ${userExit?.fullName} `);
+        res.status(200).json({
+            status: 'success',
+            message: `Lấy mật khẩu mới thành công`
+        });
+    } catch (error) {
+        req.logger.error("❌ Lỗi khi lấy mật khẩu", error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Lấy lại mật khẩu thất bại',
+            error: error.message
+        });
+    }
+});
+router.patch('/migrate_role', async (req, res) => {
+    try {
+        // 1. Lấy danh sách role hiện có
+        const allRoles = await Role.find({});
+        const roleMap = {};
+        allRoles.forEach(r => {
+            roleMap[r.name] = r._id;
+        });
+
+        // 2. Lấy user có role dạng string
+        const users = await User.find({ role: { $type: "string" } });
+        if (!users.length) {
+            return res.status(200).json({
+                status: "success",
+                message: "Không có user nào cần migrate."
+            });
+        }
+
+        // 3. Tạo bulk update
+        const ops = users.map(user => {
+            const newRoleId = roleMap[user.role];
+            if (!newRoleId) {
+                console.warn(`⚠ Role ${user.role} không tồn tại trong bảng Role`);
+                return null;
+            }
+            return {
+                updateOne: {
+                    filter: { _id: user._id },
+                    update: { role: new mongoose.Types.ObjectId(newRoleId) }
+                }
+            };
+        }).filter(Boolean);
+
+        await User.bulkWrite(ops);
+
+        res.status(200).json({
+            status: "success",
+            migrated: ops.length,
+            message: "Đã migrate role string → ObjectId thành công"
+        });
+
+    } catch (err) {
+        res.status(500).json({ status: "error", message: err.message });
+    }
+});
+
 const multer = require('multer');
+const { sendPasswordResetEmail } = require('../utils/email');
 const upload = multer({ storage: multer.memoryStorage() });
 const columnMapping = {
     'Họ tên': 'fullName',

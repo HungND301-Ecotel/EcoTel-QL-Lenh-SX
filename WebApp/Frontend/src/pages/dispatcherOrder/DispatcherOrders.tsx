@@ -118,7 +118,7 @@ const DispatcherOrders: React.FC = () => {
     });
     const { data: users = [] } = useQuery({
         queryKey: ['users'],
-        queryFn: UserService.getAll,
+        queryFn: () => UserService.getAll({ type: 'order' }),
     });
 
     const { data: orders = [], isLoading } = useQuery({

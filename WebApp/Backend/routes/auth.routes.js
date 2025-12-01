@@ -164,7 +164,14 @@ router.post('/login', async (req, res) => {
 
 
         // Check if user exists
-        const user = await User.findOne({ username }).populate("position").populate("department")
+        const user = await User.findOne({ username })
+            .populate("position")
+            .populate("department")
+            .populate({
+                path: 'role',
+                select: 'name value permission',
+                populate: { path: 'permission', select: 'code' }
+            })
         if (!user) {
             req.logger.error(`❌ Không tìm thấy người dùng ${username}`);
             return res.status(404).send({
@@ -207,7 +214,8 @@ router.post('/login', async (req, res) => {
                     salaryCode: user.salaryCode,
                     phone: user.phone,
                     department: user.department,
-                    role: user.role
+                    role: user.role?.name,
+                    permission: user.role?.permission?.map(i => i.code)
                 }
             }
         });
@@ -329,6 +337,11 @@ router.patch('/reset-password/:token', async (req, res, next) => {
 router.get('/me', verifyToken, async (req, res, next) => {
     try {
         const user = await User.findById(req.userId).populate("position").populate("department")
+            .populate({
+                path: 'role',
+                select: 'name value permission',
+                populate: { path: 'permission', select: 'code' }
+            })
         req.logger.info(`🔥 Load dữ liệu  người dùng thành công ${user.username}`);
         res.status(200).json({
             status: 'success',
@@ -341,7 +354,8 @@ router.get('/me', verifyToken, async (req, res, next) => {
                     salaryCode: user.salaryCode,
                     position: user.position,
                     department: user.department,
-                    role: user.role,
+                    role: user.role?.name,
+                    permission: user.role?.permission?.map(i => i.code),
                     signature: user.signature,
                     avatar: user.avatar
                 }

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
+const Role = require('../models/Role');
 
 const ShiftReport = require('../models/ShiftReport');
 const Notification = require('../models/Notification');
@@ -149,7 +150,8 @@ router.get('/', verifyToken, async (req, res, next) => {
             query.department = new mongoose.Types.ObjectId(user.department._id);
         }
         if (user?.role === ROLE.DISPATCHER) {
-            const dispatcherIds = await User.find({ role: ROLE.DISPATCHER }, '_id').lean();
+            const roleId = await Role.findOne({ name: ROLE.DISPATCHER }, '_id').lean()
+            const dispatcherIds = await User.find({ role: roleId }, '_id').lean();
             const ids = dispatcherIds.map(d => d._id);
             query.$or = [{ department: user.department._id }, { createdBy: { $in: ids } }];
         }
@@ -257,7 +259,8 @@ router.get('/count_status', verifyToken, async (req, res, next) => {
             baseQuery.department = new mongoose.Types.ObjectId(req.query.department);
         }
         if (user?.role === ROLE.DISPATCHER) {
-            const dispatcherIds = await User.find({ role: ROLE.DISPATCHER }, '_id').lean();
+            const roleId = await Role.findOne({ name: ROLE.DISPATCHER }, '_id').lean()
+            const dispatcherIds = await User.find({ role: roleId }, '_id').lean();
             const ids = dispatcherIds.map(d => d._id);
             baseQuery.$or = [{ department: new mongoose.Types.ObjectId(user.department._id) }, { createdBy: { $in: ids } }];
         }

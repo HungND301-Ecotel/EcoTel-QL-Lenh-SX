@@ -1,14 +1,126 @@
 const cron = require('node-cron')
 const Report = require('../models/Report')
 const Order = require('../models/Order')
+const Shift = require('../models/Shift')
+
 const Job = require('../models/Job')
 const TravelLog = require('../models/TravelLog')
 const { safeQuery, caculatorWeight } = require("./reportGrouping")
-const { ROLE, JOB_TYPE } = require('../config/config');
+const { ROLE, JOB_TYPE, STATUS_ORDER } = require('../config/config');
+const sendPushNotification = require('./sendNotification')
+const { sendShiftNotification } = require('./email')
 
 
-// cron
 
+// cron gui thong bao
+function getShiftByCronTime(now) {
+    const hour = now.getHours();
+
+    if (hour >= 7 && hour < 15) return 1;
+    if (hour >= 15 && hour < 23) return 2;
+    if (hour >= 23) return 3;
+
+    return null;
+}
+function getPreviousShiftAndDate(currentShift) {
+    const now = new Date();
+
+    if (currentShift === 1) {
+        const prevDay = new Date(now);
+        prevDay.setDate(prevDay.getDate() - 1);
+        return {
+            shift: 3,
+            date: new Date(Date.UTC(prevDay.getFullYear(), prevDay.getMonth(), prevDay.getDate()))
+        };
+    }
+
+    const todayUTC = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+
+    if (currentShift === 2) {
+        return { shift: 1, date: todayUTC };
+    }
+
+    if (currentShift === 3) {
+        return { shift: 2, date: todayUTC };
+    }
+
+    return null;
+}
+
+async function notifyPendingOrders(orders) {
+    for (let order of orders) {
+        const tokens = order?.assignedTo?.deviceTokens || [];
+        await Promise.all(tokens.map(t =>
+            sendPushNotification(t, "Bạn có lệnh mới cần nhận", "Vui lòng kiểm tra và nhận lệnh.")
+        ));
+        if (order?.assignedTo?.email) {
+            await sendShiftNotification(order?.assignedTo, order, "receive");
+        }
+    }
+}
+
+async function notifyShiftEnding(orders) {
+    for (let order of orders) {
+        const tokens = order?.assignedTo?.deviceTokens || [];
+        await Promise.all(tokens.map(t =>
+            sendPushNotification(t, "Nhắc kết thúc ca", "Ca trước vẫn còn lệnh chưa hoàn thành.")
+        ));
+        if (order?.assignedTo?.email) {
+            await sendShiftNotification(order?.assignedTo, order, "finish");
+        }
+    }
+}
+
+cron.schedule('49 7,15,20 * * *', async () => {
+    console.log("🔔 Bắt đầu Cron kiểm tra lệnh...");
+
+    try {
+        const now = new Date();
+        const todayUTC = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+
+        // Ca hiện tại
+        const currentShift = getShiftByCronTime(now);
+        if (!currentShift) return;
+
+        const currentShiftData = await Shift.findOne({ name: currentShift });
+
+        // --- Lệnh PENDING của ca hiện tại (nhắc nhận lệnh)
+        const ordersCurrent = await Order.find({
+            shift: currentShiftData._id,
+            workingDate: todayUTC,
+            status: STATUS_ORDER.PENDING,
+            cancel: false
+        }).populate("assignedTo", "email fullName deviceTokens").populate('shift');
+
+        console.log(`📌 Ca ${currentShift} có ${ordersCurrent.length} lệnh chưa nhận.`);
+        await notifyPendingOrders(ordersCurrent);
+
+
+        // --- Lệnh PENDING của ca trước (nhắc kết thúc ca)
+        const prevInfo = getPreviousShiftAndDate(currentShift);
+        const prevShiftData = await Shift.findOne({ name: prevInfo.shift });
+
+        const ordersPrev = await Order.find({
+            shift: prevShiftData._id,
+            workingDate: prevInfo.date,
+            status: { $in: [STATUS_ORDER.PENDING, STATUS_ORDER.INPROGRESS] },
+            cancel: false
+        }).populate("assignedTo", "email fullName deviceTokens").populate('shift');
+
+        console.log(`📌 Ca trước (${prevInfo.shift}) còn ${ordersPrev.length} lệnh chưa hoàn thành.`);
+        await notifyShiftEnding(ordersPrev);
+
+    } catch (error) {
+        console.error("[CRON ERROR]", error);
+    }
+
+    console.log("🔔 Kết thúc Cron.");
+});
+
+
+
+
+// cron tinh san luong
 cron.schedule('* 14 * * *', async () => {
     console.log('Bắt đầu tiến hành tính sản lượng...')
 
