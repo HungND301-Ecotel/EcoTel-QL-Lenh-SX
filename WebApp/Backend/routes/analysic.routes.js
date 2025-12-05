@@ -7,6 +7,9 @@ const mongoose = require('mongoose');
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 const { ROLE, JOB_TYPE } = require('../config/config');
 const { groupTripsVehicle, groupExcavator, groupProduction, groupTripsVehicleProduction, safeQuery } = require('../utils/reportGrouping'); // ⚠️ đường dẫn đúng tới function của bạn nhé
+const {
+    runProductionUpdateBackground
+} = require('../utils/cron')
 
 async function summariseVehicleOrdersAggFull(jobType, selectedDate, startOfMonth, departmentId, production, metricType) {
     const selectedKey = new Date(selectedDate).toISOString().slice(0, 10);
@@ -306,4 +309,21 @@ router.get(
         }
     }
 );
+
+router.get('/caculate', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res) => {
+    try {
+        const { date } = req.query
+        const selected = new Date(date);
+        // Các logic về ngày tháng giữ nguyên
+        const selectedDate = new Date(selected.getFullYear(), selected.getMonth(), selected.getDate(), 23, 59, 59, 999);
+        const startOfMonth = new Date(selected.getFullYear(), selected.getMonth(), 1, 0, 0, 0, 0);
+        let query = { workingDate: { $gte: startOfMonth, $lte: selectedDate } };
+
+        await runProductionUpdateBackground(req, query)
+        res.status(200).json({ status: 'success', message: 'Cập nhật sản lượng thành công' })
+    } catch (error) {
+        req.logger.error("❌ Lỗi khi cập nhật sản lượng", error.stack);
+        res.status(500).json({ status: 'error', message: error.message })
+    }
+})
 module.exports = router;
