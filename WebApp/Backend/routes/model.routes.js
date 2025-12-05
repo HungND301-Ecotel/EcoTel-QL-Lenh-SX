@@ -3,6 +3,9 @@ const router = express.Router();
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 const Model = require('../models/Model');
 const { ROLE } = require('../config/config');
+const {
+    runProductionUpdateBackground
+} = require('../utils/cron')
 
 
 router.post('/bulk-upsert', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res) => {
@@ -97,6 +100,11 @@ router.post('/bulk-upsert', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), a
         }
 
         if (ops.length > 0) await Model.bulkWrite(ops);
+
+
+        let query = { workingDate: { $gte: startTime, $lte: endTime } };
+
+        runProductionUpdateBackground(req, query)
 
         req.logger.info(`🔥 ${user?.username} bulk upsert ${ops.length} thay đổi`);
         res.status(200).send({ status: 'success', message: `Cập nhật mô hình thành công (${ops.length} thay đổi)` });
