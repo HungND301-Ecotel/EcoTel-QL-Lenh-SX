@@ -101,8 +101,11 @@ router.post('/bulk-upsert', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), a
 
         if (ops.length > 0) await Model.bulkWrite(ops);
 
-
-        let query = { workingDate: { $gte: startTime, $lte: endTime } };
+        const selected = new Date();
+        // Các logic về ngày tháng giữ nguyên
+        const selectedDate = new Date(selected.getFullYear(), selected.getMonth(), selected.getDate(), 23, 59, 59, 999);
+        const startOfMonth = new Date(selected.getFullYear(), selected.getMonth(), 1, 0, 0, 0, 0);
+        let query = { workingDate: { $gte: startOfMonth, $lte: selectedDate } };
 
         runProductionUpdateBackground(req, query)
 
