@@ -496,11 +496,45 @@ router.put('/:id', verifyToken, async (req, res, next) => {
         req.logger.info(`🔍 Bắt đầu cập nhật lệnh với ID: ${id}`);
 
         // 1. Lấy đơn hàng hiện tại để kiểm tra
-        const order = await Order.findById(id).populate('job').populate('shiftReport').lean();
+        const order = await Order.findById(id)
+            .populate('createdBy', '_id')
+            .populate('assignedTo', '_id')
+            .populate('shift', 'startTime')
+            .populate('job').populate('shiftReport').lean();
 
         if (!order) {
             req.logger.warn("⚠️ Lỗi 404 - Không tìm thấy lệnh với ID này.");
             return res.status(404).send({ status: 'error', message: 'Không tìm thấy lệnh với ID này.' });
+        }
+
+        if (user?.role !== ROLE.ADMIN) {
+            if (![order?.createdBy?._id, order?.assignedTo?._id].includes(user?._id)) {
+                req.logger.warn(`⚠️ ${user?.fullName} không có quyền thực hiện thao tác này.`);
+                return res.status(403).send({ status: 'error', message: `Bạn không có quyền thực hiện thao tác này.` });
+            }
+        }
+        if (status === STATUS_ORDER.INPROGRESS) {
+            const startTimeStr = order.shift?.startTime; // ví dụ: "07:00"
+            if (!startTimeStr) {
+                return res.status(400).json({ message: "Lệnh không có ca hợp lệ" });
+            }
+
+            // --- Ghép workingDate + startTime thành datetime ---
+            const workingDate = new Date(order.workingDate);
+            const [hour, minute] = startTimeStr.split(":").map(Number);
+
+            const shiftStart = new Date(workingDate);
+            shiftStart.setHours(hour, minute, 0, 0);
+
+            // --- Lấy thời gian hiện tại ---
+            const now = new Date();
+
+            // --- Kiểm tra điều kiện ---
+            if (now < shiftStart) {
+                return res.status(400).json({
+                    message: `Chưa đến thời gian không thể bắt đầu.`,
+                });
+            }
         }
 
         // 2. Chuẩn bị đối tượng cập nhật
@@ -735,7 +769,22 @@ router.delete('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPAT
         }
 
         // Xóa các order và lấy lại để gửi thông báo
-        const ordersToDelete = await Order.find({ _id: { $in: ids } }).select('assignedTo').lean();
+        const ordersToDelete = await Order.find({ _id: { $in: ids } })
+            .populate('createdBy', 'fullName _id')
+            .populate('assignedTo', 'fullName _id')
+            .lean();
+        let error = []
+        if (user?.role !== ROLE.ADMIN) {
+            for (let orderDelete of ordersToDelete) {
+                if (![orderDelete?.createdBy?._id].includes(user?._id)) {
+                    error.push(orderDelete?.assignedTo?.fullName)
+                }
+            }
+        }
+        if (error.length > 0) {
+            req.logger.warn(`⚠️ ${user?.fullName} không có quyền thực hiện thao tác này.`);
+            return res.status(403).send({ status: 'error', message: `Bạn không có quyền xóa lệnh sản xuất của ${error.join(', ')}` });
+        }
         const result = await Order.deleteMany({ _id: { $in: ids } });
 
         if (result.deletedCount === 0) {
@@ -753,7 +802,7 @@ router.delete('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPAT
                 title: "Xóa lệnh",
                 message: "Xóa lệnh",
                 type: "order",
-                recipient: order.assignedTo,
+                recipient: order.assignedTo?._id,
                 sender: req.userId
             });
         });
@@ -777,11 +826,21 @@ router.delete('/:id', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DIS
         const user = req.user
         req.logger.info(`✅ ${user?.username} bắt đầu xóa lệnh`);
 
-        const order = await Order.findByIdAndDelete(req.params.id).populate('shiftReport');
+        const order = await Order.findByIdAndDelete(req.params.id)
+            .populate('createdBy', '_id')
+            .populate('assignedTo', '_id')
+            .populate('shiftReport');
 
         if (!order) {
             req.logger.warn("⚠️ Lỗi 404 - Không tìm thấy lệnh để xóa.");
             return res.status(404).send({ status: 'error', message: 'Không tìm thấy bản ghi để xóa' });
+        }
+
+        if (user?.role !== ROLE.ADMIN) {
+            if (![order?.createdBy?._id].includes(user?._id)) {
+                req.logger.warn(`⚠️ ${user?.fullName} không có quyền thực hiện thao tác này.`);
+                return res.status(403).send({ status: 'error', message: `Bạn không có quyền thực hiện thao tác này.` });
+            }
         }
 
         if (order.shiftReport) {

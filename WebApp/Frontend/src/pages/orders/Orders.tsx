@@ -48,7 +48,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import { AlertSnackbar, showConfirmAlert, showErrorAlert, showSuccessAlert } from '../../components/Alert';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
-import { DataGrid, GridColDef, GridRenderCellParams, GridToolbar } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridFilterPanel, GridRenderCellParams, GridToolbar } from '@mui/x-data-grid';
 import { StyledPopper } from '../../ui/poppers';
 import { JobTypeEnum, RoleEnum, StatusOrderEnum } from '../../enums/index';
 import OrderHistories from '../../components/Modal/OrderHistories';
@@ -56,6 +56,17 @@ import ShiftReport from '../../components/Modal/ShiftReport';
 import DepartmentService from '../../services/departmentService';
 import OrderService from '../../services/orderService';
 import { parseAxiosError } from '../../utils/handleApiError';
+import { viVN } from "@mui/x-data-grid/locales";
+const CustomFilterPanel = (props: any) => {
+    return (
+        <GridFilterPanel
+            {...props}
+            filterFormProps={{
+                operatorInputProps: { disabled: true, style: { display: "none" } },
+            }}
+        />
+    );
+};
 
 const Orders: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -897,17 +908,9 @@ const Orders: React.FC = () => {
                         initialState={{
                             density: "compact"
                         }}
-                        slots={{ toolbar: GridToolbar }}
-                        localeText={{
-                            toolbarColumns: 'Cột',
-                            toolbarFilters: 'Bộ lọc',
-                            toolbarDensity: 'Mật độ',
-                            toolbarExport: 'Xuất dữ liệu',
-                        }}
+                        slots={{ toolbar: GridToolbar, filterPanel: CustomFilterPanel }}
+                        localeText={viVN.components.MuiDataGrid.defaultProps.localeText}
                         slotProps={{
-                            filterPanel: {
-                                disableAddFilterButton: false,
-                            },
                             toolbar: {
                                 csvOptions: { disableToolbarButton: true },
                                 printOptions: { disableToolbarButton: true },

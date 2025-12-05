@@ -4,9 +4,12 @@ import {
     GridColDef,
     GridToolbar,
     GridRowSelectionModel,
+    GridFilterPanel,
 } from "@mui/x-data-grid";
 import { Paper } from "@mui/material";
 import type { GridRenderCellParams } from "@mui/x-data-grid";
+import { viVN } from "@mui/x-data-grid/locales";
+
 
 interface ColumnDef {
     resizable?: boolean;
@@ -33,6 +36,16 @@ interface CustomDataGridProps {
     sx?: any;
 }
 
+const CustomFilterPanel = (props: any) => {
+    return (
+        <GridFilterPanel
+            {...props}
+            filterFormProps={{
+                operatorInputProps: { disabled: true, style: { display: "none" } },
+            }}
+        />
+    );
+};
 const CustomDataGrid: React.FC<CustomDataGridProps> = ({
     rows,
     defaultColumns,
@@ -59,12 +72,13 @@ const CustomDataGrid: React.FC<CustomDataGridProps> = ({
     ];
 
     return (
-        <Paper sx={{ width: "100%", overflowX: "auto",}}>
+        <Paper sx={{ width: "100%", overflowX: "auto", }}>
             <DataGrid
                 rows={rows}
                 columns={columns}
                 getRowId={(row) => (getRowId ? getRowId(row) : (row._id ?? row.id))}
                 pageSizeOptions={[10, 20, 50]}
+                localeText={viVN.components.MuiDataGrid.defaultProps.localeText}
                 autoHeight
                 disableRowSelectionOnClick
                 checkboxSelection={isAdmin}
@@ -78,13 +92,13 @@ const CustomDataGrid: React.FC<CustomDataGridProps> = ({
                     density: "compact"
                 }}
                 loading={isLoading}
-                slots={{ toolbar: GridToolbar }}
+                slots={{ toolbar: GridToolbar, filterPanel: CustomFilterPanel }}
                 disableVirtualization={true}
-                localeText={{
-                    toolbarColumns: "Cột",
-                    toolbarFilters: "Bộ lọc",
-                    toolbarDensity: "Mật độ",
-                }}
+                // localeText={{
+                //     toolbarColumns: "Cột",
+                //     toolbarFilters: "Bộ lọc",
+                //     toolbarDensity: "Mật độ",
+                // }}
                 slotProps={{
                     filterPanel: { disableAddFilterButton: false },
                     toolbar: {

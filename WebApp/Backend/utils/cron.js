@@ -2,6 +2,8 @@ const cron = require('node-cron')
 const Report = require('../models/Report')
 const Order = require('../models/Order')
 const Shift = require('../models/Shift')
+const Report = require('../models/Report')
+
 
 const Job = require('../models/Job')
 const TravelLog = require('../models/TravelLog')
@@ -47,31 +49,23 @@ function getPreviousShiftAndDate(currentShift) {
     return null;
 }
 
-async function notifyPendingOrders(orders) {
-    for (let order of orders) {
-        const tokens = order?.assignedTo?.deviceTokens || [];
-        await Promise.all(tokens.map(t =>
-            sendPushNotification(t, "Bạn có lệnh mới cần nhận", "Vui lòng kiểm tra và nhận lệnh.")
-        ));
-        if (order?.assignedTo?.email) {
-            await sendShiftNotification(order?.assignedTo, order, "receive");
-        }
-    }
+async function notifyOrders(order, type) {
+    const tokens = order?.assignedTo?.deviceTokens || [];
+    await Promise.all(tokens.map(t =>
+        sendPushNotification(t,
+            type === "pending" ? "Bạn có lệnh mới cần nhận"
+                : type === "shiftReport" ? "Nhắc báo công"
+                    : type === "report" ? "Nhắc báo chuyến/sản lượng"
+                        : "Nhắc kết thúc ca",
+            type === "pending" ? "Vui lòng kiểm tra và nhận lệnh."
+                : type === "shiftReport" ? "Ca trước vẫn chưa báo công. Vui lòng hoàn thành."
+                    : type === "report" ? "Ca trước vẫn chưa báo chuyến/ sản lượng. Vui lòng hoàn thành."
+                        : "Ca trước vẫn còn lệnh chưa hoàn thành. Vui lòng hoàn thành.")
+    ));
 }
 
-async function notifyShiftEnding(orders) {
-    for (let order of orders) {
-        const tokens = order?.assignedTo?.deviceTokens || [];
-        await Promise.all(tokens.map(t =>
-            sendPushNotification(t, "Nhắc kết thúc ca", "Ca trước vẫn còn lệnh chưa hoàn thành.")
-        ));
-        if (order?.assignedTo?.email) {
-            await sendShiftNotification(order?.assignedTo, order, "finish");
-        }
-    }
-}
 
-cron.schedule('49 7,15,20 * * *', async () => {
+cron.schedule('15 7,15,23 * * *', async () => {
     console.log("🔔 Bắt đầu Cron kiểm tra lệnh...");
 
     try {
@@ -90,10 +84,14 @@ cron.schedule('49 7,15,20 * * *', async () => {
             workingDate: todayUTC,
             status: STATUS_ORDER.PENDING,
             cancel: false
-        }).populate("assignedTo", "email fullName deviceTokens").populate('shift');
+        })
+            .populate('shiftReport')
+            .populate("assignedTo", "email fullName deviceTokens").populate('shift');
+        //thong bao toi nhan vien
 
-        console.log(`📌 Ca ${currentShift} có ${ordersCurrent.length} lệnh chưa nhận.`);
-        await notifyPendingOrders(ordersCurrent);
+        for (let order of ordersCurrent) {
+            await notifyOrders(order, "pending");
+        }
 
 
         // --- Lệnh PENDING của ca trước (nhắc kết thúc ca)
@@ -105,10 +103,27 @@ cron.schedule('49 7,15,20 * * *', async () => {
             workingDate: prevInfo.date,
             status: { $in: [STATUS_ORDER.PENDING, STATUS_ORDER.INPROGRESS] },
             cancel: false
-        }).populate("assignedTo", "email fullName deviceTokens").populate('shift');
+        })
+            .populate('job', 'type')
+            .populate("assignedTo", "email fullName deviceTokens").populate('shift');
 
-        console.log(`📌 Ca trước (${prevInfo.shift}) còn ${ordersPrev.length} lệnh chưa hoàn thành.`);
-        await notifyShiftEnding(ordersPrev);
+        //thong bao toi nhan vien
+        for (let order of ordersPrev) {
+            if (order.status === STATUS_ORDER.INPROGRESS) {
+                if ([JOB_TYPE.VAN_HANH_XE, JOB_TYPE.VAN_HANH_GAT, JOB_TYPE.VAN_HANH_KHOAN, JOB_TYPE.VAN_HANH_XE_PHUC_VU, JOB_TYPE.VAN_HANH_XUC].includes(order?.job?.type)) {
+                    const countReport = await Report.countDocuments({ orderId: order._id })
+                    if (countReport === 0) {
+                        await notifyOrders(order, "report");
+                    }
+                } else if (!order.shiftReport) {
+                    await notifyOrders(order, "shiftReport");
+                } else {
+                    await notifyOrders(order, "completed");
+                }
+            } else {
+                await notifyOrders(order, "completed");
+            }
+        }
 
     } catch (error) {
         console.error("[CRON ERROR]", error);
