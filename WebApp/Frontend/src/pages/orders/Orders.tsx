@@ -421,7 +421,7 @@ const Orders: React.FC = () => {
         },
         {
             headerName: 'Kết thúc', field: 'endTime', width: 80, align: 'center',
-            renderCell: (params: any) => params.row.endTime ? format(new Date(params.row.endTime), 'HH:mm:ss') : '',
+            renderCell: (params: any) => params.row.endTime ? format(new Date(params.row.endTime), 'dd/MM/yyyy HH:mm:ss') : '',
             filterable: false
         },
         {
