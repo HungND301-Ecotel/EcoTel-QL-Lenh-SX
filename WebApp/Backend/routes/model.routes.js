@@ -3,6 +3,9 @@ const router = express.Router();
 const { verifyToken, restrictTo } = require('../middleware/auth.middleware');
 const Model = require('../models/Model');
 const { ROLE } = require('../config/config');
+const {
+    runProductionUpdateBackground
+} = require('../utils/cron')
 
 
 router.post('/bulk-upsert', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req, res) => {
@@ -97,6 +100,14 @@ router.post('/bulk-upsert', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), a
         }
 
         if (ops.length > 0) await Model.bulkWrite(ops);
+
+        const selected = new Date();
+        // Các logic về ngày tháng giữ nguyên
+        const selectedDate = new Date(selected.getFullYear(), selected.getMonth(), selected.getDate(), 23, 59, 59, 999);
+        const startOfMonth = new Date(selected.getFullYear(), selected.getMonth(), 1, 0, 0, 0, 0);
+        let query = { workingDate: { $gte: startOfMonth, $lte: selectedDate } };
+
+        runProductionUpdateBackground(req, query)
 
         req.logger.info(`🔥 ${user?.username} bulk upsert ${ops.length} thay đổi`);
         res.status(200).send({ status: 'success', message: `Cập nhật mô hình thành công (${ops.length} thay đổi)` });

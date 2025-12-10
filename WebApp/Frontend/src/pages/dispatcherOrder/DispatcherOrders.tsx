@@ -893,7 +893,7 @@ const DispatcherOrders: React.FC = () => {
                                                                 textOverflow: 'ellipsis',
                                                                 maxWidth: 80,
                                                             }}>
-                                                                {order.endTime ? format(new Date(order.endTime), 'HH:mm:ss') : ''}
+                                                                {order.endTime ? format(new Date(order.endTime), 'dd/MM/yyyy HH:mm:ss') : ''}
                                                             </TableCell>}
 
                                                             {visibleColumns.includes('status') && <TableCell align='center' sx={{

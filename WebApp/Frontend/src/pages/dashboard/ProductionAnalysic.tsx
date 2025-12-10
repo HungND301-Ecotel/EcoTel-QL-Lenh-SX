@@ -24,7 +24,7 @@ import { useAtom } from 'jotai';
 import { userAtom } from '../../atoms/userAtoms';
 import { BarChart, RotateLeft } from '@mui/icons-material';
 import VehicleProductionChart from '../../components/VehicleProductionChart';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../../config/api.config';
 import { Typography } from 'antd';
 import { AlertSnackbar } from '../../components/Alert';
@@ -124,6 +124,19 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
         refetchInterval: 2 * 60 * 1000,    // ✅ Tự động gọi lại API mỗi 2 phút
         placeholderData: excavatorCache || undefined,
     });
+    const queryClient = useQueryClient()
+    const caculate = useMutation({
+        mutationFn: () => api.get(`/analysics/caculate?date=${date?.format('YYYY-MM-DD') || ''}`),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['analysicsVHX'] })
+            queryClient.invalidateQueries({ queryKey: ['analysicsVHXE'] })
+            queryClient.invalidateQueries({ queryKey: ['analysicsVHK'] })
+            setAlert({ open: true, message: 'Cập nhật sản lượng thành công', severity: 'success' });
+        },
+        onError: () => {
+            setAlert({ open: true, message: 'Cập nhật sản lượng thất bại', severity: 'error' });
+        }
+    })
 
     // ✅ Tổng hợp dữ liệu và trạng thái loading
     const analysicsData = useMemo(() => {
@@ -206,14 +219,7 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
                                                 top: '50%',
                                                 transform: 'translateY(-50%)',
                                             }}
-                                            onClick={async () => {
-                                                try {
-                                                    await Promise.all([refetchDrilling(), refetchExcavator(), refetchVehicle()]);
-                                                    setAlert({ open: true, message: 'Cập nhật thành công', severity: 'success' });
-                                                } catch (e) {
-                                                    setAlert({ open: true, message: 'Cập nhật thất bại', severity: 'error' });
-                                                }
-                                            }}
+                                            onClick={() => caculate.mutate()}
                                             disabled={isLoading}
                                         >
                                             {isLoading ? (
