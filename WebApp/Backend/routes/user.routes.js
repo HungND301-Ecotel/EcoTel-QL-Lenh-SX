@@ -545,7 +545,8 @@ router.patch('/migrate_role', async (req, res) => {
         });
 
         // 2. Lấy user có role dạng string
-        const users = await User.find({ role: { $type: "string" } });
+        const users = await User.find({ role: { $type: "string" } }).lean();
+        console.log(users)
         if (!users.length) {
             return res.status(200).json({
                 status: "success",

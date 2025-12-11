@@ -4,6 +4,7 @@ const Order = require('../models/Order');
 const Role = require('../models/Role');
 
 const ShiftReport = require('../models/ShiftReport');
+const Report = require('../models/Report');
 const Notification = require('../models/Notification');
 
 const History = require('../models/History');
@@ -506,7 +507,8 @@ router.put('/:id', verifyToken, async (req, res, next) => {
             req.logger.warn("⚠️ Lỗi 404 - Không tìm thấy lệnh với ID này.");
             return res.status(404).send({ status: 'error', message: 'Không tìm thấy lệnh với ID này.' });
         }
-
+        console.log(order?.createdBy?._id, order?.assignedTo?._id)
+        console.log(user?._id)
         if (user?.role !== ROLE.ADMIN) {
             if (![order?.createdBy?._id, order?.assignedTo?._id].includes(user?._id)) {
                 req.logger.warn(`⚠️ ${user?.fullName} không có quyền thực hiện thao tác này.`);
@@ -592,12 +594,29 @@ router.put('/:id', verifyToken, async (req, res, next) => {
             case STATUS_ORDER.COMPLETED:
                 updateObject.endTime = new Date();
                 updateObject.status = status;
+                const type = order.job?.type.toLowerCase();
+                if (type &&
+                    [
+                        JOB_TYPE.VAN_HANH_XE,
+                        JOB_TYPE.VAN_HANH_XUC,
+                        JOB_TYPE.VAN_HANH_XE_PHUC_VU,
+                        JOB_TYPE.VAN_HANH_KHOAN,
+                        JOB_TYPE.VAN_HANH_GAT,
+                    ].map(j => j.toLowerCase())
+                        .includes(type)) {
+                    const reports = await Report.find({ orderId: order._id });
+                    if (reports.length === 0) {
+                        return res.status(400).json({ message: "Không thể hoàn thành lệnh khi chưa báo chuyến/ sản lượng." });
+                    }
+                }
+                if (!order.shiftReport) {
+                    return res.status(400).json({ message: "Không thể hoàn thành lệnh khi chưa có báo công." });
+                }
                 if (order.device && order.device.length > 0) {
                     const lastDeviceId = order.device[order.device.length - 1];
-                    req.logger.info(`    - Giải phóng phương tiện cuối cùng: ${lastDeviceId}`);
+                    req.logger.info(`- Giải phóng phương tiện cuối cùng: ${lastDeviceId}`);
 
-                    if (order.job?.type) {
-                        const type = order.job.type.toLowerCase();
+                    if (type) {
                         if (
                             [
                                 JOB_TYPE.VAN_HANH_XE,
@@ -826,7 +845,7 @@ router.delete('/:id', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DIS
         const user = req.user
         req.logger.info(`✅ ${user?.username} bắt đầu xóa lệnh`);
 
-        const order = await Order.findByIdAndDelete(req.params.id)
+        const order = await Order.findById(req.params.id)
             .populate('createdBy', '_id')
             .populate('assignedTo', '_id')
             .populate('shiftReport');
@@ -842,6 +861,7 @@ router.delete('/:id', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DIS
                 return res.status(403).send({ status: 'error', message: `Bạn không có quyền thực hiện thao tác này.` });
             }
         }
+        await Order.findByIdAndDelete(req.params.id);
 
         if (order.shiftReport) {
             await ShiftReport.findByIdAndDelete(order.shiftReport._id);

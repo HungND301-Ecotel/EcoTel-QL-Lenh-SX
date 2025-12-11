@@ -2,7 +2,6 @@ const cron = require('node-cron')
 const Report = require('../models/Report')
 const Order = require('../models/Order')
 const Shift = require('../models/Shift')
-const Report = require('../models/Report')
 
 
 const Job = require('../models/Job')
@@ -10,7 +9,7 @@ const TravelLog = require('../models/TravelLog')
 const { safeQuery, caculatorWeight } = require("./reportGrouping")
 const { ROLE, JOB_TYPE, STATUS_ORDER } = require('../config/config');
 const sendPushNotification = require('./sendNotification')
-const { sendShiftNotification } = require('./email')
+const { sendCombinedNotification } = require('./email')
 
 
 
@@ -64,8 +63,24 @@ async function notifyOrders(order, type) {
     ));
 }
 
+const allOrdersByCreatedBy = {};
 
-cron.schedule('15 7,15,23 * * *', async () => {
+// Hàm hỗ trợ thêm lệnh vào nhóm
+const addOrderToGroup = (order, reminderType) => {
+    const createdById = order.createdBy?._id?.toString();
+    if (createdById && order.createdBy?.email) {
+        // Sử dụng .toObject() để đảm bảo object có thể thêm property mới
+        const orderData = { ...order.toObject(), reminderType: reminderType };
+        if (!allOrdersByCreatedBy[createdById]) {
+            allOrdersByCreatedBy[createdById] = {
+                user: order.createdBy, // Lưu thông tin cán bộ
+                orders: []
+            };
+        }
+        allOrdersByCreatedBy[createdById].orders.push(orderData);
+    }
+};
+cron.schedule('12 7,15,23 * * *', async () => {
     console.log("🔔 Bắt đầu Cron kiểm tra lệnh...");
 
     try {
@@ -86,11 +101,15 @@ cron.schedule('15 7,15,23 * * *', async () => {
             cancel: false
         })
             .populate('shiftReport')
-            .populate("assignedTo", "email fullName deviceTokens").populate('shift');
+            .populate('job', 'type name')
+            .populate("createdBy", "email fullName deviceTokens")
+            .populate("assignedTo", "email fullName deviceTokens salaryCode").populate('shift');
         //thong bao toi nhan vien
 
         for (let order of ordersCurrent) {
             await notifyOrders(order, "pending");
+
+            addOrderToGroup(order, "pending");
         }
 
 
@@ -104,26 +123,37 @@ cron.schedule('15 7,15,23 * * *', async () => {
             status: { $in: [STATUS_ORDER.PENDING, STATUS_ORDER.INPROGRESS] },
             cancel: false
         })
-            .populate('job', 'type')
-            .populate("assignedTo", "email fullName deviceTokens").populate('shift');
+            .populate('job', 'type name')
+            .populate("createdBy", "email fullName deviceTokens")
+            .populate("assignedTo", "email fullName deviceTokens salaryCode").populate('shift');
 
         //thong bao toi nhan vien
         for (let order of ordersPrev) {
+            let reminderType = "completed";
             if (order.status === STATUS_ORDER.INPROGRESS) {
                 if ([JOB_TYPE.VAN_HANH_XE, JOB_TYPE.VAN_HANH_GAT, JOB_TYPE.VAN_HANH_KHOAN, JOB_TYPE.VAN_HANH_XE_PHUC_VU, JOB_TYPE.VAN_HANH_XUC].includes(order?.job?.type)) {
                     const countReport = await Report.countDocuments({ orderId: order._id })
                     if (countReport === 0) {
                         await notifyOrders(order, "report");
+                        reminderType = "report";
                     }
                 } else if (!order.shiftReport) {
                     await notifyOrders(order, "shiftReport");
+                    reminderType = "shiftReport";
                 } else {
                     await notifyOrders(order, "completed");
                 }
             } else {
                 await notifyOrders(order, "completed");
             }
+            addOrderToGroup(order, reminderType);
         }
+
+        const emailPromises = Object.values(allOrdersByCreatedBy).map(group => {
+            return sendCombinedNotification(group.user, group.orders); // <-- Gửi 1 email cho 1 cán bộ
+        });
+
+        await Promise.all(emailPromises);
 
     } catch (error) {
         console.error("[CRON ERROR]", error);
