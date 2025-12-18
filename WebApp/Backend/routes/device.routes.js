@@ -440,7 +440,7 @@ router.delete('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req
     }
 });
 
-router.get('/count/status', async (req, res, next) => {
+router.get('/count/status', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
     try {
         const user = req.user
         const query = {}
