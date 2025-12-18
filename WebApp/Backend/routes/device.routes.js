@@ -440,7 +440,7 @@ router.delete('/', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN), async (req
     }
 });
 
-router.get('/count/status', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER), async (req, res, next) => {
+router.get('/count/status', async (req, res, next) => {
     try {
         const user = req.user
         const query = {}
@@ -457,7 +457,10 @@ router.get('/count/status', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, RO
 
         const departments = await Department.find(queryDept)
             .collation({ locale: "vi", strength: 1 })
-            .sort({ code: 1 });
+            .sort({
+                createdAt: 1,
+                code: 1,
+            });
         let devices = await Device.find(query)
             .populate("department")
             .populate({
@@ -514,7 +517,7 @@ router.get('/count/status', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, RO
                 deviceTypes: Array.from(typesMap.values())
             });
         }
-
+        data = data.slice(0, 15);
         req.logger.info(`🔥 Load thành công`);
         res.status(200).json({ status: 'success', data });
 
