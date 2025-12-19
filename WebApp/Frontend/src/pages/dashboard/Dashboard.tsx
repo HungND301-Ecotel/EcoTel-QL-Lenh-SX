@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
     Grid,
@@ -38,7 +38,32 @@ const DashBoard: React.FC = () => {
         queryFn: () => api.get('/devices').then(res => res.data.data),
     });
 
+    const oldestDepartments = useMemo(() => {
+        const map = new Map<string, any>();
 
+        devices.forEach((d: any) => {
+            if (d.department?._id && !map.has(d.department?._id)) {
+                map.set(d.department?._id, d?.department);
+            }
+        });
+
+        return Array.from(map.values())
+            .sort(
+                (a: any, b: any) =>
+                    new Date(a?.createdAt).getTime() - new Date(b?.createdAt).getTime()
+            )
+            .slice(0, 15);
+    }, [devices]);
+
+    const oldestDepartmentIds = useMemo(
+        () => new Set(oldestDepartments.map((d: any) => d._id)),
+        [oldestDepartments]
+    );
+
+    const filteredDevices = useMemo(
+        () => devices.filter((d: any) => oldestDepartmentIds.has(d.department?._id)),
+        [devices, oldestDepartmentIds]
+    );
 
     return (
         <Box sx={{ p: 4, bgcolor: '#f5f7fa', minHeight: '100vh' }}>
@@ -46,20 +71,20 @@ const DashBoard: React.FC = () => {
                 <Grid item xs={12} sm={6}>
                     <SummaryCardDevice
                         title="Thông tin máy"
-                        value={devices.filter((d: any) => d.category?.group === DeviceTypeEnum.MACHINE).length}
+                        value={filteredDevices.filter((d: any) => d.category?.group === DeviceTypeEnum.MACHINE).length}
                         icon={<Construction />}
                         color="#e4d52cff"
-                        data={devices.filter((d: any) => d.category?.group === DeviceTypeEnum.MACHINE)}
+                        data={filteredDevices.filter((d: any) => d.category?.group === DeviceTypeEnum.MACHINE)}
                         type={DeviceTypeEnum.MACHINE}
                     />
                 </Grid>
                 <Grid item xs={12} sm={6}>
                     <SummaryCardDevice
                         title="Thông tin xe"
-                        value={devices.filter((d: any) => d.category?.group === DeviceTypeEnum.VEHICLE).length}
+                        value={filteredDevices.filter((d: any) => d.category?.group === DeviceTypeEnum.VEHICLE).length}
                         icon={<DirectionsCar />}
                         color="#f34f21ff"
-                        data={devices.filter((d: any) => d.category?.group === DeviceTypeEnum.VEHICLE)}
+                        data={filteredDevices.filter((d: any) => d.category?.group === DeviceTypeEnum.VEHICLE)}
                         type={DeviceTypeEnum.VEHICLE}
                     />
                 </Grid>
