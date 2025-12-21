@@ -35,7 +35,7 @@ router.post('/', verifyToken, async (req, res, next) => {
             { path: "excavator", select: "code" },
             { path: "fromLocation", select: "name" },
             { path: "toLocation", select: "name" },
-            { path: "material", select: "name" }
+            { path: "material", select: "name acceptedProduct" }
         ]);
         const result = await caculate(newReport)
         newReport.totalProduction = result.totalProduction;
@@ -144,7 +144,7 @@ router.put('/:id', verifyToken, async (req, res) => {
             { path: 'excavator', select: 'code' },
             { path: 'fromLocation', select: 'name' },
             { path: 'toLocation', select: 'name' },
-            { path: 'material', select: 'name' }
+            { path: 'material', select: 'name acceptedProduct' }
         ]);
 
         // 4️⃣ Tính toán lại sau cập nhật
@@ -178,7 +178,7 @@ router.put('/update/:id', verifyToken, async (req, res) => {
             { path: 'excavator', select: 'code' },
             { path: 'fromLocation', select: 'name' },
             { path: 'toLocation', select: 'name' },
-            { path: 'material', select: 'name' }
+            { path: 'material', select: 'name acceptedProduct' }
         ]);
 
         // 4️⃣ Tính toán lại sau cập nhật
@@ -205,7 +205,7 @@ router.put('/:id/add-trip-time', verifyToken, async (req, res) => {
                 path: "device",
                 select: "code material",
             })
-            .populate("material", "name")
+            .populate("material", "name acceptedProduct")
             .populate("excavator", "code")
             .populate("fromLocation", "name")
             .populate("toLocation", "name");
@@ -239,7 +239,7 @@ router.put('/:id/remove-trip-time/:timeIndex', verifyToken, async (req, res) => 
                 path: "device",
                 select: "code material",
             })
-            .populate("material", "name")
+            .populate("material", "name acceptedProduct")
             .populate("excavator", "code")
             .populate("fromLocation", "name")
             .populate("toLocation", "name");

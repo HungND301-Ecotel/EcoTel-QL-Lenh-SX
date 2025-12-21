@@ -41,7 +41,7 @@ import { useAtom } from "jotai";
 import { userAtom } from "../../../atoms/userAtoms";
 import { trvelLogValidationSchema } from "../../../utils/validation";
 import TravelLogService from "../../../services/travelLogService";
-import { RoleEnum } from "../../../enums";
+import { AcceptedProductEnum, RoleEnum } from "../../../enums";
 import { getFormikFieldProps } from "../../../utils/helper";
 import { StyledPopper } from "../../../ui/poppers";
 import { parseAxiosError } from "../../../utils/handleApiError";
@@ -280,8 +280,8 @@ const Internals: React.FC<props> = ({ type }) => {
             shift: undefined,
             area: "",
             location: undefined,
-            material: undefined,
-            excavationLevel: "",
+            acceptedProduct: AcceptedProductEnum.LAND,
+            excavationLevel: '',
             dumpHeightActual: "",
             fullDistanceKm: undefined as number | undefined,
             fullLiftHeightM: undefined as number | undefined,
@@ -299,7 +299,7 @@ const Internals: React.FC<props> = ({ type }) => {
                 shift: values.shift,
                 area: values.area,
                 location: values.location,
-                material: values.material,
+                acceptedProduct: values.acceptedProduct,
                 excavationLevel: values.excavationLevel,
                 dumpHeightActual: values.dumpHeightActual,
                 fullDistanceKm: values.fullDistanceKm,
@@ -342,10 +342,7 @@ const Internals: React.FC<props> = ({ type }) => {
                     typeof travellog.location === "object"
                     ? travellog.location._id
                     : travellog.location || undefined,
-                material: travellog.material !== null &&
-                    typeof travellog.material === "object"
-                    ? travellog.material._id
-                    : travellog.material || undefined,
+                acceptedProduct: travellog.acceptedProduct,
                 excavationLevel: travellog.excavationLevel,
                 dumpHeightActual: travellog.dumpHeightActual,
                 fullDistanceKm: travellog.fullDistanceKm,

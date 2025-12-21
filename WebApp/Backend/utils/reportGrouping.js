@@ -36,7 +36,8 @@ async function groupTripsVehicle(trips, date, shift) {
             excavator: t.excavator?._id,
             location: t.toLocation?._id,
             workingDate: date,
-            shift: shift?._id
+            shift: shift?._id,
+            acceptedProduct: t.material?.acceptedProduct
         }).lean();
 
         const timeLogPromises = timesArray.map(async (time) => {
@@ -87,7 +88,8 @@ async function groupTripsVehicleProduction(trips) {
                         excavator: t.excavator?._id,
                         location: t.toLocation?._id,
                         workingDate: t.workingDate,
-                        shift: t.shift?._id
+                        shift: t.shift?._id,
+                        acceptedProduct: t.material?.acceptedProduct
                     }).lean()
                 );
 
@@ -494,7 +496,8 @@ async function groupProduction(reports, shiftReport) {
             excavator: r.excavator?._id,
             location: r.toLocation?._id,
             workingDate: r.workingDate,
-            shift: r.shift
+            shift: r.shift,
+            acceptedProduct: t.material?.acceptedProduct
         });
 
         const updateTimes = (r.quantityUpdateTimes || []).length;
@@ -587,7 +590,8 @@ async function groupTripsCar(trips) {
                 excavator: t.excavator?._id,
                 location: t.toLocation?._id,
                 workingDate: t.workingDate,
-                shift: t.shift?._id
+                shift: t.shift?._id,
+                acceptedProduct: t.material?.acceptedProduct
             }).lean()
 
 
@@ -639,7 +643,8 @@ async function groupCar(trips) {
                 excavator: t.excavator?._id,
                 location: t.toLocation?._id,
                 workingDate: t.workingDate,
-                shift: t.shift?._id
+                shift: t.shift?._id,
+                acceptedProduct: t.material?.acceptedProduct
             }).lean()
 
             const distance = travelLog ? travelLog.fullDistanceKm : 0;
@@ -766,9 +771,6 @@ async function caculatorWeight(materialId, deviceModel, quantity, totalDistance,
     const dryDensity = getTyTrongAtDate(material, normalizeDateToUTC(date))
     const valueModel = getMohinhAtDate(data, normalizeDateToUTC(date))
 
-    console.log(dryDensity, valueModel, material?.name)
-
-
 
     if (data && data.material?.acceptedProduct === ACCEPTED_PRODUCT.COAL) {
         ton = valueModel * (quantity || 0) * dryDensity
@@ -801,7 +803,6 @@ function getTyTrongAtDate(material, date) {
         const end = new Date(h.endTime);
 
         if (target >= start && target <= end) {
-            console.log("a", h.dryDensity)
             return h.dryDensity ?? 0;
         }
     }

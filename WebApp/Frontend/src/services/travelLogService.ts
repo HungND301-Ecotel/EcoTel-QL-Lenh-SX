@@ -21,9 +21,10 @@ const TravelLogService = {
     },
     importFile: async (
         formData: FormData,
-        onProgress?: (percent: number) => void
+        onProgress?: (percent: number) => void,
+        type?: string
     ) => {
-        const res = await api.post("/travellogs/importFile", formData, {
+        const res = await api.post(`/travellogs/importFile?type=${type}`, formData, {
             headers: { "Content-Type": "multipart/form-data" },
             onUploadProgress: (e) => {
                 if (!onProgress) return;

@@ -45,6 +45,7 @@ async function update_production_report(orders) {
                 // Gọi hàm tính toán ASYNC, việc này sẽ chạy song song
                 // với các report khác trong cùng một Order
                 const value = await production_vehicle(report);
+
                 totalProduction = value.production
                 totalCubicMeter = value.cubicMeter
                 totalTon = value.ton
@@ -159,7 +160,7 @@ async function getReports(order) {
                 path: "device",
                 select: "code material",
             })
-            .populate("material", "name")
+            .populate("material", "name acceptedProduct")
             .populate("excavator", "code")
             .populate("fromLocation", "name")
             .populate("toLocation", "name")
@@ -187,9 +188,9 @@ async function production_vehicle(t) {
         excavator: t.excavator?._id,
         location: t.toLocation?._id,
         workingDate: t.workingDate,
-        shift: t.shift?._id
+        shift: t.shift?._id,
+        acceptedProduct: t.material?.acceptedProduct
     }).lean();
-
     const distance = travelLog ? travelLog.fullDistanceKm || 0 : 0;
 
     const timeLogPromises = timesArray.map(async (time) => {
