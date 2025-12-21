@@ -116,6 +116,10 @@ router.put('/:id', verifyToken, async (req, res, next) => {
 });
 router.get('/', verifyToken, async (req, res) => {
     try {
+        const page = parseInt(req.query.page) || 1;
+        const pageSize = parseInt(req.query.limit) || 50;
+        const skip = (page - 1) * pageSize;
+
         const match = {};
 
         // --- Lọc theo ngày ---
@@ -166,12 +170,39 @@ router.get('/', verifyToken, async (req, res) => {
                 }
             },
             { $unwind: { path: "$location", preserveNullAndEmptyArrays: true } },
-            { $sort: { workingDate: -1 } }
+            {
+                $sort: {
+                    "workingDate": -1,
+                    "shift.name": -1,
+                    "excavator.code": 1,
+                }
+            },
+            {
+                $facet: {
+                    // Luồng 1: Lấy dữ liệu (Data)
+                    data: [
+                        { $skip: skip },
+                        { $limit: pageSize }
+                    ],
+                    // Luồng 2: Đếm tổng số bản ghi (Pagination Metadata)
+                    pagination: [
+                        { $count: "total" }
+                    ]
+                }
+            }
         ]);
 
+        const dataList = result[0].data;
+        const totalDocs = result[0].pagination[0] ? result[0].pagination[0].total : 0;
+        const totalPages = Math.ceil(totalDocs / pageSize);
         res.status(200).send({
             status: "success",
-            data: result
+            data: {
+                items: dataList,
+                totalDocs,
+                pageSize,
+                totalPages
+            }
         });
     } catch (err) {
         req.logger.error("❌ Lỗi", err);
@@ -310,6 +341,48 @@ router.post('/importFile', upload.single('file'), verifyToken, async (req, res) 
         for (const row of dataImport) {
             const { excavator, location, workingDate, shift, ...updateData } = row;
 
+            if (updateData.fullDistanceKm !== undefined && updateData.fullDistanceKm !== null) {
+                let val = Number(updateData.fullDistanceKm);
+
+                if (!isNaN(val)) {
+                    updateData.fullDistanceKm = parseFloat(val.toFixed(3));
+                }
+            }
+            if (updateData.fullLiftHeightM !== undefined && updateData.fullLiftHeightM !== null) {
+                let val = Number(updateData.fullLiftHeightM);
+
+                if (!isNaN(val)) {
+                    updateData.fullLiftHeightM = parseFloat(val.toFixed(3));
+                }
+            }
+            if (updateData.localMinHeightM !== undefined && updateData.localMinHeightM !== null) {
+                let val = Number(updateData.localMinHeightM);
+
+                if (!isNaN(val)) {
+                    updateData.localMinHeightM = parseFloat(val.toFixed(3));
+                }
+            }
+            if (updateData.localMaxHeightM !== undefined && updateData.localMaxHeightM !== null) {
+                let val = Number(updateData.localMaxHeightM);
+
+                if (!isNaN(val)) {
+                    updateData.localMaxHeightM = parseFloat(val.toFixed(3));
+                }
+            }
+            if (updateData.localDistanceKm !== undefined && updateData.localDistanceKm !== null) {
+                let val = Number(updateData.localDistanceKm);
+
+                if (!isNaN(val)) {
+                    updateData.localDistanceKm = parseFloat(val.toFixed(3));
+                }
+            }
+            if (updateData.localLiftHeightM !== undefined && updateData.localLiftHeightM !== null) {
+                let val = Number(updateData.localLiftHeightM);
+
+                if (!isNaN(val)) {
+                    updateData.localLiftHeightM = parseFloat(val.toFixed(3));
+                }
+            }
 
             updateData.acceptedProduct = type
             // Gán ID máy xúc

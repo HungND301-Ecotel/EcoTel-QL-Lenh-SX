@@ -83,7 +83,7 @@ const Coals: React.FC<props> = ({ type }) => {
             key: 'number',
             align: 'center',
             width: 50,
-            render: (_: any, __: any, index: number) => index + 1,
+            render: (_: any, __: any, index: number) => page * pageSize + index + 1,
         },
         {
             title: 'Máy xúc',
@@ -238,7 +238,7 @@ const Coals: React.FC<props> = ({ type }) => {
     });
     useEffect(() => {
         if (data) {
-            setTravelLogs(data.data);
+            setTravelLogs(data.items);
             setTotal(data.totalDocs);
         }
     }, [data]);

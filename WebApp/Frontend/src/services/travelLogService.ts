@@ -5,7 +5,7 @@ import { Device, Location, Job, TravelLog } from "../types";
 const TravelLogService = {
     getAll: async (params?: Record<string, any>): Promise<any> => {
         const res = await api.get('/travellogs', { params });
-        return res.data
+        return res.data.data
     },
     create: async (data: Partial<TravelLog>): Promise<any> => {
         const res = await api.post('/travellogs', data);
