@@ -36,8 +36,8 @@ const productions = [
     { key: 'KLD', name: 'Khối lượng đất thực hiện (m³)' },
     { key: 'TLT', name: 'Trọng lượng than thực hiện (tấn)' },
     { key: 'MKS', name: 'Mét khoan sâu (mks)' },
-    { key: 'SLD', name: 'Sản lượng vận chuyển đất (Tkm)' },
-    { key: 'SLT', name: 'Sản lượng vận chuyển than (tấn)' },
+    { key: 'SLD', name: 'Sản lượng vận chuyển than, đất (Tkm)' },
+    // { key: 'SLT', name: 'Sản lượng vận chuyển than (tấn)' },
     { key: 'TTK', name: 'Thể tích khối thực hiện' },
     { key: 'CD', name: 'Cung độ thực hiện' },
 ];
