@@ -624,7 +624,7 @@ router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
             showErrorMessage: true,
             errorTitle: 'Giá trị không hợp lệ',
         });
-        worksheet.dataValidations.add(`M2:M${MAX}`, {
+        worksheet.dataValidations.add(`L2:L${MAX}`, {
             type: 'list',
             allowBlank: true,
             formulae: [`=$W$2:$W$${shiftList.length + 1}`],
