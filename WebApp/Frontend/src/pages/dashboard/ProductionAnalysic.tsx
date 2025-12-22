@@ -273,21 +273,21 @@ export default function ProductionAnalysic({ departments }: { departments: any[]
                                             <TableCell sx={{ width: '20%' }}>{item.name}</TableCell>
                                             <TableCell align="center" sx={{ width: '10%' }}>
                                                 {
-                                                    Number(ca1).toFixed(1)
+                                                    Number(Number(ca1).toFixed(1)).toLocaleString()
                                                 }
                                             </TableCell>
                                             <TableCell align="center" sx={{ width: '10%' }}>
                                                 {
-                                                    Number(ca2).toFixed(1)
+                                                    Number(Number(ca2).toFixed(1)).toLocaleString()
                                                 }
                                             </TableCell>
                                             <TableCell align="center" sx={{ width: '10%' }}>
                                                 {
-                                                    Number(ca3).toFixed(1)
+                                                    Number(Number(ca3).toFixed(1)).toLocaleString()
                                                 }
                                             </TableCell>
-                                            <TableCell align="center" sx={{ width: '10%' }}>{Number(dayTotal).toFixed(1)}</TableCell>
-                                            <TableCell align="center" sx={{ width: '10%' }}>{Number(cumulativeTotal).toFixed(1)}</TableCell>
+                                            <TableCell align="center" sx={{ width: '10%' }}>{Number(Number(dayTotal).toFixed(1)).toLocaleString()}</TableCell>
+                                            <TableCell align="center" sx={{ width: '10%' }}>{Number(Number(cumulativeTotal).toFixed(1)).toLocaleString()}</TableCell>
                                         </TableRow>
                                     );
                                 })}

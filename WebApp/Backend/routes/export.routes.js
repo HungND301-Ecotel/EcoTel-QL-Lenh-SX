@@ -131,7 +131,7 @@ async function buildVehicle(order, workbook) {
             select: 'code material',
             populate: { path: 'material', selcct: 'name value' }
         })
-        .populate("material", "name")
+        .populate("material", "name acceptedProduct")
         .populate("excavator", "code")
         .populate("fromLocation", "name")
         .populate("toLocation", "name")
@@ -928,7 +928,7 @@ async function buildVehicleService(order, workbook) {
 async function buildExcavator(order, workbook) {
     const reports = await Report.find({ orderId: order._id })
         .populate("device", "code material")
-        .populate("material", "name")
+        .populate("material", "name acceptedProduct")
         .populate("excavator", "code")
         .populate("fromLocation", "name")
         .populate("toLocation", "name")
@@ -1999,7 +1999,7 @@ async function buildMaintence(order, workbook) {
 async function buildDrill(order, workbook) {
     const reports = await Report.find({ orderId: order._id })
         .populate("device", "code")
-        .populate("material", "name")
+        .populate("material", "name acceptedProduct")
         .populate("excavator", "code")
         .populate("fromLocation", "name")
         .populate("toLocation", "name")
@@ -2349,7 +2349,7 @@ async function buildDrill(order, workbook) {
 async function buildDozer(order, workbook) {
     const reports = await Report.find({ orderId: order._id })
         .populate("device", "code")
-        .populate("material", "name")
+        .populate("material", "name acceptedProduct")
         .populate("excavator", "code")
         .populate("fromLocation", "name")
         .populate("toLocation", "name")
@@ -3187,7 +3187,7 @@ router.post('/carReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN,
                         select: 'name'
                     }
                 })
-                .populate('material', 'name')
+                .populate('material', 'name acceptedProduct')
                 .populate('excavator', 'code')
                 .populate('toLocation', 'name')
 
@@ -3384,7 +3384,7 @@ router.post('/carReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE
                                 select: 'name'
                             }
                         })
-                        .populate('material', 'name')
+                        .populate('material', 'name acceptedProduct')
                         .populate('excavator', 'code')
                         .populate('toLocation', 'name')
 
@@ -3680,7 +3680,7 @@ router.post('/excavatorReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.
                         select: 'name'
                     }
                 })
-                .populate('material', 'name density')
+                .populate('material', 'name density acceptedProduct')
             if (!reports.length) continue;
 
             const grouped = await groupExcavator(reports, order.workingDate)
@@ -3864,7 +3864,7 @@ router.post('/excavatorReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN
                                 select: 'name'
                             }
                         })
-                        .populate('material', 'name')
+                        .populate('material', 'name acceptedProduct')
                     if (!reports.length) continue;
 
                     const grouped = await groupExcavator(reports, order.workingDate)
@@ -4148,7 +4148,7 @@ router.post('/dozerReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMI
                         select: 'name'
                     }
                 })
-                .populate('material', 'name')
+                .populate('material', 'name acceptedProduct')
             if (!reports.length) continue;
 
             const grouped = groupDozer(reports)
@@ -4325,7 +4325,7 @@ router.post('/dozerReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, RO
                                 select: 'name'
                             }
                         })
-                        .populate('material', 'name')
+                        .populate('material', 'name acceptedProduct')
                     if (!reports.length) continue;
 
                     const grouped = groupDozer(reports)
@@ -4593,7 +4593,7 @@ router.post('/drillReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMI
                         select: 'name'
                     }
                 })
-                .populate('material', 'name')
+                .populate('material', 'name acceptedProduct')
             if (!reports.length) continue;
 
             const grouped = groupDrill(reports)
@@ -4772,7 +4772,7 @@ router.post('/drillReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, RO
                                 select: 'name'
                             }
                         })
-                        .populate('material', 'name')
+                        .populate('material', 'name acceptedProduct')
                     if (!reports.length) continue;
 
                     const grouped = groupDrill(reports)
@@ -5042,7 +5042,7 @@ router.post(
                             select: "name",
                         },
                     })
-                    .populate("material", "name");
+                    .populate("material", "name acceptedProduct");
                 if (!reports.length) continue;
                 console.log("✍✍✍✍✍✍", reports);
 
@@ -5182,7 +5182,7 @@ router.post(
                                     select: "name",
                                 },
                             })
-                            .populate("material", "name");
+                            .populate("material", "name acceptedProduct");
                         if (!reports.length) continue;
 
                         const grouped = groupTripsExcavator(reports);
@@ -5660,7 +5660,7 @@ router.post('/carTripReport/view', verifyToken, restrictTo(ROLE.MANAGER, ROLE.AD
                         select: 'name'
                     }
                 })
-                .populate('material', 'name')
+                .populate('material', 'name acceptedProduct')
                 .populate('excavator', 'code')
                 .populate('toLocation', 'name')
 
@@ -5792,7 +5792,7 @@ router.post('/carTripReport', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, 
                                 select: 'name'
                             }
                         })
-                        .populate('material', 'name')
+                        .populate('material', 'name acceptedProduct')
                         .populate('excavator', 'code')
                         .populate('toLocation', 'name')
 
@@ -7220,7 +7220,7 @@ async function assignmentManagerData(query) {
     const reports = await Report.find({ orderId: { $in: allOrderIds } })
         .populate("device", "code")
         .populate("excavator", "code")
-        .populate("material", "name")
+        .populate("material", "name acceptedProduct")
         .populate("toLocation", "name");
 
     // -----------------------------
