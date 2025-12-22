@@ -514,7 +514,13 @@ router.post('/exportFile', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROL
                 }
             },
             { $unwind: { path: "$location", preserveNullAndEmptyArrays: true } },
-            { $sort: { workingDate: -1 } }
+            {
+                $sort: {
+                    "workingDate": -1,
+                    "shift.name": -1,
+                    "excavator.code": 1,
+                }
+            },
         ]);
         const devices = await Device.find().populate('category', 'name');
         const excavators = devices.filter(i => i.category?.name.toLowerCase().includes("máy xúc"))
