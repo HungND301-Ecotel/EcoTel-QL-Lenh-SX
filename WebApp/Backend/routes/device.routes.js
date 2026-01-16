@@ -42,7 +42,7 @@ router.get('/', verifyToken, async (req, res, next) => {
         }
 
 
-        if (user.role === ROLE.MANAGER) {
+        if ([ROLE.MANAGER,ROLE.EMPLOYEE].includes(user.role)) {
             query.department = user.department._id;
         }
 
