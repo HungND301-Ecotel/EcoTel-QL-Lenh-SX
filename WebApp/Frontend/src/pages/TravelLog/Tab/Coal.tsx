@@ -48,7 +48,7 @@ import { useAtom } from "jotai";
 import { userAtom } from "../../../atoms/userAtoms";
 import { trvelLogValidationSchema } from "../../../utils/validation";
 import TravelLogService from "../../../services/travelLogService";
-import { RoleEnum } from "../../../enums";
+import { AcceptedProductEnum, RoleEnum } from "../../../enums";
 import { getFormikFieldProps } from "../../../utils/helper";
 import { StyledPopper } from "../../../ui/poppers";
 import { parseAxiosError } from "../../../utils/handleApiError";
@@ -83,7 +83,7 @@ const Coals: React.FC<props> = ({ type }) => {
             key: 'number',
             align: 'center',
             width: 50,
-            render: (_: any, __: any, index: number) => index + 1,
+            render: (_: any, __: any, index: number) => page * pageSize + index + 1,
         },
         {
             title: 'Máy xúc',
@@ -165,12 +165,6 @@ const Coals: React.FC<props> = ({ type }) => {
             render: (_: any, record: any) => record.location?.name
         },
         {
-            title: 'Vật liệu',
-            dataIndex: 'material',
-            key: 'material',
-            render: (_: any, record: any) => record.material?.name
-        },
-        {
             title: 'Ca',
             dataIndex: 'shift',
             key: 'shift',
@@ -227,11 +221,6 @@ const Coals: React.FC<props> = ({ type }) => {
         queryFn: () =>
             api.get("/shifts").then((res) => res.data.data),
     });
-    const { data: materials = [] } = useQuery({
-        queryKey: ["materials"],
-        queryFn: () =>
-            api.get("/materials").then((res) => res.data.data),
-    });
     const { data: locations = [] } = useQuery({
         queryKey: ["locations"],
         queryFn: () => api.get("/locations").then((res) => res.data.data),
@@ -249,7 +238,7 @@ const Coals: React.FC<props> = ({ type }) => {
     });
     useEffect(() => {
         if (data) {
-            setTravelLogs(data.data);
+            setTravelLogs(data.items);
             setTotal(data.totalDocs);
         }
     }, [data]);
@@ -258,7 +247,7 @@ const Coals: React.FC<props> = ({ type }) => {
     const [isUploading, setIsUploading] = useState(false);
     const importFile = useMutation({
         mutationFn: (formData: FormData) =>
-            TravelLogService.importFile(formData, setProgress),
+            TravelLogService.importFile(formData, setProgress, AcceptedProductEnum.COAL),
         onMutate: () => {
             setIsUploading(true);
             setProgress(0); // Reset tiến trình khi bắt đầu
@@ -354,7 +343,7 @@ const Coals: React.FC<props> = ({ type }) => {
             shift: undefined,
             area: "",
             location: undefined,
-            material: undefined,
+            acceptedProduct: AcceptedProductEnum.COAL,
             excavationLevel: "",
             dumpHeightActual: "",
             fullDistanceKm: undefined as number | undefined,
@@ -373,7 +362,7 @@ const Coals: React.FC<props> = ({ type }) => {
                 shift: values.shift,
                 area: values.area,
                 location: values.location,
-                material: values.material,
+                acceptedProduct: values.acceptedProduct,
                 excavationLevel: values.excavationLevel,
                 dumpHeightActual: values.dumpHeightActual,
                 fullDistanceKm: values.fullDistanceKm,
@@ -416,10 +405,7 @@ const Coals: React.FC<props> = ({ type }) => {
                     typeof travellog.location === "object"
                     ? travellog.location._id
                     : travellog.location || undefined,
-                material: travellog.material !== null &&
-                    typeof travellog.material === "object"
-                    ? travellog.material._id
-                    : travellog.material || undefined,
+                acceptedProduct: travellog.acceptedProduct,
                 excavationLevel: travellog.excavationLevel,
                 dumpHeightActual: travellog.dumpHeightActual,
                 fullDistanceKm: travellog.fullDistanceKm,
@@ -722,7 +708,7 @@ const Coals: React.FC<props> = ({ type }) => {
                                     </Grid>
                                     <Grid container spacing={2}>
                                         {/* --- Nhóm 1: Chọn địa điểm & vật liệu --- */}
-                                        <Grid item xs={12} sm={6} md={3}>
+                                        <Grid item xs={12} sm={6} md={4}>
                                             <Autocomplete
                                                 fullWidth
                                                 options={locations}
@@ -741,26 +727,7 @@ const Coals: React.FC<props> = ({ type }) => {
                                             />
                                         </Grid>
 
-                                        <Grid item xs={12} sm={6} md={3}>
-                                            <Autocomplete
-                                                fullWidth
-                                                options={materials}
-                                                getOptionLabel={(option: Material) => option.name || ""}
-                                                value={materials.find((p: any) => p._id === formik.values.material) || null}
-                                                onChange={(e, newValue) =>
-                                                    formik.setFieldValue(`material`, newValue?._id || "")
-                                                }
-                                                renderInput={(params) => (
-                                                    <TextField
-                                                        {...params}
-                                                        label="Vật liệu"
-                                                        {...getFormikFieldProps(formik, `material`)}
-                                                    />
-                                                )}
-                                            />
-                                        </Grid>
-
-                                        <Grid item xs={12} sm={6} md={3}>
+                                        <Grid item xs={12} sm={6} md={4}>
                                             <TextField
                                                 fullWidth
                                                 label="Tầng xúc"
@@ -771,7 +738,7 @@ const Coals: React.FC<props> = ({ type }) => {
                                             />
                                         </Grid>
 
-                                        <Grid item xs={12} sm={6} md={3}>
+                                        <Grid item xs={12} sm={6} md={4}>
                                             <TextField
                                                 fullWidth
                                                 type="number"

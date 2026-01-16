@@ -51,7 +51,7 @@ router.get('/', verifyToken, async (req, res, next) => {
         let lte = endOfToday;
         const orders = await Order.find({ workingDate: { $lte: lte }, status: STATUS_ORDER.INPROGRESS }).populate("assignedTo", "fullName salaryCode")
         const devices = await Device.find(query)
-            .populate('department', 'name code')
+            .populate('department', 'name code createdAt')
             .populate('category')
             .populate('material')
             .collation({ locale: "vi", strength: 1 })
@@ -157,9 +157,9 @@ router.get('/vehicle/all', verifyToken, async (req, res, next) => {
         const query = {}
 
 
-        if (targetTypes) {
-            query.category = { $in: targetTypes };
-        }
+        // if (targetTypes) {
+        //     query.category = { $in: targetTypes };
+        // }
 
         const devices = await Device.find(query).populate('category').populate('material').populate('department', 'name code')
 
@@ -455,10 +455,20 @@ router.get('/count/status', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, RO
             queryDept._id = new mongoose.Types.ObjectId(req.query.department)
         }
 
-        const departments = await Department.find(queryDept)
+        const deptHasDevice = await Device.distinct("department", query);
+        const departments = await Department.find({
+            _id: { $in: deptHasDevice }
+        })
             .collation({ locale: "vi", strength: 1 })
-            .sort({ code: 1 });
-        let devices = await Device.find(query)
+            .sort({
+                createdAt: 1,
+                code: 1,
+            }).limit(15);
+        const departmentIds = departments.map(d => d._id);
+        let devices = await Device.find({
+            ...query,
+            department: { $in: departmentIds }
+        })
             .populate("department")
             .populate({
                 path: 'category',
@@ -514,7 +524,7 @@ router.get('/count/status', verifyToken, restrictTo(ROLE.MANAGER, ROLE.ADMIN, RO
                 deviceTypes: Array.from(typesMap.values())
             });
         }
-
+        // data = data.slice(0, 15);
         req.logger.info(`🔥 Load thành công`);
         res.status(200).json({ status: 'success', data });
 

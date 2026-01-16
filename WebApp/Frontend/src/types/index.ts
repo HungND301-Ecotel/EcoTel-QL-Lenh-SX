@@ -1,4 +1,4 @@
-import { DeviceTypeEnum, JobTypeEnum, StatusDeviceEnum, StatusOrderEnum } from "../enums/index";
+import { AcceptedProductEnum, DeviceTypeEnum, JobTypeEnum, StatusDeviceEnum, StatusOrderEnum } from "../enums/index";
 
 export interface User {
     _id: string;
@@ -142,7 +142,7 @@ export interface TravelLog {
     shift?: String,
     area?: String,
     location?: String,
-    material?: String,
+    acceptedProduct?: AcceptedProductEnum,
     excavationLevel?: String,
     dumpHeightActual?: String,
     fullDistanceKm?: Number,

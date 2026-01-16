@@ -32,6 +32,9 @@ const chunkArray = (array: any[], size: number) => {
     return results;
 };
 
+const formatNumber = (num?: number) =>
+    num ? num.toFixed(2).replace(/\.00$/, "") : "";
+
 
 export default function CarTripReport({
     data,
@@ -190,10 +193,10 @@ export default function CarTripReport({
                                                     {/* Tổng hợp theo chunk */}
                                                     {materials.map((m: any) => (
                                                         <TableCell key={m._id} align="center">
-                                                            {chunkMatSummary[m.name].distance}
+                                                            {formatNumber(chunkMatSummary[m.name].distance)}
                                                         </TableCell>
                                                     ))}
-                                                    <TableCell align="center">{chunkDistance}</TableCell>
+                                                    <TableCell align="center">{formatNumber(chunkDistance)}</TableCell>
                                                 </TableRow>
 
                                                 {/* --- HÀNG 2: THỜI GIAN --- */}
@@ -210,10 +213,10 @@ export default function CarTripReport({
 
                                                     {materials.map((m: any) => (
                                                         <TableCell key={m._id} align="center" rowSpan={2}>
-                                                            {chunkMatSummary[m.name].count}
+                                                            {formatNumber(chunkMatSummary[m.name].count)}
                                                         </TableCell>
                                                     ))}
-                                                    <TableCell align="center" rowSpan={2}>{chunkTripsCount}</TableCell>
+                                                    <TableCell align="center" rowSpan={2}>{formatNumber(chunkTripsCount)}</TableCell>
                                                 </TableRow>
 
                                                 {/* --- HÀNG 3: VẬT LIỆU --- */}

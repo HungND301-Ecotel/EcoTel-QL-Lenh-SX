@@ -1,5 +1,7 @@
 const TravelLog = require('../models/TravelLog')
 const Model = require('../models/Model');
+const Shift = require('../models/Shift')
+const mongoose = require('mongoose')
 const { ACCEPTED_PRODUCT, JPS_STATUS, SEAL_STATUS } = require('../config/config');
 const dayjs = require('dayjs');
 let pLimit = require('p-limit');
@@ -32,12 +34,8 @@ async function groupTripsVehicle(trips, date, shift) {
         // 1. TÍNH TOÁN VÀ GOM timeLogs
         // Sử dụng Promise.all để tìm TravelLog song song cho mỗi mốc thời gian
         let totalDistance = 0;
-        const travelLog = await TravelLog.findOne({
-            excavator: t.excavator?._id,
-            location: t.toLocation?._id,
-            workingDate: date,
-            shift: shift?._id
-        }).lean();
+
+        const travelLog = await getTravellog(shift?._id, date, t.excavator?._id, t.toLocation?._id, t.material?.acceptedProduct)
 
         const timeLogPromises = timesArray.map(async (time) => {
 
@@ -83,12 +81,7 @@ async function groupTripsVehicleProduction(trips) {
         trips.map(t =>
             limit(async () => {
                 const travelLog = await safeQuery(() =>
-                    TravelLog.findOne({
-                        excavator: t.excavator?._id,
-                        location: t.toLocation?._id,
-                        workingDate: t.workingDate,
-                        shift: t.shift?._id
-                    }).lean()
+                    getTravellog(t.shift?._id, t.workingDate, t.excavator?._id, t.toLocation?._id, t.material?.acceptedProduct)
                 );
 
                 return {
@@ -490,12 +483,14 @@ async function groupProduction(reports, shiftReport) {
         }
 
         // Cung độ
-        const distanceData = await TravelLog.findOne({
-            excavator: r.excavator?._id,
-            location: r.toLocation?._id,
-            workingDate: r.workingDate,
-            shift: r.shift
-        });
+
+        const distanceData = await getTravellog(
+            r.shift,
+            r.workingDate,
+            r.excavator?._id,
+            r.toLocation?._id,
+            r.material?.acceptedProduct
+        )
 
         const updateTimes = (r.quantityUpdateTimes || []).length;
         const totalDistance = (distanceData?.fullDistanceKm || 0) * updateTimes;
@@ -583,12 +578,13 @@ async function groupTripsCar(trips) {
         }
         const timesArray = (t.quantityUpdateTimes || [])
         for (const time of timesArray) {
-            const travelLog = await TravelLog.findOne({
-                excavator: t.excavator?._id,
-                location: t.toLocation?._id,
-                workingDate: t.workingDate,
-                shift: t.shift?._id
-            }).lean()
+            const travelLog = await getTravellog(
+                t.shift?._id,
+                t.workingDate,
+                t.excavator?._id,
+                t.toLocation?._id,
+                t.material?.acceptedProduct
+            )
 
 
             const distance = travelLog ? travelLog.fullDistanceKm : 0
@@ -635,12 +631,13 @@ async function groupCar(trips) {
         const timesArray = (t.quantityUpdateTimes || [])
 
         for (const time of timesArray) {
-            const travelLog = await TravelLog.findOne({
-                excavator: t.excavator?._id,
-                location: t.toLocation?._id,
-                workingDate: t.workingDate,
-                shift: t.shift?._id
-            }).lean()
+            const travelLog = await getTravellog(
+                t.shift?._id,
+                t.workingDate,
+                t.excavator?._id,
+                t.toLocation?._id,
+                t.material?.acceptedProduct
+            )
 
             const distance = travelLog ? travelLog.fullDistanceKm : 0;
 
@@ -766,9 +763,6 @@ async function caculatorWeight(materialId, deviceModel, quantity, totalDistance,
     const dryDensity = getTyTrongAtDate(material, normalizeDateToUTC(date))
     const valueModel = getMohinhAtDate(data, normalizeDateToUTC(date))
 
-    console.log(dryDensity, valueModel, material?.name)
-
-
 
     if (data && data.material?.acceptedProduct === ACCEPTED_PRODUCT.COAL) {
         ton = valueModel * (quantity || 0) * dryDensity
@@ -801,7 +795,6 @@ function getTyTrongAtDate(material, date) {
         const end = new Date(h.endTime);
 
         if (target >= start && target <= end) {
-            console.log("a", h.dryDensity)
             return h.dryDensity ?? 0;
         }
     }
@@ -830,6 +823,63 @@ function getMohinhAtDate(model, date) {
     }
 
     return 0;
+}
+
+async function getTravellog(shift, workingDate, excavator, location, acceptedProduct) {
+    const currentShiftDoc = await Shift.findById(shift).lean();
+    const currentShiftVal = parseInt(currentShiftDoc?.name || "1"); // Ví dụ: 2
+
+    // Bước 2: Chạy 1 câu lệnh duy nhất để tìm
+    const logs = await TravelLog.aggregate([
+        // 1. Lọc các bản ghi đúng Máy, đúng Vị trí, đúng Loại hàng
+        {
+            $match: {
+                excavator: new mongoose.Types.ObjectId(excavator),
+                location: new mongoose.Types.ObjectId(location),
+                acceptedProduct: acceptedProduct
+            }
+        },
+        {
+            $lookup: {
+                from: "shifts", // Tên collection Shift trong DB (thường có 's' ở cuối)
+                localField: "shift",
+                foreignField: "_id",
+                as: "shiftData"
+            }
+        },
+        { $unwind: "$shiftData" },
+        {
+            $addFields: {
+                shiftNumber: { $toInt: "$shiftData.name" } // Chuyển "2" -> 2
+            }
+        },
+        {
+            $match: {
+                $or: [
+                    // Trường hợp 1: Các ngày cũ hơn hẳn ngày hiện tại
+                    { workingDate: { $lt: new Date(workingDate) } },
+
+                    {
+                        workingDate: new Date(workingDate),
+                        shiftNumber: { $lte: currentShiftVal }
+                    }
+                ]
+            }
+        },
+        // 5. SẮP XẾP: Quan trọng nhất để quyết định lấy cái nào
+        {
+            $sort: {
+                workingDate: -1,  // Ngày giảm dần (22/12 lên trước 21/12)
+                shiftNumber: -1   // Ca giảm dần (Ca 2 lên trước Ca 1)
+            }
+        },
+        // 6. Lấy đúng 1 cái đầu tiên
+        { $limit: 1 }
+    ]);
+
+    // Kết quả
+    const travelLog = logs[0] || null;
+    return travelLog
 }
 
 

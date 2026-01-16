@@ -5,7 +5,7 @@ import { Device, Location, Job, TravelLog } from "../types";
 const TravelLogService = {
     getAll: async (params?: Record<string, any>): Promise<any> => {
         const res = await api.get('/travellogs', { params });
-        return res.data
+        return res.data.data
     },
     create: async (data: Partial<TravelLog>): Promise<any> => {
         const res = await api.post('/travellogs', data);
@@ -21,9 +21,10 @@ const TravelLogService = {
     },
     importFile: async (
         formData: FormData,
-        onProgress?: (percent: number) => void
+        onProgress?: (percent: number) => void,
+        type?: string
     ) => {
-        const res = await api.post("/travellogs/importFile", formData, {
+        const res = await api.post(`/travellogs/importFile?type=${type}`, formData, {
             headers: { "Content-Type": "multipart/form-data" },
             onUploadProgress: (e) => {
                 if (!onProgress) return;

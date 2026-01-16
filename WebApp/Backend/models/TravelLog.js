@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { ACCEPTED_PRODUCTS } = require('../config/config')
 
 const travelLogSchema = new mongoose.Schema({
     excavator: {
@@ -19,9 +20,9 @@ const travelLogSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Location',
     },
-    material: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Material',
+    acceptedProduct: {
+        type: String,
+        enum: ACCEPTED_PRODUCTS
     },
     excavationLevel: String,
     dumpHeightActual: String,

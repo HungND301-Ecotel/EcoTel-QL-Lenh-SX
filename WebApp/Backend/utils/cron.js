@@ -2,6 +2,8 @@ const cron = require('node-cron')
 const Report = require('../models/Report')
 const Order = require('../models/Order')
 const Job = require('../models/Job')
+const Shift = require('../models/Shift')
+const mongoose = require('mongoose')
 const TravelLog = require('../models/TravelLog')
 const { safeQuery, caculatorWeight } = require("./reportGrouping")
 const { ROLE, JOB_TYPE } = require('../config/config');
@@ -45,6 +47,7 @@ async function update_production_report(orders) {
                 // Gọi hàm tính toán ASYNC, việc này sẽ chạy song song
                 // với các report khác trong cùng một Order
                 const value = await production_vehicle(report);
+
                 totalProduction = value.production
                 totalCubicMeter = value.cubicMeter
                 totalTon = value.ton
@@ -159,7 +162,7 @@ async function getReports(order) {
                 path: "device",
                 select: "code material",
             })
-            .populate("material", "name")
+            .populate("material", "name acceptedProduct")
             .populate("excavator", "code")
             .populate("fromLocation", "name")
             .populate("toLocation", "name")
@@ -183,12 +186,60 @@ async function production_vehicle(t) {
     // 1. TÍNH TOÁN VÀ GOM timeLogs
     // Sử dụng Promise.all để tìm TravelLog song song cho mỗi mốc thời gian
     let totalDistance = 0;
-    const travelLog = await TravelLog.findOne({
-        excavator: t.excavator?._id,
-        location: t.toLocation?._id,
-        workingDate: t.workingDate,
-        shift: t.shift?._id
-    }).lean();
+
+    const currentShiftDoc = await Shift.findById(t.shift?._id || t.shift).lean();
+    const currentShiftVal = parseInt(currentShiftDoc?.name || "1"); // Ví dụ: 2
+
+    // Bước 2: Chạy 1 câu lệnh duy nhất để tìm
+    const logs = await TravelLog.aggregate([
+        // 1. Lọc các bản ghi đúng Máy, đúng Vị trí, đúng Loại hàng
+        {
+            $match: {
+                excavator: new mongoose.Types.ObjectId(t.excavator?._id),
+                location: new mongoose.Types.ObjectId(t.toLocation?._id),
+                acceptedProduct: t.material?.acceptedProduct
+            }
+        },
+        {
+            $lookup: {
+                from: "shifts", // Tên collection Shift trong DB (thường có 's' ở cuối)
+                localField: "shift",
+                foreignField: "_id",
+                as: "shiftData"
+            }
+        },
+        { $unwind: "$shiftData" },
+        {
+            $addFields: {
+                shiftNumber: { $toInt: "$shiftData.name" } // Chuyển "2" -> 2
+            }
+        },
+        {
+            $match: {
+                $or: [
+                    // Trường hợp 1: Các ngày cũ hơn hẳn ngày hiện tại
+                    { workingDate: { $lt: new Date(t.workingDate) } },
+
+                    {
+                        workingDate: new Date(t.workingDate),
+                        shiftNumber: { $lte: currentShiftVal }
+                    }
+                ]
+            }
+        },
+        // 5. SẮP XẾP: Quan trọng nhất để quyết định lấy cái nào
+        {
+            $sort: {
+                workingDate: -1,  // Ngày giảm dần (22/12 lên trước 21/12)
+                shiftNumber: -1   // Ca giảm dần (Ca 2 lên trước Ca 1)
+            }
+        },
+        // 6. Lấy đúng 1 cái đầu tiên
+        { $limit: 1 }
+    ]);
+
+    // Kết quả
+    const travelLog = logs[0] || null;
 
     const distance = travelLog ? travelLog.fullDistanceKm || 0 : 0;
 
