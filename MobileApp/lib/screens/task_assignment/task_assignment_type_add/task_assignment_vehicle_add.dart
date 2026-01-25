@@ -105,7 +105,7 @@ class _TaskAssignmentVehicleAdd
         _jobSafetyContent =
             matchedJobs.map((m) => m.content).join('\n');
       }
-      _updateCombinedSafetyMeasures();
+      // _updateCombinedSafetyMeasures();
     }
   }
 

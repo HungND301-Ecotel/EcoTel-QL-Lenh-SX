@@ -100,7 +100,7 @@ class _TaskAssignmentOtherAdd
             .map((m) => m.content)
             .join('\n');
       }
-      _updateCombinedSafetyMeasures();
+      // _updateCombinedSafetyMeasures();
     }
   }
 

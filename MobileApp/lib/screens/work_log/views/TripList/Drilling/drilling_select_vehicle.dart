@@ -70,7 +70,7 @@ class _DrillingSelectVehicle
       await _localSyncService.fetchAndSyncHive<DeviceHive>(
         box: box,
         prefix: "DEPARTMENT",
-        fetch: _deviceService.getAllVehicle,
+        fetch: _deviceService.getAlldevice,
         fromJson: (item) =>
             DeviceHive.fromJson(item, "DEPARTMENT"),
       );
