@@ -1,120 +1,138 @@
 const mongoose = require('mongoose');
 const { STATUS_ORDERS, STATUS_ORDER } = require('../config/config');
 
-const orderSchema = new mongoose.Schema({
+const orderSchema = new mongoose.Schema(
+  {
     assignedTo: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
     job: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Job',
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Job",
     },
     workingDate: {
-        type: Date,
+      type: Date,
     },
     shift: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Shift',
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Shift",
     },
     shiftHour: {
-        type: String,
+      type: String,
     },
     startTime: {
-        type: Date
+      type: Date,
     },
     endTime: {
-        type: Date
+      type: Date,
     },
     resumeTime: {
-        type: Date
+      type: Date,
     },
-    device: [{
+    device: [
+      {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Device',
-    }],
-    assignedVehicles: [{
+        ref: "Device",
+      },
+    ],
+    assignedVehicles: [
+      {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Device',
-    }],
-    repairVehicles: [{
+        ref: "Device",
+      },
+    ],
+    repairVehicles: [
+      {
         device: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Device',
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Device",
         },
-        note: String
-    }],
+        note: String,
+      },
+    ],
     repairDepartment: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Department',
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Department",
     },
-    excavator: [{
+    excavator: [
+      {
         device: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Device',
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Device",
         },
         status: {
-            type: Boolean,
-            default: true
-        }
-    }],
-    location: [{
+          type: Boolean,
+          default: true,
+        },
+      },
+    ],
+    location: [
+      {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Location',
-    }],
-    material: [{
+        ref: "Location",
+      },
+    ],
+    material: [
+      {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Material',
-    }],
+        ref: "Material",
+      },
+    ],
     workContent: {
-        type: String,
+      type: String,
     },
     assistants: [
-        { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: [] }
+      { type: mongoose.Schema.Types.ObjectId, ref: "User", default: [] },
     ],
     status: {
-        type: String,
-        enum: STATUS_ORDERS,
-        default: STATUS_ORDER.PENDING
+      type: String,
+      enum: STATUS_ORDERS,
+      default: STATUS_ORDER.PENDING,
     },
     previous_order_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Order',
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
     },
     note: {
-        type: String,
+      type: String,
+    },
+    risk: {
+      type: String,
     },
     cancel: {
-        type: Boolean,
-        default: false
+      type: Boolean,
+      default: false,
     },
     temporaryError: {
-        type: String,
+      type: String,
     },
     safetyMeasure: {
-        type: String
+      type: String,
     },
     safetyMeasureSpecific: {
-        type: String
+      type: String,
     },
     createdBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
     department: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Department',
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Department",
     },
     batchId: { type: String, index: true, default: null },
     updatedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    }
-}, {
-    timestamps: true
-});
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
 
 // Indexes
 orderSchema.index({ device: 1 });

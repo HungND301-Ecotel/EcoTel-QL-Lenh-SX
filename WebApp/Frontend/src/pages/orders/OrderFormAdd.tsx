@@ -124,82 +124,91 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
     };
 
     const formik = useFormik({
-        initialValues: {
-            usersAndDevices: [
-                {
-                    assignedTo: "",
-                    device: [],
-                    repairDepartment: undefined,
-                    repairVehicles: [
-                        {
-                            device: undefined,
-                            note: '',
-                        },
-                    ],
-                },
+      initialValues: {
+        usersAndDevices: [
+          {
+            assignedTo: "",
+            device: [],
+            repairDepartment: undefined,
+            repairVehicles: [
+              {
+                device: undefined,
+                note: "",
+              },
             ],
-            assignedVehicles: [],
-            job: '',
-            workingDate: new Date(),
-            shift: '',
-            shiftHour: '',
-            excavator: [],
-            location: undefined,
-            material: undefined,
-            workContent: '',
-            note: '',
-            safetyMeasure: '',
-            safetyMeasureSpecific: ''
-        },
-        validationSchema: addOrderValidationSchema,
-        onSubmit: async (values) => {
-            const orders: Partial<Order>[] = values.usersAndDevices.map(item => ({
-                assignedTo: item.assignedTo,
-                device: item.device,
-                repairDepartment: item.repairDepartment || undefined,
-                assignedVehicles: values.assignedVehicles,
-                repairVehicles: item.repairVehicles.filter(i => i.device != null && i.device !== ''),
-                job: values.job,
-                workingDate: dayjs.utc(dayjs(values.workingDate).format('YYYY-MM-DD')).toDate(),
-                excavator: values.excavator,
-                shift: values.shift,
-                shiftHour: values.shiftHour,
-                location: values.location,
-                material: values.material,
-                workContent: values.workContent,
-                safetyMeasure: values.safetyMeasure,
-                safetyMeasureSpecific: values.safetyMeasureSpecific,
-                note: values.note,
-            }));
-            const duplicates = await Promise.all(
-                orders.map(order =>
-                    api.post(`/orders/checkExist`, {
-                        workingDate: order.workingDate,
-                        shift: order.shift,
-                        assignedTo: order.assignedTo
-                    }
-                    ).then(res =>
-                        res.data.data,
-                    )
-                )
-            );
-            const existingOrders = duplicates.filter(order => order !== null);
-            if (existingOrders.length > 0) {
-                const names = existingOrders.map(o => {
-                    return o.assignedTo?.fullName || 'Không rõ';
-                }).join(', ');
+          },
+        ],
+        assignedVehicles: [],
+        job: "",
+        workingDate: new Date(),
+        shift: "",
+        shiftHour: "",
+        excavator: [],
+        location: undefined,
+        material: undefined,
+        workContent: "",
+        note: "",
+        safetyMeasure: "",
+        safetyMeasureSpecific: "",
+        risk:""
+      },
+      validationSchema: addOrderValidationSchema,
+      onSubmit: async (values) => {
+        const orders: Partial<Order>[] = values.usersAndDevices.map((item) => ({
+          assignedTo: item.assignedTo,
+          device: item.device,
+          repairDepartment: item.repairDepartment || undefined,
+          assignedVehicles: values.assignedVehicles,
+          repairVehicles: item.repairVehicles.filter(
+            (i) => i.device != null && i.device !== "",
+          ),
+          job: values.job,
+          workingDate: dayjs
+            .utc(dayjs(values.workingDate).format("YYYY-MM-DD"))
+            .toDate(),
+          excavator: values.excavator,
+          shift: values.shift,
+          shiftHour: values.shiftHour,
+          location: values.location,
+          material: values.material,
+          workContent: values.workContent,
+          safetyMeasure: values.safetyMeasure,
+          safetyMeasureSpecific: values.safetyMeasureSpecific,
+          note: values.note,
+          risk:values.risk
+        }));
+        const duplicates = await Promise.all(
+          orders.map((order) =>
+            api
+              .post(`/orders/checkExist`, {
+                workingDate: order.workingDate,
+                shift: order.shift,
+                assignedTo: order.assignedTo,
+              })
+              .then((res) => res.data.data),
+          ),
+        );
+        const existingOrders = duplicates.filter((order) => order !== null);
+        if (existingOrders.length > 0) {
+          const names = existingOrders
+            .map((o) => {
+              return o.assignedTo?.fullName || "Không rõ";
+            })
+            .join(", ");
 
-                const result = await showConfirmAlert(`${names} đã có lệnh sản xuất trong ca này. Bạn có muốn tiếp tục?`);
-                if (!result.isConfirmed) return;
-            }
-            try {
-                await Promise.all(orders.map(order => onSubmit(order)));
-                queryClient.invalidateQueries({ queryKey: ['orders'] });
-                showSuccessAlert('Thêm lệnh sản xuất thành công');
-            } catch (error) {
-                console.error('Error submitting orders:', error);
-            }
-        },
+          const result = await showConfirmAlert(
+            `${names} đã có lệnh sản xuất trong ca này. Bạn có muốn tiếp tục?`,
+          );
+          if (!result.isConfirmed) return;
+        }
+        try {
+          await Promise.all(orders.map((order) => onSubmit(order)));
+          queryClient.invalidateQueries({ queryKey: ["orders"] });
+          showSuccessAlert("Thêm lệnh sản xuất thành công");
+        } catch (error) {
+          console.error("Error submitting orders:", error);
+        }
+      },
     });
 
 
@@ -726,6 +735,22 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                                 error={formik.touched.note && Boolean(formik.errors.note)}
                                 helperText={formik.touched.note && typeof formik.errors.note === 'string'
                                     ? formik.errors.note
+                                    : ''}
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                multiline
+                                rows={5}
+                                id="risk"
+                                name="risk"
+                                label="Dự báo nguy cơ"
+                                value={formik.values.risk}
+                                onChange={formik.handleChange}
+                                error={formik.touched.risk && Boolean(formik.errors.risk)}
+                                helperText={formik.touched.risk && typeof formik.errors.risk === 'string'
+                                    ? formik.errors.risk
                                     : ''}
                             />
                         </Grid>
