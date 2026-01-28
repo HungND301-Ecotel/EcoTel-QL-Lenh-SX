@@ -13499,7 +13499,10 @@ router.post(
       }
       if (shift?.length) query.shift = { $in: shift };
 
-      const orders = await Order.find(query)
+      const orders = await Order.find({
+        ...query,
+        department: new mongoose.Types.ObjectId(dep?._id),
+      })
         .populate({
           path: "assignedTo",
           select: "fullName salaryCode department",
@@ -13568,7 +13571,10 @@ router.post(
       }
       if (shift?.length) query.shift = shift;
 
-      const orders = await Order.find(query)
+      const orders = await Order.find({
+        ...query,
+        department: new mongoose.Types.ObjectId(dep?._id),
+      })
         .populate({
           path: "assignedTo",
           select: "fullName salaryCode department",
