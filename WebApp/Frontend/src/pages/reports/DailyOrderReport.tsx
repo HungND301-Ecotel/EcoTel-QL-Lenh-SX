@@ -95,9 +95,9 @@ export default function DailyOrderReport({
                 <TableCell align="center" sx={{ minWidth: 200 }}>
                   Biện pháp an toàn
                 </TableCell>
-                <TableCell align="center" width={150}>
+                {/* <TableCell align="center" width={150}>
                   Nhóm trưởng
-                </TableCell>
+                </TableCell> */}
                 <TableCell align="center" width={150}>
                   Họ tên - Bậc lương
                 </TableCell>
@@ -111,8 +111,16 @@ export default function DailyOrderReport({
                     {item?.device.map((i: any) => i.code || "").join(",     ")}
                   </TableCell>
                   <TableCell></TableCell>
-                  <TableCell></TableCell>
-                  <TableCell></TableCell>
+                  <TableCell>
+                    {item?.excavator
+                      .map((i: any) => i.device?.code || "")
+                      .join(",     ")}
+                  </TableCell>
+                  <TableCell>
+                    {item?.material
+                      .map((i: any) => i.name || "")
+                      .join(",     ")}
+                  </TableCell>
                   <TableCell>{item?.workContent || ""}</TableCell>
                   <TableCell></TableCell>
                   <TableCell>
@@ -149,7 +157,7 @@ export default function DailyOrderReport({
                         (item?.safetyMeasureSpecific || "")}
                     </div>
                   </TableCell>
-                  <TableCell>{item?.assignedTo?.fullName || ""}</TableCell>
+                  {/* <TableCell>{item?.assignedTo?.fullName || ""}</TableCell> */}
                   <TableCell></TableCell>
                 </TableRow>
               ))}

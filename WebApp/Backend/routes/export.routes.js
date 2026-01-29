@@ -13520,6 +13520,8 @@ router.post(
           path: "device",
           select: "code",
         })
+        .populate("excavator.device","code")
+        .populate("material","name")
         .populate({
           path: "assistants",
           select: "fullName salaryCode",
@@ -13592,6 +13594,8 @@ router.post(
           path: "device",
           select: "code",
         })
+        .populate("excavator.device", "code")
+        .populate("material", "name")
         .populate({
           path: "assistants",
           select: "fullName salaryCode",
@@ -13615,13 +13619,13 @@ router.post(
         wrapText: true,
       };
 
-      worksheet.mergeCells(1, 1, 1, 11);
+      worksheet.mergeCells(1, 1, 1, 10);
       worksheet.getCell("A1").value = "CÔNG TY CỔ PHẦN THAN CAO SƠN - TKV";
       worksheet.getCell("A1").font = { italic: true, size: 18 };
       worksheet.getCell("A1").alignment = { horizontal: "left" };
 
       // === Header 1: Tiêu đề khối (Row 1) ===
-      worksheet.mergeCells(2, 1, 2, 11);
+      worksheet.mergeCells(2, 1, 2, 10);
       worksheet.getCell("A2").value = "SỔ NHẬT LỆNH QUẢN ĐỐC";
       worksheet.getCell("A2").alignment = center;
       worksheet.getCell("A2").font = { bold: true, size: 14 };
@@ -13651,7 +13655,7 @@ router.post(
         "Sản lượng theo định mức",
         "Dự báo nguy cơ mất AT",
         "Biện pháp an toàn",
-        "Nhóm trưởng",
+        // "Nhóm trưởng",
         "Họ tên - Bậc lương",
       ];
 
@@ -13674,13 +13678,13 @@ router.post(
           i?.department?.name || "",
           (i?.device || []).map((d) => d.code || "").join(", "),
           "",
-          "",
-          "",
+          (i?.excavator || []).map((d) => d.device?.code || "").join(", "),
+          (i?.material || []).map((d) => d.name || "").join(", "),
           i?.workContent || "",
           "",
           i?.risk || "",
           (i?.safetyMeasure || "") + " " + (i?.safetyMeasureSpecific || ""),
-          i?.assignedTo?.fullName,
+          // i?.assignedTo?.fullName,
           "",
         ]);
         row.eachCell((cell) => {
@@ -13693,13 +13697,13 @@ router.post(
 
         // Ép ô cột A (cột 1) phải xuống dòng nếu dài
         row.getCell(1).alignment = {
-          vertical: "middle",
+          vertical: "top",
           horizontal: "left", // Hoặc "left" tùy bạn
           wrapText: true,
         };
 
         // Bạn cũng nên áp dụng cho các cột khác có khả năng dài như cột 6, 8, 9
-        [10].forEach((colIdx) => {
+        [2,4,5].forEach((colIdx) => {
           row.getCell(colIdx).alignment = {
             vertical: "top",
             horizontal: "left",
@@ -13708,7 +13712,7 @@ router.post(
         });
       });
 
-      addTableBorders(worksheet, 6, totalDataRows, 1, 11);
+      addTableBorders(worksheet, 6, totalDataRows, 1, 10);
 
       // Khối Người lập (bên trái)
       const currentRow = totalDataRows + 2;
@@ -13790,14 +13794,14 @@ router.post(
         { key: "A", width: 15 }, // STT
         { key: "B", width: 15 }, // Nhận tải
         { key: "C", width: 12 }, // Đổ tải
-        { key: "D", width: 12 }, // Loại hàng
-        { key: "E", width: 12 }, // Cung độ tạm tính
+        { key: "D", width: 15 }, // Loại hàng
+        { key: "E", width: 15 }, // Cung độ tạm tính
         { key: "F", width: 25 }, // Chiều cao nâng tải
-        { key: "G", width: 14 }, // Số chuyến
-        { key: "H", width: 25 }, // Khối lượng
-        { key: "I", width: 25 }, // Trọng lượng
-        { key: "J", width: 15 }, // Sản lượng
-        { key: "K", width: 15 }, // Nhiên liệu
+        { key: "G", width: 15 }, // Số chuyến
+        { key: "H", width: 20 }, // Khối lượng
+        { key: "I", width: 20 }, // Trọng lượng
+        { key: "J", width: 17 }, // Sản lượng
+        // { key: "K", width: 15 }, // Nhiên liệu
       ];
 
       // Apply font, alignment and borders to all cells from row 3 onwards
