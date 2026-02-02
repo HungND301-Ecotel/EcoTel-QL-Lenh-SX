@@ -423,7 +423,7 @@ router.post("/update_status", verifyToken, async (req, res) => {
             },
           });
           logData.push({
-            "Mã thiết bị": lastDeviceId.code,
+            "Mã thiết bị": lastDeviceId?.code,
             Loại: "Thiết bị vận hành",
             "Trạng thái mới": STATUS_DEVICE.AVAILABLE,
           });
@@ -447,7 +447,7 @@ router.post("/update_status", verifyToken, async (req, res) => {
               },
             });
             logData.push({
-              "Mã thiết bị": item.device.code,
+              "Mã thiết bị": item.device?.code,
               Loại: "Thiết bị sửa chữa",
               "Trạng thái mới":
                 item.status === STATUS_REPAIR.COMPLETED
@@ -466,7 +466,7 @@ router.post("/update_status", verifyToken, async (req, res) => {
               },
             });
             logData.push({
-              "Mã thiết bị": deviceId.device.code,
+              "Mã thiết bị": deviceId.device?.code,
               Loại: "Thiết bị sửa chữa",
               "Trạng thái mới": STATUS_DEVICE.MAINTENANCE,
             });
