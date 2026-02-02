@@ -209,7 +209,7 @@ const OrderFormEdit: React.FC<OrderFormProps> = ({
         assignedVehicles: values.assignedVehicles,
         repairDepartment: values.repairDepartment || undefined,
         repairVehicles: values.repairVehicles.filter(
-          (i: any) => i.device != null && i.device !== "",
+          (i: any) => i.device && i.device != null && i.device !== "",
         ),
         job: values.job,
         workingDate: dayjs

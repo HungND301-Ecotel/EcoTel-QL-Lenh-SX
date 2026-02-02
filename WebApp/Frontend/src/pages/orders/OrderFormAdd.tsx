@@ -160,7 +160,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
           repairDepartment: item.repairDepartment || undefined,
           assignedVehicles: values.assignedVehicles,
           repairVehicles: item.repairVehicles.filter(
-            (i) => i.device != null && i.device !== "",
+            (i) => i.device && i.device != null && i.device !== "",
           ),
           job: values.job,
           workingDate: dayjs
@@ -175,7 +175,7 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
           safetyMeasure: values.safetyMeasure,
           safetyMeasureSpecific: values.safetyMeasureSpecific,
           note: values.note,
-          risk:values.risk
+          risk: values.risk,
         }));
         const duplicates = await Promise.all(
           orders.map((order) =>
