@@ -249,3 +249,17 @@ export interface ApiResponse<T> {
   error?: string;
   message?: string;
 }
+
+export interface SystemInfo {
+  cpu: number[]; // CPU usage history
+  ram: {
+    total: number;
+    free: number;
+    used: number;
+  };
+  disk: {
+    total: number;
+    free: number;
+    used: number;
+  };
+}
