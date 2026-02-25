@@ -616,68 +616,81 @@ async function groupTripsCar(trips) {
 
 // nhóm tổng hợp ô tô
 async function groupCar(trips) {
-    const groups = {};
+  const groups = {};
 
-    for (const t of trips) {
-        const key = `${t.excavator}-${t.toLocation}`;
-        if (!groups[key]) {
-            groups[key] = {
-                excavator: t.excavator,
-                toLocation: t.toLocation,
-                materials: {},   // thay vì trips
-            };
-        }
-
-        const timesArray = (t.quantityUpdateTimes || [])
-
-        for (const time of timesArray) {
-            const travelLog = await getTravellog(
-                t.shift?._id,
-                t.workingDate,
-                t.excavator?._id,
-                t.toLocation?._id,
-                t.material?.acceptedProduct
-            )
-
-            const distance = travelLog ? travelLog.fullDistanceKm : 0;
-
-            if (!groups[key].materials[t.material?.name]) {
-                groups[key].materials[t.material?.name] = {
-                    material: t.material,
-                    times: [],        // danh sách thời gian
-                    distances: [],    // danh sách cung độ theo index
-                    count: 0,
-                    totalDistance: 0
-                };
-            }
-
-            groups[key].materials[t.material?.name].times.push(time?.time);
-            groups[key].materials[t.material?.name].distances.push(distance);
-            groups[key].materials[t.material?.name].count += time?.quantity;
-            groups[key].materials[t.material?.name].totalDistance += distance;
-
-            groups[key].totalTrips += time?.quantity;
-            groups[key].totalDistance += distance;
-        }
+  for (const t of trips) {
+    const key = `${t.excavator?.code}-${t.toLocation?.name}`;
+    if (!groups[key]) {
+      groups[key] = {
+        excavator: t.excavator?.code,
+        toLocation: t.toLocation?.name,
+        materials: {},
+        totalTrips: 0, // Khởi tạo biến tổng
+        totalDistance: 0,
+      };
     }
 
-    // sort times cho từng material
-    Object.values(groups).forEach((g) => {
-        Object.values(g.materials).forEach((m) => {
-            const combined = m.times.map((time, i) => ({
-                time,
-                distance: m.distances[i]
-            }));
-            combined.sort((a, b) => new Date(a.time) - new Date(b.time));
-            m.times = combined.map(c => c.time);
-            m.distances = combined.map(c => c.distance);
-        });
+    const materialName = t.material?.name || "Không xác định";
+
+    // --- KHỞI TẠO MATERIAL TẠI ĐÂY (Ngoài vòng lặp times) ---
+    if (!groups[key].materials[materialName]) {
+      groups[key].materials[materialName] = {
+        material: t.material,
+        times: [],
+        distances: [],
+        count: 0,
+        totalDistance: 0,
+      };
+    }
+
+    const timesArray = t.quantityUpdateTimes || [];
+
+    // Nếu có dữ liệu thời gian thì mới xử lý cộng dồn
+    for (const time of timesArray) {
+      const travelLog = await getTravellog(
+        t.shift?._id,
+        t.workingDate,
+        t.excavator?._id,
+        t.toLocation?._id,
+        t.material?.acceptedProduct,
+      );
+
+      const distance = travelLog ? travelLog.fullDistanceKm : 0;
+      const quantity = time?.quantity || 0;
+
+      const targetMat = groups[key].materials[materialName];
+      targetMat.times.push(time?.time);
+      targetMat.distances.push(distance);
+      targetMat.count += quantity;
+      targetMat.totalDistance += distance;
+
+      groups[key].totalTrips += quantity;
+      groups[key].totalDistance += distance;
+    }
+  }
+
+  // Phần logic sort và format giữ nguyên
+  return Object.values(groups).map((g) => {
+    const materialsArray = Object.values(g.materials).map((m) => {
+      const combined = m.times.map((time, i) => ({
+        time,
+        distance: m.distances[i],
+      }));
+
+      // Chỉ sort khi có dữ liệu thời gian
+      if (combined.length > 0) {
+        combined.sort((a, b) => new Date(a.time) - new Date(b.time));
+        m.times = combined.map((c) => c.time);
+        m.distances = combined.map((c) => c.distance);
+      }
+      return m;
     });
 
-    return Object.values(groups).map(g => ({
-        ...g,
-        materials: Object.values(g.materials) // trả về mảng cho FE
-    }));
+    return {
+      ...g,
+      materials: materialsArray,
+    };
+  });
 }
 
 

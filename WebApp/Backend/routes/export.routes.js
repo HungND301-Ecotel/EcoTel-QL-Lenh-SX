@@ -4223,14 +4223,13 @@ router.post(
           shift: r.shift || order.shift,
         }));
         const grouped = await groupCar(mapped);
-
         result.push({
           _id: order._id,
           device: (order.device || []).map((d) => d?.code) || [],
           assignedTo: combined,
           reports: grouped.map((g) => ({
-            excavator: g.excavator?.code || "",
-            toLocation: g.toLocation?.name || "",
+            excavator: g.excavator || "",
+            toLocation: g.toLocation || "",
             materials: g.materials || {},
           })),
           fuelRemain: (order?.shiftReport?.vehicleSummaries || []).map(
@@ -4455,8 +4454,8 @@ router.post(
               device: (order.device || []).map((d) => d?.code) || [],
               assignedTo: combined,
               reports: grouped.map((g) => ({
-                excavator: g.excavator?.code || "",
-                toLocation: g.toLocation?.name || "",
+                excavator: g.excavator || "",
+                toLocation: g.toLocation || "",
                 materials: g.materials || [],
               })),
               fuelRemain: (order?.shiftReport?.vehicleSummaries || []).map(
@@ -4544,7 +4543,9 @@ router.post(
                 let row2 = worksheet.getRow(currentRow);
                 row2.getCell(8).value = (m.distances || []).join("\n"); // Cung độ theo từng chuyến
                 row2.getCell(11).value = (m.times || [])
-                  .map((t) => new Date(t).toLocaleTimeString("vi-VN"))
+                  .map((t) =>
+                    t ? new Date(t).toLocaleTimeString("vi-VN") : "",
+                  )
                   .join("\n");
 
                 // (Các cột nhiên liệu / giờ hoạt động merge xuống 2 dòng)
@@ -13520,8 +13521,8 @@ router.post(
           path: "device",
           select: "code",
         })
-        .populate("excavator.device","code")
-        .populate("material","name")
+        .populate("excavator.device", "code")
+        .populate("material", "name")
         .populate({
           path: "assistants",
           select: "fullName salaryCode",
@@ -13703,7 +13704,7 @@ router.post(
         };
 
         // Bạn cũng nên áp dụng cho các cột khác có khả năng dài như cột 6, 8, 9
-        [2,4,5].forEach((colIdx) => {
+        [2, 4, 5].forEach((colIdx) => {
           row.getCell(colIdx).alignment = {
             vertical: "top",
             horizontal: "left",
