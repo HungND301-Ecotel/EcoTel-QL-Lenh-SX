@@ -132,7 +132,7 @@ export default function DailyOrderReport({
                   </TableCell>
                   <TableCell>
                     {item?.createdAt
-                      ? dayjs(item?.createdAt).format("DD/MM/YYYY")
+                      ? dayjs(item?.createdAt).format("DD/MM/YYYY HH:mm:ss")
                       : ""}
                   </TableCell>
                   <TableCell>

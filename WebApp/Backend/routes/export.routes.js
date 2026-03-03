@@ -13676,7 +13676,7 @@ router.post(
           i?.department?.name || "",
           `${i?.createdBy?.fullName || ""} - ${i?.createdBy?.salaryCode || ""} - ${i?.createdBy?.position?.name || ""}`,
           `${i?.assignedTo?.fullName || ""} - ${i?.assignedTo?.salaryCode || ""} - ${i?.assignedTo?.position?.name || ""}`,
-          i?.createdAt ? dayjs(i?.createdAt).format("DD/MM/YYYY") : "",
+          i?.createdAt ? dayjs(i?.createdAt).format("DD/MM/YYYY HH:mm:ss") : "",
           (i?.device || []).map((d) => d.code || "").join(", "),
           "",
           (i?.excavator || []).map((d) => d.device?.code || "").join(", "),
