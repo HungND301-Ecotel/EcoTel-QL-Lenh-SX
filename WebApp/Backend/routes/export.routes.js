@@ -13506,12 +13506,13 @@ router.post(
       })
         .populate({
           path: "assignedTo",
-          select: "fullName salaryCode department",
-          populate: "department",
+          select: "fullName salaryCode position",
+          populate: "position",
         })
         .populate({
           path: "createdBy",
-          select: "fullName",
+          select: "fullName salaryCode position",
+          populate: "position",
         })
         .populate({
           path: "department",
@@ -13526,10 +13527,6 @@ router.post(
         .populate({
           path: "assistants",
           select: "fullName salaryCode",
-        })
-        .populate({
-          path: "createdBy",
-          select: "fullName",
         })
         .populate({
           path: "job",
@@ -13580,12 +13577,13 @@ router.post(
       })
         .populate({
           path: "assignedTo",
-          select: "fullName salaryCode department",
-          populate: "department",
+          select: "fullName salaryCode position",
+          populate: "position",
         })
         .populate({
           path: "createdBy",
-          select: "fullName",
+          select: "fullName salaryCode position",
+          populate: "position",
         })
         .populate({
           path: "department",
@@ -13602,10 +13600,6 @@ router.post(
           select: "fullName salaryCode",
         })
         .populate({
-          path: "createdBy",
-          select: "fullName",
-        })
-        .populate({
           path: "job",
           select: "type",
         });
@@ -13620,13 +13614,13 @@ router.post(
         wrapText: true,
       };
 
-      worksheet.mergeCells(1, 1, 1, 10);
+      worksheet.mergeCells(1, 1, 1, 13);
       worksheet.getCell("A1").value = "CÔNG TY CỔ PHẦN THAN CAO SƠN - TKV";
       worksheet.getCell("A1").font = { italic: true, size: 18 };
       worksheet.getCell("A1").alignment = { horizontal: "left" };
 
       // === Header 1: Tiêu đề khối (Row 1) ===
-      worksheet.mergeCells(2, 1, 2, 10);
+      worksheet.mergeCells(2, 1, 2, 13);
       worksheet.getCell("A2").value = "SỔ NHẬT LỆNH QUẢN ĐỐC";
       worksheet.getCell("A2").alignment = center;
       worksheet.getCell("A2").font = { bold: true, size: 14 };
@@ -13648,6 +13642,9 @@ router.post(
 
       const headers = [
         "Tên tổ sản xuất",
+        "Người tạo lệnh",
+        "Người nhận lệnh",
+        "Thời gian tạo lệnh",
         "Tên-Số hiệu thiết bị",
         "Khu vực",
         "Nơi chất tải",
@@ -13677,6 +13674,9 @@ router.post(
         totalDataRows++;
         const row = worksheet.addRow([
           i?.department?.name || "",
+          `${i?.createdBy?.fullName || ""} - ${i?.createdBy?.salaryCode || ""} - ${i?.createdBy?.position?.name || ""}`,
+          `${i?.assignedTo?.fullName || ""} - ${i?.assignedTo?.salaryCode || ""} - ${i?.assignedTo?.position?.name || ""}`,
+          i?.createdAt ? dayjs(i?.createdAt).format("DD/MM/YYYY") : "",
           (i?.device || []).map((d) => d.code || "").join(", "),
           "",
           (i?.excavator || []).map((d) => d.device?.code || "").join(", "),
@@ -13704,7 +13704,7 @@ router.post(
         };
 
         // Bạn cũng nên áp dụng cho các cột khác có khả năng dài như cột 6, 8, 9
-        [2, 4, 5].forEach((colIdx) => {
+        [2,3,4,5,7,8,].forEach((colIdx) => {
           row.getCell(colIdx).alignment = {
             vertical: "top",
             horizontal: "left",
@@ -13713,7 +13713,7 @@ router.post(
         });
       });
 
-      addTableBorders(worksheet, 6, totalDataRows, 1, 10);
+      addTableBorders(worksheet, 6, totalDataRows, 1, 13);
 
       // Khối Người lập (bên trái)
       const currentRow = totalDataRows + 2;
@@ -13761,8 +13761,8 @@ router.post(
 
       // Quản đốc (bên phải)
       // Lấy cột cuối cùng là 11, khối Quản Đốc rộng 3 cột (9, 10, 11)
-      const rightEnd = 10;
-      const rightStart = 8;
+      const rightEnd = 13;
+      const rightStart = 10;
       worksheet.mergeCells(currentRow, rightStart, currentRow, rightEnd);
       worksheet.getCell(currentRow, rightStart).value = "Quản Đốc";
       worksheet.getCell(currentRow, rightStart).font = { bold: true };
@@ -13793,15 +13793,19 @@ router.post(
 
       worksheet.columns = [
         { key: "A", width: 15 }, // STT
-        { key: "B", width: 15 }, // Nhận tải
-        { key: "C", width: 12 }, // Đổ tải
+        { key: "B", width: 17 }, // Nhận tải
+        { key: "C", width: 17 }, // Đổ tải
         { key: "D", width: 15 }, // Loại hàng
         { key: "E", width: 15 }, // Cung độ tạm tính
-        { key: "F", width: 25 }, // Chiều cao nâng tải
+        { key: "F", width: 15 }, // Chiều cao nâng tải
         { key: "G", width: 15 }, // Số chuyến
-        { key: "H", width: 20 }, // Khối lượng
-        { key: "I", width: 20 }, // Trọng lượng
-        { key: "J", width: 17 }, // Sản lượng
+        { key: "H", width: 15 }, // Khối lượng
+        { key: "I", width: 25 }, // Trọng lượng
+        { key: "J", width: 15 }, // Sản lượng
+        { key: "K", width: 20 }, // Sản lượng
+        { key: "L", width: 20 }, // Sản lượng
+        { key: "M", width: 17 }, // Sản lượng
+      
         // { key: "K", width: 15 }, // Nhiên liệu
       ];
 

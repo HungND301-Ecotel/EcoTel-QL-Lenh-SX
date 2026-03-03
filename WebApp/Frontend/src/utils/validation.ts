@@ -114,14 +114,15 @@ export const departmentValidationSchema = yup.object({
 
 // lenh sx pdk
 export const dispatcherOrderValidationSchema = yup.object({
-    usersAndDepartments: yup.array().of(
-        yup.object().shape({
-            assignedTo: yup.string().required('Vui lòng chọn thẻ lương'),
-            department: yup.string(),
-        })
-    ),
-    workingDate: yup.string().required('Vui lòng chọn ngày làm việc'),
-    workContent: yup.string().required('Vui lòng nhập nội dung'),
+  usersAndDepartments: yup.array().of(
+    yup.object().shape({
+      assignedTo: yup.string().required("Vui lòng chọn thẻ lương"),
+      department: yup.string(),
+    }),
+  ),
+  workingDate: yup.string().required("Vui lòng chọn ngày làm việc"),
+  workContent: yup.string().required("Vui lòng nhập nội dung"),
+  risk: yup.string().required("Vui lòng nhập dự báo nguy cơ"),
 });
 
 // them lenh sx
@@ -137,14 +138,16 @@ export const addOrderValidationSchema = yup.object({
     shift: yup.string().required('Vui lòng chọn ca làm việc'),
     shiftHour: yup.string().required('Vui lòng nhập giờ làm việc'),
     workContent: yup.string().required('Vui lòng nhập nội dung'),
+    risk: yup.string().required('Vui lòng nhập dự báo nguy cơ'),
 });
 // sưa, ban giao lenh sx
 export const editAndTransferOrderValidationSchema = yup.object({
-    assignedTo: yup.string().required('Vui lòng chọn thẻ lương'),
-    device: yup.array(),
-    job: yup.string().required('Vui lòng chọn loại công việc'),
-    workingDate: yup.string().required('Vui lòng chọn ngày làm việc'),
-    shift: yup.string().required('Vui lòng chọn ca làm việc'),
-    shiftHour: yup.string().required('Vui lòng nhập giờ làm việc'),
-    workContent: yup.string().required('Vui lòng nhập nội dung'),
+  assignedTo: yup.string().required("Vui lòng chọn thẻ lương"),
+  device: yup.array(),
+  job: yup.string().required("Vui lòng chọn loại công việc"),
+  workingDate: yup.string().required("Vui lòng chọn ngày làm việc"),
+  shift: yup.string().required("Vui lòng chọn ca làm việc"),
+  shiftHour: yup.string().required("Vui lòng nhập giờ làm việc"),
+  workContent: yup.string().required("Vui lòng nhập nội dung"),
+  risk: yup.string().required("Vui lòng nhập dự báo nguy cơ"),
 });

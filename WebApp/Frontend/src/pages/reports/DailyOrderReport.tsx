@@ -72,6 +72,15 @@ export default function DailyOrderReport({
                   Tên tổ sản xuất
                 </TableCell>
                 <TableCell align="center" width={150}>
+                  Người tạo lệnh
+                </TableCell>
+                <TableCell align="center" width={150}>
+                  Người nhận lệnh
+                </TableCell>
+                <TableCell align="center" width={150}>
+                  Thời gian tạo lệnh
+                </TableCell>
+                <TableCell align="center" width={150}>
                   Tên-Số hiệu thiết bị
                 </TableCell>
                 <TableCell align="center" width={150}>
@@ -107,6 +116,25 @@ export default function DailyOrderReport({
               {data.map((item: any) => (
                 <TableRow>
                   <TableCell>{item?.department?.name || ""}</TableCell>
+                  <TableCell>
+                    {item?.createdBy?.fullName || ""}
+                    {" - "}
+                    {item?.createdBy?.salaryCode || ""}
+                    {" - "}
+                    {item?.createdBy?.position?.name || ""}
+                  </TableCell>
+                  <TableCell>
+                    {item?.assignedTo?.fullName || ""}
+                    {" - "}
+                    {item?.assignedTo?.salaryCode || ""}
+                    {" - "}
+                    {item?.assignedTo?.position?.name || ""}
+                  </TableCell>
+                  <TableCell>
+                    {item?.createdAt
+                      ? dayjs(item?.createdAt).format("DD/MM/YYYY")
+                      : ""}
+                  </TableCell>
                   <TableCell>
                     {item?.device.map((i: any) => i.code || "").join(",     ")}
                   </TableCell>
