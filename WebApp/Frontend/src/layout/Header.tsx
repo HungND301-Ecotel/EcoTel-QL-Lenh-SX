@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import api from "../config/api.config";
 import { useAtom } from "jotai";
 import { useQuery } from "@tanstack/react-query";
@@ -44,15 +44,11 @@ import {
   Business,
   AccessTime,
   Badge as BadgeIcon,
-  SettingsSystemDaydream,
-  Assessment,
   Category,
   WorkOutline,
-  Assignment,
   Dashboard,
 } from "@mui/icons-material";
 import { ChartNoAxesCombined, ClipboardPaste, MonitorCog } from "lucide-react";
-
 import { userAtom } from "../atoms/userAtoms";
 import { useLocation, useNavigate } from "react-router-dom";
 import ChangePassword from "../components/Modal/ChangePassword";
