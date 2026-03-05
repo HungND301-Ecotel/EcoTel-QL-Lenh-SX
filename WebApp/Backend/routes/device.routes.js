@@ -405,12 +405,12 @@ router.post("/update_status", verifyToken, async (req, res) => {
         if (order.status === STATUS_ORDER.INPROGRESS) {
           bulkOps.push({
             updateOne: {
-              filter: { _id: lastDeviceId._id },
+              filter: { _id: lastDeviceId?._id },
               update: { status: STATUS_DEVICE.IN_USE },
             },
           });
           logData.push({
-            "Mã thiết bị": lastDeviceId.code,
+            "Mã thiết bị": lastDeviceId?.code,
             Loại: "Thiết bị vận hành",
             "Trạng thái mới": STATUS_DEVICE.IN_USE,
           });
@@ -418,12 +418,12 @@ router.post("/update_status", verifyToken, async (req, res) => {
           // Kết thúc / huỷ → device chính AVAILABLE
           bulkOps.push({
             updateOne: {
-              filter: { _id: lastDeviceId._id },
+              filter: { _id: lastDeviceId?._id },
               update: { status: STATUS_DEVICE.AVAILABLE },
             },
           });
           logData.push({
-            "Mã thiết bị": lastDeviceId.code,
+            "Mã thiết bị": lastDeviceId?.code,
             Loại: "Thiết bị vận hành",
             "Trạng thái mới": STATUS_DEVICE.AVAILABLE,
           });
@@ -437,7 +437,7 @@ router.post("/update_status", verifyToken, async (req, res) => {
           for (const item of vehicleRepairList) {
             bulkOps.push({
               updateOne: {
-                filter: { _id: item.device._id },
+                filter: { _id: item.device?._id },
                 update: {
                   status:
                     item.status === STATUS_REPAIR.COMPLETED
@@ -447,7 +447,7 @@ router.post("/update_status", verifyToken, async (req, res) => {
               },
             });
             logData.push({
-              "Mã thiết bị": item.device.code,
+              "Mã thiết bị": item.device?.code,
               Loại: "Thiết bị sửa chữa",
               "Trạng thái mới":
                 item.status === STATUS_REPAIR.COMPLETED
@@ -461,12 +461,12 @@ router.post("/update_status", verifyToken, async (req, res) => {
           for (const deviceId of repairDevices) {
             bulkOps.push({
               updateOne: {
-                filter: { _id: deviceId.device._id },
+                filter: { _id: deviceId.device?._id },
                 update: { status: STATUS_DEVICE.MAINTENANCE },
               },
             });
             logData.push({
-              "Mã thiết bị": deviceId.device.code,
+              "Mã thiết bị": deviceId.device?.code,
               Loại: "Thiết bị sửa chữa",
               "Trạng thái mới": STATUS_DEVICE.MAINTENANCE,
             });
@@ -497,7 +497,7 @@ router.post("/update_status", verifyToken, async (req, res) => {
       ).format("DD/MM/YYYY")}`,
     });
   } catch (err) {
-    res.status(500).json({ status: "error", message: err.message });
+    res.status(500).json({ status: "error", message: err.message,stack: err.stack});
   }
 });
 
