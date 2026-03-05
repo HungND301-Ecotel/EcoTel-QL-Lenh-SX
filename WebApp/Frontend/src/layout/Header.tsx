@@ -23,6 +23,7 @@ import {
   ListItemText,
   ListItem,
   MenuList,
+  ListItemIcon,
 } from "@mui/material";
 import {
   Work,
@@ -33,9 +34,25 @@ import {
   Person,
   Notifications,
   Logout,
-  ArrowRight,
   KeyboardArrowRight,
+  Security,
+  Construction,
+  Route,
+  DirectionsCar,
+  Terrain,
+  LocationOn,
+  Business,
+  AccessTime,
+  Badge as BadgeIcon,
+  SettingsSystemDaydream,
+  Assessment,
+  Category,
+  WorkOutline,
+  Assignment,
+  Dashboard,
 } from "@mui/icons-material";
+import { ChartNoAxesCombined, ClipboardPaste, MonitorCog } from "lucide-react";
+
 import { userAtom } from "../atoms/userAtoms";
 import { useLocation, useNavigate } from "react-router-dom";
 import ChangePassword from "../components/Modal/ChangePassword";
@@ -80,17 +97,17 @@ export default function Header() {
     setUser(null);
     navigate("/login");
   };
-
   const menuItems = [
     [RoleEnum.ADMIN, RoleEnum.MANAGER].includes(user?.role) && {
       text: "Biện pháp an toàn",
+      icon: <Security fontSize="small" />,
       path: "/safetyMeasures",
     },
     [RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.DISPATCHER].includes(
       user?.role,
     ) && {
       text: "Thiết bị",
-      icon: <ArrowRight color="primary" />,
+      icon: <Construction fontSize="small" />,
       path: "#",
       submenu: [
         { text: "Phân loại thiết bị", path: "/deviceTypes" },
@@ -101,55 +118,63 @@ export default function Header() {
     },
     [RoleEnum.ADMIN, RoleEnum.MANAGER].includes(user?.role) && {
       text: "Cung độ",
+      icon: <Route fontSize="small" />,
       path: "/travelLog",
     },
     [RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.DISPATCHER].includes(
       user?.role,
     ) && {
       text: "Mô hình xe",
+      icon: <DirectionsCar fontSize="small" />,
       path: "/models",
     },
     [RoleEnum.ADMIN, RoleEnum.MANAGER].includes(user?.role) && {
       text: "Vật liệu",
+      icon: <Terrain fontSize="small" />,
       path: "/materials",
     },
     [RoleEnum.ADMIN, RoleEnum.MANAGER].includes(user?.role) && {
       text: "Điểm đổ tải",
+      icon: <LocationOn fontSize="small" />,
       path: "/locations",
     },
     [RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.DISPATCHER].includes(
       user?.role,
     ) && {
       text: "Cán bộ nhân viên",
-      icon: <People color="primary" />,
+      icon: <People fontSize="small" />,
       path: "/users",
     },
     [RoleEnum.ADMIN, RoleEnum.MANAGER].includes(user?.role) && {
       text: "Công việc",
-      icon: <Work color="primary" />,
+      icon: <Work fontSize="small" />,
       path: "/jobs",
     },
     [RoleEnum.ADMIN, RoleEnum.MANAGER].includes(user?.role) && {
       text: "Chức danh nghề nghiệp",
+      icon: <BadgeIcon fontSize="small" />,
       path: "/positions",
     },
     [RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.DISPATCHER].includes(
       user?.role,
     ) && {
       text: "Đơn vị",
+      icon: <Business fontSize="small" />,
       path: "/departments",
     },
     [RoleEnum.ADMIN, RoleEnum.MANAGER].includes(user?.role) && {
       text: "Ca làm việc",
+      icon: <AccessTime fontSize="small" />,
       path: "/shifts",
     },
   ].filter(Boolean);
+
   return (
     <>
       <Box
         sx={{
           background:
-            "linear-gradient(to right, #0b109aff, #709727ff, #644921ff, #0b109aff)", // màu xanh giống ảnh
+            "linear-gradient(to right, #0b109aff, #709727ff, #644921ff, #0b109aff)",
           color: "white",
           py: 2,
           px: 3,
@@ -161,7 +186,11 @@ export default function Header() {
           alignItems={"center"}
           gap={2}
         >
-          <img src="/image/logo.png" style={{ width: 100, height: 100 }} />
+          <img
+            src="/image/logo.png"
+            style={{ width: 100, height: 100 }}
+            alt="logo"
+          />
           <Box>
             <Typography
               variant="h6"
@@ -193,14 +222,11 @@ export default function Header() {
               justifyContent={"center"}
               sx={{ mt: 1.5, gap: 4 }}
             >
-              {/* Hotline (Số điện thoại) */}
               <Box display="flex" alignItems="center" gap={0.5}>
                 <Typography variant="body1">
                   Điện thoại: 024.35180141
                 </Typography>
               </Box>
-
-              {/* Email (Tùy chọn) */}
               <Box display="flex" alignItems="center" gap={0.5}>
                 <Typography variant="body1">Fax: 024.38510724</Typography>
               </Box>
@@ -208,9 +234,9 @@ export default function Header() {
           </Box>
         </Box>
       </Box>
+
       <AppBar position="sticky">
         <Toolbar sx={{ justifyContent: "space-between" }}>
-          {/* Menu chính ngang / Drawer cho mobile */}
           {isMobile ? (
             <>
               <IconButton color="inherit" onClick={() => setDrawerOpen(true)}>
@@ -221,7 +247,7 @@ export default function Header() {
                 open={drawerOpen}
                 onClose={() => setDrawerOpen(false)}
               >
-                <List sx={{ width: 250 }}>
+                <List sx={{ width: 280 }}>
                   <ListItem
                     button
                     onClick={() => {
@@ -229,6 +255,9 @@ export default function Header() {
                       setDrawerOpen(false);
                     }}
                   >
+                    <ListItemIcon sx={{ color: "primary.main" }}>
+                      <Dashboard />
+                    </ListItemIcon>
                     <ListItemText primary="Tổng quan" />
                   </ListItem>
                   <ListItem
@@ -238,6 +267,9 @@ export default function Header() {
                       setDrawerOpen(false);
                     }}
                   >
+                    <ListItemIcon sx={{ color: "primary.main" }}>
+                      <ClipboardPaste />
+                    </ListItemIcon>
                     <ListItemText primary="Lệnh sản xuất" />
                   </ListItem>
                   {[RoleEnum.MANAGER].includes(user?.role) && (
@@ -248,10 +280,13 @@ export default function Header() {
                         setDrawerOpen(false);
                       }}
                     >
+                      <ListItemIcon sx={{ color: "primary.main" }}>
+                        <WorkOutline />
+                      </ListItemIcon>
                       <ListItemText primary="Công việc của tôi" />
                     </ListItem>
                   )}
-                  {menuItems.map((item) => {
+                  {menuItems.map((item: any) => {
                     if (!item) return null;
                     if (item.submenu) {
                       return (
@@ -264,18 +299,25 @@ export default function Header() {
                             setSubmenuItems(item.submenu!);
                           }}
                         >
+                          <ListItemIcon sx={{ color: "primary.main" }}>
+                            {item.icon}
+                          </ListItemIcon>
                           <ListItemText primary={item.text} />
                         </ListItem>
                       );
                     }
-
-                    // item bình thường
                     return (
                       <ListItem
                         key={item.text}
                         button
-                        onClick={() => navigate(item.path!)}
+                        onClick={() => {
+                          navigate(item.path!);
+                          setDrawerOpen(false);
+                        }}
                       >
+                        <ListItemIcon sx={{ color: "primary.main" }}>
+                          {item.icon}
+                        </ListItemIcon>
                         <ListItemText primary={item.text} />
                       </ListItem>
                     );
@@ -292,6 +334,9 @@ export default function Header() {
                         setDrawerOpen(false);
                       }}
                     >
+                      <ListItemIcon sx={{ color: "primary.main" }}>
+                        <ChartNoAxesCombined color="currentColor" />
+                      </ListItemIcon>
                       <ListItemText primary="Báo cáo" />
                     </ListItem>
                   )}
@@ -303,6 +348,9 @@ export default function Header() {
                         setDrawerOpen(false);
                       }}
                     >
+                      <ListItemIcon sx={{ color: "primary.main" }}>
+                        <MonitorCog color="currentColor" />
+                      </ListItemIcon>
                       <ListItemText primary="Hệ thống" />
                     </ListItem>
                   )}
@@ -313,6 +361,7 @@ export default function Header() {
             <Box display="flex" gap={2} maxWidth="xl" justifyContent="center">
               <Button
                 color="inherit"
+                startIcon={<Dashboard />}
                 sx={{
                   fontSize: 20,
                   borderBottom:
@@ -324,6 +373,7 @@ export default function Header() {
               </Button>
               <Button
                 color="inherit"
+                startIcon={<ClipboardPaste style={{ color: "inherit" }} />}
                 sx={{
                   fontSize: 20,
                   borderBottom:
@@ -336,6 +386,7 @@ export default function Header() {
               {[RoleEnum.MANAGER].includes(user?.role) && (
                 <Button
                   color="inherit"
+                  startIcon={<WorkOutline />}
                   sx={{
                     fontSize: 20,
                     borderBottom:
@@ -354,6 +405,7 @@ export default function Header() {
                     color="inherit"
                     sx={{ fontSize: 20 }}
                     onClick={(e) => setMenuAnchorEl(e.currentTarget)}
+                    startIcon={<Category />}
                     endIcon={<ExpandMore />}
                   >
                     Danh mục
@@ -363,37 +415,52 @@ export default function Header() {
                     open={Boolean(menuAnchorEl)}
                     onClose={() => setMenuAnchorEl(null)}
                   >
-                    {menuItems.map((item) => {
+                    {menuItems.map((item: any) => {
                       if (!item) return null;
                       if (item.submenu) {
                         return (
-                          <ListItem
+                          <MenuItem
                             key={item.text}
-                            secondaryAction={<KeyboardArrowRight />}
-                            button
                             onClick={(e) => {
                               setSubmenuAnchorEl(e.currentTarget);
                               setSubmenuItems(item.submenu!);
                             }}
+                            sx={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              minWidth: 200,
+                            }}
                           >
-                            <ListItemText primary={item.text} />
-                          </ListItem>
+                            <Box display="flex" alignItems="center" gap={1.5}>
+                              <Box display="flex" color="primary.main">
+                                {item.icon}
+                              </Box>
+                              {item.text}
+                            </Box>
+                            <KeyboardArrowRight fontSize="small" />
+                          </MenuItem>
                         );
                       }
                       return (
                         <MenuItem
                           key={item!.text}
                           sx={{
-                            borderBottom:
+                            borderLeft:
                               location.pathname === item.path
-                                ? "5px solid red"
-                                : "",
+                                ? "4px solid red"
+                                : "4px solid transparent",
+                            display: "flex",
+                            gap: 1.5,
+                            minWidth: 200,
                           }}
                           onClick={() => {
                             navigate(item!.path!);
                             setMenuAnchorEl(null);
                           }}
                         >
+                          <Box display="flex" color="primary.main">
+                            {item.icon}
+                          </Box>
                           {item!.text}
                         </MenuItem>
                       );
@@ -406,6 +473,9 @@ export default function Header() {
               ) && (
                 <Button
                   color="inherit"
+                  startIcon={
+                    <ChartNoAxesCombined style={{ color: "inherit" }} />
+                  }
                   sx={{
                     fontSize: 20,
                     borderBottom:
@@ -416,11 +486,10 @@ export default function Header() {
                   Báo cáo
                 </Button>
               )}
-              {[RoleEnum.ADMIN].includes(
-                user?.role,
-              ) && (
+              {[RoleEnum.ADMIN].includes(user?.role) && (
                 <Button
                   color="inherit"
+                  startIcon={<MonitorCog style={{ color: "inherit" }} />}
                   sx={{
                     fontSize: 20,
                     borderBottom:
@@ -434,7 +503,7 @@ export default function Header() {
             </Box>
           )}
 
-          {/* Avatar, thông báo */}
+          {/* Avatar, thông báo giữ nguyên */}
           <Box display="flex" alignItems="center" gap={2}>
             <Tooltip title="Thông báo">
               <IconButton
@@ -524,7 +593,6 @@ export default function Header() {
             </Popover>
           </Box>
         </Toolbar>
-        {/* Modal: Profile + Đổi mật khẩu */}
         <ChangePassword
           open={openChangePassword}
           setOpen={setOpenChangePassword}
