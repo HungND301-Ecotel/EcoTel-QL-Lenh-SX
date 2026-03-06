@@ -53,6 +53,7 @@ class _DispatcherAssignmentTransfer
       _descriptionController.text = order.workContent ?? '';
       _noteController.text =
           order.shiftReport?.handoverNotes ?? '';
+      _riskController.text = order.risk ?? '';
     } else {
       userAndDepartment.add({
         "user": null,
@@ -87,17 +88,28 @@ class _DispatcherAssignmentTransfer
     });
   }
 
-
-
   final TextEditingController _descriptionController =
       TextEditingController();
   final TextEditingController _noteController =
+      TextEditingController();
+  final TextEditingController _riskController =
       TextEditingController();
   final OrderService _orderService = OrderService();
 
   void createOrders() async {
     String description = _descriptionController.text.trim();
     String note = _noteController.text.trim();
+    String risk = _riskController.text.trim();
+
+    if (risk.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Dự báo nguy cơ không được trống."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     final userProvider = Provider.of<UserProvider>(
       context,
@@ -108,29 +120,28 @@ class _DispatcherAssignmentTransfer
       userProvider.user?.fullName,
     );
 
-    final validItems =
-        userAndDepartment
-            .where(
-              (item) =>
-                  item?["user"] != null &&
-                  item?["department"] != null,
-            )
-            .toList();
+    final validItems = userAndDepartment
+        .where(
+          (item) =>
+              item?["user"] != null &&
+              item?["department"] != null,
+        )
+        .toList();
 
     bool hasError = false;
     for (var item in validItems) {
       var result = await _orderService.createOrder({
         "job": widget.data.id,
-        "workingDate":
-            DateTime.utc(
-              _selectedDateTime!.year,
-              _selectedDateTime!.month,
-              _selectedDateTime!.day,
-            ).toIso8601String(),
+        "workingDate": DateTime.utc(
+          _selectedDateTime!.year,
+          _selectedDateTime!.month,
+          _selectedDateTime!.day,
+        ).toIso8601String(),
         "assignedTo": item?["user"].id,
         "workContent": description,
         "batchId": batchId,
         "note": note,
+        "risk": risk,
       });
       if (!mounted) return;
 
@@ -196,11 +207,9 @@ class _DispatcherAssignmentTransfer
                     color: Colors.blue,
                   ),
                 ),
-                for (
-                  int i = 0;
-                  i < userAndDepartment.length;
-                  i++
-                )
+                for (int i = 0;
+                    i < userAndDepartment.length;
+                    i++)
                   Row(
                     children: [
                       Expanded(
@@ -208,16 +217,15 @@ class _DispatcherAssignmentTransfer
                           title: 'Số thẻ lương',
                           onSelectUser: (selectedUser) {
                             setState(() {
-                              userAndDepartment[i]?["user"] =
-                                  selectedUser;
-                              userAndDepartment[i]?["department"] =
+                              userAndDepartment[i]
+                                  ?["user"] = selectedUser;
+                              userAndDepartment[i]
+                                      ?["department"] =
                                   selectedUser
-                                      ?.department
-                                      ?.code;
+                                      ?.department?.code;
                               _departmentControllers[i]
                                   .text = selectedUser
-                                      ?.department
-                                      ?.code ??
+                                      ?.department?.code ??
                                   '';
                             });
                           },
@@ -289,6 +297,17 @@ class _DispatcherAssignmentTransfer
                 ),
                 TextField(
                   controller: _noteController,
+                  maxLines: null,
+                  minLines: 5,
+                ),
+                Text(
+                  'Dự báo nguy cơ ',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TextField(
+                  controller: _riskController,
                   maxLines: null,
                   minLines: 5,
                 ),

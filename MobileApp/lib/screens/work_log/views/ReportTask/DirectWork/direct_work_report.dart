@@ -18,7 +18,7 @@ class _DirectWorkeport extends State<DirectWorkeport> {
   UserModel? user;
 
   final Map<String, VehicleSummariesControllers>
-  _deviceSummaryControllers = {};
+      _deviceSummaryControllers = {};
 
   void _updateUser(UserModel? selectedUser) {
     setState(() {
@@ -31,6 +31,8 @@ class _DirectWorkeport extends State<DirectWorkeport> {
   final TextEditingController _handoverNotesController =
       TextEditingController();
   final TextEditingController _risksController =
+      TextEditingController();
+  final TextEditingController _shiftHoursController =
       TextEditingController();
 
   void _calculateFuelUsedFor(String id) {
@@ -64,6 +66,8 @@ class _DirectWorkeport extends State<DirectWorkeport> {
       _handoverNotesController.text =
           report.handoverNotes ?? '';
       _risksController.text = report.risks ?? '';
+      _shiftHoursController.text =
+          report.shiftHours?.toString() ?? '';
 
       for (var item in report.vehicleSummaries ?? []) {
         final controller =
@@ -132,6 +136,9 @@ class _DirectWorkeport extends State<DirectWorkeport> {
     final handoverHours = int.tryParse(
       _handoverHoursController.text.trim(),
     );
+    final shiftHours = int.tryParse(
+      _shiftHoursController.text.trim(),
+    );
     final handoverNotes =
         _handoverNotesController.text.trim();
     final risks = _risksController.text.trim();
@@ -150,6 +157,7 @@ class _DirectWorkeport extends State<DirectWorkeport> {
       "assignedTo": user?.id,
       "vehicleSummaries": vehicleSummaries,
       "handoverHours": handoverHours,
+      "shiftHours": shiftHours,
       "handoverNotes": handoverNotes,
       "risks": risks,
     });
@@ -203,6 +211,9 @@ class _DirectWorkeport extends State<DirectWorkeport> {
     final handoverHours = int.tryParse(
       _handoverHoursController.text.trim(),
     );
+    final shiftHours = int.tryParse(
+      _shiftHoursController.text.trim(),
+    );
     final handoverNotes =
         _handoverNotesController.text.trim();
     final risks = _risksController.text.trim();
@@ -216,15 +227,16 @@ class _DirectWorkeport extends State<DirectWorkeport> {
       );
       return;
     }
-    var result = await _shiftReportService
-        .update(shiftReportId, {
-          "orderId": widget.order.id,
-          "assignedTo": user?.id,
-          "vehicleSummaries": vehicleSummaries,
-          "handoverHours": handoverHours,
-          "handoverNotes": handoverNotes,
-          "risks": risks,
-        });
+    var result =
+        await _shiftReportService.update(shiftReportId, {
+      "orderId": widget.order.id,
+      "assignedTo": user?.id,
+      "vehicleSummaries": vehicleSummaries,
+      "handoverHours": handoverHours,
+      "shiftHours": shiftHours,
+      "handoverNotes": handoverNotes,
+      "risks": risks,
+    });
     if (!mounted) return;
     if (result['status'] == 'error') {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -266,322 +278,305 @@ class _DirectWorkeport extends State<DirectWorkeport> {
                   children: [
                     PayRollInput(
                       title: 'Số thẻ lương',
-                      onSelectUser:
-                          (user) => _updateUser(user),
-                      initialPayroll:
-                          widget
-                              .order
-                              .assignedTo
-                              .salaryCode,
+                      onSelectUser: (user) =>
+                          _updateUser(user),
+                      initialPayroll: widget
+                          .order.assignedTo.salaryCode,
                     ),
                     Column(
                       crossAxisAlignment:
                           CrossAxisAlignment.start,
                       children:
-                          ((widget.order.device) ?? []).map((
-                            item,
-                          ) {
-                            final summaryController =
-                                _deviceSummaryControllers[item
-                                    .id]!;
-                            return Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(height: 16),
-                                Text(
-                                  "+ Phương tiện: ${item.code}",
-                                  style: TextStyle(
-                                    fontWeight:
-                                        FontWeight.bold,
-                                  ),
+                          ((widget.order.device) ?? [])
+                              .map((
+                        item,
+                      ) {
+                        final summaryController =
+                            _deviceSummaryControllers[
+                                item.id]!;
+                        return Column(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(height: 16),
+                            Text(
+                              "+ Phương tiện: ${item.code}",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: 16),
+                            if ([
+                              'Vận hành xúc',
+                              'Vận hành khoan',
+                              'Vận hành gạt',
+                            ].contains(widget
+                                .order.job?.type)) ...[
+                              Text(
+                                'Giờ lũy kế trên đồng hồ',
+                                style: TextStyle(
+                                  fontWeight:
+                                      FontWeight.w600,
                                 ),
-                                SizedBox(height: 16),
-                                Text(
-                                  'Km hoạt động trên đồng hồ',
-                                  style: TextStyle(
-                                    fontWeight:
-                                        FontWeight.w600,
-                                  ),
+                              ),
+                            ] else ...[
+                              Text(
+                                'Km hoạt động trên đồng hồ',
+                                style: TextStyle(
+                                  fontWeight:
+                                      FontWeight.w600,
                                 ),
-                                TextField(
-                                  controller:
-                                      summaryController
-                                          .distanceKm,
-                                  keyboardType:
-                                      TextInputType.number,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter
-                                        .digitsOnly,
-                                  ],
+                              ),
+                            ],
+                            TextField(
+                              controller: summaryController
+                                  .travelHours,
+                              keyboardType:
+                                  TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter
+                                    .digitsOnly,
+                              ],
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'Giờ sửa chữa(phút)',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            TextField(
+                              controller: summaryController
+                                  .repairHours,
+                              keyboardType:
+                                  TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter
+                                    .digitsOnly,
+                              ],
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Nhiên liệu',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Tồn dầu',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            TextField(
+                              controller: summaryController
+                                  .fuelRemain,
+                              onChanged: (_) =>
+                                  _calculateFuelUsedFor(
+                                item.id,
+                              ),
+                              keyboardType:
+                                  TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter
+                                    .digitsOnly,
+                              ],
+                            ),
+                            Text(
+                              'Lĩnh trong ca',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            TextField(
+                              controller: summaryController
+                                  .fuelReceived,
+                              onChanged: (_) =>
+                                  _calculateFuelUsedFor(
+                                item.id,
+                              ),
+                              keyboardType:
+                                  TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter
+                                    .digitsOnly,
+                              ],
+                            ),
+                            Text(
+                              'Tồn cuối ca',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            TextField(
+                              controller: summaryController
+                                  .fuelRemainEnd,
+                              onChanged: (_) =>
+                                  _calculateFuelUsedFor(
+                                item.id,
+                              ),
+                              keyboardType:
+                                  TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter
+                                    .digitsOnly,
+                              ],
+                            ),
+                            Text(
+                              'Tiêu thụ',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            TextField(
+                              controller: summaryController
+                                  .fuelUsedController,
+                              readOnly: true,
+                            ),
+                            Text(
+                              'Tình trạng phương tiện',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            DropdownButtonFormField<String>(
+                              value:
+                                  summaryController.status,
+                              decoration:
+                                  const InputDecoration(
+                                border:
+                                    OutlineInputBorder(),
+                              ),
+                              items: [
+                                DropdownMenuItem(
+                                  value: 'good',
+                                  child: Text('Tốt'),
                                 ),
-                                SizedBox(height: 16),
-                                Text(
-                                  'Giờ hoạt động trên đồng hồ',
-                                  style: TextStyle(
-                                    fontWeight:
-                                        FontWeight.w600,
-                                  ),
-                                ),
-                                TextField(
-                                  controller:
-                                      summaryController
-                                          .travelHours,
-                                  keyboardType:
-                                      TextInputType.number,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter
-                                        .digitsOnly,
-                                  ],
-                                ),
-                                SizedBox(height: 16),
-                                Text(
-                                  'Giờ sửa chữa(phút)',
-                                  style: TextStyle(
-                                    fontWeight:
-                                        FontWeight.w600,
-                                  ),
-                                ),
-                                TextField(
-                                  controller:
-                                      summaryController
-                                          .repairHours,
-                                  keyboardType:
-                                      TextInputType.number,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter
-                                        .digitsOnly,
-                                  ],
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Nhiên liệu',
-                                  style: TextStyle(
-                                    fontWeight:
-                                        FontWeight.w600,
-                                  ),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Tồn dầu',
-                                  style: TextStyle(
-                                    fontWeight:
-                                        FontWeight.w600,
-                                  ),
-                                ),
-                                TextField(
-                                  controller:
-                                      summaryController
-                                          .fuelRemain,
-                                  onChanged:
-                                      (_) =>
-                                          _calculateFuelUsedFor(
-                                            item.id,
-                                          ),
-                                  keyboardType:
-                                      TextInputType.number,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter
-                                        .digitsOnly,
-                                  ],
-                                ),
-                                Text(
-                                  'Lĩnh trong ca',
-                                  style: TextStyle(
-                                    fontWeight:
-                                        FontWeight.w600,
-                                  ),
-                                ),
-                                TextField(
-                                  controller:
-                                      summaryController
-                                          .fuelReceived,
-                                  onChanged:
-                                      (_) =>
-                                          _calculateFuelUsedFor(
-                                            item.id,
-                                          ),
-                                  keyboardType:
-                                      TextInputType.number,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter
-                                        .digitsOnly,
-                                  ],
-                                ),
-                                Text(
-                                  'Tồn cuối ca',
-                                  style: TextStyle(
-                                    fontWeight:
-                                        FontWeight.w600,
-                                  ),
-                                ),
-                                TextField(
-                                  controller:
-                                      summaryController
-                                          .fuelRemainEnd,
-                                  onChanged:
-                                      (_) =>
-                                          _calculateFuelUsedFor(
-                                            item.id,
-                                          ),
-                                  keyboardType:
-                                      TextInputType.number,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter
-                                        .digitsOnly,
-                                  ],
-                                ),
-                                Text(
-                                  'Tiêu thụ',
-                                  style: TextStyle(
-                                    fontWeight:
-                                        FontWeight.w600,
-                                  ),
-                                ),
-                                TextField(
-                                  controller:
-                                      summaryController
-                                          .fuelUsedController,
-                                  readOnly: true,
-                                ),
-                                Text(
-                                  'Tình trạng phương tiện',
-                                  style: TextStyle(
-                                    fontWeight:
-                                        FontWeight.w600,
-                                  ),
-                                ),
-                                DropdownButtonFormField<
-                                  String
-                                >(
-                                  value:
-                                      summaryController
-                                          .status,
-                                  decoration:
-                                      const InputDecoration(
-                                        border:
-                                            OutlineInputBorder(),
-                                      ),
-                                  items: [
-                                    DropdownMenuItem(
-                                      value: 'good',
-                                      child: Text('Tốt'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: 'fail',
-                                      child: Text('Hỏng'),
-                                    ),
-                                  ],
-                                  onChanged: (value) {
-                                    setState(() {
-                                      summaryController
-                                              .status =
-                                          value ?? 'good';
-                                    });
-                                  },
-                                ),
-                                if (summaryController
-                                        .status ==
-                                    "fail")
-                                  Text(
-                                    'Lí do hỏng *',
-                                    style: TextStyle(
-                                      fontWeight:
-                                          FontWeight.w600,
-                                    ),
-                                  ),
-                                if (summaryController
-                                        .status ==
-                                    "fail")
-                                  TextField(
-                                    controller:
-                                        summaryController
-                                            .note,
-                                    minLines: 3,
-                                    maxLines: null,
-                                  ),
-                                Text(
-                                  'GPS',
-                                  style: TextStyle(
-                                    fontWeight:
-                                        FontWeight.w600,
-                                  ),
-                                ),
-                                DropdownButtonFormField<
-                                  String
-                                >(
-                                  value:
-                                      summaryController
-                                          .gpsStatus,
-                                  decoration:
-                                      const InputDecoration(
-                                        border:
-                                            OutlineInputBorder(),
-                                      ),
-                                  items: [
-                                    DropdownMenuItem(
-                                      value:
-                                          'Hoạt động bình thường',
-                                      child: Text(
-                                        'Hoạt động bình thường',
-                                      ),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: 'Mất tín hiệu',
-                                      child: Text(
-                                        'Mất tín hiệu',
-                                      ),
-                                    ),
-                                  ],
-                                  onChanged: (value) {
-                                    setState(() {
-                                      summaryController
-                                              .gpsStatus =
-                                          value ??
-                                          'Hoạt động bình thường';
-                                    });
-                                  },
-                                ),
-                                Text(
-                                  'Kẹp chì/ Niêm phong',
-                                  style: TextStyle(
-                                    fontWeight:
-                                        FontWeight.w600,
-                                  ),
-                                ),
-                                DropdownButtonFormField<
-                                  String
-                                >(
-                                  value:
-                                      summaryController
-                                          .sealStatus,
-                                  decoration:
-                                      const InputDecoration(
-                                        border:
-                                            OutlineInputBorder(),
-                                      ),
-                                  items: [
-                                    DropdownMenuItem(
-                                      value: 'Tốt',
-                                      child: Text('Tốt'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: 'Hỏng',
-                                      child: Text('Hỏng'),
-                                    ),
-                                  ],
-                                  onChanged: (value) {
-                                    setState(() {
-                                      summaryController
-                                              .sealStatus =
-                                          value ?? 'Tốt';
-                                    });
-                                  },
+                                DropdownMenuItem(
+                                  value: 'fail',
+                                  child: Text('Hỏng'),
                                 ),
                               ],
-                            );
-                          }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  summaryController.status =
+                                      value ?? 'good';
+                                });
+                              },
+                            ),
+                            if (summaryController.status ==
+                                "fail")
+                              Text(
+                                'Lí do hỏng *',
+                                style: TextStyle(
+                                  fontWeight:
+                                      FontWeight.w600,
+                                ),
+                              ),
+                            if (summaryController.status ==
+                                "fail")
+                              TextField(
+                                controller:
+                                    summaryController.note,
+                                minLines: 3,
+                                maxLines: null,
+                              ),
+                            Text(
+                              'GPS',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            DropdownButtonFormField<String>(
+                              value: summaryController
+                                  .gpsStatus,
+                              decoration:
+                                  const InputDecoration(
+                                border:
+                                    OutlineInputBorder(),
+                              ),
+                              items: [
+                                DropdownMenuItem(
+                                  value:
+                                      'Hoạt động bình thường',
+                                  child: Text(
+                                    'Hoạt động bình thường',
+                                  ),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Mất tín hiệu',
+                                  child: Text(
+                                    'Mất tín hiệu',
+                                  ),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  summaryController
+                                          .gpsStatus =
+                                      value ??
+                                          'Hoạt động bình thường';
+                                });
+                              },
+                            ),
+                            Text(
+                              'Kẹp chì/ Niêm phong',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            DropdownButtonFormField<String>(
+                              value: summaryController
+                                  .sealStatus,
+                              decoration:
+                                  const InputDecoration(
+                                border:
+                                    OutlineInputBorder(),
+                              ),
+                              items: [
+                                DropdownMenuItem(
+                                  value: 'Tốt',
+                                  child: Text('Tốt'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Hỏng',
+                                  child: Text('Hỏng'),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  summaryController
+                                          .sealStatus =
+                                      value ?? 'Tốt';
+                                });
+                              },
+                            ),
+                          ],
+                        );
+                      }).toList(),
                     ),
+                    if ([
+                      'Vận hành xúc',
+                      'Vận hành khoan',
+                      'Vận hành gạt',
+                    ].contains(widget.order.job?.type)) ...[
+                      SizedBox(height: 16),
+                      Text(
+                        'Giờ hoạt động trong ca',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      TextField(
+                        controller: _shiftHoursController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter
+                              .digitsOnly,
+                        ],
+                      ),
+                    ],
                     SizedBox(height: 16),
                     Text(
                       'Giờ quy trình-Giao ca(phút)',
@@ -603,7 +598,6 @@ class _DirectWorkeport extends State<DirectWorkeport> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-
                     TextField(
                       controller: _handoverNotesController,
                       minLines: 5,

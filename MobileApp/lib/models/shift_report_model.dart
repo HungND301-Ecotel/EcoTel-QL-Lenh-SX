@@ -49,10 +49,9 @@ class VehicleSummariesModel {
     Map<String, dynamic>? json,
   ) {
     return VehicleSummariesModel(
-      vehicle:
-          json?['vehicle'] != null
-              ? Device.fromJson(json?['vehicle'])
-              : null,
+      vehicle: json?['vehicle'] != null
+          ? Device.fromJson(json?['vehicle'])
+          : null,
       distanceKm: json?['distanceKm'],
       travelHours: json?['travelHours'],
       repairHours: json?['repairHours'],
@@ -87,16 +86,16 @@ class VehicleRepairModel {
   final String? status;
   final String? noteRepair;
 
-  VehicleRepairModel({this.device, this.status, this.noteRepair});
+  VehicleRepairModel(
+      {this.device, this.status, this.noteRepair});
 
   factory VehicleRepairModel.fromJson(
     Map<String, dynamic>? json,
   ) {
     return VehicleRepairModel(
-      device:
-          json?['device'] != null
-              ? Device.fromJson(json?['device'])
-              : null,
+      device: json?['device'] != null
+          ? Device.fromJson(json?['device'])
+          : null,
       status: json?['status'],
       noteRepair: json?['noteRepair'],
     );
@@ -120,6 +119,7 @@ class ShiftReportModel {
   final num? handoverHours;
   final String? handoverNotes;
   final String? risks;
+  final num? shiftHours;
 
   ShiftReportModel({
     required this.id,
@@ -130,6 +130,7 @@ class ShiftReportModel {
     this.handoverHours,
     this.handoverNotes,
     this.risks,
+    this.shiftHours,
   });
 
   factory ShiftReportModel.fromJson(
@@ -139,19 +140,18 @@ class ShiftReportModel {
       id: json?['_id'],
       orderId: json?['orderId'],
       assignedTo: json?['assignedTo'] ?? '',
-      vehicleSummaries:
-          (json?['vehicleSummaries'] as List?)
+      vehicleSummaries: (json?['vehicleSummaries'] as List?)
               ?.map(
                 (e) => VehicleSummariesModel.fromJson(e),
               )
               .toList() ??
           [],
-      vehicleRepair:
-          (json?['vehicleRepair'] as List?)
+      vehicleRepair: (json?['vehicleRepair'] as List?)
               ?.map((e) => VehicleRepairModel.fromJson(e))
               .toList() ??
           [],
       handoverHours: json?['handoverHours'],
+      shiftHours: json?['shiftHours'],
       handoverNotes: json?['handoverNotes'],
       risks: json?['risks'],
     );
@@ -166,6 +166,7 @@ class ShiftReportModel {
       'vehicleRepair':
           vehicleRepair?.map((e) => e.toJson()).toList(),
       'handoverHours': handoverHours,
+      'shiftHours': shiftHours,
       'handoverNotes': handoverNotes,
       'risks': risks,
     };

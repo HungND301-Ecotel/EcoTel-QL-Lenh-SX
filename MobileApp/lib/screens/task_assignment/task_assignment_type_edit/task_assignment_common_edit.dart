@@ -57,6 +57,7 @@ class _TaskAssignmentCommonEdit
       _shiftHour = order.shiftHour ?? '';
       _descriptionController.text = order.workContent ?? '';
       _noteController.text = order.note ?? '';
+      _riskController.text = order.risk ?? '';
     }
   }
 
@@ -135,6 +136,8 @@ class _TaskAssignmentCommonEdit
       TextEditingController();
   final TextEditingController _safetySpecificController =
       TextEditingController();
+  final TextEditingController _riskController =
+      TextEditingController();
   final OrderService _orderService = OrderService();
 
   void createOrder() async {
@@ -143,6 +146,17 @@ class _TaskAssignmentCommonEdit
     String safetyMeasure = _safetyController.text.trim();
     String safetyMeasureSpecific =
         _safetySpecificController.text.trim();
+    String risk = _riskController.text.trim();
+
+    if (risk.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Dự báo nguy cơ không được trống."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     List<String> vehicleIds =
         vehicle
@@ -166,6 +180,7 @@ class _TaskAssignmentCommonEdit
           "workContent": description,
           "temporaryError": null,
           "note": note,
+          "risk": risk,
           "safetyMeasure": safetyMeasure,
           "safetyMeasureSpecific": safetyMeasureSpecific,
         });
@@ -311,6 +326,17 @@ class _TaskAssignmentCommonEdit
                 ),
                 TextField(
                   controller: _noteController,
+                  maxLines: null,
+                  minLines: 5,
+                ),
+                Text(
+                  'Dự báo nguy cơ',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TextField(
+                  controller: _riskController,
                   maxLines: null,
                   minLines: 5,
                 ),

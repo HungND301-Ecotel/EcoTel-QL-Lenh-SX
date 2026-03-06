@@ -10,7 +10,6 @@ import 'package:soft/routes/task_assignment_route.dart';
 import 'package:soft/screens/work_log/widgets/shift_select.dart';
 import 'package:soft/services/order_service.dart';
 import 'package:soft/widgets/date_picker_button.dart';
-import 'package:soft/widgets/excavator_button.dart';
 import 'package:soft/widgets/location_button.dart';
 import 'package:soft/widgets/pay_roll_input.dart';
 import 'package:soft/widgets/time_picker_button.dart';
@@ -91,6 +90,7 @@ class _TaskAssignmentVehicleEdit
       _descriptionController.text = order.workContent ?? '';
       _noteController.text = order.note ?? '';
       _noteController.text = order.note ?? '';
+      _riskController.text = order.risk ?? '';
     }
   }
 
@@ -187,6 +187,8 @@ class _TaskAssignmentVehicleEdit
       TextEditingController();
   final TextEditingController _safetySpecificController =
       TextEditingController();
+  final TextEditingController _riskController =
+      TextEditingController();
   final OrderService _orderService = OrderService();
 
   void createOrder() async {
@@ -195,7 +197,17 @@ class _TaskAssignmentVehicleEdit
     String safetyMeasure = _safetyController.text.trim();
     String safetyMeasureSpecific =
         _safetySpecificController.text.trim();
+    String risk = _riskController.text.trim();
 
+    if (risk.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Dự báo nguy cơ không được trống."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
     List<String> vehicleIds = vehicle
         .where((v) => v != null && v.isNotEmpty)
         .cast<String>()
@@ -227,6 +239,7 @@ class _TaskAssignmentVehicleEdit
       "workContent": description,
       "temporaryError": null,
       "note": note,
+      "risk": risk,
       "safetyMeasure": safetyMeasure,
       "safetyMeasureSpecific": safetyMeasureSpecific,
     });
@@ -634,6 +647,17 @@ class _TaskAssignmentVehicleEdit
                 ),
                 TextField(
                   controller: _noteController,
+                  maxLines: null,
+                  minLines: 5,
+                ),
+                Text(
+                  'Dự báo nguy cơ',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TextField(
+                  controller: _riskController,
                   maxLines: null,
                   minLines: 5,
                 ),

@@ -201,6 +201,7 @@ class _TaskAssignmentVehicleAdd
       _safetyController.text = order.safetyMeasure ?? '';
       _safetySpecificController.text =
           order.safetyMeasureSpecific ?? '';
+      _riskController.text = order.risk ?? '';
     } else {
       userAndDevice.add({"user": null, "device": null});
       excavators = [Excavator(device: null, status: true)];
@@ -270,6 +271,8 @@ class _TaskAssignmentVehicleAdd
       TextEditingController();
   final TextEditingController _safetySpecificController =
       TextEditingController();
+  final TextEditingController _riskController =
+      TextEditingController();
   final OrderService _orderService = OrderService();
 
   void createOrder() async {
@@ -278,6 +281,7 @@ class _TaskAssignmentVehicleAdd
     String safetyMeasure = _safetyController.text.trim();
     String safetyMeasureSpecific =
         _safetySpecificController.text.trim();
+    String risk = _riskController.text.trim();
 
     for (var item in userAndDevice) {
       if (item?['user'] == null ||
@@ -293,6 +297,15 @@ class _TaskAssignmentVehicleAdd
         );
         return;
       }
+    }
+    if (risk.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Dự báo nguy cơ không được trống."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
     }
     final validItems = userAndDevice
         .where(
@@ -328,6 +341,7 @@ class _TaskAssignmentVehicleAdd
         "material": material?.id,
         "workContent": description,
         "note": note,
+        "risk": risk,
         "safetyMeasure": safetyMeasure,
         "safetyMeasureSpecific": safetyMeasureSpecific,
       });
@@ -664,6 +678,17 @@ class _TaskAssignmentVehicleAdd
                 ),
                 TextField(
                   controller: _noteController,
+                  maxLines: null,
+                  minLines: 5,
+                ),
+                Text(
+                  'Dự báo nguy cơ',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TextField(
+                  controller: _riskController,
                   maxLines: null,
                   minLines: 5,
                 ),

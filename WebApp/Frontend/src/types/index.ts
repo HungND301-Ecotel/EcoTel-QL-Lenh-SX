@@ -192,6 +192,7 @@ export interface ShiftReportType {
     sealStatus?: string;
   }[];
   handoverHours?: number;
+  shiftHours?: number;
   handoverNotes?: string;
   risks?: string;
   createdAt?: string;

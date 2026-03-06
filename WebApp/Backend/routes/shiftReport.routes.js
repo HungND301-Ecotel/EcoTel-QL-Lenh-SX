@@ -17,8 +17,34 @@ router.post("/", verifyToken, async (req, res, next) => {
       vehicleRepair,
       handoverHours,
       handoverNotes,
+      shiftHours,
       risks,
     } = req.body;
+
+    // make sure numeric values are numbers, not strings or undefined
+    const shiftHoursNum =
+      shiftHours !== undefined && shiftHours !== null
+        ? Number(shiftHours)
+        : undefined;
+
+    const vehicleSummariesClean = Array.isArray(vehicleSummaries)
+      ? vehicleSummaries.map((v) => ({
+          ...v,
+          travelHours:
+            v.travelHours !== undefined && v.travelHours !== null
+              ? Number(v.travelHours)
+              : v.travelHours,
+          repairHours:
+            v.repairHours !== undefined && v.repairHours !== null
+              ? Number(v.repairHours)
+              : v.repairHours,
+          distanceKm:
+            v.distanceKm !== undefined && v.distanceKm !== null
+              ? Number(v.distanceKm)
+              : v.distanceKm,
+        }))
+      : vehicleSummaries;
+
     if (!handoverNotes) {
       req.logger.error(`❌ Tình trạng công việc là bắt buộc: ${orderId}`);
       return res
@@ -56,10 +82,11 @@ router.post("/", verifyToken, async (req, res, next) => {
     const newShiftReport = new ShiftReport({
       orderId,
       assignedTo,
-      vehicleSummaries,
+      vehicleSummaries: vehicleSummariesClean,
       vehicleRepair: filteredRepairVehicles,
       handoverHours,
       handoverNotes,
+      shiftHours: shiftHoursNum,
       risks,
     });
     await newShiftReport.save();
@@ -91,7 +118,12 @@ router.get("/:id", verifyToken, async (req, res) => {
       .send({ status: "error", message: err.message, stack: err.stack });
   }
 });
-const trackedFieldsWork = ["handoverHours", "handoverNotes", "risks"];
+const trackedFieldsWork = [
+  "handoverHours",
+  "handoverNotes",
+  "risks",
+  "shiftHours",
+];
 
 router.put("/:id", verifyToken, async (req, res) => {
   try {
@@ -108,14 +140,39 @@ router.put("/:id", verifyToken, async (req, res) => {
         .send({ status: "error", message: "Tình trạng công việc là bắt buộc" });
     }
 
-    const updates = req.body;
+    // normalize numeric fields in the update payload to avoid
+    // string/number mismatches that prevent storage or change tracking
+    const updates = {
+      ...req.body,
+      shiftHours:
+        req.body.shiftHours !== undefined && req.body.shiftHours !== null
+          ? Number(req.body.shiftHours)
+          : req.body.shiftHours,
+      vehicleSummaries: Array.isArray(req.body.vehicleSummaries)
+        ? req.body.vehicleSummaries.map((v) => ({
+            ...v,
+            travelHours:
+              v.travelHours !== undefined && v.travelHours !== null
+                ? Number(v.travelHours)
+                : v.travelHours,
+            repairHours:
+              v.repairHours !== undefined && v.repairHours !== null
+                ? Number(v.repairHours)
+                : v.repairHours,
+            distanceKm:
+              v.distanceKm !== undefined && v.distanceKm !== null
+                ? Number(v.distanceKm)
+                : v.distanceKm,
+          }))
+        : req.body.vehicleSummaries,
+    };
     const changes = [];
 
     // 🔹 So sánh các field ngoài mảng
     for (let field of trackedFieldsWork) {
       if (
         updates[field] !== undefined &&
-        updates[field] !== shiftReport[field]
+        String(updates[field]) !== String(shiftReport[field])
       ) {
         changes.push({
           field,
@@ -133,6 +190,7 @@ router.put("/:id", verifyToken, async (req, res) => {
 
         for (let field of [
           "repairHours",
+          "travelHours",
           "fuelRemain",
           "fuelReceived",
           "fuelRemainEnd",
@@ -141,10 +199,16 @@ router.put("/:id", verifyToken, async (req, res) => {
           "gpsStatus",
           "sealStatus",
         ]) {
-          if (
-            updatedItem[field] !== undefined &&
-            updatedItem[field] !== originalItem[field]
-          ) {
+          const newVal =
+            updatedItem[field] !== undefined && updatedItem[field] !== null
+              ? String(updatedItem[field])
+              : updatedItem[field];
+          const oldVal =
+            originalItem[field] !== undefined && originalItem[field] !== null
+              ? String(originalItem[field])
+              : originalItem[field];
+
+          if (updatedItem[field] !== undefined && newVal !== oldVal) {
             changes.push({
               field,
               index,
