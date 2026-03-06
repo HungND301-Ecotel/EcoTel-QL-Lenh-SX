@@ -84,6 +84,7 @@ class OrderModel {
   final ShiftReportModel? shiftReport;
   String? status;
   String? note;
+  String? risk;
   String? temporaryError;
   String? safetyMeasure;
   String? safetyMeasureSpecific;
@@ -112,6 +113,7 @@ class OrderModel {
     this.status,
     this.assistants,
     this.note,
+    this.risk,
     this.safetyMeasure,
     this.safetyMeasureSpecific,
     this.temporaryError,
@@ -181,6 +183,7 @@ class OrderModel {
               .toList() ??
           [],
       note: json?['note'] ?? '',
+      risk: json?['risk'] ?? '',
       safetyMeasure: json?['safetyMeasure'] ?? '',
       temporaryError: json?['temporaryError'] ?? '',
       safetyMeasureSpecific:
@@ -236,6 +239,7 @@ class OrderModel {
       'shiftReport': shiftReport?.toJson(),
       'status': status,
       'note': note,
+      'risk': risk,
       'temporaryError': temporaryError,
       'safetyMeasure': safetyMeasure,
       'safetyMeasureSpecific': safetyMeasureSpecific,

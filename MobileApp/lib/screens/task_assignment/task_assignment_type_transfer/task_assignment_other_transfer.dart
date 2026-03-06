@@ -48,6 +48,9 @@ class _TaskAssignmentOtherTransfer
       _descriptionController.text = order.workContent ?? '';
       _noteController.text =
           order.shiftReport?.handoverNotes ?? '';
+      _riskController.text =
+          order.risk ?? '';
+
 
       user.add(order.assignedTo);
     } else {
@@ -76,7 +79,7 @@ class _TaskAssignmentOtherTransfer
       final hour = int.tryParse(parts[0]) ?? 0;
       final minute =
           int.tryParse(parts.length > 1 ? parts[1] : '0') ??
-          0;
+              0;
       initialTime = TimeOfDay(hour: hour, minute: minute);
     } else {
       initialTime = TimeOfDay.now();
@@ -115,12 +118,17 @@ class _TaskAssignmentOtherTransfer
       TextEditingController();
   final TextEditingController _safetyController =
       TextEditingController();
+      final TextEditingController _riskController =
+      TextEditingController();
+
   final OrderService _orderService = OrderService();
 
   void createOrder() async {
     String description = _descriptionController.text.trim();
     String note = _noteController.text.trim();
     String safetyMeasure = _safetyController.text.trim();
+    String risk = _riskController.text.trim();
+
 
     for (var item in user) {
       if (item == null) {
@@ -133,6 +141,16 @@ class _TaskAssignmentOtherTransfer
         return;
       }
     }
+    if(risk.isEmpty){
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Dự báo nguy cơ không được trống."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     final validItems =
         user.where((item) => item != null).toList();
     bool hasError = false;
@@ -140,17 +158,17 @@ class _TaskAssignmentOtherTransfer
     for (var item in validItems) {
       var result = await _orderService.createOrder({
         "job": widget.data.id,
-        "workingDate":
-            DateTime.utc(
-              _selectedDateTime!.year,
-              _selectedDateTime!.month,
-              _selectedDateTime!.day,
-            ).toIso8601String(),
+        "workingDate": DateTime.utc(
+          _selectedDateTime!.year,
+          _selectedDateTime!.month,
+          _selectedDateTime!.day,
+        ).toIso8601String(),
         "shift": _shift?.id,
         "shiftHour": _shiftHour,
         "assignedTo": item?.id,
         "workContent": description,
         "note": note,
+        "risk":risk,
         "safetyMeasure": safetyMeasure,
       });
       if (!mounted) return;
@@ -275,6 +293,17 @@ class _TaskAssignmentOtherTransfer
                 ),
                 TextField(
                   controller: _noteController,
+                  maxLines: null,
+                  minLines: 5,
+                ),
+                Text(
+                  'Dự báo nguy cơ ',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TextField(
+                  controller: _riskController,
                   maxLines: null,
                   minLines: 5,
                 ),

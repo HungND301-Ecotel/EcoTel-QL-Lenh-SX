@@ -169,6 +169,7 @@ class _TaskAssignmentOtherAdd
       _shiftHour = order.shiftHour ?? '';
       _descriptionController.text = order.workContent ?? '';
       _noteController.text = order.note ?? '';
+      _riskController.text = order.risk ?? '';
 
       user.add(order.assignedTo);
     } else {
@@ -238,6 +239,8 @@ class _TaskAssignmentOtherAdd
       TextEditingController();
   final TextEditingController _safetySpecificController =
       TextEditingController();
+  final TextEditingController _riskController =
+      TextEditingController();
   final OrderService _orderService = OrderService();
 
   void createOrder() async {
@@ -246,6 +249,7 @@ class _TaskAssignmentOtherAdd
     String safetyMeasure = _safetyController.text.trim();
     String safetyMeasureSpecific =
         _safetySpecificController.text.trim();
+    String risk = _riskController.text.trim();
 
     for (var item in user) {
       if (item == null) {
@@ -257,6 +261,15 @@ class _TaskAssignmentOtherAdd
         );
         return;
       }
+    }
+    if (risk.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Dự báo nguy cơ không được trống."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
     }
     final validItems =
         user.where((item) => item != null).toList();
@@ -276,6 +289,7 @@ class _TaskAssignmentOtherAdd
         "assignedTo": item?.id,
         "workContent": description,
         "note": note,
+        "risk": risk,
         "safetyMeasure": safetyMeasure,
         "safetyMeasureSpecific": safetyMeasureSpecific,
       });
@@ -414,6 +428,17 @@ class _TaskAssignmentOtherAdd
                 ),
                 TextField(
                   controller: _noteController,
+                  maxLines: null,
+                  minLines: 5,
+                ),
+                Text(
+                  'Dự báo nguy cơ',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TextField(
+                  controller: _riskController,
                   maxLines: null,
                   minLines: 5,
                 ),

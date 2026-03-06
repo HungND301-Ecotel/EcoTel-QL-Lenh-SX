@@ -1,51 +1,56 @@
-const mongoose = require('mongoose')
-const { STATUS_REPAIRS, STATUS_REPAIR } = require('../config/config');
+const mongoose = require("mongoose");
+const { STATUS_REPAIRS, STATUS_REPAIR } = require("../config/config");
 
-
-const Shiftreport = new mongoose.Schema({
+const Shiftreport = new mongoose.Schema(
+  {
     orderId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Order',
-        required: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
+      required: true,
     },
     assignedTo: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
     },
 
     vehicleSummaries: [
-        {
-            vehicle: { type: mongoose.Schema.Types.ObjectId, ref: 'Device' },
-            repairHours: Number,
-            distanceKm: Number,
-            travelHours: Number,
-            fuelRemain: Number,
-            fuelReceived: Number,
-            fuelRemainEnd: Number,
-            status: String,
-            note: String,
-            gpsStatus: { type: String, },
-            sealStatus: { type: String, },
-        }
+      {
+        vehicle: { type: mongoose.Schema.Types.ObjectId, ref: "Device" },
+        repairHours: Number,
+        distanceKm: Number,
+        travelHours: Number,
+        fuelRemain: Number,
+        fuelReceived: Number,
+        fuelRemainEnd: Number,
+        status: String,
+        note: String,
+        gpsStatus: { type: String },
+        sealStatus: { type: String },
+      },
     ],
     vehicleRepair: [
-        {
-            device: { type: mongoose.Schema.Types.ObjectId, ref: 'Device' },
-            status: String,
-            noteRepair: String
-        }
+      {
+        device: { type: mongoose.Schema.Types.ObjectId, ref: "Device" },
+        status: String,
+        noteRepair: String,
+      },
     ],
     handoverHours: {
-        type: Number,
+      type: Number,
+    },
+    shiftHours: {
+      type: Number,
     },
     handoverNotes: {
-        type: String,
+      type: String,
     },
     risks: {
-        type: String,
+      type: String,
     },
-}, {
-    timestamps: true
-})
+  },
+  {
+    timestamps: true,
+  },
+);
 
-module.exports = mongoose.model('ShiftReport', Shiftreport)
+module.exports = mongoose.model("ShiftReport", Shiftreport);

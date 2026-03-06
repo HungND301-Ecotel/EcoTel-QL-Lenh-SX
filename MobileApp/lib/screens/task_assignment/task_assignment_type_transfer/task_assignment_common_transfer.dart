@@ -58,14 +58,15 @@ class _TaskAssignmentCommonAddTransfer
       _shift = order.shift;
       _shiftHour = order.shiftHour ?? '';
       _descriptionController.text = order.workContent ?? '';
-      _noteController.text =
-          order.shiftReport?.vehicleSummaries
+      _noteController
+          .text = order.shiftReport?.vehicleSummaries
               ?.where(
                 (e) => (e.note?.trim().isNotEmpty ?? false),
               ) // lọc trước
               .map((e) => '${e.vehicle?.code} ${e.note}')
               .join('\n') ??
           '';
+      _riskController.text = order.risk ?? '';
     } else {
       userAndDevice.add({"user": null, "device": null});
     }
@@ -93,7 +94,7 @@ class _TaskAssignmentCommonAddTransfer
       final hour = int.tryParse(parts[0]) ?? 0;
       final minute =
           int.tryParse(parts.length > 1 ? parts[1] : '0') ??
-          0;
+              0;
       initialTime = TimeOfDay(hour: hour, minute: minute);
     } else {
       initialTime = TimeOfDay.now();
@@ -137,12 +138,15 @@ class _TaskAssignmentCommonAddTransfer
       TextEditingController();
   final TextEditingController _safetyController =
       TextEditingController();
+  final TextEditingController _riskController =
+      TextEditingController();
   final OrderService _orderService = OrderService();
 
   void createOrders() async {
     String description = _descriptionController.text.trim();
     String note = _noteController.text.trim();
     String safetyMeasure = _safetyController.text.trim();
+    String risk = _riskController.text.trim();
 
     for (var item in userAndDevice) {
       if (item?['user'] == null ||
@@ -158,32 +162,40 @@ class _TaskAssignmentCommonAddTransfer
         return;
       }
     }
-    final validItems =
-        userAndDevice
-            .where(
-              (item) =>
-                  item?["user"] != null &&
-                  item?["device"] != null,
-            )
-            .toList();
+    if (risk.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Dự báo nguy cơ không được trống."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    final validItems = userAndDevice
+        .where(
+          (item) =>
+              item?["user"] != null &&
+              item?["device"] != null,
+        )
+        .toList();
 
     bool hasError = false;
 
     for (var item in validItems) {
       var result = await _orderService.createOrder({
         "job": widget.data.id,
-        "workingDate":
-            DateTime.utc(
-              _selectedDateTime!.year,
-              _selectedDateTime!.month,
-              _selectedDateTime!.day,
-            ).toIso8601String(),
+        "workingDate": DateTime.utc(
+          _selectedDateTime!.year,
+          _selectedDateTime!.month,
+          _selectedDateTime!.day,
+        ).toIso8601String(),
         "shift": _shift?.id,
         "shiftHour": _shiftHour,
         "assignedTo": item?["user"].id,
         "device": item?["device"],
         "workContent": description,
         "note": note,
+        "risk": risk,
         "safetyMeasure": safetyMeasure,
       });
 
@@ -251,11 +263,9 @@ class _TaskAssignmentCommonAddTransfer
                     color: Colors.blue,
                   ),
                 ),
-                for (
-                  int i = 0;
-                  i < userAndDevice.length;
-                  i++
-                )
+                for (int i = 0;
+                    i < userAndDevice.length;
+                    i++)
                   Row(
                     children: [
                       Expanded(
@@ -267,9 +277,9 @@ class _TaskAssignmentCommonAddTransfer
                                   selectedUser;
                             });
                           },
-                          initialPayroll:
-                              userAndDevice[i]?["user"]
-                                  ?.salaryCode,
+                          initialPayroll: userAndDevice[i]
+                                  ?["user"]
+                              ?.salaryCode,
                         ),
                       ),
                       Expanded(
@@ -282,11 +292,12 @@ class _TaskAssignmentCommonAddTransfer
                               ),
                             ),
                             VehicleButton(
-                              vehicle:
-                                  userAndDevice[i]?["device"],
+                              vehicle: userAndDevice[i]
+                                  ?["device"],
                               onSelectVehicle: (selected) {
                                 setState(() {
-                                  userAndDevice[i]?["device"] =
+                                  userAndDevice[i]
+                                          ?["device"] =
                                       selected;
                                 });
                               },
@@ -346,6 +357,28 @@ class _TaskAssignmentCommonAddTransfer
                 ),
                 TextField(
                   controller: _descriptionController,
+                  maxLines: null,
+                  minLines: 5,
+                ),
+                Text(
+                  'Nội dung bàn giao ca ',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TextField(
+                  controller: _noteController,
+                  maxLines: null,
+                  minLines: 5,
+                ),
+                Text(
+                  'Dự báo nguy cơ',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TextField(
+                  controller: _riskController,
                   maxLines: null,
                   minLines: 5,
                 ),

@@ -590,15 +590,22 @@ async function buildVehicle(order, workbook) {
     bold: true,
     size: 12,
   };
-  worksheet.mergeCells(
-    `B${totalRow + 10 + deviceRow}:D${totalRow + 10 + deviceRow}`,
+  timeSignature(
+    worksheet,
+    totalRow + 10 + deviceRow,
+    "B",
+    "D",
+    order?.startTime,
   );
-  worksheet.getCell(`B${totalRow + 10 + deviceRow}`).font = { bold: true };
-  worksheet.getCell(`B${totalRow + 10 + deviceRow}`).alignment = {
+  worksheet.mergeCells(
+    `B${totalRow + 11 + deviceRow}:D${totalRow + 11 + deviceRow}`,
+  );
+  worksheet.getCell(`B${totalRow + 11 + deviceRow}`).font = { bold: true };
+  worksheet.getCell(`B${totalRow + 11 + deviceRow}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`B${totalRow + 10 + deviceRow}`).value =
+  worksheet.getCell(`B${totalRow + 11 + deviceRow}`).value =
     order.assignedTo?.fullName || "";
 
   worksheet.mergeCells(
@@ -636,16 +643,23 @@ async function buildVehicle(order, workbook) {
       );
     }
   }
+  timeSignature(
+    worksheet,
+    totalRow + 10 + deviceRow,
+    "M",
+    "O",
+    order?.createdAt,
+  );
 
   worksheet.mergeCells(
-    `M${totalRow + 10 + deviceRow}:O${totalRow + 10 + deviceRow}`,
+    `M${totalRow + 11 + deviceRow}:O${totalRow + 11 + deviceRow}`,
   );
-  worksheet.getCell(`M${totalRow + 10 + deviceRow}`).font = { bold: true };
-  worksheet.getCell(`M${totalRow + 10 + deviceRow}`).alignment = {
+  worksheet.getCell(`M${totalRow + 11 + deviceRow}`).font = { bold: true };
+  worksheet.getCell(`M${totalRow + 11 + deviceRow}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`M${totalRow + 10 + deviceRow}`).value =
+  worksheet.getCell(`M${totalRow + 11 + deviceRow}`).value =
     order.createdBy?.fullName || "";
 
   worksheet.pageSetup = {
@@ -1127,13 +1141,14 @@ async function buildVehicleService(order, workbook) {
     vertical: "middle",
   };
   worksheet.getCell(`C${fuelEndRow + 3}`).font = { bold: true, size: 12 };
-  worksheet.mergeCells(`B${fuelEndRow + 5}:D${fuelEndRow + 5}`);
-  worksheet.getCell(`B${fuelEndRow + 5}`).font = { bold: true };
-  worksheet.getCell(`B${fuelEndRow + 5}`).alignment = {
+  timeSignature(worksheet, fuelEndRow + 5, "B", "D", order?.startTime);
+  worksheet.mergeCells(`B${fuelEndRow + 6}:D${fuelEndRow + 6}`);
+  worksheet.getCell(`B${fuelEndRow + 6}`).font = { bold: true };
+  worksheet.getCell(`B${fuelEndRow + 6}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`B${fuelEndRow + 5}`).value =
+  worksheet.getCell(`B${fuelEndRow + 6}`).value =
     order.assignedTo?.fullName || "";
 
   worksheet.mergeCells(`I${fuelEndRow + 1}:L${fuelEndRow + 1}`);
@@ -1164,14 +1179,15 @@ async function buildVehicleService(order, workbook) {
       worksheet.addImage(imageId, `J${fuelEndRow + 2}:K${fuelEndRow + 4}`);
     }
   }
+  timeSignature(worksheet, fuelEndRow + 5, "J", "K", order?.createdAt);
 
-  worksheet.mergeCells(`I${fuelEndRow + 5}:L${fuelEndRow + 5}`);
-  worksheet.getCell(`I${fuelEndRow + 5}`).font = { bold: true };
-  worksheet.getCell(`I${fuelEndRow + 5}`).alignment = {
+  worksheet.mergeCells(`I${fuelEndRow + 6}:L${fuelEndRow + 6}`);
+  worksheet.getCell(`I${fuelEndRow + 6}`).font = { bold: true };
+  worksheet.getCell(`I${fuelEndRow + 6}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`I${fuelEndRow + 5}`).value =
+  worksheet.getCell(`I${fuelEndRow + 6}`).value =
     order.createdBy?.fullName || "";
 
   worksheet.pageSetup = {
@@ -1351,20 +1367,18 @@ async function buildExcavator(order, workbook) {
     : "";
 
   worksheet.mergeCells(`F${nextRow + 4}:G${nextRow + 4}`);
-  worksheet.getCell(`F${nextRow + 4}`).value = "Giờ hoạt động trên đồng hồ";
+  worksheet.getCell(`F${nextRow + 4}`).value = "Giờ hoạt động trong ca";
   worksheet.getCell(`F${nextRow + 4}`).font = { bold: true };
   worksheet.getCell(`H${nextRow + 4}`).value =
-    (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => {
-      return sum + report?.travelHours;
-    }, 0) || "";
+    order?.shiftReport?.shiftHours || "";
   worksheet.getCell(`H${nextRow + 4}`).alignment = { horizontal: "left" };
 
   worksheet.mergeCells(`I${nextRow + 4}:J${nextRow + 4}`);
-  worksheet.getCell(`I${nextRow + 4}`).value = "Km hoạt động trên đồng hồ";
+  worksheet.getCell(`I${nextRow + 4}`).value = "Giờ lũy kế trên đồng hồ";
   worksheet.getCell(`I${nextRow + 4}`).font = { bold: true };
   worksheet.getCell(`K${nextRow + 4}`).value =
     (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => {
-      return sum + report?.distanceKm;
+      return sum + report?.travelHours;
     }, 0) || "";
   worksheet.getCell(`K${nextRow + 4}`).alignment = { horizontal: "left" };
 
@@ -1624,15 +1638,22 @@ async function buildExcavator(order, workbook) {
     bold: true,
     size: 12,
   };
-  worksheet.mergeCells(
-    `B${totalRow + 10 + deviceRow}:D${totalRow + 10 + deviceRow}`,
+  timeSignature(
+    worksheet,
+    totalRow + 10 + deviceRow,
+    "B",
+    "D",
+    order?.startTime,
   );
-  worksheet.getCell(`B${totalRow + 10 + deviceRow}`).font = { bold: true };
-  worksheet.getCell(`B${totalRow + 10 + deviceRow}`).alignment = {
+  worksheet.mergeCells(
+    `B${totalRow + 11 + deviceRow}:D${totalRow + 11 + deviceRow}`,
+  );
+  worksheet.getCell(`B${totalRow + 11 + deviceRow}`).font = { bold: true };
+  worksheet.getCell(`B${totalRow + 11 + deviceRow}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`B${totalRow + 10 + deviceRow}`).value =
+  worksheet.getCell(`B${totalRow + 11 + deviceRow}`).value =
     order.assignedTo?.fullName || "";
 
   worksheet.mergeCells(
@@ -1668,18 +1689,26 @@ async function buildExcavator(order, workbook) {
         imageId,
         `L${totalRow + 7 + deviceRow}:M${totalRow + 9 + deviceRow}`,
       );
+
     }
   }
+  timeSignature(
+    worksheet,
+    totalRow + 10 + deviceRow,
+    "L",
+    "M",
+    order?.createdAt,
+  );
 
   worksheet.mergeCells(
-    `L${totalRow + 10 + deviceRow}:M${totalRow + 10 + deviceRow}`,
+    `L${totalRow + 11 + deviceRow}:M${totalRow + 11 + deviceRow}`,
   );
-  worksheet.getCell(`L${totalRow + 10 + deviceRow}`).font = { bold: true };
-  worksheet.getCell(`L${totalRow + 10 + deviceRow}`).alignment = {
+  worksheet.getCell(`L${totalRow + 11 + deviceRow}`).font = { bold: true };
+  worksheet.getCell(`L${totalRow + 11 + deviceRow}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`L${totalRow + 10 + deviceRow}`).value =
+  worksheet.getCell(`L${totalRow + 11 + deviceRow}`).value =
     order.createdBy?.fullName || "";
 
   worksheet.pageSetup = {
@@ -2090,13 +2119,15 @@ async function buildOther(order, workbook) {
     vertical: "middle",
   };
   worksheet.getCell(`C24`).font = { bold: true, size: 12 };
-  worksheet.mergeCells(`B26:D26`);
-  worksheet.getCell(`B26`).font = { bold: true };
-  worksheet.getCell(`B26`).alignment = {
+
+  timeSignature(worksheet, 26, "B", "D", order?.startTime);
+  worksheet.mergeCells(`B27:D27`);
+  worksheet.getCell(`B27`).font = { bold: true };
+  worksheet.getCell(`B27`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`B26`).value = order.assignedTo?.fullName || "";
+  worksheet.getCell(`B27`).value = order.assignedTo?.fullName || "";
 
   worksheet.mergeCells(`I22:L22`);
   worksheet.getCell(`I22`).value = "NGƯỜI RA LỆNH";
@@ -2126,14 +2157,15 @@ async function buildOther(order, workbook) {
       worksheet.addImage(imageId, `J23:K25`);
     }
   }
+  timeSignature(worksheet, 26, "J", "K", order?.createdAt);
 
-  worksheet.mergeCells(`I26:L26`);
-  worksheet.getCell(`I26`).font = { bold: true };
-  worksheet.getCell(`I26`).alignment = {
+  worksheet.mergeCells(`I27:L27`);
+  worksheet.getCell(`I27`).font = { bold: true };
+  worksheet.getCell(`I27`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`I26`).value = order.createdBy?.fullName || "";
+  worksheet.getCell(`I27`).value = order.createdBy?.fullName || "";
 
   worksheet.pageSetup = {
     paperSize: 9, // A4
@@ -2535,13 +2567,14 @@ async function buildMaintence(order, workbook) {
     vertical: "middle",
   };
   worksheet.getCell(`C${fuelEndRow + 4}`).font = { bold: true, size: 12 };
-  worksheet.mergeCells(`B${fuelEndRow + 6}:D${fuelEndRow + 6}`);
-  worksheet.getCell(`B${fuelEndRow + 6}`).font = { bold: true };
-  worksheet.getCell(`B${fuelEndRow + 6}`).alignment = {
+  timeSignature(worksheet, fuelEndRow + 6, "B", "D", order?.startTime);
+  worksheet.mergeCells(`B${fuelEndRow + 7}:D${fuelEndRow + 7}`);
+  worksheet.getCell(`B${fuelEndRow + 7}`).font = { bold: true };
+  worksheet.getCell(`B${fuelEndRow + 7}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`B${fuelEndRow + 6}`).value =
+  worksheet.getCell(`B${fuelEndRow + 7}`).value =
     order.assignedTo?.fullName || "";
 
   worksheet.mergeCells(`J${fuelEndRow + 2}:M${fuelEndRow + 2}`);
@@ -2572,14 +2605,15 @@ async function buildMaintence(order, workbook) {
       worksheet.addImage(imageId, `K${fuelEndRow + 3}:L${fuelEndRow + 5}`);
     }
   }
+  timeSignature(worksheet, fuelEndRow + 6, "K", "L", order?.createdAt);
 
-  worksheet.mergeCells(`J${fuelEndRow + 6}:M${fuelEndRow + 6}`);
-  worksheet.getCell(`J${fuelEndRow + 6}`).font = { bold: true };
-  worksheet.getCell(`J${fuelEndRow + 6}`).alignment = {
+  worksheet.mergeCells(`J${fuelEndRow + 7}:M${fuelEndRow + 7}`);
+  worksheet.getCell(`J${fuelEndRow + 7}`).font = { bold: true };
+  worksheet.getCell(`J${fuelEndRow + 7}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`J${fuelEndRow + 6}`).value =
+  worksheet.getCell(`J${fuelEndRow + 7}`).value =
     order.createdBy?.fullName || "";
 
   worksheet.pageSetup = {
@@ -2759,20 +2793,18 @@ async function buildDrill(order, workbook) {
     : "";
 
   worksheet.mergeCells(`F${nextRow + 4}:G${nextRow + 4}`);
-  worksheet.getCell(`F${nextRow + 4}`).value = "Giờ hoạt động trên đồng hồ";
+  worksheet.getCell(`F${nextRow + 4}`).value = "Giờ hoạt động trong ca";
   worksheet.getCell(`F${nextRow + 4}`).font = { bold: true };
   worksheet.getCell(`H${nextRow + 4}`).value =
-    (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => {
-      return sum + report?.travelHours;
-    }, 0) || "";
+    order?.shiftReport?.shiftHours || "";
   worksheet.getCell(`H${nextRow + 4}`).alignment = { horizontal: "left" };
 
   worksheet.mergeCells(`I${nextRow + 4}:J${nextRow + 4}`);
-  worksheet.getCell(`I${nextRow + 4}`).value = "Km hoạt động trên đồng hồ";
+  worksheet.getCell(`I${nextRow + 4}`).value = "Giờ lũy kế trên đồng hồ";
   worksheet.getCell(`I${nextRow + 4}`).font = { bold: true };
   worksheet.getCell(`K${nextRow + 4}`).value =
     (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => {
-      return sum + report?.distanceKm;
+      return sum + report?.travelHours;
     }, 0) || "";
   worksheet.getCell(`K${nextRow + 4}`).alignment = { horizontal: "left" };
 
@@ -3012,15 +3044,22 @@ async function buildDrill(order, workbook) {
     bold: true,
     size: 12,
   };
-  worksheet.mergeCells(
-    `B${totalRow + 10 + deviceRow}:D${totalRow + 10 + deviceRow}`,
+  timeSignature(
+    worksheet,
+    totalRow + 10 + deviceRow,
+    "B",
+    "D",
+    order?.startTime,
   );
-  worksheet.getCell(`B${totalRow + 10 + deviceRow}`).font = { bold: true };
-  worksheet.getCell(`B${totalRow + 10 + deviceRow}`).alignment = {
+  worksheet.mergeCells(
+    `B${totalRow + 11 + deviceRow}:D${totalRow + 11 + deviceRow}`,
+  );
+  worksheet.getCell(`B${totalRow + 11 + deviceRow}`).font = { bold: true };
+  worksheet.getCell(`B${totalRow + 11 + deviceRow}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`B${totalRow + 10 + deviceRow}`).value =
+  worksheet.getCell(`B${totalRow + 11 + deviceRow}`).value =
     order.assignedTo?.fullName || "";
 
   worksheet.mergeCells(
@@ -3058,16 +3097,23 @@ async function buildDrill(order, workbook) {
       );
     }
   }
+  timeSignature(
+    worksheet,
+    totalRow + 10 + deviceRow,
+    "K",
+    "L",
+    order?.createdAt,
+  );
 
   worksheet.mergeCells(
-    `J${totalRow + 10 + deviceRow}:M${totalRow + 10 + deviceRow}`,
+    `J${totalRow + 11 + deviceRow}:M${totalRow + 11 + deviceRow}`,
   );
-  worksheet.getCell(`J${totalRow + 10 + deviceRow}`).font = { bold: true };
-  worksheet.getCell(`J${totalRow + 10 + deviceRow}`).alignment = {
+  worksheet.getCell(`J${totalRow + 11 + deviceRow}`).font = { bold: true };
+  worksheet.getCell(`J${totalRow + 11 + deviceRow}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`J${totalRow + 10 + deviceRow}`).value =
+  worksheet.getCell(`J${totalRow + 11 + deviceRow}`).value =
     order.createdBy?.fullName || "";
 
   worksheet.pageSetup = {
@@ -3247,20 +3293,18 @@ async function buildDozer(order, workbook) {
     : "";
 
   worksheet.mergeCells(`F${nextRow + 4}:G${nextRow + 4}`);
-  worksheet.getCell(`F${nextRow + 4}`).value = "Giờ hoạt động trên đồng hồ";
+  worksheet.getCell(`F${nextRow + 4}`).value = "Giờ hoạt động trong ca";
   worksheet.getCell(`F${nextRow + 4}`).font = { bold: true };
   worksheet.getCell(`H${nextRow + 4}`).value =
-    (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => {
-      return sum + report?.travelHours;
-    }, 0) || "";
+    order?.shiftReport?.shiftHours || "";
   worksheet.getCell(`H${nextRow + 4}`).alignment = { horizontal: "left" };
 
   worksheet.mergeCells(`I${nextRow + 4}:J${nextRow + 4}`);
-  worksheet.getCell(`I${nextRow + 4}`).value = "Km hoạt động trên đồng hồ";
+  worksheet.getCell(`I${nextRow + 4}`).value = "Giờ lũy kế trên đồng hồ";
   worksheet.getCell(`I${nextRow + 4}`).font = { bold: true };
   worksheet.getCell(`K${nextRow + 4}`).value =
     (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => {
-      return sum + report?.distanceKm;
+      return sum + report?.travelHours;
     }, 0) || "";
   worksheet.getCell(`K${nextRow + 4}`).alignment = { horizontal: "left" };
 
@@ -3499,15 +3543,22 @@ async function buildDozer(order, workbook) {
     bold: true,
     size: 12,
   };
-  worksheet.mergeCells(
-    `B${totalRow + 10 + deviceRow}:D${totalRow + 10 + deviceRow}`,
+  timeSignature(
+    worksheet,
+    totalRow + 10 + deviceRow,
+    "B",
+    "D",
+    order?.startTime,
   );
-  worksheet.getCell(`B${totalRow + 10 + deviceRow}`).font = { bold: true };
-  worksheet.getCell(`B${totalRow + 10 + deviceRow}`).alignment = {
+  worksheet.mergeCells(
+    `B${totalRow + 11 + deviceRow}:D${totalRow + 11 + deviceRow}`,
+  );
+  worksheet.getCell(`B${totalRow + 11 + deviceRow}`).font = { bold: true };
+  worksheet.getCell(`B${totalRow + 11 + deviceRow}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`B${totalRow + 10 + deviceRow}`).value =
+  worksheet.getCell(`B${totalRow + 11 + deviceRow}`).value =
     order.assignedTo?.fullName || "";
 
   worksheet.mergeCells(
@@ -3545,16 +3596,23 @@ async function buildDozer(order, workbook) {
       );
     }
   }
+  timeSignature(
+    worksheet,
+    totalRow + 10 + deviceRow,
+    "K",
+    "L",
+    order?.createdAt,
+  );
 
   worksheet.mergeCells(
-    `J${totalRow + 10 + deviceRow}:M${totalRow + 10 + deviceRow}`,
+    `J${totalRow + 11 + deviceRow}:M${totalRow + 11 + deviceRow}`,
   );
-  worksheet.getCell(`J${totalRow + 10 + deviceRow}`).font = { bold: true };
-  worksheet.getCell(`J${totalRow + 10 + deviceRow}`).alignment = {
+  worksheet.getCell(`J${totalRow + 11 + deviceRow}`).font = { bold: true };
+  worksheet.getCell(`J${totalRow + 11 + deviceRow}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`J${totalRow + 10 + deviceRow}`).value =
+  worksheet.getCell(`J${totalRow + 11 + deviceRow}`).value =
     order.createdBy?.fullName || "";
 
   worksheet.pageSetup = {
@@ -3730,13 +3788,14 @@ async function buildDispatcher(order, workbook) {
     vertical: "middle",
   };
   worksheet.getCell(`C20`).font = { bold: true, size: 12 };
-  worksheet.mergeCells(`B22:D22`);
-  worksheet.getCell(`B22`).font = { bold: true };
-  worksheet.getCell(`B22`).alignment = {
+  timeSignature(worksheet, 22, "B", "D", order?.startTime);
+  worksheet.mergeCells(`B23:D23`);
+  worksheet.getCell(`B23`).font = { bold: true };
+  worksheet.getCell(`B23`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`B22`).value = order.assignedTo?.fullName || "";
+  worksheet.getCell(`B23`).value = order.assignedTo?.fullName || "";
 
   worksheet.mergeCells(`I18:L18`);
   worksheet.getCell(`I18`).value = "NGƯỜI RA LỆNH";
@@ -3766,14 +3825,15 @@ async function buildDispatcher(order, workbook) {
       worksheet.addImage(imageId, `J19:K21`);
     }
   }
+  timeSignature(worksheet, 22, "J", "K", order?.createdAt);
 
-  worksheet.mergeCells(`I22:L22`);
-  worksheet.getCell(`I22`).font = { bold: true };
-  worksheet.getCell(`I22`).alignment = {
+  worksheet.mergeCells(`I23:L23`);
+  worksheet.getCell(`I23`).font = { bold: true };
+  worksheet.getCell(`I23`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`I22`).value = order.createdBy?.fullName || "";
+  worksheet.getCell(`I23`).value = order.createdBy?.fullName || "";
 
   worksheet.pageSetup = {
     paperSize: 9, // A4
@@ -13704,7 +13764,7 @@ router.post(
         };
 
         // Bạn cũng nên áp dụng cho các cột khác có khả năng dài như cột 6, 8, 9
-        [2,3,4,5,7,8,].forEach((colIdx) => {
+        [2, 3, 4, 5, 7, 8].forEach((colIdx) => {
           row.getCell(colIdx).alignment = {
             vertical: "top",
             horizontal: "left",
@@ -13805,7 +13865,7 @@ router.post(
         { key: "K", width: 20 }, // Sản lượng
         { key: "L", width: 20 }, // Sản lượng
         { key: "M", width: 17 }, // Sản lượng
-      
+
         // { key: "K", width: 15 }, // Nhiên liệu
       ];
 
@@ -13895,6 +13955,25 @@ function setAutoRowHeight(row, text, lineHeight = 25) {
   if (!text) return;
   const lines = text.split("\n").length;
   row.height = lines * lineHeight;
+}
+
+function timeSignature(worksheet, row, startCol, endCol, time) {
+  const cellRange = `${startCol}${row}:${endCol}${row}`;
+  const cellAddress = `${startCol}${row}`;
+
+  // 1. Merge các ô
+  worksheet.mergeCells(cellRange);
+
+  // 2. Gán giá trị thời gian hiện tại
+  worksheet.getCell(cellAddress).value = time
+    ? dayjs(time).format("DD/MM/YYYY HH:mm:ss")
+    : "";
+
+  // 3. Căn giữa
+  worksheet.getCell(cellAddress).alignment = {
+    horizontal: "center",
+    vertical: "middle", // Thêm vertical cho đẹp nếu cần
+  };
 }
 
 module.exports = router;

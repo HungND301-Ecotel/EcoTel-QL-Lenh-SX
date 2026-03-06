@@ -74,6 +74,7 @@ class _TaskAssignmentExcavatorTransfer
               .map((e) => '${e.vehicle?.code} ${e.note}')
               .join('\n') ??
           '';
+      _riskController.text = order.risk ?? '';
     } else {
       userAndDevice.add({"user": null, "device": null});
     }
@@ -152,12 +153,16 @@ class _TaskAssignmentExcavatorTransfer
       TextEditingController();
   final TextEditingController _safetyController =
       TextEditingController();
+  final TextEditingController _riskController =
+      TextEditingController();
   final OrderService _orderService = OrderService();
 
   void createOrders() async {
     String description = _descriptionController.text.trim();
     String note = _noteController.text.trim();
     String safetyMeasure = _safetyController.text.trim();
+    String risk = _riskController.text.trim();
+
 
     for (var item in userAndDevice) {
       if (item?['user'] == null ||
@@ -172,6 +177,15 @@ class _TaskAssignmentExcavatorTransfer
         );
         return;
       }
+    }
+    if (risk.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Dự báo nguy cơ không được trống."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
     }
     final validItems = userAndDevice
         .where(
@@ -202,6 +216,7 @@ class _TaskAssignmentExcavatorTransfer
         "assignedVehicles": assignedVehiclesIds,
         "workContent": description,
         "note": note,
+        "risk":risk,
         "safetyMeasure": safetyMeasure,
       });
 
@@ -431,6 +446,17 @@ class _TaskAssignmentExcavatorTransfer
                 ),
                 TextField(
                   controller: _noteController,
+                  maxLines: null,
+                  minLines: 5,
+                ),
+                Text(
+                  'Dự báo nguy cơ ',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TextField(
+                  controller: _riskController,
                   maxLines: null,
                   minLines: 5,
                 ),

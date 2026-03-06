@@ -76,6 +76,7 @@ class _TaskAssignmentMaintenceTransfer
       _safetySpecificController.text =
           order.safetyMeasureSpecific ?? '';
       _repairDepartment = order.repairDepartment?.id;
+      _riskController.text = order.risk ?? '';
 
       // Gán lại ngày làm việc nếu có
       _selectedDateTime = order.workingDate;
@@ -187,6 +188,8 @@ class _TaskAssignmentMaintenceTransfer
   final TextEditingController _safetySpecificController =
       TextEditingController();
   List<TextEditingController> _noteControllers = [];
+  final TextEditingController _riskController =
+      TextEditingController();
   final OrderService _orderService = OrderService();
 
   void createOrder() async {
@@ -195,6 +198,7 @@ class _TaskAssignmentMaintenceTransfer
     String safetyMeasure = _safetyController.text.trim();
     String safetyMeasureSpecific =
         _safetySpecificController.text.trim();
+    String risk = _riskController.text.trim();
 
     List<Map<String, dynamic>> repairVehicles =
         deviceAndNote
@@ -206,6 +210,15 @@ class _TaskAssignmentMaintenceTransfer
               },
             )
             .toList();
+    if (risk.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Dự báo nguy cơ không được trống."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
     var result = await _orderService.createOrder({
       "job": widget.data.id,
       "workingDate": DateTime.utc(
@@ -220,6 +233,7 @@ class _TaskAssignmentMaintenceTransfer
       "repairVehicles": repairVehicles,
       "workContent": description,
       "note": note,
+      "risk": risk,
       "safetyMeasure": safetyMeasure,
       "safetyMeasureSpecific": safetyMeasureSpecific,
     });
@@ -426,6 +440,17 @@ class _TaskAssignmentMaintenceTransfer
                 ),
                 TextField(
                   controller: _noteController,
+                  maxLines: null,
+                  minLines: 5,
+                ),
+                Text(
+                  'Dự báo nguy cơ ',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TextField(
+                  controller: _riskController,
                   maxLines: null,
                   minLines: 5,
                 ),
