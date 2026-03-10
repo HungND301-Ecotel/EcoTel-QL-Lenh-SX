@@ -187,6 +187,9 @@ class _DirectWorkeport extends State<DirectWorkeport> {
 
       vehicleSummaries.add({
         "vehicle": id,
+        "distanceKm": int.tryParse(
+          controller.distanceKm.text,
+        ),
         "travelHours": int.tryParse(
           controller.travelHours.text,
         ),
@@ -306,6 +309,31 @@ class _DirectWorkeport extends State<DirectWorkeport> {
                               ),
                             ),
                             SizedBox(height: 16),
+                            if (![
+                              'Vận hành xúc',
+                              'Vận hành khoan',
+                              'Vận hành gạt',
+                            ].contains(widget
+                                .order.job?.type)) ...[
+                              Text(
+                                'Km hoạt động trên đồng hồ',
+                                style: TextStyle(
+                                  fontWeight:
+                                      FontWeight.w600,
+                                ),
+                              ),
+                              TextField(
+                                controller:
+                                    summaryController
+                                        .distanceKm,
+                                keyboardType:
+                                    TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter
+                                      .digitsOnly,
+                                ],
+                              ),
+                            ],
                             if ([
                               'Vận hành xúc',
                               'Vận hành khoan',
@@ -321,7 +349,7 @@ class _DirectWorkeport extends State<DirectWorkeport> {
                               ),
                             ] else ...[
                               Text(
-                                'Km hoạt động trên đồng hồ',
+                                'Giờ hoạt động trên đồng hồ',
                                 style: TextStyle(
                                   fontWeight:
                                       FontWeight.w600,

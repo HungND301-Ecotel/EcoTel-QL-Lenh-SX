@@ -190,6 +190,7 @@ router.put("/:id", verifyToken, async (req, res) => {
 
         for (let field of [
           "repairHours",
+          "distanceKm",
           "travelHours",
           "fuelRemain",
           "fuelReceived",
