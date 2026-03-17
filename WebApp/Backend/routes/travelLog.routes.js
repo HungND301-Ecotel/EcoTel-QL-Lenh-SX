@@ -19,6 +19,7 @@ const {
 const { paginateQuery } = require("../utils/pagination");
 const Order = require("../models/Order");
 const { runProductionUpdateBackground } = require("../utils/cron");
+const { rangeTime } = require("../utils/reportGrouping");
 
 router.post("/", verifyToken, async (req, res, next) => {
   try {
@@ -58,9 +59,12 @@ router.post("/", verifyToken, async (req, res, next) => {
     req.logger.info(`🔥 Tạo thành công cung độ`);
 
     res.status(200).send({ status: "success", message: "Tạo thành công" });
+    const { rangeStart, rangeEnd } = rangeTime(newTravelLog?.workingDate);
     let query = {
-      workingDate: newTravelLog?.workingDate,
-      shift: newTravelLog?.shift,
+      workingDate: {
+        $gte: rangeStart,
+        $lte: rangeEnd,
+      },
     };
 
     runProductionUpdateBackground(req, query);
@@ -129,9 +133,12 @@ router.put("/:id", verifyToken, async (req, res, next) => {
       status: "success",
       message: "Sửa thành công",
     });
+    const { rangeStart, rangeEnd } = rangeTime(travellog?.workingDate);
     let query = {
-      workingDate: travellog?.workingDate,
-      shift: travellog?.shift,
+      workingDate: {
+        $gte: rangeStart,
+        $lte: rangeEnd,
+      },
     };
 
     runProductionUpdateBackground(req, query);
@@ -248,7 +255,7 @@ const columnMapping = {
   "H min": "localMinHeightM",
   "H max": "localMaxHeightM",
   "C. độ (km) cục bộ": "localDistanceKm",
-  "Chiều cao N.tải (m) cục bộ": "localLiftHeightM",
+  "Chiều cao N.tải (m) cục bộ": "localLiftHeightM", // tránh trùng key
   "Điểm đổ tải": "location",
   Ca: "shift",
   "Ngày (tháng/ngày/năm)": "workingDate",

@@ -10,6 +10,7 @@ const User = require("../models/User");
 const Job = require("../models/Job");
 const Shift = require("../models/Shift");
 const Material = require("../models/material");
+const { getTravellog, rangeTime } = require("../utils/reportGrouping");
 const mongoose = require("mongoose");
 const {
   ROLE,
@@ -1535,6 +1536,178 @@ router.post(
   },
 );
 
+router.post(
+  "/exportFile/no_travelog",
+  verifyToken,
+  restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER),
+  async (req, res, next) => {
+    try {
+      const today = new Date();
+      const localDay = today.getDate(); // Sẽ ra đúng 14
+      const localMonth = today.getMonth();
+      const localYear = today.getFullYear();
+
+      // 2. Ép về 00:00:00 UTC của đúng ngày đó để khớp Database
+      const now = new Date(
+        Date.UTC(localYear, localMonth, localDay, 0, 0, 0, 0),
+      );
+      const { rangeStart, rangeEnd } = await rangeTime(now);
+      let query = {
+        workingDate: {
+          $gte: rangeStart,
+          $lte: rangeEnd,
+        },
+      };
+
+      const job = await Job.findOne({ name: "Vận hành xe" });
+      if (job) {
+        query.job = job._id;
+      }
+
+      // 2. Lấy dữ liệu Orders và Populate
+      const orders = await Order.find(query)
+        .populate({
+          path: "assignedTo",
+          select: " fullName salaryCode",
+        })
+        .populate("job", "name")
+        .populate("device", "code")
+        .populate("excavator.device", "code")
+        .populate("location", "name")
+        .populate("material", "name acceptedProduct")
+        .populate("shift", "name")
+        .populate("department", "code name")
+        .populate({
+          path: "createdBy",
+          select: "fullName",
+        })
+        .sort("-workingDate")
+        .lean();
+
+      const uniqueMap = new Map();
+
+      for (const order of orders) {
+        const excavatorId = order.excavator[0]?.device?._id;
+        const locationId = order.location[0]?._id;
+        const acceptedProduct = order.material?.acceptedProduct;
+
+        // Tạo key duy nhất để check trùng: Kết hợp Máy xúc + Điểm đổ + Sản phẩm
+        const uniqueKey = `${excavatorId}_${locationId}_${acceptedProduct}`;
+
+        // Nếu key này đã được xử lý rồi thì bỏ qua luôn (để chỉ lấy 1)
+        if (uniqueMap.has(uniqueKey)) continue;
+
+        // Kiểm tra cung độ
+        const travelog = await getTravellog(
+          order.shift?._id,
+          order.workingDate,
+          excavatorId,
+          locationId,
+          acceptedProduct,
+        );
+
+        // Nếu chưa có cung độ, lưu vào map để đảm bảo duy nhất
+        if (!travelog) {
+          uniqueMap.set(uniqueKey, order);
+        }
+      }
+
+      // Chuyển Map thành Array để export
+      const data = Array.from(uniqueMap.values());
+      // 4. Khởi tạo Workbook
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Quang_duong");
+
+      // Định nghĩa cấu trúc cột chung cho tất cả các sheet
+      const columns = [
+        { header: "Stt", key: "number", width: 6 },
+        { header: "Máy xúc", key: "excavator", width: 25 },
+        { header: "Điểm đổ tải", key: "location", width: 25 },
+      ];
+
+      worksheet.columns = columns; // Áp dụng cấu trúc cột
+      const totalCols = columns.length;
+
+      // Dòng 1: tiêu đề đơn vị
+      worksheet.mergeCells(1, 1, 1, totalCols);
+
+      const titleCell = worksheet.getCell("A1");
+      titleCell.value = "Danh sách quãng đường chưa có cung độ";
+      titleCell.font = { size: 12, bold: true };
+      titleCell.alignment = { vertical: "middle", horizontal: "center" };
+
+      // Dòng 2: để trống tạo khoảng cách (tuỳ chọn, nhưng nên có)
+      worksheet.addRow([]);
+
+      // Đặt style cho header (hàng 3)
+      worksheet.addRow(columns.map((c) => c.header));
+
+      const headerRow = worksheet.getRow(3);
+      headerRow.eachCell((cell) => {
+        cell.font = { bold: true, size: 12 };
+        cell.alignment = {
+          vertical: "middle",
+          horizontal: "center",
+          wrapText: true,
+        };
+      });
+
+      // Định dạng dữ liệu cho đơn vị hiện tại
+      const formattedDevices = (data || []).map((item, index) => ({
+        number: index + 1,
+        excavator: item?.excavator[0]?.device?.code || "",
+        location: item?.location[0]?.name || "",
+      }));
+
+      worksheet.addRows(formattedDevices);
+      addTableBorders(worksheet, 3, formattedDevices.length + 3, 1, totalCols);
+      worksheet.pageSetup = {
+        paperSize: 9, // A4
+        orientation: "landscape", // ngang
+        fitToPage: true,
+        fitToWidth: 1, // vừa 1 trang theo chiều ngang
+        fitToHeight: 0, // không ép theo chiều dọc
+        margins: {
+          left: 0.3,
+          right: 0.3,
+          top: 0.5,
+          bottom: 0.5,
+          header: 0.2,
+          footer: 0.2,
+        }, // inch
+      };
+      // Áp dụng định dạng (font, alignment)
+      worksheet.eachRow((row, rowNumber) => {
+        row.eachCell((cell) => {
+          if (!cell.font) cell.font = {};
+          cell.font = {
+            ...cell.font, // giữ lại các thuộc tính khác (bold, italic,…)
+            name: "Times New Roman", // đổi font chữ
+            ...(rowNumber > 3 ? { size: 9 } : {}), // kích thước chữ
+          };
+        });
+      });
+
+      // 6. Gửi file Excel về client
+      const buffer = await workbook.xlsx.writeBuffer();
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      res.setHeader(
+        "Content-Disposition",
+        "attachment; filename=" + "danh_sach_lenh_sx.xlsx",
+      );
+      res.send(buffer);
+      req.logger.info("✅ Xuất file thành công.");
+    } catch (err) {
+      req.logger.error("❌ Lỗi khi xuất file điểm đổ tải", err);
+      res
+        .status(500)
+        .send({ status: "error", message: err.message, stack: err.stack });
+    }
+  },
+);
 const addTableBorders = (ws, startRow, endRow, startCol, endCol) => {
   const lightBorder = { style: "thin", color: "black" };
 
