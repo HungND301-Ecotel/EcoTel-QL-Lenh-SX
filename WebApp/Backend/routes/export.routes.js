@@ -158,46 +158,66 @@ async function buildVehicle(order, workbook) {
 
   const worksheet = workbook.addWorksheet(sheetName);
 
-  // Tiêu đề bảng
-  worksheet.mergeCells("A1:Q2");
-  const header = worksheet.getCell("A1");
+  // Row 1: Company Name
+  worksheet.mergeCells("A1:Q1");
+  const companyNameCell = worksheet.getCell("A1");
+  companyNameCell.value = "CÔNG TY CỔ PHẦN THAN CAO SƠN - TKV";
+  companyNameCell.font = { italic: true, size: 18 };
+  companyNameCell.alignment = { horizontal: "left", vertical: "middle" };
+
+  // Row 2: Department
+  worksheet.mergeCells("A2:Q2");
+  const departmentCell = worksheet.getCell("A2");
+  departmentCell.value = `Đơn vị: ${order.assignedTo?.department?.code || ""}`;
+  departmentCell.font = { italic: true, size: 14 };
+  departmentCell.alignment = { horizontal: "left", vertical: "middle" };
+
+  // Row 3: LỆNH SẢN XUẤT
+  worksheet.mergeCells("A3:Q3");
+  const header = worksheet.getCell("A3");
   header.value = `LỆNH SẢN XUẤT`;
   header.font = { bold: true, size: 16 };
   header.alignment = { horizontal: "center", vertical: "middle" };
 
-  worksheet.getCell("B4").value = "Đơn vị";
-  worksheet.getCell("B4").font = { bold: true };
-  worksheet.getCell("C4").value = order.assignedTo?.department?.code || "";
+  // All subsequent rows are offset by +2 from their original position
+  // Original row 4 becomes new row 6, etc.
+  const rowOffset = 2;
 
-  worksheet.getCell("F4").value = "Ngày";
-  worksheet.getCell("F4").font = { bold: true };
+  worksheet.getCell(`B${4 + rowOffset}`).value = "Đơn vị";
+  worksheet.getCell(`B${4 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${4 + rowOffset}`).value =
+    order.assignedTo?.department?.code || "";
+
+  worksheet.getCell(`F${4 + rowOffset}`).value = "Ngày";
+  worksheet.getCell(`F${4 + rowOffset}`).font = { bold: true };
   // Lấy ngày từ order.workingDate và định dạng
   const workingDate = order.workingDate ? new Date(order.workingDate) : null;
   const ngay = workingDate ? workingDate.toLocaleDateString("vi-VN") : "";
-  worksheet.getCell("G4").value = ngay;
+  worksheet.getCell(`G${4 + rowOffset}`).value = ngay;
 
-  worksheet.getCell("H4").value = order.shiftHour || "";
+  worksheet.getCell(`H${4 + rowOffset}`).value = order.shiftHour || "";
 
-  worksheet.getCell("I4").value = "Ca";
-  worksheet.getCell("I4").font = { bold: true };
+  worksheet.getCell(`I${4 + rowOffset}`).value = "Ca";
+  worksheet.getCell(`I${4 + rowOffset}`).font = { bold: true };
 
-  worksheet.getCell("J4").value = order.shift?.name || "";
-  worksheet.getCell("J4").alignment = { horizontal: "left" };
+  worksheet.getCell(`J${4 + rowOffset}`).value = order.shift?.name || "";
+  worksheet.getCell(`J${4 + rowOffset}`).alignment = { horizontal: "left" };
 
   // 3. Người ra lệnh
   // Dòng 5
-  worksheet.getCell("B5").value = "Người ra lệnh";
-  worksheet.getCell("B5").font = { bold: true };
-  worksheet.getCell("C5").value = order.createdBy?.fullName || "";
-
-  worksheet.getCell("F5").value = "Số thẻ";
-  worksheet.getCell("F5").font = { bold: true };
-  worksheet.getCell("G5").value = order.createdBy?.salaryCode || "";
-
-  worksheet.getCell("I5").value = "Chức vụ";
-  worksheet.getCell("I5").font = { bold: true };
-  worksheet.mergeCells("J5:M5");
-  worksheet.getCell("J5").value = order.createdBy?.position?.name || "";
+  worksheet.getCell(`B${5 + rowOffset}`).value = "Người ra lệnh";
+  worksheet.getCell(`B${5 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${5 + rowOffset}`).value =
+    order.createdBy?.fullName || "";
+  worksheet.getCell(`F${5 + rowOffset}`).value = "Số thẻ";
+  worksheet.getCell(`F${5 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`G${5 + rowOffset}`).value =
+    order.createdBy?.salaryCode || "";
+  worksheet.getCell(`I${5 + rowOffset}`).value = "Chức vụ";
+  worksheet.getCell(`I${5 + rowOffset}`).font = { bold: true };
+  worksheet.mergeCells(`J${5 + rowOffset}:M${5 + rowOffset}`);
+  worksheet.getCell(`J${5 + rowOffset}`).value =
+    order.createdBy?.position?.name || "";
 
   // 4. Người nhận lệnh
   // Dòng 6
@@ -213,12 +233,25 @@ async function buildVehicle(order, workbook) {
   worksheet.getCell("I6").font = { bold: true };
   worksheet.mergeCells("J6:M6");
   worksheet.getCell("J6").value = order.assignedTo?.position?.name || "";
+  worksheet.getCell(`B${6 + rowOffset}`).value = "Người nhận lệnh";
+  worksheet.getCell(`B${6 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${6 + rowOffset}`).value =
+    order.assignedTo?.fullName || "";
+  worksheet.getCell(`F${6 + rowOffset}`).value = "Số thẻ";
+  worksheet.getCell(`F${6 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`G${6 + rowOffset}`).value =
+    order.assignedTo?.salaryCode || "";
+  worksheet.getCell(`I${6 + rowOffset}`).value = "Chức vụ";
+  worksheet.getCell(`I${6 + rowOffset}`).font = { bold: true };
+  worksheet.mergeCells(`J${6 + rowOffset}:M${6 + rowOffset}`);
+  worksheet.getCell(`J${6 + rowOffset}`).value =
+    order.assignedTo?.position?.name || "";
 
   // Dòng 6 lx bo tuc
-  worksheet.getCell("B7").value = "Lái xe bổ túc";
-  worksheet.getCell("B7").font = { bold: true };
+  worksheet.getCell(`B${7 + rowOffset}`).value = "Lái xe bổ túc";
+  worksheet.getCell(`B${7 + rowOffset}`).font = { bold: true };
 
-  let rowIndex = 7;
+  let rowIndex = 7 + rowOffset;
   (order.assistants || []).forEach((driver, idx) => {
     let row = rowIndex + idx;
 
@@ -233,38 +266,40 @@ async function buildVehicle(order, workbook) {
     worksheet.getCell(`J${row}`).value = driver.position?.name || "";
   });
 
-  let nextRow = rowIndex + (order.assistants?.length || 1);
+  let nextRow = rowIndex + (order.assistants?.length || 1); // This `nextRow` is already offset
   // Dòng 7
-  worksheet.getCell(`B${nextRow}`).value = "Nội dung lệnh";
+  worksheet.getCell(`B${nextRow}`).value = "Nội dung lệnh"; // This `nextRow` is already offset
   worksheet.getCell(`B${nextRow}`).font = { bold: true };
   // Gộp ô cho nội dung để hiển thị đầy đủ
-  worksheet.mergeCells(`C${nextRow}:Q${nextRow + 1}`);
-  worksheet.getCell(`C${nextRow}`).value = order.workContent || "";
+  worksheet.mergeCells(`C${nextRow}:Q${nextRow + 1}`); // This `nextRow` is already offset
+  worksheet.getCell(`C${nextRow}`).value = order.workContent || ""; // This `nextRow` is already offset
   worksheet.getCell(`C${nextRow}`).alignment = {
+    // This `nextRow` is already offset
     horizontal: "left",
     vertical: "middle",
   };
 
   // worksheet.getCell(`B${nextRow + 2}`).value = 'Biện pháp an toàn';
   // worksheet.getCell(`B${nextRow + 2}`).font = { bold: true };
-  // // Gộp ô cho nội dung bàn giao ca
-  // worksheet.mergeCells(`C${nextRow + 2}:L${nextRow + 2}`)
-  // worksheet.getCell(`C${nextRow + 2}`).value = (order?.safetyMeasure || '') + " " + (order?.safetyMeasureSpecific || '');
+  // // Gộp ô cho nội dung bàn giao ca (nextRow + 2)
+  // worksheet.mergeCells(`C${nextRow + 2}:L${nextRow + 2}`) // nextRow is already offset
+  // worksheet.getCell(`C${nextRow + 2}`).value = (order?.safetyMeasure || '') + " " + (order?.safetyMeasureSpecific || ''); // nextRow is already offset
 
-  worksheet.getCell(`B${nextRow + 2}`).value = "Nội dung bàn giao ca";
-  worksheet.getCell(`B${nextRow + 2}`).font = { bold: true };
+  worksheet.getCell(`B${nextRow + 2}`).value = "Nội dung bàn giao ca"; // nextRow is already offset
+  worksheet.getCell(`B${nextRow + 2}`).font = { bold: true }; // nextRow is already offset
   // Gộp ô cho nội dung bàn giao ca
-  worksheet.mergeCells(`C${nextRow + 2}:Q${nextRow + 3}`);
-  worksheet.getCell(`C${nextRow + 2}`).value =
+  worksheet.mergeCells(`C${nextRow + 2}:Q${nextRow + 3}`); // nextRow is already offset
+  worksheet.getCell(`C${nextRow + 2}`).value = // nextRow is already offset
     order.shiftReport?.handoverNotes || "";
   worksheet.getCell(`C${nextRow + 2}`).alignment = {
+    // nextRow is already offset
     horizontal: "left",
     vertical: "middle",
   };
 
-  worksheet.getCell(`B${nextRow + 4}`).value = "Giờ nhận lệnh";
-  worksheet.getCell(`B${nextRow + 4}`).font = { bold: true };
-  worksheet.getCell(`C${nextRow + 4}`).value = order.startTime
+  worksheet.getCell(`B${nextRow + 4}`).value = "Giờ nhận lệnh"; // nextRow is already offset
+  worksheet.getCell(`B${nextRow + 4}`).font = { bold: true }; // nextRow is already offset
+  worksheet.getCell(`C${nextRow + 4}`).value = order.startTime // nextRow is already offset
     ? new Date(order.startTime).toLocaleTimeString("vi-VN", { hour12: false })
     : "";
 
@@ -274,27 +309,27 @@ async function buildVehicle(order, workbook) {
     ? new Date(order.endTime).toLocaleTimeString("vi-VN", { hour12: false })
     : "";
 
-  worksheet.mergeCells(`F${nextRow + 4}:G${nextRow + 4}`);
-  worksheet.getCell(`F${nextRow + 4}`).value = "Giờ hoạt động trên đồng hồ";
-  worksheet.getCell(`F${nextRow + 4}`).font = { bold: true };
-  worksheet.getCell(`H${nextRow + 4}`).value =
+  worksheet.mergeCells(`F${nextRow + 4}:G${nextRow + 4}`); // nextRow is already offset
+  worksheet.getCell(`F${nextRow + 4}`).value = "Giờ hoạt động trên đồng hồ"; // nextRow is already offset
+  worksheet.getCell(`F${nextRow + 4}`).font = { bold: true }; // nextRow is already offset
+  worksheet.getCell(`H${nextRow + 4}`).value = // nextRow is already offset
     (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => {
       return sum + report?.travelHours;
     }, 0) || "";
-  worksheet.getCell(`H${nextRow + 4}`).alignment = { horizontal: "left" };
+  worksheet.getCell(`H${nextRow + 4}`).alignment = { horizontal: "left" }; // nextRow is already offset
 
-  worksheet.mergeCells(`I${nextRow + 4}:J${nextRow + 4}`);
-  worksheet.getCell(`I${nextRow + 4}`).value = "Km hoạt động trên đồng hồ";
-  worksheet.getCell(`I${nextRow + 4}`).font = { bold: true };
-  worksheet.getCell(`K${nextRow + 4}`).value =
+  worksheet.mergeCells(`I${nextRow + 4}:J${nextRow + 4}`); // nextRow is already offset
+  worksheet.getCell(`I${nextRow + 4}`).value = "Km hoạt động trên đồng hồ"; // nextRow is already offset
+  worksheet.getCell(`I${nextRow + 4}`).font = { bold: true }; // nextRow is already offset
+  worksheet.getCell(`K${nextRow + 4}`).value = // nextRow is already offset
     (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => {
       return sum + report?.distanceKm;
     }, 0) || "";
-  worksheet.getCell(`K${nextRow + 4}`).alignment = { horizontal: "left" };
+  worksheet.getCell(`K${nextRow + 4}`).alignment = { horizontal: "left" }; // nextRow is already offset
 
-  let rowHeader1 = nextRow + 6;
-  worksheet.mergeCells(`A${rowHeader1}:M${rowHeader1}`);
-  const product = worksheet.getCell(`A${rowHeader1}`);
+  let rowHeader1 = nextRow + 6; // nextRow is already offset
+  worksheet.mergeCells(`A${rowHeader1}:M${rowHeader1}`); // rowHeader1 is already offset
+  const product = worksheet.getCell(`A${rowHeader1}`); // rowHeader1 is already offset
   product.value = `I. SẢN PHẨM`;
   product.font = { bold: true, size: 14 };
   product.alignment = { horizontal: "center", vertical: "middle" };
@@ -303,8 +338,8 @@ async function buildVehicle(order, workbook) {
   risk.value = `II. DỰ BÁO NGUY CƠ`;
   risk.font = { bold: true, size: 14 };
   risk.alignment = { horizontal: "center", vertical: "middle" };
-  worksheet.mergeCells(`P${rowHeader1}:Q${rowHeader1}`);
-  const safety = worksheet.getCell(`P${rowHeader1}`);
+  worksheet.mergeCells(`P${rowHeader1}:Q${rowHeader1}`); // rowHeader1 is already offset
+  const safety = worksheet.getCell(`P${rowHeader1}`); // rowHeader1 is already offset
   safety.value = `III. BIỆN PHÁP AN TOÀN`;
   safety.font = { bold: true, size: 14 };
   safety.alignment = { horizontal: "center", vertical: "middle" };
@@ -342,7 +377,7 @@ async function buildVehicle(order, workbook) {
 
   const grouped = await groupTripsVehicle(
     reports,
-    order.workingDate,
+    order.workingDate, // This is a date object, not a row number
     order.shift,
   );
 
@@ -434,7 +469,7 @@ async function buildVehicle(order, workbook) {
 
   const totalRow = rowIndexTrip + 1;
 
-  worksheet.mergeCells(`A${totalRow}:B${totalRow}`);
+  worksheet.mergeCells(`A${totalRow}:B${totalRow}`); // totalRow is already offset
   worksheet.getCell(`A${totalRow}`).value = "Tổng cộng";
   worksheet.getCell(`A${totalRow}`).font = { bold: true };
   worksheet.getCell(`A${totalRow}`).alignment = { horizontal: "right" };
@@ -462,11 +497,11 @@ async function buildVehicle(order, workbook) {
     }, 0) || "";
   worksheet.getCell(`J${totalRow}`).font = { bold: true };
 
-  worksheet.mergeCells(`K${totalRow}:Q${totalRow}`);
-  worksheet.getCell(`K${totalRow}`).value = "";
+  worksheet.mergeCells(`K${totalRow}:Q${totalRow}`); // totalRow is already offset
+  worksheet.getCell(`K${totalRow}`).value = ""; // totalRow is already offset
 
-  worksheet.mergeCells(`A${totalRow + 1}:Q${totalRow + 1}`);
-  worksheet.getCell(`A${totalRow + 1}`).value = "Mức bồi dưỡng (x1000đ):";
+  worksheet.mergeCells(`A${totalRow + 1}:Q${totalRow + 1}`); // totalRow is already offset
+  worksheet.getCell(`A${totalRow + 1}`).value = "Mức bồi dưỡng (x1000đ):"; // totalRow is already offset
 
   worksheet.mergeCells(`A${totalRow + 2}:Q${totalRow + 2}`);
   const header3 = worksheet.getCell(`A${totalRow + 2}`);
@@ -892,200 +927,212 @@ async function buildVehicleService(order, workbook) {
 
   const worksheet = workbook.addWorksheet(sheetName);
 
-  // Tiêu đề bảng
-  worksheet.mergeCells("A1:N2");
-  const header = worksheet.getCell("A1");
+  // Row 1: Company Name
+  worksheet.mergeCells("A1:N1");
+  const companyNameCell = worksheet.getCell("A1");
+  companyNameCell.value = "CÔNG TY CỔ PHẦN THAN CAO SƠN - TKV";
+  companyNameCell.font = { italic: true, size: 18 };
+  companyNameCell.alignment = { horizontal: "left", vertical: "middle" };
+
+  // Row 2: Department
+  worksheet.mergeCells("A2:N2");
+  const departmentCell = worksheet.getCell("A2");
+  departmentCell.value = `Đơn vị: ${order.assignedTo?.department?.code || ""}`;
+  departmentCell.font = { italic: true, size: 14 };
+  departmentCell.alignment = { horizontal: "left", vertical: "middle" };
+
+  // Row 3: LỆNH SẢN XUẤT
+  worksheet.mergeCells("A3:N3");
+  const header = worksheet.getCell("A3");
   header.value = `LỆNH SẢN XUẤT`;
   header.font = { bold: true, size: 16 };
   header.alignment = { horizontal: "center", vertical: "middle" };
+  const rowOffset = 2;
 
-  worksheet.getCell("B4").value = "Đơn vị";
-  worksheet.getCell("B4").font = { bold: true };
-  worksheet.getCell("C4").value = order.assignedTo?.department?.code || "";
+  worksheet.getCell(`B${4 + rowOffset}`).value = "Đơn vị";
+  worksheet.getCell(`B${4 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${4 + rowOffset}`).value =
+    order.assignedTo?.department?.code || "";
 
-  worksheet.getCell("F4").value = "Ngày";
-  worksheet.getCell("F4").font = { bold: true };
+  worksheet.getCell(`F${4 + rowOffset}`).value = "Ngày";
+  worksheet.getCell(`F${4 + rowOffset}`).font = { bold: true };
   // Lấy ngày từ order.workingDate và định dạng
   const workingDate = order.workingDate ? new Date(order.workingDate) : null;
   const ngay = workingDate ? workingDate.toLocaleDateString("vi-VN") : "";
-  worksheet.getCell("G4").value = ngay;
+  worksheet.getCell(`G${4 + rowOffset}`).value = ngay;
 
-  worksheet.getCell("H4").value = order.shiftHour || "";
+  worksheet.getCell(`H${4 + rowOffset}`).value = order.shiftHour || "";
 
-  worksheet.getCell("I4").value = "Ca";
-  worksheet.getCell("I4").font = { bold: true };
+  worksheet.getCell(`I${4 + rowOffset}`).value = "Ca";
+  worksheet.getCell(`I${4 + rowOffset}`).font = { bold: true };
 
-  worksheet.getCell("J4").value = order.shift?.name || "";
-  worksheet.getCell("J4").alignment = { horizontal: "left" };
+  worksheet.getCell(`J${4 + rowOffset}`).value = order.shift?.name || "";
+  worksheet.getCell(`J${4 + rowOffset}`).alignment = { horizontal: "left" };
 
   // 3. Người ra lệnh
   // Dòng 5
-  worksheet.getCell("B5").value = "Người ra lệnh";
-  worksheet.getCell("B5").font = { bold: true };
-  worksheet.getCell("C5").value = order.createdBy?.fullName || "";
-
-  worksheet.getCell("F5").value = "Số thẻ";
-  worksheet.getCell("F5").font = { bold: true };
-  worksheet.getCell("G5").value = order.createdBy?.salaryCode || "";
-
-  worksheet.getCell("I5").value = "Chức vụ";
-  worksheet.getCell("I5").font = { bold: true };
-  worksheet.mergeCells("J5:N5");
-  worksheet.getCell("J5").value = order.createdBy?.position?.name || "";
+  worksheet.getCell(`B${5 + rowOffset}`).value = "Người ra lệnh";
+  worksheet.getCell(`B${5 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${5 + rowOffset}`).value =
+    order.createdBy?.fullName || "";
+  worksheet.getCell(`F${5 + rowOffset}`).value = "Số thẻ";
+  worksheet.getCell(`F${5 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`G${5 + rowOffset}`).value =
+    order.createdBy?.salaryCode || "";
+  worksheet.getCell(`I${5 + rowOffset}`).value = "Chức vụ";
+  worksheet.getCell(`I${5 + rowOffset}`).font = { bold: true };
+  worksheet.mergeCells(`J${5 + rowOffset}:N${5 + rowOffset}`);
+  worksheet.getCell(`J${5 + rowOffset}`).value =
+    order.createdBy?.position?.name || "";
 
   // 4. Người nhận lệnh
   // Dòng 6
-  worksheet.getCell("B6").value = "Người nhận lệnh";
-  worksheet.getCell("B6").font = { bold: true };
-  worksheet.getCell("C6").value = order.assignedTo?.fullName || "";
-
-  worksheet.getCell("F6").value = "Số thẻ";
-  worksheet.getCell("F6").font = { bold: true };
-  worksheet.getCell("G6").value = order.assignedTo?.salaryCode || "";
-
-  worksheet.getCell("I6").value = "Chức vụ";
-  worksheet.getCell("I6").font = { bold: true };
-  worksheet.mergeCells("J6:N6");
-  worksheet.getCell("J6").value = order.assignedTo?.position?.name || "";
+  worksheet.getCell(`B${6 + rowOffset}`).value = "Người nhận lệnh";
+  worksheet.getCell(`B${6 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${6 + rowOffset}`).value =
+    order.assignedTo?.fullName || "";
+  worksheet.getCell(`F${6 + rowOffset}`).value = "Số thẻ";
+  worksheet.getCell(`F${6 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`G${6 + rowOffset}`).value =
+    order.assignedTo?.salaryCode || "";
+  worksheet.getCell(`I${6 + rowOffset}`).value = "Chức vụ";
+  worksheet.getCell(`I${6 + rowOffset}`).font = { bold: true };
+  worksheet.mergeCells(`J${6 + rowOffset}:N${6 + rowOffset}`);
+  worksheet.getCell(`J${6 + rowOffset}`).value =
+    order.assignedTo?.position?.name || "";
   // Dòng 7
-  worksheet.getCell(`B7`).value = "Nội dung lệnh";
-  worksheet.getCell(`B7`).font = { bold: true };
+  worksheet.getCell(`B${7 + rowOffset}`).value = "Nội dung lệnh";
+  worksheet.getCell(`B${7 + rowOffset}`).font = { bold: true };
   // Gộp ô cho nội dung để hiển thị đầy đủ
-  worksheet.mergeCells(`C7:N8`);
-  worksheet.getCell(`C7`).value = order.workContent || "";
-  worksheet.getCell(`C7`).alignment = {
+  worksheet.mergeCells(`C${7 + rowOffset}:N${8 + rowOffset}`);
+  worksheet.getCell(`C${7 + rowOffset}`).value = order.workContent || "";
+  worksheet.getCell(`C${7 + rowOffset}`).alignment = {
     horizontal: "left",
     vertical: "middle",
   };
 
-  //   worksheet.getCell(`B9`).value = "Biện pháp an toàn";
-  //   worksheet.getCell(`B9`).font = { bold: true };
-  //   // Gộp ô cho nội dung bàn giao ca
-  //   worksheet.mergeCells(`C9:L9`);
-  //   worksheet.getCell(`C9`).value =
-  //     (order?.safetyMeasure || "") + " " + (order?.safetyMeasureSpecific || "");
-
-  worksheet.getCell(`B9`).value = "Nội dung bàn giao ca";
-  worksheet.getCell(`B9`).font = { bold: true };
+  worksheet.getCell(`B${9 + rowOffset}`).value = "Nội dung bàn giao ca";
+  worksheet.getCell(`B${9 + rowOffset}`).font = { bold: true };
   // Gộp ô cho nội dung bàn giao ca
-  worksheet.mergeCells(`C9:N10`);
-  worksheet.getCell(`C9`).value = order.shiftReport?.handoverNotes || "";
-  worksheet.getCell(`C9`).alignment = {
+  worksheet.mergeCells(`C${9 + rowOffset}:N${10 + rowOffset}`);
+  worksheet.getCell(`C${9 + rowOffset}`).value =
+    order.shiftReport?.handoverNotes || "";
+  worksheet.getCell(`C${9 + rowOffset}`).alignment = {
     horizontal: "left",
     vertical: "middle",
   };
 
-  worksheet.getCell(`B11`).value = "Giờ nhận lệnh";
-  worksheet.getCell(`B11`).font = { bold: true };
-  worksheet.getCell(`C11`).value = order.startTime
+  worksheet.getCell(`B${11 + rowOffset}`).value = "Giờ nhận lệnh";
+  worksheet.getCell(`B${11 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${11 + rowOffset}`).value = order.startTime
     ? new Date(order.startTime).toLocaleTimeString("vi-VN", { hour12: false })
     : "";
 
-  worksheet.getCell(`D11`).value = "Giờ kết thúc";
-  worksheet.getCell(`D11`).font = { bold: true };
-  worksheet.getCell(`E11`).value = order.endTime
+  worksheet.getCell(`D${11 + rowOffset}`).value = "Giờ kết thúc";
+  worksheet.getCell(`D${11 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`E${11 + rowOffset}`).value = order.endTime
     ? new Date(order.endTime).toLocaleTimeString("vi-VN", { hour12: false })
     : "";
 
-  worksheet.mergeCells(`F11:G11`);
-  worksheet.getCell(`F11`).value = "Giờ hoạt động trên đồng hồ";
-  worksheet.getCell(`F11`).font = { bold: true };
-  worksheet.getCell(`H11`).value =
+  worksheet.mergeCells(`F${11 + rowOffset}:G${11 + rowOffset}`);
+  worksheet.getCell(`F${11 + rowOffset}`).value = "Giờ hoạt động trên đồng hồ";
+  worksheet.getCell(`F${11 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`H${11 + rowOffset}`).value =
     (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => {
       return sum + report?.travelHours;
     }, 0) || "";
-  worksheet.getCell(`H11`).alignment = { horizontal: "left" };
+  worksheet.getCell(`H${11 + rowOffset}`).alignment = { horizontal: "left" };
 
-  worksheet.mergeCells(`I11:J11`);
-  worksheet.getCell(`I11`).value = "Km hoạt động trên đồng hồ";
-  worksheet.getCell(`I11`).font = { bold: true };
-  worksheet.getCell(`K11`).value =
+  worksheet.mergeCells(`I${11 + rowOffset}:J${11 + rowOffset}`);
+  worksheet.getCell(`I${11 + rowOffset}`).value = "Km hoạt động trên đồng hồ";
+  worksheet.getCell(`I${11 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`K${11 + rowOffset}`).value =
     (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => {
       return sum + report?.distanceKm;
     }, 0) || "";
-  worksheet.getCell(`K11`).alignment = { horizontal: "left" };
+  worksheet.getCell(`K${11 + rowOffset}`).alignment = { horizontal: "left" };
 
-  worksheet.mergeCells(`A13:J13`);
-  const header3 = worksheet.getCell(`A13`);
+  worksheet.mergeCells(`A${13 + rowOffset}:J${13 + rowOffset}`);
+  const header3 = worksheet.getCell(`A${13 + rowOffset}`);
   header3.value = `I.NHIÊN LIỆU`;
   header3.font = { bold: true, size: 14 };
   header3.alignment = { horizontal: "center", vertical: "middle" };
-  worksheet.mergeCells(`K13:L13`);
-  const risk = worksheet.getCell(`K13`);
+  worksheet.mergeCells(`K${13 + rowOffset}:L${13 + rowOffset}`);
+  const risk = worksheet.getCell(`K${13 + rowOffset}`);
   risk.value = `II.DỰ BÁO NGUY CƠ`;
   risk.font = { bold: true, size: 14 };
   risk.alignment = { horizontal: "center", vertical: "middle" };
-  worksheet.mergeCells(`M13:N13`);
-  const safety = worksheet.getCell(`M13`);
+  worksheet.mergeCells(`M${13 + rowOffset}:N${13 + rowOffset}`);
+  const safety = worksheet.getCell(`M${13 + rowOffset}`);
   safety.value = `III.BIỆN PHÁP AN TOÀN`;
   safety.font = { bold: true, size: 14 };
   safety.alignment = { horizontal: "center", vertical: "middle" };
-  worksheet.getRow(13).height = 30;
+  worksheet.getRow(13 + rowOffset).height = 30;
 
-  worksheet.mergeCells(`A14:B14`);
-  worksheet.getCell(`A14`).value = "Thiết bị vận hành";
-  worksheet.getCell(`A14`).font = { bold: true };
-  worksheet.getCell(`A14`).alignment = {
+  worksheet.mergeCells(`A${14 + rowOffset}:B${14 + rowOffset}`);
+  worksheet.getCell(`A${14 + rowOffset}`).value = "Thiết bị vận hành";
+  worksheet.getCell(`A${14 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`A${14 + rowOffset}`).alignment = {
     horizontal: "center",
     vertical: "middle",
     wrapText: true,
   };
-  worksheet.getCell(`C14`).value = "Tồn dầu";
-  worksheet.getCell(`C14`).font = { bold: true };
-  worksheet.getCell(`C14`).alignment = {
+  worksheet.getCell(`C${14 + rowOffset}`).value = "Tồn dầu";
+  worksheet.getCell(`C${14 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${14 + rowOffset}`).alignment = {
     horizontal: "center",
     vertical: "middle",
     wrapText: true,
   };
-  worksheet.getCell(`D14`).value = "Lĩnh trong ca";
-  worksheet.getCell(`D14`).font = { bold: true };
-  worksheet.getCell(`D14`).alignment = {
+  worksheet.getCell(`D${14 + rowOffset}`).value = "Lĩnh trong ca";
+  worksheet.getCell(`D${14 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`D${14 + rowOffset}`).alignment = {
     horizontal: "center",
     vertical: "middle",
     wrapText: true,
   };
-  worksheet.getCell(`E14`).value = "Tồn cuối ca";
-  worksheet.getCell(`E14`).font = { bold: true };
-  worksheet.getCell(`E14`).alignment = {
+  worksheet.getCell(`E${14 + rowOffset}`).value = "Tồn cuối ca";
+  worksheet.getCell(`E${14 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`E${14 + rowOffset}`).alignment = {
     horizontal: "center",
     vertical: "middle",
     wrapText: true,
   };
-  worksheet.getCell(`F14`).value = "Tiêu thụ";
-  worksheet.getCell(`F14`).font = { bold: true };
-  worksheet.getCell(`F14`).alignment = {
+  worksheet.getCell(`F${14 + rowOffset}`).value = "Tiêu thụ";
+  worksheet.getCell(`F${14 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`F${14 + rowOffset}`).alignment = {
     horizontal: "center",
     vertical: "middle",
     wrapText: true,
   };
-  worksheet.getCell(`G14`).value = "Định mức";
-  worksheet.getCell(`G14`).font = { bold: true };
-  worksheet.getCell(`G14`).alignment = {
+  worksheet.getCell(`G${14 + rowOffset}`).value = "Định mức";
+  worksheet.getCell(`G${14 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`G${14 + rowOffset}`).alignment = {
     horizontal: "center",
     vertical: "middle",
     wrapText: true,
   };
-  worksheet.getCell(`H14`).value = "Tiết kiệm";
-  worksheet.getCell(`H14`).font = { bold: true };
-  worksheet.getCell(`H14`).alignment = {
+  worksheet.getCell(`H${14 + rowOffset}`).value = "Tiết kiệm";
+  worksheet.getCell(`H${14 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`H${14 + rowOffset}`).alignment = {
     horizontal: "center",
     vertical: "middle",
     wrapText: true,
   };
-  worksheet.getCell(`I14`).value = "Sử dụng vượt";
-  worksheet.getCell(`I14`).font = { bold: true };
-  worksheet.getCell(`I14`).alignment = {
+  worksheet.getCell(`I${14 + rowOffset}`).value = "Sử dụng vượt";
+  worksheet.getCell(`I${14 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`I${14 + rowOffset}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`J14`).value = "Ghi chú";
-  worksheet.getCell(`J14`).font = { bold: true };
-  worksheet.getCell(`J14`).alignment = {
+  worksheet.getCell(`J${14 + rowOffset}`).value = "Ghi chú";
+  worksheet.getCell(`J${14 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`J${14 + rowOffset}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
 
-  const fuelHeaderRow = 15;
+  const fuelHeaderRow = 15 + rowOffset;
 
   let index = 0;
   for (let d of order.device || [{}]) {
@@ -1126,7 +1173,7 @@ async function buildVehicleService(order, workbook) {
 
   const fuelEndRow = fuelHeaderRow + index;
 
-  addTableBorders(worksheet, 13, fuelEndRow - 1, 1, 14);
+  addTableBorders(worksheet, 13 + rowOffset, fuelEndRow - 1, 1, 14);
 
   worksheet.mergeCells(`B${fuelEndRow + 1}:D${fuelEndRow + 1}`);
   worksheet.getCell(`B${fuelEndRow + 1}`).value = "NGƯỜI NHẬN LỆNH";
@@ -1249,67 +1296,89 @@ async function buildExcavator(order, workbook) {
 
   const worksheet = workbook.addWorksheet(sheetName);
 
+  // Row 1: Company Name
+  worksheet.mergeCells("A1:O1");
+  const companyNameCell = worksheet.getCell("A1");
+  companyNameCell.value = "CÔNG TY CỔ PHẦN THAN CAO SƠN - TKV";
+  companyNameCell.font = { italic: true, size: 18 };
+  companyNameCell.alignment = { horizontal: "left", vertical: "middle" };
+
+  // Row 2: Department
+  worksheet.mergeCells("A2:O2");
+  const departmentCell = worksheet.getCell("A2");
+  departmentCell.value = `Đơn vị: ${order.assignedTo?.department?.code || ""}`;
+  departmentCell.font = { italic: true, size: 14 };
+  departmentCell.alignment = { horizontal: "left", vertical: "middle" };
+
+  const rowOffset = 2;
   // Tiêu đề bảng
-  worksheet.mergeCells("A1:O2");
-  const header = worksheet.getCell("A1");
+  worksheet.mergeCells(`A${1 + rowOffset}:O${2 + rowOffset}`);
+  const header = worksheet.getCell(`A${1 + rowOffset}`);
   header.value = `LỆNH SẢN XUẤT`;
   header.font = { bold: true, size: 16 };
   header.alignment = { horizontal: "center", vertical: "middle" };
 
-  worksheet.getCell("B4").value = "Đơn vị";
-  worksheet.getCell("B4").font = { bold: true };
-  worksheet.getCell("C4").value = order.assignedTo?.department?.code || "";
+  worksheet.getCell(`B${4 + rowOffset}`).value = "Đơn vị";
+  worksheet.getCell(`B${4 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${4 + rowOffset}`).value =
+    order.assignedTo?.department?.code || "";
 
-  worksheet.getCell("E4").value = "Ngày";
-  worksheet.getCell("E4").font = { bold: true };
+  worksheet.getCell(`E${4 + rowOffset}`).value = "Ngày";
+  worksheet.getCell(`E${4 + rowOffset}`).font = { bold: true };
   // Lấy ngày từ order.workingDate và định dạng
   const workingDate = order.workingDate ? new Date(order.workingDate) : null;
   const ngay = workingDate ? workingDate.toLocaleDateString("vi-VN") : "";
-  worksheet.getCell("F4").value = ngay;
+  worksheet.getCell(`F${4 + rowOffset}`).value = ngay;
 
-  worksheet.getCell("G4").value = order.shiftHour || "";
+  worksheet.getCell(`G${4 + rowOffset}`).value = order.shiftHour || "";
 
-  worksheet.getCell("H4").value = "Ca";
-  worksheet.getCell("H4").font = { bold: true };
+  worksheet.getCell(`H${4 + rowOffset}`).value = "Ca";
+  worksheet.getCell(`H${4 + rowOffset}`).font = { bold: true };
 
-  worksheet.getCell("I4").value = order.shift?.name || "";
-  worksheet.getCell("I4").alignment = { horizontal: "left" };
+  worksheet.getCell(`I${4 + rowOffset}`).value = order.shift?.name || "";
+  worksheet.getCell(`I${4 + rowOffset}`).alignment = { horizontal: "left" };
 
   // 3. Người ra lệnh
   // Dòng 5
-  worksheet.getCell("B5").value = "Người ra lệnh";
-  worksheet.getCell("B5").font = { bold: true };
-  worksheet.getCell("C5").value = order.createdBy?.fullName || "";
+  worksheet.getCell(`B${5 + rowOffset}`).value = "Người ra lệnh";
+  worksheet.getCell(`B${5 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${5 + rowOffset}`).value =
+    order.createdBy?.fullName || "";
 
-  worksheet.getCell("E5").value = "Số thẻ";
-  worksheet.getCell("E5").font = { bold: true };
-  worksheet.getCell("F5").value = order.createdBy?.salaryCode || "";
+  worksheet.getCell(`E${5 + rowOffset}`).value = "Số thẻ";
+  worksheet.getCell(`E${5 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`F${5 + rowOffset}`).value =
+    order.createdBy?.salaryCode || "";
 
-  worksheet.getCell("H5").value = "Chức vụ";
-  worksheet.getCell("H5").font = { bold: true };
-  worksheet.mergeCells("I5:O5");
-  worksheet.getCell("I5").value = order.createdBy?.position?.name || "";
+  worksheet.getCell(`H${5 + rowOffset}`).value = "Chức vụ";
+  worksheet.getCell(`H${5 + rowOffset}`).font = { bold: true };
+  worksheet.mergeCells(`I${5 + rowOffset}:O${5 + rowOffset}`);
+  worksheet.getCell(`I${5 + rowOffset}`).value =
+    order.createdBy?.position?.name || "";
 
   // 4. Người nhận lệnh
   // Dòng 6
-  worksheet.getCell("B6").value = "Người nhận lệnh";
-  worksheet.getCell("B6").font = { bold: true };
-  worksheet.getCell("C6").value = order.assignedTo?.fullName || "";
+  worksheet.getCell(`B${6 + rowOffset}`).value = "Người nhận lệnh";
+  worksheet.getCell(`B${6 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${6 + rowOffset}`).value =
+    order.assignedTo?.fullName || "";
 
-  worksheet.getCell("E6").value = "Số thẻ";
-  worksheet.getCell("E6").font = { bold: true };
-  worksheet.getCell("F6").value = order.assignedTo?.salaryCode || "";
+  worksheet.getCell(`E${6 + rowOffset}`).value = "Số thẻ";
+  worksheet.getCell(`E${6 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`F${6 + rowOffset}`).value =
+    order.assignedTo?.salaryCode || "";
 
-  worksheet.getCell("H6").value = "Chức vụ";
-  worksheet.getCell("H6").font = { bold: true };
-  worksheet.mergeCells("I6:O6");
-  worksheet.getCell("I6").value = order.assignedTo?.position?.name || "";
+  worksheet.getCell(`H${6 + rowOffset}`).value = "Chức vụ";
+  worksheet.getCell(`H${6 + rowOffset}`).font = { bold: true };
+  worksheet.mergeCells(`I${6 + rowOffset}:O${6 + rowOffset}`);
+  worksheet.getCell(`I${6 + rowOffset}`).value =
+    order.assignedTo?.position?.name || "";
 
   // Dòng 6 lx bo tuc
-  worksheet.getCell("B7").value = "Phụ máy";
-  worksheet.getCell("B7").font = { bold: true };
+  worksheet.getCell(`B${7 + rowOffset}`).value = "Phụ máy";
+  worksheet.getCell(`B${7 + rowOffset}`).font = { bold: true };
 
-  let rowIndex = 7;
+  let rowIndex = 7 + rowOffset;
   (order.assistants || []).forEach((driver, idx) => {
     let row = rowIndex + idx;
 
@@ -1324,14 +1393,14 @@ async function buildExcavator(order, workbook) {
     worksheet.getCell(`I${row}`).value = driver.position?.name || "";
   });
 
-  let nextRow = rowIndex + (order.assistants?.length || 1);
+  let nextRow = rowIndex + (order.assistants?.length || 1); // This `nextRow` is already offset
   // Dòng 7
-  worksheet.getCell(`B${nextRow}`).value = "Nội dung lệnh";
-  worksheet.getCell(`B${nextRow}`).font = { bold: true };
+  worksheet.getCell(`B${nextRow}`).value = "Nội dung lệnh"; // This `nextRow` is already offset
+  worksheet.getCell(`B${nextRow}`).font = { bold: true }; // This `nextRow` is already offset
   // Gộp ô cho nội dung để hiển thị đầy đủ
-  worksheet.mergeCells(`C${nextRow}:O${nextRow + 1}`);
-  worksheet.getCell(`C${nextRow}`).value = order.workContent || "";
-  worksheet.getCell(`C${nextRow}`).alignment = {
+  worksheet.mergeCells(`C${nextRow}:O${nextRow + 1}`); // This `nextRow` is already offset
+  worksheet.getCell(`C${nextRow}`).value = order.workContent || ""; // This `nextRow` is already offset
+  worksheet.getCell(`C${nextRow}`).alignment = { // This `nextRow` is already offset
     horizontal: "left",
     vertical: "middle",
   };
@@ -1343,46 +1412,46 @@ async function buildExcavator(order, workbook) {
   //   worksheet.getCell(`C${nextRow + 2}`).value =
   //     (order?.safetyMeasure || "") + " " + (order?.safetyMeasureSpecific || "");
 
-  worksheet.getCell(`B${nextRow + 2}`).value = "Nội dung bàn giao ca";
-  worksheet.getCell(`B${nextRow + 2}`).font = { bold: true };
+  worksheet.getCell(`B${nextRow + 2}`).value = "Nội dung bàn giao ca"; // nextRow is already offset
+  worksheet.getCell(`B${nextRow + 2}`).font = { bold: true }; // nextRow is already offset
   // Gộp ô cho nội dung bàn giao ca
-  worksheet.mergeCells(`C${nextRow + 2}:O${nextRow + 3}`);
-  worksheet.getCell(`C${nextRow + 2}`).value =
+  worksheet.mergeCells(`C${nextRow + 2}:O${nextRow + 3}`); // nextRow is already offset
+  worksheet.getCell(`C${nextRow + 2}`).value = // nextRow is already offset
     order.shiftReport?.handoverNotes || "";
-  worksheet.getCell(`C${nextRow + 2}`).alignment = {
+  worksheet.getCell(`C${nextRow + 2}`).alignment = { // nextRow is already offset
     horizontal: "left",
     vertical: "middle",
   };
 
-  worksheet.getCell(`B${nextRow + 4}`).value = "Giờ nhận lệnh";
-  worksheet.getCell(`B${nextRow + 4}`).font = { bold: true };
-  worksheet.getCell(`C${nextRow + 4}`).value = order.startTime
+  worksheet.getCell(`B${nextRow + 4}`).value = "Giờ nhận lệnh"; // nextRow is already offset
+  worksheet.getCell(`B${nextRow + 4}`).font = { bold: true }; // nextRow is already offset
+  worksheet.getCell(`C${nextRow + 4}`).value = order.startTime // nextRow is already offset
     ? new Date(order.startTime).toLocaleTimeString("vi-VN", { hour12: false })
     : "";
 
-  worksheet.getCell(`D${nextRow + 4}`).value = "Giờ kết thúc";
-  worksheet.getCell(`D${nextRow + 4}`).font = { bold: true };
-  worksheet.getCell(`E${nextRow + 4}`).value = order.endTime
+  worksheet.getCell(`D${nextRow + 4}`).value = "Giờ kết thúc"; // nextRow is already offset
+  worksheet.getCell(`D${nextRow + 4}`).font = { bold: true }; // nextRow is already offset
+  worksheet.getCell(`E${nextRow + 4}`).value = order.endTime // nextRow is already offset
     ? new Date(order.endTime).toLocaleTimeString("vi-VN", { hour12: false })
     : "";
 
-  worksheet.mergeCells(`F${nextRow + 4}:G${nextRow + 4}`);
-  worksheet.getCell(`F${nextRow + 4}`).value = "Giờ hoạt động trong ca";
-  worksheet.getCell(`F${nextRow + 4}`).font = { bold: true };
-  worksheet.getCell(`H${nextRow + 4}`).value =
+  worksheet.mergeCells(`F${nextRow + 4}:G${nextRow + 4}`); // nextRow is already offset
+  worksheet.getCell(`F${nextRow + 4}`).value = "Giờ hoạt động trong ca"; // nextRow is already offset
+  worksheet.getCell(`F${nextRow + 4}`).font = { bold: true }; // nextRow is already offset
+  worksheet.getCell(`H${nextRow + 4}`).value = // nextRow is already offset
     order?.shiftReport?.shiftHours || "";
-  worksheet.getCell(`H${nextRow + 4}`).alignment = { horizontal: "left" };
+  worksheet.getCell(`H${nextRow + 4}`).alignment = { horizontal: "left" }; // nextRow is already offset
 
-  worksheet.mergeCells(`I${nextRow + 4}:J${nextRow + 4}`);
-  worksheet.getCell(`I${nextRow + 4}`).value = "Giờ lũy kế trên đồng hồ";
-  worksheet.getCell(`I${nextRow + 4}`).font = { bold: true };
-  worksheet.getCell(`K${nextRow + 4}`).value =
+  worksheet.mergeCells(`I${nextRow + 4}:J${nextRow + 4}`); // nextRow is already offset
+  worksheet.getCell(`I${nextRow + 4}`).value = "Giờ lũy kế trên đồng hồ"; // nextRow is already offset
+  worksheet.getCell(`I${nextRow + 4}`).font = { bold: true }; // nextRow is already offset
+  worksheet.getCell(`K${nextRow + 4}`).value = // nextRow is already offset
     (order?.shiftReport?.vehicleSummaries || []).reduce((sum, report) => {
       return sum + report?.travelHours;
     }, 0) || "";
-  worksheet.getCell(`K${nextRow + 4}`).alignment = { horizontal: "left" };
+  worksheet.getCell(`K${nextRow + 4}`).alignment = { horizontal: "left" }; // nextRow is already offset
 
-  let rowHeader1 = nextRow + 6;
+  let rowHeader1 = nextRow + 6; // nextRow is already offset
   worksheet.mergeCells(`A${rowHeader1}:K${rowHeader1}`);
   const product = worksheet.getCell(`A${rowHeader1}`);
   product.value = `I. SẢN PHẨM`;
@@ -1398,25 +1467,25 @@ async function buildExcavator(order, workbook) {
   safety.value = `III. BIỆN PHÁP AN TOÀN`;
   safety.font = { bold: true, size: 14 };
   safety.alignment = { horizontal: "center", vertical: "middle" };
-  worksheet.getRow(rowHeader1).height = 30;
+  worksheet.getRow(rowHeader1).height = 30; // rowHeader1 is already offset
 
-  worksheet.getCell(`A${rowHeader1 + 1}`).value = "STT";
-  worksheet.getCell(`B${rowHeader1 + 1}`).value = "Xe nhận tải";
-  worksheet.getCell(`C${rowHeader1 + 1}`).value = "Vật liệu";
-  worksheet.getCell(`D${rowHeader1 + 1}`).value = "Số chuyến thực hiện";
-  worksheet.mergeCells(`E${rowHeader1 + 1}:F${rowHeader1 + 1}`);
-  worksheet.getCell(`E${rowHeader1 + 1}`).value =
+  worksheet.getCell(`A${rowHeader1 + 1}`).value = "STT"; // rowHeader1 is already offset
+  worksheet.getCell(`B${rowHeader1 + 1}`).value = "Xe nhận tải"; // rowHeader1 is already offset
+  worksheet.getCell(`C${rowHeader1 + 1}`).value = "Vật liệu"; // rowHeader1 is already offset
+  worksheet.getCell(`D${rowHeader1 + 1}`).value = "Số chuyến thực hiện"; // rowHeader1 is already offset
+  worksheet.mergeCells(`E${rowHeader1 + 1}:F${rowHeader1 + 1}`); // rowHeader1 is already offset
+  worksheet.getCell(`E${rowHeader1 + 1}`).value = // rowHeader1 is already offset
     "Khối lượng \n tạm tính \n(m3)";
-  worksheet.mergeCells(`G${rowHeader1 + 1}:H${rowHeader1 + 1}`);
-  worksheet.getCell(`G${rowHeader1 + 1}`).value =
+  worksheet.mergeCells(`G${rowHeader1 + 1}:H${rowHeader1 + 1}`); // rowHeader1 is already offset
+  worksheet.getCell(`G${rowHeader1 + 1}`).value = // rowHeader1 is already offset
     "Trọng lượng \n tạm tính \n (tấn)";
-  worksheet.getCell(`I${rowHeader1 + 1}`).value = "Nhiên liệu \n định mức";
-  worksheet.getCell(`J${rowHeader1 + 1}`).value = "Điểm lương \n tạm tính";
-  worksheet.getCell(`K${rowHeader1 + 1}`).value = "Ghi chú";
+  worksheet.getCell(`I${rowHeader1 + 1}`).value = "Nhiên liệu \n định mức"; // rowHeader1 is already offset
+  worksheet.getCell(`J${rowHeader1 + 1}`).value = "Điểm lương \n tạm tính"; // rowHeader1 is already offset
+  worksheet.getCell(`K${rowHeader1 + 1}`).value = "Ghi chú"; // rowHeader1 is already offset
 
-  const headerRow = worksheet.getRow(rowHeader1 + 1);
+  const headerRow = worksheet.getRow(rowHeader1 + 1); // rowHeader1 is already offset
   for (let col = 1; col <= 11; col++) {
-    const cell = headerRow.getCell(col);
+    const cell = headerRow.getCell(col); // col is 1-based
     cell.font = { bold: true };
     cell.alignment = {
       ...cell.alignment,
@@ -1426,7 +1495,7 @@ async function buildExcavator(order, workbook) {
     };
   }
 
-  const grouped = await groupExcavator(reports, order.workingDate);
+  const grouped = await groupExcavator(reports, order.workingDate); // order.workingDate is a Date object
 
   let rowIndexTrip = rowHeader1 + 2;
   grouped.forEach((g, i) => {
@@ -1689,7 +1758,6 @@ async function buildExcavator(order, workbook) {
         imageId,
         `L${totalRow + 7 + deviceRow}:M${totalRow + 9 + deviceRow}`,
       );
-
     }
   }
   timeSignature(
@@ -1970,169 +2038,200 @@ async function buildOther(order, workbook) {
 
   const worksheet = workbook.addWorksheet(sheetName);
 
-  // Tiêu đề bảng
-  worksheet.mergeCells("A1:L2");
-  const header = worksheet.getCell("A1");
+  // Row 1: Company Name
+  worksheet.mergeCells("A1:L1");
+  const companyNameCell = worksheet.getCell("A1");
+  companyNameCell.value = "CÔNG TY CỔ PHẦN THAN CAO SƠN - TKV";
+  companyNameCell.font = { italic: true, size: 18 };
+  companyNameCell.alignment = { horizontal: "left", vertical: "middle" };
+
+  // Row 2: Department
+  worksheet.mergeCells("A2:L2");
+  const departmentCell = worksheet.getCell("A2");
+  departmentCell.value = `Đơn vị: ${order.assignedTo?.department?.code || ""}`;
+  departmentCell.font = { italic: true, size: 14 };
+  departmentCell.alignment = { horizontal: "left", vertical: "middle" };
+
+  // Row 3: LỆNH SẢN XUẤT
+  worksheet.mergeCells("A3:L3");
+  const header = worksheet.getCell("A3");
   header.value = `LỆNH SẢN XUẤT`;
   header.font = { bold: true, size: 16 };
   header.alignment = { horizontal: "center", vertical: "middle" };
+  const rowOffset = 2;
 
-  worksheet.getCell("B4").value = "Đơn vị";
-  worksheet.getCell("B4").font = { bold: true };
-  worksheet.getCell("C4").value = order.assignedTo?.department?.code || "";
+  worksheet.getCell(`B${4 + rowOffset}`).value = "Đơn vị";
+  worksheet.getCell(`B${4 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${4 + rowOffset}`).value = order.assignedTo?.department?.code || "";
 
-  worksheet.getCell("F4").value = "Ngày";
-  worksheet.getCell("F4").font = { bold: true };
+  worksheet.getCell(`F${4 + rowOffset}`).value = "Ngày";
+  worksheet.getCell(`F${4 + rowOffset}`).font = { bold: true };
   // Lấy ngày từ order.workingDate và định dạng
   const workingDate = order.workingDate ? new Date(order.workingDate) : null;
   const ngay = workingDate ? workingDate.toLocaleDateString("vi-VN") : "";
-  worksheet.getCell("G4").value = ngay;
+  worksheet.getCell(`G${4 + rowOffset}`).value = ngay;
 
-  worksheet.getCell("I4").value = "Ca";
-  worksheet.getCell("I4").font = { bold: true };
+  worksheet.getCell(`I${4 + rowOffset}`).value = "Ca";
+  worksheet.getCell(`I${4 + rowOffset}`).font = { bold: true };
 
-  worksheet.getCell("J4").value = order.shift?.name || "";
-  worksheet.getCell("J4").alignment = { horizontal: "left" };
+  worksheet.getCell(`J${4 + rowOffset}`).value = order.shift?.name || "";
+  worksheet.getCell(`J${4 + rowOffset}`).alignment = { horizontal: "left" };
 
   // 3. Người ra lệnh
   // Dòng 5
-  worksheet.getCell("B5").value = "Người ra lệnh";
-  worksheet.getCell("B5").font = { bold: true };
-  worksheet.getCell("C5").value = order.createdBy?.fullName || "";
+  worksheet.getCell(`B${5 + rowOffset}`).value = "Người ra lệnh";
+  worksheet.getCell(`B${5 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${5 + rowOffset}`).value = order.createdBy?.fullName || "";
 
-  worksheet.getCell("F5").value = "Số thẻ";
-  worksheet.getCell("F5").font = { bold: true };
-  worksheet.getCell("G5").value = order.createdBy?.salaryCode || "";
+  worksheet.getCell(`F${5 + rowOffset}`).value = "Số thẻ";
+  worksheet.getCell(`F${5 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`G${5 + rowOffset}`).value = order.createdBy?.salaryCode || "";
 
-  worksheet.getCell("I5").value = "Chức vụ";
-  worksheet.getCell("I5").font = { bold: true };
-  worksheet.mergeCells("J5:L5");
-  worksheet.getCell("J5").value = order.createdBy?.position?.name || "";
+  worksheet.getCell(`I${5 + rowOffset}`).value = "Chức vụ";
+  worksheet.getCell(`I${5 + rowOffset}`).font = { bold: true };
+  worksheet.mergeCells(`J${5 + rowOffset}:L${5 + rowOffset}`);
+  worksheet.getCell(`J${5 + rowOffset}`).value = order.createdBy?.position?.name || "";
 
   // 4. Người nhận lệnh
   // Dòng 6
-  worksheet.getCell("B6").value = "Người nhận lệnh";
-  worksheet.getCell("B6").font = { bold: true };
-  worksheet.getCell("C6").value = order.assignedTo?.fullName || "";
+  worksheet.getCell(`B${6 + rowOffset}`).value = "Người nhận lệnh";
+  worksheet.getCell(`B${6 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${6 + rowOffset}`).value = order.assignedTo?.fullName || "";
 
-  worksheet.getCell("F6").value = "Số thẻ";
-  worksheet.getCell("F6").font = { bold: true };
-  worksheet.getCell("G6").value = order.assignedTo?.salaryCode || "";
+  worksheet.getCell(`F${6 + rowOffset}`).value = "Số thẻ";
+  worksheet.getCell(`F${6 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`G${6 + rowOffset}`).value = order.assignedTo?.salaryCode || "";
 
-  worksheet.getCell("I6").value = "Chức vụ";
-  worksheet.getCell("I6").font = { bold: true };
-  worksheet.mergeCells("J6:L6");
-  worksheet.getCell("J6").value = order.assignedTo?.position?.name || "";
+  worksheet.getCell(`I${6 + rowOffset}`).value = "Chức vụ";
+  worksheet.getCell(`I${6 + rowOffset}`).font = { bold: true };
+  worksheet.mergeCells(`J${6 + rowOffset}:L${6 + rowOffset}`);
+  worksheet.getCell(`J${6 + rowOffset}`).value = order.assignedTo?.position?.name || "";
 
   // Dòng 7
-  worksheet.getCell(`B7`).value = "Nội dung lệnh";
-  worksheet.getCell(`B7`).font = { bold: true };
+  worksheet.getCell(`B${7 + rowOffset}`).value = "Nội dung lệnh";
+  worksheet.getCell(`B${7 + rowOffset}`).font = { bold: true };
   // Gộp ô cho nội dung để hiển thị đầy đủ
-  worksheet.mergeCells(`C7:L8`);
-  worksheet.getCell(`C7`).value = order.workContent || "";
-  worksheet.getCell(`C7`).alignment = {
+  worksheet.mergeCells(`C${7 + rowOffset}:L${8 + rowOffset}`);
+  worksheet.getCell(`C${7 + rowOffset}`).value = order.workContent || "";
+  worksheet.getCell(`C${7 + rowOffset}`).alignment = {
     horizontal: "left",
     vertical: "middle",
   };
 
-  //   worksheet.getCell(`B9`).value = "Biện pháp an toàn";
-  //   worksheet.getCell(`B9`).font = { bold: true };
+  //   worksheet.getCell(`B${9 + rowOffset}`).value = "Biện pháp an toàn";
+  //   worksheet.getCell(`B${9 + rowOffset}`).font = { bold: true };
   //   // Gộp ô cho nội dung bàn giao ca
-  //   worksheet.mergeCells(`C9:L9`);
-  //   worksheet.getCell(`C9`).value =
+  //   worksheet.mergeCells(`C${9 + rowOffset}:L${9 + rowOffset}`);
+  //   worksheet.getCell(`C${9 + rowOffset}`).value =
   //     (order?.safetyMeasure || "") + " " + (order?.safetyMeasureSpecific || "");
 
-  worksheet.getCell(`B9`).value = "Giờ nhận lệnh";
-  worksheet.getCell(`B9`).font = { bold: true };
-  worksheet.getCell(`C9`).value = order.startTime
+  worksheet.getCell(`B${9 + rowOffset}`).value = "Giờ nhận lệnh";
+  worksheet.getCell(`B${9 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${9 + rowOffset}`).value = order.startTime
     ? new Date(order.startTime).toLocaleTimeString("vi-VN", { hour12: false })
     : "";
 
-  worksheet.getCell(`D9`).value = "Giờ kết thúc";
-  worksheet.getCell(`D9`).font = { bold: true };
-  worksheet.getCell(`E9`).value = order.endTime
+  worksheet.getCell(`D${9 + rowOffset}`).value = "Giờ kết thúc";
+  worksheet.getCell(`D${9 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`E${9 + rowOffset}`).value = order.endTime
     ? new Date(order.endTime).toLocaleTimeString("vi-VN", { hour12: false })
     : "";
 
-  worksheet.mergeCells(`A11:F11`);
-  worksheet.getCell(`A11`).value = `I. NỘI DUNG BÀN GIAO CA`;
-  worksheet.getCell(`A11`).font = { bold: true, size: 14 };
-  worksheet.getCell(`A11`).alignment = {
+  const sectionRow = 13;
+  worksheet.mergeCells(`A${11 + rowOffset}:F${11 + rowOffset}`);
+  worksheet.getCell(`A${11 + rowOffset}`).value = `I. NỘI DUNG BÀN GIAO CA`;
+  worksheet.getCell(`A${11 + rowOffset}`).font = { bold: true, size: 14 };
+  worksheet.getCell(`A${11 + rowOffset}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.mergeCells(`G11:I11`);
-  worksheet.getCell(`G11`).value = `II. Dự báo nguy cơ`;
-  worksheet.getCell(`G11`).font = { bold: true, size: 14 };
-  worksheet.getCell(`G11`).alignment = {
+  worksheet.mergeCells(`G${11 + rowOffset}:I${11 + rowOffset}`);
+  worksheet.getCell(`G${11 + rowOffset}`).value = `II. Dự báo nguy cơ`;
+  worksheet.getCell(`G${11 + rowOffset}`).font = { bold: true, size: 14 };
+  worksheet.getCell(`G${11 + rowOffset}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.mergeCells(`J11:L11`);
-  worksheet.getCell(`J11`).value = `III. Biện pháp an toàn`;
-  worksheet.getCell(`J11`).font = { bold: true, size: 14 };
-  worksheet.getCell(`J11`).alignment = {
+  worksheet.mergeCells(`J${11 + rowOffset}:L${11 + rowOffset}`);
+  worksheet.getCell(`J${11 + rowOffset}`).value = `III. Biện pháp an toàn`;
+  worksheet.getCell(`J${11 + rowOffset}`).font = { bold: true, size: 14 };
+  worksheet.getCell(`J${11 + rowOffset}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getRow(11).height = 30;
+  worksheet.getRow(11 + rowOffset).height = 30;
 
-  worksheet.mergeCells(`A12:F16`);
-  worksheet.getCell(`A12`).value = order.shiftReport?.handoverNotes || "";
-  worksheet.getCell(`A12`).alignment = { wrapText: true, vertical: "top" };
-  worksheet.mergeCells(`G12:I16`);
-  worksheet.getCell(`G12`).value = order?.risk || "";
-  worksheet.getCell(`G12`).alignment = { wrapText: true, vertical: "top" };
-  worksheet.mergeCells(`J12:L16`);
-  worksheet.getCell(`J12`).value =
+  worksheet.mergeCells(`A${12 + rowOffset}:F${16 + rowOffset}`);
+  worksheet.getCell(`A${12 + rowOffset}`).value =
+    order.shiftReport?.handoverNotes || "";
+  worksheet.getCell(`A${12 + rowOffset}`).alignment = {
+    wrapText: true,
+    vertical: "top",
+  };
+  worksheet.mergeCells(`G${12 + rowOffset}:I${16 + rowOffset}`);
+  worksheet.getCell(`G${12 + rowOffset}`).value = order?.risk || "";
+  worksheet.getCell(`G${12 + rowOffset}`).alignment = {
+    wrapText: true,
+    vertical: "top",
+  };
+  worksheet.mergeCells(`J${12 + rowOffset}:L${16 + rowOffset}`);
+  worksheet.getCell(`J${12 + rowOffset}`).value =
     (order?.safetyMeasure || "") + " " + (order?.safetyMeasureSpecific || "");
-  worksheet.getCell(`J12`).alignment = { wrapText: true, vertical: "top" };
+  worksheet.getCell(`J${12 + rowOffset}`).alignment = {
+    wrapText: true,
+    vertical: "top",
+  };
 
-  worksheet.mergeCells(`A17:L17`);
-  worksheet.getCell(`A17`).value = `IV. KIẾN NGHỊ RỦI RO`;
-  worksheet.getCell(`A17`).font = { bold: true, size: 14 };
-  worksheet.getCell(`A17`).alignment = {
+  worksheet.mergeCells(`A${17 + rowOffset}:L${17 + rowOffset}`);
+  worksheet.getCell(`A${17 + rowOffset}`).value = `IV. KIẾN NGHỊ RỦI RO`;
+  worksheet.getCell(`A${17 + rowOffset}`).font = { bold: true, size: 14 };
+  worksheet.getCell(`A${17 + rowOffset}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getRow(17).height = 30;
+  worksheet.getRow(17 + rowOffset).height = 30;
 
-  worksheet.mergeCells(`A18:L19`);
-  worksheet.getCell(`A18`).value = order.shiftReport?.risks || "";
-  worksheet.getCell(`A18`).alignment = { wrapText: true, vertical: "top" };
+  worksheet.mergeCells(`A${18 + rowOffset}:L${19 + rowOffset}`);
+  worksheet.getCell(`A${18 + rowOffset}`).value =
+    order.shiftReport?.risks || "";
+  worksheet.getCell(`A${18 + rowOffset}`).alignment = {
+    wrapText: true,
+    vertical: "top",
+  };
 
-  worksheet.mergeCells(`A20:L20`);
-  worksheet.getCell(`A20`).value = "Mức bồi dưỡng (x1000đ):";
+  worksheet.mergeCells(`A${20 + rowOffset}:L${20 + rowOffset}`);
+  worksheet.getCell(`A${20 + rowOffset}`).value = "Mức bồi dưỡng (x1000đ):";
 
-  addTableBorders(worksheet, 12, 20, 1, 12);
+  addTableBorders(worksheet, 11 + rowOffset, 20 + rowOffset, 1, 12);
 
-  worksheet.mergeCells(`B22:D22`);
-  worksheet.getCell(`B22`).value = "NGƯỜI NHẬN LỆNH";
-  worksheet.getCell(`B22`).font = { bold: true };
-  worksheet.getCell(`B22`).alignment = {
+  worksheet.mergeCells(`B${22 + rowOffset}:D${22 + rowOffset}`);
+  worksheet.getCell(`B${22 + rowOffset}`).value = "NGƯỜI NHẬN LỆNH";
+  worksheet.getCell(`B${22 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`B${22 + rowOffset}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`C24`).value = "✔";
-  worksheet.getCell(`C24`).alignment = {
+  worksheet.getCell(`C${24 + rowOffset}`).value = "✔";
+  worksheet.getCell(`C${24 + rowOffset}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`C24`).font = { bold: true, size: 12 };
+  worksheet.getCell(`C${24 + rowOffset}`).font = { bold: true, size: 12 };
 
-  timeSignature(worksheet, 26, "B", "D", order?.startTime);
-  worksheet.mergeCells(`B27:D27`);
-  worksheet.getCell(`B27`).font = { bold: true };
-  worksheet.getCell(`B27`).alignment = {
+  timeSignature(worksheet, 26 + rowOffset, "B", "D", order?.startTime);
+  worksheet.mergeCells(`B${27 + rowOffset}:D${27 + rowOffset}`);
+  worksheet.getCell(`B${27 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`B${27 + rowOffset}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`B27`).value = order.assignedTo?.fullName || "";
+  worksheet.getCell(`B${27 + rowOffset}`).value =
+    order.assignedTo?.fullName || "";
 
-  worksheet.mergeCells(`I22:L22`);
-  worksheet.getCell(`I22`).value = "NGƯỜI RA LỆNH";
-  worksheet.getCell(`I22`).font = { bold: true };
-  worksheet.getCell(`I22`).alignment = {
+  worksheet.mergeCells(`I${22 + rowOffset}:L${22 + rowOffset}`);
+  worksheet.getCell(`I${22 + rowOffset}`).value = "NGƯỜI RA LỆNH";
+  worksheet.getCell(`I${22 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`I${22 + rowOffset}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
@@ -2151,21 +2250,22 @@ async function buildOther(order, workbook) {
         extension,
       });
 
-      worksheet.mergeCells(`J23:K25`);
+      worksheet.mergeCells(`J${23 + rowOffset}:K${25 + rowOffset}`);
 
       // gán ảnh trực tiếp vào range
-      worksheet.addImage(imageId, `J23:K25`);
+      worksheet.addImage(imageId, `J${23 + rowOffset}:K${25 + rowOffset}`);
     }
   }
-  timeSignature(worksheet, 26, "J", "K", order?.createdAt);
+  timeSignature(worksheet, 26 + rowOffset, "J", "K", order?.createdAt);
 
-  worksheet.mergeCells(`I27:L27`);
-  worksheet.getCell(`I27`).font = { bold: true };
-  worksheet.getCell(`I27`).alignment = {
+  worksheet.mergeCells(`I${27 + rowOffset}:L${27 + rowOffset}`);
+  worksheet.getCell(`I${27 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`I${27 + rowOffset}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`I27`).value = order.createdBy?.fullName || "";
+  worksheet.getCell(`I${27 + rowOffset}`).value =
+    order.createdBy?.fullName || "";
 
   worksheet.pageSetup = {
     paperSize: 9, // A4
@@ -2218,67 +2318,82 @@ async function buildMaintence(order, workbook) {
 
   const worksheet = workbook.addWorksheet(sheetName);
 
+  // Row 1: Company Name
+  worksheet.mergeCells("A1:N1");
+  const companyNameCell = worksheet.getCell("A1");
+  companyNameCell.value = "CÔNG TY CỔ PHẦN THAN CAO SƠN - TKV";
+  companyNameCell.font = { italic: true, size: 18 };
+  companyNameCell.alignment = { horizontal: "left", vertical: "middle" };
+
+  // Row 2: Department
+  worksheet.mergeCells("A2:N2");
+  const departmentCell = worksheet.getCell("A2");
+  departmentCell.value = `Đơn vị: ${order.assignedTo?.department?.code || ""}`;
+  departmentCell.font = { italic: true, size: 14 };
+  departmentCell.alignment = { horizontal: "left", vertical: "middle" };
+
+  const rowOffset = 2;
   // Tiêu đề bảng
-  worksheet.mergeCells("A1:N2");
-  const header = worksheet.getCell("A1");
+  worksheet.mergeCells(`A${1 + rowOffset}:N${2 + rowOffset}`);
+  const header = worksheet.getCell(`A${1 + rowOffset}`);
   header.value = `LỆNH SẢN XUẤT`;
   header.font = { bold: true, size: 16 };
   header.alignment = { horizontal: "center", vertical: "middle" };
 
-  worksheet.getCell("B4").value = "Đơn vị";
-  worksheet.getCell("B4").font = { bold: true };
-  worksheet.getCell("C4").value = order.assignedTo?.department?.code || "";
+  worksheet.getCell(`B${4 + rowOffset}`).value = "Đơn vị";
+  worksheet.getCell(`B${4 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${4 + rowOffset}`).value = order.assignedTo?.department?.code || "";
 
-  worksheet.getCell("E4").value = "Ngày";
-  worksheet.getCell("E4").font = { bold: true };
+  worksheet.getCell(`E${4 + rowOffset}`).value = "Ngày";
+  worksheet.getCell(`E${4 + rowOffset}`).font = { bold: true };
   // Lấy ngày từ order.workingDate và định dạng
   const workingDate = order.workingDate ? new Date(order.workingDate) : null;
   const ngay = workingDate ? workingDate.toLocaleDateString("vi-VN") : "";
-  worksheet.getCell("F4").value = ngay;
+  worksheet.getCell(`F${4 + rowOffset}`).value = ngay;
 
-  worksheet.getCell("G4").value = order.shiftHour || "";
+  worksheet.getCell(`G${4 + rowOffset}`).value = order.shiftHour || "";
 
-  worksheet.getCell("H4").value = "Ca";
-  worksheet.getCell("H4").font = { bold: true };
+  worksheet.getCell(`H${4 + rowOffset}`).value = "Ca";
+  worksheet.getCell(`H${4 + rowOffset}`).font = { bold: true };
 
-  worksheet.getCell("I4").value = order.shift?.name || "";
-  worksheet.getCell("I4").alignment = { horizontal: "left" };
+  worksheet.getCell(`I${4 + rowOffset}`).value = order.shift?.name || "";
+  worksheet.getCell(`I${4 + rowOffset}`).alignment = { horizontal: "left" };
 
   // 3. Người ra lệnh
   // Dòng 5
-  worksheet.getCell("B5").value = "Người ra lệnh";
-  worksheet.getCell("B5").font = { bold: true };
-  worksheet.getCell("C5").value = order.createdBy?.fullName || "";
+  worksheet.getCell(`B${5 + rowOffset}`).value = "Người ra lệnh";
+  worksheet.getCell(`B${5 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${5 + rowOffset}`).value = order.createdBy?.fullName || "";
 
-  worksheet.getCell("E5").value = "Số thẻ";
-  worksheet.getCell("E5").font = { bold: true };
-  worksheet.getCell("F5").value = order.createdBy?.salaryCode || "";
+  worksheet.getCell(`E${5 + rowOffset}`).value = "Số thẻ";
+  worksheet.getCell(`E${5 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`F${5 + rowOffset}`).value = order.createdBy?.salaryCode || "";
 
-  worksheet.getCell("H5").value = "Chức vụ";
-  worksheet.getCell("H5").font = { bold: true };
-  worksheet.mergeCells("I5:N5");
-  worksheet.getCell("I5").value = order.createdBy?.position?.name || "";
+  worksheet.getCell(`H${5 + rowOffset}`).value = "Chức vụ";
+  worksheet.getCell(`H${5 + rowOffset}`).font = { bold: true };
+  worksheet.mergeCells(`I${5 + rowOffset}:N${5 + rowOffset}`);
+  worksheet.getCell(`I${5 + rowOffset}`).value = order.createdBy?.position?.name || "";
 
   // 4. Người nhận lệnh
   // Dòng 6
-  worksheet.getCell("B6").value = "Người nhận lệnh";
-  worksheet.getCell("B6").font = { bold: true };
-  worksheet.getCell("C6").value = order.assignedTo?.fullName || "";
+  worksheet.getCell(`B${6 + rowOffset}`).value = "Người nhận lệnh";
+  worksheet.getCell(`B${6 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${6 + rowOffset}`).value = order.assignedTo?.fullName || "";
 
-  worksheet.getCell("E6").value = "Số thẻ";
-  worksheet.getCell("E6").font = { bold: true };
-  worksheet.getCell("F6").value = order.assignedTo?.salaryCode || "";
+  worksheet.getCell(`E${6 + rowOffset}`).value = "Số thẻ";
+  worksheet.getCell(`E${6 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`F${6 + rowOffset}`).value = order.assignedTo?.salaryCode || "";
 
-  worksheet.getCell("H6").value = "Chức vụ";
-  worksheet.getCell("H6").font = { bold: true };
-  worksheet.mergeCells("I6:N6");
-  worksheet.getCell("I6").value = order.assignedTo?.position?.name || "";
+  worksheet.getCell(`H${6 + rowOffset}`).value = "Chức vụ";
+  worksheet.getCell(`H${6 + rowOffset}`).font = { bold: true };
+  worksheet.mergeCells(`I${6 + rowOffset}:N${6 + rowOffset}`);
+  worksheet.getCell(`I${6 + rowOffset}`).value = order.assignedTo?.position?.name || "";
 
   // Dòng 6 lx bo tuc
-  worksheet.getCell("B7").value = "Phụ sửa chữa";
-  worksheet.getCell("B7").font = { bold: true };
+  worksheet.getCell(`B${7 + rowOffset}`).value = "Phụ sửa chữa";
+  worksheet.getCell(`B${7 + rowOffset}`).font = { bold: true };
 
-  let rowIndex = 7;
+  let rowIndex = 7 + rowOffset;
   (order.assistants || []).forEach((driver, idx) => {
     let row = rowIndex + idx;
 
@@ -2675,67 +2790,89 @@ async function buildDrill(order, workbook) {
 
   const worksheet = workbook.addWorksheet(sheetName);
 
-  // Tiêu đề bảng
-  worksheet.mergeCells("A1:N2");
-  const header = worksheet.getCell("A1");
+  // Row 1: Company Name
+  worksheet.mergeCells("A1:N1");
+  const companyNameCell = worksheet.getCell("A1");
+  companyNameCell.value = "CÔNG TY CỔ PHẦN THAN CAO SƠN - TKV";
+  companyNameCell.font = { italic: true, size: 18 };
+  companyNameCell.alignment = { horizontal: "left", vertical: "middle" };
+
+  // Row 2: Department
+  worksheet.mergeCells("A2:N2");
+  const departmentCell = worksheet.getCell("A2");
+  departmentCell.value = `Đơn vị: ${order.assignedTo?.department?.code || ""}`;
+  departmentCell.font = { italic: true, size: 14 };
+  departmentCell.alignment = { horizontal: "left", vertical: "middle" };
+    worksheet.mergeCells(`A3:N3`);
+  const header = worksheet.getCell(`A3`);
   header.value = `LỆNH SẢN XUẤT`;
   header.font = { bold: true, size: 16 };
   header.alignment = { horizontal: "center", vertical: "middle" };
 
-  worksheet.getCell("B4").value = "Đơn vị";
-  worksheet.getCell("B4").font = { bold: true };
-  worksheet.getCell("C4").value = order.assignedTo?.department?.code || "";
+  const rowOffset = 2;
+  // Tiêu đề bảng
 
-  worksheet.getCell("F4").value = "Ngày";
-  worksheet.getCell("F4").font = { bold: true };
+  worksheet.getCell(`B${4 + rowOffset}`).value = "Đơn vị";
+  worksheet.getCell(`B${4 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${4 + rowOffset}`).value =
+    order.assignedTo?.department?.code || "";
+
+  worksheet.getCell(`F${4 + rowOffset}`).value = "Ngày";
+  worksheet.getCell(`F${4 + rowOffset}`).font = { bold: true };
   // Lấy ngày từ order.workingDate và định dạng
   const workingDate = order.workingDate ? new Date(order.workingDate) : null;
   const ngay = workingDate ? workingDate.toLocaleDateString("vi-VN") : "";
-  worksheet.getCell("G4").value = ngay;
+  worksheet.getCell(`G${4 + rowOffset}`).value = ngay;
 
-  worksheet.getCell("H4").value = order.shiftHour || "";
+  worksheet.getCell(`H${4 + rowOffset}`).value = order.shiftHour || "";
 
-  worksheet.getCell("I4").value = "Ca";
-  worksheet.getCell("I4").font = { bold: true };
+  worksheet.getCell(`I${4 + rowOffset}`).value = "Ca";
+  worksheet.getCell(`I${4 + rowOffset}`).font = { bold: true };
 
-  worksheet.getCell("J4").value = order.shift?.name || "";
-  worksheet.getCell("J4").alignment = { horizontal: "left" };
+  worksheet.getCell(`J${4 + rowOffset}`).value = order.shift?.name || "";
+  worksheet.getCell(`J${4 + rowOffset}`).alignment = { horizontal: "left" };
 
   // 3. Người ra lệnh
   // Dòng 5
-  worksheet.getCell("B5").value = "Người ra lệnh";
-  worksheet.getCell("B5").font = { bold: true };
-  worksheet.getCell("C5").value = order.createdBy?.fullName || "";
+  worksheet.getCell(`B${5 + rowOffset}`).value = "Người ra lệnh";
+  worksheet.getCell(`B${5 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${5 + rowOffset}`).value =
+    order.createdBy?.fullName || "";
 
-  worksheet.getCell("F5").value = "Số thẻ";
-  worksheet.getCell("F5").font = { bold: true };
-  worksheet.getCell("G5").value = order.createdBy?.salaryCode || "";
+  worksheet.getCell(`F${5 + rowOffset}`).value = "Số thẻ";
+  worksheet.getCell(`F${5 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`G${5 + rowOffset}`).value =
+    order.createdBy?.salaryCode || "";
 
-  worksheet.getCell("I5").value = "Chức vụ";
-  worksheet.getCell("I5").font = { bold: true };
-  worksheet.mergeCells("J5:N5");
-  worksheet.getCell("J5").value = order.createdBy?.position?.name || "";
+  worksheet.getCell(`I${5 + rowOffset}`).value = "Chức vụ";
+  worksheet.getCell(`I${5 + rowOffset}`).font = { bold: true };
+  worksheet.mergeCells(`J${5 + rowOffset}:N${5 + rowOffset}`);
+  worksheet.getCell(`J${5 + rowOffset}`).value =
+    order.createdBy?.position?.name || "";
 
   // 4. Người nhận lệnh
   // Dòng 6
-  worksheet.getCell("B6").value = "Người nhận lệnh";
-  worksheet.getCell("B6").font = { bold: true };
-  worksheet.getCell("C6").value = order.assignedTo?.fullName || "";
+  worksheet.getCell(`B${6 + rowOffset}`).value = "Người nhận lệnh";
+  worksheet.getCell(`B${6 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${6 + rowOffset}`).value =
+    order.assignedTo?.fullName || "";
 
-  worksheet.getCell("F6").value = "Số thẻ";
-  worksheet.getCell("F6").font = { bold: true };
-  worksheet.getCell("G6").value = order.assignedTo?.salaryCode || "";
+  worksheet.getCell(`F${6 + rowOffset}`).value = "Số thẻ";
+  worksheet.getCell(`F${6 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`G${6 + rowOffset}`).value =
+    order.assignedTo?.salaryCode || "";
 
-  worksheet.getCell("I6").value = "Chức vụ";
-  worksheet.getCell("I6").font = { bold: true };
-  worksheet.mergeCells("J6:N6");
-  worksheet.getCell("J6").value = order.assignedTo?.position?.name || "";
+  worksheet.getCell(`I${6 + rowOffset}`).value = "Chức vụ";
+  worksheet.getCell(`I${6 + rowOffset}`).font = { bold: true };
+  worksheet.mergeCells(`J${6 + rowOffset}:N${6 + rowOffset}`);
+  worksheet.getCell(`J${6 + rowOffset}`).value =
+    order.assignedTo?.position?.name || "";
 
   // Dòng 6 lx bo tuc
-  worksheet.getCell("B7").value = "Phụ máy";
-  worksheet.getCell("B7").font = { bold: true };
+  worksheet.getCell(`B${7 + rowOffset}`).value = "Phụ máy";
+  worksheet.getCell(`B${7 + rowOffset}`).font = { bold: true };
 
-  let rowIndex = 7;
+  let rowIndex = 7 + rowOffset;
   (order.assistants || []).forEach((driver, idx) => {
     let row = rowIndex + idx;
 
@@ -3175,67 +3312,82 @@ async function buildDozer(order, workbook) {
 
   const worksheet = workbook.addWorksheet(sheetName);
 
+  // Row 1: Company Name
+  worksheet.mergeCells("A1:N1");
+  const companyNameCell = worksheet.getCell("A1");
+  companyNameCell.value = "CÔNG TY CỔ PHẦN THAN CAO SƠN - TKV";
+  companyNameCell.font = { italic: true, size: 18 };
+  companyNameCell.alignment = { horizontal: "left", vertical: "middle" };
+
+  // Row 2: Department
+  worksheet.mergeCells("A2:N2");
+  const departmentCell = worksheet.getCell("A2");
+  departmentCell.value = `Đơn vị: ${order.assignedTo?.department?.code || ""}`;
+  departmentCell.font = { italic: true, size: 14 };
+  departmentCell.alignment = { horizontal: "left", vertical: "middle" };
+
+  const rowOffset = 2;
   // Tiêu đề bảng
-  worksheet.mergeCells("A1:N2");
-  const header = worksheet.getCell("A1");
+  worksheet.mergeCells(`A${1 + rowOffset}:N${2 + rowOffset}`);
+  const header = worksheet.getCell(`A${1 + rowOffset}`);
   header.value = `LỆNH SẢN XUẤT`;
   header.font = { bold: true, size: 16 };
   header.alignment = { horizontal: "center", vertical: "middle" };
 
-  worksheet.getCell("B4").value = "Đơn vị";
-  worksheet.getCell("B4").font = { bold: true };
-  worksheet.getCell("C4").value = order.assignedTo?.department?.code || "";
+  worksheet.getCell(`B${4 + rowOffset}`).value = "Đơn vị";
+  worksheet.getCell(`B${4 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${4 + rowOffset}`).value = order.assignedTo?.department?.code || "";
 
-  worksheet.getCell("F4").value = "Ngày";
-  worksheet.getCell("F4").font = { bold: true };
+  worksheet.getCell(`F${4 + rowOffset}`).value = "Ngày";
+  worksheet.getCell(`F${4 + rowOffset}`).font = { bold: true };
   // Lấy ngày từ order.workingDate và định dạng
   const workingDate = order.workingDate ? new Date(order.workingDate) : null;
   const ngay = workingDate ? workingDate.toLocaleDateString("vi-VN") : "";
-  worksheet.getCell("G4").value = ngay;
+  worksheet.getCell(`G${4 + rowOffset}`).value = ngay;
 
-  worksheet.getCell("H4").value = order.shiftHour || "";
+  worksheet.getCell(`H${4 + rowOffset}`).value = order.shiftHour || "";
 
-  worksheet.getCell("I4").value = "Ca";
-  worksheet.getCell("I4").font = { bold: true };
+  worksheet.getCell(`I${4 + rowOffset}`).value = "Ca";
+  worksheet.getCell(`I${4 + rowOffset}`).font = { bold: true };
 
-  worksheet.getCell("J4").value = order.shift?.name || "";
-  worksheet.getCell("J4").alignment = { horizontal: "left" };
+  worksheet.getCell(`J${4 + rowOffset}`).value = order.shift?.name || "";
+  worksheet.getCell(`J${4 + rowOffset}`).alignment = { horizontal: "left" };
 
   // 3. Người ra lệnh
   // Dòng 5
-  worksheet.getCell("B5").value = "Người ra lệnh";
-  worksheet.getCell("B5").font = { bold: true };
-  worksheet.getCell("C5").value = order.createdBy?.fullName || "";
+  worksheet.getCell(`B${5 + rowOffset}`).value = "Người ra lệnh";
+  worksheet.getCell(`B${5 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${5 + rowOffset}`).value = order.createdBy?.fullName || "";
 
-  worksheet.getCell("F5").value = "Số thẻ";
-  worksheet.getCell("F5").font = { bold: true };
-  worksheet.getCell("G5").value = order.createdBy?.salaryCode || "";
+  worksheet.getCell(`F${5 + rowOffset}`).value = "Số thẻ";
+  worksheet.getCell(`F${5 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`G${5 + rowOffset}`).value = order.createdBy?.salaryCode || "";
 
-  worksheet.getCell("I5").value = "Chức vụ";
-  worksheet.getCell("I5").font = { bold: true };
-  worksheet.mergeCells("J5:L5");
-  worksheet.getCell("J5").value = order.createdBy?.position?.name || "";
+  worksheet.getCell(`I${5 + rowOffset}`).value = "Chức vụ";
+  worksheet.getCell(`I${5 + rowOffset}`).font = { bold: true };
+  worksheet.mergeCells(`J${5 + rowOffset}:L${5 + rowOffset}`);
+  worksheet.getCell(`J${5 + rowOffset}`).value = order.createdBy?.position?.name || "";
 
   // 4. Người nhận lệnh
   // Dòng 6
-  worksheet.getCell("B6").value = "Người nhận lệnh";
-  worksheet.getCell("B6").font = { bold: true };
-  worksheet.getCell("C6").value = order.assignedTo?.fullName || "";
+  worksheet.getCell(`B${6 + rowOffset}`).value = "Người nhận lệnh";
+  worksheet.getCell(`B${6 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${6 + rowOffset}`).value = order.assignedTo?.fullName || "";
 
-  worksheet.getCell("F6").value = "Số thẻ";
-  worksheet.getCell("F6").font = { bold: true };
-  worksheet.getCell("G6").value = order.assignedTo?.salaryCode || "";
+  worksheet.getCell(`F${6 + rowOffset}`).value = "Số thẻ";
+  worksheet.getCell(`F${6 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`G${6 + rowOffset}`).value = order.assignedTo?.salaryCode || "";
 
-  worksheet.getCell("I6").value = "Chức vụ";
-  worksheet.getCell("I6").font = { bold: true };
-  worksheet.mergeCells("J6:N6");
-  worksheet.getCell("J6").value = order.assignedTo?.position?.name || "";
+  worksheet.getCell(`I${6 + rowOffset}`).value = "Chức vụ";
+  worksheet.getCell(`I${6 + rowOffset}`).font = { bold: true };
+  worksheet.mergeCells(`J${6 + rowOffset}:N${6 + rowOffset}`);
+  worksheet.getCell(`J${6 + rowOffset}`).value = order.assignedTo?.position?.name || "";
 
   // Dòng 6 lx bo tuc
-  worksheet.getCell("B7").value = "Phụ máy";
-  worksheet.getCell("B7").font = { bold: true };
+  worksheet.getCell(`B${7 + rowOffset}`).value = "Phụ máy";
+  worksheet.getCell(`B${7 + rowOffset}`).font = { bold: true };
 
-  let rowIndex = 7;
+  let rowIndex = 7 + rowOffset;
   (order.assistants || []).forEach((driver, idx) => {
     let row = rowIndex + idx;
 
@@ -3668,139 +3820,155 @@ async function buildDispatcher(order, workbook) {
 
   const worksheet = workbook.addWorksheet(sheetName);
 
-  // Tiêu đề bảng
-  worksheet.mergeCells("A1:L2");
-  const header = worksheet.getCell("A1");
+  // Row 1: Company Name
+  worksheet.mergeCells("A1:L1");
+  const companyNameCell = worksheet.getCell("A1");
+  companyNameCell.value = "CÔNG TY CỔ PHẦN THAN CAO SƠN - TKV";
+  companyNameCell.font = { italic: true, size: 18 };
+  companyNameCell.alignment = { horizontal: "left", vertical: "middle" };
+
+  // Row 2: Department
+  worksheet.mergeCells("A2:L2");
+  const departmentCell = worksheet.getCell("A2");
+  departmentCell.value = `Đơn vị: ${order.assignedTo?.department?.code || ""}`;
+  departmentCell.font = { italic: true, size: 14 };
+  departmentCell.alignment = { horizontal: "left", vertical: "middle" };
+
+  // Row 3: LỆNH SẢN XUẤT
+  worksheet.mergeCells("A3:L3");
+  const header = worksheet.getCell("A3");
   header.value = `LỆNH SẢN XUẤT`;
   header.font = { bold: true, size: 16 };
   header.alignment = { horizontal: "center", vertical: "middle" };
+  const rowOffset = 2;
 
-  worksheet.getCell("B4").value = "Đơn vị";
-  worksheet.getCell("B4").font = { bold: true };
-  worksheet.getCell("C4").value = order.createdBy?.department?.code || "";
+  worksheet.getCell(`B${4 + rowOffset}`).value = "Đơn vị";
+  worksheet.getCell(`B${4 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${4 + rowOffset}`).value = order.createdBy?.department?.code || "";
 
-  worksheet.getCell("E4").value = "Ngày";
-  worksheet.getCell("E4").font = { bold: true };
+  worksheet.getCell(`E${4 + rowOffset}`).value = "Ngày";
+  worksheet.getCell(`E${4 + rowOffset}`).font = { bold: true };
   // Lấy ngày từ order.workingDate và định dạng
   const workingDate = order.workingDate ? new Date(order.workingDate) : null;
   const ngay = workingDate ? workingDate.toLocaleDateString("vi-VN") : "";
-  worksheet.getCell("F4").value = ngay;
+  worksheet.getCell(`F${4 + rowOffset}`).value = ngay;
 
   // 3. Người ra lệnh
   // Dòng 5
-  worksheet.getCell("B5").value = "Người ra lệnh";
-  worksheet.getCell("B5").font = { bold: true };
-  worksheet.getCell("C5").value = order.createdBy?.fullName || "";
+  worksheet.getCell(`B${5 + rowOffset}`).value = "Người ra lệnh";
+  worksheet.getCell(`B${5 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${5 + rowOffset}`).value = order.createdBy?.fullName || "";
 
-  worksheet.getCell("E5").value = "Số thẻ";
-  worksheet.getCell("E5").font = { bold: true };
-  worksheet.getCell("F5").value = order.createdBy?.salaryCode || "";
+  worksheet.getCell(`E${5 + rowOffset}`).value = "Số thẻ";
+  worksheet.getCell(`E${5 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`F${5 + rowOffset}`).value = order.createdBy?.salaryCode || "";
 
-  worksheet.getCell("G5").value = "Chức vụ";
-  worksheet.getCell("G5").font = { bold: true };
-  worksheet.mergeCells("H5:L5");
-  worksheet.getCell("H5").value = order.createdBy?.position?.name || "";
+  worksheet.getCell(`G${5 + rowOffset}`).value = "Chức vụ";
+  worksheet.getCell(`G${5 + rowOffset}`).font = { bold: true };
+  worksheet.mergeCells(`H${5 + rowOffset}:L${5 + rowOffset}`);
+  worksheet.getCell(`H${5 + rowOffset}`).value = order.createdBy?.position?.name || "";
 
   // 4. Người nhận lệnh
   // Dòng 6
-  worksheet.getCell("B6").value = "Người nhận lệnh";
-  worksheet.getCell("B6").font = { bold: true };
-  worksheet.getCell("C6").value = order.assignedTo?.fullName || "";
+  worksheet.getCell(`B${6 + rowOffset}`).value = "Người nhận lệnh";
+  worksheet.getCell(`B${6 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${6 + rowOffset}`).value = order.assignedTo?.fullName || "";
 
-  worksheet.getCell("E6").value = "Số thẻ";
-  worksheet.getCell("E6").font = { bold: true };
-  worksheet.getCell("F6").value = order.assignedTo?.salaryCode || "";
+  worksheet.getCell(`E${6 + rowOffset}`).value = "Số thẻ";
+  worksheet.getCell(`E${6 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`F${6 + rowOffset}`).value = order.assignedTo?.salaryCode || "";
 
-  worksheet.getCell("G6").value = "Chức vụ";
-  worksheet.getCell("G6").font = { bold: true };
-  worksheet.mergeCells("H6:L6");
-  worksheet.getCell("H6").value = order.assignedTo?.position?.name || "";
+  worksheet.getCell(`G${6 + rowOffset}`).value = "Chức vụ";
+  worksheet.getCell(`G${6 + rowOffset}`).font = { bold: true };
+  worksheet.mergeCells(`H${6 + rowOffset}:L${6 + rowOffset}`);
+  worksheet.getCell(`H${6 + rowOffset}`).value = order.assignedTo?.position?.name || "";
 
-  worksheet.getCell("J6").value = "Đơn vị";
-  worksheet.getCell("J6").font = { bold: true };
-  worksheet.getCell("K6").value = order.assignedTo?.department?.code || "";
+  worksheet.getCell(`J${6 + rowOffset}`).value = "Đơn vị";
+  worksheet.getCell(`J${6 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`K${6 + rowOffset}`).value = order.assignedTo?.department?.code || "";
 
-  //   worksheet.getCell(`B7`).value = "Biện pháp an toàn";
-  //   worksheet.getCell(`B7`).font = { bold: true };
+  //   worksheet.getCell(`B${7 + rowOffset}`).value = "Biện pháp an toàn";
+  //   worksheet.getCell(`B${7 + rowOffset}`).font = { bold: true };
   //   // Gộp ô cho nội dung bàn giao ca
-  //   worksheet.mergeCells(`C7:L7`);
-  //   worksheet.getCell(`C7`).value =
+  //   worksheet.mergeCells(`C${7 + rowOffset}:L${7 + rowOffset}`);
+  //   worksheet.getCell(`C${7 + rowOffset}`).value =
   //     (order?.safetyMeasure || "") + " " + (order?.safetyMeasureSpecific || "");
 
-  worksheet.getCell(`B7`).value = "Giờ nhận lệnh";
-  worksheet.getCell(`B7`).font = { bold: true };
-  worksheet.getCell(`C7`).value = order.startTime
+  worksheet.getCell(`B${7 + rowOffset}`).value = "Giờ nhận lệnh";
+  worksheet.getCell(`B${7 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`C${7 + rowOffset}`).value = order.startTime
     ? new Date(order.startTime).toLocaleTimeString("vi-VN", { hour12: false })
     : "";
 
-  worksheet.getCell(`D7`).value = "Giờ kết thúc";
-  worksheet.getCell(`D7`).font = { bold: true };
-  worksheet.getCell(`E7`).value = order.endTime
+  worksheet.getCell(`D${7 + rowOffset}`).value = "Giờ kết thúc";
+  worksheet.getCell(`D${7 + rowOffset}`).font = { bold: true };
+  worksheet.getCell(`E${7 + rowOffset}`).value = order.endTime
     ? new Date(order.endTime).toLocaleTimeString("vi-VN", { hour12: false })
     : "";
 
-  worksheet.mergeCells(`A9:F9`);
-  worksheet.getCell(`A9`).value = `I. NỘI DUNG LỆNH`;
-  worksheet.getCell(`A9`).font = { bold: true, size: 14 };
-  worksheet.getCell(`A9`).alignment = {
+  worksheet.mergeCells(`A${9 + rowOffset}:F${9 + rowOffset}`);
+  worksheet.getCell(`A${9 + rowOffset}`).value = `I. NỘI DUNG LỆNH`;
+  worksheet.getCell(`A${9 + rowOffset}`).font = { bold: true, size: 14 };
+  worksheet.getCell(`A${9 + rowOffset}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.mergeCells(`G9:I9`);
-  worksheet.getCell(`G9`).value = `II. DỰ BÁO NGUY CƠ`;
-  worksheet.getCell(`G9`).font = { bold: true, size: 14 };
-  worksheet.getCell(`G9`).alignment = {
+  worksheet.mergeCells(`G${9 + rowOffset}:I${9 + rowOffset}`);
+  worksheet.getCell(`G${9 + rowOffset}`).value = `II. DỰ BÁO NGUY CƠ`;
+  worksheet.getCell(`G${9 + rowOffset}`).font = { bold: true, size: 14 };
+  worksheet.getCell(`G${9 + rowOffset}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.mergeCells(`J9:L9`);
-  worksheet.getCell(`J9`).value = `III. BIỆN PHÁP AN TOÀN`;
-  worksheet.getCell(`J9`).font = { bold: true, size: 14 };
-  worksheet.getCell(`J9`).alignment = {
+  worksheet.mergeCells(`J${9 + rowOffset}:L${9 + rowOffset}`);
+  worksheet.getCell(`J${9 + rowOffset}`).value = `III. BIỆN PHÁP AN TOÀN`;
+  worksheet.getCell(`J${9 + rowOffset}`).font = { bold: true, size: 14 };
+  worksheet.getCell(`J${9 + rowOffset}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getRow(9).height = 30;
+  worksheet.getRow(9 + rowOffset).height = 30;
 
-  worksheet.mergeCells(`A10:F16`);
-  worksheet.getCell(`A10`).value = order.workContent || "";
-  worksheet.getCell(`A10`).alignment = { vertical: "top", wrapText: true };
-  worksheet.mergeCells(`G10:I16`);
-  worksheet.getCell(`G10`).value = order.risk || "";
-  worksheet.getCell(`G10`).alignment = { vertical: "top", wrapText: true };
-  worksheet.mergeCells(`J10:L16`);
-  worksheet.getCell(`J10`).value =
+  worksheet.mergeCells(`A${10 + rowOffset}:F${16 + rowOffset}`);
+  worksheet.getCell(`A${10 + rowOffset}`).value = order.workContent || "";
+  worksheet.getCell(`A${10 + rowOffset}`).alignment = { vertical: "top", wrapText: true };
+  worksheet.mergeCells(`G${10 + rowOffset}:I${16 + rowOffset}`);
+  worksheet.getCell(`G${10 + rowOffset}`).value = order.risk || "";
+  worksheet.getCell(`G${10 + rowOffset}`).alignment = { vertical: "top", wrapText: true };
+  worksheet.mergeCells(`J${10 + rowOffset}:L${16 + rowOffset}`);
+  worksheet.getCell(`J${10 + rowOffset}`).value =
     (order?.safetyMeasure || "") + " " + (order?.safetyMeasureSpecific || "");
-  worksheet.getCell(`J10`).alignment = { vertical: "top", wrapText: true };
+  worksheet.getCell(`J${10 + rowOffset}`).alignment = { vertical: "top", wrapText: true };
 
-  addTableBorders(worksheet, 9, 16, 1, 12);
+  addTableBorders(worksheet, 9 + rowOffset, 16 + rowOffset, 1, 12);
 
-  worksheet.mergeCells(`B18:D18`);
-  worksheet.getCell(`B18`).value = "NGƯỜI NHẬN LỆNH";
-  worksheet.getCell(`B18`).font = { bold: true };
-  worksheet.getCell(`B18`).alignment = {
+  const signatureRow = 18 + rowOffset;
+  worksheet.mergeCells(`B${signatureRow}:D${signatureRow}`);
+  worksheet.getCell(`B${signatureRow}`).value = "NGƯỜI NHẬN LỆNH";
+  worksheet.getCell(`B${signatureRow}`).font = { bold: true };
+  worksheet.getCell(`B${signatureRow}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`C20`).value = "✔";
-  worksheet.getCell(`C20`).alignment = {
+  worksheet.getCell(`C${signatureRow + 2}`).value = "✔";
+  worksheet.getCell(`C${signatureRow + 2}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`C20`).font = { bold: true, size: 12 };
-  timeSignature(worksheet, 22, "B", "D", order?.startTime);
-  worksheet.mergeCells(`B23:D23`);
-  worksheet.getCell(`B23`).font = { bold: true };
-  worksheet.getCell(`B23`).alignment = {
+  worksheet.getCell(`C${signatureRow + 2}`).font = { bold: true, size: 12 };
+  timeSignature(worksheet, signatureRow + 4, "B", "D", order?.startTime);
+  worksheet.mergeCells(`B${signatureRow + 5}:D${signatureRow + 5}`);
+  worksheet.getCell(`B${signatureRow + 5}`).font = { bold: true };
+  worksheet.getCell(`B${signatureRow + 5}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`B23`).value = order.assignedTo?.fullName || "";
+  worksheet.getCell(`B${signatureRow + 5}`).value = order.assignedTo?.fullName || "";
 
-  worksheet.mergeCells(`I18:L18`);
-  worksheet.getCell(`I18`).value = "NGƯỜI RA LỆNH";
-  worksheet.getCell(`I18`).font = { bold: true };
-  worksheet.getCell(`I18`).alignment = {
+  worksheet.mergeCells(`I${signatureRow}:L${signatureRow}`);
+  worksheet.getCell(`I${signatureRow}`).value = "NGƯỜI RA LỆNH";
+  worksheet.getCell(`I${signatureRow}`).font = { bold: true };
+  worksheet.getCell(`I${signatureRow}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
@@ -3819,21 +3987,21 @@ async function buildDispatcher(order, workbook) {
         extension,
       });
 
-      worksheet.mergeCells(`J19:K21`);
+      worksheet.mergeCells(`J${signatureRow + 1}:K${signatureRow + 3}`);
 
       // gán ảnh trực tiếp vào range
-      worksheet.addImage(imageId, `J19:K21`);
+      worksheet.addImage(imageId, `J${signatureRow + 1}:K${signatureRow + 3}`);
     }
   }
-  timeSignature(worksheet, 22, "J", "K", order?.createdAt);
+  timeSignature(worksheet, signatureRow + 4, "J", "K", order?.createdAt);
 
-  worksheet.mergeCells(`I23:L23`);
-  worksheet.getCell(`I23`).font = { bold: true };
-  worksheet.getCell(`I23`).alignment = {
+  worksheet.mergeCells(`I${signatureRow + 5}:L${signatureRow + 5}`);
+  worksheet.getCell(`I${signatureRow + 5}`).font = { bold: true };
+  worksheet.getCell(`I${signatureRow + 5}`).alignment = {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`I23`).value = order.createdBy?.fullName || "";
+  worksheet.getCell(`I${signatureRow + 5}`).value = order.createdBy?.fullName || "";
 
   worksheet.pageSetup = {
     paperSize: 9, // A4
