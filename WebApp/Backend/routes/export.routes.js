@@ -220,19 +220,6 @@ async function buildVehicle(order, workbook) {
     order.createdBy?.position?.name || "";
 
   // 4. Người nhận lệnh
-  // Dòng 6
-  worksheet.getCell("B6").value = "Người nhận lệnh";
-  worksheet.getCell("B6").font = { bold: true };
-  worksheet.getCell("C6").value = order.assignedTo?.fullName || "";
-
-  worksheet.getCell("F6").value = "Số thẻ";
-  worksheet.getCell("F6").font = { bold: true };
-  worksheet.getCell("G6").value = order.assignedTo?.salaryCode || "";
-
-  worksheet.getCell("I6").value = "Chức vụ";
-  worksheet.getCell("I6").font = { bold: true };
-  worksheet.mergeCells("J6:M6");
-  worksheet.getCell("J6").value = order.assignedTo?.position?.name || "";
   worksheet.getCell(`B${6 + rowOffset}`).value = "Người nhận lệnh";
   worksheet.getCell(`B${6 + rowOffset}`).font = { bold: true };
   worksheet.getCell(`C${6 + rowOffset}`).value =
@@ -652,18 +639,30 @@ async function buildVehicle(order, workbook) {
     horizontal: "center",
     vertical: "middle",
   };
-  if (order.createdBy?.signature) {
-    const res = await axios.get(
-      `${process.env.API_URL}/uploads/get?key=${order.createdBy?.signature}`,
-    );
-    const url = res.data.data;
-    if (url) {
-      const response = await axios.get(url, { responseType: "arraybuffer" });
-      const extension = response.headers["content-type"].split("/")[1];
-      const imageBuffer = Buffer.from(response.data, "binary");
+  if (order.createdBy?.signature?.trim()) {
+    try {
+      const key = encodeURIComponent(order.createdBy.signature);
+
+      const res = await axios.get(
+        `${process.env.API_URL}/uploads/get?key=${key}`,
+      );
+
+      const url = res.data?.data;
+
+      // validate URL
+      if (!url || typeof url !== "string") {
+        throw new Error("URL không hợp lệ");
+      }
+
+      const response = await axios.get(url, {
+        responseType: "arraybuffer",
+      });
+
+      const contentType = response.headers["content-type"] || "";
+      const extension = contentType.split("/")[1] || "png";
 
       const imageId = workbook.addImage({
-        buffer: imageBuffer,
+        buffer: Buffer.from(response.data),
         extension,
       });
 
@@ -676,6 +675,13 @@ async function buildVehicle(order, workbook) {
         imageId,
         `M${totalRow + 7 + deviceRow}:O${totalRow + 9 + deviceRow}`,
       );
+    } catch (err) {
+      // ❗ KHÔNG throw
+      console.log("⚠️ Bỏ qua chữ ký lỗi:", {
+        orderId: order._id,
+        signature: order.createdBy.signature,
+        error: err.message,
+      });
     }
   }
   timeSignature(
@@ -1205,18 +1211,30 @@ async function buildVehicleService(order, workbook) {
     horizontal: "center",
     vertical: "middle",
   };
-  if (order.createdBy?.signature) {
-    const res = await axios.get(
-      `${process.env.API_URL}/uploads/get?key=${order.createdBy?.signature}`,
-    );
-    const url = res.data.data;
-    if (url) {
-      const response = await axios.get(url, { responseType: "arraybuffer" });
-      const extension = response.headers["content-type"].split("/")[1];
-      const imageBuffer = Buffer.from(response.data, "binary");
+  if (order.createdBy?.signature?.trim()) {
+    try {
+      const key = encodeURIComponent(order.createdBy.signature);
+
+      const res = await axios.get(
+        `${process.env.API_URL}/uploads/get?key=${key}`,
+      );
+
+      const url = res.data?.data;
+
+      // validate URL
+      if (!url || typeof url !== "string") {
+        throw new Error("URL không hợp lệ");
+      }
+
+      const response = await axios.get(url, {
+        responseType: "arraybuffer",
+      });
+
+      const contentType = response.headers["content-type"] || "";
+      const extension = contentType.split("/")[1] || "png";
 
       const imageId = workbook.addImage({
-        buffer: imageBuffer,
+        buffer: Buffer.from(response.data),
         extension,
       });
 
@@ -1224,6 +1242,13 @@ async function buildVehicleService(order, workbook) {
 
       // gán ảnh trực tiếp vào range
       worksheet.addImage(imageId, `J${fuelEndRow + 2}:K${fuelEndRow + 4}`);
+    } catch (err) {
+      // ❗ KHÔNG throw
+      console.log("⚠️ Bỏ qua chữ ký lỗi:", {
+        orderId: order._id,
+        signature: order.createdBy.signature,
+        error: err.message,
+      });
     }
   }
   timeSignature(worksheet, fuelEndRow + 5, "J", "K", order?.createdAt);
@@ -1400,7 +1425,8 @@ async function buildExcavator(order, workbook) {
   // Gộp ô cho nội dung để hiển thị đầy đủ
   worksheet.mergeCells(`C${nextRow}:O${nextRow + 1}`); // This `nextRow` is already offset
   worksheet.getCell(`C${nextRow}`).value = order.workContent || ""; // This `nextRow` is already offset
-  worksheet.getCell(`C${nextRow}`).alignment = { // This `nextRow` is already offset
+  worksheet.getCell(`C${nextRow}`).alignment = {
+    // This `nextRow` is already offset
     horizontal: "left",
     vertical: "middle",
   };
@@ -1418,7 +1444,8 @@ async function buildExcavator(order, workbook) {
   worksheet.mergeCells(`C${nextRow + 2}:O${nextRow + 3}`); // nextRow is already offset
   worksheet.getCell(`C${nextRow + 2}`).value = // nextRow is already offset
     order.shiftReport?.handoverNotes || "";
-  worksheet.getCell(`C${nextRow + 2}`).alignment = { // nextRow is already offset
+  worksheet.getCell(`C${nextRow + 2}`).alignment = {
+    // nextRow is already offset
     horizontal: "left",
     vertical: "middle",
   };
@@ -1734,18 +1761,30 @@ async function buildExcavator(order, workbook) {
     horizontal: "center",
     vertical: "middle",
   };
-  if (order.createdBy?.signature) {
-    const res = await axios.get(
-      `${process.env.API_URL}/uploads/get?key=${order.createdBy?.signature}`,
-    );
-    const url = res.data.data;
-    if (url) {
-      const response = await axios.get(url, { responseType: "arraybuffer" });
-      const extension = response.headers["content-type"].split("/")[1];
-      const imageBuffer = Buffer.from(response.data, "binary");
+  if (order.createdBy?.signature?.trim()) {
+    try {
+      const key = encodeURIComponent(order.createdBy.signature);
+
+      const res = await axios.get(
+        `${process.env.API_URL}/uploads/get?key=${key}`,
+      );
+
+      const url = res.data?.data;
+
+      // validate URL
+      if (!url || typeof url !== "string") {
+        throw new Error("URL không hợp lệ");
+      }
+
+      const response = await axios.get(url, {
+        responseType: "arraybuffer",
+      });
+
+      const contentType = response.headers["content-type"] || "";
+      const extension = contentType.split("/")[1] || "png";
 
       const imageId = workbook.addImage({
-        buffer: imageBuffer,
+        buffer: Buffer.from(response.data),
         extension,
       });
 
@@ -1758,6 +1797,13 @@ async function buildExcavator(order, workbook) {
         imageId,
         `L${totalRow + 7 + deviceRow}:M${totalRow + 9 + deviceRow}`,
       );
+    } catch (err) {
+      // ❗ KHÔNG throw
+      console.log("⚠️ Bỏ qua chữ ký lỗi:", {
+        orderId: order._id,
+        signature: order.createdBy.signature,
+        error: err.message,
+      });
     }
   }
   timeSignature(
@@ -2062,7 +2108,8 @@ async function buildOther(order, workbook) {
 
   worksheet.getCell(`B${4 + rowOffset}`).value = "Đơn vị";
   worksheet.getCell(`B${4 + rowOffset}`).font = { bold: true };
-  worksheet.getCell(`C${4 + rowOffset}`).value = order.assignedTo?.department?.code || "";
+  worksheet.getCell(`C${4 + rowOffset}`).value =
+    order.assignedTo?.department?.code || "";
 
   worksheet.getCell(`F${4 + rowOffset}`).value = "Ngày";
   worksheet.getCell(`F${4 + rowOffset}`).font = { bold: true };
@@ -2081,31 +2128,37 @@ async function buildOther(order, workbook) {
   // Dòng 5
   worksheet.getCell(`B${5 + rowOffset}`).value = "Người ra lệnh";
   worksheet.getCell(`B${5 + rowOffset}`).font = { bold: true };
-  worksheet.getCell(`C${5 + rowOffset}`).value = order.createdBy?.fullName || "";
+  worksheet.getCell(`C${5 + rowOffset}`).value =
+    order.createdBy?.fullName || "";
 
   worksheet.getCell(`F${5 + rowOffset}`).value = "Số thẻ";
   worksheet.getCell(`F${5 + rowOffset}`).font = { bold: true };
-  worksheet.getCell(`G${5 + rowOffset}`).value = order.createdBy?.salaryCode || "";
+  worksheet.getCell(`G${5 + rowOffset}`).value =
+    order.createdBy?.salaryCode || "";
 
   worksheet.getCell(`I${5 + rowOffset}`).value = "Chức vụ";
   worksheet.getCell(`I${5 + rowOffset}`).font = { bold: true };
   worksheet.mergeCells(`J${5 + rowOffset}:L${5 + rowOffset}`);
-  worksheet.getCell(`J${5 + rowOffset}`).value = order.createdBy?.position?.name || "";
+  worksheet.getCell(`J${5 + rowOffset}`).value =
+    order.createdBy?.position?.name || "";
 
   // 4. Người nhận lệnh
   // Dòng 6
   worksheet.getCell(`B${6 + rowOffset}`).value = "Người nhận lệnh";
   worksheet.getCell(`B${6 + rowOffset}`).font = { bold: true };
-  worksheet.getCell(`C${6 + rowOffset}`).value = order.assignedTo?.fullName || "";
+  worksheet.getCell(`C${6 + rowOffset}`).value =
+    order.assignedTo?.fullName || "";
 
   worksheet.getCell(`F${6 + rowOffset}`).value = "Số thẻ";
   worksheet.getCell(`F${6 + rowOffset}`).font = { bold: true };
-  worksheet.getCell(`G${6 + rowOffset}`).value = order.assignedTo?.salaryCode || "";
+  worksheet.getCell(`G${6 + rowOffset}`).value =
+    order.assignedTo?.salaryCode || "";
 
   worksheet.getCell(`I${6 + rowOffset}`).value = "Chức vụ";
   worksheet.getCell(`I${6 + rowOffset}`).font = { bold: true };
   worksheet.mergeCells(`J${6 + rowOffset}:L${6 + rowOffset}`);
-  worksheet.getCell(`J${6 + rowOffset}`).value = order.assignedTo?.position?.name || "";
+  worksheet.getCell(`J${6 + rowOffset}`).value =
+    order.assignedTo?.position?.name || "";
 
   // Dòng 7
   worksheet.getCell(`B${7 + rowOffset}`).value = "Nội dung lệnh";
@@ -2235,25 +2288,42 @@ async function buildOther(order, workbook) {
     horizontal: "center",
     vertical: "middle",
   };
-  if (order.createdBy?.signature) {
-    const res = await axios.get(
-      `${process.env.API_URL}/uploads/get?key=${order.createdBy?.signature}`,
-    );
-    const url = res.data.data;
-    if (url) {
-      const response = await axios.get(url, { responseType: "arraybuffer" });
-      const extension = response.headers["content-type"].split("/")[1];
-      const imageBuffer = Buffer.from(response.data, "binary");
+  if (order.createdBy?.signature?.trim()) {
+    try {
+      const key = encodeURIComponent(order.createdBy.signature);
+
+      const res = await axios.get(
+        `${process.env.API_URL}/uploads/get?key=${key}`,
+      );
+
+      const url = res.data?.data;
+
+      // validate URL
+      if (!url || typeof url !== "string") {
+        throw new Error("URL không hợp lệ");
+      }
+
+      const response = await axios.get(url, {
+        responseType: "arraybuffer",
+      });
+
+      const contentType = response.headers["content-type"] || "";
+      const extension = contentType.split("/")[1] || "png";
 
       const imageId = workbook.addImage({
-        buffer: imageBuffer,
+        buffer: Buffer.from(response.data),
         extension,
       });
 
       worksheet.mergeCells(`J${23 + rowOffset}:K${25 + rowOffset}`);
-
-      // gán ảnh trực tiếp vào range
       worksheet.addImage(imageId, `J${23 + rowOffset}:K${25 + rowOffset}`);
+    } catch (err) {
+      // ❗ KHÔNG throw
+      console.log("⚠️ Bỏ qua chữ ký lỗi:", {
+        orderId: order._id,
+        signature: order.createdBy.signature,
+        error: err.message,
+      });
     }
   }
   timeSignature(worksheet, 26 + rowOffset, "J", "K", order?.createdAt);
@@ -2342,7 +2412,8 @@ async function buildMaintence(order, workbook) {
 
   worksheet.getCell(`B${4 + rowOffset}`).value = "Đơn vị";
   worksheet.getCell(`B${4 + rowOffset}`).font = { bold: true };
-  worksheet.getCell(`C${4 + rowOffset}`).value = order.assignedTo?.department?.code || "";
+  worksheet.getCell(`C${4 + rowOffset}`).value =
+    order.assignedTo?.department?.code || "";
 
   worksheet.getCell(`E${4 + rowOffset}`).value = "Ngày";
   worksheet.getCell(`E${4 + rowOffset}`).font = { bold: true };
@@ -2363,31 +2434,37 @@ async function buildMaintence(order, workbook) {
   // Dòng 5
   worksheet.getCell(`B${5 + rowOffset}`).value = "Người ra lệnh";
   worksheet.getCell(`B${5 + rowOffset}`).font = { bold: true };
-  worksheet.getCell(`C${5 + rowOffset}`).value = order.createdBy?.fullName || "";
+  worksheet.getCell(`C${5 + rowOffset}`).value =
+    order.createdBy?.fullName || "";
 
   worksheet.getCell(`E${5 + rowOffset}`).value = "Số thẻ";
   worksheet.getCell(`E${5 + rowOffset}`).font = { bold: true };
-  worksheet.getCell(`F${5 + rowOffset}`).value = order.createdBy?.salaryCode || "";
+  worksheet.getCell(`F${5 + rowOffset}`).value =
+    order.createdBy?.salaryCode || "";
 
   worksheet.getCell(`H${5 + rowOffset}`).value = "Chức vụ";
   worksheet.getCell(`H${5 + rowOffset}`).font = { bold: true };
   worksheet.mergeCells(`I${5 + rowOffset}:N${5 + rowOffset}`);
-  worksheet.getCell(`I${5 + rowOffset}`).value = order.createdBy?.position?.name || "";
+  worksheet.getCell(`I${5 + rowOffset}`).value =
+    order.createdBy?.position?.name || "";
 
   // 4. Người nhận lệnh
   // Dòng 6
   worksheet.getCell(`B${6 + rowOffset}`).value = "Người nhận lệnh";
   worksheet.getCell(`B${6 + rowOffset}`).font = { bold: true };
-  worksheet.getCell(`C${6 + rowOffset}`).value = order.assignedTo?.fullName || "";
+  worksheet.getCell(`C${6 + rowOffset}`).value =
+    order.assignedTo?.fullName || "";
 
   worksheet.getCell(`E${6 + rowOffset}`).value = "Số thẻ";
   worksheet.getCell(`E${6 + rowOffset}`).font = { bold: true };
-  worksheet.getCell(`F${6 + rowOffset}`).value = order.assignedTo?.salaryCode || "";
+  worksheet.getCell(`F${6 + rowOffset}`).value =
+    order.assignedTo?.salaryCode || "";
 
   worksheet.getCell(`H${6 + rowOffset}`).value = "Chức vụ";
   worksheet.getCell(`H${6 + rowOffset}`).font = { bold: true };
   worksheet.mergeCells(`I${6 + rowOffset}:N${6 + rowOffset}`);
-  worksheet.getCell(`I${6 + rowOffset}`).value = order.assignedTo?.position?.name || "";
+  worksheet.getCell(`I${6 + rowOffset}`).value =
+    order.assignedTo?.position?.name || "";
 
   // Dòng 6 lx bo tuc
   worksheet.getCell(`B${7 + rowOffset}`).value = "Phụ sửa chữa";
@@ -2699,18 +2776,30 @@ async function buildMaintence(order, workbook) {
     horizontal: "center",
     vertical: "middle",
   };
-  if (order.createdBy?.signature) {
-    const res = await axios.get(
-      `${process.env.API_URL}/uploads/get?key=${order.createdBy?.signature}`,
-    );
-    const url = res.data.data;
-    if (url) {
-      const response = await axios.get(url, { responseType: "arraybuffer" });
-      const extension = response.headers["content-type"].split("/")[1];
-      const imageBuffer = Buffer.from(response.data, "binary");
+  if (order.createdBy?.signature?.trim()) {
+    try {
+      const key = encodeURIComponent(order.createdBy.signature);
+
+      const res = await axios.get(
+        `${process.env.API_URL}/uploads/get?key=${key}`,
+      );
+
+      const url = res.data?.data;
+
+      // validate URL
+      if (!url || typeof url !== "string") {
+        throw new Error("URL không hợp lệ");
+      }
+
+      const response = await axios.get(url, {
+        responseType: "arraybuffer",
+      });
+
+      const contentType = response.headers["content-type"] || "";
+      const extension = contentType.split("/")[1] || "png";
 
       const imageId = workbook.addImage({
-        buffer: imageBuffer,
+        buffer: Buffer.from(response.data),
         extension,
       });
 
@@ -2718,6 +2807,13 @@ async function buildMaintence(order, workbook) {
 
       // gán ảnh trực tiếp vào range
       worksheet.addImage(imageId, `K${fuelEndRow + 3}:L${fuelEndRow + 5}`);
+    } catch (err) {
+      // ❗ KHÔNG throw
+      console.log("⚠️ Bỏ qua chữ ký lỗi:", {
+        orderId: order._id,
+        signature: order.createdBy.signature,
+        error: err.message,
+      });
     }
   }
   timeSignature(worksheet, fuelEndRow + 6, "K", "L", order?.createdAt);
@@ -2803,7 +2899,7 @@ async function buildDrill(order, workbook) {
   departmentCell.value = `Đơn vị: ${order.assignedTo?.department?.code || ""}`;
   departmentCell.font = { italic: true, size: 14 };
   departmentCell.alignment = { horizontal: "left", vertical: "middle" };
-    worksheet.mergeCells(`A3:N3`);
+  worksheet.mergeCells(`A3:N3`);
   const header = worksheet.getCell(`A3`);
   header.value = `LỆNH SẢN XUẤT`;
   header.font = { bold: true, size: 16 };
@@ -3208,21 +3304,32 @@ async function buildDrill(order, workbook) {
     horizontal: "center",
     vertical: "middle",
   };
-  if (order.createdBy?.signature) {
-    const res = await axios.get(
-      `${process.env.API_URL}/uploads/get?key=${order.createdBy?.signature}`,
-    );
-    const url = res.data.data;
-    if (url) {
-      const response = await axios.get(url, { responseType: "arraybuffer" });
-      const extension = response.headers["content-type"].split("/")[1];
-      const imageBuffer = Buffer.from(response.data, "binary");
+  if (order.createdBy?.signature?.trim()) {
+    try {
+      const key = encodeURIComponent(order.createdBy.signature);
 
-      const imageId = workbook.addImage({
-        buffer: imageBuffer,
-        extension,
+      const res = await axios.get(
+        `${process.env.API_URL}/uploads/get?key=${key}`,
+      );
+
+      const url = res.data?.data;
+
+      // validate URL
+      if (!url || typeof url !== "string") {
+        throw new Error("URL không hợp lệ");
+      }
+
+      const response = await axios.get(url, {
+        responseType: "arraybuffer",
       });
 
+      const contentType = response.headers["content-type"] || "";
+      const extension = contentType.split("/")[1] || "png";
+
+      const imageId = workbook.addImage({
+        buffer: Buffer.from(response.data),
+        extension,
+      });
       worksheet.mergeCells(
         `K${totalRow + 7 + deviceRow}:L${totalRow + 9 + deviceRow}`,
       );
@@ -3232,6 +3339,13 @@ async function buildDrill(order, workbook) {
         imageId,
         `K${totalRow + 7 + deviceRow}:L${totalRow + 9 + deviceRow}`,
       );
+    } catch (err) {
+      // ❗ KHÔNG throw
+      console.log("⚠️ Bỏ qua chữ ký lỗi:", {
+        orderId: order._id,
+        signature: order.createdBy.signature,
+        error: err.message,
+      });
     }
   }
   timeSignature(
@@ -3336,7 +3450,8 @@ async function buildDozer(order, workbook) {
 
   worksheet.getCell(`B${4 + rowOffset}`).value = "Đơn vị";
   worksheet.getCell(`B${4 + rowOffset}`).font = { bold: true };
-  worksheet.getCell(`C${4 + rowOffset}`).value = order.assignedTo?.department?.code || "";
+  worksheet.getCell(`C${4 + rowOffset}`).value =
+    order.assignedTo?.department?.code || "";
 
   worksheet.getCell(`F${4 + rowOffset}`).value = "Ngày";
   worksheet.getCell(`F${4 + rowOffset}`).font = { bold: true };
@@ -3357,31 +3472,37 @@ async function buildDozer(order, workbook) {
   // Dòng 5
   worksheet.getCell(`B${5 + rowOffset}`).value = "Người ra lệnh";
   worksheet.getCell(`B${5 + rowOffset}`).font = { bold: true };
-  worksheet.getCell(`C${5 + rowOffset}`).value = order.createdBy?.fullName || "";
+  worksheet.getCell(`C${5 + rowOffset}`).value =
+    order.createdBy?.fullName || "";
 
   worksheet.getCell(`F${5 + rowOffset}`).value = "Số thẻ";
   worksheet.getCell(`F${5 + rowOffset}`).font = { bold: true };
-  worksheet.getCell(`G${5 + rowOffset}`).value = order.createdBy?.salaryCode || "";
+  worksheet.getCell(`G${5 + rowOffset}`).value =
+    order.createdBy?.salaryCode || "";
 
   worksheet.getCell(`I${5 + rowOffset}`).value = "Chức vụ";
   worksheet.getCell(`I${5 + rowOffset}`).font = { bold: true };
   worksheet.mergeCells(`J${5 + rowOffset}:L${5 + rowOffset}`);
-  worksheet.getCell(`J${5 + rowOffset}`).value = order.createdBy?.position?.name || "";
+  worksheet.getCell(`J${5 + rowOffset}`).value =
+    order.createdBy?.position?.name || "";
 
   // 4. Người nhận lệnh
   // Dòng 6
   worksheet.getCell(`B${6 + rowOffset}`).value = "Người nhận lệnh";
   worksheet.getCell(`B${6 + rowOffset}`).font = { bold: true };
-  worksheet.getCell(`C${6 + rowOffset}`).value = order.assignedTo?.fullName || "";
+  worksheet.getCell(`C${6 + rowOffset}`).value =
+    order.assignedTo?.fullName || "";
 
   worksheet.getCell(`F${6 + rowOffset}`).value = "Số thẻ";
   worksheet.getCell(`F${6 + rowOffset}`).font = { bold: true };
-  worksheet.getCell(`G${6 + rowOffset}`).value = order.assignedTo?.salaryCode || "";
+  worksheet.getCell(`G${6 + rowOffset}`).value =
+    order.assignedTo?.salaryCode || "";
 
   worksheet.getCell(`I${6 + rowOffset}`).value = "Chức vụ";
   worksheet.getCell(`I${6 + rowOffset}`).font = { bold: true };
   worksheet.mergeCells(`J${6 + rowOffset}:N${6 + rowOffset}`);
-  worksheet.getCell(`J${6 + rowOffset}`).value = order.assignedTo?.position?.name || "";
+  worksheet.getCell(`J${6 + rowOffset}`).value =
+    order.assignedTo?.position?.name || "";
 
   // Dòng 6 lx bo tuc
   worksheet.getCell(`B${7 + rowOffset}`).value = "Phụ máy";
@@ -3722,18 +3843,30 @@ async function buildDozer(order, workbook) {
     horizontal: "center",
     vertical: "middle",
   };
-  if (order.createdBy?.signature) {
-    const res = await axios.get(
-      `${process.env.API_URL}/uploads/get?key=${order.createdBy?.signature}`,
-    );
-    const url = res.data.data;
-    if (url) {
-      const response = await axios.get(url, { responseType: "arraybuffer" });
-      const extension = response.headers["content-type"].split("/")[1];
-      const imageBuffer = Buffer.from(response.data, "binary");
+  if (order.createdBy?.signature?.trim()) {
+    try {
+      const key = encodeURIComponent(order.createdBy.signature);
+
+      const res = await axios.get(
+        `${process.env.API_URL}/uploads/get?key=${key}`,
+      );
+
+      const url = res.data?.data;
+
+      // validate URL
+      if (!url || typeof url !== "string") {
+        throw new Error("URL không hợp lệ");
+      }
+
+      const response = await axios.get(url, {
+        responseType: "arraybuffer",
+      });
+
+      const contentType = response.headers["content-type"] || "";
+      const extension = contentType.split("/")[1] || "png";
 
       const imageId = workbook.addImage({
-        buffer: imageBuffer,
+        buffer: Buffer.from(response.data),
         extension,
       });
 
@@ -3746,6 +3879,13 @@ async function buildDozer(order, workbook) {
         imageId,
         `K${totalRow + 7 + deviceRow}:L${totalRow + 9 + deviceRow}`,
       );
+    } catch (err) {
+      // ❗ KHÔNG throw
+      console.log("⚠️ Bỏ qua chữ ký lỗi:", {
+        orderId: order._id,
+        signature: order.createdBy.signature,
+        error: err.message,
+      });
     }
   }
   timeSignature(
@@ -3844,7 +3984,8 @@ async function buildDispatcher(order, workbook) {
 
   worksheet.getCell(`B${4 + rowOffset}`).value = "Đơn vị";
   worksheet.getCell(`B${4 + rowOffset}`).font = { bold: true };
-  worksheet.getCell(`C${4 + rowOffset}`).value = order.createdBy?.department?.code || "";
+  worksheet.getCell(`C${4 + rowOffset}`).value =
+    order.createdBy?.department?.code || "";
 
   worksheet.getCell(`E${4 + rowOffset}`).value = "Ngày";
   worksheet.getCell(`E${4 + rowOffset}`).font = { bold: true };
@@ -3857,35 +3998,42 @@ async function buildDispatcher(order, workbook) {
   // Dòng 5
   worksheet.getCell(`B${5 + rowOffset}`).value = "Người ra lệnh";
   worksheet.getCell(`B${5 + rowOffset}`).font = { bold: true };
-  worksheet.getCell(`C${5 + rowOffset}`).value = order.createdBy?.fullName || "";
+  worksheet.getCell(`C${5 + rowOffset}`).value =
+    order.createdBy?.fullName || "";
 
   worksheet.getCell(`E${5 + rowOffset}`).value = "Số thẻ";
   worksheet.getCell(`E${5 + rowOffset}`).font = { bold: true };
-  worksheet.getCell(`F${5 + rowOffset}`).value = order.createdBy?.salaryCode || "";
+  worksheet.getCell(`F${5 + rowOffset}`).value =
+    order.createdBy?.salaryCode || "";
 
   worksheet.getCell(`G${5 + rowOffset}`).value = "Chức vụ";
   worksheet.getCell(`G${5 + rowOffset}`).font = { bold: true };
   worksheet.mergeCells(`H${5 + rowOffset}:L${5 + rowOffset}`);
-  worksheet.getCell(`H${5 + rowOffset}`).value = order.createdBy?.position?.name || "";
+  worksheet.getCell(`H${5 + rowOffset}`).value =
+    order.createdBy?.position?.name || "";
 
   // 4. Người nhận lệnh
   // Dòng 6
   worksheet.getCell(`B${6 + rowOffset}`).value = "Người nhận lệnh";
   worksheet.getCell(`B${6 + rowOffset}`).font = { bold: true };
-  worksheet.getCell(`C${6 + rowOffset}`).value = order.assignedTo?.fullName || "";
+  worksheet.getCell(`C${6 + rowOffset}`).value =
+    order.assignedTo?.fullName || "";
 
   worksheet.getCell(`E${6 + rowOffset}`).value = "Số thẻ";
   worksheet.getCell(`E${6 + rowOffset}`).font = { bold: true };
-  worksheet.getCell(`F${6 + rowOffset}`).value = order.assignedTo?.salaryCode || "";
+  worksheet.getCell(`F${6 + rowOffset}`).value =
+    order.assignedTo?.salaryCode || "";
 
   worksheet.getCell(`G${6 + rowOffset}`).value = "Chức vụ";
   worksheet.getCell(`G${6 + rowOffset}`).font = { bold: true };
   worksheet.mergeCells(`H${6 + rowOffset}:L${6 + rowOffset}`);
-  worksheet.getCell(`H${6 + rowOffset}`).value = order.assignedTo?.position?.name || "";
+  worksheet.getCell(`H${6 + rowOffset}`).value =
+    order.assignedTo?.position?.name || "";
 
   worksheet.getCell(`J${6 + rowOffset}`).value = "Đơn vị";
   worksheet.getCell(`J${6 + rowOffset}`).font = { bold: true };
-  worksheet.getCell(`K${6 + rowOffset}`).value = order.assignedTo?.department?.code || "";
+  worksheet.getCell(`K${6 + rowOffset}`).value =
+    order.assignedTo?.department?.code || "";
 
   //   worksheet.getCell(`B${7 + rowOffset}`).value = "Biện pháp an toàn";
   //   worksheet.getCell(`B${7 + rowOffset}`).font = { bold: true };
@@ -3931,14 +4079,23 @@ async function buildDispatcher(order, workbook) {
 
   worksheet.mergeCells(`A${10 + rowOffset}:F${16 + rowOffset}`);
   worksheet.getCell(`A${10 + rowOffset}`).value = order.workContent || "";
-  worksheet.getCell(`A${10 + rowOffset}`).alignment = { vertical: "top", wrapText: true };
+  worksheet.getCell(`A${10 + rowOffset}`).alignment = {
+    vertical: "top",
+    wrapText: true,
+  };
   worksheet.mergeCells(`G${10 + rowOffset}:I${16 + rowOffset}`);
   worksheet.getCell(`G${10 + rowOffset}`).value = order.risk || "";
-  worksheet.getCell(`G${10 + rowOffset}`).alignment = { vertical: "top", wrapText: true };
+  worksheet.getCell(`G${10 + rowOffset}`).alignment = {
+    vertical: "top",
+    wrapText: true,
+  };
   worksheet.mergeCells(`J${10 + rowOffset}:L${16 + rowOffset}`);
   worksheet.getCell(`J${10 + rowOffset}`).value =
     (order?.safetyMeasure || "") + " " + (order?.safetyMeasureSpecific || "");
-  worksheet.getCell(`J${10 + rowOffset}`).alignment = { vertical: "top", wrapText: true };
+  worksheet.getCell(`J${10 + rowOffset}`).alignment = {
+    vertical: "top",
+    wrapText: true,
+  };
 
   addTableBorders(worksheet, 9 + rowOffset, 16 + rowOffset, 1, 12);
 
@@ -3963,7 +4120,8 @@ async function buildDispatcher(order, workbook) {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`B${signatureRow + 5}`).value = order.assignedTo?.fullName || "";
+  worksheet.getCell(`B${signatureRow + 5}`).value =
+    order.assignedTo?.fullName || "";
 
   worksheet.mergeCells(`I${signatureRow}:L${signatureRow}`);
   worksheet.getCell(`I${signatureRow}`).value = "NGƯỜI RA LỆNH";
@@ -3972,18 +4130,30 @@ async function buildDispatcher(order, workbook) {
     horizontal: "center",
     vertical: "middle",
   };
-  if (order.createdBy?.signature) {
-    const res = await axios.get(
-      `${process.env.API_URL}/uploads/get?key=${order.createdBy?.signature}`,
-    );
-    const url = res.data.data;
-    if (url) {
-      const response = await axios.get(url, { responseType: "arraybuffer" });
-      const extension = response.headers["content-type"].split("/")[1];
-      const imageBuffer = Buffer.from(response.data, "binary");
+  if (order.createdBy?.signature?.trim()) {
+    try {
+      const key = encodeURIComponent(order.createdBy.signature);
+
+      const res = await axios.get(
+        `${process.env.API_URL}/uploads/get?key=${key}`,
+      );
+
+      const url = res.data?.data;
+
+      // validate URL
+      if (!url || typeof url !== "string") {
+        throw new Error("URL không hợp lệ");
+      }
+
+      const response = await axios.get(url, {
+        responseType: "arraybuffer",
+      });
+
+      const contentType = response.headers["content-type"] || "";
+      const extension = contentType.split("/")[1] || "png";
 
       const imageId = workbook.addImage({
-        buffer: imageBuffer,
+        buffer: Buffer.from(response.data),
         extension,
       });
 
@@ -3991,6 +4161,13 @@ async function buildDispatcher(order, workbook) {
 
       // gán ảnh trực tiếp vào range
       worksheet.addImage(imageId, `J${signatureRow + 1}:K${signatureRow + 3}`);
+    } catch (err) {
+      // ❗ KHÔNG throw
+      console.log("⚠️ Bỏ qua chữ ký lỗi:", {
+        orderId: order._id,
+        signature: order.createdBy.signature,
+        error: err.message,
+      });
     }
   }
   timeSignature(worksheet, signatureRow + 4, "J", "K", order?.createdAt);
@@ -4001,7 +4178,8 @@ async function buildDispatcher(order, workbook) {
     horizontal: "center",
     vertical: "middle",
   };
-  worksheet.getCell(`I${signatureRow + 5}`).value = order.createdBy?.fullName || "";
+  worksheet.getCell(`I${signatureRow + 5}`).value =
+    order.createdBy?.fullName || "";
 
   worksheet.pageSetup = {
     paperSize: 9, // A4
