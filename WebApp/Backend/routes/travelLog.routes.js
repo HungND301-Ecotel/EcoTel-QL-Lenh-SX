@@ -514,10 +514,15 @@ router.post(
   restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER),
   async (req, res, next) => {
     try {
+      const today = new Date();
+      const tenDaysAgo = new Date();
+      tenDaysAgo.setDate(today.getDate() - 10);
+      tenDaysAgo.setHours(0, 0, 0, 0);
       const match = {};
       if (req.body.type) {
         match.acceptedProduct = req.body.type;
       }
+      match.workingDate = { $gte: tenDaysAgo };
       const data = await TravelLog.aggregate([
         { $match: match },
         {
