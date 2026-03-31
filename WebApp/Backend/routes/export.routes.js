@@ -411,7 +411,7 @@ async function buildVehicle(order, workbook) {
       (sum, item) => sum + (item.distance || 0),
       0,
     );
-    worksheet.getCell(`G${rowIndexTrip}`).value = totalDistance;
+    worksheet.getCell(`G${rowIndexTrip}`).value = g.timeLogs[0]?.distance||0;
     worksheet.getCell(`G${rowIndexTrip}`).alignment = {
       horizontal: "center",
       vertical: "middle",
