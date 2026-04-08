@@ -100,24 +100,29 @@ router.post(
           ],
         });
       const workbook = new ExcelJS.Workbook();
-      for (const order of orders) {
+      for (const [index,order] of orders.entries()) {
+        console.log(order);
         const jobType = order.job?.type;
+        const sheetName =
+          `${order.assignedTo?.username}_${formatDate(order.workingDate)}_${order.shift?.name}_${index}`
+            .replace(/[\\\/:*?\[\]]/g, "-")
+            .substring(0, 31);
         if (jobType === JOB_TYPE.VAN_HANH_XE) {
-          await buildVehicle(order, workbook);
+          await buildVehicle(order, workbook, sheetName);
         } else if (jobType === JOB_TYPE.VAN_HANH_XUC) {
-          await buildExcavator(order, workbook);
+          await buildExcavator(order, workbook, sheetName);
         } else if (jobType === JOB_TYPE.SUA_CHUA_BAO_DUONG) {
-          await buildMaintence(order, workbook);
+          await buildMaintence(order, workbook, sheetName);
         } else if (jobType === JOB_TYPE.VAN_HANH_KHOAN) {
-          await buildDrill(order, workbook);
+          await buildDrill(order, workbook, sheetName);
         } else if (jobType === JOB_TYPE.VAN_HANH_GAT) {
-          await buildDozer(order, workbook);
+          await buildDozer(order, workbook, sheetName);
         } else if (jobType === JOB_TYPE.DIEU_HANH_SAN_XUAT) {
-          await buildDispatcher(order, workbook);
+          await buildDispatcher(order, workbook, sheetName);
         } else if (jobType === JOB_TYPE.VAN_HANH_XE_PHUC_VU) {
-          await buildVehicleService(order, workbook);
+          await buildVehicleService(order, workbook, sheetName);
         } else {
-          await buildOther(order, workbook);
+          await buildOther(order, workbook, sheetName);
         }
       }
       const buffer = await workbook.xlsx.writeBuffer();
@@ -140,7 +145,7 @@ router.post(
   },
 );
 
-async function buildVehicle(order, workbook) {
+async function buildVehicle(order, workbook, sheetName) {
   const reports = await Report.find({ orderId: order._id })
     .populate({
       path: "device",
@@ -151,10 +156,6 @@ async function buildVehicle(order, workbook) {
     .populate("excavator", "code")
     .populate("fromLocation", "name")
     .populate("toLocation", "name");
-  const sheetName =
-    `${order.assignedTo?.username}_${formatDate(order.workingDate)}_${order.shift?.name}_${order._id}`
-      .replace(/[\\\/:*?\[\]]/g, "-")
-      .substring(0, 31);
 
   const worksheet = workbook.addWorksheet(sheetName);
 
@@ -411,7 +412,7 @@ async function buildVehicle(order, workbook) {
       (sum, item) => sum + (item.distance || 0),
       0,
     );
-    worksheet.getCell(`G${rowIndexTrip}`).value = g.timeLogs[0]?.distance||0;
+    worksheet.getCell(`G${rowIndexTrip}`).value = g.timeLogs[0]?.distance || 0;
     worksheet.getCell(`G${rowIndexTrip}`).alignment = {
       horizontal: "center",
       vertical: "middle",
@@ -750,10 +751,10 @@ async function buildVehicle(order, workbook) {
       };
     });
   });
-  await buildTimeLogSheet(order, workbook, grouped);
+  await buildTimeLogSheet(order, workbook, grouped, sheetName);
 }
 
-async function buildTimeLogSheet(order, workbook, groupedData) {
+async function buildTimeLogSheet(order, workbook, groupedData, sheetName) {
   if (!groupedData || groupedData.length === 0) return;
 
   const TRIPS_PER_ROW = 15;
@@ -774,12 +775,8 @@ async function buildTimeLogSheet(order, workbook, groupedData) {
   };
 
   // === 1️⃣ Tạo sheet mới với tên an toàn === (Giữ nguyên)
-  const sheetName =
-    `${order.assignedTo?.fullName}_${dayjs(order.workingDate).format("DD-MM-YYYY")}_Ca${order.shift?.name}`
-      .replace(/[\\\/:*?\[\]]/g, "-")
-      .substring(0, 31);
 
-  const ws = workbook.addWorksheet(sheetName);
+  const ws = workbook.addWorksheet(`${sheetName}_Chi tiết`);
 
   const borderStyle = {
     top: { style: "thin" },
@@ -925,12 +922,7 @@ async function buildTimeLogSheet(order, workbook, groupedData) {
   });
 }
 
-async function buildVehicleService(order, workbook) {
-  const sheetName =
-    `${order.assignedTo?.username}_${formatDate(order.workingDate)}_${order.shift?.name}_${order._id}`
-      .replace(/[\\\/:*?\[\]]/g, "-")
-      .substring(0, 31);
-
+async function buildVehicleService(order, workbook, sheetName) {
   const worksheet = workbook.addWorksheet(sheetName);
 
   // Row 1: Company Name
@@ -1307,17 +1299,13 @@ async function buildVehicleService(order, workbook) {
     });
   });
 }
-async function buildExcavator(order, workbook) {
+async function buildExcavator(order, workbook, sheetName) {
   const reports = await Report.find({ orderId: order._id })
     .populate("device", "code material")
     .populate("material", "name acceptedProduct")
     .populate("excavator", "code")
     .populate("fromLocation", "name")
     .populate("toLocation", "name");
-  const sheetName =
-    `${order.assignedTo?.username}_${formatDate(order.workingDate)}_${order.shift?.name}_${order._id}`
-      .replace(/[\\\/:*?\[\]]/g, "-")
-      .substring(0, 31);
 
   const worksheet = workbook.addWorksheet(sheetName);
 
@@ -1870,10 +1858,15 @@ async function buildExcavator(order, workbook) {
       };
     });
   });
-  await buildTimeLogSheetExcavator(order, workbook, grouped);
+  await buildTimeLogSheetExcavator(order, workbook, grouped, sheetName);
 }
 
-async function buildTimeLogSheetExcavator(order, workbook, groupedData) {
+async function buildTimeLogSheetExcavator(
+  order,
+  workbook,
+  groupedData,
+  sheetName,
+) {
   if (!groupedData || groupedData.length === 0) return;
 
   // Định nghĩa số cột thời gian tối đa theo yêu cầu
@@ -1892,11 +1885,7 @@ async function buildTimeLogSheetExcavator(order, workbook, groupedData) {
   };
 
   // 1. Chuẩn bị Tên Sheet
-  const sheetName =
-    `${order.assignedTo?.fullName}_${formatDate(order.workingDate)}`
-      .replace(/[\\\/:*?\[\]]/g, "-")
-      .substring(0, 31);
-  const worksheet = workbook.addWorksheet(sheetName);
+  const worksheet = workbook.addWorksheet(`${sheetName}_Chi tiết`);
 
   const borderStyle = {
     top: { style: "thin" },
@@ -2076,12 +2065,7 @@ async function buildTimeLogSheetExcavator(order, workbook, groupedData) {
     });
   });
 }
-async function buildOther(order, workbook) {
-  const sheetName =
-    `${order.assignedTo?.username}_${formatDate(order.workingDate)}_${order.shift?.name}_${order._id}`
-      .replace(/[\\\/:*?\[\]]/g, "-")
-      .substring(0, 31);
-
+async function buildOther(order, workbook, sheetName) {
   const worksheet = workbook.addWorksheet(sheetName);
 
   // Row 1: Company Name
@@ -2380,12 +2364,7 @@ async function buildOther(order, workbook) {
     });
   });
 }
-async function buildMaintence(order, workbook) {
-  const sheetName =
-    `${order.assignedTo?.username}_${formatDate(order.workingDate)}_${order.shift?.name}_${order._id}`
-      .replace(/[\\\/:*?\[\]]/g, "-")
-      .substring(0, 31);
-
+async function buildMaintence(order, workbook, sheetName) {
   const worksheet = workbook.addWorksheet(sheetName);
 
   // Row 1: Company Name
@@ -2872,17 +2851,13 @@ async function buildMaintence(order, workbook) {
     });
   });
 }
-async function buildDrill(order, workbook) {
+async function buildDrill(order, workbook, sheetName) {
   const reports = await Report.find({ orderId: order._id })
     .populate("device", "code")
     .populate("material", "name acceptedProduct")
     .populate("excavator", "code")
     .populate("fromLocation", "name")
     .populate("toLocation", "name");
-  const sheetName =
-    `${order.assignedTo?.username}_${formatDate(order.workingDate)}_${order.shift?.name}_${order._id}`
-      .replace(/[\\\/:*?\[\]]/g, "-")
-      .substring(0, 31);
 
   const worksheet = workbook.addWorksheet(sheetName);
 
@@ -3412,17 +3387,13 @@ async function buildDrill(order, workbook) {
     });
   });
 }
-async function buildDozer(order, workbook) {
+async function buildDozer(order, workbook, sheetName) {
   const reports = await Report.find({ orderId: order._id })
     .populate("device", "code")
     .populate("material", "name acceptedProduct")
     .populate("excavator", "code")
     .populate("fromLocation", "name")
     .populate("toLocation", "name");
-  const sheetName =
-    `${order.assignedTo?.username}_${formatDate(order.workingDate)}_${order.shift?.name}_${order._id}`
-      .replace(/[\\\/:*?\[\]]/g, "-")
-      .substring(0, 31);
 
   const worksheet = workbook.addWorksheet(sheetName);
 
@@ -3952,12 +3923,7 @@ async function buildDozer(order, workbook) {
     });
   });
 }
-async function buildDispatcher(order, workbook) {
-  const sheetName =
-    `${order.assignedTo?.username}_${formatDate(order.workingDate)}_${order.shift?.name}_${order._id}`
-      .replace(/[\\\/:*?\[\]]/g, "-")
-      .substring(0, 31);
-
+async function buildDispatcher(order, workbook, sheetName) {
   const worksheet = workbook.addWorksheet(sheetName);
 
   // Row 1: Company Name
