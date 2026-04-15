@@ -239,6 +239,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
         material: values.material,
         workContent: values.workContent,
         safetyMeasure: values.safetyMeasure,
+        safetyMeasureSpecific: values.safetyMeasureSpecific,
         status: StatusOrderEnum.PENDING,
         note: values.note,
         previous_order_id: values.previous_order_id,
@@ -938,7 +939,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
             Hủy
           </Button>
           <Button type="submit" variant="contained">
-            Cập nhật
+            Chuyển ca
           </Button>
         </Box>
       </Box>
