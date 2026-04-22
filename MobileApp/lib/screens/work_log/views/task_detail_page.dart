@@ -725,38 +725,38 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                                         data?.shiftReport !=
                                                 null
                                             ? "Bạn muốn kết thúc công việc"
-                                            : "Bạn chưa báo công, bạn có muốn kết thúc không?",
+                                            : "Bạn chưa báo công, bạn vẫn muốn tiếp tục kết thúc công việc?",
                                       ),
-                                      if (data?.shiftReport ==
-                                          null) ...[
-                                        const SizedBox(
-                                          height: 8,
-                                        ),
-                                        const Text(
-                                          'Nêu lí do (bắt buộc)*',
-                                          style: TextStyle(
-                                            color:
-                                                Colors.red,
-                                          ),
-                                        ),
-                                        TextFormField(
-                                          controller:
-                                              _noteController,
-                                          validator: (
-                                            value,
-                                          ) {
-                                            if (value ==
-                                                    null ||
-                                                value
-                                                    .isEmpty) {
-                                              return 'Vui lòng nhập lí do';
-                                            }
-                                            return null;
-                                          },
-                                          minLines: 3,
-                                          maxLines: null,
-                                        ),
-                                      ],
+                                      // if (data?.shiftReport ==
+                                      //     null) ...[
+                                      //   const SizedBox(
+                                      //     height: 8,
+                                      //   ),
+                                      //   const Text(
+                                      //     'Nêu lí do (bắt buộc)*',
+                                      //     style: TextStyle(
+                                      //       color:
+                                      //           Colors.red,
+                                      //     ),
+                                      //   ),
+                                      //   TextFormField(
+                                      //     controller:
+                                      //         _noteController,
+                                      //     validator: (
+                                      //       value,
+                                      //     ) {
+                                      //       if (value ==
+                                      //               null ||
+                                      //           value
+                                      //               .isEmpty) {
+                                      //         return 'Vui lòng nhập lí do';
+                                      //       }
+                                      //       return null;
+                                      //     },
+                                      //     minLines: 3,
+                                      //     maxLines: null,
+                                      //   ),
+                                      // ],
                                     ],
                                   ),
                                 ),
@@ -776,10 +776,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                                           .currentState!
                                           .validate()) {
                                         update(
-                                          data?.shiftReport !=
-                                                  null
-                                              ? "end"
-                                              : "warning",
+                                          "end",
                                         );
                                         Navigator.pop(
                                           dialogContext,
