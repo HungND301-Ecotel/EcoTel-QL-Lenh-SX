@@ -1235,11 +1235,11 @@ router.post("/checkin", verifyToken, async (req, res, next) => {
         .send({ status: "error", message: "Không tìm thấy lệnh làm việc" });
     }
 
-    if (!order.shiftReport && order.status === STATUS_ORDER.INPROGRESS) {
-      return res
-        .status(400)
-        .send({ status: "error", message: "Bạn cần báo công trước" });
-    }
+    // if (!order.shiftReport && order.status === STATUS_ORDER.INPROGRESS) {
+    //   return res
+    //     .status(400)
+    //     .send({ status: "error", message: "Bạn cần báo công trước" });
+    // }
 
     // const vehicle = await Device.findById(deviceId)
     // if (!vehicle) {
