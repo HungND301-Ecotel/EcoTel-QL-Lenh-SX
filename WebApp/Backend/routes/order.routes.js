@@ -10,6 +10,7 @@ const User = require("../models/User");
 const Job = require("../models/Job");
 const Shift = require("../models/Shift");
 const Material = require("../models/material");
+const { getTravellog, rangeTime } = require("../utils/reportGrouping");
 const mongoose = require("mongoose");
 const {
   ROLE,
@@ -1535,6 +1536,336 @@ router.post(
   },
 );
 
+router.post(
+  "/exportFile/no_travelog",
+  verifyToken,
+  restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER),
+  async (req, res, next) => {
+    try {
+      const today = new Date();
+      const localDay = today.getDate();
+      const localMonth = today.getMonth();
+      const localYear = today.getFullYear();
+
+      // Lấy đầu tháng (ngày 1)
+      const startOfMonth = new Date(
+        Date.UTC(localYear, localMonth, 1, 0, 0, 0, 0),
+      );
+
+      // Lấy ngày hiện tại
+      const now = new Date(
+        Date.UTC(localYear, localMonth, localDay, 23, 59, 59, 999),
+      );
+
+      // Query lấy orders từ đầu tháng đến hiện tại
+      let query = {
+        workingDate: {
+          $gte: startOfMonth,
+          $lte: now,
+        },
+      };
+
+      const job = await Job.findOne({ name: "Vận hành xe" });
+      if (job) {
+        query.job = job._id;
+      }
+
+      // Lấy dữ liệu Orders - Sắp xếp theo workingDate TĂNG DẦN (cũ lên trước)
+      const orders = await Order.find(query)
+        .populate({
+          path: "assignedTo",
+          select: "fullName salaryCode",
+        })
+        .populate("job", "name")
+        .populate("device", "code")
+        .populate("excavator.device", "code")
+        .populate("location", "name")
+        .populate("material", "name acceptedProduct")
+        .populate("shift", "name")
+        .populate("department", "code name")
+        .populate({
+          path: "createdBy",
+          select: "fullName",
+        })
+        .sort("-workingDate") // Tăng dần: ngày cũ lên trước, ngày mới xuống sau
+        .lean();
+
+      // Lấy danh sách các kỳ trong tháng (theo thứ tự)
+      const periods = getPeriodsInMonth(localYear, localMonth);
+
+      // Map để lưu dữ liệu theo từng kỳ
+      const periodDataMap = new Map();
+
+      // Khởi tạo data cho từng kỳ
+      periods.forEach((period) => {
+        periodDataMap.set(period.key, {
+          periodName: period.name,
+          startDate: period.start,
+          endDate: period.end,
+          startDay: period.startDay,
+          endDay: period.endDay,
+          orderIndex: period.orderIndex, // Thêm thứ tự kỳ
+          uniqueOrders: new Map(),
+          ordersList: [],
+        });
+      });
+
+      // Duyệt từng order
+      for (const order of orders) {
+        const workingDate = new Date(order.workingDate);
+        const excavatorId = order.excavator[0]?.device?._id;
+        const locationId = order.location[0]?._id;
+        const acceptedProduct = order.material?.acceptedProduct;
+
+        // Tìm kỳ phù hợp với workingDate
+        const periodKey = getPeriodKey(workingDate, periods);
+
+        if (!periodKey) continue;
+
+        const periodData = periodDataMap.get(periodKey);
+
+        // Tạo key duy nhất: Ngày + Máy xúc + Điểm đổ + Sản phẩm
+        const uniqueKey = `${workingDate.toISOString().split("T")[0]}_${excavatorId}_${locationId}_${acceptedProduct}`;
+
+        if (periodData.uniqueOrders.has(uniqueKey)) continue;
+
+        // Kiểm tra cung độ
+        const travelog = await getTravellog(
+          order.shift?._id,
+          order.workingDate,
+          excavatorId,
+          locationId,
+          acceptedProduct,
+        );
+
+        if (!travelog) {
+          periodData.uniqueOrders.set(uniqueKey, {
+            ...order,
+            workingDateStr: workingDate.toISOString().split("T")[0],
+            workingDateObj: workingDate, // Lưu lại để sắp xếp
+          });
+        }
+      }
+
+      // Chuyển Map thành danh sách và sắp xếp theo ngày trong từng kỳ
+      for (const [periodKey, periodData] of periodDataMap.entries()) {
+        periodData.ordersList = Array.from(periodData.uniqueOrders.values());
+        // Sắp xếp theo ngày tăng dần trong từng kỳ
+        periodData.ordersList.sort((a, b) => {
+          return new Date(b.workingDate) - new Date(a.workingDate);
+        });
+      }
+
+      // Tạo workbook
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Danh sách chưa có cung độ");
+
+      // Định nghĩa cấu trúc cột
+      const columns = [
+        { header: "Stt", key: "number", width: 6 },
+        { header: "Ngày", key: "workingDate", width: 12 },
+        { header: "Máy xúc", key: "excavator", width: 25 },
+        { header: "Điểm đổ tải", key: "location", width: 30 },
+      ];
+
+      worksheet.columns = columns;
+      const totalCols = columns.length;
+      let currentRow = 1;
+      let globalStt = 1; // Biến đếm STT toàn bộ
+
+      // Tiêu đề chính
+      worksheet.mergeCells(currentRow, 1, currentRow, totalCols);
+      const titleCell = worksheet.getCell(`A${currentRow}`);
+      titleCell.value = `DANH SÁCH QUÃNG ĐƯỜNG CHƯA CÓ CUNG ĐỘ`;
+      titleCell.font = { size: 14, bold: true };
+      titleCell.alignment = { vertical: "middle", horizontal: "center" };
+      currentRow++;
+
+      worksheet.addRow([]);
+      currentRow++;
+
+      // Duyệt từng kỳ theo thứ tự (từ Kỳ 1 đến Kỳ 6)
+      for (const period of periods) {
+        const periodData = periodDataMap.get(period.key);
+
+        if (!periodData || periodData.ordersList.length === 0) continue;
+
+        // Thêm dòng tiêu đề kỳ
+        const periodTitleRow = worksheet.addRow([
+          `${periodData.periodName} (${formatDate(periodData.startDate)} - ${formatDate(periodData.endDate)})`,
+        ]);
+        worksheet.mergeCells(currentRow, 1, currentRow, totalCols);
+        periodTitleRow.getCell(1).font = { bold: true, size: 12 };
+        periodTitleRow.getCell(1).fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFE0E0E0" },
+        };
+        currentRow++;
+
+        // Thêm header bảng con
+        const headerRow = worksheet.addRow(columns.map((c) => c.header));
+        headerRow.eachCell((cell) => {
+          cell.font = { bold: true, size: 11 };
+          cell.alignment = {
+            vertical: "middle",
+            horizontal: "center",
+            wrapText: true,
+          };
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFF0F0F0" },
+          };
+        });
+        currentRow++;
+
+        // Format dữ liệu với STT toàn bộ
+        const formattedData = periodData.ordersList.map((item) => ({
+          number: globalStt++,
+          workingDate: item.workingDateStr || formatDate(item.workingDate),
+          excavator: item?.excavator[0]?.device?.code || "",
+          location: item?.location[0]?.name || "",
+        }));
+
+        worksheet.addRows(formattedData);
+        currentRow += formattedData.length;
+
+        // Thêm border cho bảng con
+        const startRow = currentRow - formattedData.length - 1;
+        const endRow = currentRow - 1;
+        addTableBorders(worksheet, startRow, endRow, 1, totalCols);
+
+        // Thêm dòng trống giữa các kỳ
+        worksheet.addRow([]);
+        currentRow++;
+      }
+
+      // Nếu không có dữ liệu
+      if (currentRow <= 3) {
+        worksheet.addRow([
+          "Không tìm thấy order nào chưa có cung độ trong tháng này",
+        ]);
+        worksheet.mergeCells(currentRow, 1, currentRow, totalCols);
+      }
+
+      // Page setup và định dạng (giữ nguyên)
+      worksheet.pageSetup = {
+        paperSize: 9,
+        orientation: "landscape",
+        fitToPage: true,
+        fitToWidth: 1,
+        fitToHeight: 0,
+        margins: {
+          left: 0.3,
+          right: 0.3,
+          top: 0.5,
+          bottom: 0.5,
+          header: 0.2,
+          footer: 0.2,
+        },
+      };
+
+      worksheet.eachRow((row, rowNumber) => {
+        row.eachCell((cell) => {
+          if (!cell.font) cell.font = {};
+          cell.font = {
+            ...cell.font,
+            name: "Times New Roman",
+            ...(rowNumber > 1 ? { size: 10 } : {}),
+          };
+          cell.alignment = {
+            vertical: "middle",
+            horizontal: cell.alignment?.horizontal || "left",
+          };
+        });
+      });
+
+      const sttColumn = worksheet.getColumn(1);
+      sttColumn.eachCell((cell, rowNumber) => {
+        if (rowNumber > 1) {
+          cell.alignment = { horizontal: "center", vertical: "middle" };
+        }
+      });
+
+      const dateColumn = worksheet.getColumn(2);
+      dateColumn.eachCell((cell, rowNumber) => {
+        if (rowNumber > 1) {
+          cell.alignment = { horizontal: "center", vertical: "middle" };
+        }
+      });
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=danh_sach_chua_co_cung_do_thang_${localMonth + 1}_${localYear}.xlsx`,
+      );
+      res.send(buffer);
+
+      req.logger.info("✅ Xuất file thành công.");
+    } catch (err) {
+      req.logger.error("❌ Lỗi khi xuất file", err);
+      res
+        .status(500)
+        .send({ status: "error", message: err.message, stack: err.stack });
+    }
+  },
+);
+
+// Hàm lấy danh sách các kỳ trong tháng (có thứ tự)
+function getPeriodsInMonth(year, month) {
+  const periods = [];
+  const lastDay = new Date(year, month + 1, 0).getDate();
+
+  const periodRanges = [
+    { start: 1, end: 4, name: "KỲ 1 (01-04)", order: 1 },
+    { start: 5, end: 9, name: "KỲ 2 (05-09)", order: 2 },
+    { start: 10, end: 14, name: "KỲ 3 (10-14)", order: 3 },
+    { start: 15, end: 19, name: "KỲ 4 (15-19)", order: 4 },
+    { start: 20, end: 24, name: "KỲ 5 (20-24)", order: 5 },
+    { start: 25, end: lastDay, name: `KỲ 6 (25-${lastDay})`, order: 6 },
+  ];
+
+  periodRanges.forEach((range) => {
+    periods.push({
+      key: `${year}-${month + 1}-${range.start}_${range.end}`,
+      name: range.name,
+      orderIndex: range.order,
+      start: new Date(Date.UTC(year, month, range.start, 0, 0, 0, 0)),
+      end: new Date(Date.UTC(year, month, range.end, 23, 59, 59, 999)),
+      startDay: range.start,
+      endDay: range.end,
+    });
+  });
+
+  return periods.sort((a, b) => b.orderIndex - a.orderIndex);
+}
+
+// Hàm tìm kỳ phù hợp với workingDate
+function getPeriodKey(workingDate, periods) {
+  const day = workingDate.getUTCDate();
+
+  for (const period of periods) {
+    if (day >= period.startDay && day <= period.endDay) {
+      return period.key;
+    }
+  }
+  return null;
+}
+
+// Hàm format date
+function formatDate(date) {
+  if (!date) return "";
+  const d = new Date(date);
+  const day = d.getUTCDate().toString().padStart(2, "0");
+  const month = (d.getUTCMonth() + 1).toString().padStart(2, "0");
+  const year = d.getUTCFullYear();
+  return `${day}/${month}/${year}`;
+}
 const addTableBorders = (ws, startRow, endRow, startCol, endCol) => {
   const lightBorder = { style: "thin", color: "black" };
 

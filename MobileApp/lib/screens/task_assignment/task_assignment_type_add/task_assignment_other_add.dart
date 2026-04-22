@@ -443,7 +443,7 @@ class _TaskAssignmentOtherAdd
                   minLines: 5,
                 ),
                 Text(
-                  'Biện pháp an toàn',
+                  'Biện pháp an toàn chung',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                   ),

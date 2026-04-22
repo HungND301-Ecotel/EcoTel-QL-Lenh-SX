@@ -66,6 +66,7 @@ import ShiftReport from "../../components/Modal/ShiftReport";
 import DepartmentService from "../../services/departmentService";
 import OrderService from "../../services/orderService";
 import { parseAxiosError } from "../../utils/handleApiError";
+import { Route } from "lucide-react";
 
 const Orders: React.FC = () => {
   const [open, setOpen] = useState(false);
@@ -129,12 +130,12 @@ const Orders: React.FC = () => {
     { id: "transfer", label: "Chuyển ca" },
   ];
   const [visibleColumns, setVisibleColumns] = useState<string[]>(
-    defaultColumns.map((i) => i.id)
+    defaultColumns.map((i) => i.id),
   );
 
   const handleToggleColumn = (id: string) => {
     setVisibleColumns((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
     );
   };
 
@@ -250,6 +251,23 @@ const Orders: React.FC = () => {
     },
   });
 
+  const reportTravelogExcel = useMutation({
+    mutationFn: () => OrderService.exportFileListTravelog(),
+    onMutate: () => {
+      setIsDownloadLoading(true);
+    },
+    onSuccess: () => {
+      showSuccessAlert("Xuất file thành công");
+      setSelectedOrders([]);
+      setIsDownloadLoading(false);
+    },
+    onError: async (error: any) => {
+      setIsDownloadLoading(false);
+      const message = await parseAxiosError(error);
+      showErrorAlert(message);
+    },
+  });
+
   const updateMutation = useMutation({
     mutationFn: OrderService.update,
     onSuccess: () => {
@@ -283,7 +301,7 @@ const Orders: React.FC = () => {
       return showErrorAlert("Lệnh đã hoàn thành không thể hủy");
     }
     showConfirmAlert(
-      "Bạn có chắc chắn muốn hủy lệnh sản xuất này?. Bạn sẽ không thể thay đổi"
+      "Bạn có chắc chắn muốn hủy lệnh sản xuất này?. Bạn sẽ không thể thay đổi",
     ).then((result) => {
       if (result.isConfirmed) {
         updateMutation.mutate({
@@ -338,14 +356,14 @@ const Orders: React.FC = () => {
           if (result.isConfirmed) {
             deleteMutation.mutate(selectedOrders.map((o) => o._id));
           }
-        }
+        },
       );
     } else {
       // lọc ra những order có thể xoá
       const deletableOrders = selectedOrders.filter(
         (o) =>
           o.status !== StatusOrderEnum.INPROGRESS &&
-          o.status !== StatusOrderEnum.COMPLETED
+          o.status !== StatusOrderEnum.COMPLETED,
       );
 
       if (deletableOrders.length === 0) {
@@ -593,13 +611,13 @@ const Orders: React.FC = () => {
           color="primary"
           disabled={
             ![StatusOrderEnum.PENDING, StatusOrderEnum.WARNING].includes(
-              params.row?.status
+              params.row?.status,
             )
           }
           onClick={async () => {
             if (open) {
               const result = await showConfirmAlert(
-                "Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?"
+                "Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?",
               );
               if (result.isConfirmed) {
                 handleOpen(params.row);
@@ -624,7 +642,7 @@ const Orders: React.FC = () => {
         <IconButton
           disabled={
             ![StatusOrderEnum.PENDING, StatusOrderEnum.WARNING].includes(
-              params.row.status
+              params.row.status,
             )
           }
           color="warning"
@@ -648,7 +666,7 @@ const Orders: React.FC = () => {
           onClick={async () => {
             if (open) {
               const result = await showConfirmAlert(
-                "Bạn đang cập nhật một mục. Nếu tiếp tục, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?"
+                "Bạn đang cập nhật một mục. Nếu tiếp tục, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?",
               );
               if (result.isConfirmed) {
                 setSelectedOrder(params.row);
@@ -684,9 +702,9 @@ const Orders: React.FC = () => {
     () =>
       orderColumns.filter(
         (col: GridColDef) =>
-          col.field && visibleColumns.includes(String(col.field))
+          col.field && visibleColumns.includes(String(col.field)),
       ),
-    [orderColumns, visibleColumns]
+    [orderColumns, visibleColumns],
   );
 
   const [alert, setAlert] = useState<{
@@ -1033,6 +1051,20 @@ const Orders: React.FC = () => {
               <CloudUpload />
             </IconButton>
           )}
+          {user?.role === RoleEnum.ADMIN && (
+            <IconButton
+              color="primary"
+              onClick={async () => reportTravelogExcel.mutate()}
+              sx={{
+                textTransform: "none",
+                borderRadius: 2,
+                py: 0.75,
+                border: "1px solid",
+              }}
+            >
+              <Route />
+            </IconButton>
+          )}
         </Box>
         <Menu
           anchorEl={anchorEl}
@@ -1074,7 +1106,7 @@ const Orders: React.FC = () => {
             rowSelectionModel={selectedOrders.map((o) => o._id)}
             onRowSelectionModelChange={(newIds) => {
               const selected = orders.filter((row: any) =>
-                newIds.includes(row._id)
+                newIds.includes(row._id),
               );
               setSelectedOrders(selected);
             }}
@@ -1216,7 +1248,7 @@ const Orders: React.FC = () => {
                       {selectedRow.workingDate
                         ? format(
                             new Date(selectedRow.workingDate),
-                            "dd-MM-yyyy"
+                            "dd-MM-yyyy",
                           )
                         : ""}
                     </Typography>
@@ -1318,7 +1350,7 @@ const Orders: React.FC = () => {
                     </Typography>
                   )}
                   {[JobTypeEnum.MAINTENANCE].includes(
-                    selectedRow.job?.type
+                    selectedRow.job?.type,
                   ) && (
                     <Box>
                       <Typography>

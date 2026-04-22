@@ -175,9 +175,9 @@ router.get("/vehicle/all", verifyToken, async (req, res, next) => {
 
     const query = {};
 
-    // if (targetTypes) {
-    //     query.category = { $in: targetTypes };
-    // }
+    if (targetTypes) {
+      query.category = { $in: targetTypes };
+    }
 
     const devices = await Device.find(query)
       .populate("category")
@@ -497,7 +497,9 @@ router.post("/update_status", verifyToken, async (req, res) => {
       ).format("DD/MM/YYYY")}`,
     });
   } catch (err) {
-    res.status(500).json({ status: "error", message: err.message,stack: err.stack});
+    res
+      .status(500)
+      .json({ status: "error", message: err.message, stack: err.stack });
   }
 });
 

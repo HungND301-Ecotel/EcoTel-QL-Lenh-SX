@@ -239,6 +239,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
         material: values.material,
         workContent: values.workContent,
         safetyMeasure: values.safetyMeasure,
+        safetyMeasureSpecific: values.safetyMeasureSpecific,
         status: StatusOrderEnum.PENDING,
         note: values.note,
         previous_order_id: values.previous_order_id,
@@ -814,7 +815,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
               rows={5}
               id="note"
               name="note"
-              label="Nội dung bàn giao ca trước"
+              label="Nội dung bàn giao của ca trước"
               value={formik.values.note}
               onChange={formik.handleChange}
               error={formik.touched.note && Boolean(formik.errors.note)}
@@ -851,7 +852,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
                 rows={5}
                 id="safetyMeasure"
                 name="safetyMeasure"
-                label="Biện pháp an toàn"
+                label="Biện pháp an toàn chung"
                 value={formik.values.safetyMeasure}
                 onChange={formik.handleChange}
                 error={
@@ -938,7 +939,7 @@ const OrderFormTransfer: React.FC<OrderFormProps> = ({
             Hủy
           </Button>
           <Button type="submit" variant="contained">
-            Cập nhật
+            Chuyển ca
           </Button>
         </Box>
       </Box>
