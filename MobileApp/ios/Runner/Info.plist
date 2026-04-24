@@ -32,9 +32,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>This app needs camera access to scan QR codes</string>
+	<string>Ứng dụng cần truy cập camera để quét mã QR của máy móc.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>App cần truy cập thư viện ảnh để lưu hoặc lấy ảnh.</string>
+	<string>Ứng dụng cần truy cập thư viện để bạn có thể chọn ảnh minh họa cho báo cáo máy móc.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
