@@ -100,7 +100,7 @@ router.post(
           ],
         });
       const workbook = new ExcelJS.Workbook();
-      for (const [index,order] of orders.entries()) {
+      for (const [index, order] of orders.entries()) {
         console.log(order);
         const jobType = order.job?.type;
         const sheetName =
@@ -4867,14 +4867,14 @@ router.post(
               const mats = r.materials?.length
                 ? r.materials
                 : [
-                    {
-                      material: {},
-                      distances: [],
-                      times: [],
-                      count: 0,
-                      totalDistance: 0,
-                    },
-                  ];
+                  {
+                    material: {},
+                    distances: [],
+                    times: [],
+                    count: 0,
+                    totalDistance: 0,
+                  },
+                ];
 
               mats.forEach((m, mIdx) => {
                 const rowStart = currentRow;
@@ -6086,8 +6086,8 @@ router.post(
                   row.getCell(10).value = r.fuelRemainEnd || "";
                   row.getCell(11).value =
                     (r.fuelRemain || 0) +
-                      (r.fuelReceived || 0) -
-                      (r.fuelRemainEnd || 0) || "";
+                    (r.fuelReceived || 0) -
+                    (r.fuelRemainEnd || 0) || "";
                   row.getCell(12).value = "";
                   row.getCell(13).value = "";
                   row.getCell(14).value = "";
@@ -6640,8 +6640,8 @@ router.post(
                   row.getCell(11).value = r.fuelRemainEnd || "";
                   row.getCell(12).value =
                     (r.fuelRemain || 0) +
-                      (r.fuelReceived || 0) -
-                      (r.fuelRemainEnd || 0) || "";
+                    (r.fuelReceived || 0) -
+                    (r.fuelRemainEnd || 0) || "";
                   row.getCell(13).value = "";
                   row.getCell(14).value = "";
                   row.getCell(15).value = "";
@@ -7359,8 +7359,7 @@ router.post(
           const endSignature = getColumnLetter(totalColumn - 1);
 
           worksheet.mergeCells(
-            `${startSignature}${currentRow + 1}:${endSignature}${
-              currentRow + 1
+            `${startSignature}${currentRow + 1}:${endSignature}${currentRow + 1
             }`,
           );
           worksheet.getCell(`${startSignature}${currentRow + 1}`).value =
@@ -7373,8 +7372,7 @@ router.post(
             vertical: "middle",
           };
           worksheet.mergeCells(
-            `${startSignature}${currentRow + 2}:${endSignature}${
-              currentRow + 2
+            `${startSignature}${currentRow + 2}:${endSignature}${currentRow + 2
             }`,
           );
           worksheet.getCell(`${startSignature}${currentRow + 2}`).value =
@@ -7926,14 +7924,14 @@ router.post(
               item.reports && item.reports.length
                 ? item.reports
                 : [
-                    {
-                      code: "",
-                      trips: [],
-                      summary: {},
-                      totalTrips: 0,
-                      totalDistance: 0,
-                    },
-                  ];
+                  {
+                    code: "",
+                    trips: [],
+                    summary: {},
+                    totalTrips: 0,
+                    totalDistance: 0,
+                  },
+                ];
 
             const startRow = currentRow;
             reps.forEach((r, i) => {
@@ -8024,10 +8022,10 @@ router.post(
                 chunkTrips.forEach((trip, tIdx) => {
                   row2.getCell(8 + tIdx).value = trip?.time
                     ? new Date(trip.time).toLocaleTimeString("vi-VN", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        second: "2-digit",
-                      })
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                    })
                     : "";
                 });
 
@@ -9755,43 +9753,55 @@ router.post(
         rr++;
       }
 
-      // ===== SECTION II =====
-      let r2 = 27;
+      // ===== TÍNH TOÁN DÒNG BẮT ĐẦU CHO PHẦN CHÂN TRANG (SECTION II, III) =====
+      // r + 7 là dòng cuối cùng của bảng bên trái
+      // rr là dòng cuối cùng của bảng bên phải
+      // Ta lấy dòng sâu nhất cộng thêm 2 dòng trống để cho thoáng
+      let maxBottomRow = Math.max(r + 7, rr) + 2;
 
-      ws.mergeCells(`A${r2}:G${r2} `);
-      ws.getCell(`A${r2} `).value =
-        "II – Nội dung công việc trong ca và bàn giao sau ca:";
-      ws.getCell(`A${r2} `).font = { bold: true };
-      ws.getCell(`A${r2} `).alignment = {
+      // ===== SECTION II =====
+      let r2 = maxBottomRow;
+
+      ws.mergeCells(`A${r2}:G${r2}`);
+      ws.getCell(`A${r2}`).value = "II – Nội dung công việc trong ca và bàn giao sau ca:";
+      ws.getCell(`A${r2}`).font = { bold: true };
+      ws.getCell(`A${r2}`).alignment = {
         vertical: "center",
         horizontal: "center",
       };
 
       // ===== SECTION III – Nửa phải =====
-      let r3 = 27;
+      let r3 = maxBottomRow;
 
-      ws.mergeCells(`H${r3}:N${r3} `);
-      ws.getCell(`H${r3} `).value = "III – Dự báo nguy cơ mất an toàn:";
-      ws.getCell(`H${r3} `).font = { bold: true };
-      ws.getCell(`H${r3} `).alignment = {
+      ws.mergeCells(`H${r3}:N${r3}`);
+      ws.getCell(`H${r3}`).value = "III – Dự báo nguy cơ mất an toàn:";
+      ws.getCell(`H${r3}`).font = { bold: true };
+      ws.getCell(`H${r3}`).alignment = {
         vertical: "center",
         horizontal: "center",
       };
 
       // ===== SIGNATURES =====
-      ws.mergeCells("A31:E31");
-      ws.getCell("A31").value = "NGƯỜI GIAO";
-      ws.getCell("A31").alignment = { horizontal: "center" };
-      ws.getCell("A31").font = { bold: true };
+      let sigTitleRow = maxBottomRow + 4; // Cách phần title 4 dòng
 
-      ws.mergeCells("H31:L31");
-      ws.getCell("H31").value = "NGƯỜI NHẬN";
-      ws.getCell("H31").alignment = { horizontal: "center" };
-      ws.getCell("H31").font = { bold: true };
+      ws.mergeCells(`A${sigTitleRow}:E${sigTitleRow}`);
+      ws.getCell(`A${sigTitleRow}`).value = "NGƯỜI GIAO";
+      ws.getCell(`A${sigTitleRow}`).alignment = { horizontal: "center" };
+      ws.getCell(`A${sigTitleRow}`).font = { bold: true };
 
-      ws.mergeCells("A32:E32");
-      ws.getCell("A32").value = "(Ký và ghi rõ họ tên)";
-      ws.getCell("A32").alignment = { horizontal: "center" };
+      ws.mergeCells(`H${sigTitleRow}:L${sigTitleRow}`);
+      ws.getCell(`H${sigTitleRow}`).value = "NGƯỜI NHẬN";
+      ws.getCell(`H${sigTitleRow}`).alignment = { horizontal: "center" };
+      ws.getCell(`H${sigTitleRow}`).font = { bold: true };
+
+      let sigSubRow = sigTitleRow + 1;
+      ws.mergeCells(`A${sigSubRow}:E${sigSubRow}`);
+      ws.getCell(`A${sigSubRow}`).value = "(Ký và ghi rõ họ tên)";
+      ws.getCell(`A${sigSubRow}`).alignment = { horizontal: "center" };
+
+      ws.mergeCells(`H${sigSubRow}:L${sigSubRow}`);
+      ws.getCell(`H${sigSubRow}`).value = "(Ký và ghi rõ họ tên)";
+      ws.getCell(`H${sigSubRow}`).alignment = { horizontal: "center" };
 
       if (signature) {
         const response = await axios.get(signature, {
@@ -9805,15 +9815,15 @@ router.post(
           extension,
         });
 
+        // Chèn ảnh chữ ký cách dòng phụ đề 1 dòng
+        let imageRow = sigSubRow + 1;
         ws.addImage(imageId, {
-          tl: { col: 2.5, row: 33 },
+          tl: { col: 2.5, row: imageRow },
           ext: { width: 100, height: 30 },
         });
       }
 
-      ws.mergeCells("H32:L32");
-      ws.getCell("H32").value = "(Ký và ghi rõ họ tên)";
-      ws.getCell("H32").alignment = { horizontal: "center" };
+      // Đoạn tiếp theo vẫn giữ nguyên: ws.eachRow((row, rowNumber) => { ...
 
       ws.eachRow((row, rowNumber) => {
         row.eachCell((cell) => {
