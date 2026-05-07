@@ -233,6 +233,19 @@ const OrderFormAdd: React.FC<OrderFormProps> = ({
                         formik.setFieldValue('job', newValue?._id || '');
                         setSelectedJob(newValue);
 
+                        // Reset fields when job changes
+                        formik.setFieldValue('excavator', []);
+                        formik.setFieldValue('assignedVehicles', []);
+                        formik.setFieldValue('location', undefined);
+                        formik.setFieldValue('material', undefined);
+                        const resetUsersAndDevices = formik.values.usersAndDevices.map(item => ({
+                            ...item,
+                            device: [],
+                            repairDepartment: undefined,
+                            repairVehicles: [{ device: undefined, note: "" }]
+                        }));
+                        formik.setFieldValue('usersAndDevices', resetUsersAndDevices);
+
                         updateSafetyMeasure(jobSafetyTexts, formik.values.usersAndDevices[0].assignedTo);
                     }}
                     PopperComponent={StyledPopper}
