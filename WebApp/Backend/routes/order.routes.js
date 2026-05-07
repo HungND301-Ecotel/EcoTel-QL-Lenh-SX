@@ -573,12 +573,9 @@ router.put("/:id", verifyToken, async (req, res, next) => {
     }
 
     // 2. Chuẩn bị đối tượng cập nhật
-    const filteredRepairVehicles = (body.repairVehicles || []).filter(
-      (r) => r.device,
-    );
+
     let updateObject = {
       ...body,
-      repairVehicles: filteredRepairVehicles,
       updatedBy: req.user._id,
     };
 
