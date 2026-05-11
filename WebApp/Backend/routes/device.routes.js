@@ -53,13 +53,6 @@ router.get("/", verifyToken, async (req, res, next) => {
       query.department = user.department._id;
     }
 
-    const endOfToday = new Date();
-    endOfToday.setHours(23, 59, 59, 999);
-    let lte = endOfToday;
-    const orders = await Order.find({
-      workingDate: { $lte: lte },
-      status: STATUS_ORDER.INPROGRESS,
-    }).populate("assignedTo", "fullName salaryCode");
     const devices = await Device.find(query)
       .populate("department", "name code createdAt")
       .populate("category")
@@ -67,25 +60,66 @@ router.get("/", verifyToken, async (req, res, next) => {
       .collation({ locale: "vi", strength: 1 })
       .sort({ code: 1 });
 
+    const deviceIds = devices.map((d) => d._id);
+
+    // Sử dụng aggregation để lấy DUY NHẤT 1 lệnh mới nhất cho mỗi phương tiện
+    const latestOrdersAgg = await Order.aggregate([
+      {
+        $match: {
+          device: { $in: deviceIds },
+          status: { $ne: STATUS_ORDER.PENDING },
+        },
+      },
+      { $sort: { createdAt: -1 } },
+      {
+        $group: {
+          // Group theo device cuối cùng trong mảng (xe đang chạy)
+          _id: { $arrayElemAt: ["$device", -1] },
+          latestOrder: { $first: "$$ROOT" },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "latestOrder.assignedTo",
+          foreignField: "_id",
+          as: "assignedToInfo",
+        },
+      },
+      {
+        $unwind: {
+          path: "$assignedToInfo",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+    ]);
+
     const deviceToOrderMap = new Map();
-    for (const order of orders) {
-      // Kiểm tra xem có device trong order không
-      if (order.device && order.device.length > 0) {
-        // Lấy device cuối cùng trong mảng
-        const lastDevice = order.device[order.device.length - 1];
-        deviceToOrderMap.set(lastDevice._id.toString(), order);
+    for (const item of latestOrdersAgg) {
+      if (item._id) {
+        const order = item.latestOrder;
+        // Gán thông tin user đã populate từ lookup
+        order.assignedTo = item.assignedToInfo;
+        deviceToOrderMap.set(item._id.toString(), order);
       }
     }
+
     const devicesWithAssignedInfo = devices.map((device) => {
       const deviceObj = device.toObject();
-      const assignedOrder = deviceToOrderMap.get(deviceObj._id.toString());
+      const latestOrder = deviceToOrderMap.get(deviceObj._id.toString());
 
-      if (assignedOrder && assignedOrder.assignedTo) {
-        // Thêm thông tin người dùng được giao việc vào object device
+      // Chỉ gán người lái nếu lệnh mới nhất đang ở trạng thái INPROGRESS
+      if (
+        latestOrder &&
+        latestOrder.status === STATUS_ORDER.INPROGRESS &&
+        latestOrder.assignedTo
+      ) {
         deviceObj.assignedTo =
-          assignedOrder.assignedTo?.fullName +
-            " - " +
-            assignedOrder.assignedTo?.salaryCode || null;
+          latestOrder.assignedTo.fullName +
+          " - " +
+          latestOrder.assignedTo.salaryCode;
+      } else {
+        deviceObj.assignedTo = null;
       }
       return deviceObj;
     });
