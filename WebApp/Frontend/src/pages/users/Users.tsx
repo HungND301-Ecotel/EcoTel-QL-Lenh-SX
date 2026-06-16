@@ -288,28 +288,38 @@ const Users: React.FC = () => {
     file: File,
     type: "avatar" | "signature",
   ) => {
-    const resizedFile = await imageCompression(file, {
-      maxWidthOrHeight: 300,
-      maxSizeMB: 1,
-      initialQuality: 0.8,
-      useWebWorker: true,
-    });
-    const ext = "webp";
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-    const res = await api.get(`/uploads/put`, { params: { fileName, type } });
-    const { uploadUrl, fileKey } = res.data.data;
-    const uploadRes = await fetch(uploadUrl, {
-      method: "PUT",
-      headers: { "Content-Type": "image/webp" },
-      body: resizedFile,
-    });
-    if (!uploadRes.ok) {
-      throw new Error(
-        `Upload failed: ${uploadRes.status} ${uploadRes.statusText}`,
+    try {
+      const resizedFile = await imageCompression(file, {
+        maxWidthOrHeight: 300,
+        maxSizeMB: 1,
+        initialQuality: 0.8,
+        useWebWorker: true,
+        fileType: "image/webp",
+      });
+      const ext = "webp";
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+      const res = await api.get(`/uploads/put`, { params: { fileName, type } });
+      const { uploadUrl, fileKey } = res.data.data;
+      const uploadRes = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": "image/webp" },
+        body: resizedFile,
+      });
+      if (!uploadRes.ok) {
+        throw new Error(
+          `Upload failed: ${uploadRes.status} ${uploadRes.statusText}`,
+        );
+      }
+      setAvatar(fileKey);
+      formik.setFieldValue("avatar", fileKey);
+    } catch (err) {
+      // ✅ Không set key nếu có lỗi bất kỳ bước nào
+      showErrorAlert(
+        err instanceof Error
+          ? err.message
+          : "Tải ảnh lên thất bại, vui lòng thử lại",
       );
     }
-    setAvatar(fileKey);
-    formik.setFieldValue("avatar", fileKey);
   };
 
   const userColumns: GridColDef[] = [
@@ -805,7 +815,7 @@ const Users: React.FC = () => {
                     departments.find(
                       (p: any) =>
                         p._id ===
-                        (user?.role === "manager?"
+                        (user?.role === RoleEnum.MANAGER
                           ? user?.department?._id
                           : formik.values.department),
                     ) || null
