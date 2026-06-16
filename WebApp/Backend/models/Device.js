@@ -53,6 +53,10 @@ const deviceSchema = new mongoose.Schema({
     note: {
         type: String,
     },
+    files: [{
+        key: String,
+        fileName: String
+    }],
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',

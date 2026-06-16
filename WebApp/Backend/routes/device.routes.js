@@ -17,6 +17,7 @@ const ExcelJS = require("exceljs");
 const xlsx = require("xlsx");
 const mongoose = require("mongoose");
 const Shift = require("../models/Shift");
+const ShiftReport = require("../models/ShiftReport");
 const dayjs = require("dayjs");
 
 const { verifyToken, restrictTo } = require("../middleware/auth.middleware");
@@ -53,13 +54,6 @@ router.get("/", verifyToken, async (req, res, next) => {
       query.department = user.department._id;
     }
 
-    const endOfToday = new Date();
-    endOfToday.setHours(23, 59, 59, 999);
-    let lte = endOfToday;
-    const orders = await Order.find({
-      workingDate: { $lte: lte },
-      status: STATUS_ORDER.INPROGRESS,
-    }).populate("assignedTo", "fullName salaryCode");
     const devices = await Device.find(query)
       .populate("department", "name code createdAt")
       .populate("category")
@@ -67,26 +61,87 @@ router.get("/", verifyToken, async (req, res, next) => {
       .collation({ locale: "vi", strength: 1 })
       .sort({ code: 1 });
 
+    const deviceIds = devices.map((d) => d._id);
+
+    // Sử dụng aggregation để lấy DUY NHẤT 1 lệnh mới nhất cho mỗi phương tiện
+    const latestOrdersAgg = await Order.aggregate([
+      {
+        $match: {
+          device: { $in: deviceIds },
+          status: { $ne: STATUS_ORDER.PENDING },
+        },
+      },
+      { $sort: { createdAt: -1 } },
+      {
+        $group: {
+          // Group theo device cuối cùng trong mảng (xe đang chạy)
+          _id: { $arrayElemAt: ["$device", -1] },
+          latestOrder: { $first: "$$ROOT" },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "latestOrder.assignedTo",
+          foreignField: "_id",
+          as: "assignedToInfo",
+        },
+      },
+      {
+        $unwind: {
+          path: "$assignedToInfo",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+    ]);
+
     const deviceToOrderMap = new Map();
-    for (const order of orders) {
-      // Kiểm tra xem có device trong order không
-      if (order.device && order.device.length > 0) {
-        // Lấy device cuối cùng trong mảng
-        const lastDevice = order.device[order.device.length - 1];
-        deviceToOrderMap.set(lastDevice._id.toString(), order);
+    for (const item of latestOrdersAgg) {
+      if (item._id) {
+        const order = item.latestOrder;
+        // Gán thông tin user đã populate từ lookup
+        order.assignedTo = item.assignedToInfo;
+        deviceToOrderMap.set(item._id.toString(), order);
       }
     }
+
+    const travelHoursAgg = await ShiftReport.aggregate([
+      { $unwind: "$vehicleSummaries" },
+      { $match: { "vehicleSummaries.vehicle": { $in: deviceIds } } },
+      {
+        $group: {
+          _id: "$vehicleSummaries.vehicle",
+          totalTravelHours: { $sum: "$vehicleSummaries.travelHours" },
+        },
+      },
+    ]);
+
+    const travelHoursMap = new Map();
+    for (const item of travelHoursAgg) {
+      travelHoursMap.set(item._id.toString(), item.totalTravelHours || 0);
+    }
+
     const devicesWithAssignedInfo = devices.map((device) => {
       const deviceObj = device.toObject();
-      const assignedOrder = deviceToOrderMap.get(deviceObj._id.toString());
+      const latestOrder = deviceToOrderMap.get(deviceObj._id.toString());
 
-      if (assignedOrder && assignedOrder.assignedTo) {
-        // Thêm thông tin người dùng được giao việc vào object device
+      // Chỉ gán người lái nếu lệnh mới nhất đang ở trạng thái INPROGRESS
+      if (
+        latestOrder &&
+        latestOrder.status === STATUS_ORDER.INPROGRESS &&
+        latestOrder.assignedTo
+      ) {
         deviceObj.assignedTo =
-          assignedOrder.assignedTo?.fullName +
-            " - " +
-            assignedOrder.assignedTo?.salaryCode || null;
+          latestOrder.assignedTo.fullName +
+          " - " +
+          latestOrder.assignedTo.salaryCode;
+      } else {
+        deviceObj.assignedTo = null;
       }
+
+      deviceObj.cumulativeHours =
+        travelHoursMap.get(deviceObj._id.toString()) || 0;
+
       return deviceObj;
     });
     req.logger.info(`🔥  Load phương tiện thành công`);
@@ -273,22 +328,51 @@ router.post(
 
 router.get("/:id", verifyToken, async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        status: "error",
+        message: "ID thiết bị không hợp lệ",
+      });
+    }
+
+    const deviceId = new mongoose.Types.ObjectId(req.params.id);
     const device = await Device.findById(req.params.id)
-      .populate("category")
+      .populate("category", "name")
       .populate("department", "name code")
+      .populate("material", "name")
       .populate("createdBy", "username fullName")
       .populate("updatedBy", "username fullName");
 
     if (!device) {
       req.logger.error("❌ Không tìm thấy phương tiện");
       return res
-        .status(200)
+        .status(404)
         .send({ status: "error", message: "No device found with that ID" });
     }
+
+    const travelHoursAgg = await ShiftReport.aggregate([
+      { $unwind: "$vehicleSummaries" },
+      {
+        $match: {
+          "vehicleSummaries.vehicle": deviceId,
+        },
+      },
+      {
+        $group: {
+          _id: "$vehicleSummaries.vehicle",
+          totalTravelHours: { $sum: "$vehicleSummaries.travelHours" },
+        },
+      },
+    ]);
+
+    const deviceObj = device.toObject();
+    deviceObj.cumulativeHours =
+      travelHoursAgg.length > 0 ? travelHoursAgg[0].totalTravelHours || 0 : 0;
+
     req.logger.info(`🔥 Load phương tiện thành công`);
     res.status(200).json({
       status: "success",
-      data: device,
+      data: deviceObj,
     });
   } catch (err) {
     req.logger.error("❌ Lỗi", err);
@@ -980,6 +1064,97 @@ router.post(
       res
         .status(500)
         .send({ status: "error", message: err.message, stack: err.stack });
+    }
+  },
+);
+
+router.post(
+  "/:id/files",
+  verifyToken,
+  restrictTo(ROLE.MANAGER, ROLE.ADMIN),
+  async (req, res, next) => {
+    try {
+      const { key, fileName } = req.body;
+      const user = req.user;
+
+      if (!key || !fileName) {
+        return res.status(400).json({
+          status: "error",
+          message: "Key và fileName là bắt buộc",
+        });
+      }
+
+      const device = await Device.findByIdAndUpdate(
+        req.params.id,
+        {
+          $push: { files: { key, fileName } },
+          updatedBy: user._id,
+        },
+        { new: true, runValidators: true },
+      );
+
+      if (!device) {
+        req.logger.error("❌ Không tìm thấy phương tiện");
+        return res
+          .status(404)
+          .json({ status: "error", message: "Không tìm thấy thiết bị" });
+      }
+
+      req.logger.info(
+        `🔥 ${user?.username} Thêm file cho phương tiện thành công`,
+      );
+      res.status(200).json({
+        status: "success",
+        data: device,
+      });
+    } catch (err) {
+      req.logger.error("❌ Lỗi thêm file", err);
+      res.status(500).send({
+        status: "error",
+        message: "Đã xảy ra lỗi khi xử lý tệp đính kèm",
+      });
+    }
+  },
+);
+
+router.delete(
+  "/:id/files/:fileId",
+  verifyToken,
+  restrictTo(ROLE.MANAGER, ROLE.ADMIN),
+  async (req, res, next) => {
+    try {
+      const user = req.user;
+
+      const device = await Device.findOneAndUpdate(
+        { _id: req.params.id, "files._id": req.params.fileId },
+        {
+          $pull: { files: { _id: req.params.fileId } },
+          $set: { updatedBy: user._id },
+        },
+        { new: true, runValidators: true },
+      );
+
+      if (!device) {
+        req.logger.error("❌ Không tìm thấy phương tiện");
+        return res
+          .status(404)
+          .json({
+            status: "error",
+            message: "Không tìm thấy tệp trên thiết bị",
+          });
+      }
+
+      req.logger.info(`🔥 ${user?.username} Xóa file phương tiện thành công`);
+      res.status(200).json({
+        status: "success",
+        data: device,
+      });
+    } catch (err) {
+      req.logger.error("❌ Lỗi xóa file", err);
+      res.status(500).send({
+        status: "error",
+        message: "Đã xảy ra lỗi khi xử lý tệp đính kèm",
+      });
     }
   },
 );
