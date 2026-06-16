@@ -1,3 +1,4 @@
+const { randomUUID } = require("crypto");
 require("dotenv").config();
 const AWS = require("aws-sdk");
 const path = require("path"); // để lấy phần mở rộng file
@@ -41,9 +42,12 @@ exports.getPresignedUrl = async (req, res) => {
 
   // Lấy phần mở rộng (ext không có dấu chấm)
   const ext = path.extname(fileName).slice(1).toLowerCase();
-  const contentType = contentTypes[ext] || "application/octet-stream"; // default binary
-
-  const fileKey = `${prefix}${fileName}`;
+  if (!contentTypes[ext]) {
+    return res.status(400).json({ message: "Unsupported file type" });
+  }
+  const contentType = contentTypes[ext];
+  const safeName = `${Date.now()}-${randomUUID()}.${ext}`;
+  const fileKey = `${prefix}${safeName}`;
 
   const params = {
     Bucket: process.env.S3_BUCKET_NAME,

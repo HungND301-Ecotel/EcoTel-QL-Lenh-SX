@@ -110,11 +110,16 @@ export default function Profile({ open, setOpen }: { open: boolean, setOpen: Dis
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`
         const res = await api.get(`/uploads/put`, { params: { fileName, type } })
         const { uploadUrl, fileKey } = res.data.data;
-        await fetch(uploadUrl, {
+        const uploadRes = await fetch(uploadUrl, {
           method: "PUT",
           headers: { "Content-Type": "image/webp" },
           body: resizedFile,
         });
+        if (!uploadRes.ok) {
+          throw new Error(
+            `Upload failed: ${uploadRes.status} ${uploadRes.statusText}`,
+          );
+        }
         if (type === 'avatar') {
             setAvatar(fileKey);
             formik.setFieldValue('avatar', fileKey)

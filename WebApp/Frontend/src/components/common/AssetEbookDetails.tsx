@@ -107,11 +107,15 @@ export default function AssetEbookDetails({ asset }: AssetEbookDetailsProps) {
       );
       const { uploadUrl, fileKey } = presignRes.data.data;
 
-      await axios.put(uploadUrl, file, {
+      const uploadRes = await axios.put(uploadUrl, file, {
         headers: {
           "Content-Type": file.type || "application/octet-stream",
         },
+        validateStatus: (status) => status === 200,
       });
+      if (uploadRes.status !== 200) {
+        throw new Error(`Upload failed: ${uploadRes.status}`);
+      }
 
       uploadFileMutation.mutate({ key: fileKey, fileName: file.name });
     } catch (err) {
