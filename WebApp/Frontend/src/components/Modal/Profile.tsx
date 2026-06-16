@@ -109,19 +109,18 @@ export default function Profile({ open, setOpen }: { open: boolean, setOpen: Dis
         const ext = 'webp'
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`
         const res = await api.get(`/uploads/put`, { params: { fileName, type } })
-        const url = res.data?.data
-        await fetch(url, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'image/webp' },
-            body: resizedFile
-        })
-        const key = url.split('.amazonaws.com/')[1].split('?')[0]
+        const { uploadUrl, fileKey } = res.data.data;
+        await fetch(uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": "image/webp" },
+          body: resizedFile,
+        });
         if (type === 'avatar') {
-            setAvatar(key)
-            formik.setFieldValue('avatar', key)
+            setAvatar(fileKey);
+            formik.setFieldValue('avatar', fileKey)
         } else {
-            setSignatureUrl(key)
-            formik.setFieldValue('signature', key)
+            setSignatureUrl(fileKey)
+            formik.setFieldValue('signature', fileKey)
         }
     }
 

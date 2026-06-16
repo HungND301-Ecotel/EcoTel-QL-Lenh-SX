@@ -138,9 +138,10 @@ router.get("/", verifyToken, async (req, res, next) => {
       } else {
         deviceObj.assignedTo = null;
       }
-      
-      deviceObj.cumulativeHours = travelHoursMap.get(deviceObj._id.toString()) || 0;
-      
+
+      deviceObj.cumulativeHours =
+        travelHoursMap.get(deviceObj._id.toString()) || 0;
+
       return deviceObj;
     });
     req.logger.info(`🔥  Load phương tiện thành công`);
@@ -327,6 +328,14 @@ router.post(
 
 router.get("/:id", verifyToken, async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        status: "error",
+        message: "ID thiết bị không hợp lệ",
+      });
+    }
+
+    const deviceId = new mongoose.Types.ObjectId(req.params.id);
     const device = await Device.findById(req.params.id)
       .populate("category", "name")
       .populate("department", "name code")
@@ -337,13 +346,17 @@ router.get("/:id", verifyToken, async (req, res, next) => {
     if (!device) {
       req.logger.error("❌ Không tìm thấy phương tiện");
       return res
-        .status(200)
+        .status(404)
         .send({ status: "error", message: "No device found with that ID" });
     }
 
     const travelHoursAgg = await ShiftReport.aggregate([
       { $unwind: "$vehicleSummaries" },
-      { $match: { "vehicleSummaries.vehicle": new mongoose.Types.ObjectId(req.params.id) } },
+      {
+        $match: {
+          "vehicleSummaries.vehicle": deviceId,
+        },
+      },
       {
         $group: {
           _id: "$vehicleSummaries.vehicle",
@@ -351,9 +364,10 @@ router.get("/:id", verifyToken, async (req, res, next) => {
         },
       },
     ]);
-    
+
     const deviceObj = device.toObject();
-    deviceObj.cumulativeHours = travelHoursAgg.length > 0 ? (travelHoursAgg[0].totalTravelHours || 0) : 0;
+    deviceObj.cumulativeHours =
+      travelHoursAgg.length > 0 ? travelHoursAgg[0].totalTravelHours || 0 : 0;
 
     req.logger.info(`🔥 Load phương tiện thành công`);
     res.status(200).json({
@@ -1095,9 +1109,10 @@ router.post(
       });
     } catch (err) {
       req.logger.error("❌ Lỗi thêm file", err);
-      res
-        .status(500)
-        .send({ status: "error", message: err.message, stack: err.stack });
+      res.status(500).send({
+        status: "error",
+        message: "Đã xảy ra lỗi khi xử lý tệp đính kèm",
+      });
     }
   },
 );
@@ -1110,20 +1125,23 @@ router.delete(
     try {
       const user = req.user;
 
-      const device = await Device.findByIdAndUpdate(
-        req.params.id,
+      const device = await Device.findOneAndUpdate(
+        { _id: req.params.id, "files._id": req.params.fileId },
         {
           $pull: { files: { _id: req.params.fileId } },
-          updatedBy: user._id,
+          $set: { updatedBy: user._id },
         },
-        { new: true },
+        { new: true, runValidators: true },
       );
 
       if (!device) {
         req.logger.error("❌ Không tìm thấy phương tiện");
         return res
           .status(404)
-          .json({ status: "error", message: "Không tìm thấy thiết bị" });
+          .json({
+            status: "error",
+            message: "Không tìm thấy tệp trên thiết bị",
+          });
       }
 
       req.logger.info(`🔥 ${user?.username} Xóa file phương tiện thành công`);
@@ -1133,9 +1151,10 @@ router.delete(
       });
     } catch (err) {
       req.logger.error("❌ Lỗi xóa file", err);
-      res
-        .status(500)
-        .send({ status: "error", message: err.message, stack: err.stack });
+      res.status(500).send({
+        status: "error",
+        message: "Đã xảy ra lỗi khi xử lý tệp đính kèm",
+      });
     }
   },
 );

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Box,
@@ -85,149 +85,148 @@ const Machines: React.FC = () => {
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
-  const defaultColumns = [
-    {
-      id: "stt",
-      label: "STT",
-      width: 50,
-      resizable: false,
-    },
-    { id: "code", label: "Biển số", minWidth: 100 },
-    { id: "name", label: "Tên máy", flex: 1, minWidth: 150 },
-    { id: "vehicleNumber", label: "Số máy", minWidth: 100 },
-    {
-      id: "category",
-      label: "Loại máy",
-      renderCell: (params: GridRenderCellParams<Device>) => {
-        const category = params.row.category as any;
-        return typeof category === "object"
-          ? category?.name || ""
-          : category || "";
+  const defaultColumns = useMemo(
+    () => [
+      {
+        id: "stt",
+        label: "STT",
+        width: 50,
+        resizable: false,
       },
-    },
-    {
-      id: "material",
-      label: "Chủng loại",
-      renderCell: (params: GridRenderCellParams<Device>) => {
-        const material = params.row.material as any;
-        return typeof material === "object"
-          ? material?.name || ""
-          : material || "";
+      { id: "code", label: "Biển số", minWidth: 100 },
+      { id: "name", label: "Tên máy", flex: 1, minWidth: 150 },
+      { id: "vehicleNumber", label: "Số máy", minWidth: 100 },
+      {
+        id: "category",
+        label: "Loại máy",
+        renderCell: (params: GridRenderCellParams<Device>) => {
+          const category = params.row.category as any;
+          return typeof category === "object"
+            ? category?.name || ""
+            : category || "";
+        },
       },
-    },
-    { id: "fuelType", label: "Nhiên liệu", minWidth: 120 },
-    {
-      id: "coordinates",
-      label: "Vị trí",
-      renderCell: (params: GridRenderCellParams<Device>) => {
-        const coordsData = params.row.coordinates as any;
-        const coords = coordsData?.coordinates;
-        return coords && coords.length === 2
-          ? `${coords[1]}, ${coords[0]}`
-          : "Không có tọa độ";
+      {
+        id: "material",
+        label: "Chủng loại",
+        renderCell: (params: GridRenderCellParams<Device>) => {
+          const material = params.row.material as any;
+          return typeof material === "object"
+            ? material?.name || ""
+            : material || "";
+        },
       },
-    },
-    {
-      id: "department",
-      label: "Đơn vị",
-      renderCell: (params: GridRenderCellParams<Device>) => {
-        const dept = params.row.department as any;
-        return typeof dept === "object" ? dept?.name || "" : dept || "Chưa có";
+      { id: "fuelType", label: "Nhiên liệu", minWidth: 120 },
+      {
+        id: "coordinates",
+        label: "Vị trí",
+        renderCell: (params: GridRenderCellParams<Device>) => {
+          const coordsData = params.row.coordinates as any;
+          const coords = coordsData?.coordinates;
+          return coords && coords.length === 2
+            ? `${coords[1]}, ${coords[0]}`
+            : "Không có tọa độ";
+        },
       },
-    },
-    {
-      id: "status",
-      label: "Trạng thái",
-      renderCell: (params: GridRenderCellParams<Device>) => {
-        const s = params.row.status;
-        return (
-          <Chip
-            sx={{ width: "120px" }}
-            label={
-              s === StatusDeviceEnum.IN_USE
-                ? "Đang hoạt động"
-                : s === StatusDeviceEnum.MAINTENANCE
-                  ? "SC; BD"
-                  : s === StatusDeviceEnum.RETIRED
-                    ? "Niêm cất"
-                    : s === StatusDeviceEnum.AVAILABLE
-                      ? "Chờ điều động"
-                      : s
-            }
-            color={
-              s === StatusDeviceEnum.IN_USE
-                ? "error"
-                : s === StatusDeviceEnum.MAINTENANCE
-                  ? "warning"
-                  : s === StatusDeviceEnum.RETIRED
-                    ? "secondary"
-                    : s === StatusDeviceEnum.AVAILABLE
-                      ? "success"
-                      : "default"
-            }
-          />
-        );
+      {
+        id: "department",
+        label: "Đơn vị",
+        renderCell: (params: GridRenderCellParams<Device>) => {
+          const dept = params.row.department as any;
+          return typeof dept === "object"
+            ? dept?.name || ""
+            : dept || "Chưa có";
+        },
       },
-    },
-    {
-      id: "view",
-      label: "Xem",
-      width: 60,
-      renderCell: (params: { row: any }) => (
-        <IconButton
-          color="info"
-          onClick={() => {
-            setViewingDevice(
-              viewingDevice?._id === params.row._id ? null : params.row,
-            );
-          }}
-        >
-          <Visibility />
-        </IconButton>
-      ),
-      sortable: false,
-      filterable: false,
-    },
-    {
-      id: "edit",
-      label: "Sửa",
-      width: 60,
-      renderCell: (params: { row: any }) => (
-        <IconButton
-          color="primary"
-          onClick={async () => {
-            if (open) {
-              const result = await showConfirmAlert(
-                "Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?",
+      {
+        id: "status",
+        label: "Trạng thái",
+        renderCell: (params: GridRenderCellParams<Device>) => {
+          const s = params.row.status;
+          return (
+            <Chip
+              sx={{ width: "120px" }}
+              label={
+                s === StatusDeviceEnum.IN_USE
+                  ? "Đang hoạt động"
+                  : s === StatusDeviceEnum.MAINTENANCE
+                    ? "SC; BD"
+                    : s === StatusDeviceEnum.RETIRED
+                      ? "Niêm cất"
+                      : s === StatusDeviceEnum.AVAILABLE
+                        ? "Chờ điều động"
+                        : s
+              }
+              color={
+                s === StatusDeviceEnum.IN_USE
+                  ? "error"
+                  : s === StatusDeviceEnum.MAINTENANCE
+                    ? "warning"
+                    : s === StatusDeviceEnum.RETIRED
+                      ? "secondary"
+                      : s === StatusDeviceEnum.AVAILABLE
+                        ? "success"
+                        : "default"
+              }
+            />
+          );
+        },
+      },
+      {
+        id: "view",
+        label: "Xem",
+        width: 60,
+        renderCell: (params: { row: any }) => (
+          <IconButton
+            color="info"
+            onClick={() => {
+              setViewingDevice(
+                viewingDevice?._id === params.row._id ? null : params.row,
               );
-              if (result.isConfirmed) {
+            }}
+          >
+            <Visibility />
+          </IconButton>
+        ),
+        sortable: false,
+        filterable: false,
+      },
+      {
+        id: "edit",
+        label: "Sửa",
+        width: 60,
+        renderCell: (params: { row: any }) => (
+          <IconButton
+            color="primary"
+            onClick={async () => {
+              if (open) {
+                const result = await showConfirmAlert(
+                  "Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?",
+                );
+                if (result.isConfirmed) {
+                  handleOpen(params.row);
+                }
+              } else {
                 handleOpen(params.row);
               }
-            } else {
-              handleOpen(params.row);
-            }
-          }}
-        >
-          <EditIcon />
-        </IconButton>
-      ),
-      sortable: false,
-      filterable: false,
-    },
-  ];
+            }}
+          >
+            <EditIcon />
+          </IconButton>
+        ),
+        sortable: false,
+        filterable: false,
+      },
+    ],
+    [],
+  );
 
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
   useEffect(() => {
     if (user) {
       let initialColumns: string[];
 
-      // if (user.role === RoleEnum.ADMIN) {
-      initialColumns = defaultColumns.map((i) => i.id);
-      // } else {
-      //     initialColumns = defaultColumns
-      //         .filter((i) => i.id !== "edit")
-      //         .map((i) => i.id);
-      // }
+      initialColumns = defaultColumns.map((i: any) => i.id);
 
       setVisibleColumns(initialColumns);
     }
@@ -281,7 +280,8 @@ const Machines: React.FC = () => {
       setProgress(0);
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+      queryClient.invalidateQueries({ queryKey: ["allMachines"] });
+      queryClient.invalidateQueries({ queryKey: ["machines"] });
       setIsUploading(false);
       let combinedMessage = `Import dữ liệu hoàn tất. Đã xử lý ${data.summary.totalProcessed} bản ghi.`;
       combinedMessage += `\nĐã thêm mới: ${data.summary.insertedCount}`;
@@ -962,7 +962,7 @@ const Machines: React.FC = () => {
           onClose={() => setAnchorEl(null)}
           sx={{ maxHeight: 400 }}
         >
-          {defaultColumns.map((col) => (
+          {defaultColumns.map((col: any) => (
             <MenuItem key={col.id} onClick={() => handleToggleColumn(col.id)}>
               <Switch checked={visibleColumns.includes(col.id)} />
               <ListItemText primary={col.label} />
@@ -981,7 +981,7 @@ const Machines: React.FC = () => {
               ...sm,
               stt: index + 1,
             }))}
-            defaultColumns={defaultColumns.filter((c) =>
+            defaultColumns={defaultColumns.filter((c: any) =>
               visibleColumns.includes(c.id),
             )}
             isAdmin={user?.role === RoleEnum.ADMIN}

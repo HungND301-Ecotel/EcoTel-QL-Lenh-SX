@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Box,
@@ -84,150 +84,147 @@ const Vehicles: React.FC = () => {
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
-  const defaultColumns = [
-    {
-      id: "stt",
-      label: "STT",
-      width: 50,
-      resizable: false,
-    },
-    {
-      id: "code",
-      label: "Biển số",
-      width: 120,
-      resizable: false,
-    },
-    { id: "name", label: "Tên xe", flex: 1 },
-    { id: "vehicleNumber", label: "Số xe", minWidth: 100 },
-    {
-      id: "category",
-      label: "Loại xe",
-      renderCell: (params: GridRenderCellParams<any>) =>
-        params.row.category?.name || "",
-    },
-    {
-      id: "material",
-      label: "Chủng loại",
-      renderCell: (params: GridRenderCellParams<any>) =>
-        params.row.material?.name || "",
-    },
-    { id: "fuelType", label: "Nhiên liệu", minWidth: 120 },
-    { id: "capacity", label: "Trọng tải", minWidth: 100 },
-    {
-      id: "coordinates",
-      label: "Vị trí",
-      renderCell: (params: GridRenderCellParams<any>) => {
-        const coords = params.row.coordinates?.coordinates;
-        return coords && coords.length === 2
-          ? `${coords[1]} , ${coords[0]}`
-          : "Không có tọa độ";
+  const defaultColumns = useMemo(
+    () => [
+      {
+        id: "stt",
+        label: "STT",
+        width: 50,
+        resizable: false,
       },
-    },
-    {
-      id: "department",
-      label: "Đơn vị",
-      renderCell: (params: GridRenderCellParams<any>) =>
-        typeof params.row.department === "object"
-          ? params.row.department?.name
-          : params.row.department || "Chưa có",
-    },
-    {
-      id: "cumulativeHours",
-      label: "Giờ hoạt động lũy kế",
-    },
-    {
-      id: "status",
-      label: "Trạng thái",
-      renderCell: (params: GridRenderCellParams<any>) => {
-        const s = params.row.status;
-        return (
-          <Chip
-            sx={{ width: "120px" }}
-            label={
-              s === StatusDeviceEnum.IN_USE
-                ? "Đang hoạt động"
-                : s === StatusDeviceEnum.MAINTENANCE
-                  ? "SC; BD"
-                  : s === StatusDeviceEnum.RETIRED
-                    ? "Niêm cất"
-                    : s === StatusDeviceEnum.AVAILABLE
-                      ? "Chờ điều động"
-                      : s
-            }
-            color={
-              s === StatusDeviceEnum.IN_USE
-                ? "error"
-                : s === StatusDeviceEnum.MAINTENANCE
-                  ? "warning"
-                  : s === StatusDeviceEnum.RETIRED
-                    ? "secondary"
-                    : s === StatusDeviceEnum.AVAILABLE
-                      ? "success"
-                      : "default"
-            }
-          />
-        );
+      {
+        id: "code",
+        label: "Biển số",
+        width: 120,
+        resizable: false,
       },
-    },
-    {
-      id: "view",
-      label: "Xem",
-      width: 60,
-      renderCell: (params: { row: any }) => (
-        <IconButton
-          color="info"
-          onClick={() => {
-            setViewingDevice(
-              viewingDevice?._id === params.row._id ? null : params.row,
-            );
-          }}
-        >
-          <Visibility />
-        </IconButton>
-      ),
-      sortable: false,
-      filterable: false,
-    },
-    {
-      id: "edit",
-      label: "Sửa",
-      width: 60,
-      renderCell: (params: { row: any }) => (
-        <IconButton
-          color="primary"
-          onClick={async () => {
-            if (open) {
-              const result = await showConfirmAlert(
-                "Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?",
+      { id: "name", label: "Tên xe", flex: 1 },
+      { id: "vehicleNumber", label: "Số xe", minWidth: 100 },
+      {
+        id: "category",
+        label: "Loại xe",
+        renderCell: (params: GridRenderCellParams<any>) =>
+          params.row.category?.name || "",
+      },
+      {
+        id: "material",
+        label: "Chủng loại",
+        renderCell: (params: GridRenderCellParams<any>) =>
+          params.row.material?.name || "",
+      },
+      { id: "fuelType", label: "Nhiên liệu", minWidth: 120 },
+      { id: "capacity", label: "Trọng tải", minWidth: 100 },
+      {
+        id: "coordinates",
+        label: "Vị trí",
+        renderCell: (params: GridRenderCellParams<any>) => {
+          const coords = params.row.coordinates?.coordinates;
+          return coords && coords.length === 2
+            ? `${coords[1]} , ${coords[0]}`
+            : "Không có tọa độ";
+        },
+      },
+      {
+        id: "department",
+        label: "Đơn vị",
+        renderCell: (params: GridRenderCellParams<any>) =>
+          typeof params.row.department === "object"
+            ? params.row.department?.name
+            : params.row.department || "Chưa có",
+      },
+      {
+        id: "cumulativeHours",
+        label: "Giờ hoạt động lũy kế",
+      },
+      {
+        id: "status",
+        label: "Trạng thái",
+        renderCell: (params: GridRenderCellParams<any>) => {
+          const s = params.row.status;
+          return (
+            <Chip
+              sx={{ width: "120px" }}
+              label={
+                s === StatusDeviceEnum.IN_USE
+                  ? "Đang hoạt động"
+                  : s === StatusDeviceEnum.MAINTENANCE
+                    ? "SC; BD"
+                    : s === StatusDeviceEnum.RETIRED
+                      ? "Niêm cất"
+                      : s === StatusDeviceEnum.AVAILABLE
+                        ? "Chờ điều động"
+                        : s
+              }
+              color={
+                s === StatusDeviceEnum.IN_USE
+                  ? "error"
+                  : s === StatusDeviceEnum.MAINTENANCE
+                    ? "warning"
+                    : s === StatusDeviceEnum.RETIRED
+                      ? "secondary"
+                      : s === StatusDeviceEnum.AVAILABLE
+                        ? "success"
+                        : "default"
+              }
+            />
+          );
+        },
+      },
+      {
+        id: "view",
+        label: "Xem",
+        width: 60,
+        renderCell: (params: { row: any }) => (
+          <IconButton
+            color="info"
+            onClick={() => {
+              setViewingDevice(
+                viewingDevice?._id === params.row._id ? null : params.row,
               );
-              if (result.isConfirmed) {
+            }}
+          >
+            <Visibility />
+          </IconButton>
+        ),
+        sortable: false,
+        filterable: false,
+      },
+      {
+        id: "edit",
+        label: "Sửa",
+        width: 60,
+        renderCell: (params: { row: any }) => (
+          <IconButton
+            color="primary"
+            onClick={async () => {
+              if (open) {
+                const result = await showConfirmAlert(
+                  "Bạn đang cập nhật một mục. Nếu tiếp tục chỉnh sửa, dữ liệu hiện tại sẽ bị ghi đè. Bạn có chắc chắn muốn tiếp tục?",
+                );
+                if (result.isConfirmed) {
+                  handleOpen(params.row);
+                }
+              } else {
                 handleOpen(params.row);
               }
-            } else {
-              handleOpen(params.row);
-            }
-          }}
-        >
-          <EditIcon />
-        </IconButton>
-      ),
-      sortable: false,
-      filterable: false,
-    },
-  ];
+            }}
+          >
+            <EditIcon />
+          </IconButton>
+        ),
+        sortable: false,
+        filterable: false,
+      },
+    ],
+    [],
+  );
 
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
   useEffect(() => {
     if (user) {
       let initialColumns: string[];
 
-      // if (user.role === RoleEnum.ADMIN) {
-      initialColumns = defaultColumns.map((i) => i.id);
-      // } else {
-      //     initialColumns = defaultColumns
-      //         .filter((i) => i.id !== "edit")
-      //         .map((i) => i.id);
-      // }
+      initialColumns = defaultColumns.map((i: any) => i.id);
 
       setVisibleColumns(initialColumns);
     }
@@ -1009,7 +1006,7 @@ const Vehicles: React.FC = () => {
           onClose={() => setAnchorEl(null)}
           sx={{ maxHeight: 400 }}
         >
-          {defaultColumns.map((col) => (
+          {defaultColumns.map((col: any) => (
             <MenuItem key={col.id} onClick={() => handleToggleColumn(col.id)}>
               <Switch checked={visibleColumns.includes(col.id)} />
               <ListItemText primary={col.label} />
@@ -1028,7 +1025,7 @@ const Vehicles: React.FC = () => {
             ...sm,
             stt: index + 1,
           }))}
-          defaultColumns={defaultColumns.filter((c) =>
+          defaultColumns={defaultColumns.filter((c: any) =>
             visibleColumns.includes(c.id),
           )}
           isAdmin={user?.role === RoleEnum.ADMIN}

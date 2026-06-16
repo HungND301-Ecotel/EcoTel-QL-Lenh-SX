@@ -280,11 +280,10 @@ const Users: React.FC = () => {
         const ext = 'webp';
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
         const res = await api.get(`/uploads/put`, { params: { fileName, type } });
-        const url = res.data?.data;
-        await fetch(url, { method: 'PUT', headers: { 'Content-Type': 'image/webp' }, body: resizedFile });
-        const key = url.split('.amazonaws.com/')[1].split('?')[0]
-        setAvatar(key);
-        formik.setFieldValue('avatar', key);
+        const { uploadUrl, fileKey } = res.data.data;
+        await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'image/webp' }, body: resizedFile });
+        setAvatar(fileKey);
+        formik.setFieldValue('avatar', fileKey);
     };
 
     const userColumns: GridColDef[] = [

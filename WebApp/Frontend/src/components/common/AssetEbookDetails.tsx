@@ -105,7 +105,7 @@ export default function AssetEbookDetails({ asset }: AssetEbookDetailsProps) {
       const presignRes = await api.get(
         `/uploads/put?fileName=${encodeURIComponent(file.name)}&type=document`,
       );
-      const uploadUrl = presignRes.data.data;
+      const { uploadUrl, fileKey } = presignRes.data.data;
 
       await axios.put(uploadUrl, file, {
         headers: {
@@ -113,8 +113,7 @@ export default function AssetEbookDetails({ asset }: AssetEbookDetailsProps) {
         },
       });
 
-      const key = `documents/${file.name}`;
-      uploadFileMutation.mutate({ key, fileName: file.name });
+      uploadFileMutation.mutate({ key: fileKey, fileName: file.name });
     } catch (err) {
       console.error(err);
       showErrorAlert("Upload file thất bại");
@@ -172,7 +171,8 @@ export default function AssetEbookDetails({ asset }: AssetEbookDetailsProps) {
             : currentDevice?.department}
         </Typography>
         <Typography sx={{ mb: 1.5, fontSize: "1.1rem" }}>
-          <strong>Giờ hoạt động lũy kế:</strong> {currentDevice?.cumulativeHours}
+          <strong>Giờ hoạt động lũy kế:</strong>{" "}
+          {currentDevice?.cumulativeHours}
         </Typography>
         <Typography sx={{ mb: 1.5, fontSize: "1.1rem" }}>
           <strong>Trạng thái:</strong>{" "}
@@ -230,7 +230,10 @@ export default function AssetEbookDetails({ asset }: AssetEbookDetailsProps) {
         <List>
           {files.map((file: any) => (
             <ListItem key={file._id} divider>
-              <ListItemText primary={file.fileName} sx={{ fontSize: "5px" }} />
+              <ListItemText
+                primary={file.fileName}
+                primaryTypographyProps={{ fontSize: 14 }}
+              />
               <ListItemSecondaryAction>
                 <IconButton
                   edge="end"
