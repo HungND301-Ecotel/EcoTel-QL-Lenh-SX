@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { FieldArray, FormikProvider, useFormik } from 'formik';
 import {
     Autocomplete,
@@ -27,7 +27,6 @@ import { addOrderValidationSchema } from '../../utils/validation';
 import { JobTypeEnum } from '../../enums/index';
 import { MultiSelectField } from '../../components/MultiSelectField';
 import DepartmentService from '../../services/departmentService';
-import OrderService from '../../services/orderService';
 dayjs.extend(utc);
 
 

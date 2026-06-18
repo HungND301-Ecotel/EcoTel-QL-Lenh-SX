@@ -339,6 +339,13 @@ const Users: React.FC = () => {
       headerAlign: "center",
     },
     {
+      field: "username",
+      headerName: "Tài khoản",
+      flex: 1,
+      minWidth: 150,
+      headerAlign: "center",
+    },
+    {
       field: "gender",
       headerName: "Giới tính",
       minWidth: 120,
