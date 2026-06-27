@@ -56,13 +56,15 @@ export default function CarTripReport({
   startDate,
   endDate,
   department,
-  day
+  day,
+  shifts
 }: {
   data: any[]; signatureUrl: string | null;
   startDate: dayjs.Dayjs | null;
   endDate: dayjs.Dayjs | null;
   department: Department | null;
   day: dayjs.Dayjs | null;
+  shifts?: any[];
 }) {
 
   const [user] = useAtom(userAtom);
@@ -349,7 +351,7 @@ export default function CarTripReport({
               <TableRow sx={{}}>
                 {/* Đảm bảo colSpan=2 */}
                 <TableCell align="center" colSpan={2} sx={{ fontWeight: 'bold' }}>
-                  TỔNG CẢ NGÀY
+                  {shifts && shifts.length > 0 ? `TỔNG CA ${shifts.map(s => s.name).join('+')}` : 'TỔNG CẢ NGÀY'}
                 </TableCell>
 
                 {/* Cells trống cho các cột chi tiết ĐẤT */}
