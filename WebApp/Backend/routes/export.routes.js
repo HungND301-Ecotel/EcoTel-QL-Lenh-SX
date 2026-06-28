@@ -10738,7 +10738,7 @@ router.post(
   restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER),
   async (req, res, next) => {
     try {
-      const { day, department } = req.body;
+      const { day, department, shift } = req.body;
       const user = req.user;
       let query = {};
 
@@ -10757,6 +10757,11 @@ router.post(
           .json({ status: "error", message: "Ngày là bắt buộc" });
       }
 
+      if (shift && shift.length > 0) {
+        const shiftIds = shift.map(s => typeof s === 'object' ? s._id : s);
+        query.shift = { $in: shiftIds };
+      }
+
       const orders = await Order.find(query)
         .populate("shift", "name")
         .populate("job", "type");
@@ -10766,7 +10771,16 @@ router.post(
       );
 
       // 2. Khởi tạo cấu trúc dữ liệu tổng hợp
-      let aggregatedData = { 1: {}, 2: {}, 3: {} }; // Dữ liệu thô theo Ca và Xe
+      let aggregatedData = {};
+      if (shift && shift.length > 0) {
+        const shiftIds = shift.map(s => typeof s === 'object' ? s._id : s);
+        const selectedShifts = await Shift.find({ _id: { $in: shiftIds } });
+        selectedShifts.forEach(s => {
+          if (s.name) aggregatedData[s.name] = {};
+        });
+      } else {
+        aggregatedData = { 1: {}, 2: {}, 3: {} };
+      }
       const uniqueHeaderKeysDat = new Set(); // Set lưu trữ key header Đất duy nhất (MX | Nơi đổ)
       const uniqueHeaderKeysThan = new Set(); // Set lưu trữ key header Than duy nhất (MX | Nơi đổ)
       let grandTotalDat = 0;
@@ -10907,7 +10921,7 @@ router.post(
   restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER),
   async (req, res, next) => {
     try {
-      const { day, department, signature } = req.body;
+      const { day, department, signature, shift } = req.body;
       const user = req.user;
       let query = {};
 
@@ -10927,6 +10941,11 @@ router.post(
           .json({ status: "error", message: "Ngày là bắt buộc" });
       }
 
+      if (shift && shift.length > 0) {
+        const shiftIds = shift.map(s => typeof s === 'object' ? s._id : s);
+        query.shift = { $in: shiftIds };
+      }
+
       const orders = await Order.find({ ...query, department: dep })
         .populate("shift", "name")
         .populate("job", "type");
@@ -10936,7 +10955,16 @@ router.post(
       );
 
       // 2. Khởi tạo cấu trúc dữ liệu tổng hợp
-      let aggregatedData = { 1: {}, 2: {}, 3: {} }; // Dữ liệu thô theo Ca và Xe
+      let aggregatedData = {};
+      if (shift && shift.length > 0) {
+        const shiftIds = shift.map(s => typeof s === 'object' ? s._id : s);
+        const selectedShifts = await Shift.find({ _id: { $in: shiftIds } });
+        selectedShifts.forEach(s => {
+          if (s.name) aggregatedData[s.name] = {};
+        });
+      } else {
+        aggregatedData = { 1: {}, 2: {}, 3: {} };
+      }
       const uniqueHeaderKeysDat = new Set(); // Set lưu trữ key header Đất duy nhất (MX | Nơi đổ)
       const uniqueHeaderKeysThan = new Set(); // Set lưu trữ key header Than duy nhất (MX | Nơi đổ)
       let grandTotalDat = 0;
@@ -11261,7 +11289,10 @@ router.post(
 
       // --- TỔNG CẢ NGÀY ---
       sheet.mergeCells(currentRow, 1, currentRow, 2);
-      sheet.getCell(currentRow, 1).value = "TỔNG CẢ NGÀY";
+      const shiftNamesList = shift && shift.length > 0 
+        ? shift.map(s => typeof s === 'object' ? s.name : s).join('+')
+        : "";
+      sheet.getCell(currentRow, 1).value = shiftNamesList ? `TỔNG CA ${shiftNamesList}` : "TỔNG CẢ NGÀY";
       sheet.getCell(currentRow, totalDatCol).value =
         finalResult.grandTotal.grandTotalDat;
       sheet.getCell(currentRow, totalThanCol).value =

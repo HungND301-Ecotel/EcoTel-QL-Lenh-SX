@@ -628,7 +628,6 @@ function Reports() {
                 {![
                   ReportEnum.SHIFT_HANDOVER,
                   ReportEnum.DAILY_PRODUCTION_EXCAVATOR_REPORT,
-                  ReportEnum.DATE_TRIP_CAR,
                   ReportEnum.TIMESHEET,
                   ReportEnum.DAILY_PRODUCTION_CAR_REPORT,
                   ReportEnum.PRODUCTIVITY_CAR_REPORT,
