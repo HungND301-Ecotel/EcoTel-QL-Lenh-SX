@@ -10757,10 +10757,10 @@ router.post(
           .json({ status: "error", message: "Ngày là bắt buộc" });
       }
 
-      // if (shift && shift.length > 0) {
-      //   const shiftIds = shift.map(s => typeof s === 'object' ? s._id : s);
-      //   query.shift = { $in: shiftIds };
-      // }
+      if (shift && shift.length > 0) {
+        const shiftIds = shift.map(s => typeof s === 'object' ? s._id : s);
+        query.shift = { $in: shiftIds };
+      }
 
       const orders = await Order.find(query)
         .populate("shift", "name")
