@@ -56,8 +56,8 @@ const JPS_STATUS = {
 };
 
 const SEAL_STATUS = {
-    GOOD: 'good',
-    FAIL: 'fail',
+    GOOD: 'Tốt',
+    FAIL: 'Hỏng',
 };
 
 module.exports = {

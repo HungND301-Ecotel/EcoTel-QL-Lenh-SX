@@ -8597,7 +8597,7 @@ async function getProductReport(query) {
     })
     .populate("assignedTo", "fullName salaryCode")
     .populate("device", "code")
-    .populate("job", "type");
+    .populate("job", "type")
 
   const result = [];
 

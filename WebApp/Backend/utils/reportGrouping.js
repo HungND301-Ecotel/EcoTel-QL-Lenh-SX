@@ -477,7 +477,6 @@ async function groupProduction(reports, shiftReport) {
       const fuelData = (shiftReport?.vehicleSummaries || []).find(
         (v) => v.vehicle?._id.toString() === r.device._id.toString(),
       );
-      console.log(shiftReport);
 
       vehicles[deviceCode] = {
         device: deviceCode,
@@ -493,7 +492,7 @@ async function groupProduction(reports, shiftReport) {
           : "",
         travelHours: fuelData?.travelHours || "",
         gpsStatus: fuelData?.gpsStatus === JPS_STATUS.GOOD ? true : false,
-        sealStatus: fuelData?.sealStatus === SEAL_STATUS ? true : false,
+        sealStatus: fuelData?.sealStatus === SEAL_STATUS.GOOD ? true : false,
       };
     }
 
