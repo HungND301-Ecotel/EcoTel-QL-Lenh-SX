@@ -31,6 +31,7 @@ import DeviceModels from "./pages/deviceModels/DeviceModels";
 import Models from "./pages/model/Model";
 import { RoleEnum } from "./enums";
 import SystemDashboard from "./pages/dashboard/System";
+import TimekeepingPage from "./pages/timekeeping";
 
 interface PrivateRouteProps {
   children: React.ReactNode;
@@ -204,6 +205,14 @@ const App = () => {
           element={
             <PrivateRoute>
               <Reports />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/timekeeping"
+          element={
+            <PrivateRoute>
+              <TimekeepingPage />
             </PrivateRoute>
           }
         />
