@@ -299,6 +299,8 @@ export default function TimekeepingPage() {
               flexDirection: "column",
               height: "calc(100vh - 120px)",
               bgcolor: "#ffffff",
+              position: { md: "sticky" },
+              top: { md: "100px" },
             }}
           >
             {/* Sidebar Title */}
@@ -371,20 +373,20 @@ export default function TimekeepingPage() {
                       mb: "4px",
                       ...(isSelected
                         ? {
-                            bgcolor: "#f5f3f1",
-                            borderLeft: "4px solid #1e3a8a",
-                            pl: "12px",
-                            pr: "16px",
-                          }
+                          bgcolor: "#f5f3f1",
+                          borderLeft: "4px solid #1e3a8a",
+                          pl: "12px",
+                          pr: "16px",
+                        }
                         : {
-                            bgcolor: "transparent",
-                            borderLeft: "4px solid transparent",
-                            pl: "16px",
-                            pr: "16px",
-                            "&:hover": {
-                              bgcolor: "#fdfcfc",
-                            },
-                          }),
+                          bgcolor: "transparent",
+                          borderLeft: "4px solid transparent",
+                          pl: "16px",
+                          pr: "16px",
+                          "&:hover": {
+                            bgcolor: "#fdfcfc",
+                          },
+                        }),
                     }}
                   >
                     <Avatar
@@ -430,8 +432,6 @@ export default function TimekeepingPage() {
               display: "flex",
               flexDirection: "column",
               gap: 3,
-              height: "calc(100vh - 120px)",
-              overflowY: "auto",
               pr: 1,
             }}
           >
@@ -930,13 +930,16 @@ export default function TimekeepingPage() {
                         series={[
                           {
                             data: pieChartData,
-                            innerRadius: 50,
-                            outerRadius: 90,
+                            innerRadius: 40,
+                            outerRadius: 80,
                             paddingAngle: 2,
                             cornerRadius: 4,
+                            cx: "50%",
+                            cy: "45%",
                           },
                         ]}
                         height={230}
+                        margin={{ top: 0, bottom: 40, left: 0, right: 0 }}
                         slotProps={{
                           legend: {
                             direction: "row",
