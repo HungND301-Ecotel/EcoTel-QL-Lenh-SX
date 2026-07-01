@@ -899,7 +899,7 @@ export default function TimekeepingPage() {
                       textTransform: "uppercase",
                     }}
                   >
-                    TÌNH TRẠNG CÔNG — THÁNG {selectedMonth}/{selectedYear}
+                    TÌNH TRẠNG CÔNG - THÁNG {selectedMonth}/{selectedYear}
                   </Box>
                   <Paper
                     elevation={1}
