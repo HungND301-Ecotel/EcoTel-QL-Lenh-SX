@@ -26,43 +26,49 @@ const getCellStyles = (status: DailyRecord["status"]) => {
   switch (status) {
     case "working":
       return {
-        backgroundColor: "rgba(230, 244, 234, 0.2)",
-        color: "#000000",
-        textColorClass: "#137333",
+        backgroundColor: "rgba(16, 185, 129, 0.045)",
+        color: "#0f172a",
+        badgeBg: "rgba(16, 185, 129, 0.08)",
+        badgeText: "#047857",
+        badgeLabel: "ĐỦ GIỜ",
+        themeColor: "#10b981",
       };
     case "late":
       return {
-        backgroundColor: "rgba(232, 240, 254, 0.4)",
-        color: "#000000",
-        textColorClass: "#0b57d0",
-        badgeBg: "#e8f0fe",
-        badgeText: "#0b57d0",
-        badgeLabel: "MUỘN",
+        backgroundColor: "rgba(99, 102, 241, 0.045)",
+        color: "#0f172a",
+        badgeBg: "rgba(99, 102, 241, 0.08)",
+        badgeText: "#4338ca",
+        badgeLabel: "ĐI MUỘN",
+        themeColor: "#6366f1",
       };
     case "short":
       return {
-        backgroundColor: "rgba(254, 247, 224, 0.45)",
-        color: "#000000",
-        textColorClass: "#b06000",
-        badgeBg: "#fef7e0",
-        badgeText: "#b06000",
-        badgeLabel: "THIẾU",
+        backgroundColor: "rgba(245, 158, 11, 0.045)",
+        color: "#0f172a",
+        badgeBg: "rgba(245, 158, 11, 0.08)",
+        badgeText: "#b45309",
+        badgeLabel: "THIẾU GIỜ",
+        themeColor: "#f59e0b",
       };
     case "absent":
       return {
-        backgroundColor: "rgba(252, 232, 230, 0.3)",
-        color: "#c5221f",
-        textColorClass: "rgba(119, 113, 105, 0.4)",
-        badgeBg: "#fce8e6",
-        badgeText: "#c5221f",
-        badgeLabel: "NGHỈ",
+        backgroundColor: "rgba(244, 63, 94, 0.045)",
+        color: "#94a3b8",
+        badgeBg: "rgba(244, 63, 94, 0.08)",
+        badgeText: "#be123c",
+        badgeLabel: "NGHỈ LÀM",
+        themeColor: "#f43f5e",
       };
     case "future":
     default:
       return {
-        backgroundColor: "rgba(245, 243, 241, 0.6)",
-        color: "rgba(119, 113, 105, 0.4)",
-        textColorClass: "rgba(119, 113, 105, 0.4)",
+        backgroundColor: "rgba(248, 250, 252, 0.4)",
+        color: "#94a3b8",
+        badgeBg: "transparent",
+        badgeText: "#94a3b8",
+        badgeLabel: "",
+        themeColor: "#cbd5e1",
       };
   }
 };
@@ -78,37 +84,61 @@ export default function TimekeepingCalendar({
   return (
     <Box>
       {/* Date selection dropdowns */}
-      <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5, mb: 1 }}>
-        <FormControl size="small" sx={{ width: 120 }}>
+      <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5, mb: 2 }}>
+        <FormControl size="small" sx={{ width: 130 }}>
           <Select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
             sx={{
-              borderRadius: "8px",
+              borderRadius: "10px",
               bgcolor: "#ffffff",
-              fontSize: "14px",
+              fontSize: "13px",
+              fontWeight: 600,
+              color: "#0f172a",
+              "& .MuiOutlinedInput-notchedOutline": {
+                borderColor: "rgba(15, 23, 42, 0.06)",
+              },
+              "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: "rgba(15, 23, 42, 0.12)",
+              },
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                borderColor: "#0f172a",
+                borderWidth: "1px",
+              },
             }}
           >
             {months.map((m) => (
-              <MenuItem key={m.value} value={m.value}>
+              <MenuItem key={m.value} value={m.value} sx={{ fontSize: "13px" }}>
                 {m.label}
               </MenuItem>
             ))}
           </Select>
         </FormControl>
 
-        <FormControl size="small" sx={{ width: 120 }}>
+        <FormControl size="small" sx={{ width: 130 }}>
           <Select
             value={selectedYear}
             onChange={(e) => setSelectedYear(e.target.value)}
             sx={{
-              borderRadius: "8px",
+              borderRadius: "10px",
               bgcolor: "#ffffff",
-              fontSize: "14px",
+              fontSize: "13px",
+              fontWeight: 600,
+              color: "#0f172a",
+              "& .MuiOutlinedInput-notchedOutline": {
+                borderColor: "rgba(15, 23, 42, 0.06)",
+              },
+              "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: "rgba(15, 23, 42, 0.12)",
+              },
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                borderColor: "#0f172a",
+                borderWidth: "1px",
+              },
             }}
           >
             {years.map((y) => (
-              <MenuItem key={y.value} value={y.value}>
+              <MenuItem key={y.value} value={y.value} sx={{ fontSize: "13px" }}>
                 {y.label}
               </MenuItem>
             ))}
@@ -116,63 +146,70 @@ export default function TimekeepingCalendar({
         </FormControl>
       </Box>
 
-      {/* Blue Header with Legend */}
+      {/* Elegant White Header with Legend */}
       <Box
         sx={{
-          bgcolor: "#1e3a8a",
-          color: "#ffffff",
-          px: 2.5,
-          py: 2,
+          bgcolor: "#ffffff",
+          color: "#0f172a",
+          px: 3,
+          py: 2.5,
           borderTopLeftRadius: "16px",
           borderTopRightRadius: "16px",
+          border: "1px solid rgba(15, 23, 42, 0.06)",
+          borderBottom: "none",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
-          gap: 1.5,
+          gap: 2,
         }}
       >
-        <Typography sx={{ fontWeight: "bold", fontSize: "14px" }}>
-          Bảng Chấm Công Tháng {selectedMonth}/{selectedYear}
+        <Typography
+          sx={{
+            fontWeight: 800,
+            fontSize: "18px",
+            color: "#0f172a",
+          }}
+        >
+          Bảng chấm công • Tháng {selectedMonth}/{selectedYear}
         </Typography>
-        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", fontSize: "12px", fontWeight: 500 }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-            <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: "#10b981" }} />
-            <Typography variant="caption">Đi Làm</Typography>
+        <Box sx={{ display: "flex", gap: 2.5, flexWrap: "wrap", fontSize: "11px", fontWeight: 600 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#10b981" }} />
+            <Typography variant="caption" sx={{ fontSize: "11px", fontWeight: 600, color: "#64748b" }}>Đi làm</Typography>
           </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-            <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: "#ef4444" }} />
-            <Typography variant="caption">Nghỉ</Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#f43f5e" }} />
+            <Typography variant="caption" sx={{ fontSize: "11px", fontWeight: 600, color: "#64748b" }}>Nghỉ</Typography>
           </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-            <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: "#f59e0b" }} />
-            <Typography variant="caption">Thiếu Giờ</Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#f59e0b" }} />
+            <Typography variant="caption" sx={{ fontSize: "11px", fontWeight: 600, color: "#64748b" }}>Thiếu giờ</Typography>
           </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-            <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: "#1a73e8" }} />
-            <Typography variant="caption">Đi Muộn</Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#6366f1" }} />
+            <Typography variant="caption" sx={{ fontSize: "11px", fontWeight: 600, color: "#64748b" }}>Đi muộn</Typography>
           </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box
               sx={{
-                width: 10,
-                height: 10,
+                width: 8,
+                height: 8,
                 borderRadius: "50%",
-                bgcolor: "#e5e5e5",
-                border: "1px solid rgba(255,255,255,0.2)",
+                bgcolor: "#e2e8f0",
+                border: "1px solid rgba(15,23,42,0.1)",
               }}
             />
-            <Typography variant="caption">Chưa Đến</Typography>
+            <Typography variant="caption" sx={{ fontSize: "11px", fontWeight: 600, color: "#94a3b8" }}>Chưa đến</Typography>
           </Box>
         </Box>
       </Box>
 
       {/* Grid Body */}
       <Paper
-        elevation={1}
+        elevation={0}
         sx={{
-          border: "1px solid",
-          borderColor: "divider",
+          border: "1px solid rgba(15, 23, 42, 0.06)",
           borderTop: "none",
           borderBottomLeftRadius: "16px",
           borderBottomRightRadius: "16px",
@@ -185,9 +222,8 @@ export default function TimekeepingCalendar({
           sx={{
             display: "grid",
             gridTemplateColumns: "repeat(7, 1fr)",
-            bgcolor: "#fdfcfc",
-            borderBottom: "1px solid",
-            borderColor: "divider",
+            bgcolor: "#faf9f6",
+            borderBottom: "1px solid rgba(15, 23, 42, 0.06)",
             textAlign: "center",
           }}
         >
@@ -196,11 +232,10 @@ export default function TimekeepingCalendar({
               key={day}
               sx={{
                 py: 1.5,
-                fontSize: "13px",
-                fontWeight: 600,
-                color: "#777169",
-                borderRight: idx < 6 ? "1px solid" : "none",
-                borderColor: "divider",
+                fontSize: "12px",
+                fontWeight: 700,
+                color: idx === 0 ? "#be123c" : "#475569",
+                letterSpacing: "0.05em",
               }}
             >
               {day}
@@ -213,8 +248,9 @@ export default function TimekeepingCalendar({
           sx={{
             display: "grid",
             gridTemplateColumns: "repeat(7, 1fr)",
-            borderLeft: "1px solid",
-            borderColor: "divider",
+            gap: 1.25,
+            bgcolor: "transparent",
+            p: 1.25,
           }}
         >
           {/* Empty Offset cells */}
@@ -222,11 +258,10 @@ export default function TimekeepingCalendar({
             <Box
               key={`empty-${idx}`}
               sx={{
-                minHeight: "96px",
-                bgcolor: "rgba(253, 252, 252, 0.2)",
-                borderRight: "1px solid",
-                borderBottom: "1px solid",
-                borderColor: "divider",
+                minHeight: "105px",
+                bgcolor: "rgba(248, 250, 252, 0.35)",
+                borderRadius: "10px",
+                border: "1px dashed rgba(15, 23, 42, 0.04)",
               }}
             />
           ))}
@@ -238,27 +273,33 @@ export default function TimekeepingCalendar({
               <Box
                 key={record.date}
                 sx={{
-                  minHeight: "96px",
-                  p: 1.5,
-                  borderRight: "1px solid",
-                  borderBottom: "1px solid",
-                  borderColor: "divider",
+                  minHeight: "105px",
+                  p: 2,
+                  borderRadius: "10px",
+                  border: "1px solid rgba(15, 23, 42, 0.05)",
                   bgcolor: cellStyle.backgroundColor,
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "space-between",
-                  transition: "opacity 0.15s",
+                  position: "relative",
+                  transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
                   "&:hover": {
-                    opacity: 0.9,
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 6px 16px -4px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.02)",
+                    borderColor: "rgba(15, 23, 42, 0.12)",
+                    zIndex: 1,
                   },
                 }}
               >
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                {/* Cell Top Header */}
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <Typography
                     variant="body2"
                     sx={{
-                      fontWeight: 600,
+                      fontWeight: 800,
                       color: cellStyle.color,
+                      fontSize: "15px",
+                      fontVariantNumeric: "tabular-nums",
                     }}
                   >
                     {record.dayNum}
@@ -266,12 +307,12 @@ export default function TimekeepingCalendar({
                   {cellStyle.badgeLabel && (
                     <Box
                       sx={{
-                        fontSize: "9px",
-                        fontWeight: "bold",
-                        letterSpacing: "0.05em",
-                        px: "6px",
-                        py: "2px",
-                        borderRadius: "12px",
+                        fontSize: "9.5px",
+                        fontWeight: 700,
+                        letterSpacing: "0.04em",
+                        px: "8px",
+                        py: "3px",
+                        borderRadius: "4px",
                         bgcolor: cellStyle.badgeBg,
                         color: cellStyle.badgeText,
                       }}
@@ -281,42 +322,95 @@ export default function TimekeepingCalendar({
                   )}
                 </Box>
 
-                <Box sx={{ mt: "14px", display: "flex", flexDirection: "column", gap: "2px" }}>
-                  {record.status === "absent" || record.status === "future" ? (
-                    <Typography
-                      variant="caption"
+                {/* Cell Contents */}
+                {record.status === "absent" || record.status === "future" ? (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "#52525b",
+                      fontStyle: "italic",
+                      fontSize: "12.5px",
+                      fontWeight: 600,
+                      mt: 1.5,
+                      display: "block",
+                      textAlign: "left",
+                    }}
+                  >
+                    {record.status === "future" ? "Chưa đến" : "Nghỉ phép"}
+                  </Typography>
+                ) : (
+                  /* Design Anchor: Micro-Timeline Graphic */
+                  <Box sx={{ display: "flex", gap: 1.25, alignItems: "center", mt: 1.5 }}>
+                    <Box
                       sx={{
-                        color: "rgba(119, 113, 105, 0.4)",
-                        fontStyle: "italic",
-                        textAlign: "right",
-                        fontSize: "11px",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        height: 28,
+                        width: 6,
+                        position: "relative",
                       }}
                     >
-                      --:--
-                    </Typography>
-                  ) : (
-                    <>
-                      <Typography variant="caption" sx={{ color: "#777169", fontSize: "12px" }}>
+                      <Box
+                        sx={{
+                          width: 5,
+                          height: 5,
+                          borderRadius: "50%",
+                          bgcolor: cellStyle.themeColor,
+                          zIndex: 1,
+                        }}
+                      />
+                      <Box
+                        sx={{
+                          flexGrow: 1,
+                          width: "1.5px",
+                          bgcolor: `${cellStyle.themeColor}33`,
+                        }}
+                      />
+                      <Box
+                        sx={{
+                          width: 5,
+                          height: 5,
+                          borderRadius: "50%",
+                          bgcolor: cellStyle.themeColor,
+                          zIndex: 1,
+                        }}
+                      />
+                    </Box>
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "#64748b",
+                          fontSize: "12px",
+                          display: "flex",
+                          gap: 0.5,
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
                         Vào:{" "}
-                        <Box
-                          component="span"
-                          sx={{ color: cellStyle.textColorClass, fontWeight: 600 }}
-                        >
+                        <Box component="span" sx={{ color: "#0f172a", fontWeight: 700, fontSize: "12.5px" }}>
                           {record.checkIn}
                         </Box>
                       </Typography>
-                      <Typography variant="caption" sx={{ color: "#777169", fontSize: "12px" }}>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "#64748b",
+                          fontSize: "12px",
+                          display: "flex",
+                          gap: 0.5,
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
                         Ra:{" "}
-                        <Box
-                          component="span"
-                          sx={{ color: cellStyle.textColorClass, fontWeight: 600 }}
-                        >
+                        <Box component="span" sx={{ color: "#0f172a", fontWeight: 700, fontSize: "12.5px" }}>
                           {record.checkOut}
                         </Box>
                       </Typography>
-                    </>
-                  )}
-                </Box>
+                    </Box>
+                  </Box>
+                )}
               </Box>
             );
           })}

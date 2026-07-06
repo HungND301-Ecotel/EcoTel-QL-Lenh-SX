@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Box, Breadcrumbs, Link, Typography, Grid, CircularProgress, Alert } from "@mui/material";
+import { Box, Breadcrumbs, Link, Typography, Grid, Alert } from "@mui/material";
+import { Spin } from "antd";
 import { Employee, DailyRecord } from "./types";
 import EmployeeSidebar from "./components/EmployeeSidebar";
 import ProfileAndStats from "./components/ProfileAndStats";
 import TimekeepingCalendar from "./components/TimekeepingCalendar";
-import AnalyticsCharts from "./components/AnalyticsCharts";
+import { AttendanceDonutChart, YearlyBarChart } from "./components/AnalyticsCharts";
 import { useQuery } from "@tanstack/react-query";
 import UserService from "../../services/userService";
 
@@ -38,6 +39,8 @@ export default function TimekeepingPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("4");
   const [selectedYear, setSelectedYear] = useState("2024");
+
+
 
   // Fetch users from backend API using useQuery
   const { data: usersData = [], isLoading, isError } = useQuery({
@@ -180,9 +183,9 @@ export default function TimekeepingPage() {
   const pieChartData = useMemo(() => {
     return [
       { id: 0, value: stats.totalWorkingDays, label: "Đi làm", color: "#10b981" },
-      { id: 1, value: stats.totalAbsentDays, label: "Nghỉ", color: "#ef4444" },
+      { id: 1, value: stats.totalAbsentDays, label: "Nghỉ", color: "#f43f5e" },
       { id: 2, value: stats.totalShortHours, label: "Thiếu giờ", color: "#f59e0b" },
-      { id: 3, value: stats.totalLateDays, label: "Đi muộn", color: "#1a73e8" },
+      { id: 3, value: stats.totalLateDays, label: "Đi muộn", color: "#6366f1" },
     ].filter((item) => item.value > 0);
   }, [stats]);
 
@@ -203,10 +206,11 @@ export default function TimekeepingPage() {
     });
   }, [selectedEmployee]);
 
-  if (isLoading) {
+  // ponytail: show loading spinner until employees list is fetched and the default employee is initialized/selected
+  if (isLoading || (employees.length > 0 && !selectedEmployee)) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "80vh" }}>
-        <CircularProgress />
+        <Spin size="large" />
       </Box>
     );
   }
@@ -219,7 +223,7 @@ export default function TimekeepingPage() {
     );
   }
 
-  if (employees.length === 0 || !selectedEmployee) {
+  if (employees.length === 0) {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="warning">Không tìm thấy dữ liệu nhân viên.</Alert>
@@ -228,13 +232,43 @@ export default function TimekeepingPage() {
   }
 
   return (
-    <Box sx={{ width: "100%", minHeight: "100vh", bgcolor: "#fdfcfc", p: 1 }}>
+    <Box>
       {/* Breadcrumbs */}
-      <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
-        <Link underline="hover" color="inherit" href="/">
+      <Breadcrumbs
+        aria-label="breadcrumb"
+        sx={{
+          mb: 3,
+          "& .MuiBreadcrumbs-separator": {
+            color: "#a3a3a3",
+          },
+        }}
+      >
+        <Link
+          underline="hover"
+          href="/"
+          sx={{
+            color: "#78716c",
+            fontSize: "13px",
+            fontWeight: 500,
+            textDecoration: "none",
+            transition: "color 0.2s",
+            "&:hover": {
+              color: "#0f172a",
+            },
+          }}
+        >
           Trang chủ
         </Link>
-        <Typography color="text.primary">Quản lý chấm công</Typography>
+        <Typography
+          sx={{
+            color: "#0f172a",
+            fontSize: "13px",
+            fontWeight: 600,
+            letterSpacing: "0.02em",
+          }}
+        >
+          Quản lý chấm công
+        </Typography>
       </Breadcrumbs>
 
       {/* Main Layout Grid */}
@@ -280,13 +314,22 @@ export default function TimekeepingPage() {
               records={records}
             />
 
-            {/* Section 3: Analytics Charts */}
-            <AnalyticsCharts
-              selectedMonth={selectedMonth}
-              selectedYear={selectedYear}
-              pieChartData={pieChartData}
-              barChartData={barChartData}
-            />
+            {/* Section 3: Analytics Charts - Rendered side-by-side */}
+            <Grid container spacing={3.5}>
+              <Grid item xs={12} lg={6}>
+                <AttendanceDonutChart
+                  selectedMonth={selectedMonth}
+                  selectedYear={selectedYear}
+                  pieChartData={pieChartData}
+                />
+              </Grid>
+              <Grid item xs={12} lg={6}>
+                <YearlyBarChart
+                  selectedYear={selectedYear}
+                  barChartData={barChartData}
+                />
+              </Grid>
+            </Grid>
           </Box>
         </Grid>
       </Grid>

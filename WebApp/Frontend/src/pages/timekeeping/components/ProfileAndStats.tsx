@@ -28,7 +28,8 @@ export default function ProfileAndStats({
       elevation={1}
       sx={{
         borderRadius: "16px",
-        border: "1px solid",
+        border: "0.5px solid",
+        boxShadow: "none",
         borderColor: "divider",
         p: 2.5,
         display: "flex",
@@ -67,10 +68,16 @@ export default function ProfileAndStats({
           {initials}
         </Avatar>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-          <Typography variant="caption" sx={{ color: "#777169", fontWeight: 500 }}>
+          <Typography
+            variant="caption"
+            sx={{ color: "#777169", fontWeight: 500 }}
+          >
             Mã NV: {selectedEmployee.code}
           </Typography>
-          <Typography variant="subtitle1" sx={{ fontWeight: "bold", color: "#000000" }}>
+          <Typography
+            variant="subtitle1"
+            sx={{ fontWeight: "bold", color: "#000000" }}
+          >
             {selectedEmployee.name}
           </Typography>
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
@@ -120,11 +127,23 @@ export default function ProfileAndStats({
             }}
           >
             <Box sx={{ display: "flex", flexDirection: "column" }}>
-              <Typography variant="caption" sx={{ fontWeight: "bold", letterSpacing: "0.05em" }}>
+              <Typography
+                variant="caption"
+                sx={{ fontWeight: "bold", letterSpacing: "0.05em" }}
+              >
                 SỐ NGÀY ĐI LÀM
               </Typography>
-              <Typography variant="h3" sx={{ fontWeight: 800, mt: 0.5, lineHeight: 1 }}>
-                {stats.totalWorkingDays} <Box component="span" sx={{ fontSize: "11px", fontWeight: "normal" }}>ngày</Box>
+              <Typography
+                variant="h3"
+                sx={{ fontWeight: 800, mt: 0.5, lineHeight: 1 }}
+              >
+                {stats.totalWorkingDays}{" "}
+                <Box
+                  component="span"
+                  sx={{ fontSize: "11px", fontWeight: "normal" }}
+                >
+                  ngày
+                </Box>
               </Typography>
             </Box>
             <Box
@@ -157,11 +176,23 @@ export default function ProfileAndStats({
             }}
           >
             <Box sx={{ display: "flex", flexDirection: "column" }}>
-              <Typography variant="caption" sx={{ fontWeight: "bold", letterSpacing: "0.05em" }}>
+              <Typography
+                variant="caption"
+                sx={{ fontWeight: "bold", letterSpacing: "0.05em" }}
+              >
                 SỐ NGÀY NGHỈ
               </Typography>
-              <Typography variant="h3" sx={{ fontWeight: 800, mt: 0.5, lineHeight: 1 }}>
-                {stats.totalAbsentDays} <Box component="span" sx={{ fontSize: "11px", fontWeight: "normal" }}>ngày</Box>
+              <Typography
+                variant="h3"
+                sx={{ fontWeight: 800, mt: 0.5, lineHeight: 1 }}
+              >
+                {stats.totalAbsentDays}{" "}
+                <Box
+                  component="span"
+                  sx={{ fontSize: "11px", fontWeight: "normal" }}
+                >
+                  ngày
+                </Box>
               </Typography>
             </Box>
             <Box
@@ -194,11 +225,23 @@ export default function ProfileAndStats({
             }}
           >
             <Box sx={{ display: "flex", flexDirection: "column" }}>
-              <Typography variant="caption" sx={{ fontWeight: "bold", letterSpacing: "0.05em" }}>
+              <Typography
+                variant="caption"
+                sx={{ fontWeight: "bold", letterSpacing: "0.05em" }}
+              >
                 ĐI MUỘN / THIẾU GIỜ
               </Typography>
-              <Typography variant="h3" sx={{ fontWeight: 800, mt: 0.5, lineHeight: 1 }}>
-                {stats.totalLateDays + stats.totalShortHours} <Box component="span" sx={{ fontSize: "11px", fontWeight: "normal" }}>ngày</Box>
+              <Typography
+                variant="h3"
+                sx={{ fontWeight: 800, mt: 0.5, lineHeight: 1 }}
+              >
+                {stats.totalLateDays + stats.totalShortHours}{" "}
+                <Box
+                  component="span"
+                  sx={{ fontSize: "11px", fontWeight: "normal" }}
+                >
+                  ngày
+                </Box>
               </Typography>
             </Box>
             <Box
