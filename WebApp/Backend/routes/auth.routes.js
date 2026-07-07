@@ -328,7 +328,27 @@ router.patch('/reset-password/:token', async (req, res, next) => {
  */
 router.get('/me', verifyToken, async (req, res, next) => {
     try {
+        if (req.user && req.user.tokenType === 'PORTAL') {
+            req.logger.info(`🔥 Load dữ liệu Portal user thành công ${req.user.username}`);
+            return res.status(200).json({
+                status: 'success',
+                data: {
+                    user: {
+                        _id: req.user._id,
+                        username: req.user.username,
+                        fullName: req.user.fullName,
+                        role: req.user.role || 'manager', // Default role cho frontend check
+                        isPortal: true,
+                        permissions: req.user.permissions
+                    }
+                }
+            });
+        }
+
         const user = await User.findById(req.userId).populate("position").populate("department")
+        if (!user) {
+            return res.status(404).json({ status: 'error', message: 'Không tìm thấy thông tin user local' });
+        }
         req.logger.info(`🔥 Load dữ liệu  người dùng thành công ${user.username}`);
         res.status(200).json({
             status: 'success',
@@ -350,6 +370,59 @@ router.get('/me', verifyToken, async (req, res, next) => {
     } catch (err) {
         req.logger.error("❌ Lỗi khi load dữ liệu người dùng", err);
         res.status(500).send({ status: 'error', message: err.message, stack: err.stack })
+    }
+});
+
+const redisClient = require('../utils/redis');
+
+/**
+ * @swagger
+ * /api/auth/exchange-code:
+ *   post:
+ *     summary: Exchange OTC code for Portal appToken
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - code
+ *             properties:
+ *               code:
+ *                 type: string
+ */
+router.post('/exchange-code', async (req, res) => {
+    try {
+        const { code } = req.body;
+        if (!code) {
+            return res.status(400).json({ status: 'error', message: 'Mã code không được để trống' });
+        }
+
+        const key = `otc:${code}`;
+        // Lấy và xóa key một cách atomic
+        const value = await redisClient.get(key);
+        if (!value) {
+            req.logger.warn(`⚠️ Đổi OTC code thất bại: Mã code không tồn tại hoặc đã hết hạn (key: ${key})`);
+            return res.status(401).json({ status: 'error', message: 'Mã code không hợp lệ hoặc đã hết hạn' });
+        }
+        await redisClient.del(key); // Xóa ngay sau khi dùng
+
+        const [appToken, refreshToken] = value.split('|');
+        if (!appToken) {
+            return res.status(401).json({ status: 'error', message: 'Token không hợp lệ trong hệ thống Portal' });
+        }
+
+        req.logger.info(`🔥 Đổi OTC code thành công`);
+        res.status(200).json({
+            success: true,
+            appToken,
+            refreshToken
+        });
+    } catch (err) {
+        req.logger.error('❌ Lỗi khi đổi mã code lấy token:', err);
+        res.status(500).json({ status: 'error', message: 'Lỗi hệ thống trao đổi mã xác thực' });
     }
 });
 

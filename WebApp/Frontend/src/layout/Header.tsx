@@ -90,7 +90,10 @@ export default function Header() {
   });
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    import("../auth/tokenService").then(({ tokenService }) => {
+      tokenService.clear();
+    });
+    localStorage.removeItem("user");
     setUser(null);
     navigate("/login");
   };
