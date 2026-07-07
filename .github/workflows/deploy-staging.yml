@@ -3,7 +3,7 @@
 name: Deploy for staging version
 
 on:
-  pull-request:
+  pull_request:
     branches:
       - main # Deploy when code is pushed to 'develop'
 
