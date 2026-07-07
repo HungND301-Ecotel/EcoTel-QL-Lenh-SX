@@ -31,28 +31,41 @@ import DeviceModels from "./pages/deviceModels/DeviceModels";
 import Models from "./pages/model/Model";
 import { RoleEnum } from "./enums";
 import SystemDashboard from "./pages/dashboard/System";
+import TimekeepingPage from "./pages/timekeeping";
+import { isTokenValid } from "./utils/auth";
+import { tokenService } from "./auth/tokenService";
 
 interface PrivateRouteProps {
   children: React.ReactNode;
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
-  const token = localStorage.getItem("token");
-  if (!token) {
+  const token = tokenService.getAppToken();
+  if (!token || !tokenService.isValid()) {
+    tokenService.clear();
     return <Navigate to="/login" />;
   }
   return <MainLayout>{children}</MainLayout>;
 };
 
 const App = () => {
-  const token = localStorage.getItem("token");
+  const token = tokenService.getAppToken();
   const [user, setUser] = useAtom(userAtom);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (token && !isTokenValid(token)) {
+      tokenService.clear();
+      localStorage.removeItem("user");
+      setUser(null);
+      window.location.href = "/login";
+    }
+  }, [token, setUser]);
 
   const { data } = useQuery({
     queryKey: ["user", token],
     queryFn: () => api.get(`/auth/me`).then((res) => res.data.data.user),
-    enabled: !!token,
+    enabled: !!token && isTokenValid(token),
   });
 
   useEffect(() => {
@@ -204,6 +217,14 @@ const App = () => {
           element={
             <PrivateRoute>
               <Reports />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/timekeeping"
+          element={
+            <PrivateRoute>
+              <TimekeepingPage />
             </PrivateRoute>
           }
         />

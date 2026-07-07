@@ -43,6 +43,7 @@ import {
   LocationOn,
   Business,
   AccessTime,
+  CalendarMonth,
   Badge as BadgeIcon,
   Category,
   WorkOutline,
@@ -89,7 +90,10 @@ export default function Header() {
   });
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    import("../auth/tokenService").then(({ tokenService }) => {
+      tokenService.clear();
+    });
+    localStorage.removeItem("user");
     setUser(null);
     navigate("/login");
   };
@@ -268,6 +272,18 @@ export default function Header() {
                     </ListItemIcon>
                     <ListItemText primary="Lệnh sản xuất" />
                   </ListItem>
+                  <ListItem
+                    button
+                    onClick={() => {
+                      navigate("/timekeeping");
+                      setDrawerOpen(false);
+                    }}
+                  >
+                    <ListItemIcon sx={{ color: "primary.main" }}>
+                      <CalendarMonth />
+                    </ListItemIcon>
+                    <ListItemText primary="Chấm công" />
+                  </ListItem>
                   {[RoleEnum.MANAGER].includes(user?.role) && (
                     <ListItem
                       button
@@ -378,6 +394,18 @@ export default function Header() {
                 onClick={() => navigate("/orders")}
               >
                 Lệnh sản xuất
+              </Button>
+              <Button
+                color="inherit"
+                startIcon={<CalendarMonth style={{ color: "inherit" }} />}
+                sx={{
+                  fontSize: 20,
+                  borderBottom:
+                    location.pathname === "/timekeeping" ? "5px solid red" : "",
+                }}
+                onClick={() => navigate("/timekeeping")}
+              >
+                Chấm công
               </Button>
               {[RoleEnum.MANAGER].includes(user?.role) && (
                 <Button

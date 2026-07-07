@@ -3,8 +3,7 @@
 # $ docker run -d -p 3000:80 ecotel_frontend_img:latest
 
 ## Create an image based on the official Node image from dockerhub
-FROM node:18 AS development
-
+FROM node:22-alpine AS development
 ## Create app directory
 WORKDIR /usr/src/app
 
@@ -34,6 +33,6 @@ WORKDIR /usr/share/nginx/html
 # Remove default nginx static assets
 RUN rm -rf ./*
 # Copy static assets from builder stage
-COPY --from=development /usr/src/app/build /usr/share/nginx/html
+COPY --from=development /usr/src/app/dist /usr/share/nginx/html
 # Containers run nginx with global directives and daemon off
 ENTRYPOINT ["nginx", "-g", "daemon off;"]

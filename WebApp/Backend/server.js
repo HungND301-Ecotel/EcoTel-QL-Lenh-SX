@@ -1,3 +1,5 @@
+const dotenv = require("dotenv");
+dotenv.config();
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -8,7 +10,6 @@ const swaggerUi = require("swagger-ui-express");
 const { createServer } = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
-const dotenv = require("dotenv");
 const { connectDB } = require("./config/db.config");
 const { logger } = require("./utils/logger");
 const os = require("os");
@@ -42,7 +43,6 @@ const AnalysicRoutes = require("./routes/analysic.routes");
 require("./utils/cron");
 
 // Load environment variables
-dotenv.config();
 require("./data-seeder/seed");
 
 // Create Express app
@@ -52,7 +52,7 @@ const httpServer = createServer(app);
 // Create Socket.IO instance
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   },
 });
@@ -79,6 +79,13 @@ io.on("connection", (socket) => {
 connectDB();
 
 // Middleware
+// const corsOptions = {
+//   origin: "*",
+//   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+//   allowedHeaders: ["Content-Type", "Authorization"],
+//   credentials: true,
+// };
+
 app.use(cors());
 app.use(helmet());
 app.use(express.json({ limit: "50mb" }));
