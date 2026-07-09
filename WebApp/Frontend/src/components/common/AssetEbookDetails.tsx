@@ -9,8 +9,13 @@ import {
   ListItemSecondaryAction,
   IconButton,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Pagination,
 } from "@mui/material";
-import { Delete, Download, UploadFile } from "@mui/icons-material";
+import { Delete, Download, UploadFile, Visibility } from "@mui/icons-material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import api from "../../config/api.config";
@@ -25,6 +30,10 @@ export default function AssetEbookDetails({ asset }: AssetEbookDetailsProps) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [previewData, setPreviewData] = useState<Array<{ url: string; name: string }> | null>(null);
+  const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
+  const [previewLoadingId, setPreviewLoadingId] = useState<string | null>(null);
+  const [previewLoadingAll, setPreviewLoadingAll] = useState(false);
 
   // Gọi API lấy thông tin mới nhất của thiết bị, bao gồm mảng files
   const { data: deviceDetail, isLoading } = useQuery({
@@ -55,6 +64,82 @@ export default function AssetEbookDetails({ asset }: AssetEbookDetailsProps) {
       console.error(err);
       showErrorAlert("Không thể tải file. Vui lòng thử lại.");
     }
+  };
+
+  const handlePreview = async (file: any) => {
+    try {
+      setPreviewLoadingId(file._id);
+      const res = await api.get(
+        `/uploads/get?key=${encodeURIComponent(file.key)}`,
+      );
+      let url = res.data.data;
+      const fileName = file.fileName.toLowerCase();
+
+      if (
+        fileName.endsWith(".xls") ||
+        fileName.endsWith(".xlsx") ||
+        fileName.endsWith(".doc") ||
+        fileName.endsWith(".docx") ||
+        fileName.endsWith(".ppt") ||
+        fileName.endsWith(".pptx")
+      ) {
+        url = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(
+          url
+        )}`;
+      }
+
+      setCurrentPreviewIndex(0);
+      setPreviewData([{ url, name: file.fileName }]);
+    } catch (err) {
+      console.error(err);
+      showErrorAlert("Không thể xem trước file. Vui lòng thử lại.");
+    } finally {
+      setPreviewLoadingId(null);
+    }
+  };
+
+  const handlePreviewAll = async () => {
+    if (files.length === 0) return;
+    try {
+      setPreviewLoadingAll(true);
+      const promises = files.map((file: any) =>
+        api.get(`/uploads/get?key=${encodeURIComponent(file.key)}`)
+      );
+      const results = await Promise.all(promises);
+
+      const newPreviewData = results.map((res, index) => {
+        let url = res.data.data;
+        const fileName = files[index].fileName.toLowerCase();
+
+        if (
+          fileName.endsWith(".xls") ||
+          fileName.endsWith(".xlsx") ||
+          fileName.endsWith(".doc") ||
+          fileName.endsWith(".docx") ||
+          fileName.endsWith(".ppt") ||
+          fileName.endsWith(".pptx")
+        ) {
+          url = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(
+            url
+          )}`;
+        }
+
+        return { url, name: files[index].fileName };
+      });
+
+      setCurrentPreviewIndex(0);
+      setPreviewData(newPreviewData);
+    } catch (err) {
+      console.error(err);
+      showErrorAlert("Không thể xem trước các file. Vui lòng thử lại.");
+    } finally {
+      setPreviewLoadingAll(false);
+    }
+  };
+
+  const handleClosePreview = () => {
+    setPreviewData(null);
+    setCurrentPreviewIndex(0);
   };
 
   const deleteFileMutation = useMutation({
@@ -208,27 +293,47 @@ export default function AssetEbookDetails({ asset }: AssetEbookDetailsProps) {
             Tài liệu đính kèm ({files.length})
           </Typography>
 
-          <input
-            type="file"
-            style={{ display: "none" }}
-            ref={fileInputRef}
-            onChange={handleFileChange}
-          />
-          <Button
-            variant="contained"
-            startIcon={
-              uploading ? (
-                <CircularProgress size={20} color="inherit" />
-              ) : (
-                <UploadFile />
-              )
-            }
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            size="small"
-          >
-            Thêm file
-          </Button>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            {files.length > 0 && (
+              <Button
+                variant="outlined"
+                color="info"
+                startIcon={
+                  previewLoadingAll ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : (
+                    <Visibility />
+                  )
+                }
+                onClick={handlePreviewAll}
+                disabled={previewLoadingAll || uploading}
+                size="small"
+              >
+                Xem tất cả
+              </Button>
+            )}
+            <input
+              type="file"
+              style={{ display: "none" }}
+              ref={fileInputRef}
+              onChange={handleFileChange}
+            />
+            <Button
+              variant="contained"
+              startIcon={
+                uploading ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  <UploadFile />
+                )
+              }
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading || previewLoadingAll}
+              size="small"
+            >
+              Thêm file
+            </Button>
+          </Box>
         </Box>
 
         <List>
@@ -239,6 +344,20 @@ export default function AssetEbookDetails({ asset }: AssetEbookDetailsProps) {
                 primaryTypographyProps={{ fontSize: 14 }}
               />
               <ListItemSecondaryAction>
+                <IconButton
+                  edge="end"
+                  color="info"
+                  onClick={() => handlePreview(file)}
+                  title="Xem trước"
+                  disabled={previewLoadingId === file._id}
+                  sx={{ mr: 1 }}
+                >
+                  {previewLoadingId === file._id ? (
+                    <CircularProgress size={24} />
+                  ) : (
+                    <Visibility />
+                  )}
+                </IconButton>
                 <IconButton
                   edge="end"
                   color="primary"
@@ -271,6 +390,108 @@ export default function AssetEbookDetails({ asset }: AssetEbookDetailsProps) {
           )}
         </List>
       </Box>
+
+      <Dialog
+        open={Boolean(previewData)}
+        onClose={handleClosePreview}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2 }}>
+          <Typography variant="h6">
+            Xem trước tài liệu
+          </Typography>
+          {previewData && previewData.length > 1 && (
+            <Pagination
+              count={previewData.length}
+              page={currentPreviewIndex + 1}
+              onChange={(e, value) => setCurrentPreviewIndex(value - 1)}
+              color="primary"
+              shape="rounded"
+              showFirstButton
+              showLastButton
+            />
+          )}
+        </DialogTitle>
+        <DialogContent
+          dividers
+          sx={{
+            height: "80vh",
+            p: 0,
+            bgcolor: "#f5f5f5",
+          }}
+        >
+          {previewData && previewData.length > 0 && (() => {
+            const item = previewData[currentPreviewIndex];
+            const isImage =
+              item.name.toLowerCase().endsWith(".jpg") ||
+              item.name.toLowerCase().endsWith(".png") ||
+              item.name.toLowerCase().endsWith(".jpeg") ||
+              item.name.toLowerCase().endsWith(".webp");
+
+            return (
+              <Box
+                sx={{
+                  width: "100%",
+                  height: "100%",
+                  bgcolor: "white",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                {previewData.length > 1 && (
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ p: 1.5, bgcolor: "#e0e0e0", flexShrink: 0, fontWeight: "bold" }}
+                  >
+                    {item.name}
+                  </Typography>
+                )}
+                <Box
+                  sx={{
+                    flexGrow: 1,
+                    position: "relative",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    bgcolor: "#fff",
+                    overflow: "hidden",
+                  }}
+                >
+                  {isImage ? (
+                    <img
+                      src={item.url}
+                      alt={item.name}
+                      style={{
+                        maxWidth: "100%",
+                        height: "auto",
+                        maxHeight: "100%",
+                        objectFit: "contain",
+                      }}
+                    />
+                  ) : (
+                    <iframe
+                      src={item.url}
+                      title={item.name}
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        height: "100%",
+                        border: "none",
+                      }}
+                    />
+                  )}
+                </Box>
+              </Box>
+            );
+          })()}
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: "flex-end" }}>
+          <Button onClick={handleClosePreview}>Đóng</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
