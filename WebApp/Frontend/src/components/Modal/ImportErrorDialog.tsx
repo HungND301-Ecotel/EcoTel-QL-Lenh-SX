@@ -202,7 +202,7 @@ const ImportErrorDialog: React.FC<ImportErrorDialogProps> = ({
         </Typography>
 
         <List sx={{ pt: 0 }}>
-          {errors.map((item, index) => (
+          {(errors || []).map((item, index) => (
             <ListItem
               key={index}
               disableGutters

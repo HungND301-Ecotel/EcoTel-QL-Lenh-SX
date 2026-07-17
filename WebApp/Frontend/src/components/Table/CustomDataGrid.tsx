@@ -31,6 +31,11 @@ interface CustomDataGridProps {
     isLoading?: boolean;
     getRowId?: (row: any) => string;
     sx?: any;
+    paginationMode?: "client" | "server";
+    rowCount?: number;
+    paginationModel?: { page: number; pageSize: number };
+    onPaginationModelChange?: (model: { page: number; pageSize: number }) => void;
+    onRowClick?: (params: any) => void;
 }
 
 const CustomDataGrid: React.FC<CustomDataGridProps> = ({
@@ -41,6 +46,11 @@ const CustomDataGrid: React.FC<CustomDataGridProps> = ({
     isLoading = false,
     getRowId,
     sx,
+    paginationMode,
+    rowCount,
+    paginationModel,
+    onPaginationModelChange,
+    onRowClick,
 }) => {
     const columns: GridColDef[] = [
         ...defaultColumns.map((col) => ({
@@ -71,7 +81,12 @@ const CustomDataGrid: React.FC<CustomDataGridProps> = ({
                 onRowSelectionModelChange={(newSelection: GridRowSelectionModel) =>
                     onSelectionChange?.(newSelection as string[])
                 }
-                initialState={{
+                paginationMode={paginationMode}
+                rowCount={rowCount}
+                paginationModel={paginationModel}
+                onPaginationModelChange={onPaginationModelChange}
+                onRowClick={onRowClick}
+                initialState={paginationMode === "server" ? undefined : {
                     pagination: {
                         paginationModel: { pageSize: 10, page: 0 },
                     },

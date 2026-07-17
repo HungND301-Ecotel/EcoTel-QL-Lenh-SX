@@ -31,6 +31,7 @@ import DeviceModels from "./pages/deviceModels/DeviceModels";
 import Models from "./pages/model/Model";
 import { RoleEnum } from "./enums";
 import SystemDashboard from "./pages/dashboard/System";
+import Statistics from "./pages/statistics/Statistics";
 
 interface PrivateRouteProps {
   children: React.ReactNode;
@@ -204,6 +205,22 @@ const App = () => {
           element={
             <PrivateRoute>
               <Reports />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/statistics/internal-trucks"
+          element={
+            <PrivateRoute>
+              <Statistics />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/statistics/external-trucks"
+          element={
+            <PrivateRoute>
+              <Statistics />
             </PrivateRoute>
           }
         />

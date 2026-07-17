@@ -7,6 +7,10 @@ const ShiftService = {
         const res = await api.get('/shifts', { params });
         return res.data.data
     },
+    getById: async (id: string): Promise<Shift> => {
+        const res = await api.get(`/shifts/${id}`);
+        return res.data.data;
+    },
     create: async (data: Partial<Shift>): Promise<any> => {
         const res = await api.post('/shifts', data);
         return res.data

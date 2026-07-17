@@ -59,6 +59,7 @@ export default function Header() {
   const navigate = useNavigate();
   const [user, setUser] = useAtom(userAtom);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [statsAnchorEl, setStatsAnchorEl] = useState<null | HTMLElement>(null);
   const [avatarAnchorEl, setAvatarAnchorEl] = useState<null | HTMLElement>(
     null,
   );
@@ -336,6 +337,28 @@ export default function Header() {
                       <ListItemText primary="Báo cáo" />
                     </ListItem>
                   )}
+                  {[
+                    RoleEnum.ADMIN,
+                    RoleEnum.MANAGER,
+                    RoleEnum.DISPATCHER,
+                  ].includes(user?.role) && (
+                    <ListItem
+                      button
+                      onClick={(e) => {
+                        setSubmenuAnchorEl(e.currentTarget);
+                        setSubmenuItems([
+                          { text: "Thống kê xe trong mỏ", path: "/statistics/internal-trucks" },
+                          { text: "Thống kê xe thuê ngoài", path: "/statistics/external-trucks" },
+                        ]);
+                      }}
+                    >
+                      <ListItemIcon sx={{ color: "primary.main" }}>
+                        <ChartNoAxesCombined color="currentColor" />
+                      </ListItemIcon>
+                      <ListItemText primary="Thống kê" />
+                      <KeyboardArrowRight />
+                    </ListItem>
+                  )}
                   {[RoleEnum.ADMIN].includes(user?.role) && (
                     <ListItem
                       button
@@ -481,6 +504,67 @@ export default function Header() {
                 >
                   Báo cáo
                 </Button>
+              )}
+              {[RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.DISPATCHER].includes(
+                user?.role,
+              ) && (
+                <>
+                  <Button
+                    color="inherit"
+                    sx={{
+                      fontSize: 20,
+                      borderBottom:
+                        location.pathname.startsWith("/statistics") ? "5px solid red" : "",
+                    }}
+                    onClick={(e) => setStatsAnchorEl(e.currentTarget)}
+                    startIcon={
+                      <ChartNoAxesCombined style={{ color: "inherit" }} />
+                    }
+                    endIcon={<ExpandMore />}
+                  >
+                    Thống kê
+                  </Button>
+                  <Menu
+                    anchorEl={statsAnchorEl}
+                    open={Boolean(statsAnchorEl)}
+                    onClose={() => setStatsAnchorEl(null)}
+                  >
+                    <MenuItem
+                      sx={{
+                        borderLeft:
+                          location.pathname === "/statistics/internal-trucks"
+                            ? "4px solid red"
+                            : "4px solid transparent",
+                        display: "flex",
+                        gap: 1.5,
+                        minWidth: 200,
+                      }}
+                      onClick={() => {
+                        navigate("/statistics/internal-trucks");
+                        setStatsAnchorEl(null);
+                      }}
+                    >
+                      Thống kê xe trong mỏ
+                    </MenuItem>
+                    <MenuItem
+                      sx={{
+                        borderLeft:
+                          location.pathname === "/statistics/external-trucks"
+                            ? "4px solid red"
+                            : "4px solid transparent",
+                        display: "flex",
+                        gap: 1.5,
+                        minWidth: 200,
+                      }}
+                      onClick={() => {
+                        navigate("/statistics/external-trucks");
+                        setStatsAnchorEl(null);
+                      }}
+                    >
+                      Thống kê xe thuê ngoài
+                    </MenuItem>
+                  </Menu>
+                </>
               )}
               {[RoleEnum.ADMIN].includes(user?.role) && (
                 <Button
