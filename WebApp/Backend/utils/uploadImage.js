@@ -19,6 +19,11 @@ const contentTypes = {
   pdf: "application/pdf",
   xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   xls: "application/vnd.ms-excel",
+  doc: "application/msword",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ppt: "application/vnd.ms-powerpoint",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  csv: "text/csv",
   txt: "text/plain",
 };
 
@@ -33,17 +38,27 @@ exports.getPresignedUrl = async (req, res) => {
   }[type];
 
   if (!prefix) {
-    return res.status(400).json({ message: "Invalid type" });
+    req.logger.error(`❌ Loại ${type} không hợp lệ.`);
+    return res
+      .status(400)
+      .json({ status: "error", message: `❌ Loại ${type} không hợp lệ.` });
   }
 
   if (!fileName) {
-    return res.status(400).json({ message: "Missing fileName" });
+    req.logger.error(`❌ Thiếu tên file ${fileName}`);
+    return res
+      .status(400)
+      .json({ status: "error", message: `❌ Thiếu tên file ${fileName}` });
   }
 
   // Lấy phần mở rộng (ext không có dấu chấm)
   const ext = path.extname(fileName).slice(1).toLowerCase();
   if (!contentTypes[ext]) {
-    return res.status(400).json({ message: "Unsupported file type" });
+    req.logger.error(`❌ Loại file ${ext} không hỗ trợ.`);
+    return res.status(400).json({
+      status: "error",
+      message: `❌ Loại file ${ext} không hỗ trợ.`,
+    });
   }
   const contentType = contentTypes[ext];
   const safeName = `${Date.now()}-${randomUUID()}.${ext}`;
@@ -63,18 +78,27 @@ exports.getPresignedUrl = async (req, res) => {
       data: {
         uploadUrl: uploadURL,
         fileKey: fileKey,
+        contentType: contentType,
       },
     });
   } catch (err) {
-    console.error("Error generating pre-signed URL:", err);
-    res.status(500).json({ status: "error", message: "Error generating URL" });
+    req.logger.error("❌ Lỗi khi tạo URL", err);
+    res.status(500).json({
+      status: "error",
+      message: `❌ Lỗi khi tạo URL ${err}`,
+    });
   }
 };
 
 exports.getDownloadUrl = async (req, res) => {
   try {
     const { key } = req.query; // FE gửi key = "checkin/abc.webp"
-    if (!key) return res.status(400).json({ message: "Missing key" });
+    if (!key) {
+      req.logger.error(`❌ Thiếu key ${key}`);
+      return res
+        .status(400)
+        .json({ status: "error", message: `❌ Thiếu key ${key}` });
+    }
 
     const params = {
       Bucket: process.env.S3_BUCKET_NAME,
@@ -88,7 +112,10 @@ exports.getDownloadUrl = async (req, res) => {
       data: downloadURL,
     });
   } catch (err) {
-    console.error("Error generating download URL:", err);
-    res.status(500).json({ message: "Error generating URL" });
+    req.logger.error("❌ Lỗi khi tạo URL", err);
+    res.status(500).json({
+      status: "error",
+      message: `❌ Lỗi khi tạo URL ${err}`,
+    });
   }
 };
