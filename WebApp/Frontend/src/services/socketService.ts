@@ -19,7 +19,7 @@ class SocketService {
 
     public connect(userId: string): void {
         if (!this.socket) {
-            this.socket = io(process.env.REACT_APP_SOCKET_API || 'ws://localhost:8080', {
+            this.socket = io(import.meta.env.VITE_SOCKET_API || 'ws://localhost:8080', {
                 transports: ['websocket'],
                 autoConnect: false,
             });

@@ -406,10 +406,17 @@ router.put(
         req.params.id,
         {
           ...req.body,
-          coordinates: {
-            type: "Point",
-            coordinates: [req.body.coordinates.lng, req.body.coordinates.lat],
-          },
+          ...(req.body.coordinates
+            ? {
+                coordinates: {
+                  type: "Point",
+                  coordinates: [
+                    req.body.coordinates.lng,
+                    req.body.coordinates.lat,
+                  ],
+                },
+              }
+            : {}),
           updatedBy: req.user._id,
         },
         {

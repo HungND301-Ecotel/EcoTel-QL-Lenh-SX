@@ -22,6 +22,7 @@ import {
   InputAdornment,
   LinearProgress,
   Chip,
+  Grid,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -970,12 +971,8 @@ const Machines: React.FC = () => {
           ))}
         </Menu>
       </Box>
-      <Box display="flex" gap={2}>
-        <Box
-          flex={viewingDevice ? 1 : "none"}
-          width={viewingDevice ? "50%" : "100%"}
-          sx={{ overflow: "hidden" }}
-        >
+      <Grid container>
+        <Grid item xs={viewingDevice ? 4 : 12} sx={{ overflow: "hidden" }}>
           <CustomDataGrid
             rows={machines.map((sm, index) => ({
               ...sm,
@@ -989,11 +986,11 @@ const Machines: React.FC = () => {
             isLoading={isLoading}
             getRowId={(row) => row._id}
           />
-        </Box>
+        </Grid>
         {viewingDevice && (
-          <Box
-            flex={1}
-            width="50%"
+          <Grid
+            item
+            xs={8}
             sx={{
               height: "calc(100vh)",
               overflow: "hidden",
@@ -1005,9 +1002,9 @@ const Machines: React.FC = () => {
               asset={viewingDevice}
               onClose={() => setViewingDevice(null)}
             />
-          </Box>
+          </Grid>
         )}
-      </Box>
+      </Grid>
     </Box>
   );
 };

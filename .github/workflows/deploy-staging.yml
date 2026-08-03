@@ -28,9 +28,9 @@ jobs:
 
       - name: Create an .env file in frontend for building image
         run: |
-          echo "REACT_APP_BASE_API=${{ secrets.REACT_APP_BASE_API }}" > ./WebApp/Frontend/.env
-          echo "REACT_APP_SOCKET_API=${{ secrets.REACT_APP_SOCKET_API }}" >> ./WebApp/Frontend/.env
-          echo "REACT_APP_MAP_API_KEY=${{ secrets.REACT_APP_MAP_API_KEY }}" >> ./WebApp/Frontend/.env
+          echo "VITE_BASE_API=${{ secrets.VITE_BASE_API }}" > ./WebApp/Frontend/.env
+          echo "VITE_SOCKET_API=${{ secrets.VITE_SOCKET_API }}" >> ./WebApp/Frontend/.env
+          echo "VITE_MAP_API_KEY=${{ secrets.VITE_MAP_API_KEY }}" >> ./WebApp/Frontend/.env
       
       - name: List Files
         run: ls -laR
