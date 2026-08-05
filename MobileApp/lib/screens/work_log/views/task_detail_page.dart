@@ -661,48 +661,90 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                             ),
                           ),
                         const SizedBox(height: 8),
-                        ElevatedButton(
-                          onPressed: () {
-                            if ([
-                              'vận hành khoan'
-                                  .toLowerCase(),
-                              'vận hành gạt'.toLowerCase(),
-                              'vận hành xe'.toLowerCase(),
-                              'vận hành xúc'.toLowerCase(),
-                              'vận hành xe phục vụ'
-                                  .toLowerCase(),
-                            ].contains(
-                              data!.job?.type.toLowerCase(),
-                            )) {
-                              Navigator.pushNamed(
-                                context,
-                                WorkLogRoutes
-                                    .directWorkReport,
-                                arguments: data,
-                              );
-                            } else if ([
-                              'sửa chữa, bảo dưỡng'
-                                  .toLowerCase(),
-                            ].contains(
-                              data!.job?.type.toLowerCase(),
-                            )) {
-                              Navigator.pushNamed(
-                                context,
-                                WorkLogRoutes
-                                    .maintencetWorkReport,
-                                arguments: data,
-                              );
-                            } else {
+                        if ([
+                          'vận hành khoan',
+                          'vận hành gạt',
+                          'vận hành xe',
+                          'vận hành xúc',
+                          'vận hành xe phục vụ',
+                          'sửa chữa, bảo dưỡng',
+                        ].contains(
+                          data!.job?.type.toLowerCase(),
+                        ))
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    if ([
+                                      'vận hành khoan'
+                                          .toLowerCase(),
+                                      'vận hành gạt'
+                                          .toLowerCase(),
+                                      'vận hành xe'
+                                          .toLowerCase(),
+                                      'vận hành xúc'
+                                          .toLowerCase(),
+                                      'vận hành xe phục vụ'
+                                          .toLowerCase(),
+                                    ].contains(
+                                      data!.job?.type
+                                          .toLowerCase(),
+                                    )) {
+                                      Navigator.pushNamed(
+                                        context,
+                                        WorkLogRoutes
+                                            .directWorkReport,
+                                        arguments: data,
+                                      );
+                                    } else {
+                                      Navigator.pushNamed(
+                                        context,
+                                        WorkLogRoutes
+                                            .maintencetWorkReport,
+                                        arguments: data,
+                                      );
+                                    }
+                                  },
+                                  child: const Text(
+                                    'Báo công\n(Chính)',
+                                    textAlign:
+                                        TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      WorkLogRoutes
+                                          .indirectWorkReport,
+                                      arguments: data,
+                                    );
+                                  },
+                                  child: const Text(
+                                    'Báo công\n(Phụ)',
+                                    textAlign:
+                                        TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        else
+                          ElevatedButton(
+                            onPressed: () {
                               Navigator.pushNamed(
                                 context,
                                 WorkLogRoutes
                                     .indirectWorkReport,
                                 arguments: data,
                               );
-                            }
-                          },
-                          child: const Text('Báo công'),
-                        ),
+                            },
+                            child: const Text('Báo công'),
+                          ),
                         const SizedBox(height: 8),
                         ElevatedButton(
                           onPressed: () {
@@ -725,38 +767,38 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                                         data?.shiftReport !=
                                                 null
                                             ? "Bạn muốn kết thúc công việc"
-                                            : "Bạn chưa báo công, bạn vẫn muốn tiếp tục kết thúc công việc?",
+                                            : "Bạn chưa báo công, bạn có muốn kết thúc không?",
                                       ),
-                                      // if (data?.shiftReport ==
-                                      //     null) ...[
-                                      //   const SizedBox(
-                                      //     height: 8,
-                                      //   ),
-                                      //   const Text(
-                                      //     'Nêu lí do (bắt buộc)*',
-                                      //     style: TextStyle(
-                                      //       color:
-                                      //           Colors.red,
-                                      //     ),
-                                      //   ),
-                                      //   TextFormField(
-                                      //     controller:
-                                      //         _noteController,
-                                      //     validator: (
-                                      //       value,
-                                      //     ) {
-                                      //       if (value ==
-                                      //               null ||
-                                      //           value
-                                      //               .isEmpty) {
-                                      //         return 'Vui lòng nhập lí do';
-                                      //       }
-                                      //       return null;
-                                      //     },
-                                      //     minLines: 3,
-                                      //     maxLines: null,
-                                      //   ),
-                                      // ],
+                                      if (data?.shiftReport ==
+                                          null) ...[
+                                        const SizedBox(
+                                          height: 8,
+                                        ),
+                                        const Text(
+                                          'Nêu lí do (bắt buộc)*',
+                                          style: TextStyle(
+                                            color:
+                                                Colors.red,
+                                          ),
+                                        ),
+                                        TextFormField(
+                                          controller:
+                                              _noteController,
+                                          validator: (
+                                            value,
+                                          ) {
+                                            if (value ==
+                                                    null ||
+                                                value
+                                                    .isEmpty) {
+                                              return 'Vui lòng nhập lí do';
+                                            }
+                                            return null;
+                                          },
+                                          minLines: 3,
+                                          maxLines: null,
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 ),
@@ -776,7 +818,10 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                                           .currentState!
                                           .validate()) {
                                         update(
-                                          "end",
+                                          data?.shiftReport !=
+                                                  null
+                                              ? "end"
+                                              : "warning",
                                         );
                                         Navigator.pop(
                                           dialogContext,

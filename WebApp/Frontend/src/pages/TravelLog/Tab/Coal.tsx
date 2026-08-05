@@ -44,6 +44,7 @@ import { StyledPopper } from "../../../ui/poppers";
 import { parseAxiosError } from "../../../utils/handleApiError";
 import { Table, TableColumnsType } from "antd";
 import ImportErrorDialog from "../../../components/Modal/ImportErrorDialog";
+import ExportTravelLogDialog from "../components/ExportTravelLogDialog";
 
 interface props {
   type: string;
@@ -55,6 +56,7 @@ const Coals: React.FC<props> = ({ type }) => {
   const [endTime, setEndTime] = useState<Dayjs | null>(null);
   const [selectedTravelLog, setSelectedTravelLog] = useState<any | null>(null);
   const [selectedTravelLogs, setSelectedTravelLogs] = useState<any[]>([]);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [user] = useAtom(userAtom);
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
@@ -280,14 +282,6 @@ const Coals: React.FC<props> = ({ type }) => {
     },
   });
 
-  const exportExcel = useMutation({
-    mutationFn: () => TravelLogService.exportFile(type),
-    onSuccess: () => {},
-    onError: async (error: any) => {
-      const message = await parseAxiosError(error);
-      showErrorAlert(message);
-    },
-  });
 
   const createMutation = useMutation({
     mutationFn: TravelLogService.create,
@@ -603,7 +597,7 @@ const Coals: React.FC<props> = ({ type }) => {
                     component="span"
                     variant="contained"
                     startIcon={<Download />}
-                    onClick={() => exportExcel.mutate()}
+                    onClick={() => setExportDialogOpen(true)}
                   >
                     Tải xuống
                   </Button>
@@ -938,6 +932,12 @@ const Coals: React.FC<props> = ({ type }) => {
         }}
         summary={importReport.summary}
         errors={importReport.invalidRows}
+      />
+      <ExportTravelLogDialog
+        open={exportDialogOpen}
+        onClose={() => setExportDialogOpen(false)}
+        type={type}
+        shifts={shifts}
       />
     </>
   );
