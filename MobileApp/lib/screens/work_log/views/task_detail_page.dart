@@ -707,7 +707,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                                     }
                                   },
                                   child: const Text(
-                                    'Báo công\n(Thợ chính)',
+                                    'Báo công\n(Chính)',
                                     textAlign:
                                         TextAlign.center,
                                   ),
@@ -725,7 +725,7 @@ class _TaskDetailPage extends State<TaskDetailPage> {
                                     );
                                   },
                                   child: const Text(
-                                    'Báo công\n(Thợ phụ)',
+                                    'Báo công\n(Phụ)',
                                     textAlign:
                                         TextAlign.center,
                                   ),

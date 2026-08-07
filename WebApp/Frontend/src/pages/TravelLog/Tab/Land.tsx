@@ -44,6 +44,7 @@ import { StyledPopper } from "../../../ui/poppers";
 import { parseAxiosError } from "../../../utils/handleApiError";
 import { Table, TableColumnsType } from "antd";
 import ImportErrorDialog from "../../../components/Modal/ImportErrorDialog";
+import ExportTravelLogDialog from "../components/ExportTravelLogDialog";
 
 interface props {
   type: string;
@@ -58,7 +59,7 @@ const Lands: React.FC<props> = ({ type }) => {
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
-
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(50);
   const [total, setTotal] = useState(0);
@@ -275,15 +276,6 @@ const Lands: React.FC<props> = ({ type }) => {
     onError: (error: any) => {
       setIsUploading(false);
       showErrorAlert(error.response?.data?.message || "Lỗi khi import");
-    },
-  });
-
-  const exportExcel = useMutation({
-    mutationFn: () => TravelLogService.exportFile(type),
-    onSuccess: () => {},
-    onError: async (error: any) => {
-      const message = await parseAxiosError(error);
-      showErrorAlert(message);
     },
   });
 
@@ -601,7 +593,7 @@ const Lands: React.FC<props> = ({ type }) => {
                     component="span"
                     variant="contained"
                     startIcon={<Download />}
-                    onClick={() => exportExcel.mutate()}
+                    onClick={() => setExportDialogOpen(true)}
                   >
                     Tải xuống
                   </Button>
@@ -936,6 +928,12 @@ const Lands: React.FC<props> = ({ type }) => {
         }}
         summary={importReport.summary}
         errors={importReport.invalidRows}
+      />
+      <ExportTravelLogDialog
+        open={exportDialogOpen}
+        onClose={() => setExportDialogOpen(false)}
+        type={type}
+        shifts={shifts}
       />
     </>
   );

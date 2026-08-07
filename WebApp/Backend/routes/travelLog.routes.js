@@ -5,6 +5,7 @@ const Device = require("../models/Device");
 const Location = require("../models/Location");
 const Material = require("../models/material");
 const Shift = require("../models/Shift");
+const Job = require("../models/Job");
 const { verifyToken, restrictTo } = require("../middleware/auth.middleware");
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
@@ -19,7 +20,7 @@ const {
 const { paginateQuery } = require("../utils/pagination");
 const Order = require("../models/Order");
 const { runProductionUpdateBackground } = require("../utils/cron");
-const { rangeTime } = require("../utils/reportGrouping");
+const { rangeTime, getTravellog } = require("../utils/reportGrouping");
 
 router.post("/", verifyToken, async (req, res, next) => {
   try {
@@ -508,69 +509,163 @@ router.post(
   },
 );
 
+const mongoose = require("mongoose");
+
 router.post(
   "/exportFile",
   verifyToken,
   restrictTo(ROLE.MANAGER, ROLE.ADMIN, ROLE.DISPATCHER),
   async (req, res, next) => {
     try {
-      const today = new Date();
-      const tenDaysAgo = new Date();
-      tenDaysAgo.setDate(today.getDate() - 10);
-      tenDaysAgo.setHours(0, 0, 0, 0);
-      const match = {};
-      if (req.body.type) {
-        match.acceptedProduct = req.body.type;
-      }
-      match.workingDate = { $gte: tenDaysAgo };
-      const data = await TravelLog.aggregate([
-        { $match: match },
-        {
-          $lookup: {
-            from: "devices",
-            localField: "excavator",
-            foreignField: "_id",
-            as: "excavator",
-          },
-        },
-        { $unwind: { path: "$excavator", preserveNullAndEmptyArrays: true } },
-        {
-          $lookup: {
-            from: "shifts",
-            localField: "shift",
-            foreignField: "_id",
-            as: "shift",
-          },
-        },
-        { $unwind: { path: "$shift", preserveNullAndEmptyArrays: true } },
-        {
-          $lookup: {
-            from: "locations",
-            localField: "location",
-            foreignField: "_id",
-            as: "location",
-          },
-        },
-        { $unwind: { path: "$location", preserveNullAndEmptyArrays: true } },
-        {
-          $sort: {
-            workingDate: -1,
-            "shift.name": -1,
-            "excavator.code": 1,
-          },
-        },
-      ]);
-      const devices = await Device.find().populate("category", "name");
-      const excavators = devices.filter((i) =>
-        i.category?.name.toLowerCase().includes("máy xúc"),
-      );
-      const locations = await Location.find();
-      const shifts = await Shift.find();
+      const {
+        startTime,
+        endTime,
+        shift, // shiftId
+        type, // acceptedProduct
+        includeHasLog = true,
+        includeNoLog = true,
+      } = req.body;
+      console.log(req.body);
 
+      const start = startTime
+        ? new Date(startTime)
+        : (() => {
+            const d = new Date();
+            d.setDate(d.getDate() - 10);
+            d.setHours(0, 0, 0, 0);
+            return d;
+          })();
+      const end = endTime ? new Date(endTime) : new Date();
+
+      const rows = []; // format thống nhất theo form cung độ
+
+      // ---------- 1. Đã có cung độ ----------
+      if (includeHasLog) {
+        const match = { workingDate: { $gte: start, $lte: end } };
+        if (type) match.acceptedProduct = type;
+        if (shift) match.shift = new mongoose.Types.ObjectId(shift);
+
+        const data = await TravelLog.aggregate([
+          { $match: match },
+          {
+            $lookup: {
+              from: "devices",
+              localField: "excavator",
+              foreignField: "_id",
+              as: "excavator",
+            },
+          },
+          { $unwind: { path: "$excavator", preserveNullAndEmptyArrays: true } },
+          {
+            $lookup: {
+              from: "shifts",
+              localField: "shift",
+              foreignField: "_id",
+              as: "shift",
+            },
+          },
+          { $unwind: { path: "$shift", preserveNullAndEmptyArrays: true } },
+          {
+            $lookup: {
+              from: "locations",
+              localField: "location",
+              foreignField: "_id",
+              as: "location",
+            },
+          },
+          { $unwind: { path: "$location", preserveNullAndEmptyArrays: true } },
+          { $sort: { workingDate: -1, "shift.name": -1, "excavator.code": 1 } },
+        ]);
+
+        data.forEach((item) => {
+          rows.push({
+            excavator: item.excavator?.code || "",
+            area: item.area || "",
+            excavationLevel: item.excavationLevel || "",
+            dumpHeightActual: item.dumpHeightActual || "",
+            fullDistanceKm: item.fullDistanceKm ?? "",
+            fullLiftHeightM: item.fullLiftHeightM ?? "",
+            localMinHeightM: item.localMinHeightM ?? "",
+            localMaxHeightM: item.localMaxHeightM ?? "",
+            localDistanceKm: item.localDistanceKm ?? "",
+            localLiftHeightM: item.localLiftHeightM ?? "",
+            location: item.location?.name || "",
+            shift: item.shift?.name || "",
+            workingDate: item.workingDate ? new Date(item.workingDate) : "",
+          });
+        });
+      }
+
+      // ---------- 2. Chưa có cung độ ----------
+      if (includeNoLog) {
+        const query = { workingDate: { $gte: start, $lte: end } };
+        const job = await Job.findOne({ name: "Vận hành xe" });
+        if (job) query.job = job._id;
+        if (shift) query.shift = shift;
+
+        const orders = await Order.find(query)
+          .populate("shift", "name")
+          .populate("excavator.device", "code")
+          .populate("location", "name")
+          .populate("material", "name acceptedProduct")
+          .sort("-workingDate")
+          .lean();
+
+        // Lấy toàn bộ TravelLog trong cùng khoảng ngày 1 lần duy nhất
+        const existingLogs = await TravelLog.find({
+          workingDate: { $gte: start, $lte: end },
+          ...(type ? { acceptedProduct: type } : {}),
+          ...(shift ? { shift } : {}),
+        }).lean();
+
+        const existingKeySet = new Set(
+          existingLogs.map((log) => {
+            const d = new Date(log.workingDate).toISOString().split("T")[0];
+            return `${d}_${log.excavator}_${log.location}_${log.acceptedProduct}_${log.shift}`;
+          }),
+        );
+
+        const seen = new Set();
+        for (const order of orders) {
+          const excavatorId = order.excavator?.[0]?.device?._id;
+          const locationId = order.location?.[0]?._id;
+          const acceptedProduct = order.material?.[0]?.acceptedProduct;
+          const shiftId = order.shift?._id;
+          if (type && acceptedProduct !== type) continue;
+          if (!excavatorId || !locationId || !shiftId) continue;
+
+          const workingDate = new Date(order.workingDate);
+          const dayStr = workingDate.toISOString().split("T")[0];
+          const uniqueKey = `${dayStr}_${excavatorId}_${locationId}_${acceptedProduct}_${shiftId}`;
+
+          if (seen.has(uniqueKey)) continue;
+          if (existingKeySet.has(uniqueKey)) continue; // đã có cung độ -> bỏ qua
+
+          seen.add(uniqueKey);
+          rows.push({
+            excavator: order.excavator?.[0]?.device?.code || "",
+            area: "",
+            excavationLevel: "",
+            dumpHeightActual: "",
+            fullDistanceKm: "",
+            fullLiftHeightM: "",
+            localMinHeightM: "",
+            localMaxHeightM: "",
+            localDistanceKm: "",
+            localLiftHeightM: "",
+            location: order.location?.[0]?.name || "",
+            shift: order.shift?.name || "",
+            workingDate,
+          });
+        }
+      }
+      // sắp xếp lại toàn bộ theo ngày/ca cho dễ nhìn
+      rows.sort((a, b) => new Date(b.workingDate) - new Date(a.workingDate));
+
+      // ---------- Ghi file Excel (giữ nguyên style cũ) ----------
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("DS_CUNG_DO");
 
-      // 1️⃣ Ghi header tầng 1
       worksheet.addRow([
         "Máy xúc",
         "Khu vực",
@@ -586,8 +681,6 @@ router.post(
         "Ca",
         "Ngày (tháng/ngày/năm)",
       ]);
-
-      // 2️⃣ Ghi header tầng 2
       worksheet.addRow([
         "",
         "",
@@ -603,19 +696,15 @@ router.post(
         "",
         "",
       ]);
-
-      // 3️⃣ Merge các cột tầng 1
-      worksheet.mergeCells("A1:A2"); // Máy xúc
-      worksheet.mergeCells("B1:B2"); //Khu vực
-      worksheet.mergeCells("C1:C2"); // Tầng xúc
-      worksheet.mergeCells("D1:D2"); // Độ cao thực tế nơi đổ
-      worksheet.mergeCells("E1:F1"); //Toàn tuyến
-      worksheet.mergeCells("G1:J1"); // Trong đó cục bộ
-      worksheet.mergeCells("K1:K2"); // Điểm đổ tải
-      worksheet.mergeCells("L1:L2"); // Vật liệu
-      worksheet.mergeCells("M1:M2"); // ca
-
-      // 4️⃣ Đặt style cho header
+      worksheet.mergeCells("A1:A2");
+      worksheet.mergeCells("B1:B2");
+      worksheet.mergeCells("C1:C2");
+      worksheet.mergeCells("D1:D2");
+      worksheet.mergeCells("E1:F1");
+      worksheet.mergeCells("G1:J1");
+      worksheet.mergeCells("K1:K2");
+      worksheet.mergeCells("L1:L2");
+      worksheet.mergeCells("M1:M2");
       worksheet.getRow(1).font = { bold: true, size: 10 };
       worksheet.getRow(2).font = { bold: true, size: 10 };
       worksheet.getRow(1).alignment = {
@@ -631,21 +720,21 @@ router.post(
       worksheet.getRow(1).height = 40;
       worksheet.getRow(2).height = 40;
 
-      data.forEach((item) => {
+      rows.forEach((item) => {
         worksheet.addRow([
-          item.excavator?.code || "",
-          item.area || "",
-          item.excavationLevel || "",
-          item.dumpHeightActual || "",
-          item.fullDistanceKm || "",
-          item.fullLiftHeightM || "",
-          item.localMinHeightM || "",
-          item.localMaxHeightM || "",
-          item.localDistanceKm || "",
-          item.localLiftHeightM || "",
-          item.location?.name || "",
-          item.shift?.name || "",
-          item.workingDate ? new Date(item.workingDate) : "",
+          item.excavator,
+          item.area,
+          item.excavationLevel,
+          item.dumpHeightActual,
+          item.fullDistanceKm,
+          item.fullLiftHeightM,
+          item.localMinHeightM,
+          item.localMaxHeightM,
+          item.localDistanceKm,
+          item.localLiftHeightM,
+          item.location,
+          item.shift,
+          item.workingDate,
         ]);
       });
 
@@ -664,10 +753,15 @@ router.post(
         { key: "shift", width: 5 },
         { key: "workingDate", width: 12 },
       ];
+      worksheet.getColumn("M").numFmt = "dd/mm/yyyy";
 
-      const dateCol = worksheet.getColumn("B"); // giả sử cột C là Ngày
-      dateCol.numFmt = "dd/mm/yyyy";
-
+      // dropdown validation (giữ như cũ)
+      const devices = await Device.find().populate("category", "name");
+      const excavators = devices.filter((i) =>
+        i.category?.name.toLowerCase().includes("máy xúc"),
+      );
+      const locations = await Location.find();
+      const shifts = await Shift.find();
       const deviceList = [
         ...new Set(excavators.map((p) => p.code).filter(Boolean)),
       ];
@@ -684,22 +778,21 @@ router.post(
       worksheet.getColumn("W").hidden = true;
 
       const MAX = Math.max(worksheet.rowCount + 100, 1000);
-
-      worksheet.dataValidations.add(`A2:A${MAX}`, {
+      worksheet.dataValidations.add(`A3:A${MAX}`, {
         type: "list",
         allowBlank: true,
         formulae: [`=$X$2:$X$${deviceList.length + 1}`],
         showErrorMessage: true,
         errorTitle: "Giá trị không hợp lệ",
       });
-      worksheet.dataValidations.add(`K2:K${MAX}`, {
+      worksheet.dataValidations.add(`K3:K${MAX}`, {
         type: "list",
         allowBlank: true,
         formulae: [`=$Y$2:$Y$${locationList.length + 1}`],
         showErrorMessage: true,
         errorTitle: "Giá trị không hợp lệ",
       });
-      worksheet.dataValidations.add(`L2:L${MAX}`, {
+      worksheet.dataValidations.add(`L3:L${MAX}`, {
         type: "list",
         allowBlank: true,
         formulae: [`=$W$2:$W$${shiftList.length + 1}`],
@@ -714,12 +807,12 @@ router.post(
       );
       res.setHeader(
         "Content-Disposition",
-        "attachment; filename=" + "danh_sach_cung_do.xlsx",
+        "attachment; filename=danh_sach_cung_do.xlsx",
       );
       res.send(buffer);
       req.logger.info("✅ Xuất file thành công.");
     } catch (err) {
-      req.logger.error("❌ Lỗi khi xuất file vật liệu", err);
+      req.logger.error("❌ Lỗi khi xuất file", err);
       res
         .status(500)
         .send({ status: "error", message: err.message, stack: err.stack });
