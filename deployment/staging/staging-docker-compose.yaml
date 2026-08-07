@@ -8,7 +8,6 @@
 #### THIS DOCKER COMPOSE IS FOR STAGING DEVELOPMENT ####
 ######################################################
 services:
-
   ktv_reverse_proxy_service:
     image: ${REGISTRY}/ktv_reverse_proxy_img:${VERSION}
     ports:
@@ -52,8 +51,7 @@ services:
       options:
         max-size: "100m"
         max-file: "30"
-  
-  
+
   ktv_Backend_service:
     env_file:
       - .env_backend
@@ -86,12 +84,15 @@ services:
     #restart: always
     env_file:
       - .env_backend
-    environment:      
+    environment:
       TZ: Asia/Ho_Chi_Minh
     volumes:
       - ktv_data:/data/db
+      - /opt/mongo-keyfile:/etc/mongo-keyfile:ro
     networks:
       - backnet
+    command:
+      ["--replSet", "rs0", "--bind_ip_all", "--keyFile", "/etc/mongo-keyfile"]
     ports:
       - "27018:27017"
     logging:
@@ -99,7 +100,7 @@ services:
       options:
         max-size: "100m"
         max-file: "30"
-  
+
   ktv_grafana:
     image: grafana/grafana
     container_name: ktv_grafana
@@ -190,6 +191,3 @@ volumes:
       o: bind
   # .mongodb_backup:
   # .mongodb_restore:
-  
-
-
