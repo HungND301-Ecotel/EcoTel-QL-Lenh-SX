@@ -19,6 +19,7 @@ const {
 } = require("../config/config");
 const { paginateQuery } = require("../utils/pagination");
 const Order = require("../models/Order");
+const Report = require("../models/Report");
 const { runProductionUpdateBackground } = require("../utils/cron");
 const { rangeTime, getTravellog } = require("../utils/reportGrouping");
 
@@ -259,7 +260,7 @@ const columnMapping = {
   "Chiều cao N.tải (m) cục bộ": "localLiftHeightM", // tránh trùng key
   "Điểm đổ tải": "location",
   Ca: "shift",
-  "Ngày (tháng/ngày/năm)": "workingDate",
+  "Ngày (ngày/tháng/năm)": "workingDate",
 };
 
 // 👉 Tạo map ngược để lấy tên cột Tiếng Việt khi báo lỗi
@@ -351,6 +352,11 @@ router.post(
           row.workingDate = new Date(
             row.workingDate.getTime() - offset * 60000,
           );
+        } else if (typeof row.workingDate === "string") {
+          const parts = row.workingDate.split("/");
+          if (parts.length === 3) {
+            row.workingDate = new Date(Date.UTC(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0])));
+          }
         }
       });
 
@@ -525,7 +531,6 @@ router.post(
         includeHasLog = true,
         includeNoLog = true,
       } = req.body;
-      console.log(req.body);
 
       const start = startTime
         ? new Date(startTime)
@@ -591,7 +596,7 @@ router.post(
             localLiftHeightM: item.localLiftHeightM ?? "",
             location: item.location?.name || "",
             shift: item.shift?.name || "",
-            workingDate: item.workingDate ? new Date(item.workingDate) : "",
+            workingDate: item.workingDate ? dayjs(item.workingDate).format("DD/MM/YYYY") : "",
           });
         });
       }
@@ -603,12 +608,30 @@ router.post(
         if (job) query.job = job._id;
         if (shift) query.shift = shift;
 
+        // Chỉ dùng Order để check trong ngày/ca có order nào
         const orders = await Order.find(query)
+          .select("_id workingDate shift")
           .populate("shift", "name")
-          .populate("excavator.device", "code")
-          .populate("location", "name")
+          .lean();
+          
+        const orderIds = orders.map((o) => o._id);
+        const orderMap = {};
+        orders.forEach((o) => {
+          orderMap[o._id.toString()] = o;
+        });
+
+        const reportQuery = { orderId: { $in: orderIds } };
+        if (type) {
+          const materials = await Material.find({ acceptedProduct: type }).select("_id").lean();
+          const materialIds = materials.map((m) => m._id);
+          reportQuery.material = { $in: materialIds };
+        }
+
+        const reports = await Report.find(reportQuery)
+          .populate("device", "code")
+          .populate("excavator", "code")
+          .populate("toLocation", "name")
           .populate("material", "name acceptedProduct")
-          .sort("-workingDate")
           .lean();
 
         // Lấy toàn bộ TravelLog trong cùng khoảng ngày 1 lần duy nhất
@@ -625,25 +648,38 @@ router.post(
           }),
         );
 
-        const seen = new Set();
-        for (const order of orders) {
-          const excavatorId = order.excavator?.[0]?.device?._id;
-          const locationId = order.location?.[0]?._id;
-          const acceptedProduct = order.material?.[0]?.acceptedProduct;
-          const shiftId = order.shift?._id;
+        const seenReport = new Set();
+        const seenMissingLog = new Set();
+
+        for (const report of reports) {
+          const order = orderMap[report.orderId.toString()];
+          if (!order) continue;
+
+          const deviceId = report.device?._id?.toString();
+          const excavatorId = report.excavator?._id?.toString();
+          const locationId = report.toLocation?._id?.toString();
+          const acceptedProduct = report.material?.acceptedProduct;
+          const shiftId = order.shift?._id?.toString();
+
           if (type && acceptedProduct !== type) continue;
-          if (!excavatorId || !locationId || !shiftId) continue;
+          if (!deviceId || !excavatorId || !locationId || !shiftId) continue;
 
           const workingDate = new Date(order.workingDate);
           const dayStr = workingDate.toISOString().split("T")[0];
-          const uniqueKey = `${dayStr}_${excavatorId}_${locationId}_${acceptedProduct}_${shiftId}`;
+          
+          // Lọc theo report (device, toLocation, excavator, workingDate, shift)
+          const reportUniqueKey = `${deviceId}_${locationId}_${excavatorId}_${dayStr}_${shiftId}`;
+          if (seenReport.has(reportUniqueKey)) continue;
+          seenReport.add(reportUniqueKey);
 
-          if (seen.has(uniqueKey)) continue;
-          if (existingKeySet.has(uniqueKey)) continue; // đã có cung độ -> bỏ qua
+          // Check xem cung độ đã có chưa
+          const logUniqueKey = `${dayStr}_${excavatorId}_${locationId}_${acceptedProduct}_${shiftId}`;
+          if (existingKeySet.has(logUniqueKey)) continue; // đã có cung độ -> bỏ qua
+          if (seenMissingLog.has(logUniqueKey)) continue; // tránh ghi đè file báo cáo lặp dòng nếu 2 xe chạy cùng 1 cung độ bị thiếu
+          seenMissingLog.add(logUniqueKey);
 
-          seen.add(uniqueKey);
           rows.push({
-            excavator: order.excavator?.[0]?.device?.code || "",
+            excavator: report.excavator?.code || "",
             area: "",
             excavationLevel: "",
             dumpHeightActual: "",
@@ -653,9 +689,9 @@ router.post(
             localMaxHeightM: "",
             localDistanceKm: "",
             localLiftHeightM: "",
-            location: order.location?.[0]?.name || "",
+            location: report.toLocation?.name || "",
             shift: order.shift?.name || "",
-            workingDate,
+            workingDate: workingDate ? dayjs(workingDate).format("DD/MM/YYYY") : "",
           });
         }
       }
@@ -679,7 +715,7 @@ router.post(
         "",
         "Điểm đổ tải",
         "Ca",
-        "Ngày (tháng/ngày/năm)",
+        "Ngày (ngày/tháng/năm)",
       ]);
       worksheet.addRow([
         "",
