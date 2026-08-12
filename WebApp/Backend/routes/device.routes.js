@@ -107,18 +107,24 @@ router.get("/", verifyToken, async (req, res, next) => {
 
     const travelHoursAgg = await ShiftReport.aggregate([
       { $unwind: "$vehicleSummaries" },
-      { $match: { "vehicleSummaries.vehicle": { $in: deviceIds } } },
+      {
+        $match: {
+          "vehicleSummaries.vehicle": { $in: deviceIds },
+          "vehicleSummaries.travelHours": { $ne: null }, // bỏ qua bản ghi không có giá trị
+        },
+      },
+      { $sort: { createdAt: -1 } }, // sắp xếp theo thời gian ca làm việc mới nhất -> cũ nhất
       {
         $group: {
           _id: "$vehicleSummaries.vehicle",
-          totalTravelHours: { $sum: "$vehicleSummaries.travelHours" },
+          latestTravelHours: { $first: "$vehicleSummaries.travelHours" }, // lấy giá trị đầu tiên sau khi sort = mới nhất
         },
       },
     ]);
 
     const travelHoursMap = new Map();
     for (const item of travelHoursAgg) {
-      travelHoursMap.set(item._id.toString(), item.totalTravelHours || 0);
+      travelHoursMap.set(item._id.toString(), item.latestTravelHours || 0);
     }
 
     const devicesWithAssignedInfo = devices.map((device) => {
@@ -354,16 +360,23 @@ router.get("/:id", verifyToken, async (req, res, next) => {
       { $unwind: "$vehicleSummaries" },
       {
         $match: {
-          "vehicleSummaries.vehicle": deviceId,
+          "vehicleSummaries.vehicle": { $in: deviceIds },
+          "vehicleSummaries.travelHours": { $ne: null }, // bỏ qua bản ghi không có giá trị
         },
       },
+      { $sort: { updatedAt: -1 } }, // sắp xếp theo thời gian ca làm việc mới nhất -> cũ nhất
       {
         $group: {
           _id: "$vehicleSummaries.vehicle",
-          totalTravelHours: { $sum: "$vehicleSummaries.travelHours" },
+          latestTravelHours: { $first: "$vehicleSummaries.travelHours" }, // lấy giá trị đầu tiên sau khi sort = mới nhất
         },
       },
     ]);
+
+    const travelHoursMap = new Map();
+    for (const item of travelHoursAgg) {
+      travelHoursMap.set(item._id.toString(), item.latestTravelHours || 0);
+    }
 
     const deviceObj = device.toObject();
     deviceObj.cumulativeHours =
@@ -1136,12 +1149,10 @@ router.delete(
 
       if (!device) {
         req.logger.error("❌ Không tìm thấy phương tiện");
-        return res
-          .status(404)
-          .json({
-            status: "error",
-            message: "Không tìm thấy tệp trên thiết bị",
-          });
+        return res.status(404).json({
+          status: "error",
+          message: "Không tìm thấy tệp trên thiết bị",
+        });
       }
 
       req.logger.info(`🔥 ${user?.username} Xóa file phương tiện thành công`);
