@@ -1,0 +1,58 @@
+project:
+  id: DIEU-PHOI-MM
+  name: Điều phối máy móc (EcoTel QL Lệnh SX)
+  description: >-
+    Hệ thống điều phối máy móc/phương tiện và quản lý lệnh sản xuất — phân
+    công lệnh (order/job) cho thiết bị/người vận hành theo ca, theo dõi
+    tình trạng thiết bị, cung độ vận chuyển, an toàn lao động, báo cáo ca.
+    Source code + lịch sử Git đã có sẵn (github.com/anhnt205/EcoTel-QL-Lenh-SX),
+    đưa vào factory bằng onboarding (2026-08-24) trên nhánh dev-dieuphoi-mm —
+    KHÔNG động vào main/develop (2 nhánh này có GitHub Actions tự động deploy
+    thật lên VPS staging/release khi có push, xem docs/ARCHITECTURE_CURRENT.md).
+
+stack:
+  frontend: react-create-react-app-typescript
+  backend: node-express
+  database: mongodb
+  mobile: flutter (MobileApp/ — không quản lý qua factory pipeline này)
+
+# Đã xác minh THẬT bằng cách đọc code + chạy thử trong container (không suy đoán).
+# CỐ TÌNH không dùng "docker run -v $(pwd)/...:/app" (bind-mount) — pipeline-worker
+# tự chạy trong container riêng (Docker-outside-of-Docker), $(pwd) lúc đó là đường
+# dẫn BÊN TRONG container pipeline-worker, không phải đường dẫn thật trên Docker
+# daemon của host → bind-mount sai chỗ. Dùng "docker build" thay thế (context được
+# CLI đọc cục bộ rồi stream lên daemon qua BuildKit) — cùng lỗi/cùng cách né đã gặp
+# ở TK-HATU (xem docs/INCIDENTS.md #14 ở gốc factory).
+commands:
+  # --entrypoint sh bắt buộc: Backend/Dockerfile có ENTRYPOINT entrypoint.sh tự
+  # "exec npm run start" vô điều kiện, bỏ qua CMD — không override thì không chạy
+  # test được, container sẽ cố khởi động app thật (và treo vì không có Mongo thật).
+  build: docker build -t dieuphoimm-backend-baseline ./WebApp/Backend
+  # Hiện tại KHÔNG có file test nào trong Backend (0 file .test.js) — lệnh này sẽ
+  # FAIL/báo "no tests found", đây là hiện trạng thật, chưa sửa trong onboarding
+  # (xem docs/TECHNICAL_DEBT.md mục 3).
+  test_backend: docker build -t dieuphoimm-backend-baseline ./WebApp/Backend && docker run --rm --entrypoint sh dieuphoimm-backend-baseline -c "npm test"
+  test: docker build -t dieuphoimm-backend-baseline ./WebApp/Backend && docker run --rm --entrypoint sh dieuphoimm-backend-baseline -c "npm test"
+  # Frontend CÓ script "test" (react-scripts test, mặc định của Create React App)
+  # nhưng KHÔNG có file test nào (kể cả App.test.tsx mặc định của CRA cũng đã bị
+  # xoá) — cố tình không khai test_frontend ở đây vì lệnh sẽ không kiểm tra được gì
+  # thật (0 test), dễ gây ảo tưởng "có test" — xem docs/TECHNICAL_DEBT.md mục 4.
+  start: docker compose -f WebApp/docker-compose.yaml up -d --build ktv_Backend_service ktv_Frontend_service ktv_reverse_proxy_service ktv_db
+  stop: docker compose -f WebApp/docker-compose.yaml down
+
+# TẮT — chưa có test baseline thật nào (0 test Backend, 0 test Frontend), không có
+# lưới an toàn để phát hiện AI sinh code sai. Bật theo đúng chính sách đã chốt
+# (ưu tiên MiMO code) CHỈ SAU KHI có test baseline thật — xem TECHNICAL_DEBT mục 3-4.
+automation:
+  allow_apply_code: false
+
+pipeline:
+  - REQUIREMENT
+  - PROVISION
+  - ARCHITECTURE
+  - CODE
+  - BUILD
+  - TEST
+  - PREVIEW
+  - GIT_PUSH
+  - APPROVAL

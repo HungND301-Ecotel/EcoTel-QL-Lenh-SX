@@ -1,0 +1,51 @@
+{
+  "project_id": "DIEU-PHOI-MM",
+  "status": "ONBOARDING",
+  "current_step": "PREVIEW",
+  "steps": [
+    {
+      "name": "REQUIREMENT",
+      "status": "PASSED",
+      "message": "As-is, suy tu code co san - xem docs/REQUIREMENTS_AS_IS.md. Chua co to trinh/spec nghiep vu chinh thuc."
+    },
+    {
+      "name": "PROVISION",
+      "status": "PASSED",
+      "message": "Clone that tu https://github.com/anhnt205/EcoTel-QL-Lenh-SX.git (git clone, giu nguyen lich su). Checkout tu main (4653203), tao nhanh dev-dieuphoi-mm - KHONG dong vao main/develop (co CI/CD tu dong deploy that, xem CLAUDE.md muc 1)."
+    },
+    {
+      "name": "ARCHITECTURE",
+      "status": "PASSED",
+      "message": "Kien truc hien trang da ghi lai - xem docs/ARCHITECTURE_CURRENT.md. Xac nhan cung goc codebase voi TK-HATU (package.json trung ten, domain hardcode trung nhau trong nginx_release.conf)."
+    },
+    {
+      "name": "CODE",
+      "status": "PASSED",
+      "message": "Code co san tu truoc, KHONG thay doi gi trong buoc onboarding (dung quy tac 8). Phat hien 11 muc no ky thuat qua doc code, xem docs/TECHNICAL_DEBT.md - dang chu y nhat: bug ROLES tinh sai trong config.js, upload.routes.js thieu xac thuc (giong TK-HATU), 2 bug logic trong device.routes.js."
+    },
+    {
+      "name": "BUILD",
+      "status": "PASSED",
+      "message": "docker build -t dieuphoimm-backend-baseline ./WebApp/Backend PASS that (2026-08-24). npm ci bao 65 vulnerabilities (4 low/35 moderate/22 high/4 critical) - xem TECHNICAL_DEBT muc 11."
+    },
+    {
+      "name": "TEST",
+      "status": "FAILED",
+      "message": "docker run --entrypoint sh ... npm test -> jest: 'No tests found, exiting with code 1'. Dung nhu du doan: 0 file test that trong Backend (jest cai san nhung chua ai viet test). Frontend cung 0 test file (react-scripts test co san nhung khong co gi de chay). Day la hien trang that, chua sua trong onboarding."
+    },
+    {
+      "name": "PREVIEW",
+      "status": "PENDING",
+      "message": "Chua chay full stack that - thieu Backend/.env, Frontend/.env, serviceAccountKey.json (Firebase). Xem docs/ARCHITECTURE_CURRENT.md muc 5."
+    },
+    {
+      "name": "GIT_PUSH",
+      "status": "PENDING",
+      "message": "Dang lam viec tren nhanh dev-dieuphoi-mm (local, base tu origin/main). Chua push nhanh nay len remote."
+    },
+    {
+      "name": "APPROVAL",
+      "status": "PENDING"
+    }
+  ]
+}
