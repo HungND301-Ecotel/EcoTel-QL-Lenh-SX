@@ -40,11 +40,13 @@ commands:
   start: docker compose -f WebApp/docker-compose.yaml up -d --build ktv_Backend_service ktv_Frontend_service ktv_reverse_proxy_service ktv_db
   stop: docker compose -f WebApp/docker-compose.yaml down
 
-# TẮT — chưa có test baseline thật nào (0 test Backend, 0 test Frontend), không có
-# lưới an toàn để phát hiện AI sinh code sai. Bật theo đúng chính sách đã chốt
-# (ưu tiên MiMO code) CHỈ SAU KHI có test baseline thật — xem TECHNICAL_DEBT mục 3-4.
+# Bật 2026-08-24 để giao việc sửa lỗi đã phát hiện cho MiMO qua apply_code (đúng
+# chính sách đã chốt: ưu tiên MiMO code, Claude Code chỉ viết spec + review).
+# Task sửa lỗi đầu tiên (config.js ROLES) BẮT BUỘC kèm theo test thật đầu tiên của
+# dự án (tests/config.test.js) để tạo lưới an toàn — commands.test hiện luôn FAIL
+# "no tests found" nên tự nó chặn auto-commit cho tới khi có >=1 test thật.
 automation:
-  allow_apply_code: false
+  allow_apply_code: true
 
 pipeline:
   - REQUIREMENT
