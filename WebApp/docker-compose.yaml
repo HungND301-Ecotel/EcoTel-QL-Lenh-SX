@@ -71,7 +71,8 @@ services:
       # For development only, to synced src code to container
       # - ./Backend:/usr/src/app
       - /usr/src/app/node_modules
-      - ./Backend/serviceAccountKey.json:/usr/src/app/serviceAccountKey.json:ro
+      # serviceAccountKey.json (Firebase) chưa tồn tại trên máy này — bỏ mount để tránh Docker tự tạo thư mục rỗng thay thế
+      # - ./Backend/serviceAccountKey.json:/usr/src/app/serviceAccountKey.json:ro
     depends_on:
       - ktv_db
     # ports:
