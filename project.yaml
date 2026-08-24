@@ -28,9 +28,9 @@ commands:
   # "exec npm run start" vô điều kiện, bỏ qua CMD — không override thì không chạy
   # test được, container sẽ cố khởi động app thật (và treo vì không có Mongo thật).
   build: docker build -t dieuphoimm-backend-baseline ./WebApp/Backend
-  # Hiện tại KHÔNG có file test nào trong Backend (0 file .test.js) — lệnh này sẽ
-  # FAIL/báo "no tests found", đây là hiện trạng thật, chưa sửa trong onboarding
-  # (xem docs/TECHNICAL_DEBT.md mục 3).
+  # Cap nhat 2026-08-25: co 1 test file that (WebApp/Backend/tests/config.test.js,
+  # tu commit 623ab24) - lenh nay gio PASS 2/2 that, khong con "no tests found"
+  # nhu luc onboarding (xem docs/TECHNICAL_DEBT.md muc 3).
   test_backend: docker build -t dieuphoimm-backend-baseline ./WebApp/Backend && docker run --rm --entrypoint sh dieuphoimm-backend-baseline -c "npm test"
   test: docker build -t dieuphoimm-backend-baseline ./WebApp/Backend && docker run --rm --entrypoint sh dieuphoimm-backend-baseline -c "npm test"
   # Frontend CÓ script "test" (react-scripts test, mặc định của Create React App)
@@ -47,6 +47,15 @@ commands:
 # "no tests found" nên tự nó chặn auto-commit cho tới khi có >=1 test thật.
 automation:
   allow_apply_code: true
+
+# Tai khoan demo seed san cho moi truong preview (data-seeder/seed.js) - chi de
+# Control UI hien nhanh thong tin truy cap, khong phai secret that. Port 6869
+# (khac 6868 mac dinh cua chinh repo nay) vi TK-HATU - cung goc codebase, cung
+# hardcode port 6868 - dang chay song song tren cung may factory nay.
+demo_login:
+  url: http://localhost:6869
+  username: admin
+  password: "123456"
 
 pipeline:
   - REQUIREMENT

@@ -1,7 +1,7 @@
 {
   "project_id": "DIEU-PHOI-MM",
   "status": "ONBOARDING",
-  "current_step": "PREVIEW",
+  "current_step": "GIT_PUSH",
   "steps": [
     {
       "name": "REQUIREMENT",
@@ -35,8 +35,8 @@
     },
     {
       "name": "PREVIEW",
-      "status": "PENDING",
-      "message": "Chua chay full stack that - thieu Backend/.env, Frontend/.env, serviceAccountKey.json (Firebase). Xem docs/ARCHITECTURE_CURRENT.md muc 5."
+      "status": "PASSED",
+      "message": "Stack chay that (2026-08-25): docker compose -f WebApp/docker-compose.yaml -f WebApp/docker-compose.local-preview.yaml up -d ktv_Backend_service ktv_Frontend_service ktv_reverse_proxy_service ktv_db. Preview: http://localhost:6869 (doi tu 6868 vi TK-HATU dang chay song song tren may, xem file override). Da tao WebApp/Backend/.env, WebApp/Frontend/.env (dev-only, gitignored) va WebApp/Backend/serviceAccountKey.json (Firebase placeholder - RSA key that nhung khong gan project Firebase nao, chi de config/firebase.js khong crash luc boot vi require() eager, khong lazy nhu TK-HATU tung mo ta). Verify that: GET / -> 200, POST /api/auth/login (admin/123456) -> 200 tra JWT that, bundle JS xac nhan baseURL:\"/api\" (khong con hardcode localhost:8080 - cong do bi factory gateway chiem). Gioi han da biet, KHONG hoat dong that trong preview nay (thieu credential that, chap nhan duoc cho local dev): Firebase push notification, SMTP (quen mat khau), AWS S3 (upload anh/file), Socket.IO/realtime (giong TK-HATU, can sua socketService.ts dung window.location.origin - la code nghiep vu, chua yeu cau)."
     },
     {
       "name": "GIT_PUSH",
