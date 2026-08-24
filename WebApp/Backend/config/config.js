@@ -27,7 +27,7 @@ const ROLE = {
     MANAGER: 'manager',
     EMPLOYEE: 'employee',
 };
-const ROLES = Object.values(STATUS_ORDER);
+const ROLES = Object.values(ROLE);
 
 
 const STATUS_DEVICE = {
