@@ -360,7 +360,7 @@ router.get("/:id", verifyToken, async (req, res, next) => {
       { $unwind: "$vehicleSummaries" },
       {
         $match: {
-          "vehicleSummaries.vehicle": { $in: deviceIds },
+          "vehicleSummaries.vehicle": deviceId,
           "vehicleSummaries.travelHours": { $ne: null }, // bỏ qua bản ghi không có giá trị
         },
       },
@@ -380,7 +380,7 @@ router.get("/:id", verifyToken, async (req, res, next) => {
 
     const deviceObj = device.toObject();
     deviceObj.cumulativeHours =
-      travelHoursAgg.length > 0 ? travelHoursAgg[0].totalTravelHours || 0 : 0;
+      travelHoursAgg.length > 0 ? travelHoursAgg[0].latestTravelHours || 0 : 0;
 
     req.logger.info(`🔥 Load phương tiện thành công`);
     res.status(200).json({
