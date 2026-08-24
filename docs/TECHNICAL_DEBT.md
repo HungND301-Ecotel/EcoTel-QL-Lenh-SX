@@ -2,14 +2,9 @@
 
 Chỉ ghi những gì đã đọc trực tiếp trong code ngày 2026-08-24 (nhánh `dev-dieuphoi-mm`). Không suy đoán, không tự sửa (đúng nguyên tắc onboarding — chỉ phát hiện, sửa phải được yêu cầu rõ ràng riêng).
 
-## 1. Bug thật: `ROLES` trong `config.js` tính sai (mức độ: cao)
+## 1. ✅ ĐÃ SỬA (2026-08-24, commit `623ab24`): `ROLES` trong `config.js` tính sai
 
-`WebApp/Backend/config/config.js`:
-```js
-const ROLE = { ADMIN: 'admin', DISPATCHER: 'dispatcher', MANAGER: 'manager', EMPLOYEE: 'employee' };
-const ROLES = Object.values(STATUS_ORDER);   // ❌ phải là Object.values(ROLE)
-```
-`ROLES` hiện chứa `['pending', 'in_progress', 'completed', 'warning', 'cancel']` (giá trị của `STATUS_ORDER`) thay vì 4 vai trò thật. Bất kỳ chỗ nào dùng `ROLES` (validate giá trị role hợp lệ, populate dropdown chọn role...) sẽ sai. Chưa grep hết toàn bộ nơi `ROLES` (số nhiều) được import để đánh giá blast radius đầy đủ — cần làm trước khi sửa.
+`const ROLES = Object.values(STATUS_ORDER);` → `Object.values(ROLE);`. Đã grep toàn bộ nơi dùng `ROLES` (số nhiều): chỉ 1 chỗ import (`WebApp/Backend/models/User.js:2`) và **không hề dùng** trong cả file đó (import chết) — bug có thật nhưng thực tế CHƯA gây ảnh hưởng runtime nào trước khi sửa, vì không ai đọc giá trị sai đó. Kèm test baseline đầu tiên của dự án: `WebApp/Backend/tests/config.test.js`.
 
 ## 2. Rủi ro bảo mật: `backup/entrypoint.sh` dump toàn bộ env ra file trong container (mức độ: trung bình-cao)
 
@@ -26,22 +21,17 @@ Ghi TOÀN BỘ biến môi trường (bao gồm `MONGODB_URI` có mật khẩu, 
 
 `react-scripts test` (Create React App mặc định) có sẵn nhưng ngay cả `App.test.tsx` mặc định của CRA (thường tự sinh khi tạo project) cũng đã bị xoá — xác nhận 0 test thật. Khác TK-HATU (Frontend TK-HATU không có script test nào cả) — ở đây có SCRIPT nhưng không có TEST.
 
-## 5. `upload.routes.js` không có xác thực (mức độ: cao — giống hệt lỗi đã sửa ở TK-HATU)
+## 5. ✅ ĐÃ SỬA (2026-08-24, commit `d7091e2`): `upload.routes.js` không có xác thực
 
-```js
-router.get('/put', handleUpload.getPresignedUrl);
-router.get('/get', handleUpload.getDownloadUrl);
-```
-Không có `verifyToken` trên cả 2 route — bất kỳ ai (không cần đăng nhập) đều lấy được presigned URL để upload/download file lên S3 của hệ thống. Toàn bộ 23 route file khác đều có `verifyToken` explicit trên từng handler (xem `docs/ARCHITECTURE_CURRENT.md` mục 2) — đây là ngoại lệ duy nhất đã xác minh.
+Đã thêm `verifyToken` vào cả 2 route (`GET /put`, `GET /get`), đúng pattern per-route đã dùng ở các route file khác. **Lưu ý khi apply_code (task #136)**: MiMO thêm đúng `verifyToken` nhưng tự ý đổi `require('../utils/uploadImage')` thành `require('../utils/handleUpload')` (file không tồn tại, sẽ crash server thật lúc boot) — build/test PASS vẫn không phát hiện được vì test suite không import file này. Phát hiện bằng cách `require()` trực tiếp module trong container, sửa lại path đúng.
 
 ## 6. `errorHandler.js` tồn tại nhưng không được mount + có bug tiềm ẩn nếu mount sau này (mức độ: trung bình, hiện tại chưa phát tác)
 
 Xem chi tiết ở `docs/ARCHITECTURE_CURRENT.md` mục 4. Tóm tắt: `server.js` dùng error handler inline riêng (không phải file `utils/errorHandler.js`); nếu sau này ai mount `utils/errorHandler.js` vào mà không sửa, request sẽ treo vô thời hạn khi `NODE_ENV` không đúng 2 giá trị `development`/`production` — đúng lỗi đã gặp và fix ở TK-HATU (`errorHandler.js` gốc TK-HATU trước khi sửa).
 
-## 7. 2 bug logic trong `device.routes.js` (mức độ: trung bình, không crash toàn app vì có try/catch)
+## 7. ✅ ĐÃ SỬA (2026-08-24, commit `ca9b31e`): 2 bug logic trong `device.routes.js`
 
-- **`GET /:id`** (dòng ~359-364): dùng biến `deviceIds` trong 1 aggregation `$match`, nhưng `deviceIds` **không được định nghĩa trong scope của handler này** (chỉ tồn tại ở handler `GET /` khác) — sẽ ném `ReferenceError`, bị bắt bởi `catch` và trả về 500 kèm `err.stack`. Endpoint xem chi tiết 1 thiết bị hiện luôn lỗi 500 khi chạy tới đoạn tính `travelHoursAgg`.
-- **Cùng handler, dòng ~382-383**: đọc `travelHoursAgg[0].totalTravelHours` nhưng field thật trong kết quả aggregation (theo `$group`) là `latestTravelHours`, không phải `totalTravelHours` — sẽ luôn ra `undefined` → `cumulativeHours` luôn bằng `0`, sai âm thầm (không crash, chỉ sai dữ liệu hiển thị).
+`GET /:id` (handler xem chi tiết 1 thiết bị): (1) `"vehicleSummaries.vehicle": { $in: deviceIds }` → `deviceId` (biến `deviceIds` không tồn tại trong scope handler này, gây `ReferenceError` thật, luôn trả 500). (2) `travelHoursAgg[0].totalTravelHours` → `latestTravelHours` (đúng tên field do `$group` tạo ra). Áp dụng trực tiếp (không qua apply_code) sau khi task #137 từ chối vì cần toàn bộ 1174 dòng file gốc để ghi lại — xem mục "Bài học apply_code" bên dưới.
 
 ## 8. MongoDB expose thẳng port 27017 ra host, Grafana dùng mật khẩu mặc định (mức độ: trung bình, chỉ áp dụng khi chạy compose dev)
 
@@ -59,12 +49,22 @@ Xem chi tiết ở `docs/ARCHITECTURE_CURRENT.md` mục 4. Tóm tắt: `server.j
 
 Xác nhận thật khi build baseline (2026-08-24): `npm ci` báo **65 vulnerabilities (4 low, 35 moderate, 22 high, 4 critical)**. Chưa chạy `npm audit` chi tiết để liệt kê từng package — cần làm trước khi quyết định `npm audit fix` (có thể breaking change, không tự ý chạy `--force`).
 
+## Bài học thật khi dùng apply_code trên dự án này (2026-08-24)
+
+3/3 task giao cho MiMO qua `apply_code` đều KHÔNG dùng được nguyên trạng — tệ hơn cả tỉ lệ đã gặp ở TK-HATU:
+
+- **Task #135** (fix 1 dòng `ROLES` + thêm test): MiMO viết lại **toàn bộ** `config.js` dù được yêu cầu rõ "CHỈ đổi đúng dòng này" — xoá hẳn `STATUS_DEVICE`/`STATUS_REPAIR`/`ACCEPTED_PRODUCT`/`JPS_STATUS`/`SEAL_STATUS` (đang dùng thật ở nơi khác), đổi cả giá trị chuỗi `STATUS_ORDER.CANCEL: 'cancel'` → `'cancelled'` (sẽ làm sai lệch dữ liệu đã lưu trong MongoDB nếu lọt qua), bịa hẳn `JOB_TYPE` tiếng Anh khác hoàn toàn nghiệp vụ thật. Build/test vẫn PASS vì test suite (do chính task này tạo) chỉ kiểm tra `ROLE`/`ROLES`/`STATUS_ORDER` — không cover phần bị phá. Revert (`ae4fa70`), áp fix đúng bằng tay.
+- **Task #136** (thêm `verifyToken` vào `upload.routes.js`): áp đúng phần được yêu cầu, NHƯNG tự ý đổi `require('../utils/uploadImage')` thành `require('../utils/handleUpload')` — file không tồn tại, sẽ crash server thật khi boot (`Cannot find module`). Build/test vẫn PASS vì test suite không import file này. Chỉ phát hiện được bằng cách `require()` trực tiếp module trong container — build/test không đủ để bắt lỗi loại này.
+- **Task #137** (2 fix 1 dòng trong `device.routes.js`): model từ chối, báo cần toàn bộ nội dung file gốc (1174 dòng) vì cơ chế `apply_code` bắt buộc ghi lại TOÀN BỘ file, không phải diff — không bịa liều, nhưng không dùng được trong pipeline này.
+
+**Bài học mới, riêng của dự án này**: ngay cả yêu cầu tối giản, tối literal, có sẵn tiền lệ thất bại y hệt ở TK-HATU để tham khảo, vẫn thất bại 3/3 lần trên file lớn/nhiều export. Với file có nhiều hằng số/export không liên quan tới chỗ cần sửa, cân nhắc áp fix trực tiếp ngay từ đầu (không thử qua apply_code trước) nếu fix chỉ 1-2 dòng và đã biết rõ nội dung file — tốn ít thời gian hơn là chờ apply_code thất bại rồi mới sửa tay. Luôn verify độc lập bằng `require()` trực tiếp module thay đổi trong container (không chỉ tin `npm test` PASS) khi test suite còn mỏng.
+
+**Bug mới phát hiện khi thao tác apply_code (không phải bug code, mà bug hạ tầng factory)**: gọi thẳng `POST /api/agent/requests` với `request_text` nhiều dòng (nhúng code mẫu) — dù không dùng cú pháp đính kèm cũ — vẫn bị `decompose_request` tách thành 13 task rác theo từng dòng (tái hiện đúng sự cố #16 đã ghi ở `docs/INCIDENTS.md` gốc factory, nhưng qua đường gọi API trực tiếp thay vì Chat UI). Khắc phục: luôn dùng field `attachments` cho nội dung nhiều dòng, giữ `request_text` là 1 dòng duy nhất.
+
 ## Chưa làm / chưa xác minh (báo cáo trước khi phát triển tiếp)
 
-- **Chưa build/test baseline trong Docker** — sẽ chạy ngay sau khi tạo xong 7 file onboarding, kết quả cập nhật vào `.factory/pipeline.json`.
 - Chưa đọc chi tiết `utils/cron.js` (nội dung job định kỳ cụ thể).
 - Chưa đọc chi tiết Socket.IO server-side handler trong `server.js` (chỉ xác nhận có khởi tạo `new Server(...)`, chưa xem các event `on(...)` cụ thể).
 - Chưa đọc MobileApp (Flutter) — nằm ngoài phạm vi factory quản lý ở bước onboarding này.
 - Chưa xác định rõ mục đích biến `process.env.API_URL` và model `Internal`.
-- Chưa grep toàn bộ nơi dùng biến `ROLES` (số nhiều, đang bug) để đánh giá đầy đủ mức độ ảnh hưởng trước khi đề xuất sửa.
-- `.factory/pipeline.json` sẽ phản ánh đúng các mục PENDING/PASSED sau khi build/test baseline chạy xong — xem file đó để biết trạng thái mới nhất, đừng tin tài liệu này về trạng thái BUILD/TEST (tài liệu này chỉ ghi phát hiện code, không phải kết quả chạy).
+- `.factory/pipeline.json` phản ánh trạng thái mới nhất sau build/test/preview — xem file đó, đừng tin tài liệu này về trạng thái BUILD/TEST/PREVIEW (tài liệu này chỉ ghi phát hiện code + lịch sử sửa, không phải kết quả chạy real-time).
