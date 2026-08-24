@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const handleUpload = require("../utils/handleUpload");
+const handleUpload = require("../utils/uploadImage");
 const { verifyToken } = require("../middleware/auth.middleware");
 
 router.get('/put', verifyToken, handleUpload.getPresignedUrl);
