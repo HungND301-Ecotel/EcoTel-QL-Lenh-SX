@@ -21,17 +21,17 @@
     {
       "name": "CODE",
       "status": "PASSED",
-      "message": "Code co san tu truoc, KHONG thay doi gi trong buoc onboarding (dung quy tac 8). Phat hien 11 muc no ky thuat qua doc code, xem docs/TECHNICAL_DEBT.md - dang chu y nhat: bug ROLES tinh sai trong config.js, upload.routes.js thieu xac thuc (giong TK-HATU), 2 bug logic trong device.routes.js."
+      "message": "Onboarding ban dau: code co san tu truoc, phat hien 11 muc no ky thuat qua doc code (xem docs/TECHNICAL_DEBT.md). 3/3 lan thu apply_code qua MiMO deu KHONG dung duoc nguyen trang (task #135 viet lai toan bo config.js pha huy nhieu export - da revert ae4fa70; task #136 hallucinate sai require() path; task #137 tu choi vi can toan bo 1174 dong file goc). Ca 3 bug da phat hien (ROLES sai trong config.js, upload.routes.js thieu xac thuc, 2 bug logic device.routes.js) DA DUOC SUA THU CONG + verify doc lap (require() truc tiep module, khong chi tin build/test), commit 623ab24/d7091e2/ca9b31e. Kem test baseline dau tien cua du an (WebApp/Backend/tests/config.test.js). Bai hoc apply_code + 1 bug that cua pipeline-worker (CONTEXT_PATH_PATTERN nuot dau cau sau @path) da ghi tai docs/TECHNICAL_DEBT.md va docs/INCIDENTS.md #19 (bug do da duoc sua + deploy 2026-08-24, khong can dung lai apply_code cho 2 bug device.routes.js vi da sua tay xong)."
     },
     {
       "name": "BUILD",
       "status": "PASSED",
-      "message": "docker build -t dieuphoimm-backend-baseline ./WebApp/Backend PASS that (2026-08-24). npm ci bao 65 vulnerabilities (4 low/35 moderate/22 high/4 critical) - xem TECHNICAL_DEBT muc 11."
+      "message": "docker build -t dieuphoimm-backend-baseline ./WebApp/Backend PASS that, re-verify lai 2026-08-24 sau khi cai lai Docker Desktop (image cu khong con, rebuild tu source). npm ci bao 65 vulnerabilities (4 low/35 moderate/22 high/4 critical) - xem TECHNICAL_DEBT muc 11."
     },
     {
       "name": "TEST",
-      "status": "FAILED",
-      "message": "docker run --entrypoint sh ... npm test -> jest: 'No tests found, exiting with code 1'. Dung nhu du doan: 0 file test that trong Backend (jest cai san nhung chua ai viet test). Frontend cung 0 test file (react-scripts test co san nhung khong co gi de chay). Day la hien trang that, chua sua trong onboarding."
+      "status": "PASSED",
+      "message": "Da doi tu FAILED sang PASSED sau commit 623ab24 (them WebApp/Backend/tests/config.test.js kem fix bug ROLES). Re-verify that 2026-08-24: 'npm test' (jest) PASS 2/2 test that (tests/config.test.js). Frontend van 0 test file (react-scripts test co san nhung khong co gi de chay, khong tinh vao PASS nay) - xem TECHNICAL_DEBT muc 4."
     },
     {
       "name": "PREVIEW",
